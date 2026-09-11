@@ -31,7 +31,13 @@ passes both fixed primary gates: folded wall −12.77%, CPU −12.89%; token wal
 84 artifacts verify. Folded medians are native 1.702s, control 1.939s, candidate
 1.696s; token medians are 1.965s, 4.290s and 4.462s. Added analysis is included:
 token's execution improvement does not offset its compiler overhead. The candidate
-is not retained yet. Proceed to [broad and held-out qualification](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
+is not retained yet. The candidate now passes [47,004 broad native-validation commands](results/aggregate-relocation-native-01/assessment.md)
+and [245 TLS/destructor commands](results/aggregate-relocation-tls-01/assessment.md).
+The per-case held-out verifier reproduces nine actual histories and rejects
+105 invalid synthetic cases while preserving both prior verifiers. Fresh fre
+body coverage and all seven held-outs remain. A reviewed four-cache archive of
+the completed public Nushell history will provide the large-case reserve;
+private and active caches are excluded. Continue the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
 
 Source `aa2f6ea` / tool `0e94d6d8` now completes the current runtime qualification.
 Our direct AArch64 JIT keeps checked dynamic/large copies inside resumable
