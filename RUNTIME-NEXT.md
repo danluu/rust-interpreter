@@ -19,8 +19,11 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
 2. **Choose the next execution change from fresh profiles.** The previous
    token profile put 88.19% of interpreted operations in copies; those copies
    now execute natively. Follow the [recorded profile protocol](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
-   on the exact current artifacts before choosing
-   another ABI, initialization or memory-check change. Preserve exact budgets,
+   on the exact current artifacts. Fresh captures now show 41.01% folded and
+   12.23% token samples in clearing, with token boundary self only 2.23%.
+   Map hot clearing sites to callee frames and investigate a substantial
+   read-before-write proof including alias/call effects before implementing
+   another initialization change. Preserve exact budgets,
    initialization, fault order and guest state. Earlier narrow frame-reuse
    censuses are parked; their tiny measured opportunities do not justify a
    new optimization without evidence.

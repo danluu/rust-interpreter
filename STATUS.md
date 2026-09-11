@@ -35,6 +35,13 @@ The fre replay uses the explicit options in its report; it is not unfiltered
 libtest. Real unwinding, threads and general OS/FFI remain unsupported.
 [Fresh body replay](results/resumable-copy-fre-01/assessment.md).
 
+Fresh exact-code profiles now guide the next change:
+
+- [token profile](results/resumable-copy-token-sample-01/assessment.md): boundary self 2.23%; exact frame clearing 12.23% of thread samples.
+- [folded profile](results/resumable-copy-folded-sample-01/assessment.md): boundary self 0.22%; exact frame clearing 41.01% of thread samples.
+
+These are partial, perturbed sample shares, not latency or speedup predictions.
+
 ### Current held-out verification
 
 All seven histories verify together: 588 commands, 105 edited pairs and 294 artifacts.

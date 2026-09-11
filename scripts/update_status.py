@@ -62,6 +62,19 @@ def current_copy():
             if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest:
                 raise RuntimeError('current aggregate evidence changed: ' + path)
         reports.append(aggregate_path)
+    profile_lines = []
+    for label in ['token', 'folded']:
+        folder = f'results/resumable-copy-{label}-sample-01'
+        if not (ROOT / folder / 'generated-attribution.json').exists():
+            continue
+        sample, attribution = read(folder + '/summary.json'), read(folder + '/generated-attribution.json')
+        if (sample['tool_key'] != key or attribution['tool_key'] != key or
+                sample['total_samples'] != attribution['total_thread_samples']):
+            raise RuntimeError('current profile identity differs')
+        classes = attribution['percentage_of_thread_samples']
+        clearing = classes.get('native_zero_range', 0) + classes.get('native_zero_bulk', 0)
+        profile_lines.append(f"- [{label} profile]({folder}/assessment.md): boundary self {sample['percentages'].get('native_boundary_self', 0):.2f}%; exact frame clearing {clearing:.2f}% of thread samples.")
+        reports += [folder + '/summary.json', folder + '/generated-attribution.json']
     native, tls, fre = qualifications
     lines = ['## Current custom-copy and native-call experiment', '',
         f"Source `{original['source_commit'][:7]}`, tool `{key[:8]}` passes {release['workspace_passed']} workspace tests",
@@ -87,6 +100,9 @@ def current_copy():
         'The fre replay uses the explicit options in its report; it is not unfiltered',
         'libtest. Real unwinding, threads and general OS/FFI remain unsupported.',
         '[Fresh body replay](results/resumable-copy-fre-01/assessment.md).', '',
+        *(['Fresh exact-code profiles now guide the next change:', '', *profile_lines, '',
+           'These are partial, perturbed sample shares, not latency or speedup predictions.', '']
+          if profile_lines else []),
         '### Current held-out verification', '',
         ('All seven histories verify together: 588 commands, 105 edited pairs and 294 artifacts.'
          if aggregate else f"{len(completed)} of seven required histories have completed partial gate verification."),

@@ -28,6 +28,10 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | current-copy-evidence | [resumable-copy-heldout-01-case-07/gate-evaluation.json](resumable-copy-heldout-01-case-07/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-heldout-01-case-07/final-verification.json](resumable-copy-heldout-01-case-07/final-verification.json) |
 | current-copy-evidence | [resumable-copy-heldout-recovery-01/summary.json](resumable-copy-heldout-recovery-01/summary.json) |
+| current-copy-evidence | [resumable-copy-token-sample-01/summary.json](resumable-copy-token-sample-01/summary.json) |
+| current-copy-evidence | [resumable-copy-token-sample-01/generated-attribution.json](resumable-copy-token-sample-01/generated-attribution.json) |
+| current-copy-evidence | [resumable-copy-folded-sample-01/summary.json](resumable-copy-folded-sample-01/summary.json) |
+| current-copy-evidence | [resumable-copy-folded-sample-01/generated-attribution.json](resumable-copy-folded-sample-01/generated-attribution.json) |
 | workflow | [pgrust](native-controls-corpus-01-pgrust/summary.json) |
 | workflow | [nushell](native-controls-corpus-01-nushell/summary.json) |
 | workflow | [rg-aot](native-controls-corpus-01-rg-aot/summary.json) |

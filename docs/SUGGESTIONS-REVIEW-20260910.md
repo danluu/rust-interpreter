@@ -118,6 +118,14 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Fresh exact-code [token](../results/resumable-copy-token-sample-01/assessment.md)
+  and [folded](../results/resumable-copy-folded-sample-01/assessment.md) profiles
+  verify six original executions without declines. Token boundary self share
+  falls from 15.59% to 2.23%; clearing is now 12.23% token and 41.01% folded.
+  All generated samples map to their own emitted code. The next investigation
+  is substantial, provably redundant frame initialization, including aliases
+  and call effects. These sample shares are not a speedup prediction.
+
 - The current candidate now passes the [complete held-out set](../results/resumable-copy-heldout-recovery-01/assessment.md):
   588 commands, 105 edited pairs, 294 artifacts, no wall or CPU regression
   above 5%. The original zero-pair stop and a strict receipt-schema mismatch

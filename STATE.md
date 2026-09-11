@@ -47,13 +47,24 @@ aggregation uses `assess_copy_heldout_receipts.py` and the bound adapter plan.
 All measurement and aggregation processes are terminal; no source change or
 benchmark rerun was used to resolve this receipt mismatch.
 
-Next execute the [post-copy profile protocol](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
-with the immutable current tool and the recorded original candidate artifacts.
+The [post-copy profile protocol](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
+uses the immutable current tool and the recorded original candidate artifacts.
 Token native entries fell from ~22.4 million to ~2.65 million; the old profile
 mix no longer identifies the next bottleneck. Choose one substantial cost from
 fresh exact-code attribution before changing the runtime. Earlier narrow frame
 reuse proposals remain parked. An unfiltered suite attempt remains the separate
-compatibility direction. No new profiles have started at this checkpoint.
+compatibility direction. The fresh [token profile](results/resumable-copy-token-sample-01/assessment.md)
+and [folded profile](results/resumable-copy-folded-sample-01/assessment.md) now
+verify three original-artifact processes each with no declines. All 7,186 token
+and 2,297 folded samples reconcile; 6,459 and 2,289 generated samples map to
+their exact emitted code, with zero unresolved samples. Token boundary self
+samples are 2.23% (previously 15.59%); exact clearing is 12.23% token and 41.01%
+folded. The analyzers are unchanged; one relative-path analysis-wrapper failure
+is preserved, and analysis alone was rerun with absolute paths. Next map hot
+clearing sites to callee frames and determine whether a substantial set of
+bytes is provably written before any read, including alias/call effects.
+Do not reopen the parked narrow argument/private-array optimizations or tune
+clearing batches. No new runtime optimization has been implemented yet.
 
 Function-level reuse remains correctness/design work: the [Nushell reduction](results/allocation-history-reduction-02/assessment.md)
 and [built-MIR observer](results/allocation-history-mir-dumps-02/assessment.md)
@@ -62,8 +73,9 @@ bytes do not establish allocation identity, and session-local IDs are unsuitable
 cache keys. Roughly 71 ms of lowering inside a 5.3-second command does not justify
 function reuse as the immediate speed project.
 
-Storage maintenance remains at 205 verified archives; this continuation changed
-no cache files and did not signal any process. Bounded [remaining-case inventories](results/copy-remaining-space-inventory-01/assessment.md)
+Storage maintenance remains at 205 verified archives. This continuation created
+fresh benchmark caches but reclaimed or archived no historical cache and did
+not signal any process. Bounded [remaining-case inventories](results/copy-remaining-space-inventory-01/assessment.md)
 inspect public/private cache sizes and publish only aggregates. Lock-only stops
 and the corrected object-presence guard are retained. No private cache was
 archived. The original suggestions file remains unchanged and untracked.
