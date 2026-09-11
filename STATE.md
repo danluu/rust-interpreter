@@ -35,9 +35,12 @@ is not retained yet. The candidate now passes [47,004 broad native-validation co
 and [245 TLS/destructor commands](results/aggregate-relocation-tls-01/assessment.md).
 The per-case held-out verifier reproduces nine actual histories and rejects
 105 invalid synthetic cases while preserving both prior verifiers. Fresh fre
-body coverage and all seven held-outs remain. A reviewed four-cache archive of
-the completed public Nushell history will provide the large-case reserve;
-private and active caches are excluded. Continue the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
+body coverage is running; all seven held-outs remain. The reviewed four-cache
+archive of the completed public Nushell history has [completed and verified](results/aggregate-relocation-space-01/summary.json),
+preserving 13.46 GB of payloads in 4.36 GB of archives. Private and active caches
+were excluded. Held-out admission now qualifies all seven independently bound
+case controls, six ratio-gate examples and 54 rejected inputs, including the
+required running floor. Continue the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
 
 Source `aa2f6ea` / tool `0e94d6d8` now completes the current runtime qualification.
 Our direct AArch64 JIT keeps checked dynamic/large copies inside resumable
