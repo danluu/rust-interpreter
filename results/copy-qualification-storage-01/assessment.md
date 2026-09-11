@@ -1,0 +1,3 @@
+All eight reviewed caches from the completed original-baseline comparison were archived and verified. The batch covers 14,146 paths, 2,023,615,351 unique original bytes, 721,169,028 archive bytes and 110 unchanged evidence hashes. Each child decoded and hashed every archive payload before retiring its original cache. Executed snapshots, source and reports remain preserved. The inventory was committed as `3ba7838` before application.
+
+The completed total is now 173 archives (152 workflow and 21 host). This maintenance is outside benchmark timers. About 9.4 GiB was available afterward on the shared volume; that observation is not attributed entirely to archival.

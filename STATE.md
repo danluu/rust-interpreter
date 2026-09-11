@@ -60,8 +60,9 @@ passes 382 bodies, seven ignored, with 382 fresh native executions, all 382
 compared artifacts unchanged and no declines. These remain body replays, not
 unfiltered libtest. The seven held-out edit workflows remain before retention.
 No default change. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
-are archived and verified. About 4.7 GiB remains after fresh coverage;
-archive reviewed completed caches before any large fresh history.
+are archived and verified. The [eight original-comparison caches](results/copy-qualification-storage-01/assessment.md)
+are also archived and verified. About 9.4 GiB is currently available on the shared
+volume; the large held-out histories still need a bounded storage strategy.
 
 ## Closed worker-count experiment
 
@@ -127,7 +128,8 @@ Guest code and runtime defaults remain unchanged.
 The [latest 32-cache batch](results/worker-cold-storage-batch-05/assessment.md)
 completed and verified. The [four cold04 caches](results/allocation-history-storage-01/assessment.md)
 also verified. The [eight copy-comparison caches](results/copy-comparison-storage-01/assessment.md)
-bring the total to 165 archives (144 workflow and 21 host). The new
+and the [eight original-comparison caches](results/copy-qualification-storage-01/assessment.md)
+bring the total to 173 archives (152 workflow and 21 host). The new
 [artifact clone qualification](benchmarks/experiments/compiler-pipeline/ARTIFACT-CLONES.md)
 preserves independent write behavior and rejects 18 invalid/failure cases.
 The [pilot](results/artifact-clone-pilot-01/assessment.md) and
