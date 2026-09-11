@@ -67,6 +67,28 @@ Options remain explicit and disabled by default; whole-codebase compatibility
 and native parity on the two compute workloads remain open.
 [Current work](STATE.md) · [Fixed plan and retry](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md).
 
+### MIR inlining policy comparison
+
+Ordinary inlining budgets lose to the current enlarged budgets with the
+same custom JIT. All 168 commands, 30 edited pairs and 84 artifacts verify.
+
+| Workflow | Ordinary vs enlarged wall | Ordinary vs enlarged CPU |
+| --- | ---: | ---: |
+| folded-literal-trie | +4.55% | +5.56% |
+| token-phrase | +6.88% | +7.04% |
+
+Both predeclared gates fail. Smaller artifacts and less native code did
+not offset the extra guest instructions and Calls. Keep enlarged inlining;
+no intermediate threshold sweep is planned.
+[Complete assessment](results/mir-call-policy-01/assessment.md).
+
+The [typed clearing split](results/register-clearing-attribution-01/assessment.md)
+assigns all 942 folded and 879 token clearing samples to guest memory;
+register clearing has zero sampled hits. A stronger register proof is parked.
+
+Historical source evidence is verified at its [recorded Git version](results/historical-source-bindings.json)
+when the current source has subsequently changed; original measured records remain exact.
+
 The following sections preserve the preceding experiment and full-corpus baseline.
 
 ## Previous native-call and register experiment

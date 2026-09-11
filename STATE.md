@@ -68,11 +68,24 @@ now attributes all 942 folded and 879 token clearing samples to guest memory,
 with zero register-array hits. Twenty positive cases and 140 rejected mutants
 qualify the analyzer; all six original captures reproduce. A stronger register
 proof is parked. The hottest folded frame has 18,224 bytes, of which 16,704 are
-MIR locals in the existing verified inventory. Before broader aggregate alias
-and padding analysis, compare ordinary MIR inlining budgets against the current
-enlarged budgets with the same cheap native Call ABI. This deliberately changes
-artifacts and needs a compiler-configuration comparison with original native
-controls. No new runtime optimization has been implemented yet.
+MIR locals in the existing verified inventory. The [completed inlining comparison](results/mir-call-policy-01/assessment.md)
+rejects ordinary budgets: paired wall +4.55% folded and +6.88% token, CPU +5.56%
+and +7.04%. Both policies used the same 0e tools/runtime. All 168 commands,
+30 edited pairs and 84 artifacts verify. Smaller artifacts/native code do not
+offset more guest instructions and Calls. Keep enlarged inlining; no threshold
+sweep. No new runtime optimization has been implemented yet. Next follow the
+[broader byte-write plan](benchmarks/experiments/aggregate-reuse-census/BYTE-WRITES-NEXT.md)
+for private aggregate storage, including actual lowering coverage, partial
+writes, padding, aliases and normal Call-return edges. Require meaningful
+additional scope before implementing a compiler transformation.
+
+The verifier's default still requires identical runtime artifacts. Its explicit
+compiler-flags path checks identical tools/other options and actual child flags,
+and reports differing artifact hashes honestly. Qualification reproduces six
+historical reports and rejects 18 invalid cases. Reporting binds the historical
+verifier to its exact Git object; measured files remain exact and four negative
+reporting checks reject substitution/corruption. All current processes are
+terminal; new performance defaults were not selected.
 Do not reopen the parked narrow argument/private-array optimizations or tune
 clearing batches.
 

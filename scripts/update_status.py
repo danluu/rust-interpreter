@@ -3,6 +3,7 @@
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = 'results/native-controls-corpus-01/summary.json'
@@ -12,6 +13,45 @@ COMPUTE = {'folded-literal-trie', 'token-phrase', 'forward-anchored-tls', 'pgrus
 EXPERIMENT_RUN = 'resumable-bulk-e2e-02'
 EXPERIMENT = 'results/' + EXPERIMENT_RUN + '/gate-evaluation.json'
 HELD_OUT_REPORT = 'results/resumable-bulk-heldout-recovery-01/summary.json'
+
+
+def verify_evidence(path, digest):
+    if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest:
+        return
+    bindings = json.loads((ROOT / 'results/historical-source-bindings.json').read_text())
+    source = bindings['sources'].get(path)
+    if path == 'scripts/verify_repeated_workflow.py' and source is not None and source['sha256'] == digest:
+        content = subprocess.check_output(['git', 'show', source['commit'] + ':' + path], cwd=ROOT)
+        if hashlib.sha256(content).hexdigest() == digest:
+            return
+    raise RuntimeError('recorded evidence changed: ' + path)
+
+
+def current_mir_policy():
+    path = 'results/mir-call-policy-01/summary.json'
+    data = json.loads((ROOT / path).read_text())
+    if data['ordinary_policy_passed'] or data['selected_policy'] != 'enlarged':
+        raise RuntimeError('unexpected MIR policy decision')
+    for name, digest in data['evidence'].items():
+        verify_evidence(name, digest)
+    lines = ['### MIR inlining policy comparison', '',
+        'Ordinary inlining budgets lose to the current enlarged budgets with the',
+        'same custom JIT. All 168 commands, 30 edited pairs and 84 artifacts verify.', '',
+        '| Workflow | Ordinary vs enlarged wall | Ordinary vs enlarged CPU |',
+        '| --- | ---: | ---: |']
+    for case in data['cases']:
+        row = case['assessment']
+        lines.append(f"| {case['label']} | {(row['wall_ratio_ordinary_over_enlarged']-1)*100:+.2f}% | {(row['cpu_ratio_ordinary_over_enlarged']-1)*100:+.2f}% |")
+    lines += ['', 'Both predeclared gates fail. Smaller artifacts and less native code did',
+        'not offset the extra guest instructions and Calls. Keep enlarged inlining;',
+        'no intermediate threshold sweep is planned.',
+        '[Complete assessment](results/mir-call-policy-01/assessment.md).', '',
+        'The [typed clearing split](results/register-clearing-attribution-01/assessment.md)',
+        'assigns all 942 folded and 879 token clearing samples to guest memory;',
+        'register clearing has zero sampled hits. A stronger register proof is parked.', '',
+        'Historical source evidence is verified at its [recorded Git version](results/historical-source-bindings.json)',
+        'when the current source has subsequently changed; original measured records remain exact.', '']
+    return lines, [path, 'results/register-clearing-attribution-01/summary.json', 'results/historical-source-bindings.json']
 
 
 def current_copy():
@@ -47,8 +87,7 @@ def current_copy():
                 verified['counts'] != dict(primary_commands=63, check_commands=21, edited_pairs=15, artifacts=42)):
             raise RuntimeError('current held-out receipt identities or counts differ')
         for path, digest in verified['evidence'].items():
-            if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest:
-                raise RuntimeError('current held-out evidence changed: ' + path)
+            verify_evidence(path, digest)
         completed.append(gate['evaluated'][0])
         reports += [gate_path, f'results/{run}/final-verification.json']
     aggregate_path = 'results/resumable-copy-heldout-recovery-01/summary.json'
@@ -59,8 +98,7 @@ def current_copy():
                 [row['evaluation'] for row in aggregate['workflows']] != completed):
             raise RuntimeError('current complete held-out aggregate differs from its components')
         for path, digest in aggregate['evidence'].items():
-            if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest:
-                raise RuntimeError('current aggregate evidence changed: ' + path)
+            verify_evidence(path, digest)
         reports.append(aggregate_path)
     profile_lines = []
     for label in ['token', 'folded']:
@@ -124,6 +162,9 @@ def current_copy():
         '[Current work](STATE.md) · [Fixed plan and retry](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md).', '',
         'The following sections preserve the preceding experiment and full-corpus baseline.', '',
     ]
+    policy_lines, policy_reports = current_mir_policy()
+    lines[-2:-2] = policy_lines
+    reports += policy_reports
     return lines, [dict(category='current-copy-evidence', report=path,
         report_sha256=hashlib.sha256((ROOT / path).read_bytes()).hexdigest()) for path in reports]
 

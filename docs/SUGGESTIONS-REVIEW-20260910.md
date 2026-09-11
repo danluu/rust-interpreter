@@ -118,6 +118,17 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Items 1.1/3.1/3.2 now have a [typed clearing split](../results/register-clearing-attribution-01/assessment.md):
+  all 942 folded and 879 token clearing samples concern guest memory, with zero
+  register-array hits. A stronger register proof is parked. The subsequent
+  [MIR inlining comparison](../results/mir-call-policy-01/assessment.md) rejects
+  ordinary budgets under the current cheaper Call ABI: wall +4.55% folded,
+  +6.88% token, with higher CPU. All 168 commands, 30 real-edit pairs and 84
+  artifacts verify. Keep enlarged inlining; no threshold sweep. The next
+  [aggregate byte-write analysis](../benchmarks/experiments/aggregate-reuse-census/BYTE-WRITES-NEXT.md)
+  covers the previously excluded layouts and Call destinations, with explicit
+  padding, partial-write, normal-return and alias constraints.
+
 - Fresh exact-code [token](../results/resumable-copy-token-sample-01/assessment.md)
   and [folded](../results/resumable-copy-folded-sample-01/assessment.md) profiles
   verify six original executions without declines. Token boundary self share

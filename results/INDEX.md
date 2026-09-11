@@ -32,6 +32,9 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | current-copy-evidence | [resumable-copy-token-sample-01/generated-attribution.json](resumable-copy-token-sample-01/generated-attribution.json) |
 | current-copy-evidence | [resumable-copy-folded-sample-01/summary.json](resumable-copy-folded-sample-01/summary.json) |
 | current-copy-evidence | [resumable-copy-folded-sample-01/generated-attribution.json](resumable-copy-folded-sample-01/generated-attribution.json) |
+| current-copy-evidence | [mir-call-policy-01/summary.json](mir-call-policy-01/summary.json) |
+| current-copy-evidence | [register-clearing-attribution-01/summary.json](register-clearing-attribution-01/summary.json) |
+| current-copy-evidence | [historical-source-bindings.json](historical-source-bindings.json) |
 | workflow | [pgrust](native-controls-corpus-01-pgrust/summary.json) |
 | workflow | [nushell](native-controls-corpus-01-nushell/summary.json) |
 | workflow | [rg-aot](native-controls-corpus-01-rg-aot/summary.json) |

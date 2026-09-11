@@ -23,12 +23,13 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
    12.23% token samples in clearing, with token boundary self only 2.23%.
    The typed arena split accounts for all clearing samples as guest memory;
    register clearing has zero hits, so a stronger register proof is parked.
-   Compare ordinary MIR inlining budgets with the current enlarged settings
-   under the cheaper native Call ABI before broader frame analysis. Retain
-   both artifacts and native reference results for this compiler comparison.
-   If inlining does not help, investigate a substantial
-   read-before-write proof including alias/call effects before implementing
-   another initialization change. Preserve exact budgets,
+   The ordinary/enlarged inlining comparison now fails both gates: ordinary
+   paired wall +4.55% folded and +6.88% token, with higher CPU. Keep enlarged
+   inlining and preserve all 168 commands and 84 artifacts. Follow the
+   [broader aggregate byte-write plan](benchmarks/experiments/aggregate-reuse-census/BYTE-WRITES-NEXT.md):
+   actual full-byte writes, partial writes/padding, alias exclusions and normal
+   Call-return edges. Require substantial additional scope before implementing
+   a compiler storage transformation. Preserve exact budgets,
    initialization, fault order and guest state. Earlier narrow frame-reuse
    censuses are parked; their tiny measured opportunities do not justify a
    new optimization without evidence.
