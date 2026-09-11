@@ -15,6 +15,11 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | workflow | [pgrust-sha1-inline8](native-controls-corpus-01-pgrust-sha1-inline8/summary.json) |
 | workflow | [ruff](native-controls-corpus-01-ruff/summary.json) |
 | workflow | [nushell-type-relations](native-controls-corpus-01-nushell-type-relations/summary.json) |
+| runtime-experiment | [bounded-native-e2e-01/summary.json](bounded-native-e2e-01/summary.json) |
+| runtime-gates | [bounded-native-e2e-01/gate-evaluation.json](bounded-native-e2e-01/gate-evaluation.json) |
+| runtime-verification | [bounded-native-e2e-01/final-verification.json](bounded-native-e2e-01/final-verification.json) |
+| release-qualification | [bounded-native-release-01/summary.json](bounded-native-release-01/summary.json) |
+| execution-smoke | [bounded-native-real-smoke-01/summary.json](bounded-native-real-smoke-01/summary.json) |
 | corpus | [native-controls-corpus-01/summary.json](native-controls-corpus-01/summary.json) |
 | previous-corpus | [local-memory-forwarding-01/summary.json](local-memory-forwarding-01/summary.json) |
 | repeated-workflow | [paired-repeated-token-01/summary.json](paired-repeated-token-01/summary.json) |

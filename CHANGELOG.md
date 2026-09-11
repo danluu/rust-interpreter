@@ -67,3 +67,11 @@ root/TLS completion stays in the VM. Fixed heap detection for C allocation
 operations. All 225 workspace tests and seven CLI checks pass. Added optional
 release tool publication after the recorded workspace check. No speedup result
 yet; the path remains experimental and disabled by default.
+
+### First native-call E2E result
+
+Source `09de2a9` / tool `c98d995b` passes 225 debug/release workspace tests and
+all 168 repeated real workflow commands (84 paired artifacts). Token improves
+14.4% paired; folded regresses 3.0%. Both original gates fail, so the option
+remains experimental. The next step is native Calls inside ordinary regions,
+with the same correctness and full-command performance requirements.

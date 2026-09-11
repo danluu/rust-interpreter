@@ -147,6 +147,13 @@ review are not commitments or evidence of feasibility.
   runtime gain. The corpus receipt now clears stale child-exit fields between
   cases; that fix was made after the measured scripts were released.
 
-The [bounded native-call experiment](../benchmarks/experiments/bounded-native-calls/PLAN.md)
+- Implemented the custom bounded native Call/Return path and its explicit
+  launcher/benchmark option. All 225 workspace tests pass in debug and release.
+  The [three-cycle E2E result](../results/bounded-native-e2e-01/assessment.md) covers
+  168 commands/84 artifacts: token improves 14.4% paired but folded regresses 3.0%.
+  Both predeclared gates fail; the version stays experimental. This addresses
+  the native-call direction without claiming readiness or resetting success criteria.
+
+The [ordinary-region Call integration](../benchmarks/experiments/bounded-native-calls/REGION-CALLS-NEXT.md)
 is next. The remaining accepted design work above is prioritized follow-up,
 not a claim that a production Rust development engine is complete.

@@ -42,15 +42,19 @@ checks and both saved real workload smoke checks pass. [Release/tool evidence](r
 [Smoke assessment](results/bounded-native-real-smoke-01/assessment.md). The Git
 build index verifies the new source key and installed binaries.
 
-**Active:** `bounded-native-e2e-01`, three balanced edit cycles each for folded
-trie and token phrase, baseline b2aa6efe / candidate c98d995b with native calls,
-plus O0/incremental native Cargo and independent checks. Supervisor 26925,
-controller 26928; exact current workflow child is in
-`.work/corpus-runs/bounded-native-e2e-01/status.json`. Do not change frozen
-benchmark scripts or measured inputs while active. Early folded pairs regress;
-wait for complete controls and retain every result. No performance retention
-claim yet. Review original gates, then use the planned regular-region native
-Call stubs if outer VM transitions prevent the targeted gains.
+The first native-call E2E corpus is complete: 168 commands, 30 edited pairs,
+84 paired artifacts, restored sources. Token improves 14.4% paired (6.504 to
+5.565 s marginal medians); folded regresses 3.0% paired (2.559 to 2.603 s).
+Both original targets fail. [Assessment](results/bounded-native-e2e-01/assessment.md).
+Do not retain or enable this intermediate candidate by default. The seven held-out
+workflows and broader native/TLS/fre qualification were not run on it.
+
+**Next:** implement [native Call stubs inside ordinary JIT regions](benchmarks/experiments/bounded-native-calls/REGION-CALLS-NEXT.md).
+This is the planned follow-on to eliminate the remaining outer VM transitions.
+It has not been implemented yet. Reuse tested tree code, but explicitly handle
+mixed 16/64-byte host frames, budget/readiness declines, active memory commits,
+profile accounting and a full-cursor raw pointer. Keep c98d995b available as an
+intermediate comparison and the original b2aa6efe performance gates unchanged.
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -65,11 +69,11 @@ regression. Broader execution qualification is required for production retention
 
 ## Process and ownership
 
-The release/tool check and smoke run are terminal with return code zero.
-The two-workflow E2E corpus above is active; re-check its receipts before treating
-any PID as live. The earlier `bounded-native-vm-02` failure used an invalid errno
-test fixture; `03` corrects the setup and passes. All evidence remains preserved.
-Detailed pointers/pins are in `.work/continuation-state.json`.
+The release/tool check, real-artifact smoke and E2E corpus are terminal with
+return code zero. No task process is active. The earlier `bounded-native-vm-02`
+failure used an invalid errno fixture; `03` corrected the setup and passed.
+All evidence remains preserved. Re-check actual identities before treating old
+PIDs as live. Detailed pointers/pins are in `.work/continuation-state.json`.
 
 No subagents or independent model calls. No AWS activation, unrelated process
 control, broad cache deletion, private cleanup or quarantine deletion. A separate

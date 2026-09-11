@@ -5,8 +5,10 @@ Status: the complete native call-tree path is connected behind
 [225 workspace tests pass](../../../results/bounded-native-vm-03/summary.json).
 The launcher forwards this runtime option without changing the MIR workspace
 identity. Paired benchmarks enable it only with `--candidate-jit-native-calls`.
-An optimized tool build and real edit/build/test measurements are next; this
-experimental branch is not a retained performance improvement yet.
+The optimized build also passes 225 tests. Three-cycle real edit/build/test
+measurements are complete: token improves 14.4% paired, folded regresses 3.0%.
+Both original performance gates are missed. [Assessment](../../../results/bounded-native-e2e-01/assessment.md).
+Keep this version experimental; next implement [ordinary-region Call stubs](REGION-CALLS-NEXT.md).
 
 The current implementation caps speculative frame span at 256 KiB, register
 storage at 65,536 u128 slots and native nesting at 64 frames. These are

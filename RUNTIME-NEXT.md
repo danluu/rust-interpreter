@@ -4,12 +4,15 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Implement bounded native call trees.** The new typed census finds that
-   acyclic direct-call trees with explicit terminal-Trap support cover 80.72% of
-   token direct calls and 54.61% of folded direct calls. Whole-tree instruction bounds allow
-   pre-entry fallback when budget is insufficient. All code and initialized
-   storage must also be ready before entry. Preserve exact memory/error/copy
-   behavior; keep the generic interpreter path. [Experiment plan](benchmarks/experiments/bounded-native-calls/PLAN.md).
+1. **Link native Calls with ordinary JIT regions.** The bounded-tree path is
+   implemented and passes 225 debug/release workspace tests. Its three-cycle
+   real-edit result improves token 14.4% paired but regresses folded 3.0%; both
+   original gates are missed. It still performs millions of outer calls through
+   the VM. Keep `c98d995b` experimental and implement direct Call stubs that preserve
+   readiness, budgets, storage bounds, copy semantics and fault exits. Compare
+   against b2aa6efe with the same gates, then run held-out/broader qualification
+   before retention. [Result](results/bounded-native-e2e-01/assessment.md),
+   [implementation notes](benchmarks/experiments/bounded-native-calls/REGION-CALLS-NEXT.md).
 2. **Finish native configuration qualification.** Nine workflows now have three
    real-edit cycles, child CPU, explicit root O0/incremental native settings,
    18 native build jobs, default test concurrency and independent checks.
