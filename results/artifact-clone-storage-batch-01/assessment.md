@@ -1,0 +1,3 @@
+All 174 reviewed replacements completed across six public token histories. All 252 snapshot paths, byte hashes, sizes, ownership, modes and modification times verify, and all six original workflow verifications reproduce. Together with the pilot, seven histories retain 294 independent files after sharing data for 203 duplicates (5,849,473,161 logical bytes).
+
+No executed evidence was removed. Raw inventories and replacement journals remain under the recorded .work/clones paths. Storage maintenance is outside benchmark timers. Shared-volume free space is an observation, not an isolated physical saving.
