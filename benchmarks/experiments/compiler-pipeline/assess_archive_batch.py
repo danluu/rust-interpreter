@@ -26,7 +26,7 @@ def sha(path):
     return digest.hexdigest()
 
 
-def assess(name):
+def assess(name, completed_prefix=None):
     identifier(name)
     out = ROOT / 'results' / name
     review = read(out / 'inventory-review.json')
@@ -40,7 +40,7 @@ def assess(name):
     require(len(batch['entries']) == len(review['entries']), 'review entry count differs')
     experiment = ROOT / '.work/experiments' / (name + '-apply')
     status, plan = read(experiment / 'status.json'), read(experiment / 'plan.json')
-    require(status['status'] == 'finished' and status['returncode'] == 0 and
+    require(status['status'] == 'finished' and status['returncode'] == (1 if completed_prefix else 0) and
             status['owner'] == status['cwd'] == plan['owner'] == str(ROOT) and
             status['command'] == plan['command'] and
             status['plan_sha256'] == sha(experiment / 'plan.json') and
@@ -52,12 +52,26 @@ def assess(name):
     objects = [json.loads(line) for line in (experiment / 'command.log').read_text().splitlines()
                if line.startswith('{')]
     launches = [o for o in objects if o.get('action') == 'apply' and 'pid' in o]
-    require([o['archive'] for o in launches] == [e['archive'] for e in batch['entries']] and
-            objects[-1] == dict(status='completed', action='apply', targets=len(batch['entries']),
-                                plan_sha256=review['batch_sha256']), 'child launch/completion ledger differs')
+    count = len(batch['entries'])
+    if completed_prefix is None:
+        require([o['archive'] for o in launches] == [e['archive'] for e in batch['entries']] and
+                objects[-1] == dict(status='completed', action='apply', targets=count,
+                                    plan_sha256=review['batch_sha256']), 'child launch/completion ledger differs')
+    else:
+        require(0 < completed_prefix < count and
+                [o['archive'] for o in launches] == [e['archive'] for e in batch['entries'][:completed_prefix + 1]] and
+                'BlockingIOError: [Errno 35]' in (experiment / 'command.log').read_text(),
+                'not the reviewed pre-application lock failure')
+        for entry, reviewed in zip(batch['entries'][completed_prefix:], review['entries'][completed_prefix:]):
+            work = ROOT / '.work/workflow-cache-archives' / entry['archive']
+            require(read(work / 'status.json')['status'] == 'prepared' and
+                    sha(work / 'plan.json') == reviewed['plan_sha256'] and
+                    {p.name for p in work.iterdir()} == {'plan.json', 'status.json'} and
+                    not (ROOT / 'results' / entry['archive']).exists(), 'remaining target was started')
+        count = completed_prefix
     reservations = read(ROOT / '.work/workflow-cache-archives/targets.json')
     entries, evidence = [], {}
-    for entry, reviewed, launch in zip(batch['entries'], review['entries'], launches):
+    for entry, reviewed, launch in zip(batch['entries'][:count], review['entries'][:count], launches[:count]):
         archive = identifier(entry['archive'])
         work = ROOT / '.work/workflow-cache-archives' / archive
         prepared = read(work / 'plan.json')
@@ -91,7 +105,9 @@ def assess(name):
         entries.append(dict(entry, **{k: result[k] for k in ['files', 'unique_original_bytes',
             'archive_bytes', 'archive_sha256', 'free_bytes_before', 'free_bytes_after']}))
     require(all(sha(ROOT / path) == digest for path, digest in evidence.items()), 'external evidence changed')
-    return dict(status='completed and verified', batch_sha256=review['batch_sha256'],
+    return dict(status=('completed and verified' if completed_prefix is None else 'incomplete; completed prefix verified'),
+        completed_entries=count, total_entries=len(batch['entries']),
+        unapplied_entries=batch['entries'][count:], batch_sha256=review['batch_sha256'],
         controller_sha256=review['controller_sha256'], review_sha256=sha(out / 'inventory-review.json'),
         entries=entries, total_files=sum(e['files'] for e in entries),
         total_unique_original_bytes=sum(e['unique_original_bytes'] for e in entries),
@@ -105,11 +121,13 @@ def assess(name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--batch', required=True)
+    parser.add_argument('--completed-prefix', type=int,
+                        help='audit a failed batch prefix only after a pre-application lock rejection')
     args = parser.parse_args()
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        result = assess(args.batch)
-        output = ROOT / 'results' / args.batch / 'summary.json'
+        result = assess(args.batch, args.completed_prefix)
+        output = ROOT / 'results' / args.batch / ('partial-summary.json' if args.completed_prefix else 'summary.json')
         require(not output.exists(), 'assessment already exists')
         write_json(output, result)
         print(json.dumps({k: result[k] for k in ['status', 'total_files', 'total_unique_original_bytes',

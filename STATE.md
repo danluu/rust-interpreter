@@ -52,7 +52,12 @@ qualification; four to the explicitly verified resumable held-out corpus member.
 The batch coordinator now forwards and checks optional corpus identity;
 [four invalid or mismatched parent cases](results/archive-batch-corpus-checks-01/summary.json)
 are rejected before any child invocation, with all eight prepared statuses intact.
-Application is running under supervisor **51342** / controller **51345**.
+The original application stopped before cache six because a receipt verifier
+acquired the lock between children. Its [five-target prefix](results/warm-storage-batch-01/assessment.md)
+verifies. All three remaining inventories and prepared status hashes are unchanged;
+[recovery review](results/warm-storage-batch-01-recovery-01/inventory-review.json)
+binds only those untouched targets. Do not retry the whole batch or queue another
+lock waiter during recovery.
 Require roughly 27 GiB free before the large warm
 run; the eight-GiB per-command guard remains unchanged.
 
