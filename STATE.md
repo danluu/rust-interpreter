@@ -121,6 +121,15 @@ relaxation, wrapper retention or conditional held-out testing is claimed.
 
 ## Resource planning
 
+The [next reviewed batch](results/worker-cold-storage-combined-01/inventory-review.json)
+contains twelve completed public targets from the worker Nushell primary and
+older Nushell/Ruff corpus cases: 249,643 paths / 20,569,002,571 unique bytes.
+All 207 distinct source/evidence hashes and exact optional corpus identities
+verify. The first three applications create room for the larger native target.
+No archive application has started yet. Keep all archive-bound scripts unchanged
+and launch no other lock waiter until this entire application batch is terminal.
+
+
 [Completed batch04](results/cold-storage-batch-04/assessment.md) preserves eight
 exact completed targets: 84,333 paths / 21.42 GiB unique contents in 7.21 GiB
 of archives. Final receipts, inventories and all 38 distinct external evidence/
