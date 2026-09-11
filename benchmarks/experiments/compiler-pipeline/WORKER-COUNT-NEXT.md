@@ -94,3 +94,13 @@ historical commands. The helper is now integrated into the workflow/corpus drive
 verifier after the wrapper futility assessment. Helper02 also checks namespace
 JSON serialization. Actual integration checks and project qualification follow;
 no measured wrapper input changed during its completed histories.
+
+Both workflow qualifications now pass: pgrust03cycles in qualification02 verifies
+36 commands/eighteen artifacts after a preserved pre-compilation guard rejection;
+Nushell01 verifies twelve commands/six artifacts. Its pilot cold wall falls from
+61.125s to 30.550s while child CPU rises from 178.047s to 233.596s. These observations
+remain outside adoption statistics and do not waive the declared CPU guard.
+Before primary timing, exercise the corpus coordinator's positive path with one
+small pgrust body-edit case, three cycles/five edits and the same four/eighteen
+counts. This tests JSON receipts and actual forwarding that invalid-CLI probes
+cannot establish; its timings are also qualification-only.

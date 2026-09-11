@@ -6,7 +6,51 @@ using real source-edit/build/test measurements. Every user suggestion has an
 is user-owned, unchanged and intentionally untracked. Local commits are authorized;
 no push was requested. Branch: `experiment/resumable-native-calls`.
 
-## Active experiment
+## Active worker-count experiment
+
+The [worker plan](benchmarks/experiments/compiler-pipeline/WORKER-COUNT-NEXT.md)
+compares four versus eighteen Cargo workers using identical tool **78e60cdd**
+in both arms. Ordinary JIT and leaf inlining are matched; resumable/persistent/
+tree/stub options are off. Native/check retain eighteen jobs, O0/incremental
+and default test concurrency. No guest runtime or installed binary changed.
+
+Source **2c86d1f** integrates independent custom counts in the workflow/corpus
+CLIs and receipts. [Harness qualification](results/worker-count-harness-02/assessment.md)
+reverifies seventeen histories (1,524 commands / 762 artifacts), rejects two
+false worker receipts and eighteen invalid CLI cases, and tests two actual late
+guard paths. [Helper02](results/worker-count-helper-02/assessment.md) covers JSON
+namespace serialization; [archive07](results/cache-archive-qualification-07/assessment.md)
+passes 44 rejections, four coordinator cases and both older formats.
+
+The first pgrust attempt was [rejected before compilation](results/worker-count-pgrust-rejection-01/assessment.md)
+by the old same-tool guard. Its corrected [three-cycle qualification](results/worker-count-pgrust-qualification-02/assessment.md)
+passes 36 commands, eighteen matching artifacts, eleven frozen inputs/eighteen
+wrapper traces and exact source restoration. Paired wall ratio **1.0055983071**;
+qualification timings are excluded from adoption measurements.
+
+[Nushell qualification](results/worker-count-nushell-qualification-01/assessment.md)
+passes twelve commands, six artifacts and exact tool/configuration/source checks.
+Cold wall is **61.125s at four workers / 30.550s at eighteen**; child CPU is
+**178.047s / 233.596s**. This ~50% latency reduction costs ~31% more child CPU
+in one excluded qualification. API-edit wall is 4.972s / 4.957s. Keep the planned
+CPU guard and all observations; no adoption follows from this pilot.
+
+Active: **worker-count-corpus-qualification-01**, supervisor **76184**,
+controller **76187**, started at 08:57:52 local. This small pgrust
+body-edit corpus checks positive option forwarding/JSON receipts before primary
+measurements. Expected: one case, three cycles/five edits, 84 commands and
+42 artifacts. Verify final corpus provenance, source and exact mode configuration.
+Its timings are excluded from the primary API-edit study. Then run fifteen
+pgrust API cycles and fifteen Nushell API cycles with the frozen worker settings.
+Check space before the large run; archive exact completed targets as needed.
+
+Worker retention requires at least 10% median cold wall reduction, no >5% warm
+wall regression and no >10% child-CPU increase for the checked primary groups.
+The plan now predeclares deterministic futility stopping only for failure bounds,
+with incomplete protocols identified; no early acceptance or extra trials.
+Conditional held-out checks remain required before any adoption claim.
+
+## Closed wrapper experiment
 
 The [lightweight compiler wrapper](benchmarks/experiments/compiler-pipeline/LIGHTWEIGHT-WRAPPER.md)
 execs ordinary rustc for unselected units and loads the heavy exporter only for
@@ -51,9 +95,6 @@ The stopping rule was not predeclared; the amendment is explicit and the origina
 six-history protocol remains **incomplete**. No six-sample estimate, threshold
 relaxation, wrapper retention or conditional held-out testing is claimed.
 
-The separate four-versus-eighteen worker experiment is now the next direction.
-Integration is in progress; exact current qualification receipts are recorded
-in `.work/continuation-state.json`. No guest runtime or installed tool changes.
 
 ## Resource planning
 
@@ -73,20 +114,13 @@ keep query metadata, private caches, installed tools and historical evidence.
 Allow at least roughly 21 GiB before each large fresh history; the per-command
 guard remains eight GiB and is not a reservation against other host activity.
 
-## Next experiment
+## Evidence for next directions
 
 [Historical Cargo timelines](results/compiler-cold-concurrency-01/assessment.md)
-show 800 custom timed units under four jobs and CPU/wall about 3.1 during cold
-commands, versus about 1.5 after edits. Native has 608 units under eighteen jobs.
-Overlap does not establish CPU utilization, a ready queue or a critical path.
-The [worker-count plan](benchmarks/experiments/compiler-pipeline/WORKER-COUNT-NEXT.md)
-is a separate next experiment: identical tool78 in both arms, four versus eighteen
-jobs, qualification followed by fixed cold/warm samples and original controls.
-The wrapper histories are closed after the verified futility decision. The
-worker helper's first qualification is preserved; an additional JSON namespace
-serialization check now passes. Actual harness integration and project
-qualification follow with identical tool78 in both arms and separate namespaces.
-
+show 800 custom timed units under four jobs and CPU/wall about 3.1 when cold,
+versus about 1.5 after edits. Native has 608 units under eighteen jobs. Overlap
+is not CPU utilization, a ready queue or a critical-path proof. This motivated
+the active isolated worker comparison.
 
 [Constant-history inspection](results/interface-nushell-literal-history-01/assessment.md)
 finds an extra `Expected OneOf` literal and changed guest offsets after edit/revert.
