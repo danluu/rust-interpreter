@@ -98,7 +98,9 @@ complete-tree mode remain separate execution specializations. All 231 workspace
 tests pass, including mixed native-frame ABI checks at up to 64 child levels,
 linked Call loops, all existing integration budget/fault/profile cases in both
 modes, heap growth and larger padding retained by a VM callee. Seven CLI checks
-pass. Optimized and real-workflow qualification is next; no new speedup claim.
+pass. Optimized source `26833c3` / tool `2f31c6a0` also passes all 231 tests
+and both saved real-artifact smoke checks. Three-cycle E2E qualification is
+running; no new speedup claim.
 
 Call stubs enforce the full budget internally. A direct entry that cannot fit
 returns its own PC with zero progress, and the VM executes that instruction once.

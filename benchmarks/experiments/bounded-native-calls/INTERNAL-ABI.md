@@ -138,3 +138,18 @@ expected behavior. The failed check remains recorded as `bounded-native-vm-02`;
 `bounded-native-vm-03` passes all 225 workspace tests (one ignored). Seven CLI
 checks validate the new option and invalid combinations. Release/real workflow
 qualification remains separate.
+
+## Ordinary region integration qualification
+
+Source `26833c3` adds an ordinary 16-byte wrapper around the 64-byte Call-setup
+frame and links successful stubs back to ordinary internal entries. Its cursor
+is now 80 bytes: the existing prefix and fields through generated-Call count at
+offset 48, descendant instruction count at 56, readiness at 64 and successful
+stub count at 72. Raw cursor pointers originate from the complete allocation.
+Default ordinary entries keep their smaller cursor and cannot reach stubs.
+
+All 231 workspace tests pass in debug/release, including mixed ABI declines and
+faults, linked loops, heap growth and VM-retained alignment padding. The saved
+real workloads execute the stubs and pass original assertions. See
+[the implementation notes](REGION-CALLS-NEXT.md) for readiness-cache and
+accounting contracts; complete-command performance qualification is separate.

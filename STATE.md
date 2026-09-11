@@ -53,10 +53,11 @@ The `experiment/native-region-calls` branch now links outer direct Call stubs
 with ordinary JIT regions behind `--jit-native-calls --jit-native-call-stubs`.
 All 231 workspace tests and seven CLI checks pass. The earlier modes remain
 available. [Implementation/ABI notes](benchmarks/experiments/bounded-native-calls/REGION-CALLS-NEXT.md).
-No new optimized tool or performance result exists yet. Next run the recorded
-release check/tool installation, both saved real-artifact smoke checks, then the
-same three-cycle folded/token E2E comparison against b2aa6efe. Keep c98d995b as
-an intermediate comparison; the original gates and broader qualification remain.
+Source `26833c3`, optimized tool `2f31c6a0`, passes the same 231 workspace tests
+in release and both saved real-artifact smoke checks. The three-cycle folded/token
+E2E comparison `native-region-e2e-01` is running against b2aa6efe with both native
+flags. Keep c98d995b as an intermediate comparison; the original gates and broader
+qualification remain. [Release receipt](results/native-region-release-01/summary.json).
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -71,11 +72,13 @@ regression. Broader execution qualification is required for production retention
 
 ## Process and ownership
 
-The release/tool check, real-artifact smoke and E2E corpus are terminal with
-return code zero. The latest `native-region-calls-01` (227 tests) and `02` (231 tests) checks are also terminal; no task process is active. The earlier `bounded-native-vm-02`
-failure used an invalid errno fixture; `03` corrected the setup and passed.
-All evidence remains preserved. Re-check actual identities before treating old
-PIDs as live. Detailed pointers/pins are in `.work/continuation-state.json`.
+The first tree E2E corpus, both native-region workspace checks, optimized build
+and saved-artifact smoke are terminal with return code zero. The region E2E
+supervisor is PID 11215, controller 11220, initially folded child 11225;
+recorded identities/commands are in `.work/experiments/native-region-e2e-01/`
+and `.work/corpus-runs/native-region-e2e-01/status.json`. Re-check live state
+before treating these PIDs as current. Frozen benchmark scripts must stay fixed
+until this corpus finishes. Detailed pointers/pins are in `.work/continuation-state.json`.
 
 No subagents or independent model calls. No AWS activation, unrelated process
 control, broad cache deletion, private cleanup or quarantine deletion. A separate
