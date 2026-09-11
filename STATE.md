@@ -7,8 +7,8 @@ Local Git commits are authorized; no remote or push was requested.
 
 ## Active work
 
-Branch `experiment/aggregate-reuse-census`, runtime commit `d664bce`, installed
-tool `e89de7f8`. Bounded full-CFG liveness (`b252588`) and up to three persistent
+Branch `experiment/resumable-native-calls`; current groundwork is `1264921`.
+The latest measured runtime remains `d664bce`, installed tool `e89de7f8`. Bounded full-CFG liveness (`b252588`) and up to three persistent
 u128 register pairs now span native branches and calls. VM continuations spill
 live values before returning, and native children preserve assigned host GPRs.
 Analysis limits decline to the existing emitter. The option stays experimental.
@@ -58,10 +58,19 @@ Three typed weighting tests pass; actual function IDs and every profile operatio
 are verified, with exact instruction accounting and no unattributed direct frames.
 All three runs are terminal with return code zero. No production layout changed.
 
-Next implement [resumable native Calls](benchmarks/experiments/resumable-native-calls/PLAN.md)
-over an explicit guest frame stack. Begin with initialized/stable frame backing,
-documented host layout and typed continuation invariants, then emitted Call/Return
-and VM integration behind an experimental option. A descendant must resume at its
+The first stages of [resumable native Calls](benchmarks/experiments/resumable-native-calls/PLAN.md)
+are now implemented. `fca1e96` moves VM/TLS frames to initialized reusable backing
+with a separate active prefix; 243 workspace tests pass. `1264921` adds a typed
+native continuation boundary that checks backing identity, guest budgets, exact
+call/depth accounting and the actual resulting top frame before publishing live
+frame/memory/register extents. All 249 workspace tests pass in
+[debug](results/resumable-boundary-01/summary.json) and
+[release](results/resumable-boundary-release-01/summary.json), one ignored.
+Nine new tests cover storage and boundary invariants. They model native cursor
+changes; no resumable machine code is emitted yet and no speedup is claimed.
+
+Next connect the dedicated emitter and VM specialization, starting with the
+[entry/Call/Return implementation notes](benchmarks/experiments/resumable-native-calls/EMITTER-NEXT.md). A descendant must resume at its
 actual frame/PC after an unsupported operation, budget tail or preparation
 boundary. Do not map guest recursion onto host-stack recursion. Preserve complete
 initialization, argument/error order, result copies, full-width registers,

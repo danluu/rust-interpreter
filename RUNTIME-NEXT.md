@@ -12,7 +12,9 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
    profiles retain substantial native-boundary/dispatcher cost. The qualified
    [private-array census](results/aggregate-reuse-weights-01/assessment.md) finds
    only 0.0000073% additional folded frame-byte reduction and 0.1233% token;
-   that narrow layout change is parked. Next remove whole-function eligibility
+   that narrow layout change is parked. Stable guest frames and typed continuation
+   checks (`fca1e96`, `1264921`) now pass 249 debug/release tests. The resumable
+   emitter and VM specialization remain to be connected. Remove whole-function eligibility
    restrictions using exact guest-frame continuations at unsupported operations,
    budget tails and preparation boundaries. Preserve initialization and all call,
    return, TLS and profile semantics; moving setup into native code alone is not

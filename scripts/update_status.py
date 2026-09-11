@@ -20,6 +20,7 @@ def render():
     experiment = json.loads((ROOT / EXPERIMENT).read_text())
     experimental_checks = json.loads((ROOT / 'results' / EXPERIMENT_RUN / 'final-verification.json').read_text())['counts']
     experimental_release = json.loads((ROOT / 'results/persistent-release-01/summary.json').read_text())
+    continuation_release = json.loads((ROOT / 'results/resumable-boundary-release-01/summary.json').read_text())
     rows = corpus['workflows']
     options = corpus['plan']['options']
     key = options['candidate_tool_key']
@@ -59,6 +60,10 @@ def render():
         'required. A qualified private-array reuse census found negligible scope;',
         'the next runtime direction is resumable native Calls over guest frames.',
         f'[Result and limitations](results/{EXPERIMENT_RUN}/assessment.md).', '',
+        'Initialized VM/TLS frame backing and typed native continuation checks',
+        f"(`fca1e96`, `1264921`) pass {continuation_release['workspace_passed']} workspace tests in debug and release.",
+        'Resumable emission and VM integration remain outstanding; this groundwork',
+        'has no new performance result. [Qualification](results/resumable-boundary-release-01/assessment.md).', '',
         '## Full-corpus baseline', '',
         f"Full-corpus engine `{key[:8]}`, Git `{commit[:7]}`; paired baseline `{options['baseline_tool_key'][:8]}`.",
         'The current change fixes codegen-limit handling; these measurements do not',
@@ -134,6 +139,9 @@ def render():
         ('generated-code-attribution', 'results/persistent-token-sample-01/generated-attribution.json'),
         ('diagnostic-tool-qualification', 'results/persistent-profile-tools-02/summary.json'),
         ('parked-frame-reuse-scope', 'results/aggregate-reuse-weights-01/summary.json'),
+        ('resumable-storage-qualification', 'results/resumable-frames-01/summary.json'),
+        ('resumable-boundary-qualification', 'results/resumable-boundary-01/summary.json'),
+        ('resumable-release-qualification', 'results/resumable-boundary-release-01/summary.json'),
         ('observer-qualification', 'results/aggregate-reuse-build-01/summary.json'),
         ('observer-artifact-qualification', 'results/aggregate-reuse-collection-01/summary.json'),
         ('diagnostic-release', 'results/native-code-dump-release-01/summary.json'),

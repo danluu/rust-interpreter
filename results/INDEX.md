@@ -25,6 +25,9 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | generated-code-attribution | [persistent-token-sample-01/generated-attribution.json](persistent-token-sample-01/generated-attribution.json) |
 | diagnostic-tool-qualification | [persistent-profile-tools-02/summary.json](persistent-profile-tools-02/summary.json) |
 | parked-frame-reuse-scope | [aggregate-reuse-weights-01/summary.json](aggregate-reuse-weights-01/summary.json) |
+| resumable-storage-qualification | [resumable-frames-01/summary.json](resumable-frames-01/summary.json) |
+| resumable-boundary-qualification | [resumable-boundary-01/summary.json](resumable-boundary-01/summary.json) |
+| resumable-release-qualification | [resumable-boundary-release-01/summary.json](resumable-boundary-release-01/summary.json) |
 | observer-qualification | [aggregate-reuse-build-01/summary.json](aggregate-reuse-build-01/summary.json) |
 | observer-artifact-qualification | [aggregate-reuse-collection-01/summary.json](aggregate-reuse-collection-01/summary.json) |
 | diagnostic-release | [native-code-dump-release-01/summary.json](native-code-dump-release-01/summary.json) |

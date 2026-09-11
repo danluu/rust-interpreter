@@ -190,3 +190,10 @@ has completed and parked private primitive-array reuse. Existing argument-zeroin
 and unused-local censuses also remain parked; resumable native Calls are next.
 The remaining accepted design work above is prioritized follow-up, not a claim
 that a production Rust development engine is complete.
+
+- Item 3.1 now has initialized VM/TLS guest-frame backing (`fca1e96`) and a
+  checked descendant-continuation boundary (`1264921`). All 249 workspace tests
+  pass in [debug](../results/resumable-boundary-01/summary.json) and
+  [release](../results/resumable-boundary-release-01/summary.json), one ignored.
+  The nine new tests qualify storage/publication invariants. Resumable native
+  emission, VM integration and the original E2E gates remain outstanding.

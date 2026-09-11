@@ -50,7 +50,9 @@ not nested host Calls. This develops the broader alternative already recorded in
    facts cannot cross Calls. Keep full u128 values and alias write order.
 5. Before a generated Call, prove its target and initialized backing are ready
    and all speculative bounds fit. If any prerequisite fails, resume that Call
-   in the VM before consuming it. Do not raise a later depth/register-memory
+   in the VM before consuming it. Preserve the actual VM error order: frame
+   reservation, register-size/working-memory checks, argument copies, then depth
+   checking and register initialization. In particular, do not raise a depth
    error ahead of an earlier argument-copy error. On the native path, initialize
    exactly the range the current frame reservation would initialize, expose
    that live extent, copy arguments in order, initialize registers according to
@@ -108,3 +110,13 @@ retention. No production default changes merely because a prototype executes.
 [Fresh profiles](../../../results/persistent-folded-sample-01/assessment.md) ·
 [Parked array census](../../../results/aggregate-reuse-weights-01/assessment.md) ·
 [Original call/ABI audit](../../../docs/NATIVE-CALL-EXPERIMENT.md)
+
+## Groundwork completed
+
+`fca1e96` implements initialized reusable `Frames` and moves the VM/TLS paths to
+it. `1264921` implements the typed `Boundary`/`State`/`Run` publication contract.
+Nine new tests cover backing reuse and checked native cursor publication; all
+249 workspace tests pass in debug and release (one ignored). Boundary tests
+model descriptor/cursor mutations; they do not execute resumable machine code.
+The emitter/VM specialization and E2E qualification remain outstanding.
+[Concrete next implementation](EMITTER-NEXT.md).

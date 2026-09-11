@@ -23,6 +23,11 @@ required. A qualified private-array reuse census found negligible scope;
 the next runtime direction is resumable native Calls over guest frames.
 [Result and limitations](results/persistent-e2e-01/assessment.md).
 
+Initialized VM/TLS frame backing and typed native continuation checks
+(`fca1e96`, `1264921`) pass 249 workspace tests in debug and release.
+Resumable emission and VM integration remain outstanding; this groundwork
+has no new performance result. [Qualification](results/resumable-boundary-release-01/assessment.md).
+
 ## Full-corpus baseline
 
 Full-corpus engine `b2aa6efe`, Git `a2a0e04`; paired baseline `57a54edd`.
