@@ -1,0 +1,724 @@
+{
+  "schema_version": 2,
+  "project": "nushell",
+  "workflow": "nushell-generic-list",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "cycles": 1,
+  "minimum_free_gib": 8,
+  "tests": [
+    "ty::tests::oneof::oneof_lhs",
+    "ty::tests::oneof::oneof_rhs",
+    "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+    "ty::tests::oneof_flattening::test_oneof_deduplicates",
+    "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+    "ty::tests::subtype_relation::table_list_oneof_covariance",
+    "ty::tests::subtype_relation::test_any_is_top_type",
+    "ty::tests::subtype_relation::test_list_covariance",
+    "ty::tests::subtype_relation::test_number_supertype",
+    "ty::tests::subtype_relation::test_reflexivity",
+    "ty::tests::widen_shortcuts::test_chain_shortcut",
+    "ty::tests::widen_shortcuts::test_glob_string_union",
+    "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+    "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+  ],
+  "edits": [
+    "generalize-list-constructor-input"
+  ],
+  "workload": "Generalize the public Type::list constructor to Into<Type>. Existing constructor, covariance and OneOf assertions remain unchanged across all fourteen selected type-relation tests.",
+  "case_sha256": "b0ad719b750711ecba715ec85ab1ea96b4cdb93aa9ad30ee76efef84be343bed",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/lightweight-wrapper-nushell-qualification-01",
+  "build_tool_opt_level": null,
+  "build_jobs": 4,
+  "native_control": {
+    "profile": "o0-incremental",
+    "jobs": 18,
+    "test_threads": "default",
+    "rustflags": []
+  },
+  "instruction_limit": 1000000000,
+  "allocation_limit": null,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "candidate_jit_persistent_registers": false,
+  "candidate_jit_resumable_calls": false,
+  "candidate_jit_native_calls": false,
+  "candidate_jit_native_call_stubs": false,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "c341296cbf7a86347fd0b47c5f80dab156e98e8049588de4ff7a2b445f709a9c",
+  "candidate_tool_key_requested": "c341296cbf7a86347fd0b47c5f80dab156e98e8049588de4ff7a2b445f709a9c",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 11.019508833999964,
+    "baseline": 5.0626715419999755,
+    "candidate": 5.218741249999994
+  },
+  "median_cpu_seconds": {
+    "native": 34.03366400000007,
+    "baseline": 7.117034999999987,
+    "candidate": 7.216663000000011
+  },
+  "cpu_accounting": "RUSAGE_CHILDREN deltas around one waited-for child tree at a time; user plus system CPU; excludes harness CPU",
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 48.016972,
+    "baseline": 75.01984166700001,
+    "candidate": 78.16944154199999
+  },
+  "cycle_anchor_seconds": [],
+  "source_transitions": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "content_changed": false,
+      "previous_mode_sources": {
+        "native": null,
+        "baseline": null,
+        "candidate": null
+      }
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "baseline": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "candidate": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "baseline": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "candidate": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01"
+      }
+    }
+  ],
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "9176903ea903f95d24c24fc8ad0e680faa2167ed69f9ea72906cdbf46d850034",
+    "scripts/interpreter.py": "034298c86c1dc8a8d8c4d8b601db801a5624230d40f7299e10d3fe52e5e8e17f",
+    "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+    "scripts/workflow_case_file.py": "60c73c83f5dff4eaea548a07f8419c41f47df3e613de0d34541af26603894712",
+    "scripts/workflow_measurements.py": "8f28b001e51c118f1e96a37d9232083a3927b5c020374dadfdbbb911a7796a3c",
+    "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+    "scripts/workflow_io.py": "29e006c3397fb762743783d13bfe3a2fca1d45091bfb2110380fe083108a4119",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+    "benchmarks/experiments/interface-edits/nushell-generic-list.json": "109ecc7c03981cdb3bd3f38e67a3130562e2d5e60a63fb57fe9b41ae12f822d3",
+    ".work/runs/lightweight-wrapper-nushell-qualification-01/case.json": "109ecc7c03981cdb3bd3f38e67a3130562e2d5e60a63fb57fe9b41ae12f822d3"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+      "jit_persistent_registers": false,
+      "jit_resumable_calls": false,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "60b00d7de39977e6512e8335d449e5eac84c48ff95819dc2feae6ed8220a859c",
+      "exporter_sha256": "64d7102e21ae5017564076d40781c1c9f5e05cf62bff7abefb6f8519fd0fb317"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "c341296cbf7a86347fd0b47c5f80dab156e98e8049588de4ff7a2b445f709a9c",
+      "jit_persistent_registers": false,
+      "jit_resumable_calls": false,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "60b00d7de39977e6512e8335d449e5eac84c48ff95819dc2feae6ed8220a859c",
+      "exporter_sha256": "65311cddf4354b265bad8af41d373162fdedbd35d7316bf25da468ee08f26244"
+    }
+  },
+  "mode_orders": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    }
+  ],
+  "vm_sha256": "60b00d7de39977e6512e8335d449e5eac84c48ff95819dc2feae6ed8220a859c",
+  "exporter_sha256": "65311cddf4354b265bad8af41d373162fdedbd35d7316bf25da468ee08f26244",
+  "samples": [
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 48.016972,
+      "cpu_seconds": 302.996779,
+      "previous_source_sha256": null,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        14.67626953125,
+        8.32373046875,
+        8.00146484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 75.01984166700001,
+      "cpu_seconds": 232.568693,
+      "previous_source_sha256": null,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        12.33203125,
+        9.18212890625,
+        8.36279296875
+      ],
+      "engine": "jit",
+      "tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+      "artifacts": [
+        {
+          "path": ".work/runs/lightweight-wrapper-nushell-qualification-01/artifacts/baseline/0-0.rbc",
+          "sha256": "f94507b63ef7e575dbdfa2ec0c9800dcef238bd89bb5aa724274547ea2950b8e",
+          "bytes": 950120
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 78.16944154199999,
+      "cpu_seconds": 244.95493899999997,
+      "previous_source_sha256": null,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        9.22314453125,
+        9.0595703125,
+        8.39453125
+      ],
+      "engine": "jit",
+      "tool_key": "c341296cbf7a86347fd0b47c5f80dab156e98e8049588de4ff7a2b445f709a9c",
+      "artifacts": [
+        {
+          "path": ".work/runs/lightweight-wrapper-nushell-qualification-01/artifacts/candidate/0-0.rbc",
+          "sha256": "f94507b63ef7e575dbdfa2ec0c9800dcef238bd89bb5aa724274547ea2950b8e",
+          "bytes": 950120
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 4.949923124999998,
+      "cpu_seconds": 6.894539999999978,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        10.27099609375,
+        9.41259765625,
+        8.55322265625
+      ],
+      "engine": "jit",
+      "tool_key": "c341296cbf7a86347fd0b47c5f80dab156e98e8049588de4ff7a2b445f709a9c",
+      "artifacts": [
+        {
+          "path": ".work/runs/lightweight-wrapper-nushell-qualification-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "63bedb586ab8f547d535376c6f674324fb4df7623f986db863a3d8bbd8ed3d13",
+          "bytes": 950120
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.324215707999997,
+      "cpu_seconds": 7.253999999999991,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        9.7685546875,
+        9.322265625,
+        8.5263671875
+      ],
+      "engine": "jit",
+      "tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+      "artifacts": [
+        {
+          "path": ".work/runs/lightweight-wrapper-nushell-qualification-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "63bedb586ab8f547d535376c6f674324fb4df7623f986db863a3d8bbd8ed3d13",
+          "bytes": 950120
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 8.778181666999984,
+      "cpu_seconds": 20.245525999999984,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        9.3486328125,
+        9.24560546875,
+        8.5078125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 11.019508833999964,
+      "cpu_seconds": 34.03366400000007,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        8.28662109375,
+        9.01953125,
+        8.439453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.0626715419999755,
+      "cpu_seconds": 7.117034999999987,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        7.86279296875,
+        8.91943359375,
+        8.4072265625
+      ],
+      "engine": "jit",
+      "tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+      "artifacts": [
+        {
+          "path": ".work/runs/lightweight-wrapper-nushell-qualification-01/artifacts/baseline/1-0.rbc",
+          "sha256": "7ad553fdf05736ad55b0c5a9478a81ae97fb4f29d9033a9d6de9fc754fcc61da",
+          "bytes": 950895
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.218741249999994,
+      "cpu_seconds": 7.216663000000011,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        7.55322265625,
+        8.83740234375,
+        8.38134765625
+      ],
+      "engine": "jit",
+      "tool_key": "c341296cbf7a86347fd0b47c5f80dab156e98e8049588de4ff7a2b445f709a9c",
+      "artifacts": [
+        {
+          "path": ".work/runs/lightweight-wrapper-nushell-qualification-01/artifacts/candidate/1-0.rbc",
+          "sha256": "7ad553fdf05736ad55b0c5a9478a81ae97fb4f29d9033a9d6de9fc754fcc61da",
+          "bytes": 950895
+        }
+      ]
+    }
+  ],
+  "case_file": {
+    "path": "/Users/danluu/dev/rust-interp/benchmarks/experiments/interface-edits/nushell-generic-list.json",
+    "sha256": "109ecc7c03981cdb3bd3f38e67a3130562e2d5e60a63fb57fe9b41ae12f822d3",
+    "label": "nushell-generic-list",
+    "edit_class": "public-interface-generic",
+    "schema_version": 1,
+    "snapshot": ".work/runs/lightweight-wrapper-nushell-qualification-01/case.json"
+  },
+  "exporter_seconds": {
+    "baseline": {
+      "frontend": 1.089045,
+      "lowering": 0.07316,
+      "scalar-frames": 0.002103,
+      "scalar-promotion": 0.002023,
+      "inline": 0.001798,
+      "cfg": 0.002203
+    },
+    "candidate": {
+      "frontend": 1.102793,
+      "lowering": 0.07374599999999999,
+      "scalar-frames": 0.002092,
+      "scalar-promotion": 0.002084,
+      "inline": 0.001754,
+      "cfg": 0.002102
+    }
+  },
+  "check_floor": {
+    "interpretation": "Independent library-test Cargo-check control; executes no tests, including the wrong runtime edit; not a strict lower bound or subtractive attribution",
+    "timing_position": "after each primary mode triplet; separate target/cache history; no Cargo timing-report generation",
+    "median_seconds": 4.404546583000013,
+    "median_cpu_seconds": 6.960042000000016,
+    "samples": [
+      {
+        "cycle": 0,
+        "state": 0,
+        "phase": "cold",
+        "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "previous_source_sha256": null,
+        "seconds": 32.2035185,
+        "cpu_seconds": 274.7486410000001,
+        "cpu": {
+          "user_seconds": 224.11164200000007,
+          "system_seconds": 50.636999,
+          "total_seconds": 274.7486410000001
+        },
+        "returncode": 0,
+        "load": [
+          10.64306640625,
+          9.47021484375,
+          8.568359375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "seconds": 4.57040708400001,
+        "cpu_seconds": 6.9229989999999475,
+        "cpu": {
+          "user_seconds": 4.327420999999958,
+          "system_seconds": 2.595577999999989,
+          "total_seconds": 6.9229989999999475
+        },
+        "returncode": 0,
+        "load": [
+          9.240234375,
+          9.224609375,
+          8.50439453125
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "seconds": 4.404546583000013,
+        "cpu_seconds": 6.960042000000016,
+        "cpu": {
+          "user_seconds": 4.36081200000001,
+          "system_seconds": 2.5992300000000057,
+          "total_seconds": 6.960042000000016
+        },
+        "returncode": 0,
+        "load": [
+          7.1083984375,
+          8.7236328125,
+          8.34375
+        ]
+      }
+    ]
+  },
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+    "candidate_tool_key": "c341296cbf7a86347fd0b47c5f80dab156e98e8049588de4ff7a2b445f709a9c",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "cycle": 0,
+        "state": 1,
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "baseline_seconds": 5.0626715419999755,
+        "candidate_seconds": 5.218741249999994,
+        "native_seconds": 11.019508833999964,
+        "native_cpu_seconds": 34.03366400000007,
+        "baseline_cpu_seconds": 7.117034999999987,
+        "candidate_cpu_seconds": 7.216663000000011,
+        "cpu_difference_seconds": 0.09962800000002403,
+        "difference_seconds": 0.15606970800001818,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 4.986098292,
+            "execution_seconds": 0.007845042000000468,
+            "artifact_hash_seconds": 0.0005022920000001818,
+            "launcher_seconds": 5.035046
+          },
+          "candidate": {
+            "cargo_seconds": 5.143775,
+            "execution_seconds": 0.007746207999999477,
+            "artifact_hash_seconds": 0.000503166999999749,
+            "launcher_seconds": 5.1938520409999995
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 0,
+    "median_paired_difference_seconds": 0.15606970800001818,
+    "median_paired_cpu_difference_seconds": 0.09962800000002403,
+    "per_edit": [
+      {
+        "state": 1,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 5.0626715419999755,
+            "median": 5.0626715419999755,
+            "max": 5.0626715419999755
+          },
+          "candidate_seconds": {
+            "min": 5.218741249999994,
+            "median": 5.218741249999994,
+            "max": 5.218741249999994
+          },
+          "native_seconds": {
+            "min": 11.019508833999964,
+            "median": 11.019508833999964,
+            "max": 11.019508833999964
+          },
+          "difference_seconds": {
+            "min": 0.15606970800001818,
+            "median": 0.15606970800001818,
+            "max": 0.15606970800001818
+          },
+          "cpu_difference_seconds": {
+            "min": 0.09962800000002403,
+            "median": 0.09962800000002403,
+            "max": 0.09962800000002403
+          }
+        }
+      }
+    ]
+  }
+}

@@ -54,6 +54,8 @@ in debug/release (one ignored); VM is byte-identical to 78e60cdd. Fifteen proces
 commands/five manifest checks pass, and only libSystem is linked by the wrapper.
 All 99 original launcher checks pass with unchanged assertions, plus historical
 two-binary execution. Startup probes reduce paired overhead from 10.530 to
-1.751 ms, which is diagnostic only. Pgrust's one-cycle API-edit qualification
-passes twelve commands/six matching artifacts. Nushell's qualification is active;
-repeated warm and cold comparisons remain pending. No retention claim yet.
+1.751 ms, which is diagnostic only. Both pgrust and Nushell one-cycle API-edit
+qualifications pass twelve commands/six matching artifacts each. Nushell is
+slower in this first observation: 78.169s versus75.020s cold and5.219s versus5.063s
+edited. Preserve it; it does not support retention. Repeated warm and balanced
+fresh-target cold comparisons remain pending. No retention claim yet.
