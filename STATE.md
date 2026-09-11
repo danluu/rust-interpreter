@@ -77,7 +77,11 @@ independent clones; all original verifications reproduce. About 17.2 GiB is
 available. The [separate-case gate checks](results/separate-heldout-gates-01/assessment.md)
 reproduce both recent primary receipts, preserve both older near-miss decisions
 and reject 39 invalid configurations. The [fixed seven-case plan](benchmarks/experiments/resumable-native-calls/HELDOUT-STORAGE-NEXT.md)
-is written; an excluded actual pgrust case remains before primary measurements.
+is committed as `91d5c48`. The [actual pgrust qualification](results/resumable-copy-heldout-qualification-01/assessment.md)
+and [final gate helper check](results/separate-heldout-gates-03/assessment.md) now
+pass: 84 commands, fifteen pairs and 42 artifacts, with all 39 rejection checks
+and prior gate decisions preserved. A lock rejection before testing is retained.
+Primary case01 (Nushell type-relations) is next after its storage preflight.
 
 ## Closed worker-count experiment
 

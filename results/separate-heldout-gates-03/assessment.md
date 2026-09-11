@@ -1,0 +1,3 @@
+The final helper qualification passes with the actual excluded pgrust corpus: 63 primary commands, 21 independent checks, fifteen edited pairs and 42 artifacts. The new single-case receipt explicitly leaves seven-case qualification incomplete. Both recent primary gate/verification receipts still reproduce exactly, both older token near-miss ratios and failed decisions remain unchanged, and all 39 negative cases still reject.
+
+The earlier helper02 attempt was rejected by the shared lock before testing and remains preserved. No source change was needed for the successful retry. Qualification timings are excluded from the seven predeclared primary histories.

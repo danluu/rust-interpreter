@@ -1,0 +1,1 @@
+The helper was rejected by the nonblocking benchmark lock before any qualification checks ran. Its terminal receipt and log are preserved. A later read-only lock inspection found no holder. No benchmark or compiler cache was changed by this attempt; retry uses a new run identity.
