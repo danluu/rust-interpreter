@@ -48,8 +48,12 @@ def supervise(path):
                                      stdout=log, stderr=subprocess.STDOUT)
             record.update(status='running', child_pid=child.pid,
                           child_identity=identity(child.pid), child_started_at=time.time())
-            write(receipt, record)
-            code = child.wait()
+            try:
+                write(receipt, record)
+            finally:
+                # Keep ownership while the child runs even when disk-full
+                # prevents receipt publication. No process is signaled.
+                code = child.wait()
         record.update(status='finished', returncode=code, finished_at=time.time(),
                       log_sha256=sha(work / 'command.log'))
         write(receipt, record)

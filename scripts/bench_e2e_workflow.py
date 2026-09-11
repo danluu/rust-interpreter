@@ -16,6 +16,7 @@ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require
 from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
 from workflow_measurements import child_usage, child_cpu_since, per_edit_spread, sample_path, source_states
 from workflow_controls import native_command, native_environment, exporter_seconds
+from workflow_io import SourceEdit, capture, require_space, write_json
 
 
 def guest_test_failure(stderr):
@@ -41,6 +42,7 @@ def main():
     parser.add_argument('--workflow',default='default',help='additional named workload within a project')
     parser.add_argument('--batch',action='store_true',help='invoke all custom test entries in one command')
     parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
+    parser.add_argument('--minimum-free-gib',type=int,default=8,help='refuse to start a command below this free-space threshold; not a disk reservation')
     parser.add_argument('--jobs',type=int,default=4,help='Cargo jobs for custom engines and, by default, native (1..256)')
     parser.add_argument('--native-jobs',type=int,help='override native/check Cargo jobs (1..256)')
     parser.add_argument('--native-profile',choices=['repository','o0-incremental'],default='repository',help='explicit native/check profile override; no fastest-native claim')
@@ -75,6 +77,7 @@ def main():
     if args.candidate_jit_resumable_calls and (args.candidate_jit_native_calls or args.candidate_jit_native_call_stubs):parser.error('--candidate-jit-resumable-calls cannot be combined with native tree/stub calls')
     if args.candidate_jit_native_calls and (args.baseline_tool_key is None or args.comparison_engine=='interpreter'):parser.error('--candidate-jit-native-calls requires a paired JIT comparison')
     if not 1<=args.cycles<=30:parser.error('cycles must be in 1..30')
+    if not 1<=args.minimum_free_gib<=1024:parser.error('minimum-free-gib must be in 1..1024')
     if not 1<=args.jobs<=256 or (args.native_jobs is not None and not 1<=args.native_jobs<=256):parser.error('jobs must be in 1..256')
     if args.native_test_threads!='default' and (not args.native_test_threads.isdigit() or not 1<=int(args.native_test_threads)<=256):parser.error('native-test-threads must be default or in 1..256')
     if any(not flag or '\x1f' in flag or '\x00' in flag for flag in args.native_rustflag):parser.error('native rustflags must be nonempty arguments without NUL or unit separators')
@@ -159,7 +162,7 @@ def main():
         raise RuntimeError('snapshot has tracked changes')
     work=ROOT/'.work/runs'/args.run_id
     work.mkdir(parents=True)
-    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/std_mir.py']
+    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py']
     frozen_scripts={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in script_paths}
     file=source/case['file']
     original=file.read_bytes();current=original
@@ -181,18 +184,15 @@ def main():
         command=native_command(TOOLCHAIN,source/'Cargo.toml',package,work/'check',native_jobs,
             args.native_test_threads,[],check=True)
         child_env=native_environment(env,args.native_profile,args.native_rustflag)
+        require_space(work,args.minimum_free_gib)
         before=child_usage();start=time.perf_counter()
-        child=subprocess.Popen(command,cwd=source,env=child_env,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        receipt=dict(pid=child.pid,parent_pid=os.getpid(),cwd=str(source),command=command,mode='check-floor',
-            cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],started_at=time.time(),status='running')
-        (work/'active-command.json').write_text(json.dumps(receipt,indent=2)+'\n')
-        stdout,stderr=child.communicate();elapsed=time.perf_counter()-start;cpu=child_cpu_since(before)
-        receipt.update(status='finished',returncode=child.returncode,finished_at=time.time())
-        (work/'active-command.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        child,stdout,stderr=capture(command,cwd=source,env=child_env,receipt_path=work/'active-command.json',
+            receipt=dict(mode='check-floor',cycle=sample['cycle'],state=sample['state'],phase=sample['phase']))
+        elapsed=time.perf_counter()-start;cpu=child_cpu_since(before)
         row=dict(cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],source_sha256=digest,
             previous_source_sha256=previous,seconds=elapsed,cpu_seconds=cpu['total_seconds'],cpu=cpu,
             command=command,returncode=child.returncode,stdout=stdout,stderr=stderr,load=os.getloadavg())
-        check_records.append(row);(work/'check-records.json').write_text(json.dumps(check_records,indent=2)+'\n')
+        check_records.append(row);write_json(work/'check-records.json',check_records)
         if child.returncode or 'Checking '+package not in stderr:raise RuntimeError('Cargo-check control did not successfully check the edited target: '+stderr)
         if file.read_bytes()!=current:raise RuntimeError('source changed during Cargo-check control')
         print('check-floor',sample['cycle'],sample['state'],round(elapsed,3),flush=True)
@@ -233,16 +233,13 @@ def main():
         if mode!='native' and config['guest_flags']:
             child_env['RUSTFLAGS']=' '.join(config['guest_flags'])
         for command in commands:
+            require_space(work,args.minimum_free_gib)
             child_start=time.perf_counter()
             usage_before=child_usage()
-            p=subprocess.Popen(command,cwd=source,env=child_env,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            active=dict(pid=p.pid,parent_pid=os.getpid(),command=command,cwd=str(source),
-                        mode=mode,cycle=cycle,state=state,phase=phase,label=label,rustflags=child_env.get('RUSTFLAGS'),encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS'),started_at=time.time(),status='running')
-            (work/'active-command.json').write_text(json.dumps(active,indent=2)+'\n')
-            stdout,stderr=p.communicate()
+            p,stdout,stderr=capture(command,cwd=source,env=child_env,receipt_path=work/'active-command.json',
+                receipt=dict(mode=mode,cycle=cycle,state=state,phase=phase,label=label,
+                    rustflags=child_env.get('RUSTFLAGS'),encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS')))
             cpu=child_cpu_since(usage_before)
-            active.update(status='finished',returncode=p.returncode)
-            (work/'active-command.json').write_text(json.dumps(active,indent=2)+'\n')
             calls.append(dict(pid=p.pid,command=command,rustflags=child_env.get('RUSTFLAGS'),seconds=time.perf_counter()-child_start,
                               encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS'),
                               exporter_seconds=exporter_seconds(stderr) if mode!='native' else {},
@@ -260,7 +257,7 @@ def main():
         records.append(record)
         # Preserve command evidence even if provenance validation or copying
         # below fails. Source restoration still runs in the outer finally.
-        (work/'records.json').write_text(json.dumps(records,indent=2)+'\n')
+        write_json(work/'records.json',records)
         if (args.baseline_tool_key is not None or args.trap_unsupported_calls) and mode!='native':
             # Snapshot the sidecar actually selected and executed by the
             # launcher. Diagnostic copying is outside the command timer.
@@ -306,7 +303,7 @@ def main():
                 snapshot=work/'cargo-timings'/mode/sample_path(sample,index,args.cycles,'html');snapshot.parent.mkdir(parents=True,exist_ok=True)
                 with snapshot.open('xb') as destination:destination.write(payload)
                 reports.append(dict(path=str(snapshot.relative_to(ROOT)),sha256=hashlib.sha256(payload).hexdigest(),bytes=len(payload)))
-        (work/'records.json').write_text(json.dumps(records,indent=2)+'\n')
+        write_json(work/'records.json',records)
         if success:
             assert all(c['returncode']==0 for c in calls),calls[-1]['stderr']
             assert len(calls)==len(commands)
@@ -327,7 +324,8 @@ def main():
         assert record['source_sha256']==source_digest,'source changed during the command'
         built_sources[mode]=source_digest
         print(mode,cycle,state,label,round(record['seconds'],3),flush=True)
-    try:
+    require_space(work,args.minimum_free_gib)
+    with SourceEdit(file,original) as source_edit:
         # Different modes each have their own caches. A cold successful original
         # build is followed by a wrong production edit, then cumulative body
         # refactors. Test code is byte-for-byte unchanged throughout.
@@ -335,14 +333,14 @@ def main():
             cycle=sample['cycle'];state=sample['state']
             if file.read_bytes()!=current:raise RuntimeError('source changed outside this benchmark')
             previous=hashlib.sha256(current).hexdigest()
+            source_edit.replace(sample['source'])
             current=sample['source']
             current_digest=hashlib.sha256(current).hexdigest()
             if sample['phase']!='cold':assert previous!=current_digest,'repeated unchanged source state'
-            file.write_bytes(current)
             orders.append({k:sample[k] for k in ['cycle','state','phase','modes']})
             transitions.append(dict(cycle=cycle,state=state,phase=sample['phase'],previous_source_sha256=previous,
                 source_sha256=current_digest,content_changed=previous!=current_digest,previous_mode_sources=dict(built_sources)))
-            (work/'source-transitions.json').write_text(json.dumps(transitions,indent=2)+'\n')
+            write_json(work/'source-transitions.json',transitions)
             for mode in sample['modes']:
                 if file.read_bytes()!=current:raise RuntimeError('source changed outside this benchmark')
                 invoke(mode,sample)
@@ -356,12 +354,10 @@ def main():
                 assert custom[0]['source_sha256']==custom[1]['source_sha256']
                 assert [a['sha256'] for a in custom[0]['artifacts']]==[a['sha256'] for a in custom[1]['artifacts']],'custom engines exported different artifacts'
             if args.check_floor:check_reference(sample)
-    finally:
-        if file.read_bytes()!=current:raise RuntimeError('source changed outside this benchmark; refusing to overwrite it')
-        file.write_bytes(original)
     assert all(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest for path,digest in frozen_scripts.items()),'benchmark scripts changed during the run'
     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
     result=dict(schema_version=2,project=args.project,workflow=args.workflow,revision=revision,cycles=args.cycles,
+                minimum_free_gib=args.minimum_free_gib,
                 tests=f'{len(tests)} existing private test bodies' if private else tests,
                 edits=[e[0] for e in edits],
                 workload=case['workload'],case_sha256=hashlib.sha256(json.dumps(case,sort_keys=True).encode()).hexdigest(),

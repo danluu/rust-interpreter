@@ -45,24 +45,33 @@ folded improves 19.15% and token 19.97%, with CPU improving. Token's ratio
 Corresponding histories match across runs; cross-cycle layout differences remain
 unresolved. No more repeated attempts or batch-size tuning are planned.
 
-Broader native/TLS/fre compatibility checks now pass. Seven held-out real-edit
-workflows are running as `resumable-bulk-heldout-01` on the unchanged tool and
-original controls. Their results will guide the next substantive change; they
-do not waive the failed performance gate or authorize default retention.
+Broader native/TLS/fre compatibility checks pass. The seven-workflow held-out
+run is **incomplete after ENOSPC in its final Nushell type-relations case**.
+[Failure and recovery](results/resumable-bulk-heldout-failure-01/assessment.md)
+preserve stale status receipts, logs and partial timings. All matching run
+processes were gone; the owned source matched the exact expected edit and was
+restored to its pinned bytes. No cache cleanup or process signaling was needed.
 
-Six held-out workflows have completed: pgrust paired wall −1.88%, Nushell +0.60%,
+Six completed workflows were reverified: pgrust paired wall −1.88%, Nushell +0.60%,
 rg-aot −0.03%, fre TLS −1.58%, pgrust SHA-1 −4.38%, Ruff −0.56%. None exceeds
-the 5% regression threshold. These are provisional per-case summaries; the full
-corpus is not yet terminal. Nushell type relations is the remaining active case.
+5%; there is no complete seven-case result. Preserve these 504 commands, 90 pairs
+and 252 artifacts separately from the incomplete last case's 12 primary records
+and three check records. Retry only the missing case with a new run/cache identity.
+
+The harness now stages source restoration before mutation, publishes source and
+JSON atomically, waits/drains children on receipt failures and checks free space
+before commands. [Ten failure-injection checks](results/workflow-io-faults-01/summary.json)
+pass using three real child processes. Actual integrated Rust qualification is
+next. Runtime/tool options and failed primary gates are unchanged.
 
 The next workflow check is [generic interface edits](benchmarks/experiments/interface-edits/PLAN.md):
 pgrust's byte-hash API becomes generic over borrowed `AsRef<[u8]>`, and Nushell's
 list-type constructor accepts `Into<Type>`. All original test source is preserved.
 Two pinned case files, a bounded public case loader and input-check helper are
-committed in `38962af`, but have **not** been run or integrated. After the held-out
-corpus is terminal and evaluated, qualify the helper, add the case-file hook to
-the tracked harness, run one qualification cycle per case, then fifteen cycles
-of each single interface edit. Do not modify frozen harness inputs before then.
+committed in `38962af`. The input helper now passes two valid specifications and
+15 malformed/path cases; no Rust interface edit has run yet. Integrate the
+case-file hook, qualify one cycle per case, then fifteen cycles of each single
+interface edit. Finish the missing held-out case first.
 
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.

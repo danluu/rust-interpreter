@@ -81,7 +81,7 @@ def main():
     work.mkdir(parents=True, exist_ok=False)
     paths = ['scripts/bench_e2e_workflow.py', 'scripts/interpreter.py',
              'scripts/workflow_cases.py', 'scripts/workflow_controls.py',
-             'scripts/workflow_measurements.py', 'scripts/std_mir.py',
+             'scripts/workflow_measurements.py', 'scripts/workflow_io.py', 'scripts/std_mir.py',
              'scripts/verify_repeated_workflow.py', 'scripts/bench_workflow_corpus.py',
              'benchmarks/workflow-corpus.json']
     frozen = {p: sha(ROOT / p) for p in paths}
@@ -139,9 +139,11 @@ def main():
                                          stdout=log, stderr=subprocess.STDOUT)
                 status.update(status='running', child_pid=child.pid, command=command,
                               child_started_at=time.time(), updated_at=time.time())
-                write(receipt, status)
-                print('START', case['label'], child.pid, flush=True)
-                code = child.wait()
+                try:
+                    write(receipt, status)
+                    print('START', case['label'], child.pid, flush=True)
+                finally:
+                    code = child.wait()
             status.update(status='verifying workflow', child_returncode=code,
                           child_finished_at=time.time(), updated_at=time.time())
             write(receipt, status)
