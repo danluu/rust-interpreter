@@ -55,5 +55,34 @@ and retirement happen outside measured commands and never while a comparison
 holds the lock. Do not lower the eight-GiB command guard, alter the cold sample
 count or treat this logistical work as a compiler speedup.
 
-Status: design only. No cache has been compressed or retired by this mechanism.
-The existing qualified object-only tool remains the only cleanup mechanism used.
+Status: implemented by `scripts/archive_workflow_cache.py` and
+`scripts/cache_archive.py`. [Qualification03](../../../results/cache-archive-qualification-03/assessment.md)
+passes37 rejection checks, hardlink/mode/access/modification-time restoration
+and four coordinator cases, including recovery after1,000 retired fixture paths.
+The first real public native preparation refused Cargo root-directory xattrs
+before any archive or retirement. Preserve that refusal; add and qualify exact
+round-trip support for the two observed root markers before retrying. No real
+cache has yet been retired by this mechanism.
+
+The bounded format uses ZIP/DEFLATE payloads and a JSON manifest, storing each
+inode's bytes once. It preserves regular-file/directory permission bits,
+access/modification times and internal hardlink groups. It refuses special
+files, external hardlinks, file flags and xattrs; inodes, ctimes, birth times and
+ACLs are not recreated. ZIP entry names are never used as extraction paths.
+
+Use a unique archive ID to prepare the exact completed workflow's native target:
+
+```sh
+python3 scripts/archive_workflow_cache.py --prepare ARCHIVE_ID --workflow COMPLETED_RUN
+# Review the prepared inventory and ownership/closed-file evidence before applying.
+python3 scripts/archive_workflow_cache.py --apply ARCHIVE_ID
+python3 scripts/archive_workflow_cache.py --inspect ARCHIVE_ID --member RELATIVE_METADATA_PATH
+python3 scripts/archive_workflow_cache.py --restore ARCHIVE_ID --restore-id UNIQUE_RESTORE_ID
+```
+
+Archives and reservations live under `.work/workflow-cache-archives`. Inspection
+is limited to one MiB of output. Restoration creates a new directory beneath
+the archive identity and refuses to overwrite existing files. Failed or partial
+retirement reserves its original target and cannot be blindly retried under
+another ID. Sources, reports and executed bytecode snapshots remain outside
+the retired native target. No arbitrary target path is accepted by this CLI.
