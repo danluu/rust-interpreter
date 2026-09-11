@@ -115,3 +115,11 @@ CPU ratio 1.0732865843. Both warm guards pass, with no observed warm benefit.
 The six fresh cold histories remain required, subject to the original failure
 bound rule. These updates record execution status and
 do not change the predeclared samples, thresholds or stopping rule.
+
+
+The [first fixed cold history](../../../results/worker-count-nushell-cold-01/assessment.md)
+now verifies twelve commands and six artifacts. Cold wall ratio is 0.5555410355;
+child CPU ratio is 1.5230560848. The [verified prefix decision](../../../results/worker-count-cold-decision-through-01/assessment.md)
+requires continuing the fixed histories: one observation cannot establish
+acceptance or deterministic failure. Next order: candidate,baseline,native.
+The CPU gate and all other requirements are unchanged.

@@ -52,20 +52,17 @@ no warm-build gain. Original/wrong-edit artifacts repeat the known cross-cycle
 layout difference; corresponding modes match and the API-edit artifact is stable.
 Reported lowering is about 71 ms within roughly 5.3-second edited commands.
 
-Both warm primaries are complete. Next: the six fixed fresh-target Nushell cold
-histories, retaining the 10% cold wall improvement and 10% CPU guard. Only those
-new cold samples enter the cold statistic. Qualification/primary anchor timings
-remain excluded. Prepare space from exact completed public targets before each
-large history; do not run another lock waiter inside an archive batch.
+Both warm primaries are complete. The [first fixed cold history](results/worker-count-nushell-cold-01/assessment.md)
+also verifies twelve commands/six artifacts: cold wall 64.029→35.571s (−44.45%),
+child CPU 189.053→287.938s (+52.31%). The [prefix assessment](results/worker-count-cold-decision-through-01/assessment.md)
+requires continuing the remaining fixed histories; no bound proves failure yet.
+Next order: candidate,baseline,native. Keep the 10% cold wall improvement and
+10% CPU guard. Qualification/primary anchors remain excluded; no adoption.
+Prepare space outside measurements before the next large history.
 
-Eight reviewed completed targets are now [archived](results/warm-storage-batch-01-recovery-01/assessment.md):
-95,657 paths / 23,139,072,348 unique bytes in 7,776,020,009 archive bytes.
-The original batch stopped before its sixth child because a queued verifier
-acquired the lock. Its verified five-target prefix and separately audited
-three-target recovery preserve that failure. All targets and external proofs
-verify; forty-four archives are complete in total. Never queue another lock
-waiter while an archive batch is active. Require roughly 27 GiB before the
-Nushell fifteen-cycle run; the eight-GiB per-command guard remains unchanged.
+The earlier [warm-cache recovery](results/warm-storage-batch-01-recovery-01/assessment.md)
+preserves its original lock-scheduling failure and completed recovery receipts.
+Never queue another lock waiter during an archive batch.
 
 Worker retention requires at least 10% median cold wall reduction, no >5% warm
 wall regression and no >10% child-CPU increase for the checked primary groups.
@@ -120,6 +117,16 @@ relaxation, wrapper retention or conditional held-out testing is claimed.
 
 
 ## Resource planning
+
+[Twenty completed host checks](results/worker-cold-host-object-storage-01/assessment.md)
+released 1.54 GiB of object contents; 13,884 other files and 2,105 evidence hashes
+verify afterward. The remaining files contain 5.31 GiB of unique contents.
+The [next storage plan](benchmarks/experiments/compiler-pipeline/HOST-CACHE-STORAGE-NEXT.md)
+extends existing bounded archival only to completed debug checks without an
+installed-tool publication. It is **not implemented yet**. Qualify that selector,
+review exact targets and preserve their evidence before any retirement. The
+completed cold01 caches are also eligible for separately reviewed archival once
+its assessment is committed. Cold02 has not started.
 
 The [completed twelve-target batch](results/worker-cold-storage-combined-01/assessment.md)
 preserves worker Nushell and older Nushell/Ruff corpus caches: 249,643 paths /
