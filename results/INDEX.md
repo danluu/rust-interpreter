@@ -16,9 +16,12 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | workflow | [ruff](native-controls-corpus-01-ruff/summary.json) |
 | workflow | [nushell-type-relations](native-controls-corpus-01-nushell-type-relations/summary.json) |
 | historical-count-correction | [historical-validation-counts-01/summary.json](historical-validation-counts-01/summary.json) |
-| runtime-experiment | [resumable-bulk-e2e-01/summary.json](resumable-bulk-e2e-01/summary.json) |
-| runtime-gates | [resumable-bulk-e2e-01/gate-evaluation.json](resumable-bulk-e2e-01/gate-evaluation.json) |
-| runtime-verification | [resumable-bulk-e2e-01/final-verification.json](resumable-bulk-e2e-01/final-verification.json) |
+| runtime-replication | [resumable-bulk-replication-01/summary.json](resumable-bulk-replication-01/summary.json) |
+| first-bulk-run | [resumable-bulk-e2e-01/summary.json](resumable-bulk-e2e-01/summary.json) |
+| coverage-driver-qualification | [resumable-coverage-drivers-01/summary.json](resumable-coverage-drivers-01/summary.json) |
+| runtime-experiment | [resumable-bulk-e2e-02/summary.json](resumable-bulk-e2e-02/summary.json) |
+| runtime-gates | [resumable-bulk-e2e-02/gate-evaluation.json](resumable-bulk-e2e-02/gate-evaluation.json) |
+| runtime-verification | [resumable-bulk-e2e-02/final-verification.json](resumable-bulk-e2e-02/final-verification.json) |
 | release-qualification | [resumable-bulk-release-01/summary.json](resumable-bulk-release-01/summary.json) |
 | execution-smoke | [resumable-bulk-real-smoke-01/summary.json](resumable-bulk-real-smoke-01/summary.json) |
 | cli-qualification | [resumable-bulk-cli-01/summary.json](resumable-bulk-cli-01/summary.json) |

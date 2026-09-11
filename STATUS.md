@@ -12,17 +12,19 @@ tests in debug and release. Three repeated source-edit cycles completed
 
 | Workload | Native | Baseline JIT | Experimental JIT | Paired change |
 | --- | ---: | ---: | ---: | ---: |
-| folded-literal-trie | 1.725 s | 2.544 s | 2.065 s | -19.51% |
-| token-phrase | 2.246 s | 6.765 s | 5.421 s | -19.95% |
+| folded-literal-trie | 1.852 s | 2.582 s | 2.085 s | -19.15% |
+| token-phrase | 2.202 s | 7.161 s | 5.596 s | -19.97% |
 
 Paired change is the median within-edit ratio; command columns are marginal
 medians. The targets remain −20% token and −10% folded against b2aa6efe.
 Resumable Calls and Returns now batch required initialization. Folded
-passes; token narrowly misses its target (ratio 0.8004639304 versus 0.8).
-The combined gate fails. One unchanged-tool replication will examine
-repeatability; the first failure stays in the record. Seven held-out
-workflows and broader execution qualification remain required.
-[Result and limitations](results/resumable-bulk-e2e-01/assessment.md).
+passes; token narrowly misses its target (ratio 0.8003441753 versus 0.8).
+Both fixed-tool runs fail the token gate. The first improved folded 19.51%
+and token 19.95%; this replication improved 19.15% and 19.97%. All pairs
+and both decisions are preserved. Broader experimental compatibility
+checks are next; defaults and original criteria remain unchanged.
+[Both runs and per-edit variation](results/resumable-bulk-replication-01/assessment.md).
+[Result and limitations](results/resumable-bulk-e2e-02/assessment.md).
 
 ## Full-corpus baseline
 

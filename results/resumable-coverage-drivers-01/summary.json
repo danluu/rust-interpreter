@@ -1,0 +1,136 @@
+{
+  "status": "passed",
+  "original_tls_case_matrix_unchanged": true,
+  "cli_checks": [
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/validate_tls_destructors.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: validate_tls_destructors.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                                   [--jit-native-calls]\n                                   [--jit-native-call-stubs]\n                                   [--jit-persistent-registers]\n                                   [--jit-resumable-calls]\n\nQualify real TLS destructor ordering and normal callbacks with a selected VM.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --run-id RUN_ID\n  --tool-key TOOL_KEY\n  --jit-native-calls\n  --jit-native-call-stubs\n  --jit-persistent-registers\n  --jit-resumable-calls\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/validate_tls_destructors.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--jit-resumable-calls",
+        "--jit-native-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: validate_tls_destructors.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                                   [--jit-native-calls]\n                                   [--jit-native-call-stubs]\n                                   [--jit-persistent-registers]\n                                   [--jit-resumable-calls]\nvalidate_tls_destructors.py: error: resumable calls exclude native tree/stub calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/validate_tls_destructors.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--jit-native-call-stubs"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: validate_tls_destructors.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                                   [--jit-native-calls]\n                                   [--jit-native-call-stubs]\n                                   [--jit-persistent-registers]\n                                   [--jit-resumable-calls]\nvalidate_tls_destructors.py: error: native Call stubs require native calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "-O",
+        "/Users/danluu/dev/rust-interp/scripts/validate_tls_destructors.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: validate_tls_destructors.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                                   [--jit-native-calls]\n                                   [--jit-native-call-stubs]\n                                   [--jit-persistent-registers]\n                                   [--jit-resumable-calls]\nvalidate_tls_destructors.py: error: TLS qualification requires enabled Python assertions\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\n\nCompare retained ordinary tests with fresh native processes; no speedup claim.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --collection COLLECTION\n                        corpus audit summary.json\n  --entries ENTRIES     optional JSON list selecting bodies from the verified\n                        collection\n  --vm-tool-key VM_TOOL_KEY\n                        optional immutable tool build whose VM executes the\n                        retained bytecode\n  --native-control-provenance NATIVE_CONTROL_PROVENANCE\n                        reuse a verified native control from a previous batch\n                        at the same source pin and toolchain; fresh processes\n                        still run each test\n  --instruction-limit INSTRUCTION_LIMIT\n  --allocation-limit ALLOCATION_LIMIT\n                        explicit live-allocation allowance; omitted preserves\n                        the VM default\n  --jit-native-calls\n  --jit-native-call-stubs\n  --jit-persistent-registers\n  --jit-resumable-calls\n  --run-id RUN_ID\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--run-id",
+        "unused",
+        "--collection",
+        "unused",
+        "--jit-resumable-calls",
+        "--jit-native-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\nsurvey_audit_execution.py: error: resumable calls exclude native tree/stub calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--run-id",
+        "unused",
+        "--collection",
+        "unused",
+        "--jit-native-call-stubs"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\nsurvey_audit_execution.py: error: native Call stubs require native calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--run-id",
+        "unused",
+        "--collection",
+        "unused",
+        "--allocation-limit",
+        "-1"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\nsurvey_audit_execution.py: error: allocation limit must fit an unsigned 64-bit count\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "-O",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--run-id",
+        "unused",
+        "--collection",
+        "unused"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\nsurvey_audit_execution.py: error: execution surveys require enabled Python assertions\n"
+    }
+  ],
+  "frozen": {
+    "benchmarks/experiments/resumable-native-calls/check_coverage_drivers.py": "345fdca04c389ffbc34bbfdcabee7e2a1d587b2ef205049827320d6881b1ed20",
+    ".work/validate_local_memory_forwarding_tls_01.py": "d942f7548f7dfcb087b94b9e820f30e63df8a11f3dc5d6fa31456d9d1d641f73",
+    "scripts/validate_tls_destructors.py": "faff52aaf8d38ca8bba5afa161a4aa3b74202d8dc1b71e3c55c5ed71cbef75ea",
+    "scripts/survey_audit_execution.py": "bad43b0cb6ef817d1d6708988046b406d7185fce1e378e42d08b76543bcf8879",
+    "scripts/qualify_native_execution.py": "4b0df2f7d6c60a536fb7dfbd194adc07692075fec4de72bb6be240292adc7b41"
+  },
+  "actual_coverage_execution": false,
+  "performance_measurement": false
+}

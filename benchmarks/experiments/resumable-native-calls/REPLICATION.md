@@ -28,3 +28,15 @@ The seven held-out workflows and native/TLS/fre execution qualification remain
 required before a production retention decision. Their tracked preparation is
 in [BROADER-QUALIFICATION.md](BROADER-QUALIFICATION.md); the new full native
 validator driver still needs its first actual selected-tool execution.
+
+## Completed decision
+
+Both runs are complete and independently verified. Folded improves 19.51% and
+19.15%; token 19.95% and 19.97%. Both token numerical gates fail, with CPU
+improving. No further replication is planned. Corresponding history artifacts
+match across runs, while the cross-cycle layout issue remains unresolved.
+
+Proceed to broader experimental compatibility characterization without waiving
+the failed performance gate or changing defaults. Preserve all comparisons and
+use large-project workflows and broader execution failures to choose the next
+substantive change. [Two-run report](../../../results/resumable-bulk-replication-01/assessment.md).

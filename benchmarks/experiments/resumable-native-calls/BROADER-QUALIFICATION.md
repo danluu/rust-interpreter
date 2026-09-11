@@ -1,7 +1,11 @@
-# Broader execution qualification after the primary gates
+# Broader experimental execution qualification
 
-The current primary E2E run decides whether to proceed to retention checks.
-None of this document transfers older execution coverage to the new tool.
+The two fixed-tool E2E runs improve folded 19.51%/19.15% and token 19.95%/19.97%.
+Both narrowly fail token's original 20% numerical gate. Those failures stay
+recorded. Next characterize broader compatibility on the experimental candidate:
+that is more useful than further attempts at crossing this fine cutoff or
+another batch-size tweak. This is not retention, a default change or a waiver
+of the original criteria. None of this document transfers older coverage.
 Native/FFI fallback and success-returning OS/unwind shims remain out of scope.
 
 The archived full validator driver hardcodes the old tool and JIT mode. Its
@@ -13,9 +17,9 @@ into JIT commands. Every existing assertion AST must remain identical. Python
 assertions cannot be disabled. The staged source, substitutions, full commands,
 outputs, process receipts and file hashes remain in the unique run directory.
 
-Before the full run, `check_execution_driver.py` must verify staging for baseline,
+`check_execution_driver.py` has verified staging for baseline,
 resumable and tree/stub modes, reproduce both historical VM command counts and
-reject falsely labelled resumable commands. This is helper qualification only.
+rejects falsely labelled resumable commands. This is helper qualification only.
 The actual full run then verifies every VM command uses the selected binary and
 exact mode options, and requires successful native Call/Return counters when
 resumable mode is selected. Code size and declined executions are reported.
@@ -29,8 +33,9 @@ for the production development workflow. See the historical count correction.
 
 After full native differential qualification, run the separate 245-command
 TLS/destructor suite with the same selected runtime flags and real native
-controls. Migrate the archived hardcoded TLS driver to a tracked parameterized
-recipe first; preserve original assertions, three MIR settings, both inlining
+controls. The tracked `scripts/validate_tls_destructors.py` now selects the tool and mode
+explicitly. Its complete case-generation AST matches the archived driver. It
+preserves original assertions, three MIR settings, both inlining
 settings, exact destructor order, all test resets, normal callback behavior,
 terminal actual-panic failure and strict rejection controls. Do not claim full
 unwinding merely because normal callbacks run.
@@ -39,8 +44,9 @@ Then recollect/replay the same 389 original fre bodies (382 previous passes,
 seven ignored), with fresh native controls and the documented 150,000 allocation
 limit, unsupported-call trapping and normal try callbacks. Flag every unsupported
 or failed execution explicitly. A lowered audit body is not a passed test; this
-remains body replay, not unfiltered libtest. The replay driver also needs explicit
-resumable-mode plumbing before it can qualify the new runtime.
+remains body replay, not unfiltered libtest. The replay driver now carries explicit runtime modes and an optional allocation
+limit. Nine coverage-driver CLI checks and the preserved TLS case matrix pass;
+actual new-tool execution is still required.
 
 Run all seven held-out real-edit workflows with the same original b2 baseline,
 three cycles, flags, source pins, wrong edits, identical paired artifacts,

@@ -22,9 +22,25 @@ def main():
     parser.add_argument('--vm-tool-key',help='optional immutable tool build whose VM executes the retained bytecode')
     parser.add_argument('--native-control-provenance',type=Path,help='reuse a verified native control from a previous batch at the same source pin and toolchain; fresh processes still run each test')
     parser.add_argument('--instruction-limit',type=int,default=100_000_000)
+    parser.add_argument('--allocation-limit',type=int,help='explicit live-allocation allowance; omitted preserves the VM default')
+    parser.add_argument('--jit-native-calls',action='store_true')
+    parser.add_argument('--jit-native-call-stubs',action='store_true')
+    parser.add_argument('--jit-persistent-registers',action='store_true')
+    parser.add_argument('--jit-resumable-calls',action='store_true')
     parser.add_argument('--run-id',default='audit-execution-'+str(time.time_ns()))
     args=parser.parse_args()
+    if not __debug__ or sys.flags.optimize:parser.error('execution surveys require enabled Python assertions')
     if args.instruction_limit<=0:parser.error('instruction limit must be positive')
+    if args.allocation_limit is not None and not 0<=args.allocation_limit<2**64:
+        parser.error('allocation limit must fit an unsigned 64-bit count')
+    if args.jit_native_call_stubs and not args.jit_native_calls:
+        parser.error('native Call stubs require native calls')
+    if args.jit_resumable_calls and (args.jit_native_calls or args.jit_native_call_stubs):
+        parser.error('resumable calls exclude native tree/stub calls')
+    runtime_options={name:getattr(args,name) for name in
+        ['jit_native_calls','jit_native_call_stubs','jit_persistent_registers','jit_resumable_calls']}
+    vm_flags=['--'+name.replace('_','-') for name,enabled in runtime_options.items() if enabled]
+    if args.allocation_limit is not None:vm_flags+=['--allocation-limit',str(args.allocation_limit)]
     if Path(args.run_id).name!=args.run_id or args.run_id in ['.','..']:parser.error('invalid run id')
     lock=(ROOT/'.work/benchmark.lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     collection=json.loads(args.collection.read_text())
@@ -175,7 +191,7 @@ def main():
                 else:
                     artifact=pack/row['artifact']['file']
                     assert hashlib.sha256(artifact.read_bytes()).hexdigest()==row['artifact']['sha256']
-                    b=run('jit:'+entry,[tools/'rust-interp-vm','--engine','jit','--instruction-limit',str(args.instruction_limit),artifact],cwd,vm=True)
+                    b=run('jit:'+entry,[tools/'rust-interp-vm','--engine','jit','--instruction-limit',str(args.instruction_limit),*vm_flags,artifact],cwd,vm=True)
                     result.update(jit=b,artifact_sha256=row['artifact']['sha256'])
                     if b['returncode']==0 and b['stdout'].strip()=='0':result['status']='passed'
                     elif b['returncode']!=0 and unavailable_call_failure(b['stderr'],row.get('unavailable_calls',[])):
@@ -198,6 +214,7 @@ def main():
             trap_unsupported_calls=report.get('trap_unsupported_calls',False),run_try_callbacks=report.get('run_try_callbacks',False),
             collection_tool_key=collection_key,collection_tool_binaries=collection_manifest,
             instruction_limit=args.instruction_limit,engine='jit',counts=counts,selected=len(results),
+            allocation_limit=args.allocation_limit,runtime_options=runtime_options,
             available_in_collection=len(report['entries']),
             selection=None if args.entries is None else dict(path=str(args.entries.resolve()),sha256=hashlib.sha256(args.entries.read_bytes()).hexdigest()),
             native_build_seconds=native['seconds'],native_binary_sha256=binary_digest,
@@ -216,6 +233,7 @@ def main():
             f"Collection tool: `{collection_key}`. Execution tool: `{key}`. The original artifact pack and its collection provenance are verified independently of the selected VM.",'',
             '| Outcome | Bodies |','|---|---:|']
         lines += [f'| {name} | {count} |' for name,count in sorted(counts.items())]
+        if vm_flags:lines += ['', 'Explicit VM options: `'+' '.join(vm_flags)+'`. Per-body runtime counters are retained in the raw results.']
         if guest_flags:lines += ['', 'Collected guest MIR flags: `'+ ' '.join(guest_flags)+'`. Their recorded compilation invocation is hash-verified; native controls use their ordinary Cargo profile.']
         lines += ['',*summary['limitations'],'',f"Native build: {native['seconds']:.3f} s. Native and JIT process totals are retained in JSON as diagnostics; they are not end-to-end production-edit measurements."]
         (output/'summary.md').write_text('\n'.join(lines)+'\n')

@@ -37,18 +37,27 @@ it excludes tree/stub mode and stays disabled by default.
 Native remains faster on both. The first resumable tool (`035ef708`) improved
 folded 10.6% and token 15.0%; cross-run differences are not isolated component gains.
 
-Exactly one unchanged-tool replication `resumable-bulk-e2e-02` is running, using
-[the recorded protocol](benchmarks/experiments/resumable-native-calls/REPLICATION.md).
-Keep the first failure, both run decisions and all pairs; no retry-until-pass or
-new pooled retention rule. The narrow cutoff miss calls for repeatability
-before another runtime change. Seven held-out workflows and broader native/
-TLS/fre qualification remain required before retention and have not run on this tool.
+[The single replication](results/resumable-bulk-e2e-02/assessment.md) is complete:
+folded improves 19.15% and token 19.97%, with CPU improving. Token's ratio
+0.8003441753 again narrowly misses 0.8; both combined numerical gates fail.
+[The two-run report](results/resumable-bulk-replication-01/assessment.md) preserves
+336 commands, 60 edited pairs, 168 artifacts and per-edit wall/CPU variation.
+Corresponding histories match across runs; cross-cycle layout differences remain
+unresolved. No more repeated attempts or batch-size tuning are planned.
+
+Next characterize broader compatibility on this experimental candidate: full
+native differential validation, TLS/destructors, fre bodies and seven held-out
+large-project workflows. These are needed to choose the next substantive change;
+they do not waive the failed performance gate or authorize default retention.
 
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.
 Its [helper qualification](results/resumable-execution-driver-01/summary.json)
 passes three staging configurations and both archived mode checks; false
-resumable claims are rejected. Full new-tool execution is still outstanding.
+resumable claims are rejected. Full new-tool execution is still outstanding. The tracked TLS driver preserves
+its complete archived case matrix; the fre replay now exposes runtime flags
+and allocation limits. Nine coverage-driver CLI checks pass. Actual coverage
+runs remain outstanding.
 [Broader recipe](benchmarks/experiments/resumable-native-calls/BROADER-QUALIFICATION.md).
 
 Exact-code profiles of `035ef708` resolved every generated PC across three
@@ -110,8 +119,8 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-Only `resumable-bulk-e2e-02` is active; observe its supervisor/corpus receipts
-and keep workflow scripts frozen. All preceding task runs are terminal0.
+All preceding task runs are terminal0. The full selected-tool native validator
+is ready to start under the benchmark lock.
 The unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal

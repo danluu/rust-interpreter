@@ -224,3 +224,11 @@ that a production Rust development engine is complete.
 - The full native validator now has a tracked immutable-tool/mode driver with
   unchanged assertion checks and verified VM command flags. Helper qualification
   passes; full new-mode execution, separate TLS and fre coverage are pending.
+
+- The one predeclared fixed-tool replication also narrowly misses token's 20%
+  gate: 19.97% token and 19.15% folded, with CPU improving. Both failed combined
+  decisions remain in the [two-run report](../results/resumable-bulk-replication-01/assessment.md).
+  Stop repeated attempts/batch tuning and characterize broader compatibility.
+  Explicit-mode native, TLS and fre drivers are ready; helper checks preserve
+  the full TLS case matrix. This does not waive the original gates or retain
+  the experimental mode.

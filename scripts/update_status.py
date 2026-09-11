@@ -9,7 +9,7 @@ CORPUS = 'results/native-controls-corpus-01/summary.json'
 PREVIOUS = 'results/local-memory-forwarding-01/summary.json'
 REPEATED = 'results/paired-repeated-token-01/summary.json'
 COMPUTE = {'folded-literal-trie', 'token-phrase', 'forward-anchored-tls', 'pgrust-sha1-inline8'}
-EXPERIMENT_RUN = 'resumable-bulk-e2e-01'
+EXPERIMENT_RUN = 'resumable-bulk-e2e-02'
 EXPERIMENT = 'results/' + EXPERIMENT_RUN + '/gate-evaluation.json'
 
 
@@ -56,10 +56,12 @@ def render():
         'Paired change is the median within-edit ratio; command columns are marginal',
         'medians. The targets remain −20% token and −10% folded against b2aa6efe.',
         'Resumable Calls and Returns now batch required initialization. Folded',
-        'passes; token narrowly misses its target (ratio 0.8004639304 versus 0.8).',
-        'The combined gate fails. One unchanged-tool replication will examine',
-        'repeatability; the first failure stays in the record. Seven held-out',
-        'workflows and broader execution qualification remain required.',
+        'passes; token narrowly misses its target (ratio 0.8003441753 versus 0.8).',
+        'Both fixed-tool runs fail the token gate. The first improved folded 19.51%',
+        'and token 19.95%; this replication improved 19.15% and 19.97%. All pairs',
+        'and both decisions are preserved. Broader experimental compatibility',
+        'checks are next; defaults and original criteria remain unchanged.',
+        '[Both runs and per-edit variation](results/resumable-bulk-replication-01/assessment.md).',
         f'[Result and limitations](results/{EXPERIMENT_RUN}/assessment.md).', '',
         '## Full-corpus baseline', '',
         f"Full-corpus engine `{key[:8]}`, Git `{commit[:7]}`; paired baseline `{options['baseline_tool_key'][:8]}`.",
@@ -130,6 +132,9 @@ def render():
         native_seconds=r['medians']['native'], custom_seconds=r['medians']['candidate']) for r in rows]
     for category, report in [
         ('historical-count-correction', 'results/historical-validation-counts-01/summary.json'),
+        ('runtime-replication', 'results/resumable-bulk-replication-01/summary.json'),
+        ('first-bulk-run', 'results/resumable-bulk-e2e-01/summary.json'),
+        ('coverage-driver-qualification', 'results/resumable-coverage-drivers-01/summary.json'),
         ('runtime-experiment', 'results/' + EXPERIMENT_RUN + '/summary.json'),
         ('runtime-gates', EXPERIMENT),
         ('runtime-verification', 'results/' + EXPERIMENT_RUN + '/final-verification.json'),
