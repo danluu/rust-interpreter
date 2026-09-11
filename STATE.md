@@ -31,6 +31,22 @@ identities before treating a run as live. A separate user-owned disk-cleanup tas
 has been using the same lock; do not interrupt or modify it. The coordinator
 waits up to ten minutes per lock acquisition and preserves failures.
 
+At the latest check, eight workflows are verified and `nushell-type-relations`
+is running (child PID **20579**, inspect actual identity before relying on it).
+The completed token row is 6.664 s custom versus 2.002 s native; folded-trie is
+2.485 versus 1.638 s. These are edited-command medians. The token cycle-0/state-2
+outlier is retained; higher wall and CPU time have no demonstrated cause.
+
+Prepared follow-up: `benchmarks/experiments/native-call-census/` compiles the
+actual emitter support predicate against saved typed bytecode/profiles. Its
+sources are written but **not yet built or tested**. Run only after the corpus
+finishes, under the benchmark lock. [ABI design](docs/NATIVE-CALL-EXPERIMENT.md)
+records exact error order, retained alignment padding, and a broader guest-stack
+alternative. `scripts/update_status.py` has been updated for the new aggregate;
+do not run it until that aggregate and its assessment exist. The corpus runner
+still needs stale child-exit receipt fields cleared between cases, after its
+frozen run completes.
+
 The corpus uses three actual-edit cycles per workflow, O0/incremental native
 compilation with 18 jobs/default test concurrency, four custom build jobs, and a
 separate Cargo-check reference. This is a specified native candidate, not a claim
