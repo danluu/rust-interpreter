@@ -61,9 +61,21 @@ gives wall 63.796→31.333s and CPU 186.549→232.158s;
 six artifacts, exact restored sources and eleven frozen inputs.
 The [three-history assessment](results/worker-count-cold-decision-through-03/assessment.md)
 requires continuing: three histories remain and neither failure bound is decisive.
-Next order: native,candidate,baseline. Keep the 10% cold wall improvement and
+The fourth history is now running in order native,candidate,baseline, with
+24.41 GiB free at admission and all eleven frozen inputs verified.
+Keep the 10% cold wall improvement and
 10% CPU guard. Qualification/primary anchors remain excluded; no adoption.
 Prepare space outside measurements before the next large history.
+
+The [latest 32-cache batch](results/worker-cold-storage-batch-05/assessment.md)
+completed and verified, bringing the total to 153 archives. The new
+[artifact clone qualification](benchmarks/experiments/compiler-pipeline/ARTIFACT-CLONES.md)
+preserves independent write behavior and rejects 18 invalid/failure cases.
+The [pilot](results/artifact-clone-pilot-01/assessment.md) and
+[six-history batch](results/artifact-clone-storage-batch-01/assessment.md)
+retain all 294 executed snapshot paths, bytes and checked metadata while sharing
+data for 203 duplicates. All seven original workflow verifications reproduce.
+This maintenance is outside benchmark timers; it is not a compilation gain.
 
 The earlier [warm-cache recovery](results/warm-storage-batch-01-recovery-01/assessment.md)
 preserves its original lock-scheduling failure and completed recovery receipts.
