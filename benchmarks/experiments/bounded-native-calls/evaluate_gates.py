@@ -31,25 +31,21 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--run-id', required=True)
-    parser.add_argument('--source-commit', required=True)
-    parser.add_argument('--held-out', action='store_true', help='verify the seven other workflows and flag paired wall regressions above 5 percent')
-    parser.add_argument('--copy-transitions', action='store_true', help='apply the predeclared copy-transition gate against matched resumable tool78')
-    parser.add_argument('--check-existing', action='store_true', help='recompute and compare existing receipts without overwriting them')
-    args = parser.parse_args()
-    require(not (args.copy_transitions and args.held_out), 'copy-transition and held-out gates are separate')
+def evaluate(args):
+    """Return verified evidence without publishing it; caller holds the benchmark lock."""
+    single = args.held_out_case
+    held_out = args.held_out or single is not None
+    require(not (args.held_out and single is not None), 'select either all held-out cases or one case')
+    require(single is None or single in HELD_OUT, 'unknown held-out case')
+    require(not (args.copy_transitions and held_out), 'copy-transition and held-out gates are separate')
     require(Path(args.run_id).name == args.run_id and args.run_id not in ('.', '..'), 'invalid run ID')
     status = read(ROOT / '.work/corpus-runs' / args.run_id / 'status.json')
     supervisor = read(ROOT / '.work/experiments' / args.run_id / 'status.json')
     require(status['status'] == 'finished' and supervisor['status'] == 'finished' and supervisor['returncode'] == 0, 'corpus still active or failed')
-    lock = (ROOT / '.work/benchmark.lock').open('a')
-    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     out = ROOT / 'results' / args.run_id
     corpus = read(out / 'summary.json')
     options = corpus['plan']['options']
-    targets = {name: 1.05 for name in HELD_OUT} if args.held_out else TARGETS
+    targets = {name: 1.05 for name in ([single] if single else HELD_OUT)} if held_out else TARGETS
     baseline = COPY_BASELINE if args.copy_transitions else BASELINE
     if args.copy_transitions:
         targets = {'folded-literal-trie': 1.05, 'token-phrase': 0.9}
@@ -120,7 +116,7 @@ def main():
             median_paired_ratio=ratio, median_paired_cpu_ratio=cpu_ratio, target_max_ratio=target,
             median_paired_difference_seconds=median(p['difference_seconds'] for p in pairs),
             median_paired_cpu_difference_seconds=median(p['cpu_difference_seconds'] for p in pairs),
-            passed=ratio <= target and (args.held_out or cpu_ratio < 1),
+            passed=ratio <= target and (held_out or cpu_ratio < 1),
             stages={m: {s: median(p['stage_seconds'][m][s] for p in pairs) for s in ['execution_seconds', 'cargo_seconds']} for m in ['baseline', 'candidate']}))
         if args.copy_transitions:
             wall_exact = median(Fraction(str(p['candidate_seconds'])) / Fraction(str(p['baseline_seconds'])) for p in pairs)
@@ -145,13 +141,32 @@ def main():
         checks['evidence'][str(plan_path.relative_to(ROOT))] = sha(plan_path)
         gates.update(copy_transition_gates_passed=all(r['passed'] for r in evaluated),
             reason='Matched-runtime copy experiment only. Original b2 gates, held-out workflows and broader native/TLS/fre qualification still required; no retention follows.')
-    if args.held_out:
+    if held_out:
         gates = dict(source_commit=build['commit'], tool_key=build['tool_key'], baseline_tool_key=BASELINE,
             evaluated=evaluated, retained=False, held_out_workflows_run=True,
             held_out_wall_checks_passed=all(r['passed'] for r in evaluated),
             wall_regressions_above_5_percent=[r['workload'] for r in evaluated if r['median_paired_ratio'] > 1.05],
             cpu_regressions_above_5_percent=[r['workload'] for r in evaluated if r['median_paired_cpu_ratio'] > 1.05],
             reason='Characterization of seven held-out workflows. Primary gates remain separate and unchanged; no default retention follows from passing these checks. The 5 percent threshold is an engineering target, not a confidence interval.')
+        if single:
+            gates.update(held_out_workflows_run=False, held_out_case=single,
+                reason='One of seven required held-out cases. This case alone does not complete held-out qualification or authorize retention. The same 5 percent wall gate applies; CPU regressions are reported separately.')
+    return checks, gates
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-id', required=True)
+    parser.add_argument('--source-commit', required=True)
+    parser.add_argument('--held-out', action='store_true', help='verify the seven other workflows and flag paired wall regressions above 5 percent')
+    parser.add_argument('--held-out-case', choices=sorted(HELD_OUT), help='verify exactly one required case without claiming the seven-case qualification is complete')
+    parser.add_argument('--copy-transitions', action='store_true', help='apply the predeclared copy-transition gate against matched resumable tool78')
+    parser.add_argument('--check-existing', action='store_true', help='recompute and compare existing receipts without overwriting them')
+    args = parser.parse_args()
+    lock = (ROOT / '.work/benchmark.lock').open('a')
+    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    checks, gates = evaluate(args)
+    out = ROOT / 'results' / args.run_id
     for name, value in [('final-verification.json', checks), ('gate-evaluation.json', gates)]:
         path = out / name
         if args.check_existing:
@@ -159,7 +174,7 @@ def main():
             continue
         require(not path.exists(), 'refusing to overwrite previous gate evidence')
         path.write_text(json.dumps(value, indent=2) + '\n')
-    print(json.dumps(dict(counts=counts, evaluated=evaluated)))
+    print(json.dumps(dict(counts=checks['counts'], evaluated=gates['evaluated'])))
 
 
 if __name__ == '__main__':

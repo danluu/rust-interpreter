@@ -71,8 +71,13 @@ Nushell/Ruff cases while preserving their interrupted parent and recovery record
 The [eight reviewed Nushell/Ruff caches](results/heldout-recovery-storage-01/assessment.md)
 now archive and verify successfully: 34,513 paths, 8.16 GB original data and
 2.61 GB archives, with 134 unchanged evidence hashes. About 14.6 GiB is available.
-Next preserve duplicate artifact snapshots using the existing clone helper and
-qualify explicit per-case gates before the seven separately completed histories.
+The [new clone batch](results/copy-artifact-clones-01/assessment.md) preserves all
+336 snapshot paths across eight histories, replacing 244 identical files with
+independent clones; all original verifications reproduce. About 17.2 GiB is
+available. The [separate-case gate checks](results/separate-heldout-gates-01/assessment.md)
+reproduce both recent primary receipts, preserve both older near-miss decisions
+and reject 39 invalid configurations. The [fixed seven-case plan](benchmarks/experiments/resumable-native-calls/HELDOUT-STORAGE-NEXT.md)
+is written; an excluded actual pgrust case remains before primary measurements.
 
 ## Closed worker-count experiment
 
