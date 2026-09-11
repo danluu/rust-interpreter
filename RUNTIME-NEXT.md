@@ -48,6 +48,20 @@ attempting a more complex runtime initialization policy. Scalar slot coloring
 and bytecode inline-bank reuse already exist and must not be counted twice.
 [Typed census](results/frame-initialization-census-01/summary.md).
 
+The MIR inventory is also complete: all 11 exporter tests pass, fresh folded
+and token bytecode match exactly, and original assertions pass. Unreferenced
+MIR ranges account for only 1.46% and 1.78% of weighted direct-call frame bytes.
+Display-name collisions between compiler shims are preserved and excluded;
+none occurs among the weighted callees. Keep the existing frame layout.
+[MIR inventory](results/mir-frame-census-01/summary.md).
+
+Next, make the token workflow runnable entirely from tracked scripts and
+validate that migration with actual edits. Then improve repeated per-edit
+controls and native comparison coverage before another performance decision.
+A typed census of remaining fully native leaf calls will guide the next larger
+runtime experiment. The new user-owned suggestions.txt is review input; its
+claims require verification and it remains unchanged.
+
 Git now records the baseline and ongoing source/report changes. Build caches,
 private checkouts and raw private evidence remain local. All builds, tests,
 benchmarks and cleanup remain serialized. Only processes created for this task
