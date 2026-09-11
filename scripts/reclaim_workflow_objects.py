@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reclaim only .o files from a completed public workflow's native Cargo target.
+"""Reclaim only .o files from a completed public native or host-check Cargo target.
 
 Prepare an inventory first; apply its exact identity separately. Executables,
 libraries, metadata, incremental query caches, sidecars and reports are retained.
@@ -141,16 +141,27 @@ def workflow(run_id, corpus_id=None):
     return target, {str(p.relative_to(ROOT)): sha(p) for p in proof_paths}, verified
 
 
+def evidence(kind, run_id, corpus_id=None):
+    if kind == 'workflow':
+        return workflow(run_id, corpus_id)
+    require(kind == 'workspace-check' and corpus_id is None, 'unknown or inconsistent evidence kind')
+    from workspace_check_evidence import workspace_check
+    return workspace_check(run_id, sha)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument('--prepare', metavar='CLEANUP_ID')
     action.add_argument('--apply', metavar='CLEANUP_ID')
-    parser.add_argument('--workflow', help='completed public workflow; required for --prepare')
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--workflow', help='completed public workflow; preparation only')
+    source.add_argument('--workspace-check', help='completed host check_workspace.py run; preparation only')
     parser.add_argument('--corpus', help='completed parent corpus identifying this exact report; preparation only')
     args = parser.parse_args()
-    require(bool(args.workflow) == bool(args.prepare), 'supply --workflow only when preparing')
-    require(not args.corpus or args.prepare, 'supply --corpus only when preparing')
+    require(bool(args.workflow or args.workspace_check) == bool(args.prepare),
+            'supply one completed workflow or workspace check only when preparing')
+    require(not args.corpus or (args.prepare and args.workflow), 'supply --corpus only with a workflow preparation')
     cleanup_id = identifier(args.prepare or args.apply)
     work = ROOT / '.work/reclaims' / cleanup_id
     require(not (ROOT / 'results' / cleanup_id).exists(), 'cleanup result already exists')
@@ -158,12 +169,14 @@ def main():
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     if args.prepare:
         require(not work.exists(), 'cleanup identity already exists')
-        target, proofs, verified = workflow(args.workflow, args.corpus)
+        kind = 'workspace-check' if args.workspace_check else 'workflow'
+        run_id = identifier(args.workspace_check or args.workflow)
+        target, proofs, verified = evidence(kind, run_id, args.corpus)
         work.mkdir(parents=True)
         opened = no_open_files(target)
         entries = inventory(target)
         require(any(item['remove'] for item in entries), 'no removable objects')
-        plan = dict(schema_version=1, owner=str(ROOT), workflow=args.workflow, corpus=args.corpus, target=str(target),
+        plan = dict(schema_version=1, owner=str(ROOT), proof_kind=kind, workflow=run_id, corpus=args.corpus, target=str(target),
             prepared_at=time.time(), driver_sha256=sha(Path(__file__)), proofs=proofs,
             verification=verified, process_and_open_file_check=opened, entries=entries)
         write_json(work / 'plan.json', plan)
@@ -179,7 +192,8 @@ def main():
     plan = json.loads((work / 'plan.json').read_text())
     require(plan['owner'] == str(ROOT) and plan['schema_version'] == 1 and
             plan['driver_sha256'] == sha(Path(__file__)), 'cleanup owner/schema/driver differs')
-    target, proofs, verified = workflow(plan['workflow'], plan.get('corpus'))
+    kind = plan.get('proof_kind', 'workflow')
+    target, proofs, verified = evidence(kind, plan['workflow'], plan.get('corpus'))
     require(str(target) == plan['target'] and proofs == plan['proofs'] and verified == plan['verification'],
             'workflow changed after preparation')
     entries = plan['entries']
@@ -204,8 +218,12 @@ def main():
                 print('removed objects', status['deleted_objects'], flush=True)
         validate_inventory(target, entries, removed=True)
         require(all(sha(ROOT / p) == digest for p, digest in proofs.items()), 'preserved workflow evidence changed')
-        require(verify(json.loads((ROOT / 'results' / plan['workflow'] / 'summary.json').read_text())) == verified,
-                'post-cleanup workflow verification differs')
+        if kind == 'workspace-check':
+            require(evidence(kind, plan['workflow']) == (target, proofs, verified),
+                    'post-cleanup host qualification evidence differs')
+        else:
+            require(verify(json.loads((ROOT / 'results' / plan['workflow'] / 'summary.json').read_text())) == verified,
+                    'post-cleanup workflow verification differs')
         status.update(status='completed', finished_at=time.time(),
             free_bytes_after=os.statvfs(ROOT).f_bavail * os.statvfs(ROOT).f_frsize,
             retained_files_verified=sum(not item['remove'] for item in entries),
@@ -213,9 +231,9 @@ def main():
         write_json(work / 'status.json', status)
         output = ROOT / 'results' / cleanup_id
         output.mkdir(exist_ok=False)
-        write_json(output / 'summary.json', dict(**status, workflow=plan['workflow'], target=str(target),
+        write_json(output / 'summary.json', dict(**status, proof_kind=kind, workflow=plan['workflow'], target=str(target),
             inventory=str((work / 'plan.json').relative_to(ROOT)), proofs=proofs, verification=verified,
-            note='Only non-executable .o files in this completed native target were unlinked. Every other native-target file and all workflow snapshots/reports were verified unchanged. Logical byte sums do not measure physical space freed on a shared/APFS host. No processes were signaled.'))
+            note='Only non-executable .o files in this exact completed compilation target were unlinked. Every other target file and all qualification/workflow evidence were verified unchanged. Logical byte sums do not measure physical space freed on a shared/APFS host. No processes were signaled.'))
     except BaseException as error:
         status.update(status='failed', error=repr(error), finished_at=time.time())
         write_json(work / 'status.json', status)

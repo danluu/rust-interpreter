@@ -60,10 +60,22 @@ bytecode snapshots and reports. Cleanup is outside command timers, documented
 separately, and never touches private or unrelated work. Recheck available space
 before each new large cache history; the per-command guard remains eight GiB.
 
+Resource follow-up: completed `check_workspace.py` host-build targets are also
+potential sources of disposable `.o` files. The qualified extension verifies their
+archived sources, original test logs/counts, terminal ownership records and any
+installed binary copies before permitting the same object-only inventory/apply
+protocol. Its 31 rejection cases, retained-hardlink check, three real host
+qualifications and two historical workflow checks pass. Preserve all other
+files and installed tools. This affects setup space, not the fixed tools,
+source edits, command settings, samples or timing criteria. No cleanup runs
+during a comparison.
+
 Status: scheduler helper passes 48 synthetic configurations, thirteen historical
 reports, nine malformed inputs, two false receipts and three early CLI rejects.
 The reversed-order three-cycle pgrust qualification passes 36 commands and
 18 paired artifacts. Pgrust's fifteen-cycle comparison passes 180 commands and
 90 artifacts, with median paired wall/CPU reductions of 4.57%/4.46%. Nushell's
-fifteen-cycle run is active (`lightweight-wrapper-nushell-repeated-01`);
-six balanced cold histories remain pending.
+fifteen-cycle run also verifies 180 commands/90 artifacts, with reductions of
+4.24%/1.94%. Neither warm comparison exceeds the regression guard. Its single
+cold observation improves about 0.52% and is excluded from the cold gate.
+Six balanced cold histories remain pending; no retention decision yet.

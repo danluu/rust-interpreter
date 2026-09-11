@@ -123,9 +123,12 @@ qualification verifies twelve commands/six artifacts. Nushell's qualification
 also passes, but its first cold and edited observations were slower.
 [Repeated pgrust API edits](results/lightweight-wrapper-pgrust-repeated-01/assessment.md)
 verify 180 commands, fifteen pairs and ninety artifacts: paired wall −4.57%,
-CPU −4.46%. This is a descriptive small-project result. The larger Nushell
-warm comparison and six predeclared balanced fresh-target cold runs remain
-pending; no retention claim follows yet. The scheduling option passes its
+CPU −4.46%. [Nushell's fifteen cycles](results/lightweight-wrapper-nushell-repeated-01/assessment.md)
+also verify 180 commands/ninety artifacts, with paired wall −4.24% and CPU
+−1.94%. Original/wrong-edit artifacts show the same previously recorded
+cache-history difference; every corresponding pair matches. Neither warm
+comparison exceeds the regression guard. Six predeclared balanced fresh-target
+cold runs remain pending; no retention claim follows yet. The scheduling option passes its
 archived-behavior checks and a three-cycle reversed-order pgrust qualification.
 
 The [typed Nushell history comparison](results/interface-nushell-artifact-diff-01/assessment.md)
@@ -221,28 +224,33 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-The active run is `lightweight-wrapper-nushell-repeated-01`, supervisor59822,
-controller59829, started September11 at06:25:56. Earlier wrapper qualifications,
-reversed-order scheduling qualification and fifteen pgrust cycles are terminal0.
-Freeze Rust/case/interpreter/harness inputs until the new run completes, then
-verify source restoration, frozen inputs, commands and paired artifacts.
-Baseline78/candidatec341 use ordinary JIT, matched leaf inlining, std-MIR,
-native18/O0/incremental/default threads, custom4 and independent checking.
+No benchmark or cleanup is active at this checkpoint. Nushell15 and its verifier
+are terminal0; all source/frozen-input checks and ninety compiler-wrapper traces
+verify. All earlier wrapper qualifications and pgrust15 are also complete.
+The next measurements remain the six fixed balanced Nushell cold histories;
+none has started. Preserve baseline78/candidatec341, ordinary JIT, matched leaf
+inlining, std-MIR, native18/O0/incremental/default threads, custom4 and independent
+checking. This run's cold observation improved only about0.52% and is outside
+the six-run gate. Both original runtime gate failures remain unchanged.
 
-Six exact completed public Nushell native targets have had only non-executable
-`.o` files reclaimed, through separately reviewed inventories. All other target
-files and all benchmark evidence verified unchanged. Their results are
-`interface-nushell-native-objects-01`, `heldout-nushell-native-objects-01`,
-`native-controls-nushell-types-native-objects-01`,
-`interface-nushell-qualification-native-objects-01`,
-`interface-nushell-units-native-objects-01` and
-`lightweight-wrapper-nushell-qualification-native-objects-01`.
-Hard-linked path totals exceed unique object inode sizes. Free space was about
-27.31 GiB before the new Nushell run; the per-command guard remains eight GiB.
-Ruff and the smaller native-controls Nushell inventories remain unapplied;
-their unique object sizes were only 0.263/0.092 GiB. Preserve executables,
-libraries, metadata, query caches, bytecode snapshots and all private caches.
-No cleanup or other benchmark may run while the new comparison holds the lock.
+The object-only tool has reclaimed six exact completed public Nushell native
+targets and one completed host workspace-check target. Every other target file
+and all evidence verified unchanged. The host extension passes31 rejection
+checks, two real workflow checks, three host qualifications and retained-hardlink
+checks. Its first actual application, `lightweight-wrapper-host-debug-objects-01`,
+removed5004 object paths and retained750 files, including all executables,
+libraries and archived source/log evidence. Unique object inodes were0.351GiB;
+free space was about10.02GiB afterward. This is insufficient for a new large
+cold history plus the eight-GiB guard.
+
+[Reversible cache archival](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
+is the next resource step: qualify a complete byte-preserving compressed archive
+and recovery before retiring any exact completed public cache. This is a design,
+not an implemented or executed mechanism. It must preserve query metadata,
+private caches, installed tools, snapshots and all historical evidence. Do not
+start the cold runs before adequate space is available or change their gates.
+The small Ruff/Nushell object inventories remain unapplied and are bound to the
+older cleanup driver; using either now would require a fresh reviewed inventory.
 
 The old held-out run's stale status is preserved ENOSPC evidence, not a live task.
 Its separate recovery assessment verifies all seven complete cases. Both token

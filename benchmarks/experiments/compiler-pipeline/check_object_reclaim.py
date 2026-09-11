@@ -4,13 +4,15 @@ import argparse
 from copy import deepcopy
 import fcntl
 import json
+import os
 from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from reclaim_workflow_objects import corpus_member, inventory, no_open_files, sha, validate_inventory
+from reclaim_workflow_objects import corpus_member, evidence, inventory, no_open_files, sha, validate_inventory
 from workflow_io import write_json
+from workspace_check_evidence import validate_identity, workspace_check
 
 
 def require(ok, message):
@@ -37,8 +39,11 @@ def main():
         path = target / name
         path.write_bytes(('owned fixture: ' + name).encode())
         path.chmod(0o755 if name in ['executable.o', 'executable'] else 0o644)
+    os.link(target / 'ordinary.o', target / 'ordinary-copy.o')
+    os.link(target / 'ordinary.o', target / 'retained-link.rlib')
     plan = inventory(target)
-    require([e['path'] for e in plan if e['remove']] == ['ordinary.o'], 'non-object/executable selected for removal')
+    require([e['path'] for e in plan if e['remove']] == ['ordinary-copy.o', 'ordinary.o'],
+            'non-object/executable selected for removal')
     validate_inventory(target, plan)
     no_open_files(target)
     rejected = []
@@ -71,8 +76,11 @@ def main():
     object_path.write_bytes(original)
     plan = inventory(target)
     retained = {e['path']: e['sha256'] for e in plan if not e['remove']}
-    # This test deletes its own single fixture object, never a compiler cache.
-    object_path.unlink()
+    # Delete only two links to this test's own fixture object. A third link
+    # with a retained library suffix must keep the same inode/content.
+    for item in plan:
+        if item['remove']:
+            (target / item['path']).unlink()
     validate_inventory(target, plan, removed=True)
     require(all(sha(target / name) == digest for name, digest in retained.items()), 'retained file changed')
     require(len(rejected) == 6, 'missing rejection cases')
@@ -96,12 +104,55 @@ def main():
         change(altered)
         rejects(label, lambda: corpus_member(altered, corpus_id, workflow_id, report_path, report))
     require(len(rejected) == 13, 'missing corpus provenance rejections')
+    workflow_checks = []
+    for run_id, parent in [('lightweight-wrapper-pgrust-repeated-01', None), (workflow_id, corpus_id)]:
+        checked_target, proofs, verified = evidence('workflow', run_id, parent)
+        require(checked_target == ROOT / '.work/runs' / run_id / 'native', 'native workflow target differs')
+        workflow_checks.append(dict(run_id=run_id, proof_files=len(proofs),
+            primary_commands=verified['commands'], artifact_checks=verified['exact_artifact_hashes_verified']))
+    host_checks = []
+    for run_id in ['resumable-bulk-debug-01', 'resumable-bulk-release-01', 'lightweight-wrapper-release-01']:
+        host_target, proofs, verified = workspace_check(run_id, sha)
+        require(host_target == ROOT / '.work/diagnostic-builds' / run_id, 'host target differs')
+        host_checks.append(dict(run_id=run_id, proof_files=len(proofs), verification=verified))
+    run_id = 'resumable-bulk-debug-01'
+    host_plan = json.loads((ROOT / '.work' / run_id / 'plan.json').read_text())
+    host_status = json.loads((ROOT / '.work' / run_id / 'status.json').read_text())
+    host_report = json.loads((ROOT / 'results' / run_id / 'summary.json').read_text())
+    changes = [
+        ('foreign check owner', lambda p, s, r: p.update(owner='/another/workspace')),
+        ('another host target', lambda p, s, r: p.update(target='.work/interpreter-tools')),
+        ('another source archive', lambda p, s, r: r.update(source_archive='.work/private')),
+        ('running host check', lambda p, s, r: s.update(status='running')),
+        ('failed host report', lambda p, s, r: r.update(status='failed')),
+        ('changed host return code', lambda p, s, r: r.update(returncode=1)),
+        ('changed frozen sources', lambda p, s, r: r.update(frozen_sources_unchanged=False)),
+        ('another host report', lambda p, s, r: s.update(report='results/another')),
+        ('performance target', lambda p, s, r: p.update(performance_measurement=True)),
+        ('changed host command', lambda p, s, r: r['command'].append('--release')),
+        ('another completed host command', lambda p, s, r: s['command'].__setitem__(
+            s['command'].index('--target-dir') + 1, '/another/target')),
+        ('another test log', lambda p, s, r: r.update(raw_log='.work/another/test.log')),
+        ('missing frozen input', lambda p, s, r: r['frozen'].pop(next(iter(r['frozen'])))),
+        ('zero passing tests', lambda p, s, r: r.update(workspace_passed=0)),
+        ('incorrect test totals', lambda p, s, r: r.update(workspace_passed=r['workspace_passed'] + 1)),
+        ('failed test target', lambda p, s, r: r['tests'][0].update(failed=1)),
+    ]
+    for label, change in changes:
+        p, s, r = deepcopy(host_plan), deepcopy(host_status), deepcopy(host_report)
+        change(p, s, r)
+        rejects(label, lambda: validate_identity(run_id, p, s, r))
+    rejects('unknown cleanup evidence kind', lambda: evidence('private', run_id))
+    rejects('host check with corpus identity', lambda: evidence('workspace-check', run_id, 'some-corpus'))
+    require(len(rejected) == 31, 'missing host qualification rejections')
     out.mkdir()
     write_json(out / 'summary.json', dict(status='passed', rejected=rejected,
-        removable_objects=1, retained_files_verified=len(retained), compiler_cache_modified=False,
-        real_corpus_provenance_verified=True,
+        removable_objects=2, retained_files_verified=len(retained), compiler_cache_modified=False,
+        real_corpus_provenance_verified=True, real_workflow_checks=workflow_checks, real_host_checks=host_checks,
+        retained_hardlink_verified=True,
         raw=str(raw.relative_to(ROOT)), sources={str(p.relative_to(ROOT)): sha(p) for p in
-            [Path(__file__), ROOT / 'scripts/reclaim_workflow_objects.py', ROOT / 'scripts/workflow_io.py']}))
+            [Path(__file__), ROOT / 'scripts/reclaim_workflow_objects.py',
+             ROOT / 'scripts/workspace_check_evidence.py', ROOT / 'scripts/workflow_io.py']}))
     print(json.dumps(dict(rejections=len(rejected), retained_files=len(retained))))
 
 

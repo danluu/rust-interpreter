@@ -126,7 +126,9 @@ review are not commitments or evidence of feasibility.
   project build-time evidence. The pgrust API qualification passes with identical
   artifacts, as does Nushell. [Fifteen pgrust cycles](../results/lightweight-wrapper-pgrust-repeated-01/assessment.md)
   reduce paired wall time 4.57% and CPU 4.46%; the first Nushell observation
-  was slower. Repeated Nushell warm/cold measurements follow. New manifests
+  was slower. [Repeated Nushell edits](../results/lightweight-wrapper-nushell-repeated-01/assessment.md)
+  now reduce paired wall time 4.24% and CPU 1.94%, with all ninety artifacts
+  matching. Six balanced cold histories remain required. New manifests
   verify the third executable and preserve historical two-binary compatibility.
 - Item 1.5 now includes [actual Cargo unit attribution](../results/interface-nushell-units-01/assessment.md)
   for a generic API edit: all modes rebuild 19 units. Native nu-command takes
@@ -289,3 +291,10 @@ that a production Rust development engine is complete.
   public Nushell native targets were reclaimed. Hard-linked path totals are
   explicitly distinguished from unique inode sizes and observed free space.
   Private caches, bytecode snapshots, reports and all non-object files remain.
+
+- Item 9.2 also has a qualified object-only path for completed host workspace
+  checks, verifying archived sources/logs/test counts and installed copies.
+  Thirty-one rejection cases, hardlink preservation, three real host
+  qualifications and two historical workflow checks pass. The first host
+  inventory contains only 0.351 GiB of unique object inodes; object cleanup
+  alone is unlikely to fund all six fresh large-project cold histories.
