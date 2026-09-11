@@ -1,5 +1,5 @@
 //! One guest thread's callbacks. Handles and data never enter the host TLS ABI.
-use super::{Frame, Limits, Memory, Program, FUNCTION_POINTER_TAG};
+use super::{Frame, Frames, Limits, Memory, Program, FUNCTION_POINTER_TAG};
 
 struct Callback { function: usize, argument: usize }
 
@@ -44,7 +44,7 @@ impl Tls {
     /// Start the next callback, or finish teardown. Called only at lifecycle
     /// transitions, without replaying a consumed Return or Reset instruction.
     pub fn advance(&mut self, program: &Program, memory: &mut Memory,
-        frames: &mut Vec<Frame>, registers: &mut Vec<u128>, register_bytes: &mut usize,
+        frames: &mut Frames, registers: &mut Vec<u128>, register_bytes: &mut usize,
         needs_zeroes: &[bool], limits: &Limits) -> Result<Option<u128>, String> {
         if let Some(callback) = self.callbacks.pop() {
             memory.auxiliary_bytes -= std::mem::size_of::<Callback>();

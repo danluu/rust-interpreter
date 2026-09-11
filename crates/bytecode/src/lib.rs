@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 extern crate self as rust_interp_bytecode;
 mod heap;
 mod linear_memory;
+mod frames;
 mod native_execution;
 mod jit;
 mod float;
@@ -28,6 +29,7 @@ pub use optimize::{remove_fallthrough_jumps, optimize_calls, CallOptimizationRep
 pub use control_flow::{optimize_control_flow, ControlFlowReport, FunctionControlFlowReport};
 pub use inline::{transform as inline_leaves, Options as LeafInlineOptions};
 pub use forwarding::{eliminate_direct_forwarders, ForwardingReport};
+use frames::{Frame, Frames};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Engine {
@@ -425,15 +427,6 @@ pub struct Execution {
     pub jit_liveness_declines: usize,
 }
 
-struct Frame {
-    function: usize,
-    pc: usize,
-    base: usize,
-    register_base: usize,
-    return_address: usize,
-    tls_callback: bool,
-}
-
 struct Memory {
     bytes: linear_memory::LinearMemory,
     heap: heap::Heap,
@@ -713,14 +706,14 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         .map(registers::needs_initial_zeroes).collect();
     let local_call_arguments = calls::local_arguments(program);
     let mut registers = vec![0; entry.registers];
-    let mut frames = vec![Frame {
+    let mut frames = Frames::from(Frame {
         function: program.entry,
         pc: 0,
         base,
         register_base: 0,
         return_address: 0,
         tls_callback: false,
-    }];
+    });
     prepare_jit::<PROFILE>(&mut jit, program.entry, &mut profile)?;
     let mut steps = 0;
     let mut tls = tls::Tls::default();
