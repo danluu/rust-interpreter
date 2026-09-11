@@ -165,8 +165,9 @@ the active isolated worker comparison.
 finds an extra `Expected OneOf` literal and changed guest offsets after edit/revert.
 The allocation HashMap is never iterated for layout. This is not proof of an
 interning cause or permission for content-only deduplication. The
-[bounded trace design](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
-is pending; stable allocation/relocation identity is required before function reuse.
+[bounded trace](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
+is qualified on fixtures; the large history remains pending. Stable allocation/
+relocation identity is required before function reuse.
 
 The opt-in allocation trace is implemented in the exporter and a tracked
 [fixture qualification driver](benchmarks/experiments/artifact-diff/check_allocation_trace.py).
