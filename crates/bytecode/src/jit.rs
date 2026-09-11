@@ -8,6 +8,9 @@
 use crate::{Binary, Function, Op, Program, Reg, Unary};
 use std::collections::{BTreeMap, BTreeSet};
 
+#[cfg(test)]
+mod limit_tests;
+
 // This cursor is host-owned and lives across exactly one generated-code call.
 // Its pointers never enter guest registers or addressable guest memory.
 #[repr(C)]
@@ -207,6 +210,9 @@ struct CompiledFunction<'a> {
 }
 
 pub(crate) struct Jit<'a> {
+    // MAP_JIT write protection is per-thread. Make confinement intentional,
+    // including on platforms whose placeholder Code type contains no pointer.
+    _thread_bound: std::marker::PhantomData<std::rc::Rc<()>>,
     program: &'a Program,
     profiled: bool,
     uses_heap: bool,
@@ -227,7 +233,7 @@ impl<'a> Jit<'a> {
         let uses_heap = !program.statics.is_empty() || program.functions.iter().flat_map(|f| &f.code).any(|op| {
             matches!(op, Op::Allocate { .. } | Op::Deallocate { .. } | Op::Reallocate { .. })
         });
-        Ok(Self { program, profiled, uses_heap, capacity, code: None,
+        Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
@@ -253,10 +259,21 @@ impl<'a> Jit<'a> {
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
         let remaining = (self.capacity - self.bytes) / 4;
-        let Some(mut staged) = self.emit_function(&self.program.functions[id], remaining)? else {
-            self.prepared[id] = true;
-            self.declined_functions += 1;
-            return Ok(true);
+        let staged = self.emit_function(&self.program.functions[id], remaining);
+        self.finish_preparation(id, staged)
+    }
+
+    fn finish_preparation(&mut self, id: usize, staged: Result<Option<CompiledFunction<'a>>, EmitError>) -> Result<bool, String> {
+        let mut staged = match staged {
+            Ok(Some(staged)) => staged,
+            Ok(None) | Err(EmitError::Limit(_)) => {
+                // No words, entries or assertion identities have been published.
+                // This function remains executable by our interpreter.
+                self.prepared[id] = true;
+                self.declined_functions += 1;
+                return Ok(true);
+            }
+            Err(EmitError::InvalidRelocation(message)) => return Err(message.into()),
         };
         if !staged.words.is_empty() {
             self.assertions.try_reserve(staged.assertions.len())
@@ -274,7 +291,7 @@ impl<'a> Jit<'a> {
         Ok(true)
     }
 
-    fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, String> {
+    fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         let mut words = vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
@@ -364,9 +381,7 @@ impl<'a> Jit<'a> {
                 for (index, op) in f.code[start..body_end].iter().enumerate() {
                     a.current_pc = start + index;
                     if let Op::Assert { value, expected, message } = op {
-                        let code = ASSERTION_FAILURE_BASE.checked_sub((self.assertions.len() + assertions.len()) as u64)
-                            .filter(|code| *code >= FAILURE_MIN)
-                            .ok_or("too many JIT assertions")?;
+                        let code = assertion_code(self.assertions.len(), assertions.len())?;
                         assertions.push(Assertion { message, function: &f.name });
                         a.assertion(*value, *expected, code);
                     } else if let Some(fill) = fills.get(&(start + index)) {
@@ -431,8 +446,23 @@ impl<'a> Jit<'a> {
         Ok(Some(CompiledFunction { words, entries, operations, assertions,
             #[cfg(test)] local_forwarding }))
     }
-    // This transition runs once per emitted region. Keep the small dispatch
-    // wrapper in the VM loop even when cold fault paths grow.
+    /// Execute a region and any linked successors in the same guest function.
+    ///
+    /// # Safety
+    /// `block` must be an entry published by this JIT for the current function,
+    /// and `code_len` must be that function's bytecode length. `registers` must
+    /// address its complete, initialized u128 register slice. `memory` and `heap`
+    /// must address distinct live byte arenas of `len` and `heap_len` bytes;
+    /// `base` identifies the function's reserved frame and `readonly <= len`.
+    /// When profiling, `profile_hits` must address `code_len` initialized u64s;
+    /// otherwise it may be null. Host metadata must not alias guest storage.
+    ///
+    /// All storage is exclusively owned for this call and must remain at stable
+    /// addresses. No allocation, Vec growth, code append, concurrent guest call,
+    /// or write-protection change may occur until return. Call on the JIT's
+    /// owning thread with executable protection enabled. Generated code uses
+    /// the little-endian AArch64 macOS ABI; no other platform is implemented.
+    // Keep this transition in the VM loop even when cold fault paths grow.
     #[inline(always)]
     pub unsafe fn run(
         &self,
@@ -487,13 +517,41 @@ impl<'a> Jit<'a> {
     }
 }
 
-fn patch_jump(words: &mut [u32], at: usize, target: usize) -> Result<(), String> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CodegenLimit {
+    ConditionalBranch,
+    Jump,
+    Assertions,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum EmitError {
+    Limit(CodegenLimit),
+    InvalidRelocation(&'static str),
+}
+
+fn assertion_code(published: usize, staged: usize) -> Result<u64, EmitError> {
+    published.checked_add(staged)
+        .and_then(|index| u64::try_from(index).ok())
+        .and_then(|index| ASSERTION_FAILURE_BASE.checked_sub(index))
+        .filter(|code| *code >= FAILURE_MIN)
+        .ok_or(EmitError::Limit(CodegenLimit::Assertions))
+}
+
+// AArch64 displacements count four-byte instructions and are signed. Widen
+// before subtraction so very large staging offsets cannot wrap into range.
+fn branch_displacement(at: usize, target: usize, bits: u8, limit: CodegenLimit) -> Result<u32, EmitError> {
+    let delta = target as i128 - at as i128;
+    let range = 1i128 << (bits - 1);
+    if !(-range..range).contains(&delta) { return Err(EmitError::Limit(limit)); }
+    Ok((delta as u32) & ((1u32 << bits) - 1))
+}
+
+fn patch_jump(words: &mut [u32], at: usize, target: usize) -> Result<(), EmitError> {
     if at >= words.len() || target >= words.len() || words[at] != 0x14000000 {
-        return Err("invalid JIT link relocation".into());
+        return Err(EmitError::InvalidRelocation("invalid JIT link relocation"));
     }
-    let delta = target as i64 - at as i64;
-    if !(-(1 << 25)..(1 << 25)).contains(&delta) { return Err("JIT link is too large".into()); }
-    words[at] |= (delta as u32) & 0x03ff_ffff;
+    words[at] |= branch_displacement(at, target, 26, CodegenLimit::Jump)?;
     Ok(())
 }
 
@@ -799,13 +857,17 @@ impl Assembler<'_> {
         self.links.push((self.words.len(), pc));
         self.emit(0x14000000); // patched b internal_entry / VM fallback
     }
-    fn patch_conditional(&mut self, at: usize, target: usize) -> Result<(), String> {
-        let delta=target as i64-at as i64;
-        if !(-(1<<18)..(1<<18)).contains(&delta) { return Err("JIT branch is too large".into()); }
-        self.words[at] |= ((delta as u32)&0x7ffff)<<5;
+    fn patch_conditional(&mut self, at: usize, target: usize) -> Result<(), EmitError> {
+        // Forward local labels may be the next word to append. Only accept an
+        // unpatched B.cond; bad indices/opcodes are emitter bugs, not declines.
+        if at >= self.words.len() || target > self.words.len()
+            || self.words[at] & !0xf != 0x54000000 {
+            return Err(EmitError::InvalidRelocation("invalid JIT conditional relocation"));
+        }
+        self.words[at] |= branch_displacement(at, target, 19, CodegenLimit::ConditionalBranch)? << 5;
         Ok(())
     }
-    fn exit(&mut self, terminal: Option<&Op>, fallthrough: usize) -> Result<(), String> {
+    fn exit(&mut self, terminal: Option<&Op>, fallthrough: usize) -> Result<(), EmitError> {
         match terminal {
             Some(Op::Jump {target}) => {
                 self.successor(*target);

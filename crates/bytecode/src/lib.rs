@@ -690,6 +690,11 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool>(
                     } else {
                         std::ptr::null_mut()
                     };
+                    // SAFETY: the validated current function owns this emitted
+                    // entry and register/frame ranges. Guest arenas, registers
+                    // and optional profile counters remain live and exclusive;
+                    // no VM allocation, frame change or code append occurs
+                    // while generated code runs. Jit is confined to this thread.
                     let (next, executed) = unsafe {
                         jit.run(
                             block,

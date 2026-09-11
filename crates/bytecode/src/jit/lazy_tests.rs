@@ -72,3 +72,41 @@ fn declining_a_staged_function_preserves_code_budget_and_assertion_ids() {
         assert_eq!(run(&jit, 2).unwrap_err(), "guest assertion: assertion_2 in function_2");
     }
 }
+
+#[test]
+fn encoding_limit_declines_publish_nothing_and_leave_other_functions_usable() {
+    let p = fixture();
+    crate::validate(&p).unwrap();
+    for profiled in [false, true] {
+        for limit in [CodegenLimit::ConditionalBranch, CodegenLimit::Jump, CodegenLimit::Assertions] {
+            let mut jit = Jit::new(&p, profiled, MAX_CODE_BYTES).unwrap();
+            jit.ensure_function(0).unwrap();
+            let before = (jit.bytes, jit.operations, jit.assertions.len(), jit.blocks[0][0].unwrap().offset);
+            // Exercise the publication boundary for each typed emitter limit.
+            // Real displacement/identity boundaries are checked in limit_tests;
+            // this does not claim the current region cap naturally reaches them.
+            assert!(jit.finish_preparation(1, Err(EmitError::Limit(limit))).unwrap());
+            assert!(jit.blocks[1].is_empty());
+            assert!(!jit.ensure_function(1).unwrap());
+            assert_eq!(jit.declined_functions, 1);
+            assert_eq!((jit.bytes, jit.operations, jit.assertions.len(), jit.blocks[0][0].unwrap().offset), before);
+            jit.ensure_function(2).unwrap();
+            assert_eq!(jit.assertions.len(), 2);
+            assert_eq!(run(&jit, 0).unwrap(), (3, 3));
+            assert_eq!(run(&jit, 2).unwrap_err(), "guest assertion: assertion_2 in function_2");
+        }
+    }
+}
+
+#[test]
+fn internal_relocation_errors_remain_errors_and_do_not_mark_a_function_prepared() {
+    let p = fixture();
+    let mut jit = Jit::new(&p, false, MAX_CODE_BYTES).unwrap();
+    let error = jit.finish_preparation(0, Err(EmitError::InvalidRelocation("invalid JIT link relocation"))).unwrap_err();
+    assert_eq!(error, "invalid JIT link relocation");
+    assert!(!jit.prepared[0]);
+    assert_eq!(jit.declined_functions, 0);
+    assert!(jit.code.is_none());
+    jit.ensure_function(0).unwrap();
+    assert_eq!(run(&jit, 0).unwrap(), (3, 3));
+}
