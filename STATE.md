@@ -52,20 +52,20 @@ no warm-build gain. Original/wrong-edit artifacts repeat the known cross-cycle
 layout difference; corresponding modes match and the API-edit artifact is stable.
 Reported lowering is about 71 ms within roughly 5.3-second edited commands.
 
-Both warm primaries and the first three fixed cold histories are complete.
-[Cold01](results/worker-count-nushell-cold-01/assessment.md) gives wall
-64.029→35.571s and CPU 189.053→287.938s; [cold02](results/worker-count-nushell-cold-02/assessment.md)
-gives wall 63.796→31.333s and CPU 186.549→232.158s;
-[cold03](results/worker-count-nushell-cold-03/assessment.md) gives wall
-67.678→35.016s and CPU 204.702→266.197s. All verify twelve commands,
-six artifacts, exact restored sources and eleven frozen inputs.
-The [three-history assessment](results/worker-count-cold-decision-through-03/assessment.md)
-requires continuing: three histories remain and neither failure bound is decisive.
-The fourth history is now running in order native,candidate,baseline, with
-24.41 GiB free at admission and all eleven frozen inputs verified.
-Keep the 10% cold wall improvement and
-10% CPU guard. Qualification/primary anchors remain excluded; no adoption.
-Prepare space outside measurements before the next large history.
+Both warm primaries and four fixed cold histories completed and verified.
+The [four-history decision](results/worker-count-cold-decision-through-04/assessment.md)
+stops the unstarted fifth and sixth histories under the predeclared failure rule.
+Even the best possible final CPU median is **1.2724474026**, above the 1.1 guard.
+The six-history protocol is explicitly incomplete; no adoption/default change.
+Cold wall falls about 45–51% in the observed runs, while child CPU rises 24–52%.
+Warm primary latency shows no material benefit. Exact observations and source
+restoration are preserved, including [cold04](results/worker-count-nushell-cold-04/assessment.md).
+
+The worker experiment is closed. Its eleven inputs remained unchanged through
+the decision; Git e4bbffb preserves the tracked source versions. Release the
+launcher for the pending allocation-origin diagnostic, keeping guest code and
+runtime defaults unchanged. Qualify the new flag/sidecar receipts first, then
+capture the original/wrong/API/restored Nushell history.
 
 The [latest 32-cache batch](results/worker-cold-storage-batch-05/assessment.md)
 completed and verified, bringing the total to 153 archives. The new
