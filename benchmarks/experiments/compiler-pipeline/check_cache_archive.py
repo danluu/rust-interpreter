@@ -25,6 +25,7 @@ ROOT_ATTRIBUTES = {
     'com.apple.metadata:com_apple_backup_excludeItem':
         '62706c69737430305f1011636f6d2e6170706c652e6261636b75706408000000000000010100000000000000010000000000000000000000000000001c',
 }
+DIRECTORY_ATTRIBUTES = dict(ROOT_ATTRIBUTES, **{'com.apple.fileprovider.ignore#P': '30'})
 
 
 def fixture(target, many=False):
@@ -42,6 +43,8 @@ def fixture(target, many=False):
             (target / f'object-{index:04d}.o').write_bytes(str(index).encode())
     if sys.platform == 'darwin':
         archive.set_root_xattrs(target, ROOT_ATTRIBUTES)
+        (target / 'aarch64-apple-darwin').mkdir()
+        archive.set_root_xattrs(target / 'aarch64-apple-darwin', DIRECTORY_ATTRIBUTES)
     timestamp = 1_700_000_000_123456789
     for path in sorted(target.rglob('*'), key=lambda p: len(p.parts), reverse=True):
         os.utime(path, ns=(timestamp - 100, timestamp))
@@ -90,6 +93,9 @@ def main():
         archive.restore(packed, manifest, restored)
         require(manifest.get('root_xattrs') == (ROOT_ATTRIBUTES if sys.platform == 'darwin' else {}),
                 'root attributes were not captured')
+        require(manifest.get('directory_xattrs', {}) ==
+                ({'aarch64-apple-darwin': DIRECTORY_ATTRIBUTES} if sys.platform == 'darwin' else {}),
+                'architecture directory attributes were not captured separately')
         for group in manifest['groups']:
             restored_info = archive.information(restored / group['paths'][0])
             require(restored_info['atime_ns'] == group['atime_ns'] and
@@ -132,6 +138,18 @@ def main():
         altered = deepcopy(manifest)
         altered['root_xattrs'] = {'com.apple.fileprovider.ignore#P': 'not-hex'}
         rejects('invalid root attribute encoding', lambda: archive.validate(altered))
+        for label, values in [
+            ('unsupported attribute directory', {'empty': ROOT_ATTRIBUTES}),
+            ('unsupported nested attribute', {'aarch64-apple-darwin': {'com.apple.quarantine': '00'}}),
+            ('malformed nested attribute', {'aarch64-apple-darwin': {'com.apple.fileprovider.ignore#P': 'not-hex'}}),
+        ]:
+            altered = deepcopy(manifest)
+            altered['directory_xattrs'] = values
+            rejects(label, lambda: archive.validate(altered))
+        altered = deepcopy(manifest)
+        altered['directory_xattrs'] = {'aarch64-apple-darwin': ROOT_ATTRIBUTES}
+        altered['directories'] = [d for d in altered['directories'] if d['path'] != 'aarch64-apple-darwin']
+        rejects('attributes on absent directory', lambda: archive.validate(altered))
 
         with zipfile.ZipFile(packed) as source:
             entries = [(name, source.read(name)) for name in source.namelist()]
@@ -260,13 +278,19 @@ def main():
         require('root_xattrs' not in legacy_manifest, 'expected the earlier archive layout')
         archive.verify_archive(legacy, legacy_manifest)
         archive.restore(legacy, legacy_manifest, raw / 'legacy-restored')
-        require(len(rejected) == (40 if sys.platform == 'darwin' else 39),
+        root_only = ROOT / '.work/runs/cache-archive-qualification-05/cache.zip'
+        with zipfile.ZipFile(root_only) as prior:
+            root_only_manifest = json.loads(prior.read('manifest.json'))
+        require('directory_xattrs' not in root_only_manifest, 'expected the root-only archive layout')
+        archive.restore(root_only, root_only_manifest, raw / 'root-only-restored')
+        require(len(rejected) == (44 if sys.platform == 'darwin' else 43),
                 f'unexpected rejection count: {len(rejected)}')
         output.mkdir()
         write_json(output / 'summary.json', dict(status='passed', rejected=rejected, coordinator_cases=coordination,
             restored_payloads=len(manifest['groups']), restored_paths=sum(len(g['paths']) for g in manifest['groups']),
             hardlinks_verified=True, timestamps_and_modes_verified=True, outside_evidence_preserved=True,
             root_attributes_verified=manifest.get('root_xattrs'), legacy_archive_verified=True,
+            directory_attributes_verified=manifest.get('directory_xattrs'), root_only_archive_verified=True,
             real_compiler_cache_modified=False, raw=str(raw.relative_to(ROOT)),
             sources={str(p.relative_to(ROOT)): sha(p) for p in [Path(__file__), *coordinator.SOURCES]}))
         print(json.dumps(dict(status='passed', rejections=len(rejected), coordinator_cases=len(coordination))))

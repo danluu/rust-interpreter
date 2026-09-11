@@ -2,7 +2,8 @@
 
 No ZIP member is extracted by name. Only validated manifest paths are created.
 File bytes, permission bits, access/modification times and internal hardlinks
-are preserved, including two Cargo root-directory backup markers on macOS.
+are preserved, including two Cargo backup markers on macOS at the root and
+the observed aarch64-apple-darwin target directory.
 Special files, external hardlinks, flags and other xattrs are refused.
 Inodes, ctimes, birth times and ACLs are not recreated by this format.
 """
@@ -23,6 +24,7 @@ LIMIT_MANIFEST = 128 * 1024 * 1024
 LIMIT_BYTES = 1024**4
 BLOCK = 1024 * 1024
 ROOT_XATTRS = {'com.apple.fileprovider.ignore#P', 'com.apple.metadata:com_apple_backup_excludeItem'}
+XATTR_DIRECTORIES = {'aarch64-apple-darwin'}
 
 
 def encoded(manifest):
@@ -49,30 +51,37 @@ def information(path, directory=False):
     return result
 
 
-def root_xattrs(target, paths):
+def cache_xattrs(target, paths):
     if sys.platform == 'darwin':
-        result = subprocess.run(['/usr/bin/xattr', str(target)], capture_output=True, text=True)
-        names = result.stdout.splitlines()
-        require(result.returncode == 0 and not result.stderr and len(names) == len(set(names)) and
-                set(names) <= ROOT_XATTRS, 'unsupported root attributes or inspection failure')
+        found, expected = {}, []
+        directories = ['', *sorted(name for name in XATTR_DIRECTORIES if (target / name).is_dir())]
+        for directory in directories:
+            path = target / directory
+            result = subprocess.run(['/usr/bin/xattr', str(path)], capture_output=True, text=True)
+            names = result.stdout.splitlines()
+            require(result.returncode == 0 and not result.stderr and len(names) == len(set(names)) and
+                    set(names) <= ROOT_XATTRS, 'unsupported Cargo directory attributes or inspection failure')
+            values = {}
+            for name in sorted(names):
+                expected.append(str(path) + ': ' + name)
+                result = subprocess.run(['/usr/bin/xattr', '-p', '-x', name, str(path)], capture_output=True, text=True)
+                require(result.returncode == 0 and not result.stderr, 'Cargo directory attribute read failed')
+                value = bytes.fromhex(result.stdout)
+                require(len(value) <= 4096, 'Cargo directory attribute too large')
+                values[name] = value.hex()
+            if values:
+                found[directory] = values
         recursive = subprocess.run(['/usr/bin/xattr', '-r', str(target)], capture_output=True, text=True)
         require(recursive.returncode == 0 and not recursive.stderr and
-                sorted(recursive.stdout.splitlines()) == sorted(str(target) + ': ' + name for name in names),
-                'attributes below the root are unsupported or inspection failed')
-        values = {}
-        for name in sorted(names):
-            result = subprocess.run(['/usr/bin/xattr', '-p', '-x', name, str(target)], capture_output=True, text=True)
-            require(result.returncode == 0 and not result.stderr, 'root attribute read failed')
-            value = bytes.fromhex(result.stdout)
-            require(len(value) <= 4096, 'root attribute too large')
-            values[name] = value.hex()
-        return values
+                sorted(recursive.stdout.splitlines()) == sorted(expected),
+                'attributes outside the known Cargo directories are unsupported or inspection failed')
+        return found.pop('', {}), found
     elif hasattr(os, 'listxattr'):
         require(all(not os.listxattr(target / p, follow_symlinks=False) for p in paths),
                 'extended attributes are unsupported')
     else:
         raise RuntimeError('cannot inspect extended attributes on this platform')
-    return {}
+    return {}, {}
 
 
 def set_root_xattrs(target, values):
@@ -140,20 +149,23 @@ def snapshot(target):
             inodes[key] = len(groups)
             groups.append(group)
     require(all(len(g['paths']) == g['links'] for g in groups), 'hardlinks outside this target are unsupported')
-    attributes = root_xattrs(target, [d['path'] for d in directories] + [p for g in groups for p in g['paths']])
+    attributes, nested = cache_xattrs(target, [d['path'] for d in directories] + [p for g in groups for p in g['paths']])
     result = dict(format='rust-interp-cache-zip-v1', directories=sorted(directories, key=lambda d: d['path']),
-                  groups=groups, root_xattrs=attributes)
+                  groups=groups, root_xattrs=attributes, directory_xattrs=nested)
     validate(result)
     return result
+
+
+def validate_xattrs(attributes):
+    require(isinstance(attributes, dict) and set(attributes) <= ROOT_XATTRS, 'unsupported root attributes')
+    require(all(isinstance(v, str) and len(v) <= 8192 and len(v) % 2 == 0 and
+                all(c in '0123456789abcdef' for c in v) for v in attributes.values()), 'invalid root attribute value')
 
 
 def validate(manifest):
     require(manifest['format'] == 'rust-interp-cache-zip-v1', 'unsupported archive format')
     require(len(encoded(manifest)) <= LIMIT_MANIFEST, 'manifest too large')
-    attributes = manifest.get('root_xattrs', {})
-    require(isinstance(attributes, dict) and set(attributes) <= ROOT_XATTRS, 'unsupported root attributes')
-    require(all(isinstance(v, str) and len(v) <= 8192 and len(v) % 2 == 0 and
-                all(c in '0123456789abcdef' for c in v) for v in attributes.values()), 'invalid root attribute value')
+    validate_xattrs(manifest.get('root_xattrs', {}))
     directories, groups = manifest['directories'], manifest['groups']
     require(directories and directories[0]['path'] == '', 'missing root directory')
     names, file_count, total = set(), 0, 0
@@ -162,6 +174,11 @@ def validate(manifest):
         require(item['path'] not in names, 'duplicate archive path')
         names.add(item['path'])
     directory_names = set(names)
+    nested = manifest.get('directory_xattrs', {})
+    require(isinstance(nested, dict) and set(nested) <= XATTR_DIRECTORIES and
+            set(nested) <= directory_names, 'attributes on unsupported or absent directory')
+    for attributes in nested.values():
+        validate_xattrs(attributes)
     for index, group in enumerate(groups):
         require(group['member'] == f'data/{index:08d}' and bool(group['paths']) and
                 group['paths'] == sorted(group['paths']) and group['links'] == len(group['paths']), 'invalid payload group')
@@ -189,6 +206,7 @@ def stable(manifest, *, restored=False):
         keys = ['mode', 'mtime_ns'] + ([] if restored else ['device', 'inode'])
         return {key: entry[key] for key in keys}
     return dict(root_xattrs=manifest.get('root_xattrs', {}),
+        directory_xattrs=manifest.get('directory_xattrs', {}),
         directories=[dict(path=d['path'], **metadata(d)) for d in manifest['directories']],
         groups=[dict(paths=g['paths'], bytes=g['bytes'], sha256=g['sha256'], links=g['links'], **metadata(g))
                 for g in manifest['groups']])
@@ -235,7 +253,8 @@ def verify_archive(path, manifest):
 
 def restore(path, manifest, destination):
     validate(manifest)
-    require(sys.platform == 'darwin' or not manifest.get('root_xattrs'), 'macOS root attributes cannot be restored here')
+    require(sys.platform == 'darwin' or not (manifest.get('root_xattrs') or manifest.get('directory_xattrs')),
+            'macOS Cargo attributes cannot be restored here')
     require(not destination.exists() and not destination.is_symlink() and
             destination.parent.resolve(strict=True) == destination.parent, 'restore destination is not new and canonical')
     with zipfile.ZipFile(path) as archive:
@@ -253,6 +272,8 @@ def restore(path, manifest, destination):
             first.chmod(group['mode'])
             os.utime(first, ns=(group['atime_ns'], group['mtime_ns']))
         set_root_xattrs(destination, manifest.get('root_xattrs', {}))
+        for name, attributes in manifest.get('directory_xattrs', {}).items():
+            set_root_xattrs(destination / name, attributes)
         for directory in sorted(manifest['directories'], key=lambda d: len(PurePosixPath(d['path']).parts), reverse=True):
             target = destination / directory['path']
             target.chmod(directory['mode'])

@@ -25,3 +25,9 @@ write/decode/hash/recheck/retire sequence.
 These changes provide storage for the predeclared cold histories. They do not
 alter compiler tools, commands, source edits, sample counts, timing gates or
 the eight-GiB command guard. All reports and executed snapshots stay in place.
+
+Implemented after the full native archive completed. Qualification06 passes
+44 rejection checks, all four coordinator cases and restoration of both older
+formats. Its root and nested fixture values differ to verify separate handling.
+The new real custom preparation uses ID `interface-nushell-baseline-cache-archive-02`;
+preparation01 and its refusal remain preserved.

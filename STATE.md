@@ -224,9 +224,9 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-The full completed Nushell native cache is being archived under supervisor
-58619 (`lightweight-wrapper-nushell-native-cache-archive-01-apply`); inspect its
-receipt before further cleanup or benchmarking. Nushell15 and its verifier
+The first completed custom cache is being archived as
+`interface-nushell-baseline-cache-archive-02`; inspect its application receipt
+before further cleanup or benchmarking. Nushell15 and its verifier
 are terminal0; all source/frozen-input checks and ninety compiler-wrapper traces
 verify. All earlier wrapper qualifications and pgrust15 are also complete.
 The next measurements remain the six fixed balanced Nushell cold histories;
@@ -246,7 +246,7 @@ free space was about10.02GiB afterward. This is insufficient for a new large
 cold history plus the eight-GiB guard.
 
 [Reversible cache archival](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
-is implemented and passes 40 rejection checks plus four coordinator scenarios,
+is implemented and passes 44 rejection checks plus four coordinator scenarios,
 including restoration after an interrupted retirement and preservation of two
 observed Cargo root attributes. The first actual completed native archive,
 `interface-nushell-native-cache-archive-02`, preserves 5,012 paths/4,988 payloads
@@ -259,12 +259,16 @@ four coordinator scenarios. It reconstructs caches from recorded commands,
 unique namespaces, tool/std-MIR identities and executed snapshots, and holds
 the custom invocation lock. Both `interface-nushell-check-cache-archive-01` and
 `lightweight-wrapper-nushell-check-cache-archive-01` are complete: 7,592 paths
-each, all payloads and 99 evidence hashes verified. The full native inventory
-has 140,547 paths/10.02 GiB unique contents and is now being applied. A custom
+each, all payloads and 99 evidence hashes verified. The full native archive
+preserves 140,547 paths/10.02 GiB unique contents in 2.75 GiB. Its application
+finished with status 0; observed free space reached about 19.5 GiB. A custom
 preparation refused additional Cargo markers on `target/aarch64-apple-darwin`
 before changing any files. Its [bounded follow-up](benchmarks/experiments/compiler-pipeline/NESTED-CACHE-MARKERS.md)
-must wait until the pending native application finishes; do not edit its frozen
-sources in the meantime. Preserve query metadata in archives, private caches,
+now passes all 44 archive checks with distinct root/nested fixture values and
+restoration of both previous archive layouts. New custom inventory02 verifies
+23,639 paths/8,523 payloads (2.70 GiB), 99 evidence hashes and the exact unique
+namespace. Its application holds the invocation lock. Preserve query metadata
+in archives, private caches,
 installed tools and all historical evidence. Do not start cold runs before
 adequate space is available or change their gates.
 The small Ruff/Nushell object inventories remain unapplied and are bound to the
