@@ -1,0 +1,127 @@
+# Review of suggestions.txt
+
+Reviewed against retained engine `57a54edd`, the implementation, the original
+[plan](../PLAN.md), the [five persona rounds](../persona-reviews.md), and the
+recorded experiments. The review is useful, but its claims and proposed speedups
+are hypotheses until checked. The source review is user-owned and remains intact.
+
+## Direction and decisions
+
+The immediate order is measurement controls, JIT decline correctness, a concise
+current status, then a larger native-call experiment. Small emitter optimizations
+are no longer the default direction. Native Cargo remains an explicit comparison;
+the requested engine continues to use our own interpreter and emitter.
+
+The original plan started with native artifact caching. That experiment was done:
+the [native-cache results](../RESULTS.md) did not demonstrate a consistent warm
+edit benefit. The user then explicitly requested a custom interpreter/JIT and
+rejected unchanged builds as the main success metric. This explains the change
+of backend and priority. It does **not** waive the original requirements for
+correct reuse, strong native controls, repeated real edits, compatibility, or
+complete-command performance. Those remain unfinished engineering work. An
+experimental runtime improvement is not qualification for large-project use.
+
+“Never loses” tiering is not a defensible promise. Previous runtime can choose
+poorly after an edit; building a native test may compile a whole target; mixed
+selection can pay both export and native compilation. A future opt-in hybrid
+must include that work, unavailable histories, and changing workloads in its
+measurements. Substituting an existing JIT library would conflict with the
+user's custom-backend instruction, independent of any Cranelift platform bug.
+
+## Item-by-item disposition
+
+**0 — Overall verdict.** Accept the direction, qualify the numbers. Selected
+frontend/link dominated batches and compute-heavy batches must be reported
+separately. Ratios describe the pinned controls on this host. The latest profile
+is [sample 04](../results/retained-token-cpu-sample-04/summary.md), not sample 03.
+Heterogeneous pair counts are bookkeeping, not an adoption result.
+
+| Item | Decision and reason |
+| --- | --- |
+| 1.1 Emitter treadmill | Accept. Use the observed call/dispatch cost to choose a larger experiment; stop treating small paired savings as progress toward native parity by themselves. |
+| 1.2 Per-test native tiering | Defer as an explicit hybrid comparison. It cannot guarantee native latency and must not silently replace the requested custom backend. Model compilation granularity and double work first. |
+| 1.3 Export once, select later | Accept the selection invalidation problem. Design a shared graph with multiple entry descriptors; eagerly lowering every test can increase work and encounter unsupported bodies unnecessarily. Measure selection separately from real edits. |
+| 1.4 Function bytecode reuse | Accept direction, reject the proposed key as sufficient. Include compiler/target/layout/ABI/features/lowering options, semantic dependencies, stable identities and relocations. A crate hash alone also invalidates all local functions after each edit. |
+| 1.5 Frontend floor | Accept. Add an independent matched Cargo-check control and record export-pass timings. Wall-time subtraction between separate runs is descriptive, not causal attribution. |
+| 1.6 Publication and macros | Keep publication available as an explicitly unchanged-build result; the user deprioritized it. Macro expansion remains a possible frontend direction after current control measurements. |
+| 1.7 Plan deviation | Addressed above. The plan already records the custom-backend pivot; stronger statistical and compatibility gates still need work. |
+| 1.8 Compatibility | Accept explicit limits and real libtest metadata. Do not implement fake pthread success or longjmp-based catch_unwind: unwinding must run Rust cleanup correctly and preserve synchronization semantics. |
+| 2.1 Strong native control | Accept. Add independently configurable native profiles/jobs and matched checking. Qualify available backends/linkers on this pinned macOS toolchain before assuming the proposed flags compose or help. Stock repository settings remain a separate useful control. |
+| 2.2 Workload groups | Accept. Remove the mixed N/45 headline from current documentation; retain historical raw counts. |
+| 2.3 Repeats and CPU | Implemented and checked with three cycles: fifteen edited pairs, rotated mode positions, per-child CPU, per-edit spread. Corresponding engines agree; the separate cross-history identity check failed and remains documented. Add stronger repetitions/A/A before fine-grained decisions. Shared-host load is recorded; do not disrupt other work or wait indefinitely for load <1. A historical A/A range is context, not a universal significance threshold. Bootstrap intervals require an explicit treatment of correlated cycles and distinct edits. |
+| 2.4 Tracked reproducer | Token case, launcher and allocation flag were already committed in `9358c2b`. The corpus/status report generator is still needed. |
+| 2.5 Realistic workloads | Accept. Existing fre body replays give broad execution evidence but are not an unfiltered libtest command. Add interface/test/macro/dependency edits and report unsupported cases as failures of coverage, not missing samples. Reverts are now explicit cycle anchors. |
+| 2.6 Cold setup | Accept explicit labels. Existing measurements exclude toolchain/dependency-fetch/std-MIR setup and OS-cache clearing. Keep setup separate and visible; do not retroactively call target-cache-cold measurements installation-cold. |
+| 3.1 Native calls | Highest-priority runtime direction. Begin with typed eligibility and a bounded calling convention. Native branches alone do not remove required frame initialization, argument copies, budgets, traps or TLS cleanup. Profile percentages are not predicted savings. |
+| 3.2 Register allocation | Consider together with the new call ABI. The earlier fixed-register residency census addressed the existing ABI only; it does not rule out an allocator spanning loops and calls. |
+| 3.3 Budget placement | Investigate with native calls. Preserve exact instruction limits and fault order, including straight-line tails; blindly moving checks to backedges changes behavior. |
+| 3.4 Guarded arena | Defer pending a memory-model design. Guard pages do not enforce subpage, object, logical-budget or readonly boundaries. Pointer provenance is not currently modeled. |
+| 3.5 Persistent execution preparation | Accept redundant preparation as a target. Correction: native functions are already compiled lazily at first entry. Reusable validated immutable code must be separated from fresh guest memory/TLS/allocator state. |
+| 3.6 Heap fast paths | Defer behind calls: latest token sample attributes about 3.7% to heap work. Preserve allocator behavior and limits if revisited. |
+| 3.7 Compact bytecode | Defer until measured decode/storage costs justify a format change. Preserve full 128-bit operations and alias semantics. |
+| 3.8 Cranelift library | Decline for the requested guest engine. It can be a separately labeled native control. A cg_clif unwind failure does not establish a Cranelift-library limitation. |
+| 3.9 Default JIT | Keep explicit engine selection while platform coverage and decline handling are incomplete. The interpreter remains the portable reference. Revisit launcher defaults after qualification. |
+| 4.1 Tiny rustc wrapper | Confirmed heavy exporter delegates with spawn/wait. Implement a lightweight exec path in a separate, measured pipeline change; preserve Cargo jobserver, exit/signal behavior, target/sysroot selection and host tools. |
+| 4.2 Duplicate publication | Confirmed two writes in strict mode. Audit direct-export/audit/capture consumers before removing the requested output. A sidecar-only wrapper mode can avoid duplication without breaking the direct interface. |
+| 4.3 Shared dependency targets | Accept investigation, not unconditional sharing. Cache keys must cover compiler/target/flags/features/sysroot and selected-crate invalidation; comparisons need isolated cache histories and locks. |
+| 4.4 Resolve tool proxies | Defer until process-overhead measurements. Cache resolved paths with compiler identity; retain integrity checks and invalidation on toolchain changes. |
+| 4.5 Jobs option | Accept with native-control work. Keep matched settings recorded and limit our own concurrency without touching other workloads. |
+| 4.6 Names/profile cost | Accept separate compact identities as a design need. Profiles format ops only when profiling. Compiler shim names can collide; names are not unique IDs, as the frame census demonstrated. |
+| 5.1 Toolchain pin/identity | Accept pin and explicit wrapper compatibility diagnostics. Avoid a stable-default build failure and a cryptic mismatched rustc_driver load. |
+| 5.2 Format/lint | Accept a separate formatting/qualification commit. Do not rewrite frozen measured sources mid-run or conflate source-key changes with performance. Establish a clean lint baseline before requiring it in CI. |
+| 5.3 Split large functions | Accept incrementally alongside owned changes. Separate graph construction, calling convention and intrinsic lowering when those paths change; avoid a broad untested rewrite. |
+| 5.4 Typed Op visitors | Accept exhaustive shared traversal, but preserve each analysis's distinctions: read-before-write order, aliases, indirect call arguments and conservative boundaries. |
+| 5.5 Named AArch64 operations | Accept, starting with branch relocation/ABI work. Add encoding checks and retain differential execution tests. |
+| 5.6 Structured errors | Accept stable decline/error categories first, then exporter blocker categories. A category is not permission to ignore an executed operation. |
+| 5.7 Compiler items | Accept where pinned rustc supplies an appropriate lang/diagnostic item. Keep explicit errors and tests for remaining path-based matches; not every intrinsic has such an item. |
+| 5.8 Exporter repeated work | Confirm and profile each path before optimizing. Index entry names/allocator presence; replace large Repeat expansion only with equivalent memory and initialization semantics. |
+| 5.9 Shared configuration/schema | Accept incremental common parsing and a capability record. Keep artifact-version validation explicit and versioned. |
+| 5.10 Constants | Accept named encoding/capacity limits as the owning code is revised. A named constant needs a documented invariant, not just a renamed literal. |
+| 5.11 Test-only observability | No production storage cost from cfg(test) fields. Keep useful emitted-code census tests; isolate their hooks when restructuring the emitter. This is maintainability work, not a runtime fix. |
+| 5.12 Python package/assertions | Accept incremental shared modules; repeat/CPU logic is now shared. Replace safety-critical asserts with explicit checks. One enormous CLI migration is unnecessary before the controls work. |
+| 6.1 Codegen limits | Confirmed error propagation. Fix known encoding/capacity exhaustion to decline atomically; preserve actual internal relocation errors as errors. Add boundary and execution-equivalence checks. |
+| 6.2 Pointer truncation | Do not change blindly. Memory operands currently use target-width address semantics, with tests; indirect function identities and allocator layouts use stricter contracts. Document and audit these distinctions. |
+| 6.3 Tagged arena crossing | Accept as a documented provenance limitation. The engine is not an undefined-behavior detector or hostile-code sandbox. Valid Rust pointer behavior still requires differential coverage. |
+| 6.4 Unsafe/ABI contract | Accept. Document pointer lengths/lifetimes, exclusive guest storage, emitter-owned entries, same-thread write protection, supported endian/platform, and make thread confinement intentional. |
+| 6.5 Null prefix | Audit/document current minimum-storage behavior before changing it. Bytes 1–15 are not all guard memory under the present bytecode contract. |
+| 6.6 Allocation accounting | Distinguish guest working-memory/live-allocation limits from host RSS and map metadata. Audit bad-layout versus out-of-memory outcomes against Rust allocator contracts; do not report the guest budget as a host-memory cap. |
+| 6.7 MIR catch-alls | Accept targeted pinned-toolchain coverage audit. Unsupported operations must remain explicit; supporting volatile or unwind behavior requires semantics, not another name match. |
+| 7.1 Random differential tests | Accept deterministic seeded valid-program generation with persisted failures. Existing native differential commands cover 23,502 cases in two modes, but are not general randomized CFG generation. |
+| 7.2 Limit/platform tests | Accept boundary/decline tests now; retain portable interpreter testing. Performance gates belong in reproducible benchmarks, not timing-sensitive unit tests. |
+| 7.3 Test counts | Accept a reproducible command and aggregate clarification: library-only counts differ from all bytecode unit/integration tests. Historical snapshots keep their historical counts. |
+| 7.4 Test builders | Accept a small shared builder for new generated/boundary suites. Do not obscure the concrete operations a regression exercises. |
+| 7.5 Audit freshness | Publish a current coverage index and fresh reports for expanded coverage; preserve old audits as dated evidence. Lowered, executed, ignored and unsupported are separate statuses. |
+| 8.1 Current-state page | Accept. Current source, measured binaries, coverage and next work need one authoritative view. |
+| 8.2 Documentation structure | Accept concise README, generated status/results index, mechanism-only architecture and historical narrative links. Preserve historical report paths. |
+| 8.3 Build names | Use Git commit plus eight-character tool key in new summaries. `af9aa691` and `57a54edd` have different test sources but byte-identical measured production binaries; retain both identities explicitly. |
+| 8.4 Clear findings | Accept scoped ratios and limits instead of repeated generic caveats. Do not infer tuned-native performance from stock controls. |
+| 8.5 Coverage qualifications | Accept explicit 150,000 allocation limit, trap/normal-try flags, 382 body passes/7 ignored, and native input × mode counts. Do not claim libtest or whole Nushell execution from lowering alone. RESULTS.md is already titled as earlier native-cache/publication work; retain its linked path. |
+| 9.1 Git/state | Git and reasonable commits already exist. Fix the stale no-Git continuation rule. Keep current state concise and archive old checkpoints rather than deleting evidence. Use sidecar provenance: ready.json currently has an exact binary-hash schema and must not be changed casually. |
+| 9.2 Cache cleanup | Decline blanket deletion. Clean only exact task-owned, completed compiler caches after lock/ownership/artifact/live-file checks. Preserve private caches and evidence. Consolidate reusable drivers into tracked scripts. |
+| 9.3 Reconstructability | Accept a build/source index. Correction: measured af9 source and corrected 57 source are both archived and reproduced. A claim that every historical key is reconstructible needs an actual audit. |
+| 9.4 Results organization | Generate a nondestructive index first. Do not relocate/delete/compress historical shards merely because the current status omits them; existing reports and other work may reference them. |
+| 9.5 ICE/quarantine deletion | Decline quarantine deletion: it is outside this task's ownership. Ignored historical crash logs are not a performance blocker; preserve evidence unless exact ownership and cleanup need are established. |
+| 9.6 Historical backend removal | Keep archived native controls reproducible. Consider default-members and historical documentation instead of deleting still-referenced tools. Removing experimental checking/capture modes needs a caller/fixture audit, separately from runtime work. |
+| 9.7 Decision rules | Accept. Predeclare required behavior, target workloads, meaningful end-to-end gain and held-out checks. Report regressions and uncertainty; do not choose success criteria after seeing the pairs. |
+
+**10 — Proposed schedule.** Accept controls first and larger call/ABI work next.
+Documentation and correctness fixes can proceed between serialized measurements.
+Native tiering and eager export-all are design experiments with costs and
+compatibility constraints, not guaranteed shortcuts. Calendar estimates in the
+review are not commitments or evidence of feasibility.
+
+## Implemented follow-ups
+
+- `93abea7`: repeated source-edit cycles, CPU accounting, portable verifier and
+  typed artifact diagnostic. All 63 commands completed. [Assessment and preserved
+  identity failure](../results/paired-repeated-token-01/assessment.md).
+- `a2a0e04`: typed encoding-limit declines, relocation validation, explicit JIT
+  safety/thread contract, and five new tests. [202 passing workspace tests](../results/review-codegen-limits-01/summary.json).
+  Boundary tests do not claim that the current region cap naturally overflows.
+- Added the toolchain pin, concise README, generated status/results index,
+  mechanism-only architecture, changelog and historical snapshots. Fixed the
+  stale no-Git continuation rule without deleting old evidence or quarantine.
+
+Native-control tuning and the Cargo-check control are the next measurement
+changes. The remaining accepted design work above is prioritized follow-up,
+not a claim that a production Rust development engine is complete.
