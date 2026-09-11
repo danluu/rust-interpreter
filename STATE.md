@@ -224,19 +224,23 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-The second balanced cold history `lightweight-wrapper-nushell-cold-02` is active
-under supervisor 52272, in candidate,baseline,native order. Cold01 and its
-verification are complete. The first cold history's four caches and the six
-reviewed batch targets are now archived; 221 distinct evidence hashes verify.
-Inspect cold02's receipt before further cleanup or benchmarking. Nushell15 and its verifier
+The first two balanced cold histories and their verifiers are complete.
+`cold-storage-batch-02-apply` is active under supervisor 24168, archiving eight
+reviewed targets from cold02 and the older Nushell interface qualification.
+Batch01 completed six targets and verified 221 distinct evidence hashes.
+Inspect batch02's receipt before further cleanup or benchmarking. Nushell15 and its verifier
 are terminal0; all source/frozen-input checks and ninety compiler-wrapper traces
 verify. All earlier wrapper qualifications and pgrust15 are also complete.
 The remaining measurements are the six fixed balanced Nushell cold histories;
-the first verifies twelve commands/six artifacts, the second is running and
-the other four have not started. Cold01 wall is 61.439s baseline versus 61.539s candidate, ratio
+the first two each verify twelve commands/six artifacts and the other four have
+not started. Cold01 wall is 61.439s baseline versus 61.539s candidate, ratio
 1.0016210970; CPU ratio is 1.0046207955. All ten frozen inputs, six wrapper
 traces and byte-for-byte source restoration verify. There is no cold gain in
-this sample and no retention decision. Preserve baseline78/candidatec341, ordinary JIT, matched leaf
+this sample. Cold02 wall is 62.435s baseline versus 61.617s candidate, ratio
+0.9868934347; CPU ratio is 0.9717771801. It also verifies all ten frozen inputs,
+six wrapper traces and exact source restoration. The checked-in per-history
+assessor passes index02; its aggregate path awaits all six histories and is not
+yet executed. There is no retention decision. Preserve baseline78/candidatec341, ordinary JIT, matched leaf
 inlining, std-MIR, native18/O0/incremental/default threads, custom4 and independent
 checking. This run's cold observation improved only about0.52% and is outside
 the six-run gate. Both original runtime gate failures remain unchanged.
@@ -280,8 +284,10 @@ free before cold01 started; about 9.65 GiB remained afterward. Five actual
 archives are complete. Cold01's reviewed native inventory has 22,485 paths and
 4.34 GiB unique payloads and is now archived in about 1.39 GiB. The six-target
 batch preserves 99,327 paths/15.06 GiB unique contents and has completed.
-About 22.67 GiB was free before cold02 began. Its required initial order is
-candidate,baseline,native; cold03 will use baseline,candidate,native. Preserve query metadata
+About 22.67 GiB was free before cold02 began; about 9.49 GiB remained before
+batch02. Batch02 inventories 84,317 paths/21.42 GiB unique contents and has a
+fixed reviewed plan hash. Finish it and verify available space before cold03,
+whose required order is baseline,candidate,native. Preserve query metadata
 in archives, private caches,
 installed tools and all historical evidence. Do not start cold runs before
 adequate space is available or change their gates.
