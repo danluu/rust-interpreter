@@ -118,6 +118,15 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Items 4.5/2.1 now have independent, bounded custom worker counts, while native
+  and check controls retain their own settings. Helper/harness qualifications
+  cover legacy receipts, invalid counts, namespace serialization and actual
+  same-tool comparisons. Real workflow and corpus qualifications pass. The
+  [fifteen-cycle pgrust comparison](../results/worker-count-pgrust-repeated-01/assessment.md)
+  finds no material gain (paired wall −0.19%, CPU −0.04%). Nushell's excluded
+  pilot halves cold wall time but increases child CPU by 31%; its primary warm
+  comparison and unchanged adoption guards are next. No worker default changes.
+
 - Item 9.2 now has bounded completed-cache archival, with exact workflow and
   invocation ownership, decoded payload verification before retirement, and
   preserved query metadata and executed snapshots. [The format qualification](../results/cache-archive-qualification-06/assessment.md)

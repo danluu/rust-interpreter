@@ -52,7 +52,8 @@ qualification; four to the explicitly verified resumable held-out corpus member.
 The batch coordinator now forwards and checks optional corpus identity;
 [four invalid or mismatched parent cases](results/archive-batch-corpus-checks-01/summary.json)
 are rejected before any child invocation, with all eight prepared statuses intact.
-Application has not started. Require roughly 27 GiB free before the large warm
+Application is running under supervisor **51342** / controller **51345**.
+Require roughly 27 GiB free before the large warm
 run; the eight-GiB per-command guard remains unchanged.
 
 Worker retention requires at least 10% median cold wall reduction, no >5% warm
