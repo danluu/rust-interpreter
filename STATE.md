@@ -224,7 +224,9 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-No benchmark or cleanup is active at this checkpoint. Nushell15 and its verifier
+The full completed Nushell native cache is being archived under supervisor
+58619 (`lightweight-wrapper-nushell-native-cache-archive-01-apply`); inspect its
+receipt before further cleanup or benchmarking. Nushell15 and its verifier
 are terminal0; all source/frozen-input checks and ninety compiler-wrapper traces
 verify. All earlier wrapper qualifications and pgrust15 are also complete.
 The next measurements remain the six fixed balanced Nushell cold histories;
@@ -255,10 +257,14 @@ recorded. The check/custom target extension passes 31 rejection checks and nine
 real target derivations; the archive suite again passes all 40 rejections and
 four coordinator scenarios. It reconstructs caches from recorded commands,
 unique namespaces, tool/std-MIR identities and executed snapshots, and holds
-the custom invocation lock. The first check-cache application is active:
-`interface-nushell-check-cache-archive-01`, with 7,592 paths/1.65 GiB of unique
-payloads and 99 evidence hashes reviewed. Preserve query metadata in archives,
-private caches,
+the custom invocation lock. Both `interface-nushell-check-cache-archive-01` and
+`lightweight-wrapper-nushell-check-cache-archive-01` are complete: 7,592 paths
+each, all payloads and 99 evidence hashes verified. The full native inventory
+has 140,547 paths/10.02 GiB unique contents and is now being applied. A custom
+preparation refused additional Cargo markers on `target/aarch64-apple-darwin`
+before changing any files. Its [bounded follow-up](benchmarks/experiments/compiler-pipeline/NESTED-CACHE-MARKERS.md)
+must wait until the pending native application finishes; do not edit its frozen
+sources in the meantime. Preserve query metadata in archives, private caches,
 installed tools and all historical evidence. Do not start cold runs before
 adequate space is available or change their gates.
 The small Ruff/Nushell object inventories remain unapplied and are bound to the
