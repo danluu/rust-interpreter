@@ -1,0 +1,3 @@
+All eight reviewed caches from the completed matched-runtime copy comparison were archived and verified. The batch covers 14,146 paths, 2,023,615,972 unique original bytes, 721,169,660 archive bytes and 110 unchanged evidence hashes. Each child decoded and hashed every archive payload before retiring its original cache. Executed snapshots, source and benchmark reports remain retained. The inventory was reviewed and committed as `489db9f` before application.
+
+The completed total is now 165 archives (144 workflow and 21 host). This maintenance makes room for the original-baseline comparison; it is outside benchmark timers.

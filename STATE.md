@@ -45,8 +45,9 @@ now passes: token paired wall −15.14%, child CPU −15.28%; folded +1.06%/+0.5
 passes both 5% guards. Verification covers 168 commands, 30 edited pairs and
 84 artifacts. Token median is 5.116s → 4.329s, still above native's 2.036s.
 No default change. Next run the original b2 comparison, then held-out and broad
-correctness qualification if its gates pass. About 11 GiB remains; review and
-archive completed public caches before creating more large fresh histories.
+correctness qualification if its gates pass. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
+are archived and verified; about 13.8 GiB was available afterward for the next
+two-workflow comparison. Large fresh histories will need another space review.
 
 ## Closed worker-count experiment
 
@@ -111,7 +112,8 @@ Guest code and runtime defaults remain unchanged.
 
 The [latest 32-cache batch](results/worker-cold-storage-batch-05/assessment.md)
 completed and verified. The [four cold04 caches](results/allocation-history-storage-01/assessment.md)
-also verified, bringing the total to 157 archives. The new
+also verified. The [eight copy-comparison caches](results/copy-comparison-storage-01/assessment.md)
+bring the total to 165 archives (144 workflow and 21 host). The new
 [artifact clone qualification](benchmarks/experiments/compiler-pipeline/ARTIFACT-CLONES.md)
 preserves independent write behavior and rejects 18 invalid/failure cases.
 The [pilot](results/artifact-clone-pilot-01/assessment.md) and
