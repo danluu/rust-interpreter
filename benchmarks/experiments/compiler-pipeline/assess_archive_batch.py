@@ -26,6 +26,26 @@ def sha(path):
     return digest.hexdigest()
 
 
+def preapplication_rejection(log, launches, entries, completed_prefix):
+    """Recognize only a failed next child, before it began archive publication."""
+    require(type(completed_prefix) is int and 0 < completed_prefix < len(entries) and
+            [o['archive'] for o in launches] ==
+            [e['archive'] for e in entries[:completed_prefix + 1]],
+            'failed prefix does not match exactly one next child')
+    lines = log.splitlines()
+    last_launch = [index for index, line in enumerate(lines)
+                   if line.startswith('{') and json.loads(line) == launches[-1]]
+    require(len(last_launch) == 1, 'failed child launch is missing or repeated')
+    reasons = {
+        'BlockingIOError: [Errno 35] Resource temporarily unavailable': 'lock unavailable',
+        'RuntimeError: insufficient space to finish a worst-case archive before retiring originals':
+            'space preflight rejected',
+    }
+    failures = [reasons[line] for line in lines[last_launch[0] + 1:] if line in reasons]
+    require(len(failures) == 1, 'not a recognized pre-application rejection')
+    return failures[0]
+
+
 def assess(name, completed_prefix=None):
     identifier(name)
     out = ROOT / 'results' / name
@@ -49,7 +69,8 @@ def assess(name, completed_prefix=None):
     require(command[1:] == ['benchmarks/experiments/compiler-pipeline/archive_batch.py',
             '--plan', str(batch_path), '--plan-sha256', review['batch_sha256'], '--action', 'apply'],
             'batch command differs')
-    objects = [json.loads(line) for line in (experiment / 'command.log').read_text().splitlines()
+    log = (experiment / 'command.log').read_text()
+    objects = [json.loads(line) for line in log.splitlines()
                if line.startswith('{')]
     launches = [o for o in objects if o.get('action') == 'apply' and 'pid' in o]
     count = len(batch['entries'])
@@ -58,16 +79,21 @@ def assess(name, completed_prefix=None):
                 objects[-1] == dict(status='completed', action='apply', targets=count,
                                     plan_sha256=review['batch_sha256']), 'child launch/completion ledger differs')
     else:
-        require(0 < completed_prefix < count and
-                [o['archive'] for o in launches] == [e['archive'] for e in batch['entries'][:completed_prefix + 1]] and
-                'BlockingIOError: [Errno 35]' in (experiment / 'command.log').read_text(),
-                'not the reviewed pre-application lock failure')
+        rejection = preapplication_rejection(log, launches, batch['entries'], completed_prefix)
+        import archive_workflow_cache as coordinator
         for entry, reviewed in zip(batch['entries'][completed_prefix:], review['entries'][completed_prefix:]):
             work = ROOT / '.work/workflow-cache-archives' / entry['archive']
             require(read(work / 'status.json')['status'] == 'prepared' and
                     sha(work / 'plan.json') == reviewed['plan_sha256'] and
                     {p.name for p in work.iterdir()} == {'plan.json', 'status.json'} and
                     not (ROOT / 'results' / entry['archive']).exists(), 'remaining target was started')
+            _, prepared, _ = coordinator.load(entry['archive'])
+            require(prepared['sources'] == coordinator.sources(), 'remaining archive sources changed')
+            with coordinator.selection_guard(Path(prepared['target']), prepared.get('mode', 'native'),
+                                             prepared.get('proof_kind', 'workflow')):
+                target = coordinator.check_evidence(prepared)
+                coordinator.archive.unchanged(target, prepared['manifest'])
+                coordinator.no_open_files(target)
         count = completed_prefix
     reservations = read(ROOT / '.work/workflow-cache-archives/targets.json')
     entries, evidence = [], {}
@@ -108,6 +134,8 @@ def assess(name, completed_prefix=None):
             'archive_bytes', 'archive_sha256', 'free_bytes_before', 'free_bytes_after']}))
     require(all(sha(ROOT / path) == digest for path, digest in evidence.items()), 'external evidence changed')
     return dict(status=('completed and verified' if completed_prefix is None else 'incomplete; completed prefix verified'),
+        preapplication_rejection=None if completed_prefix is None else rejection,
+        remaining_original_inventories_verified=0 if completed_prefix is None else len(batch['entries']) - count,
         completed_entries=count, total_entries=len(batch['entries']),
         unapplied_entries=batch['entries'][count:], batch_sha256=review['batch_sha256'],
         controller_sha256=review['controller_sha256'], review_sha256=sha(out / 'inventory-review.json'),
@@ -124,7 +152,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--batch', required=True)
     parser.add_argument('--completed-prefix', type=int,
-                        help='audit a failed batch prefix only after a pre-application lock rejection')
+                        help='audit a failed batch prefix after a lock/space rejection, verifying untouched remaining originals')
     args = parser.parse_args()
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
