@@ -9,9 +9,10 @@ fn limits(instructions: u64, memory: usize, frames: usize, native: bool) -> Limi
 }
 fn same(p: &Program, instructions: u64, memory: usize, frames: usize) {
     let reference = execute_with_engine(p, &[], limits(instructions, memory, frames, false), Engine::Interpreter);
-    for profiled in [false, true] {
+    for stubs in [false, true] { for profiled in [false, true] {
+        let config = || Limits { jit_native_call_stubs: stubs, ..limits(instructions, memory, frames, true) };
         let got = if profiled {
-            execute_profiled(p, &[], limits(instructions, memory, frames, true), Engine::Jit).map(|(r, profile)| {
+            execute_profiled(p, &[], config(), Engine::Jit).map(|(r, profile)| {
                 let mut charged = 0;
                 let mut trees = 0;
                 for f in &profile.functions {
@@ -27,7 +28,7 @@ fn same(p: &Program, instructions: u64, memory: usize, frames: usize) {
                 assert_eq!(trees, r.jit_tree_instructions);
                 r
             })
-        } else { execute_with_engine(p, &[], limits(instructions, memory, frames, true), Engine::Jit) };
+        } else { execute_with_engine(p, &[], config(), Engine::Jit) };
         match (&reference, got) {
             (Ok(want), Ok(got)) => {
                 assert_eq!((got.value, got.instructions, got.peak_memory), (want.value, want.instructions, want.peak_memory));
@@ -42,7 +43,7 @@ fn same(p: &Program, instructions: u64, memory: usize, frames: usize) {
             }
             (want, got) => panic!("instructions={instructions} memory={memory} frames={frames}: {want:?} / {got:?}"),
         }
-    }
+    } }
 }
 fn function(frame_size: usize, frame_align: usize, code: Vec<Op>) -> Function {
     Function { name: "native transition".into(), frame_size, frame_align, registers: 4,
@@ -167,4 +168,70 @@ fn c_allocations_enable_heap_access_in_native_returns_and_regular_regions() {
     for native in [false, true] {
         assert_eq!(execute_with_engine(&p, &[], limits(1000, 65536, 10, native), Engine::Jit).unwrap().value, 73);
     }
+}
+
+#[test]
+fn linked_call_stubs_remove_outer_vm_entries_and_keep_instruction_counts() {
+    let p = fixture();
+    let r = execute_with_engine(&p, &[], Limits { jit_native_calls: true, jit_native_call_stubs: true,
+        ..Limits::default() }, Engine::Jit).unwrap();
+    assert_eq!((r.value, r.instructions), (73, 18));
+    assert_eq!(r.jit_tree_entries, 0);
+    assert_eq!(r.jit_entries, 1);
+    assert_eq!(r.jit_stub_calls, 2);
+    assert_eq!(r.jit_tree_calls, 4);
+    assert_eq!(r.jit_tree_instructions, 14);
+    assert_eq!(r.jit_instructions, 16);
+    assert_eq!(r.jit_call_stubs, 2);
+    assert_eq!(execute_with_engine(&p, &[], Limits { jit_native_call_stubs: true, ..Limits::default() },
+        Engine::Jit).unwrap_err(), "native Call stubs require native calls");
+}
+
+#[test]
+fn native_call_stubs_link_ordinary_regions_across_loops_and_budget_declines() {
+    let mut p = fixture();
+    p.functions[0].code = vec![Op::Local { dst: 0, offset: 0 }, Op::Imm { dst: 1, value: 3 },
+        Op::Imm { dst: 2, value: 1 }, Op::Call { function: 1, args: vec![], destination: 0 },
+        Op::Binary { dst: 1, overflow: 3, op: Binary::Sub, a: 1, b: 2, bits: 64, signed: false },
+        Op::Assert { value: 2, expected: true, message: "caller register survived".into() },
+        Op::Switch { value: 1, cases: vec![(0, 7)], otherwise: 3 }, Op::Return];
+    let r = execute_with_engine(&p, &[], Limits { jit_native_calls: true, jit_native_call_stubs: true,
+        ..Limits::default() }, Engine::Jit).unwrap();
+    assert_eq!((r.value, r.jit_entries, r.jit_stub_calls), (73, 1, 3));
+    for instructions in 0..=r.instructions + 1 { same(&p, instructions, 65536, 10); }
+    for frames in [1, 2, 3] { same(&p, 1000, 65536, frames); }
+    // Untaken code still requires readiness, but cannot introduce a guest error.
+    p.functions[2].frame_align = 1 << 20;
+    p.functions[0].code = vec![Op::Imm { dst: 0, value: 0 },
+        Op::Switch { value: 0, cases: vec![(0, 3)], otherwise: 2 },
+        Op::Call { function: 1, args: vec![], destination: 0 }, Op::Return];
+    same(&p, 1000, 4096, 2);
+}
+
+#[test]
+fn heap_growth_rechecks_live_limits_before_reusing_a_ready_region() {
+    let mut p = fixture();
+    p.functions[0].code = vec![Op::Local { dst: 0, offset: 0 }, Op::Imm { dst: 1, value: 32 },
+        Op::Imm { dst: 2, value: 16 }, Op::Call { function: 1, args: vec![], destination: 0 },
+        Op::Allocate { dst: 3, size: 1, align: 2, zeroed: true },
+        Op::Call { function: 1, args: vec![], destination: 0 },
+        Op::Deallocate { pointer: 3, size: 1, align: 2 },
+        Op::Call { function: 1, args: vec![], destination: 0 }, Op::Return];
+    for memory in [352, 353, 399, 400, 401, 433, 480, 481, 4096] { same(&p, 1000, memory, 10); }
+    let steps = execute_with_engine(&p, &[], Limits::default(), Engine::Interpreter).unwrap().instructions;
+    for budget in 0..=steps { same(&p, budget, 401, 10); }
+}
+
+#[test]
+fn a_vm_callee_with_larger_alignment_invalidates_prepared_region_extent() {
+    let mut p = fixture();
+    p.functions.push(function(16, 4096, vec![Op::Local { dst: 0, offset: 0 }, Op::Imm { dst: 1, value: 0 },
+        Op::CopyDynamic { dst: 0, src: 0, size: 1 }, Op::Return]));
+    p.functions[0].code = vec![Op::Local { dst: 0, offset: 0 }, Op::Imm { dst: 1, value: 0 },
+        Op::Imm { dst: 2, value: 0 }, Op::Call { function: 1, args: vec![], destination: 0 },
+        Op::Call { function: 3, args: vec![], destination: 0 },
+        Op::Call { function: 1, args: vec![], destination: 0 }, Op::Return];
+    for memory in [4096, 4200, 4448, 4449, 8192, 65536] { same(&p, 1000, memory, 10); }
+    let steps = execute_with_engine(&p, &[], Limits::default(), Engine::Interpreter).unwrap().instructions;
+    for budget in 0..=steps { same(&p, budget, 65536, 10); }
 }

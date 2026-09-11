@@ -62,10 +62,12 @@ def main():
     parser.add_argument('--run-try-callbacks',action='store_true',help='execute normal-return try callbacks; actual unwinding fails; requires --trap-unsupported-calls')
     parser.add_argument('--baseline-tool-key',help='compare an installed baseline with the candidate build on every edit, alongside native')
     parser.add_argument('--candidate-tool-key',help='use a retained candidate in a paired comparison; defaults to the current build')
+    parser.add_argument('--candidate-jit-native-call-stubs',action='store_true',help='also link candidate Calls into ordinary regions; requires --candidate-jit-native-calls')
     parser.add_argument('--candidate-jit-native-calls',action='store_true',help='enable experimental native call trees in the paired candidate only')
     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
     args=parser.parse_args()
+    if args.candidate_jit_native_call_stubs and not args.candidate_jit_native_calls:parser.error('--candidate-jit-native-call-stubs requires --candidate-jit-native-calls')
     if args.candidate_jit_native_calls and (args.baseline_tool_key is None or args.comparison_engine=='interpreter'):parser.error('--candidate-jit-native-calls requires a paired JIT comparison')
     if not 1<=args.cycles<=30:parser.error('cycles must be in 1..30')
     if not 1<=args.jobs<=256 or (args.native_jobs is not None and not 1<=args.native_jobs<=256):parser.error('jobs must be in 1..256')
@@ -124,13 +126,14 @@ def main():
                     'candidate':dict(engine=engine,tool_key=key,directory=tools)}
     for mode,config in mode_tools.items():
         config['inline_leaves']=args.baseline_inline_leaves if mode=='baseline' else args.inline_leaves
+        config['jit_native_call_stubs']=args.candidate_jit_native_call_stubs and mode=='candidate'
         config['jit_native_calls']=args.candidate_jit_native_calls and mode=='candidate'
         config['guest_flags']=baseline_guest_flags if mode=='baseline' else guest_flags
     if args.trap_unsupported_calls:
         for config in mode_tools.values():require_export_option(config['directory'],config['tool_key'],'trap-unsupported-calls')
     if args.run_try_callbacks:
         for config in mode_tools.values():require_export_option(config['directory'],config['tool_key'],'run-try-callbacks')
-    tool_builds={mode:dict(engine=config['engine'],tool_key=config['tool_key'],inline_leaves=config['inline_leaves'],jit_native_calls=config['jit_native_calls'],
+    tool_builds={mode:dict(engine=config['engine'],tool_key=config['tool_key'],inline_leaves=config['inline_leaves'],jit_native_calls=config['jit_native_calls'],jit_native_call_stubs=config['jit_native_call_stubs'],
                  trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks,guest_rustflags=config['guest_flags'],
                  vm_sha256=hashlib.sha256((config['directory']/'rust-interp-vm').read_bytes()).hexdigest(),
                  exporter_sha256=hashlib.sha256((config['directory']/'rust-interp-mir-export').read_bytes()).hexdigest())
@@ -209,6 +212,7 @@ def main():
             if args.allocation_limit is not None:base+=['--allocation-limit',str(args.allocation_limit)]
             if config['inline_leaves']:base+=['--inline-leaves']
             if config['jit_native_calls']:base+=['--jit-native-calls']
+            if config['jit_native_call_stubs']:base+=['--jit-native-call-stubs']
             if args.trap_unsupported_calls:base+=['--trap-unsupported-calls']
             if args.run_try_callbacks:base+=['--run-try-callbacks']
             if std:base+=['--std-mir']
@@ -258,6 +262,7 @@ def main():
                 assert launch['tool_key']==config['tool_key'] and launch['engine']==config['engine']
                 assert launch.get('inline_leaves',False)==config['inline_leaves']
                 assert launch.get('jit_native_calls',False)==config['jit_native_calls']
+                assert launch.get('jit_native_call_stubs',False)==config['jit_native_call_stubs']
                 assert launch.get('trap_unsupported_calls',False)==args.trap_unsupported_calls
                 assert launch.get('run_try_callbacks',False)==args.run_try_callbacks
                 if args.allocation_limit is not None:assert launch['allocation_limit']==args.allocation_limit
@@ -354,7 +359,7 @@ def main():
                 build_jobs=args.jobs,native_control=dict(profile=args.native_profile,jobs=native_jobs,
                     test_threads=args.native_test_threads,rustflags=args.native_rustflag),
                 instruction_limit=args.instruction_limit,allocation_limit=args.allocation_limit,
-                inline_leaves=args.inline_leaves,baseline_inline_leaves=args.baseline_inline_leaves,candidate_jit_native_calls=args.candidate_jit_native_calls,
+                inline_leaves=args.inline_leaves,baseline_inline_leaves=args.baseline_inline_leaves,candidate_jit_native_calls=args.candidate_jit_native_calls,candidate_jit_native_call_stubs=args.candidate_jit_native_call_stubs,
                 trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks,
                 guest_mir_opt_level=args.guest_mir_opt_level,
                 baseline_guest_mir_opt_level=args.baseline_guest_mir_opt_level,baseline_guest_rustflags=baseline_guest_flags,
@@ -451,6 +456,7 @@ def main():
             report+=f"| {row['cycle']} | "+' | '.join(f"{row['seconds'][mode]:.3f}" for mode in modes)+' |\n'
     report+='\nCPU time sums user and system time for each waited-for child tree, including its completed descendants and excluding the harness itself. Commands run serially within the harness, so unrelated processes do not enter that accounting.\n'
     report+=f'\nCold means empty per-engine artifact caches; tool bootstrap, installed sysroot, downloads, and OS file-cache coldness are excluded. {len(edits)*args.cycles} edited samples per mode on a shared host do not establish a whole-suite or general performance result.\n'
+    if args.candidate_jit_native_call_stubs:report+='\nCandidate native Calls are also linked with ordinary JIT regions.\n'
     if args.candidate_jit_native_calls:report+='\nThe candidate explicitly enables bounded native call trees; the baseline uses its ordinary JIT. Export/lowering options remain identical when artifact equality is required.\n'
     if std:report+=f'\nCustom engines use the shared metadata-only standard library. Its original installation took {std[3]["setup_seconds"]:.3f} s, including {std[3]["build_seconds"]:.3f} s of metadata compilation; that setup is excluded from the command times above. Native uses the installed standard library.\n'
     (out/'summary.md').write_text(report)

@@ -247,7 +247,7 @@ fn native_stack_and_callee_saved_registers_survive_maximum_depth_and_faults() {
                 let mut hits: Vec<Vec<u64>> = p.functions.iter().map(|f| vec![0; f.code.len()]).collect();
                 let table: Vec<_> = hits.iter_mut().map(|h| h.as_mut_ptr()).collect();
                 let mut cursor = TreeCursor { base: Cursor { remaining: plan.instructions, profile_hits: table[0] },
-                    memory_len: 32, peak_linear: 32, return_address: 16, profile_table: table.as_ptr(), calls: 0 };
+                    memory_len: 32, peak_linear: 32, return_address: 16, profile_table: table.as_ptr(), calls: 0, tree_instructions: 0, regions_ready: 0, stub_calls: 0 };
                 let arguments = [registers.as_mut_ptr() as usize, 16, memory.as_mut_ptr() as usize, 32, 16,
                     0, 0, (&mut cursor as *mut TreeCursor) as usize];
                 let entry = jit.trees.as_ref().unwrap().entries[0].as_ref().unwrap();

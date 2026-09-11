@@ -3,13 +3,16 @@ use super::*;
 use super::trees::{Plan, analyze};
 
 #[repr(C)]
-struct TreeCursor {
-    base: Cursor,
-    memory_len: usize,
-    peak_linear: usize,
-    return_address: usize,
-    profile_table: *const *mut u64,
-    calls: u64,
+pub(super) struct TreeCursor {
+    pub base: Cursor,
+    pub memory_len: usize,
+    pub peak_linear: usize,
+    pub return_address: usize,
+    pub profile_table: *const *mut u64,
+    pub calls: u64,
+    pub tree_instructions: u64,
+    pub regions_ready: u64,
+    pub stub_calls: u64,
 }
 #[cfg(all(target_arch = "aarch64", target_os = "macos"))]
 const _: () = {
@@ -19,7 +22,10 @@ const _: () = {
     assert!(std::mem::offset_of!(TreeCursor, return_address) == 32);
     assert!(std::mem::offset_of!(TreeCursor, profile_table) == 40);
     assert!(std::mem::offset_of!(TreeCursor, calls) == 48);
-    assert!(std::mem::size_of::<TreeCursor>() == 56);
+    assert!(std::mem::offset_of!(TreeCursor, tree_instructions) == 56);
+    assert!(std::mem::offset_of!(TreeCursor, regions_ready) == 64);
+    assert!(std::mem::offset_of!(TreeCursor, stub_calls) == 72);
+    assert!(std::mem::size_of::<TreeCursor>() == 80);
 };
 
 pub(super) struct State {
@@ -53,6 +59,10 @@ pub(crate) struct TreeRun {
 }
 
 impl<'a> Jit<'a> {
+    pub(super) fn ready_tree(&self, id: usize) -> Option<(Plan, usize)> {
+        let state = self.trees.as_ref()?;
+        Some((state.plans[id].ok()?, state.entries[id].as_ref()?.internal))
+    }
     /// Analyze once on first experimental use. Prepare all cold dependencies
     /// before publishing any parent. Immutable entries share the region arena.
     pub(crate) fn ensure_tree(&mut self, id: usize) -> Result<Option<Plan>, String> {
@@ -281,9 +291,11 @@ impl<'a> Jit<'a> {
         if budget < plan.instructions { return Ok(None); }
         let profile_hits = if self.profiled { unsafe { *profile_table.add(id) } } else { std::ptr::null_mut() };
         let mut cursor = TreeCursor { base: Cursor { remaining: budget, profile_hits }, memory_len: len,
-            peak_linear: len, return_address, profile_table, calls: 0 };
+            peak_linear: len, return_address, profile_table, calls: 0,
+            tree_instructions: 0, regions_ready: 0, stub_calls: 0 };
         let status = unsafe { self.code.as_ref().ok_or("missing tree code")?.call(entry.wrapper,
-            registers, base, memory, len, readonly, heap, heap_len, &mut cursor.base) };
+            registers, base, memory, len, readonly, heap, heap_len,
+            std::ptr::addr_of_mut!(cursor).cast::<Cursor>()) };
         if status >= FAILURE_MIN { return Err(self.fault_message(status)?); }
         if status != 0 || cursor.memory_len != base { return Err("JIT tree returned an invalid completion".into()); }
         let instructions = budget.checked_sub(cursor.base.remaining)
@@ -300,14 +312,19 @@ fn terminal(op: &Op) -> bool {
 }
 
 impl Assembler<'_> {
-    fn tree_epilogue(&mut self) {
-        self.emit(0xf9000a63); // str x3,[x19,#16]: live extent, also on faults
+    pub(super) fn tree_restore_host_frame(&mut self) {
         self.emit(0xa9417bf6); // ldp x22,lr,[sp,#16]
         self.emit(0xa8c457f4); // ldp x20,x21,[sp],#64
-        self.emit(0xd65f03c0);
     }
 
-    fn tree_call(&mut self, caller: &Function, callee: &Function, callee_id: usize,
+    pub(super) fn tree_epilogue(&mut self) {
+        self.emit(0xf9000a63); // str x3,[x19,#16]: live extent, also on faults
+        self.tree_restore_host_frame();
+        if self.tree_caller_is_region { self.return_to_vm(); }
+        else { self.emit(0xd65f03c0); }
+    }
+
+    pub(super) fn tree_call(&mut self, caller: &Function, callee: &Function, callee_id: usize,
         args: &[Reg], destination: Reg, profiled: bool, global_start: usize, target: usize,
     ) -> Result<(), EmitError> {
         self.evict_cached(true);

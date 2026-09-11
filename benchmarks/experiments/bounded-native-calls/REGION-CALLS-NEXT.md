@@ -4,7 +4,7 @@ The first complete-tree integration still enters a tree through the VM Call
 handler. The folded-trie three-cycle result misses its gate: 2.603 s candidate
 versus 2.559 s baseline, with a +73 ms median paired difference. Its saved-artifact
 smoke has 11.53 million host tree entries and only 2.62 million nested generated
-Calls. Token's complete-command comparison is still running. This motivates the
+Calls. Token's complete-command comparison improves 14.4% paired, below its 20% target. This motivates the
 already planned next step; it does not establish where all the regression occurs.
 
 Keep source/tool `09de2a9` / `c98d995b` available as a separate comparison. Preserve
@@ -89,3 +89,36 @@ Extend the assembly probe to cover these mixed exits, ensuring SP, LR and x19–
 survive every fault and decline. Use profile sums to detect omitted/double-counted
 Call or Return instructions. Then use the same real edited sources and artifact
 identity checks, with separate baseline/candidate Cargo histories and all outliers.
+
+## Implemented follow-up — September 11
+
+The `experiment/native-region-calls` branch implements this path behind
+`--jit-native-calls --jit-native-call-stubs`. The default mode and the earlier
+complete-tree mode remain separate execution specializations. All 231 workspace
+tests pass, including mixed native-frame ABI checks at up to 64 child levels,
+linked Call loops, all existing integration budget/fault/profile cases in both
+modes, heap growth and larger padding retained by a VM callee. Seven CLI checks
+pass. Optimized and real-workflow qualification is next; no new speedup claim.
+
+Call stubs enforce the full budget internally. A direct entry that cannot fit
+returns its own PC with zero progress, and the VM executes that instruction once.
+This keeps the existing Block representation unchanged. The expanded cursor is
+used only for functions with prepared Call stubs; other ordinary functions keep
+the existing region transition. Internal stub success pops its 64-byte frame
+before linking to the next ordinary region. Faults pop it plus the outer 16-byte
+wrapper. Root and TLS returns remain in the VM.
+
+Readiness caches function identity, active register count, VM depth, fixed
+heap/auxiliary bytes, and an aligned live-memory ceiling. It retains no pointers.
+Repeated native sibling calls cannot exceed that ceiling; later VM allocations
+or larger retained padding cause a miss. Initialized backing vectors never shrink
+during execution and pointers are obtained fresh for every entry. Working-memory
+and depth declines still use the original VM path. Region preparation costs remain
+inside execution timing. Nested code-generation time is not counted twice.
+
+The caller's Call is counted in ordinary profile blocks; descendants are counted
+in tree blocks. `jit_stub_calls` counts successful outer generated Calls, while
+`jit_tree_calls` counts all generated Calls (including those outer stubs).
+`jit_tree_entries` remains the number of complete trees entered through the VM.
+`jit_call_stubs` counts published stub sites. A saved remaining-budget value in
+the stub frame measures descendant instructions without per-tree-block additions.

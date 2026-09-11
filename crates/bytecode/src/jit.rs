@@ -15,6 +15,7 @@ use std::collections::{BTreeMap, BTreeSet};
 mod trees;
 #[allow(dead_code)]
 mod native_calls;
+mod native_regions;
 
 #[cfg(test)]
 mod limit_tests;
@@ -281,9 +282,17 @@ pub(crate) struct Jit<'a> {
     pub compile_nanos: u128,
     assertions: Vec<Assertion<'a>>,
     trees: Option<native_calls::State>,
+    native_call_stubs: bool,
+    pub region_plans: Vec<native_regions::RegionPlan>,
+    pub call_stubs: usize,
 }
 impl<'a> Jit<'a> {
     pub fn new(program: &'a Program, profiled: bool, capacity: usize) -> Result<Self, String> {
+        Self::new_with_call_stubs(program, profiled, capacity, false)
+    }
+
+    pub(crate) fn new_with_call_stubs(program: &'a Program, profiled: bool, capacity: usize,
+        native_call_stubs: bool) -> Result<Self, String> {
         if capacity > MAX_CODE_BYTES { return Err("JIT code budget exceeds supported range".into()); }
         let uses_heap = !program.statics.is_empty() || program.functions.iter().flat_map(|f| &f.code).any(|op| {
             matches!(op, Op::Allocate { .. } | Op::Deallocate { .. } | Op::Reallocate { .. }
@@ -293,7 +302,8 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None })
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0,
+            region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
 
     /// Called at guest function entry, including TLS callbacks, never in the
@@ -309,11 +319,15 @@ impl<'a> Jit<'a> {
     #[inline(never)]
     fn compile_function(&mut self, id: usize) -> Result<bool, String> {
         let start = std::time::Instant::now();
+        let previous_nanos = self.compile_nanos;
         let result = self.prepare_function(id);
-        self.compile_nanos += start.elapsed().as_nanos();
+        // Tree preparation may occur inside this timed region. Its separate
+        // counter is retained, but do not add the nested duration twice.
+        self.compile_nanos = previous_nanos + start.elapsed().as_nanos();
         result
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
+        if self.native_call_stubs { self.prepare_region_calls(id)?; }
         let remaining = (self.capacity - self.bytes) / 4;
         let staged = self.emit_function(&self.program.functions[id], remaining);
         self.finish_preparation(id, staged)
@@ -341,6 +355,8 @@ impl<'a> Jit<'a> {
             self.compiled_functions += 1;
         }
         self.operations += staged.operations;
+        self.call_stubs += staged.entries.iter().enumerate().filter(|(pc, entry)|
+            entry.is_some() && matches!(self.program.functions[id].code[*pc], Op::Call { .. })).count();
         self.assertions.extend(staged.assertions);
         self.blocks[id] = staged.entries;
         self.prepared[id] = true;
@@ -492,6 +508,24 @@ impl<'a> Jit<'a> {
                 operations += pc - start;
             }
             if pc == start {
+                if self.native_call_stubs {
+                    if let Op::Call { function, args, destination } = &f.code[pc] {
+                        if let Some((plan, target)) = self.ready_tree(*function) {
+                            let offset = words.len() * 4;
+                            let (a, internal, fallback) = self.emit_call_stub(f, pc, *function, args, *destination,
+                                plan, target, self.bytes / 4 + words.len(), &reads)?;
+                            if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
+                            internal_entries[pc] = Some(words.len() + internal);
+                            // The stub already supplies a safe VM successor;
+                            // successful edges are linked exactly like regions.
+                            links.extend(a.links.iter().map(|&(at, successor)|
+                                (words.len() + at, successor, words.len() + fallback)));
+                            entries[pc] = Some(Block { offset, end: pc + 1 });
+                            operations += 1;
+                            words.extend(a.words);
+                        }
+                    }
+                }
                 pc += 1;
             }
         }
@@ -506,6 +540,8 @@ impl<'a> Jit<'a> {
     ///
     /// # Safety
     /// `block` must be an entry published by this JIT for the current function,
+    /// and neither it nor its native successors may contain Call stubs (use
+    /// run_regions with the extended cursor for those functions).
     /// and `code_len` must be that function's bytecode length. `registers` must
     /// address its complete, initialized u128 register slice. `memory` and `heap`
     /// must address distinct live byte arenas of `len` and `heap_len` bytes;
@@ -873,6 +909,7 @@ enum Fact {
 
 #[derive(Default)]
 struct Assembler<'a> {
+    tree_caller_is_region: bool,
     local_values: Vec<local_memory::Value>,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,

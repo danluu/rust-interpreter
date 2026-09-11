@@ -49,6 +49,7 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--candidate-tool-key', required=True)
     parser.add_argument('--baseline-tool-key', required=True)
+    parser.add_argument('--candidate-jit-native-call-stubs', action='store_true')
     parser.add_argument('--candidate-jit-native-calls', action='store_true')
     parser.add_argument('--only', action='append', help='case label; repeat to select a subset')
     parser.add_argument('--cycles', type=int, default=3)
@@ -60,6 +61,8 @@ def main():
     parser.add_argument('--lock-wait-seconds', type=int, default=600)
     parser.add_argument('--minimum-free-gib', type=int, default=30)
     args = parser.parse_args()
+    if args.candidate_jit_native_call_stubs and not args.candidate_jit_native_calls:
+        parser.error('--candidate-jit-native-call-stubs requires --candidate-jit-native-calls')
     if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..'] or len(args.run_id) > 120:
         parser.error('run-id must be one short directory name')
     if not 3 <= args.cycles <= 30 or min(args.jobs, args.native_jobs) < 1 or max(args.jobs, args.native_jobs) > 256:
@@ -121,6 +124,7 @@ def main():
                 '--comparison-engine', 'jit', '--expect-identical-bytecode', *case['flags'],
                 *['--native-rustflag=' + flag for flag in args.native_rustflag]]
             if args.candidate_jit_native_calls:command.append('--candidate-jit-native-calls')
+            if args.candidate_jit_native_call_stubs:command.append('--candidate-jit-native-call-stubs')
             # The child acquires its own benchmark lock. If another task wins
             # the small release/start race, keep that failed attempt; do not
             # steal the lock or retry a possibly partially edited workflow.

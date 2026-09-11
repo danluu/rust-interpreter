@@ -372,6 +372,8 @@ pub struct Limits {
     pub jit_code_bytes: usize,
     /// Experimental complete acyclic native call trees; requires Engine::Jit.
     pub jit_native_calls: bool,
+    /// Also link outer direct Calls with ordinary regions. Requires native calls.
+    pub jit_native_call_stubs: bool,
 }
 impl Default for Limits {
     fn default() -> Self {
@@ -382,6 +384,7 @@ impl Default for Limits {
             frames: 4096,
             jit_code_bytes: jit::MAX_CODE_BYTES,
             jit_native_calls: false,
+            jit_native_call_stubs: false,
         }
     }
 }
@@ -407,6 +410,8 @@ pub struct Execution {
     pub jit_tree_compiled_functions: usize,
     pub jit_tree_declined_functions: usize,
     pub jit_tree_compile_nanos: u128,
+    pub jit_call_stubs: usize,
+    pub jit_stub_calls: u64,
 }
 
 struct Frame {
@@ -604,15 +609,19 @@ fn execute_observed<const PROFILE: bool>(
 ) -> Result<Execution, String> {
     // Select once at entry. Each loop specialization can omit the other
     // engine's transition path and its temporaries completely.
+    if limits.jit_native_call_stubs && !limits.jit_native_calls {
+        return Err("native Call stubs require native calls".into());
+    }
     match engine {
         Engine::Interpreter if limits.jit_native_calls => Err("native calls require the JIT engine".into()),
-        Engine::Interpreter => execute_impl::<PROFILE, false, false>(program, arguments, limits, profile),
-        Engine::Jit if limits.jit_native_calls => execute_impl::<PROFILE, true, true>(program, arguments, limits, profile),
-        Engine::Jit => execute_impl::<PROFILE, true, false>(program, arguments, limits, profile),
+        Engine::Interpreter => execute_impl::<PROFILE, false, false, false>(program, arguments, limits, profile),
+        Engine::Jit if limits.jit_native_call_stubs => execute_impl::<PROFILE, true, true, true>(program, arguments, limits, profile),
+        Engine::Jit if limits.jit_native_calls => execute_impl::<PROFILE, true, true, false>(program, arguments, limits, profile),
+        Engine::Jit => execute_impl::<PROFILE, true, false, false>(program, arguments, limits, profile),
     }
 }
 
-fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool>(
+fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool, const CALL_STUBS: bool>(
     program: &Program,
     arguments: &[u128],
     limits: Limits,
@@ -624,7 +633,8 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     }
     let started = std::time::Instant::now();
     let mut jit = if USE_JIT {
-        Some(jit::Jit::new(program, PROFILE, limits.jit_code_bytes)?)
+        Some(if CALL_STUBS { jit::Jit::new_with_call_stubs(program, PROFILE, limits.jit_code_bytes, true)? }
+            else { jit::Jit::new(program, PROFILE, limits.jit_code_bytes)? })
     } else { None };
     if let Some(jit) = &mut jit { jit.compile_nanos = started.elapsed().as_nanos(); }
     let mut jit_instructions = 0;
@@ -696,8 +706,9 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         if steps >= limits.instructions {
             return Err("interpreter instruction limit exceeded".into());
         }
+        let active_frames = frames.len();
         let frame = frames.last_mut().ok_or("missing frame")?;
-        if let Some(jit) = &jit {
+        if let Some(jit) = &mut jit {
             if let Some(block) = jit.blocks[frame.function].get(frame.pc).copied().flatten() {
                 let count = (block.end - frame.pc) as u64;
                 // Interpret the tail when the budget is smaller than a block,
@@ -713,7 +724,12 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     // and optional profile counters remain live and exclusive;
                     // no VM allocation, frame change or code append occurs
                     // while generated code runs. Jit is confined to this thread.
-                    let (next, executed) = unsafe {
+                    let (next, executed) = if CALL_STUBS && jit.region_plans[frame.function].depth != 0 {
+                        native.as_mut().unwrap().run_regions::<PROFILE>(jit, block,
+                            frame.function, frame.pc, frame.base, frame.register_base,
+                            register_bytes / 16, active_frames, limits.instructions - steps,
+                            &limits, &mut memory, &mut registers, &mut profile)?
+                    } else { unsafe {
                         jit.run(
                             block,
                             jit.blocks[frame.function].len(),
@@ -727,7 +743,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                             memory.heap.bytes.as_mut_ptr(),
                             memory.heap.bytes.len(),
                         )
-                    }?;
+                    }? };
                     frame.pc = next;
                     steps += executed;
                     jit_instructions += executed;
@@ -735,7 +751,8 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     // Compiled successors are linked inside generated code.
                     // A successful return therefore leaves an unsupported or
                     // short region, or a block that cannot fit the remaining
-                    // budget. Dispatch its next operation here, without
+                    // budget. An unready Call stub can also return its own PC
+                    // with zero progress. Dispatch that operation once, without
                     // repeating the loop header and JIT-eligibility lookup.
                     // Exhaustion must still win over a following return/fault.
                     if steps >= limits.instructions {
@@ -1112,7 +1129,9 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         jit_tree_instructions: native.as_ref().map_or(0, |n| n.instructions),
         jit_tree_bytes: tree_stats.0, jit_tree_operations: tree_stats.1,
         jit_tree_compiled_functions: tree_stats.2, jit_tree_declined_functions: tree_stats.3,
-        jit_tree_compile_nanos: tree_stats.4 })
+        jit_tree_compile_nanos: tree_stats.4,
+        jit_call_stubs: jit.as_ref().map_or(0, |j| j.call_stubs),
+        jit_stub_calls: native.as_ref().map_or(0, |n| n.stub_calls) })
 }
 
 #[inline(always)]

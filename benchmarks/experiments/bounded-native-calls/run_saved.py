@@ -32,6 +32,7 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--candidate-tool-key', required=True)
     parser.add_argument('--baseline-tool-key', required=True)
+    parser.add_argument('--candidate-call-stubs', action='store_true')
     parser.add_argument('--profile-candidate', action='store_true')
     args = parser.parse_args()
     if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..']:
@@ -75,6 +76,7 @@ def main():
                     '--instruction-limit', '100000000000', '--allocation-limit', '150000']
                 if mode == 'candidate':
                     command.append('--jit-native-calls')
+                    if args.candidate_call_stubs:command.append('--jit-native-call-stubs')
                     if args.profile_candidate:
                         command += ['--profile', str(work / (label + '-profile.json'))]
                 command.append(str(artifact))
@@ -97,7 +99,7 @@ def main():
                 write(work / 'commands.json', rows)
                 if child.returncode != 0 or stdout.strip() != '0':
                     raise RuntimeError(label + '/' + mode + ' failed: ' + stderr[-2000:])
-                if mode == 'candidate' and not stats.get('jit_tree_entries', 0):
+                if mode == 'candidate' and not (stats.get('jit_tree_entries', 0) + stats.get('jit_stub_calls', 0)):
                     raise RuntimeError('experimental path did not execute')
                 print(label, mode, 'PASS', stats, flush=True)
         if any(sha(ROOT / p) != digest for p, digest in frozen.items()):

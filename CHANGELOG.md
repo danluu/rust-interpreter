@@ -75,3 +75,11 @@ all 168 repeated real workflow commands (84 paired artifacts). Token improves
 14.4% paired; folded regresses 3.0%. Both original gates fail, so the option
 remains experimental. The next step is native Calls inside ordinary regions,
 with the same correctness and full-command performance requirements.
+
+### Native Call stubs in ordinary regions
+
+Implemented optional linked outer Calls, readiness caching without retained host
+pointers, complete-cursor raw pointers, and mixed 16/64-byte native frame exits.
+Preserved exact VM fallbacks and separate ordinary/tree profile accounting; fixed
+nested preparation timing double-counting. All 231 workspace tests and seven CLI
+checks pass. Release and real edit/build/test qualification are next.
