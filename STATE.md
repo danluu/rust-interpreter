@@ -121,11 +121,25 @@ relaxation, wrapper retention or conditional held-out testing is claimed.
 
 ## Resource planning
 
+The [latest eight-target selection](results/worker-cold-storage-batch-03/assessment.md)
+completed seven archives before a shared-volume space drop rejected the final
+child at preflight. Its original files were untouched. The [separate recovery](results/worker-cold-storage-batch-03-recovery-01/assessment.md)
+archives that final target and verifies its evidence; the original failed batch
+stays incomplete. Completed archives now total **89** (68 workflow, 21 host).
+Available space briefly fell to about 636 MiB, then recovered to about 19 GiB
+without process intervention. The cause is unknown. Do not weaken the guards.
+
+The next prepared plan, `.work/cache-batches/worker-cold-storage-batch-04.json`,
+selects 32 exact completed public fre targets from bounded/native-region/
+persistent/resumable comparisons. Inventory preparation is active; review
+before application, with no other lock waiter. Cold03 remains unstarted.
+
+
 The [completed twenty-four-target batch](results/worker-cold-storage-batch-02/assessment.md)
 preserves the first cold history's four Cargo targets and twenty completed debug
 host caches: 64,858 paths / 16.77 GiB unique contents in 5.70 GiB of archives.
-All 2,150 external evidence hashes verify. Completed archives now total 81
-(sixty workflow targets and 21 host targets). The host reported about 23 GiB
+All 2,150 external evidence hashes verify. That batch brought completed archives to 81
+(sixty workflow targets and 21 host targets); the newer total is 89 above. The host reported about 23 GiB
 free afterward. Cold02 is complete; prepare space for cold03 next.
 
 The [host selector](results/host-cache-selector-03/assessment.md) and archive
@@ -145,7 +159,7 @@ inventory is obsolete because its exact target has now been archived.
 exact completed targets: 84,333 paths / 21.42 GiB unique contents in 7.21 GiB
 of archives. Final receipts, inventories and all 38 distinct external evidence/
 source hashes verify. That batch brought the archive count to thirty-six; the current total is
-eighty-one after the separately reviewed storage work above. All payloads
+eighty-nine after the separately reviewed storage work above. All payloads
 were decoded and hashed before retirement. Executed snapshots and reports remain
 in place. Archival ran outside benchmark timing and controlled no other work.
 
@@ -230,3 +244,9 @@ can join exact initialized allocation contents to all request ancestry and full
 function context. It preserves distinct mutable TLS identities and checks exact
 serialized output bounds. The actual Nushell history diagnosis remains pending;
 worker-study inputs stay frozen until that study closes.
+
+The [allocation transport helper](results/allocation-trace-transport-01/assessment.md)
+passes four real traces and 33 malformed-file checks with exact byte/event
+boundaries. It checks the selected artifact hash before use; deeper origin
+semantics remain in the qualified inspector. Launcher integration is pending
+release of the worker study's frozen inputs. No performance claim follows.

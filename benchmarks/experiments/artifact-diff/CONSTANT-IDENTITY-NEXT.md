@@ -101,3 +101,11 @@ pass. `inspect_allocation_origins.py --literal 'Expected OneOf'` can inspect the
 future Nushell trace after supplying its matching bytecode and a fresh run ID.
 It records all request ancestry and full function instance context, bounds the
 query report, and makes no allocation-equivalence or deduplication inference.
+
+The standalone `scripts/allocation_trace.py` transport helper is now
+[qualified](../../../results/allocation-trace-transport-01/assessment.md) against
+all four original trace artifacts and 33 corrupted-input cases. It validates
+regular bounded files, ordered events, strict schema, completion and artifact
+binding before a future launcher invocation can execute. The original launcher
+is still unchanged; add the explicit flag/capability/environment/receipt path
+only after the worker study closes.
