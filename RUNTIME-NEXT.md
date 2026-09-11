@@ -35,7 +35,12 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
    both complete primary gates: folded wall −12.77%, CPU −12.89%; token wall
    +3.70%, CPU +3.33%. Both original assertions and all 168 measured commands
    verify. Compiler overhead outweighs the execution gain on token. Keep the
-   candidate experimental pending [broad correctness and all seven held-outs](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
+   candidate experimental. Broad qualification now passes 47,004 native commands,
+   245 TLS commands and 382 fre bodies with seven ignored and unchanged outcomes.
+   [All seven held-outs](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md)
+   remain before adoption. Recorded pass timers show 189.5 ms capture/finalization
+   on token against only 79.3 ms paired execution savings; evaluate the compiler
+   overhead on the larger frontend-heavy cases.
    Preserve exact budgets,
    initialization, fault order and guest state. Earlier narrow frame-reuse
    censuses are parked; their tiny measured opportunities do not justify a

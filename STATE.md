@@ -35,7 +35,14 @@ is not retained yet. The candidate now passes [47,004 broad native-validation co
 and [245 TLS/destructor commands](results/aggregate-relocation-tls-01/assessment.md).
 The per-case held-out verifier reproduces nine actual histories and rejects
 105 invalid synthetic cases while preserving both prior verifiers. Fresh fre
-body coverage is running; all seven held-outs remain. The reviewed four-cache
+body coverage now [passes all 382 bodies with seven ignored](results/aggregate-relocation-fre-01/assessment.md),
+382 fresh native controls, unchanged outcomes and zero JIT declines. All 382
+artifacts differ, as expected for the compiler change. All seven held-outs remain.
+The [recorded pass timers](results/aggregate-relocation-pass-costs-01/assessment.md)
+show median capture/finalization costs of 41.9 ms folded and 189.5 ms token;
+token's paired execution gain is only 79.3 ms versus 237.4 ms more Cargo time.
+This diagnostic reuses the completed edits, changes no gates, and omits earlier
+span/origin recording costs. The reviewed four-cache
 archive of the completed public Nushell history has [completed and verified](results/aggregate-relocation-space-01/summary.json),
 preserving 13.46 GB of payloads in 4.36 GB of archives. Private and active caches
 were excluded. Held-out admission now qualifies all seven independently bound
