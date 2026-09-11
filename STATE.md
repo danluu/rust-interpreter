@@ -37,7 +37,7 @@ it excludes tree/stub mode and stays disabled by default.
 Native remains faster on both. The first resumable tool (`035ef708`) improved
 folded 10.6% and token 15.0%; cross-run differences are not isolated component gains.
 
-Next run exactly one unchanged-tool replication `resumable-bulk-e2e-02`, using
+Exactly one unchanged-tool replication `resumable-bulk-e2e-02` is running, using
 [the recorded protocol](benchmarks/experiments/resumable-native-calls/REPLICATION.md).
 Keep the first failure, both run decisions and all pairs; no retry-until-pass or
 new pooled retention rule. The narrow cutoff miss calls for repeatability
@@ -110,8 +110,9 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-All task executions are terminal0; one unchanged-tool E2E replication is ready
-to start. The unbounded goal remains active.
+Only `resumable-bulk-e2e-02` is active; observe its supervisor/corpus receipts
+and keep workflow scripts frozen. All preceding task runs are terminal0.
+The unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal
 receipts are in `.work/continuation-state.json`. Toolchain is
