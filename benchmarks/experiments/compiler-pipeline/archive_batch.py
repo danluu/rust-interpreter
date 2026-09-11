@@ -30,7 +30,8 @@ def main():
     require(plan['owner'] == str(ROOT) and plan['schema_version'] == 1, 'batch owner/schema differs')
     entries = plan['entries']
     require(isinstance(entries, list) and 1 <= len(entries) <= 32, 'invalid batch size')
-    require(all(isinstance(e, dict) and set(e) == {'archive', 'workflow', 'mode'} for e in entries),
+    fields = {'archive', 'workflow', 'mode'}
+    require(all(isinstance(e, dict) and set(e) in [fields, fields | {'corpus'}] for e in entries),
             'invalid batch entry')
     require(len({e['archive'] for e in entries}) == len(entries) and
             len({(e['workflow'], e['mode']) for e in entries}) == len(entries), 'duplicate batch target')
@@ -38,17 +39,20 @@ def main():
     for entry in entries:
         identifier(entry['archive'])
         identifier(entry['workflow'])
+        corpus = identifier(entry['corpus']) if 'corpus' in entry else None
         require(entry['mode'] in ['native', 'check', 'baseline', 'candidate'], 'unknown cache mode')
         work = ROOT / '.work/workflow-cache-archives' / entry['archive']
         command = [sys.executable, str(ROOT / 'scripts/archive_workflow_cache.py')]
         if args.action == 'prepare':
             require(not work.exists(), 'batch preparation identity already exists')
             command += ['--prepare', entry['archive'], '--workflow', entry['workflow'], '--mode', entry['mode']]
+            if corpus is not None:
+                command += ['--corpus', corpus]
         else:
             prepared = json.loads((work / 'plan.json').read_text())
             status = json.loads((work / 'status.json').read_text())
             require(status['status'] == 'prepared' and prepared['workflow'] == entry['workflow'] and
-                    prepared.get('mode', 'native') == entry['mode'] and prepared['corpus'] is None,
+                    prepared.get('mode', 'native') == entry['mode'] and prepared['corpus'] == corpus,
                     'batch does not match untouched inventories; audit any partial application')
             command += ['--apply', entry['archive']]
         commands.append(command)

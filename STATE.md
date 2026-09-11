@@ -35,14 +35,25 @@ Cold wall is **61.125s at four workers / 30.550s at eighteen**; child CPU is
 in one excluded qualification. API-edit wall is 4.972s / 4.957s. Keep the planned
 CPU guard and all observations; no adoption follows from this pilot.
 
-Active: **worker-count-corpus-qualification-01**, supervisor **76184**,
-controller **76187**, started at 08:57:52 local. This small pgrust
-body-edit corpus checks positive option forwarding/JSON receipts before primary
-measurements. Expected: one case, three cycles/five edits, 84 commands and
-42 artifacts. Verify final corpus provenance, source and exact mode configuration.
-Its timings are excluded from the primary API-edit study. Then run fifteen
-pgrust API cycles and fifteen Nushell API cycles with the frozen worker settings.
-Check space before the large run; archive exact completed targets as needed.
+The [corpus qualification](results/worker-count-corpus-qualification-01/assessment.md)
+completed 84 commands and 42 artifacts, verifying JSON receipts and actual
+four/eighteen-job forwarding. Its timings are excluded from primary statistics.
+
+The [fifteen-cycle pgrust primary comparison](results/worker-count-pgrust-repeated-01/assessment.md)
+verifies 180 commands, ninety artifacts, eleven frozen inputs and source
+restoration. Median paired wall ratio is **0.9981098106** and child-CPU ratio
+**0.9996062101**: no material worker-count gain, with warm guards passing.
+
+Next: fifteen Nushell API-edit cycles with the same frozen worker settings.
+Eight exact completed cache targets are prepared and separately reviewed in
+[warm-storage-batch-01](results/warm-storage-batch-01/inventory-review.json):
+95,657 paths / 23,139,072,348 unique bytes. Four belong to the completed worker
+qualification; four to the explicitly verified resumable held-out corpus member.
+The batch coordinator now forwards and checks optional corpus identity;
+[four invalid or mismatched parent cases](results/archive-batch-corpus-checks-01/summary.json)
+are rejected before any child invocation, with all eight prepared statuses intact.
+Application has not started. Require roughly 27 GiB free before the large warm
+run; the eight-GiB per-command guard remains unchanged.
 
 Worker retention requires at least 10% median cold wall reduction, no >5% warm
 wall regression and no >10% child-CPU increase for the checked primary groups.

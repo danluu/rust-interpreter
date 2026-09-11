@@ -1,0 +1,90 @@
+{
+  "plan": {
+    "schema_version": 1,
+    "options": {
+      "run_id": "worker-count-corpus-qualification-01",
+      "candidate_tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+      "baseline_tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+      "candidate_jit_native_call_stubs": false,
+      "candidate_jit_resumable_calls": false,
+      "candidate_jit_persistent_registers": false,
+      "candidate_jit_native_calls": false,
+      "only": [
+        "pgrust"
+      ],
+      "cycles": 3,
+      "jobs": 4,
+      "native_jobs": 18,
+      "baseline_jobs": 4,
+      "candidate_jobs": 18,
+      "native_profile": "o0-incremental",
+      "native_test_threads": "default",
+      "native_rustflag": [],
+      "lock_wait_seconds": 600,
+      "minimum_free_gib": 8,
+      "_specified_job_counts": [
+        "jobs",
+        "baseline_jobs",
+        "candidate_jobs",
+        "native_jobs"
+      ]
+    },
+    "cases": [
+      {
+        "label": "pgrust",
+        "project": "pgrust",
+        "workflow": "default",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--instruction-limit",
+          "1000000000"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-corpus-pgrust-01/summary.json",
+        "reference_report_sha256": "51ba7dd4e7f61f1c36ec55984ac4ce3381910769d6bc5e679766708550f75377"
+      }
+    ],
+    "frozen": {
+      "scripts/bench_e2e_workflow.py": "b59e163f04cfb7eefdb1c228dfcc28762cbe3de58a7f1d30bdd201db2ea1bfb6",
+      "scripts/interpreter.py": "034298c86c1dc8a8d8c4d8b601db801a5624230d40f7299e10d3fe52e5e8e17f",
+      "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+      "scripts/workflow_case_file.py": "4a138ac3b497b9871b3d0781b0272f68da886ef118a26b8795cb7c59141588d7",
+      "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+      "scripts/workflow_measurements.py": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132",
+      "scripts/workflow_io.py": "29e006c3397fb762743783d13bfe3a2fca1d45091bfb2110380fe083108a4119",
+      "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+      "scripts/workflow_jobs.py": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5",
+      "scripts/verify_repeated_workflow.py": "83ae5abf8757f573649a56a20af8e7d3c2f70d23d9dd080eaac0fcfd39b71e4b",
+      "scripts/bench_workflow_corpus.py": "6b6159907598e583be1ddb8f655c8bedc67e93de3261a55ca56166936d8f4814",
+      "benchmarks/workflow-corpus.json": "53c845a5a862a3022816c23fea7f8e6d843da2e65b8c3afe48b17d2e4841916d"
+    },
+    "purpose": "Repeated complete-command control comparison; preserve original assertions, wrong edits, cache histories and all regressions. No fastest-native, significance or retention decision is automatic."
+  },
+  "workflows": [
+    {
+      "label": "pgrust",
+      "report": "results/worker-count-corpus-qualification-01-pgrust/summary.json",
+      "report_sha256": "a4cd291c5921b0cb43ceceb2d9b83cbab3c2ca518fe2159e16e7528f99da0789",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 0.6741612499999992,
+        "baseline": 0.47956008399999916,
+        "candidate": 0.47711583300000004
+      },
+      "cpu_medians": {
+        "native": 0.616599,
+        "baseline": 0.46990700000000274,
+        "candidate": 0.46747799999999984
+      },
+      "check_median_seconds": 0.3783501670000007,
+      "cross_cycle_bytecode_identical": true
+    }
+  ],
+  "status": "All requested workflows completed; compare separate workload groups before selecting a native configuration or runtime direction"
+}
