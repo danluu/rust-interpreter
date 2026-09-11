@@ -35,3 +35,13 @@ caches from workflow `resumable-copy-heldout-01-case-02-ruff`, parent corpus
 assess sequence with new archive identities. The first four-cache batch is
 complete; none of its retired targets is selected again. Preserve the failed
 space admission separately and recheck the original bound after this batch.
+
+The completed new Nushell type-relations benchmark leaves 14.91 GiB free;
+Ruff needs 16.16 GiB. No Ruff history has started. Prepare a third batch from
+the remaining completed public original-copy held-outs: Nushell (case 03),
+fre forward/TLS (04), pgrust SHA-1 (05), and pgrust basic (06). Select the
+native/check/baseline/candidate caches of each, with their exact completed
+parent corpus identities. Review all sixteen inventories and commit them
+before applying the batch. The private case 07 and all current relocation
+histories are excluded. This batch provides room for the remaining fixed
+benchmarks; continue to require a fresh live admission before each one.
