@@ -81,12 +81,18 @@ is committed as `91d5c48`. The [actual pgrust qualification](results/resumable-c
 and [final gate helper check](results/separate-heldout-gates-03/assessment.md) now
 pass: 84 commands, fifteen pairs and 42 artifacts, with all 39 rejection checks
 and prior gate decisions preserved. A lock rejection before testing is retained.
-Primary case01 (Nushell type-relations) is now running under the unchanged
-plan. Its [space preflight](results/resumable-copy-heldout-01-case-01-preflight/summary.json)
-requires 17.99 GiB including 20% growth plus first-archive and evidence reserves;
-18.20 GiB was available at launch. Supervisor 64903 / corpus controller 64907 /
-workflow 64909 were confirmed live. Keep all plan, evaluator and corpus inputs
-frozen through the seven-case assessment.
+Primary case01 (Nushell type-relations) [stopped at the disk guard](results/resumable-copy-heldout-01-case-01-stop/assessment.md).
+Five primary commands and one check completed; fourteen original tests pass in
+all modes and both custom wrong edits fail at the original assertion. Four
+snapshots verify. No successful-edit pair was measured. All task processes are
+terminal and source restoration matches the pin. Raw records remain unchanged.
+The old [space preflight](results/resumable-copy-heldout-01-case-01-preflight/summary.json)
+omitted the 8 GiB per-command floor. The [corrected calculation](results/workflow-space-floor-01/assessment.md)
+rejects that admission, passes exact-boundary and 32 invalid-input checks, and
+requires 25.99 GiB with the same historical growth/archive/evidence reserves.
+No retry has started. Preserve the fixed plan/evaluator as historical evidence;
+a fresh retry ID and explicit amendment are required before restarting case01.
+More completed task-owned cache space is needed; no unrelated work was changed.
 
 ## Closed worker-count experiment
 
