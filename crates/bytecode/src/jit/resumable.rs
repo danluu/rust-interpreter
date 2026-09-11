@@ -416,6 +416,32 @@ impl Assembler<'_> {
         }
     }
 
+    /// Clear the prechecked host range [x11,x12), whose length is at least
+    /// `minimum`. Only the old zero_range scratch registers are clobbered.
+    /// Plain pair stores permit unaligned normal memory and never extend past
+    /// x12. A known 64-byte minimum permits the first batch without a guard;
+    /// subsequent batches test the remaining length. The old helper handles
+    /// the exact tail, including empty ranges. Small frames emit no extra test.
+    fn zero_range_at_least(&mut self, minimum: usize) -> Result<(), EmitError> {
+        const BATCH: usize = 64;
+        if minimum >= BATCH {
+            self.three(0xcb000000, 9, 12, 11);
+            self.imm(10, BATCH as u64);
+            let batch = self.words.len();
+            for offset in (0..BATCH).step_by(16) {
+                // stp xzr,xzr,[x11,#offset]; offsets fit signed scaled imm7.
+                self.emit(0xa9000000 | ((offset as u32 / 8) << 15) | (31 << 10) | (11 << 5) | 31);
+            }
+            self.add_imm(11, 11, BATCH);
+            self.sub_imm(9, 9, BATCH);
+            self.cmp(9, 10);
+            let more = self.words.len();
+            self.emit(0x54000000 | Cond::Hs as u32);
+            self.patch_conditional(more, batch)?;
+        }
+        self.zero_range()
+    }
+
     fn resumable_call(
         &mut self,
         caller: &Function,
@@ -468,7 +494,8 @@ impl Assembler<'_> {
         self.imm(9, callee.frame_size.max(1) as u64);
         self.three(0x8b000000, 3, 21, 9);
         self.three(0x8b000000, 12, 2, 3);
-        self.zero_range()?;
+        // The dynamic alignment padding only increases this proven minimum.
+        self.zero_range_at_least(callee.frame_size.max(1))?;
         self.load64(9, 19, state::PEAK_LINEAR);
         self.cmp(3, 9);
         self.emit(0x9a892069); // csel x9,x3,x9,hs
@@ -486,7 +513,7 @@ impl Assembler<'_> {
             self.mov(11, 22);
             self.imm(12, callee.registers as u64 * 16);
             self.three(0x8b000000, 12, 22, 12);
-            self.zero_range()?;
+            self.zero_range_at_least(callee.registers as usize * 16)?;
         }
         self.get(15, destination, false);
         self.resumable_save_pc(pc + 1);

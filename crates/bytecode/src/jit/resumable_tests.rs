@@ -3,6 +3,71 @@ use crate::{
     Engine, Execution, ExecutionProfile, Slot, VERSION, execute_profiled, execute_with_engine,
 };
 
+#[test]
+fn bulk_zeroing_matches_exact_dirty_ranges_and_preserves_spare_bytes() {
+    let mut code = platform::Code::reserve(4096).unwrap();
+    let mut entries = vec![];
+    for minimum in [0, 64] {
+        let mut a = Assembler::default();
+        a.mov(11, 2); // owned memory argument; no guest frame is needed
+        a.three(0x8b000000, 12, 2, 3); // exclusive end = start + length
+        a.zero_range_at_least(minimum).unwrap();
+        a.mov(0, 31);
+        a.emit(0xd65f03c0); // ret; the helper uses only caller-saved scratch
+        entries.push((minimum, code.append(&a.words).unwrap()));
+    }
+    let mut registers = [0u128; 1];
+    for (minimum, entry) in entries {
+        for size in (minimum..=256).chain([511, 512, 513, 1023, 1024, 1025, 4095, 4096, 4097]) {
+            for alignment in 0..64 {
+                // Every byte begins dirty. Full equality checks both the
+                // requested initialization and untouched prefix/spare suffix.
+                let start = 64 + alignment;
+                let mut actual = vec![0xa5u8; start + size + 64];
+                let mut expected = actual.clone();
+                expected[start..start + size].fill(0);
+                // SAFETY: this emitter-owned leaf accesses only the given
+                // initialized range, with a true minimum and stable backing.
+                // All other pointer arguments are unused by this leaf.
+                let result = unsafe {
+                    code.call(
+                        entry,
+                        registers.as_mut_ptr(),
+                        0,
+                        actual.as_mut_ptr().add(start),
+                        size,
+                        0,
+                        std::ptr::null_mut(),
+                        0,
+                        std::ptr::null_mut(),
+                    )
+                };
+                assert_eq!(result, 0);
+                assert_eq!(
+                    actual, expected,
+                    "minimum={minimum} size={size} alignment={alignment}"
+                );
+            }
+        }
+    }
+    // Empty one-past-end is also valid; it must not attempt even one store.
+    let mut byte = [0xa5u8];
+    unsafe {
+        code.call(
+            0,
+            registers.as_mut_ptr(),
+            0,
+            byte.as_mut_ptr().add(1),
+            0,
+            0,
+            std::ptr::null_mut(),
+            0,
+            std::ptr::null_mut(),
+        );
+    }
+    assert_eq!(byte, [0xa5]);
+}
+
 fn function(code: Vec<Op>) -> Function {
     Function {
         name: "resumable fixture".into(),
