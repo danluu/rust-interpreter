@@ -7,7 +7,7 @@ Local Git commits are authorized; no remote or push was requested.
 
 ## Active work
 
-Branch `experiment/persistent-registers`, runtime commit `d664bce`, installed
+Branch `experiment/aggregate-reuse-census`, runtime commit `d664bce`, installed
 tool `e89de7f8`. Bounded full-CFG liveness (`b252588`) and up to three persistent
 u128 register pairs now span native branches and calls. VM continuations spill
 live values before returning, and native children preserve assigned host GPRs.
@@ -48,13 +48,25 @@ assertions and resolve all generated PCs. Folded has 24.9% VM frame reservation,
 The helper rechecks all 12 old/new windows with unchanged counts and hashes;
 its initial tuple-versus-JSON-array comparison failure remains documented.
 
-Next implement the [isolated aggregate-reuse census](benchmarks/experiments/aggregate-reuse-census/PLAN.md).
-Start with additional non-ABI private arrays whose complete assignments overwrite
-all bytes, preserving partial writes, entry zeros, aliases and layout semantics.
-Compute a hypothetical plan only, compare against existing scalar coloring and
-weight by exact matching profiled calls. Require unchanged exported bytecode and
-original assertions before drawing an opportunity conclusion. Production layout
-stays unchanged until scope and initialization/escape proofs justify a new experiment.
+The [additional private-array census](results/aggregate-reuse-weights-01/assessment.md)
+is complete and rules out that narrow optimization: only 3,116 additional bytes
+across 42.5 billion folded direct-call frame bytes (0.0000073%) and 0.1233% for
+token. The isolated observer (`f9bd49c`, tool `71605527`) passes 15 exporter/observer
+tests and uses the exact `e89de7f8` VM. Both fresh exports are byte-identical to
+the original artifacts and pass original assertions. New profiles also pass.
+Three typed weighting tests pass; actual function IDs and every profile operation
+are verified, with exact instruction accounting and no unattributed direct frames.
+All three runs are terminal with return code zero. No production layout changed.
+
+Next implement [resumable native Calls](benchmarks/experiments/resumable-native-calls/PLAN.md)
+over an explicit guest frame stack. Begin with initialized/stable frame backing,
+documented host layout and typed continuation invariants, then emitted Call/Return
+and VM integration behind an experimental option. A descendant must resume at its
+actual frame/PC after an unsupported operation, budget tail or preparation
+boundary. Do not map guest recursion onto host-stack recursion. Preserve complete
+initialization, argument/error order, result copies, full-width registers,
+profiling, guest budgets and root/TLS completion. This removes whole-function
+eligibility restrictions; it does not promise to remove frame-clearing costs.
 
 Keep the original b2 gates. Seven held-out workflows and broader native/TLS/fre
 qualification remain required before retention; no unresolved >5% held-out
@@ -80,7 +92,8 @@ the bounded-readiness fix/complete retry are preserved.
 Frame layout/lifetime changes stay separate. Argument-only zero elision already
 had little scope (4.4% folded / 9.1% token), as did removing unused MIR local
 storage. Do not repeat those parked experiments. Aggregate lifetime reuse needs
-a new alias/initialization proof and changed-artifact controls.
+a new alias/initialization proof and changed-artifact controls. Private primitive
+arrays now join those parked directions; broader aggregate reuse is unproven.
 
 ## Qualified controls and coverage
 

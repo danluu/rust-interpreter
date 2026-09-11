@@ -1,5 +1,14 @@
 # Next diagnostic: additional private aggregate reuse
 
+**Completed; private primitive-array reuse is parked.** The
+[qualified result](../../../results/aggregate-reuse-weights-01/assessment.md)
+finds 0.0000073% additional folded frame-byte scope and 0.1233% token. The
+observer passes 15 tests; the typed join passes three and validates matching
+original artifacts/fresh profiles with no unattributed direct frames. No runtime
+layout transformation was made. Broader aggregate reuse remains unproven;
+[resumable native Calls](../resumable-native-calls/PLAN.md) are the next selected
+implementation. The original diagnostic requirements follow for reproducibility.
+
 The persistent-register candidate (`d664bce` / `e89de7f8`) improves real token
 commands 23.6% paired and folded 4.2% against `b2aa6efe`. Token passes its original
 gate; folded misses 10%. Fresh folded samples show 24.9% VM frame reservation

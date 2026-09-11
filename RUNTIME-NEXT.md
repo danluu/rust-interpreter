@@ -4,17 +4,19 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Measure additional safe frame reuse before changing layout.**
+1. **Implement resumable native Calls over a guest frame stack.**
    Full-width register values now persist across native branches and calls.
    `d664bce` / `e89de7f8` passes 240 debug/release tests. Three real-edit cycles
    improve token 23.6% paired and folded 4.2%. Token passes its original gate;
    folded misses 10%, so the options stay experimental. Fresh exact-code
-   profiles put folded VM frame reservation at 24.9% and generated zeroing at
-   9.0%; direct register-array stores are 3.6%. These shares are not savings.
-   Next inventory additional fully overwritten private aggregate ranges with
-   noninterfering lifetimes, preserving padding, aliases and entry zero values.
-   Keep existing scalar coloring, unused-local and argument-zeroing work separate.
-   [Bounded diagnostic plan](benchmarks/experiments/aggregate-reuse-census/PLAN.md).
+   profiles retain substantial native-boundary/dispatcher cost. The qualified
+   [private-array census](results/aggregate-reuse-weights-01/assessment.md) finds
+   only 0.0000073% additional folded frame-byte reduction and 0.1233% token;
+   that narrow layout change is parked. Next remove whole-function eligibility
+   restrictions using exact guest-frame continuations at unsupported operations,
+   budget tails and preparation boundaries. Preserve initialization and all call,
+   return, TLS and profile semantics; moving setup into native code alone is not
+   a gain. [Implementation plan](benchmarks/experiments/resumable-native-calls/PLAN.md).
    Keep the original b2aa6efe gates, then require held-out and broader qualification.
    [Result](results/persistent-e2e-01/assessment.md),
    [profiling protocol](benchmarks/experiments/bounded-native-calls/PROFILING.md).

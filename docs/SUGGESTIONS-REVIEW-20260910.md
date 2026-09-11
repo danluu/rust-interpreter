@@ -112,6 +112,16 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- The additional private-array reuse census (`f9bd49c`, isolated tool `71605527`)
+  passes 15 exporter/observer tests and preserves both original exported artifacts
+  and assertions on the exact `e89de7f8` VM. A typed join passes three tests and
+  checks all function IDs/operations and exact counts in fresh profiles. Its
+  [weighted result](../results/aggregate-reuse-weights-01/assessment.md) is only
+  0.0000073% additional folded frame bytes and 0.1233% token. This narrow change
+  is parked; broader layout proofs remain open. The next native-call step uses
+  [resumable guest frames](../benchmarks/experiments/resumable-native-calls/PLAN.md)
+  to avoid excluding whole functions for loops or cold unsupported operations.
+
 - Items 3.2 and 5.4 now have a bounded full-CFG liveness analysis and shared
   read-before-write visitor (`b252588`), plus persistent full-u128 register pairs
   across native branches/calls (`d664bce` / `e89de7f8`). Debug and release pass
@@ -176,7 +186,7 @@ attribution are complete. The diagnostic tool passes 233 debug/release tests.
 [Register liveness/persistence](../benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md)
 is now implemented and measured above. The
 [next diagnostic](../benchmarks/experiments/aggregate-reuse-census/PLAN.md)
-investigates additional fully initialized private frame ranges. Existing
-argument-zeroing and unused-local censuses remain parked.
+has completed and parked private primitive-array reuse. Existing argument-zeroing
+and unused-local censuses also remain parked; resumable native Calls are next.
 The remaining accepted design work above is prioritized follow-up, not a claim
 that a production Rust development engine is complete.

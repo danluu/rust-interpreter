@@ -19,7 +19,8 @@ Paired change is the median within-edit ratio; command columns are marginal
 medians. The targets remain −20% token and −10% folded against b2aa6efe.
 Full-width values now persist across native branches and calls. Token passes
 its primary gate, but folded misses its target. Broader qualification remains
-required. Fresh exact-code profiles guide the next runtime direction.
+required. A qualified private-array reuse census found negligible scope;
+the next runtime direction is resumable native Calls over guest frames.
 [Result and limitations](results/persistent-e2e-01/assessment.md).
 
 ## Full-corpus baseline
