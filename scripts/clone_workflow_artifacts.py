@@ -47,6 +47,20 @@ def stable(record):
     return {k: v for k, v in record.items() if k not in ['atime_ns', 'open_file_check']}
 
 
+def selected_histories(args):
+    """Require explicit paired corpus IDs or explicit standalone workflows."""
+    paired = list(zip(args.workflow, args.corpus))
+    standalone = [(workflow, None) for workflow in args.standalone_workflow]
+    histories = paired + standalone
+    require((bool(args.prepare) and not args.apply and len(args.workflow) == len(args.corpus) and
+             0 < len(histories) <= 8 and not args.plan_sha256) or
+            (bool(args.apply) and not args.prepare and not args.workflow and not args.corpus and
+             not args.standalone_workflow and args.plan_sha256), 'invalid preparation/application arguments')
+    require(len({workflow for workflow, _ in histories}) == len(histories), 'duplicate workflow')
+    return [(identifier(workflow), identifier(corpus) if corpus is not None else None)
+            for workflow, corpus in histories]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
@@ -54,10 +68,11 @@ def main():
     action.add_argument('--apply')
     parser.add_argument('--corpus', action='append', default=[])
     parser.add_argument('--workflow', action='append', default=[])
+    parser.add_argument('--standalone-workflow', action='append', default=[],
+                        help='completed supervised workflow without a parent corpus; preparation only')
     parser.add_argument('--plan-sha256')
     args = parser.parse_args()
-    require((bool(args.prepare) and 0 < len(args.workflow) == len(args.corpus) <= 8 and not args.plan_sha256) or
-            (bool(args.apply) and not args.workflow and not args.corpus and args.plan_sha256), 'invalid preparation/application arguments')
+    pairs = selected_histories(args)
     run = identifier(args.prepare or args.apply)
     raw, out = [ROOT / parent / run for parent in ['.work/clones', 'results']]
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -69,9 +84,7 @@ def main():
             require(qualified['status'] == 'passed' and qualified['independent_writes_both_directions'] and
                     qualified['sources_sha256']['scripts/artifact_clones.py'] == sha(ROOT / 'scripts/artifact_clones.py'),
                     'current clone helper has not passed qualification')
-            pairs = list(zip(args.workflow, args.corpus))
-            require(len(set(args.workflow)) == len(pairs), 'duplicate workflow')
-            histories = [snapshots(identifier(w), identifier(c)) for w, c in pairs]
+            histories = [snapshots(w, c) for w, c in pairs]
             plan = dict(schema_version=1, owner=str(ROOT), prepared_at=time.time(), histories=histories,
                 sources_sha256=source_hashes(), qualification_sha256=sha(qualification),
                 semantics='Preserve exact paths/bytes/ownership/mode/mtime and independent writes. Inode/ctime/birthtime change; access times may change during verification. Plain files only; no hardlink or ordinary-copy fallback.')
@@ -82,7 +95,7 @@ def main():
             write_json(raw / 'status.json', dict(status='prepared', plan_sha256=digest))
             entries = [e for h in histories for e in h['entries']]
             write_json(out / 'review.json', dict(plan_sha256=digest, raw=str(raw.relative_to(ROOT)),
-                workflows=args.workflow, files=len(entries), replacements=sum(e['path'] != e['anchor'] for e in entries),
+                workflows=[w for w, _ in pairs], files=len(entries), replacements=sum(e['path'] != e['anchor'] for e in entries),
                 duplicate_logical_bytes=sum(e['bytes'] for e in entries if e['path'] != e['anchor']),
                 sources_sha256=plan['sources_sha256'], qualification_sha256=plan['qualification_sha256'],
                 semantics=plan['semantics']))

@@ -1,0 +1,1 @@
+Five valid selector configurations and sixteen invalid configurations pass their checks. All 270 executed snapshots across three real standalone histories verify with their original command evidence. No snapshot was changed. The underlying file-clone primitive is unchanged from its existing independent-write qualification.
