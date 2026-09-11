@@ -1,0 +1,781 @@
+{
+  "project": "ruff",
+  "workflow": "default",
+  "revision": "d136bd8d002a648de5f344df602e492658306f1e",
+  "tests": [
+    "registry::tests::documentation",
+    "registry::tests::rule_naming_convention",
+    "registry::tests::check_code_serialization",
+    "registry::tests::linter_parse_code",
+    "registry::tests::rule_size",
+    "registry::tests::linter_sorting"
+  ],
+  "edits": [
+    "match-optional-rule-code-explicitly",
+    "make-name-conversion-explicit",
+    "match-linter-prefix-result-explicitly",
+    "name-code-suffix-before-comparison",
+    "use-explicit-rule-search-loop"
+  ],
+  "workload": "All six existing registry tests, including rule-code roundtrips, naming patterns, and linter sorting",
+  "case_sha256": "74ce22dd5d862475efcf2d1f849514cda626aacd10cdcef63f3b1bffffc42bc8",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": true,
+  "raw": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+  "candidate_tool_key_requested": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 5.495121625000024,
+    "baseline": 2.7850577079999823,
+    "candidate": 2.767264958999988
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 56.021062542,
+    "baseline": 28.234059540999993,
+    "candidate": 27.709019917000006
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "0a5dd4678615d6f2e5fd5b5e4ed083c2e48df8c0ae7a3ad03232293d86ff5a96",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "83c9f16c422f60c67e72776e83ac9e1f2e9d2f27ed12cd4e7a6437448701ecec",
+      "exporter_sha256": "220d1817b8d498609f674f5c31208eebb56a6d98b72b116cc88ee96e65b5d98f"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "83c9f16c422f60c67e72776e83ac9e1f2e9d2f27ed12cd4e7a6437448701ecec",
+      "exporter_sha256": "a0dd4437b17398c17506576a07760a2246cefa741cd6600cd062de04faf39fa4"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "83c9f16c422f60c67e72776e83ac9e1f2e9d2f27ed12cd4e7a6437448701ecec",
+  "exporter_sha256": "a0dd4437b17398c17506576a07760a2246cefa741cd6600cd062de04faf39fa4",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 56.021062542,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        3.74560546875,
+        2.48291015625,
+        2.2607421875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 28.234059540999993,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        4.00732421875,
+        2.65087890625,
+        2.3271484375
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/baseline/0-0.rbc",
+          "sha256": "c56f3363a133eb832ad99b816158914d631684986439d1c4bb096341f20438ac",
+          "bytes": 4437351
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 27.709019917000006,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        3.654296875,
+        2.69775390625,
+        2.3544921875
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/candidate/0-0.rbc",
+          "sha256": "833b0b222aeab42651e4a67972a377a2c3fa1c9ff7059f1e4b3bc3285f882d62",
+          "bytes": 4437351
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.9586956250000043,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        3.654296875,
+        2.69775390625,
+        2.3544921875
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "7ab3ee674fcd71b35039dfc40ea5fb9a50fca96df008cd7cc50d6ae721746674",
+          "bytes": 4433093
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.0520410000000027,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        3.681640625,
+        2.71923828125,
+        2.36376953125
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "40cf3910d83fbe64850c7ef513c84c52f3de61f22271859a8400abd9d3ef792a",
+          "bytes": 4433093
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.682302917000001,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        3.626953125,
+        2.7236328125,
+        2.3671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 5.8719957089999895,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        3.29638671875,
+        2.6826171875,
+        2.3564453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.8755397909999942,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        3.29638671875,
+        2.6826171875,
+        2.3564453125
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/baseline/1-0.rbc",
+          "sha256": "6332dffb9bd1d723833a9aa25301c438094cac5d83455a42b94772f57a987859",
+          "bytes": 1449090
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.767264958999988,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        3.2724609375,
+        2.6875,
+        2.35986328125
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/candidate/1-0.rbc",
+          "sha256": "fe457d7929045438bd8e12a2dbd198f9a7f68ed0ccf61c0458452a85d6eaa82a",
+          "bytes": 1449090
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 4.117953125000014,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        3.09033203125,
+        2.6591796875,
+        2.3515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.7491741670000067,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        3.09033203125,
+        2.6591796875,
+        2.3515625
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/candidate/2-0.rbc",
+          "sha256": "9671c07f6a4d5e0049a03c6f5e8f6cd3684cce84604c5b15d8acab22b15f1b8c",
+          "bytes": 2054747
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.6887544580000053,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        3.0029296875,
+        2.64794921875,
+        2.34912109375
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/baseline/2-0.rbc",
+          "sha256": "95b9192889c5f301055d56bda1156882f85ae310568726420121f9300e743b8a",
+          "bytes": 2054747
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 2.6403640000000053,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        3.0029296875,
+        2.64794921875,
+        2.34912109375
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/baseline/3-0.rbc",
+          "sha256": "05a13a8b3a5b98a215474ecf3481c606921d5a233a1bcf9215b5f125d8470beb",
+          "bytes": 1682491
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 5.495121625000024,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        2.84228515625,
+        2.6201171875,
+        2.3408203125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 2.8091693340000177,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        2.7744140625,
+        2.609375,
+        2.33837890625
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/candidate/3-0.rbc",
+          "sha256": "88972231af48707676d4ec4544ec7b8fe71a3de607dcbdb86cd727a678eb63ea",
+          "bytes": 1682491
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.577227708999999,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        2.7744140625,
+        2.609375,
+        2.33837890625
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/candidate/4-0.rbc",
+          "sha256": "64d117569dfb2d64d832bebac9bcddee759ca13a225b8413441be0bfb127bcdf",
+          "bytes": 1444225
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 4.121567583000001,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        2.6318359375,
+        2.58251953125,
+        2.330078125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.7850577079999823,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        2.7412109375,
+        2.60595703125,
+        2.33984375
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/baseline/4-0.rbc",
+          "sha256": "5fe448b9f3c9f4ffddfefd4596b30a23027cdfbfb3d54130813244a42a5fb72e",
+          "bytes": 1444225
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.8820117920000143,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        2.7412109375,
+        2.60595703125,
+        2.33984375
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/baseline/5-0.rbc",
+          "sha256": "4848578e2db161431995eedbc04a1dabfa31a86318ba8d3a1d94e94104886edd",
+          "bytes": 4422196
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.9266702920000114,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        2.841796875,
+        2.62890625,
+        2.34912109375
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-ruff-01/artifacts/candidate/5-0.rbc",
+          "sha256": "93e29756895897ea377c31d0bf7202935f03259bb2da776d3204bf58f105bd20",
+          "bytes": 4422196
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 5.820718709000005,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        2.85400390625,
+        2.634765625,
+        2.3525390625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+    "candidate_tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline_seconds": 2.8755397909999942,
+        "candidate_seconds": 2.767264958999988,
+        "difference_seconds": -0.10827483200000643,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.747982792,
+            "execution_seconds": 0.04338537500000017,
+            "artifact_hash_seconds": 0.0006849580000003463,
+            "launcher_seconds": 2.834479667
+          },
+          "candidate": {
+            "cargo_seconds": 2.661224875,
+            "execution_seconds": 0.042561832999999716,
+            "artifact_hash_seconds": 0.0006801250000001424,
+            "launcher_seconds": 2.743356083
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline_seconds": 2.6887544580000053,
+        "candidate_seconds": 2.7491741670000067,
+        "difference_seconds": 0.060419709000001376,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.560832458,
+            "execution_seconds": 0.06313741700000008,
+            "artifact_hash_seconds": 0.0009297500000000625,
+            "launcher_seconds": 2.664104666
+          },
+          "candidate": {
+            "cargo_seconds": 2.607583334,
+            "execution_seconds": 0.061147582999999894,
+            "artifact_hash_seconds": 0.000866290999999908,
+            "launcher_seconds": 2.711525542
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline_seconds": 2.6403640000000053,
+        "candidate_seconds": 2.8091693340000177,
+        "difference_seconds": 0.1688053340000124,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.525104875,
+            "execution_seconds": 0.052254416999999886,
+            "artifact_hash_seconds": 0.00073395800000009,
+            "launcher_seconds": 2.616382833
+          },
+          "candidate": {
+            "cargo_seconds": 2.6753280420000003,
+            "execution_seconds": 0.05324600000000013,
+            "artifact_hash_seconds": 0.0007280000000000619,
+            "launcher_seconds": 2.77148175
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline_seconds": 2.7850577079999823,
+        "candidate_seconds": 2.577227708999999,
+        "difference_seconds": -0.20782999899998345,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.6629735,
+            "execution_seconds": 0.04289324999999966,
+            "artifact_hash_seconds": 0.0007354159999999332,
+            "launcher_seconds": 2.7477069999999997
+          },
+          "candidate": {
+            "cargo_seconds": 2.4719840420000003,
+            "execution_seconds": 0.04214116699999959,
+            "artifact_hash_seconds": 0.000644416000000092,
+            "launcher_seconds": 2.5530709579999997
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline_seconds": 2.8820117920000143,
+        "candidate_seconds": 2.9266702920000114,
+        "difference_seconds": 0.04465849999999705,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.73927525,
+            "execution_seconds": 0.07704145800000006,
+            "artifact_hash_seconds": 0.0019816669999999093,
+            "launcher_seconds": 2.857494166
+          },
+          "candidate": {
+            "cargo_seconds": 2.7844564999999997,
+            "execution_seconds": 0.0773405829999998,
+            "artifact_hash_seconds": 0.0018660000000001453,
+            "launcher_seconds": 2.902033959
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.04465849999999705
+  }
+}

@@ -1,0 +1,653 @@
+{
+  "project": "nushell",
+  "workflow": "type-relations",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "tests": [
+    "ty::tests::oneof::oneof_lhs",
+    "ty::tests::oneof::oneof_rhs",
+    "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+    "ty::tests::oneof_flattening::test_oneof_deduplicates",
+    "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+    "ty::tests::subtype_relation::table_list_oneof_covariance",
+    "ty::tests::subtype_relation::test_any_is_top_type",
+    "ty::tests::subtype_relation::test_list_covariance",
+    "ty::tests::subtype_relation::test_number_supertype",
+    "ty::tests::subtype_relation::test_reflexivity",
+    "ty::tests::widen_shortcuts::test_chain_shortcut",
+    "ty::tests::widen_shortcuts::test_glob_string_union",
+    "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+    "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+  ],
+  "edits": [
+    "combine-equal-and-supertype-widening-arms",
+    "collect-oneof-from-explicit-iterator",
+    "return-unrelated-widening-pair-early",
+    "express-subtype-test-with-is-some-and",
+    "make-union-pair-iterator-explicit"
+  ],
+  "workload": "All fourteen existing type-relation tests: enum cross-product covariance, OneOf hashing/deduplication, nested collections, and the original 100-step widening chain",
+  "case_sha256": "71efbef9c1c396130a892eefdddf7309dce7f00c6a2467eb8f2ca50c2749cab2",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-workflow-nushell-type-relations-jit-division-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "guest_mir_opt_level": null,
+  "tool_key": "193fc7498198701e58006033250f9b8c2aaa9e8d94affd50ec84dd28b47b39b3",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 11.073692042000005,
+    "interpreter": 5.094706375000015,
+    "jit": 5.246320957999956
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 70.59915504099999,
+    "interpreter": 62.761018459,
+    "jit": 64.034372458
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "8adc01448e634133eaf29de6b9dd5da1441d563ea5a86e99bc0ee15fff08d326",
+    "scripts/interpreter.py": "e910ac14237f77a4f3d6ba82208276a0a836db26a2e95645ca8436aa1c089df7",
+    "scripts/workflow_cases.py": "8c37fb0ffde10b7120d7576ec84add96e8095b7725b8637f6e61f6dcd654e46a",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "vm_sha256": "f79d2c7da3579de9fd7504005c871023e4b12493414c4c52a335dfd640e127d5",
+  "exporter_sha256": "2e38d1f2e8face4a56e199f23724ce63483cfc2fb1d8e726bd23a63be9809b15",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 70.59915504099999,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        8.61376953125,
+        5.92919921875,
+        5.23291015625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 62.761018459,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        7.2734375,
+        6.111328125,
+        5.353515625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 64.034372458,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        9.79150390625,
+        7.0068359375,
+        5.73583984375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 3.9521391660000234,
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        9.32763671875,
+        6.95654296875,
+        5.7255859375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.174757666999994,
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        9.38134765625,
+        7.0068359375,
+        5.75048828125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 9.941824457999985,
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        8.39990234375,
+        6.87451171875,
+        5.7177734375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "combine-equal-and-supertype-widening-arms",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.400438500000007,
+      "source_sha256": "2b991eae528eb2f8824ff145397ffa0dd83e271515525c10bd8938e20bcbdafa",
+      "load": [
+        8.36767578125,
+        6.89306640625,
+        5.73095703125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "combine-equal-and-supertype-widening-arms",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.094706375000015,
+      "source_sha256": "2b991eae528eb2f8824ff145397ffa0dd83e271515525c10bd8938e20bcbdafa",
+      "load": [
+        7.9375,
+        6.828125,
+        5.71484375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "combine-equal-and-supertype-widening-arms",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 9.634438042,
+      "source_sha256": "2b991eae528eb2f8824ff145397ffa0dd83e271515525c10bd8938e20bcbdafa",
+      "load": [
+        7.01806640625,
+        6.66845703125,
+        5.6708984375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "collect-oneof-from-explicit-iterator",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 14.304486083,
+      "source_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+      "load": [
+        8.85498046875,
+        7.13134765625,
+        5.85498046875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "collect-oneof-from-explicit-iterator",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.325176707999958,
+      "source_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+      "load": [
+        8.5458984375,
+        7.095703125,
+        5.849609375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "collect-oneof-from-explicit-iterator",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.246320957999956,
+      "source_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+      "load": [
+        10.583984375,
+        7.5419921875,
+        6.01416015625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "return-unrelated-widening-pair-early",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 4.782400499999994,
+      "source_sha256": "268d5bc7071e9f2d4811ca1a9df4b93e81aeedaed0061c36d067888a3cfaa7eb",
+      "load": [
+        10.216796875,
+        7.51611328125,
+        6.013671875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "return-unrelated-widening-pair-early",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.0308608749999735,
+      "source_sha256": "268d5bc7071e9f2d4811ca1a9df4b93e81aeedaed0061c36d067888a3cfaa7eb",
+      "load": [
+        9.798828125,
+        7.47412109375,
+        6.00732421875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "return-unrelated-widening-pair-early",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 11.073692042000005,
+      "source_sha256": "268d5bc7071e9f2d4811ca1a9df4b93e81aeedaed0061c36d067888a3cfaa7eb",
+      "load": [
+        8.90673828125,
+        7.35888671875,
+        5.9833984375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "express-subtype-test-with-is-some-and",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 9.052349915999969,
+      "source_sha256": "4a4786a0576cf152a0f36e2de5da099120d2409e6a6c1272a4635da6875aebd8",
+      "load": [
+        7.837890625,
+        7.181640625,
+        5.9365234375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "express-subtype-test-with-is-some-and",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 6.448915459000034,
+      "source_sha256": "4a4786a0576cf152a0f36e2de5da099120d2409e6a6c1272a4635da6875aebd8",
+      "load": [
+        7.4501953125,
+        7.11181640625,
+        5.9189453125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "express-subtype-test-with-is-some-and",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.7733120830000075,
+      "source_sha256": "4a4786a0576cf152a0f36e2de5da099120d2409e6a6c1272a4635da6875aebd8",
+      "load": [
+        6.765625,
+        6.97607421875,
+        5.88427734375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "make-union-pair-iterator-explicit",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.003610292000019,
+      "source_sha256": "26be19f11e2bf168c19f5a39322a9454392fe2f594ab7aa450090e767840ae6e",
+      "load": [
+        6.6240234375,
+        6.94287109375,
+        5.87890625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "make-union-pair-iterator-explicit",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 4.748552417000042,
+      "source_sha256": "26be19f11e2bf168c19f5a39322a9454392fe2f594ab7aa450090e767840ae6e",
+      "load": [
+        6.33349609375,
+        6.876953125,
+        5.86181640625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "make-union-pair-iterator-explicit",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 17.543021334000002,
+      "source_sha256": "26be19f11e2bf168c19f5a39322a9454392fe2f594ab7aa450090e767840ae6e",
+      "load": [
+        5.2373046875,
+        6.60546875,
+        5.7822265625
+      ]
+    }
+  ]
+}

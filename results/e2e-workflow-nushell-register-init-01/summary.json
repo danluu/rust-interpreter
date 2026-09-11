@@ -1,0 +1,403 @@
+{
+  "project": "nushell",
+  "workflow": "default",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "tests": [
+    "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+    "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+    "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+    "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+  ],
+  "edits": [
+    "express-membership-with-any",
+    "reject-empty-name-early",
+    "filter-spaces-before-utf8-conversion",
+    "chain-keyword-tables-for-membership",
+    "make-utf8-result-handling-explicit"
+  ],
+  "workload": "All four existing parser-keyword tests, including collection of single-word keywords",
+  "case_sha256": "9d94b6856a360257ca0e9f92dfda3797ea2708ba2d9fce148329ee3501526f9f",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": true,
+  "raw": ".work/runs/e2e-workflow-nushell-register-init-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "guest_mir_opt_level": null,
+  "tool_key": "ac51146616624f7563f77da1e1d3d1a9754dd28f4dfe83497fb37930fea88c1a",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.6235116669999883,
+    "interpreter": 0.42843508299999655,
+    "jit": 0.4295793329999924
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 21.859480791,
+    "interpreter": 19.510439417,
+    "jit": 20.955790416999996
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "8adc01448e634133eaf29de6b9dd5da1441d563ea5a86e99bc0ee15fff08d326",
+    "scripts/interpreter.py": "e910ac14237f77a4f3d6ba82208276a0a836db26a2e95645ca8436aa1c089df7",
+    "scripts/workflow_cases.py": "73f12a7b1d0bb0f542ddfa0d05d5904a4faa3f6d2e12315e6aa868d75c8143e3",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "vm_sha256": "14c64da978a4557cfbe1c36df074529d9d920bee187579b3368b8a93562536b9",
+  "exporter_sha256": "44b67fb2085b2cd8a482bd8a6c6bf2c8f57342b640fc70bb49bf271403043de2",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 21.859480791,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.58984375,
+        3.82666015625,
+        2.951171875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 19.510439417,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.193359375,
+        3.85205078125,
+        2.98046875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 20.955790416999996,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.95556640625,
+        4.10595703125,
+        3.0908203125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.7139058750000018,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.95556640625,
+        4.10595703125,
+        3.0908203125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6327419579999969,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.95556640625,
+        4.10595703125,
+        3.0908203125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.9345003749999918,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.4295793329999924,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.4271942080000031,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.6219777080000028,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.6235116669999883,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.43687729200000547,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.42658579200001157,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4693144579999995,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.452972165999995,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.798828125,
+        4.10400390625,
+        3.095703125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6672260419999958,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.814453125,
+        4.13525390625,
+        3.1123046875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6286992909999896,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.814453125,
+        4.13525390625,
+        3.1123046875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.42843508299999655,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.814453125,
+        4.13525390625,
+        3.1123046875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.42893712499999026,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.814453125,
+        4.13525390625,
+        3.1123046875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.42958212500001025,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.814453125,
+        4.13525390625,
+        3.1123046875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.42504012499999533,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.814453125,
+        4.13525390625,
+        3.1123046875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6037810000000121,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.814453125,
+        4.13525390625,
+        3.1123046875
+      ]
+    }
+  ]
+}

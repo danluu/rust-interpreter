@@ -1,0 +1,1077 @@
+{
+  "project": "fre",
+  "workflow": "forward-anchored-tls",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+    "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+    "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+    "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+    "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+    "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+    "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+    "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+    "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+    "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+    "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+    "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+    "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+    "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+    "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+    "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+    "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+  ],
+  "edits": [
+    "name-byte-class-membership-mask",
+    "combine-empty-class-words",
+    "match-canonical-member-count-explicitly",
+    "match-inclusive-range-cardinality",
+    "use-iterator-for-inclusive-insertion"
+  ],
+  "workload": "Seventeen original forward-anchored tests newly executable with guest TLS destructors: ordered disjoint witness partitions, directed-position model comparisons, candidate-prefix accounting, threshold boundaries and exact call counts; real production edits preserve original tests and tracing instrumentation",
+  "case_sha256": "762216473bccbd206725c21697771c1e71802fc7c9f05cfeade4dfd95007e90a",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/paired-direct-forwarding-tls-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 100000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": true,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+  "candidate_tool_key_requested": null,
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.4970025410000005,
+    "baseline": 2.1592716669999987,
+    "candidate": 1.9686509590000014
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.289206583,
+    "baseline": 6.074903749999999,
+    "candidate": 5.888383792000001
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "0a5dd4678615d6f2e5fd5b5e4ed083c2e48df8c0ae7a3ad03232293d86ff5a96",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [],
+      "vm_sha256": "b429eebfa27812435e19e3c1a73b34e6d714ad19a97b8f2db34564f4a2001c9d",
+      "exporter_sha256": "cc3a6e6dd60577a4596f2281649e913d6ea4e3ee36eb3e09515dd37bace9363b"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [],
+      "vm_sha256": "0cbafda5b99c593bae4738b26562b469552a959044e65fa5cb40a81f19a0d1b4",
+      "exporter_sha256": "2ea44868e4b1c52bcc1c6aa5947b0836bf7bcd5894df5f72dfffe8ee956b59a4"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "0cbafda5b99c593bae4738b26562b469552a959044e65fa5cb40a81f19a0d1b4",
+  "exporter_sha256": "2ea44868e4b1c52bcc1c6aa5947b0836bf7bcd5894df5f72dfffe8ee956b59a4",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 7.289206583,
+      "source_sha256": "9feaed6f5d75de2569636df9a88221351a517ec88a05dcbd02d30b31302a7ea0",
+      "load": [
+        3.06201171875,
+        2.0517578125,
+        2.18017578125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 6.074903749999999,
+      "source_sha256": "9feaed6f5d75de2569636df9a88221351a517ec88a05dcbd02d30b31302a7ea0",
+      "load": [
+        3.13671875,
+        2.083984375,
+        2.1904296875
+      ],
+      "engine": "jit",
+      "tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/baseline/0-0.rbc",
+          "sha256": "5bb46a70feaa1482f0e5c336461396440435d1890c5a136341eab0ded18beae4",
+          "bytes": 3378567
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 5.888383792000001,
+      "source_sha256": "9feaed6f5d75de2569636df9a88221351a517ec88a05dcbd02d30b31302a7ea0",
+      "load": [
+        2.96533203125,
+        2.06591796875,
+        2.18310546875
+      ],
+      "engine": "jit",
+      "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/candidate/0-0.rbc",
+          "sha256": "15676795be5ab8722e41bc29e4147182e4697c3a0ddfcb05c26af453db2386c7",
+          "bytes": 3378567
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 0.9079205419999994,
+      "source_sha256": "2a3803d22c9020d813ff6a7d424989cc81616e5b78ca359a50ce2ed472b99900",
+      "load": [
+        2.96533203125,
+        2.06591796875,
+        2.18310546875
+      ],
+      "engine": "jit",
+      "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "60a31c1657747cf1030596fbb9eac4c06992b436fd233ee3a13e15d5ffb2932d",
+          "bytes": 3378567
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 0.904511583999998,
+      "source_sha256": "2a3803d22c9020d813ff6a7d424989cc81616e5b78ca359a50ce2ed472b99900",
+      "load": [
+        2.9677734375,
+        2.0810546875,
+        2.1875
+      ],
+      "engine": "jit",
+      "tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "8212165b456cf73dfeaa8c8a8b2af680b26346f0555e5e88a623283eb578bb31",
+          "bytes": 3378567
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.4866588749999998,
+      "source_sha256": "2a3803d22c9020d813ff6a7d424989cc81616e5b78ca359a50ce2ed472b99900",
+      "load": [
+        2.9677734375,
+        2.0810546875,
+        2.1875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-byte-class-membership-mask",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.752788209000002,
+      "source_sha256": "1fc34dadcda7ab60f3813040ff0d3dafd2f109a84c157b8cefbbee8d8ebead8b",
+      "load": [
+        2.9677734375,
+        2.0810546875,
+        2.1875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-byte-class-membership-mask",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 2.253634625,
+      "source_sha256": "1fc34dadcda7ab60f3813040ff0d3dafd2f109a84c157b8cefbbee8d8ebead8b",
+      "load": [
+        2.81005859375,
+        2.06298828125,
+        2.18017578125
+      ],
+      "engine": "jit",
+      "tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/baseline/1-0.rbc",
+          "sha256": "7d217dc9abe94842bd9aa50547e35d8f86b9b62109f6d8b74b992f58a1739d99",
+          "bytes": 3378567
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-byte-class-membership-mask",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 2.0500920419999993,
+      "source_sha256": "1fc34dadcda7ab60f3813040ff0d3dafd2f109a84c157b8cefbbee8d8ebead8b",
+      "load": [
+        2.81005859375,
+        2.06298828125,
+        2.18017578125
+      ],
+      "engine": "jit",
+      "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/candidate/1-0.rbc",
+          "sha256": "c409478d629f85e0f68643896ae80f81bc5972fcd8eb0f2731945b9064946430",
+          "bytes": 3378567
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "combine-empty-class-words",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.415578458999999,
+      "source_sha256": "8472046fffafb84e036df259818b690e664383081563a57143f97d943e4223b4",
+      "load": [
+        2.81005859375,
+        2.06298828125,
+        2.18017578125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "combine-empty-class-words",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.9339369590000004,
+      "source_sha256": "8472046fffafb84e036df259818b690e664383081563a57143f97d943e4223b4",
+      "load": [
+        2.6650390625,
+        2.044921875,
+        2.1728515625
+      ],
+      "engine": "jit",
+      "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/candidate/2-0.rbc",
+          "sha256": "cf29538c86ca0a928760c2b905d35923f43477053c2de9e1783bf81771392adc",
+          "bytes": 3378070
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "combine-empty-class-words",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 2.1182142919999976,
+      "source_sha256": "8472046fffafb84e036df259818b690e664383081563a57143f97d943e4223b4",
+      "load": [
+        2.6650390625,
+        2.044921875,
+        2.1728515625
+      ],
+      "engine": "jit",
+      "tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/baseline/2-0.rbc",
+          "sha256": "688b0bbd2038f17d68daebdb4cd25dc89496fc3457b41589beb5454cdd568706",
+          "bytes": 3378070
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "match-canonical-member-count-explicitly",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 2.1162909170000006,
+      "source_sha256": "777523bb74f81af2130f061cf94b6859b5247bb205720ed6949115db97c16984",
+      "load": [
+        2.53125,
+        2.02734375,
+        2.16552734375
+      ],
+      "engine": "jit",
+      "tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/baseline/3-0.rbc",
+          "sha256": "bb961995fad1fff359affda69d3e8e6571150180f1f1e023bfa45355368819ac",
+          "bytes": 3376691
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "match-canonical-member-count-explicitly",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.430140541,
+      "source_sha256": "777523bb74f81af2130f061cf94b6859b5247bb205720ed6949115db97c16984",
+      "load": [
+        2.53125,
+        2.02734375,
+        2.16552734375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "match-canonical-member-count-explicitly",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.9686509590000014,
+      "source_sha256": "777523bb74f81af2130f061cf94b6859b5247bb205720ed6949115db97c16984",
+      "load": [
+        2.53125,
+        2.02734375,
+        2.16552734375
+      ],
+      "engine": "jit",
+      "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/candidate/3-0.rbc",
+          "sha256": "f877b222cc52287d3474d925a21c991ccb001e1e71bc117c454036578168b56d",
+          "bytes": 3376691
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "match-inclusive-range-cardinality",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.9251257499999994,
+      "source_sha256": "3f89051c7cb71998b036e8277c38b4f27660052fec18b2ba7ea167b172281723",
+      "load": [
+        2.48828125,
+        2.02685546875,
+        2.16455078125
+      ],
+      "engine": "jit",
+      "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/candidate/4-0.rbc",
+          "sha256": "29ab67e472648b30e3bd72567884786e668cbdb1cde9c2f3fb1459a57063405a",
+          "bytes": 3376691
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "match-inclusive-range-cardinality",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.4970025410000005,
+      "source_sha256": "3f89051c7cb71998b036e8277c38b4f27660052fec18b2ba7ea167b172281723",
+      "load": [
+        2.48828125,
+        2.02685546875,
+        2.16455078125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "match-inclusive-range-cardinality",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 2.1592716669999987,
+      "source_sha256": "3f89051c7cb71998b036e8277c38b4f27660052fec18b2ba7ea167b172281723",
+      "load": [
+        2.48828125,
+        2.02685546875,
+        2.16455078125
+      ],
+      "engine": "jit",
+      "tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/baseline/4-0.rbc",
+          "sha256": "5dbe7613f51e013fd00525be0d08a8e343c04131b47c63b8afaf8f4b887557d3",
+          "bytes": 3376691
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-iterator-for-inclusive-insertion",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 2.257359958000002,
+      "source_sha256": "b079c1d68f9d9054c05f18b78f77db3d94069dd4a9a7432ede0504ce5ba12855",
+      "load": [
+        2.36865234375,
+        2.009765625,
+        2.15771484375
+      ],
+      "engine": "jit",
+      "tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/baseline/5-0.rbc",
+          "sha256": "8cd45721e0846e9842662dc82c416cfe203650b82a3f34ac08c0ecb0cc026c63",
+          "bytes": 3394219
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-iterator-for-inclusive-insertion",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 2.0452435420000015,
+      "source_sha256": "b079c1d68f9d9054c05f18b78f77db3d94069dd4a9a7432ede0504ce5ba12855",
+      "load": [
+        2.36865234375,
+        2.009765625,
+        2.15771484375
+      ],
+      "engine": "jit",
+      "tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-direct-forwarding-tls-01/artifacts/candidate/5-0.rbc",
+          "sha256": "9d7e0ba7e1bdb70f5dc9a28c0fc03ef27783c5c6bce5d88a640f16a2157c3601",
+          "bytes": 3394219
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-iterator-for-inclusive-insertion",
+      "tests": [
+        "forward_anchored::tests::asymmetric_partition_is_ordered_disjoint_complete_and_mutation_effective",
+        "forward_anchored::tests::asymmetric_witness_confirms_the_returned_first_outsider",
+        "forward_anchored::tests::asymmetric_witness_matches_independent_model_at_every_directed_position",
+        "forward_anchored::tests::asymmetric_witness_partitions_and_call_counts_are_exact",
+        "forward_anchored::tests::asymmetric_witness_plan_preserves_partition_boundary_semantics",
+        "forward_anchored::tests::asymmetric_witness_threshold_is_exact_and_overlap_uses_forward",
+        "forward_anchored::tests::candidate_prefix_accounting_is_exact_across_equality_block_edges",
+        "forward_anchored::tests::dispatch_never_replaces_specialized_or_non_ascii_prefix_paths",
+        "forward_anchored::tests::equality_candidate_search_handles_absence_and_earlier_outsiders",
+        "forward_anchored::tests::equality_candidate_search_preserves_windows_and_absolute_anchors",
+        "forward_anchored::tests::first_suffix_byte_candidate_is_the_only_possible_boundary",
+        "forward_anchored::tests::medium_witness_edges_and_middle_have_the_modeled_call_counts",
+        "forward_anchored::tests::overlapping_asymmetric_regions_use_one_forward_prefilter",
+        "forward_anchored::tests::pair_through_quint_confirm_suffix_at_the_first_outsider",
+        "forward_anchored::tests::reverse_asymmetric_witness_handles_a_bordered_suffix",
+        "forward_anchored::tests::triple_plan_target_lengths_and_long_boundary_have_exact_calls",
+        "forward_anchored::tests::valid_equality_candidate_excludes_the_known_outsider"
+      ],
+      "seconds": 1.6000559579999987,
+      "source_sha256": "b079c1d68f9d9054c05f18b78f77db3d94069dd4a9a7432ede0504ce5ba12855",
+      "load": [
+        2.2587890625,
+        1.99267578125,
+        2.15087890625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+    "candidate_tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "1fc34dadcda7ab60f3813040ff0d3dafd2f109a84c157b8cefbbee8d8ebead8b",
+        "baseline_seconds": 2.253634625,
+        "candidate_seconds": 2.0500920419999993,
+        "difference_seconds": -0.20354258300000083,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.883579542,
+            "execution_seconds": 1.3058891250000002,
+            "artifact_hash_seconds": 0.0011090409999999773,
+            "launcher_seconds": 2.229161
+          },
+          "candidate": {
+            "cargo_seconds": 0.883875333,
+            "execution_seconds": 1.102620875,
+            "artifact_hash_seconds": 0.0012217920000000548,
+            "launcher_seconds": 2.0262256250000004
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "8472046fffafb84e036df259818b690e664383081563a57143f97d943e4223b4",
+        "baseline_seconds": 2.1182142919999976,
+        "candidate_seconds": 1.9339369590000004,
+        "difference_seconds": -0.18427733299999716,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.753916667,
+            "execution_seconds": 1.3003212089999998,
+            "artifact_hash_seconds": 0.001121625000000015,
+            "launcher_seconds": 2.093580333
+          },
+          "candidate": {
+            "cargo_seconds": 0.77178,
+            "execution_seconds": 1.097961,
+            "artifact_hash_seconds": 0.0011067909999999959,
+            "launcher_seconds": 1.9095990409999999
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "777523bb74f81af2130f061cf94b6859b5247bb205720ed6949115db97c16984",
+        "baseline_seconds": 2.1162909170000006,
+        "candidate_seconds": 1.9686509590000014,
+        "difference_seconds": -0.14763995799999918,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.742592916,
+            "execution_seconds": 1.3078437909999998,
+            "artifact_hash_seconds": 0.0011068749999999516,
+            "launcher_seconds": 2.089984834
+          },
+          "candidate": {
+            "cargo_seconds": 0.80302175,
+            "execution_seconds": 1.101171209,
+            "artifact_hash_seconds": 0.0011148330000000373,
+            "launcher_seconds": 1.9444036660000001
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "3f89051c7cb71998b036e8277c38b4f27660052fec18b2ba7ea167b172281723",
+        "baseline_seconds": 2.1592716669999987,
+        "candidate_seconds": 1.9251257499999994,
+        "difference_seconds": -0.23414591699999932,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.78127225,
+            "execution_seconds": 1.312356167,
+            "artifact_hash_seconds": 0.0012192920000000385,
+            "launcher_seconds": 2.135306375
+          },
+          "candidate": {
+            "cargo_seconds": 0.771390584,
+            "execution_seconds": 1.087922375,
+            "artifact_hash_seconds": 0.0014244170000000667,
+            "launcher_seconds": 1.900630042
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "b079c1d68f9d9054c05f18b78f77db3d94069dd4a9a7432ede0504ce5ba12855",
+        "baseline_seconds": 2.257359958000002,
+        "candidate_seconds": 2.0452435420000015,
+        "difference_seconds": -0.21211641600000064,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.88243225,
+            "execution_seconds": 1.3108505000000001,
+            "artifact_hash_seconds": 0.0011132910000000162,
+            "launcher_seconds": 2.233289166
+          },
+          "candidate": {
+            "cargo_seconds": 0.896930334,
+            "execution_seconds": 1.082837083,
+            "artifact_hash_seconds": 0.001359499999999958,
+            "launcher_seconds": 2.0205040000000003
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 5,
+    "median_paired_difference_seconds": -0.20354258300000083
+  }
+}

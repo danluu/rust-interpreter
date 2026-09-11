@@ -1,0 +1,756 @@
+{
+  "project": "nushell",
+  "workflow": "default",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "tests": [
+    "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+    "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+    "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+    "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+  ],
+  "edits": [
+    "express-membership-with-any",
+    "reject-empty-name-early",
+    "filter-spaces-before-utf8-conversion",
+    "chain-keyword-tables-for-membership",
+    "make-utf8-result-handling-explicit"
+  ],
+  "workload": "All four existing parser-keyword tests, including collection of single-word keywords",
+  "case_sha256": "9d94b6856a360257ca0e9f92dfda3797ea2708ba2d9fce148329ee3501526f9f",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": true,
+  "raw": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.6600011660000007,
+    "baseline": 0.45120216700000526,
+    "candidate": 0.43917737499999987
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 24.605508625000002,
+    "baseline": 21.482263582999998,
+    "candidate": 21.616808916000004
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "51a37a9249877090ce69254ab8591308e45adbb8df3bcb6643756352bd88d90d",
+    "scripts/interpreter.py": "88d607e173ea266ff6ea7de76f708f83fc65e8a67f6b6bb6af93eb22e571d055",
+    "scripts/workflow_cases.py": "1552b1998ca38835cb8604f86256c2b2a9b32ccf26e765079d3fad4b11c7a0f0",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "guest_rustflags": [],
+      "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+      "exporter_sha256": "facf0ba7fd252e4a1fbd249d511d2b8598b8a92f116b89e23404c5746a1e8d08"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "guest_rustflags": [],
+      "vm_sha256": "07d6322a893c38f2ee1a9b426363178a3bd98353220551eb23cb07abd0eb8e7f",
+      "exporter_sha256": "da7819bb20817801d29bc50fd4594341d80a095ef3686e87f4f08746e967f5cb"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "07d6322a893c38f2ee1a9b426363178a3bd98353220551eb23cb07abd0eb8e7f",
+  "exporter_sha256": "da7819bb20817801d29bc50fd4594341d80a095ef3686e87f4f08746e967f5cb",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 24.605508625000002,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        4.1689453125,
+        3.50927734375,
+        3.4853515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 21.482263582999998,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        4.53271484375,
+        3.63623046875,
+        3.53125
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/baseline/0-0.rbc",
+          "sha256": "aacf2b64670457cbd9af7146aaae85c456b7c9fa1e0d5d1b59263b978464be86",
+          "bytes": 716433
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 21.616808916000004,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.19921875,
+        3.83837890625,
+        3.60546875
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/candidate/0-0.rbc",
+          "sha256": "aacf2b64670457cbd9af7146aaae85c456b7c9fa1e0d5d1b59263b978464be86",
+          "bytes": 716433
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.736960707999998,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.19921875,
+        3.83837890625,
+        3.60546875
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "5b573992b34931dd34566a8a6af29ecd951ba189d0c5cb75ef22cef0d10a3f89",
+          "bytes": 709569
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.8156743340000077,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        4.94287109375,
+        3.8076171875,
+        3.595703125
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "5b573992b34931dd34566a8a6af29ecd951ba189d0c5cb75ef22cef0d10a3f89",
+          "bytes": 709569
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.949387999999999,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        4.94287109375,
+        3.8076171875,
+        3.595703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.6605622080000018,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        4.94287109375,
+        3.8076171875,
+        3.595703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.4770290420000123,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        4.94287109375,
+        3.8076171875,
+        3.595703125
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/baseline/1-0.rbc",
+          "sha256": "30b8be102abc91ca4b7e7a0c08b41dd0b880a9853cfe39ce9b6537c2c4ba77af",
+          "bytes": 24871
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.41447554200000525,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        4.94287109375,
+        3.8076171875,
+        3.595703125
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/candidate/1-0.rbc",
+          "sha256": "30b8be102abc91ca4b7e7a0c08b41dd0b880a9853cfe39ce9b6537c2c4ba77af",
+          "bytes": 24871
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.6387398750000131,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        4.94287109375,
+        3.8076171875,
+        3.595703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.43917737499999987,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        4.94287109375,
+        3.8076171875,
+        3.595703125
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/candidate/2-0.rbc",
+          "sha256": "34e8eca8a8bb05dc9a1c731706518fabfb1c6e7c790df6a62f50c9f653f2a7a7",
+          "bytes": 21853
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.43148812500000133,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        4.94287109375,
+        3.8076171875,
+        3.595703125
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/baseline/2-0.rbc",
+          "sha256": "34e8eca8a8bb05dc9a1c731706518fabfb1c6e7c790df6a62f50c9f653f2a7a7",
+          "bytes": 21853
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.45120216700000526,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/baseline/3-0.rbc",
+          "sha256": "0164312dc96ee5e33fd90dcb47d38d845ae02636013fc62612dffbb6f6047f54",
+          "bytes": 728495
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6600011660000007,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.46537337499999865,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/candidate/3-0.rbc",
+          "sha256": "0164312dc96ee5e33fd90dcb47d38d845ae02636013fc62612dffbb6f6047f54",
+          "bytes": 728495
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.47779874999999095,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/candidate/4-0.rbc",
+          "sha256": "fb108a4e31c9936e51b6fd146d8714040d50b1219043565dd545c899d102edc6",
+          "bytes": 745207
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.644953416000007,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.47276966700000855,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/baseline/4-0.rbc",
+          "sha256": "fb108a4e31c9936e51b6fd146d8714040d50b1219043565dd545c899d102edc6",
+          "bytes": 745207
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.44254549999999426,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/baseline/5-0.rbc",
+          "sha256": "f8caf75c9259b80264d36506a70654e6c2f561f38588e7ab864e75ae3495fcbc",
+          "bytes": 738302
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.43120508399999835,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-nushell-cpu-feature-broad-01/artifacts/candidate/5-0.rbc",
+          "sha256": "f8caf75c9259b80264d36506a70654e6c2f561f38588e7ab864e75ae3495fcbc",
+          "bytes": 738302
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.7022322499999945,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        4.947265625,
+        3.8271484375,
+        3.603515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+    "candidate_tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "baseline_seconds": 0.4770290420000123,
+        "candidate_seconds": 0.41447554200000525,
+        "difference_seconds": -0.06255350000000703,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.3885955,
+            "execution_seconds": 0.0028286659999999797,
+            "artifact_hash_seconds": 0.00012262500000004284,
+            "launcher_seconds": 0.43892375
+          },
+          "candidate": {
+            "cargo_seconds": 0.347197167,
+            "execution_seconds": 0.0029032079999999905,
+            "artifact_hash_seconds": 0.0003009999999999957,
+            "launcher_seconds": 0.39004925
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "baseline_seconds": 0.43148812500000133,
+        "candidate_seconds": 0.43917737499999987,
+        "difference_seconds": 0.0076892499999985375,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.365780917,
+            "execution_seconds": 0.0030376249999999883,
+            "artifact_hash_seconds": 0.0001982919999999888,
+            "launcher_seconds": 0.407406583
+          },
+          "candidate": {
+            "cargo_seconds": 0.363357667,
+            "execution_seconds": 0.0029833750000000103,
+            "artifact_hash_seconds": 0.0003477910000000417,
+            "launcher_seconds": 0.407576625
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "baseline_seconds": 0.45120216700000526,
+        "candidate_seconds": 0.46537337499999865,
+        "difference_seconds": 0.014171207999993385,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.381358625,
+            "execution_seconds": 0.006942583999999974,
+            "artifact_hash_seconds": 0.00043870800000000987,
+            "launcher_seconds": 0.426702458
+          },
+          "candidate": {
+            "cargo_seconds": 0.383759708,
+            "execution_seconds": 0.007070124999999983,
+            "artifact_hash_seconds": 0.0004199169999999919,
+            "launcher_seconds": 0.431982416
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "baseline_seconds": 0.47276966700000855,
+        "candidate_seconds": 0.47779874999999095,
+        "difference_seconds": 0.005029082999982393,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.398199209,
+            "execution_seconds": 0.007472040999999985,
+            "artifact_hash_seconds": 0.00044245800000003443,
+            "launcher_seconds": 0.446050583
+          },
+          "candidate": {
+            "cargo_seconds": 0.398586125,
+            "execution_seconds": 0.00807033300000004,
+            "artifact_hash_seconds": 0.0004553330000000022,
+            "launcher_seconds": 0.45162541599999995
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "baseline_seconds": 0.44254549999999426,
+        "candidate_seconds": 0.43120508399999835,
+        "difference_seconds": -0.011340415999995912,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.366568,
+            "execution_seconds": 0.00728224999999999,
+            "artifact_hash_seconds": 0.00045283400000001306,
+            "launcher_seconds": 0.41685716700000003
+          },
+          "candidate": {
+            "cargo_seconds": 0.35932183300000003,
+            "execution_seconds": 0.007360374999999975,
+            "artifact_hash_seconds": 0.0007389580000000118,
+            "launcher_seconds": 0.406561459
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.005029082999982393
+  }
+}

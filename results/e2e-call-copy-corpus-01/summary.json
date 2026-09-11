@@ -1,0 +1,491 @@
+{
+  "status": "selected argument-copy implementation passes all nine production workflows",
+  "production_benchmark_qualified": true,
+  "tool_key": "152f5bca5be8152fe34a2de35f218789df3732e5a25a3f7ff4f89d7deac0d726",
+  "bytecode_version": 5,
+  "selection": {
+    "label": "both_engines",
+    "tool_key": "152f5bca5be8152fe34a2de35f218789df3732e5a25a3f7ff4f89d7deac0d726",
+    "validation": "results/call-local-copy-validation-01.json",
+    "reason": "The broader shortcut wins all six JIT pairs in each workload, has lower interpreter medians than baseline, and outperforms the JIT-only variant. JIT-only caused a clear word64 interpreter regression and is rejected.",
+    "three_build_comparison": ".work/call-copy-three-builds-01/summary.json",
+    "production_benchmark_qualified": true,
+    "rebuild": {
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "4",
+        "-p",
+        "rust-interp-bytecode",
+        "-p",
+        "rust-interp-mir-export",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/interpreter-build"
+      ],
+      "seconds": 4.877751333,
+      "mutable_immutable_binaries_match": true
+    }
+  },
+  "raw": ".work/call-copy-corpus-01",
+  "source_revisions_restored": {
+    "pgrust": "38d2517d3e09168a8fe222837730d435238ff358",
+    "fre": "e0df0b010b156b030a02f073588d28703f4267f3",
+    "nushell": "9d3157963241cf89447119d34d6e887859f5e7e8",
+    "ruff": "d136bd8d002a648de5f344df602e492658306f1e",
+    "rg-aot": "474782386e976f80f7bcbc2643eaaeac1d787ad3"
+  },
+  "workflows": [
+    {
+      "label": "fre-word64",
+      "run_id": "e2e-workflow-fre-word64-call-copy-01",
+      "median_seconds": {
+        "native": 2.1073848749999797,
+        "interpreter": 15.776212375,
+        "jit": 3.0789551250000002
+      },
+      "cold_success_seconds": {
+        "native": 7.103022625,
+        "interpreter": 19.320003958,
+        "jit": 7.042741249999999
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": 3,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3"
+      ]
+    },
+    {
+      "label": "pgrust",
+      "run_id": "e2e-workflow-pgrust-call-copy-01",
+      "median_seconds": {
+        "native": 0.6606792500000003,
+        "interpreter": 0.7581946669999997,
+        "jit": 0.5318062079999999
+      },
+      "cold_success_seconds": {
+        "native": 0.8157711670000001,
+        "interpreter": 0.7644915,
+        "jit": 0.5304949999999999
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "fre-class-sequence",
+      "run_id": "e2e-workflow-fre-class-sequence-call-copy-01",
+      "median_seconds": {
+        "native": 1.4738310840000004,
+        "interpreter": 0.7857217090000006,
+        "jit": 0.8092859170000004
+      },
+      "cold_success_seconds": {
+        "native": 6.86242975,
+        "interpreter": 4.553673959,
+        "jit": 4.442853417
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "nushell",
+      "run_id": "e2e-workflow-nushell-call-copy-01",
+      "median_seconds": {
+        "native": 0.6354379999999935,
+        "interpreter": 0.4323117080000003,
+        "jit": 0.44198516699999857
+      },
+      "cold_success_seconds": {
+        "native": 24.551003041999998,
+        "interpreter": 20.848901042,
+        "jit": 21.270832041999995
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "ruff",
+      "run_id": "e2e-workflow-ruff-call-copy-01",
+      "median_seconds": {
+        "native": 5.820457916999999,
+        "interpreter": 3.0574760000000083,
+        "jit": 3.0448409169999877
+      },
+      "cold_success_seconds": {
+        "native": 58.747743584,
+        "interpreter": 30.385212625,
+        "jit": 28.048363666
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "rg-aot",
+      "run_id": "e2e-workflow-rg-aot-call-copy-01",
+      "median_seconds": {
+        "native": 0.5576134580000005,
+        "interpreter": 0.20299974999999826,
+        "jit": 0.20327887500000053
+      },
+      "cold_success_seconds": {
+        "native": 3.986579958,
+        "interpreter": 2.9627564169999996,
+        "jit": 3.048559334
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "nushell-type-relations",
+      "run_id": "e2e-workflow-nushell-type-relations-call-copy-01",
+      "median_seconds": {
+        "native": 17.35236225,
+        "interpreter": 8.06371116599999,
+        "jit": 7.927319542000021
+      },
+      "cold_success_seconds": {
+        "native": 71.098802166,
+        "interpreter": 65.96533575,
+        "jit": 67.703882125
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "fre-word64-inline8",
+      "run_id": "e2e-workflow-fre-word64-inline8-call-copy-01",
+      "median_seconds": {
+        "native": 2.9675829999999905,
+        "interpreter": 13.88553341699999,
+        "jit": 2.978599916999997
+      },
+      "cold_success_seconds": {
+        "native": 8.441401458,
+        "interpreter": 18.45960125,
+        "jit": 7.276309333
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": 3,
+      "guest_mir_inline_scale": 8,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ]
+    },
+    {
+      "label": "pgrust-sha1-inline8",
+      "run_id": "e2e-workflow-pgrust-sha1-inline8-call-copy-01",
+      "median_seconds": {
+        "native": 0.7502448749999999,
+        "interpreter": 5.244749374999998,
+        "jit": 1.1595377910000018
+      },
+      "cold_success_seconds": {
+        "native": 0.868793291,
+        "interpreter": 5.648870584000001,
+        "jit": 1.206512042
+      },
+      "vm_sha256": "4194b6d3b526710c41c456dc8e2b6075e7b256cbcf27b529ebd732eac2a26512",
+      "exporter_sha256": "435e20d157c27d13ac9a0f5af46ec53bbb3b8402816dcd3a4b7dcd4c2c37317c",
+      "guest_mir_opt_level": 3,
+      "guest_mir_inline_scale": 8,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ]
+    }
+  ],
+  "stage_medians": {
+    "fre-word64": {
+      "interpreter": {
+        "cargo_seconds": 0.8353331660000001,
+        "execution_seconds": 14.740706290999999,
+        "launcher_seconds": 15.725810375
+      },
+      "jit": {
+        "cargo_seconds": 0.818262958,
+        "execution_seconds": 2.184806417,
+        "launcher_seconds": 3.0551359579999997
+      }
+    },
+    "pgrust": {
+      "interpreter": {
+        "cargo_seconds": 0.441480208,
+        "execution_seconds": 0.283463458,
+        "launcher_seconds": 0.727074417
+      },
+      "jit": {
+        "cargo_seconds": 0.44399825000000004,
+        "execution_seconds": 0.06070445800000002,
+        "launcher_seconds": 0.50833775
+      }
+    },
+    "fre-class-sequence": {
+      "interpreter": {
+        "cargo_seconds": 0.753114625,
+        "execution_seconds": 0.005071000000000048,
+        "launcher_seconds": 0.7620465
+      },
+      "jit": {
+        "cargo_seconds": 0.77727925,
+        "execution_seconds": 0.005060375000000006,
+        "launcher_seconds": 0.78583775
+      }
+    },
+    "nushell": {
+      "interpreter": {
+        "cargo_seconds": 0.360486625,
+        "execution_seconds": 0.004104624999999973,
+        "launcher_seconds": 0.40526670800000003
+      },
+      "jit": {
+        "cargo_seconds": 0.37167054200000005,
+        "execution_seconds": 0.006067250000000024,
+        "launcher_seconds": 0.41658425
+      }
+    },
+    "ruff": {
+      "interpreter": {
+        "cargo_seconds": 2.895557875,
+        "execution_seconds": 0.1533769170000001,
+        "launcher_seconds": 3.034143
+      },
+      "jit": {
+        "cargo_seconds": 2.93493175,
+        "execution_seconds": 0.06157858400000027,
+        "launcher_seconds": 3.021063875
+      }
+    },
+    "rg-aot": {
+      "interpreter": {
+        "cargo_seconds": 0.171620042,
+        "execution_seconds": 0.0032655000000000045,
+        "launcher_seconds": 0.178517833
+      },
+      "jit": {
+        "cargo_seconds": 0.17126570800000002,
+        "execution_seconds": 0.003921457999999989,
+        "launcher_seconds": 0.17893445900000002
+      }
+    },
+    "nushell-type-relations": {
+      "interpreter": {
+        "cargo_seconds": 7.978868959,
+        "execution_seconds": 0.009351584000000912,
+        "launcher_seconds": 8.0352325
+      },
+      "jit": {
+        "cargo_seconds": 7.8544451660000005,
+        "execution_seconds": 0.007578582999999917,
+        "launcher_seconds": 7.903421084
+      }
+    },
+    "fre-word64-inline8": {
+      "interpreter": {
+        "cargo_seconds": 1.617527625,
+        "execution_seconds": 12.358641625,
+        "launcher_seconds": 13.861921417
+      },
+      "jit": {
+        "cargo_seconds": 1.4442135,
+        "execution_seconds": 1.4865413749999998,
+        "launcher_seconds": 2.9536723329999997
+      }
+    },
+    "pgrust-sha1-inline8": {
+      "interpreter": {
+        "cargo_seconds": 0.46218358299999995,
+        "execution_seconds": 4.715845958999999,
+        "launcher_seconds": 5.2206058749999995
+      },
+      "jit": {
+        "cargo_seconds": 0.46043037500000006,
+        "execution_seconds": 0.635768834,
+        "launcher_seconds": 1.1360157499999999
+      }
+    }
+  },
+  "runtime_comparison": {
+    "tool_keys": {
+      "baseline": "ae1110085889bb1b67425ff5e2d066cd73b75560ac2abdfcc41be00ff320d328",
+      "both_engines": "152f5bca5be8152fe34a2de35f218789df3732e5a25a3f7ff4f89d7deac0d726",
+      "jit_only": "3e9d24db7f6b7654b1f15ae02afeaa35fafa442f69dcdc53cbb21b9e12ed0faf"
+    },
+    "orders": [
+      [
+        "baseline",
+        "both_engines",
+        "jit_only"
+      ],
+      [
+        "baseline",
+        "jit_only",
+        "both_engines"
+      ],
+      [
+        "both_engines",
+        "baseline",
+        "jit_only"
+      ],
+      [
+        "both_engines",
+        "jit_only",
+        "baseline"
+      ],
+      [
+        "jit_only",
+        "baseline",
+        "both_engines"
+      ],
+      [
+        "jit_only",
+        "both_engines",
+        "baseline"
+      ]
+    ],
+    "cases": {
+      "jit/word64-default": {
+        "engine": "jit",
+        "workload": "word64-default",
+        "artifact_sha256": "b165ab5d8002e2f40f2558eb016b317379eebf7289e62b415712e45696e000b3",
+        "median_seconds": {
+          "baseline": 2.281892333000001,
+          "both_engines": 2.170744437499998,
+          "jit_only": 2.209497333499998
+        },
+        "pair_wins": {
+          "both_engines_vs_baseline": 6,
+          "jit_only_vs_baseline": 6,
+          "jit_only_vs_both_engines": 0
+        },
+        "deterministic_stats": {
+          "instructions": 3336017284,
+          "peak_guest_memory": 107056,
+          "jit_bytes": 752976,
+          "jit_operations": 49030,
+          "jit_instructions": 3213146922
+        }
+      },
+      "jit/word64-inline8": {
+        "engine": "jit",
+        "workload": "word64-inline8",
+        "artifact_sha256": "909d08b1a4ac496b0a0e4a5afa1053a458b7579b93061289d4b24ecc6dda8ad2",
+        "median_seconds": {
+          "baseline": 1.5283299170000042,
+          "both_engines": 1.4672683125,
+          "jit_only": 1.4832236460000026
+        },
+        "pair_wins": {
+          "both_engines_vs_baseline": 6,
+          "jit_only_vs_baseline": 6,
+          "jit_only_vs_both_engines": 1
+        },
+        "deterministic_stats": {
+          "instructions": 2892954629,
+          "peak_guest_memory": 105840,
+          "jit_bytes": 800508,
+          "jit_operations": 53102,
+          "jit_instructions": 2831595657
+        }
+      },
+      "jit/sha1-inline8": {
+        "engine": "jit",
+        "workload": "sha1-inline8",
+        "artifact_sha256": "681884a8e6cf74afedc6052b34f20687f48d7e75a55df1193607c4f68b346685",
+        "median_seconds": {
+          "baseline": 0.6626291255000041,
+          "both_engines": 0.643112520999999,
+          "jit_only": 0.6557904170000057
+        },
+        "pair_wins": {
+          "both_engines_vs_baseline": 6,
+          "jit_only_vs_baseline": 6,
+          "jit_only_vs_both_engines": 0
+        },
+        "deterministic_stats": {
+          "instructions": 1378275772,
+          "peak_guest_memory": 1019120,
+          "jit_bytes": 232192,
+          "jit_operations": 15412,
+          "jit_instructions": 1354510609
+        }
+      },
+      "interpreter/word64-default": {
+        "engine": "interpreter",
+        "workload": "word64-default",
+        "artifact_sha256": "b165ab5d8002e2f40f2558eb016b317379eebf7289e62b415712e45696e000b3",
+        "median_seconds": {
+          "baseline": 14.911158771000018,
+          "both_engines": 14.774799520500025,
+          "jit_only": 16.050654333499992
+        },
+        "pair_wins": {
+          "both_engines_vs_baseline": 4,
+          "jit_only_vs_baseline": 0,
+          "jit_only_vs_both_engines": 0
+        },
+        "deterministic_stats": {
+          "instructions": 3336017284,
+          "peak_guest_memory": 107056,
+          "jit_bytes": 0,
+          "jit_operations": 0,
+          "jit_instructions": 0
+        }
+      },
+      "interpreter/sha1-inline8": {
+        "engine": "interpreter",
+        "workload": "sha1-inline8",
+        "artifact_sha256": "681884a8e6cf74afedc6052b34f20687f48d7e75a55df1193607c4f68b346685",
+        "median_seconds": {
+          "baseline": 4.896214437499992,
+          "both_engines": 4.7384116459999746,
+          "jit_only": 4.955124478999977
+        },
+        "pair_wins": {
+          "both_engines_vs_baseline": 6,
+          "jit_only_vs_baseline": 2,
+          "jit_only_vs_both_engines": 0
+        },
+        "deterministic_stats": {
+          "instructions": 1378275772,
+          "peak_guest_memory": 1019120,
+          "jit_bytes": 0,
+          "jit_operations": 0,
+          "jit_instructions": 0
+        }
+      }
+    },
+    "rationale": "Interpreter effects were small and mixed in the initial two-build comparison. Each of the six possible execution orders is used once for each workload/engine; no other task builds or benchmarks run concurrently.",
+    "completed_commands": 90
+  },
+  "limitations": "Selected existing tests, not full applications or suites. Five production edits with unchanged original tests. Metadata-sysroot setup excluded. Historical corpus differences are not isolated causal effects."
+}

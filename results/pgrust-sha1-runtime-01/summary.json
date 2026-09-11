@@ -1,0 +1,209 @@
+{
+  "status": "original tests passed after all five production edits and wrong-edit control",
+  "workflow": "results/e2e-workflow-pgrust-sha1-inline8-01/summary.json",
+  "tool_key": "f48aa0309249d84249dc43f8a3ef703f2a63f2980640edc453c65a5e7f3d4979",
+  "median_seconds": {
+    "native": 0.7808429580000009,
+    "interpreter": 5.726202499999999,
+    "jit": 1.2552371250000007
+  },
+  "cold_seconds": {
+    "native": 0.9438353339999999,
+    "interpreter": 5.912512916,
+    "jit": 1.2406442080000009
+  },
+  "paired_wrapper": {
+    "before_tool_key": "193fc7498198701e58006033250f9b8c2aaa9e8d94affd50ec84dd28b47b39b3",
+    "after_tool_key": "f48aa0309249d84249dc43f8a3ef703f2a63f2980640edc453c65a5e7f3d4979",
+    "cases": {
+      "sha1-inline8": {
+        "median_seconds": {
+          "before": 0.8116908329999997,
+          "after": 0.694409458
+        },
+        "candidate_pair_wins": 5,
+        "same_bytecode": true,
+        "artifact_sha256": "681884a8e6cf74afedc6052b34f20687f48d7e75a55df1193607c4f68b346685",
+        "stats": {
+          "instructions": 1378275772,
+          "peak_guest_memory": 1019120,
+          "jit_bytes": 231000,
+          "jit_operations": 15278,
+          "jit_instructions": 1327977301
+        }
+      }
+    }
+  },
+  "profile": {
+    "raw": ".work/pgrust-sha1-jit-entry-paired-01/profile.json",
+    "performance_result": false,
+    "interpreted_operations": {
+      "Assert": 17964866,
+      "Jump": 16013501,
+      "Return": 5539863,
+      "Call": 5539697,
+      "Store": 2033205,
+      "Unary": 2033201,
+      "CopyDynamic": 1016399,
+      "Local": 63135,
+      "Copy": 62548,
+      "Imm": 15640,
+      "Switch": 15640,
+      "Load": 420,
+      "CallIndirect": 165,
+      "Allocate": 81,
+      "Deallocate": 81,
+      "Reallocate": 12,
+      "FillBytes": 10,
+      "CompareBytes": 5,
+      "ResetThreadLocals": 2,
+      "Binary": 0,
+      "Trap": 0,
+      "Cast": 0,
+      "Select": 0
+    },
+    "top_calls": [
+      {
+        "name": "std::ptr::const_ptr::<impl *const T>::is_aligned_to[()]",
+        "calls": 2033015,
+        "ops": 96,
+        "instructions": 83353615,
+        "jit_entries": 6099045
+      },
+      {
+        "name": "core::num::<impl usize>::unchecked_add::precondition_check[]",
+        "calls": 1329014,
+        "ops": 84,
+        "instructions": 38541406,
+        "jit_entries": 1329014
+      },
+      {
+        "name": "std::ptr::copy_nonoverlapping::precondition_check[]",
+        "calls": 1016399,
+        "ops": 150,
+        "instructions": 85377516,
+        "jit_entries": 12196788
+      },
+      {
+        "name": "core::ub_checks::maybe_is_nonoverlapping::runtime[]",
+        "calls": 1016399,
+        "ops": 89,
+        "instructions": 80295677,
+        "jit_entries": 4065596
+      },
+      {
+        "name": "<usize as std::slice::SliceIndex<[T]>>::get_unchecked::precondition_check[]",
+        "calls": 78218,
+        "ops": 66,
+        "instructions": 860398,
+        "jit_entries": 78218
+      },
+      {
+        "name": "step[]",
+        "calls": 15634,
+        "ops": 1703,
+        "instructions": 1082591964,
+        "jit_entries": 51388958
+      },
+      {
+        "name": "std::ptr::drop_glue[std::iter::Zip<std::slice::IterMut<'{erased}, u32>, std::array::IntoIter<u32, 5_usize>>]",
+        "calls": 15634,
+        "ops": 9,
+        "instructions": 140706,
+        "jit_entries": 15634
+      },
+      {
+        "name": "std::ptr::drop_glue[std::array::IntoIter<u32, 5_usize>]",
+        "calls": 15634,
+        "ops": 7,
+        "instructions": 109438,
+        "jit_entries": 15634
+      },
+      {
+        "name": "<std::array::IntoIter<T, N> as std::ops::Drop>::drop[u32, 5_usize]",
+        "calls": 15634,
+        "ops": 12,
+        "instructions": 46902,
+        "jit_entries": 0
+      },
+      {
+        "name": "std::hint::assert_unchecked::precondition_check[]",
+        "calls": 420,
+        "ops": 59,
+        "instructions": 1680,
+        "jit_entries": 420
+      },
+      {
+        "name": "std::ptr::NonNull::<T>::new_unchecked::precondition_check[]",
+        "calls": 186,
+        "ops": 68,
+        "instructions": 2418,
+        "jit_entries": 186
+      },
+      {
+        "name": "std::slice::from_raw_parts::precondition_check[]",
+        "calls": 174,
+        "ops": 111,
+        "instructions": 8526,
+        "jit_entries": 1044
+      },
+      {
+        "name": "std::ptr::const_ptr::<impl *const T>::offset_from_unsigned::precondition_check[]",
+        "calls": 166,
+        "ops": 66,
+        "instructions": 1826,
+        "jit_entries": 166
+      },
+      {
+        "name": "std::vec::Vec::<T, A>::reserve[u8, std::alloc::Global]",
+        "calls": 161,
+        "ops": 59,
+        "instructions": 8119,
+        "jit_entries": 575
+      },
+      {
+        "name": "<std::vec::Vec<T, A> as std::vec::spec_extend::SpecExtend<&'a T, std::slice::Iter<'a, T>>>::spec_extend['{erased}, u8, std::alloc::Global]",
+        "calls": 156,
+        "ops": 120,
+        "instructions": 17160,
+        "jit_entries": 1560
+      },
+      {
+        "name": "std::vec::Vec::<T, A>::append_elements[u8, std::alloc::Global]",
+        "calls": 156,
+        "ops": 105,
+        "instructions": 16380,
+        "jit_entries": 1092
+      },
+      {
+        "name": "core::num::<impl usize>::unchecked_mul::precondition_check[]",
+        "calls": 93,
+        "ops": 84,
+        "instructions": 2697,
+        "jit_entries": 93
+      },
+      {
+        "name": "std::alloc::Layout::from_size_align_unchecked::precondition_check[]",
+        "calls": 93,
+        "ops": 105,
+        "instructions": 4557,
+        "jit_entries": 465
+      },
+      {
+        "name": "std::mem::Alignment::new_unchecked::precondition_check[]",
+        "calls": 93,
+        "ops": 71,
+        "instructions": 1488,
+        "jit_entries": 186
+      },
+      {
+        "name": "alloc::raw_vec::RawVecInner::<A>::reserve::do_reserve_and_handle[std::alloc::Global]",
+        "calls": 92,
+        "ops": 28,
+        "instructions": 2024,
+        "jit_entries": 184
+      }
+    ]
+  },
+  "limitations": "One million-byte reference workload, not the whole pgrust application. Metadata-sysroot setup is excluded. Profile operation counts are diagnostic, not percentages of CPU time. The wrapper pair compares identical bytecode across immutable VMs; whole-command times are a separate measurement."
+}

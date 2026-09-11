@@ -1,0 +1,20 @@
+# Native byte comparison
+
+The retained experimental build emits CompareBytes directly in the custom AArch64 JIT. It checks both complete guest ranges before inspecting bytes, compares unaligned eight-byte chunks followed by byte tails, and preserves empty dangling ranges, usize truncation, aliased registers, read-only inputs and the exact u32::MAX/0/1 result encoding. The x5/x6 cache, native ABI, logical instruction budget and 16 MiB native-code cap remain active. There is no LLVM guest compilation or host memcmp call. The exporter binary is identical to the retained parent.
+
+All 165 bytecode tests pass, including focused alignment, range, length, ordering, alias, cache, profile, budget and fallback cases. The initial emitter failed because the general relocation helper rejects a target at the current buffer end; a bounded local branch encoding fixes that error without changing the existing function-link helper. The failed build, log and exact correction are preserved.
+
+The six-pair same-artifact screen saves a paired 105 ms on the exhaustive token-phrase test (5/6 wins), against a 5.58-second parent runtime. TLS regresses 2.8 ms in all six pairs. Folded saves 11.2 ms, SHA-1 regresses 0.8 ms, and the interpreter control changes by −0.5 ms. These screens exclude Cargo and are not end-to-end qualification. All samples are retained.
+
+The exhaustive test executes about 8.42 million fewer VM-to-native entries and no interpreted byte comparisons. Its separately launched real-RNG profiles vary slightly. Under two explicit RNG inputs in isolated diagnostic builds, both engines pass all original assertions with exact normalized per-PC counts. Each emitter and production RNG remain unchanged; these diagnostic timings are excluded. Complete folded and TLS logical traces also match. Folded loses only nine native entries and TLS 168, so their full timing differences cannot be confidently attributed to those removed transitions.
+
+| Production-edit workflow | Native / parent / candidate median | Paired command change | Execution change | Parent / native wins |
+|---|---:|---:|---:|---:|
+| [token-phrase](../paired-native-compare-bytes-token-phrase-01/summary.md) | 2.264 / 7.649 / 7.378 s | -300.5 ms | -244.1 ms | 5/5 / 0/5 |
+| [forward-anchored-tls](../paired-native-compare-bytes-forward-anchored-tls-01/summary.md) | 1.791 / 1.262 / 1.234 s | -60.2 ms | -0.8 ms | 4/5 / 5/5 |
+| [folded-literal-trie](../paired-native-compare-bytes-folded-literal-trie-01/summary.md) | 1.800 / 2.796 / 2.771 s | +19.3 ms | -1.2 ms | 2/5 / 0/5 |
+| [pgrust-sha1-inline8](../paired-native-compare-bytes-pgrust-sha1-inline8-01/summary.md) | 0.763 / 0.806 / 0.804 s | -2.7 ms | +0.2 ms | 3/5 / 1/5 |
+
+Each workflow recompiles five cumulative production edits and runs unchanged original assertions. Native, parent and candidate reject the deliberately wrong production edit. Both custom engines export identical bytecode in all seven source states, including the cold original and wrong edit; source restoration and artifact hashes are checked. Cold timings, all orders and per-command stages are in the linked reports. Token-phrase explicitly allows 150,000 live allocations in both custom engines; other workflows retain the 100,000 default.
+
+Five pairs limit conclusions, and independent stage medians need not add to the command median. Native remains much faster on the exhaustive workflow. The candidate is retained as a targeted runtime improvement after all 47,004 native differential commands and 245 TLS checks pass. At the explicit 150,000 limit, retained-program replay passes all 382 non-ignored fre bodies against 382 fresh native controls; seven are ignored. An additional 70 guest commands replay seven retained states in each of five project workflows, preserving 60 successful outcomes and ten wrong-edit rejections. That additional replay uses historical native controls, with no fresh-export or performance claim. All five source pins are restored. The complete source and evidence are archived. Whole applications, arbitrary OS/FFI, guest threads and native unwinding remain unsupported. No broad warm-build improvement is established.

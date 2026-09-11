@@ -1,0 +1,291 @@
+{
+  "project": "fre",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "determinize_state_codec::tests::unsigned_roundtrips_boundaries",
+    "determinize_state_codec::tests::signed_roundtrips_boundaries",
+    "determinize_state_codec::tests::malformed_and_one_below_refuse"
+  ],
+  "edits": [
+    "reverse-continuation-condition",
+    "express-zigzag-as-xor",
+    "compute-encoded-length-from-bit-count",
+    "put-resource-limit-first",
+    "name-signed-encoding-sign"
+  ],
+  "test_source_unchanged": true,
+  "batch": true,
+  "raw": ".work/runs/e2e-workflow-fre-batch-01",
+  "tool_key": "11666d89a41e6f798d37318f245b88ec27517795a7d1a33532eb5a41d1796511",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.314392667,
+    "interpreter": 0.720597957999999,
+    "jit": 0.7141799170000027
+  },
+  "cold_success_seconds": {
+    "native": 6.753670958,
+    "interpreter": 4.2792195,
+    "jit": 4.313673583
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "3c35be464de9cb05caa2beee137928262e4562a0694ccc8a530576f024684030",
+    "scripts/interpreter.py": "5fa48b6ce480e4b5d19629c6222ca61b3208416313b07706374ce5d82807313b"
+  },
+  "vm_sha256": "404a2b1c1e0106724da76272bfecfd34af15b76e268f2cb5b259bce6ce90e39d",
+  "exporter_sha256": "ca8c23c8b4205ebb6e22d46fa2fdf05268fc4d6a04a0b27de2687ba4634adeb9",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "seconds": 6.753670958,
+      "source_sha256": "ca8daf2d8b9a98fec842a7217ac39b86fa3248f377a19d44211cfe739f83df47",
+      "load": [
+        6.05322265625,
+        3.65869140625,
+        3.1572265625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "seconds": 4.2792195,
+      "source_sha256": "ca8daf2d8b9a98fec842a7217ac39b86fa3248f377a19d44211cfe739f83df47",
+      "load": [
+        5.80859375,
+        3.6474609375,
+        3.15625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "seconds": 4.313673583,
+      "source_sha256": "ca8daf2d8b9a98fec842a7217ac39b86fa3248f377a19d44211cfe739f83df47",
+      "load": [
+        5.80859375,
+        3.6474609375,
+        3.15625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "wrong-encoding",
+      "seconds": 0.7144238329999997,
+      "source_sha256": "d91414eee483b3d08b5722e6a7e79d521336a4eb63131cd464086767c28725eb",
+      "load": [
+        5.82373046875,
+        3.68603515625,
+        3.1728515625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "wrong-encoding",
+      "seconds": 0.7216050829999965,
+      "source_sha256": "d91414eee483b3d08b5722e6a7e79d521336a4eb63131cd464086767c28725eb",
+      "load": [
+        5.82373046875,
+        3.68603515625,
+        3.1728515625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "wrong-encoding",
+      "seconds": 1.3278436249999999,
+      "source_sha256": "d91414eee483b3d08b5722e6a7e79d521336a4eb63131cd464086767c28725eb",
+      "load": [
+        5.82373046875,
+        3.68603515625,
+        3.1728515625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "reverse-continuation-condition",
+      "seconds": 0.7374666659999995,
+      "source_sha256": "2317c719394f76da67f731c1b586f3dbc27116753de7c5806f2cc43b92eb3928",
+      "load": [
+        5.82373046875,
+        3.68603515625,
+        3.1728515625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "reverse-continuation-condition",
+      "seconds": 0.7116691250000002,
+      "source_sha256": "2317c719394f76da67f731c1b586f3dbc27116753de7c5806f2cc43b92eb3928",
+      "load": [
+        5.82373046875,
+        3.68603515625,
+        3.1728515625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "reverse-continuation-condition",
+      "seconds": 1.3886652500000025,
+      "source_sha256": "2317c719394f76da67f731c1b586f3dbc27116753de7c5806f2cc43b92eb3928",
+      "load": [
+        5.43701171875,
+        3.64111328125,
+        3.15966796875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "express-zigzag-as-xor",
+      "seconds": 1.3581908329999983,
+      "source_sha256": "6814a56c11306ab36e1d2fa022a7930ba297d72528322a1b8ee55ec102641ed8",
+      "load": [
+        5.43701171875,
+        3.64111328125,
+        3.15966796875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "express-zigzag-as-xor",
+      "seconds": 0.7212176659999976,
+      "source_sha256": "6814a56c11306ab36e1d2fa022a7930ba297d72528322a1b8ee55ec102641ed8",
+      "load": [
+        5.43701171875,
+        3.64111328125,
+        3.15966796875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "express-zigzag-as-xor",
+      "seconds": 0.6930441250000001,
+      "source_sha256": "6814a56c11306ab36e1d2fa022a7930ba297d72528322a1b8ee55ec102641ed8",
+      "load": [
+        5.43701171875,
+        3.64111328125,
+        3.15966796875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "compute-encoded-length-from-bit-count",
+      "seconds": 0.7272398749999986,
+      "source_sha256": "d0d6bd344af0e42d9942eed3e152739cedaf9ec7f7b6e774e45a80b3f18752fe",
+      "load": [
+        5.43701171875,
+        3.64111328125,
+        3.15966796875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "compute-encoded-length-from-bit-count",
+      "seconds": 0.7314236250000015,
+      "source_sha256": "d0d6bd344af0e42d9942eed3e152739cedaf9ec7f7b6e774e45a80b3f18752fe",
+      "load": [
+        5.43701171875,
+        3.64111328125,
+        3.15966796875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "compute-encoded-length-from-bit-count",
+      "seconds": 1.314392667,
+      "source_sha256": "d0d6bd344af0e42d9942eed3e152739cedaf9ec7f7b6e774e45a80b3f18752fe",
+      "load": [
+        5.08154296875,
+        3.59716796875,
+        3.14697265625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "put-resource-limit-first",
+      "seconds": 1.262548916,
+      "source_sha256": "dfcee4a6d883394347cb48c12daa9898266ea59ae2e1f43a26481fb480c35da8",
+      "load": [
+        5.08154296875,
+        3.59716796875,
+        3.14697265625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "put-resource-limit-first",
+      "seconds": 0.6915325830000008,
+      "source_sha256": "dfcee4a6d883394347cb48c12daa9898266ea59ae2e1f43a26481fb480c35da8",
+      "load": [
+        5.08154296875,
+        3.59716796875,
+        3.14697265625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "put-resource-limit-first",
+      "seconds": 0.6834302089999973,
+      "source_sha256": "dfcee4a6d883394347cb48c12daa9898266ea59ae2e1f43a26481fb480c35da8",
+      "load": [
+        5.08154296875,
+        3.59716796875,
+        3.14697265625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "name-signed-encoding-sign",
+      "seconds": 0.7141799170000027,
+      "source_sha256": "e64d09f0d9397706349fd2a0ff133849a08972551517bd2e0a766e6e95fd10be",
+      "load": [
+        5.08154296875,
+        3.59716796875,
+        3.14697265625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "name-signed-encoding-sign",
+      "seconds": 0.720597957999999,
+      "source_sha256": "e64d09f0d9397706349fd2a0ff133849a08972551517bd2e0a766e6e95fd10be",
+      "load": [
+        5.08154296875,
+        3.59716796875,
+        3.14697265625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "name-signed-encoding-sign",
+      "seconds": 1.2695835419999995,
+      "source_sha256": "e64d09f0d9397706349fd2a0ff133849a08972551517bd2e0a766e6e95fd10be",
+      "load": [
+        8.59814453125,
+        4.3505859375,
+        3.41552734375
+      ]
+    }
+  ]
+}

@@ -1,0 +1,492 @@
+{
+  "project": "nushell",
+  "workflow": "float-ranges",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "tests": [
+    "value::range::tests::float_range_small_step_inclusive",
+    "value::range::tests::float_range_tiny_step_inclusive",
+    "value::range::tests::float_range_integer_step_noninteger_start",
+    "value::range::tests::float_range_decreasing",
+    "value::range::tests::float_range_explicit_step_clean_values",
+    "value::range::tests::float_range_rounds_last_value",
+    "value::range::tests::float_range_clean_serialization"
+  ],
+  "edits": [
+    "compute-rounded-quotient-once",
+    "name-scaled-value-before-rounding",
+    "name-range-direction",
+    "compute-step-magnitude-once",
+    "return-next-value-before-exhaustion"
+  ],
+  "workload": "Seven existing fractional, decreasing, and rounded floating-point range tests",
+  "case_sha256": "fc0b1d7d6c01e2eda4043872dc1d73372f69f0f689d095736aee0a4091036d53",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-workflow-nushell-float-default-sysroot-01",
+  "build_tool_opt_level": null,
+  "tool_key": "7da12741d9c15fd05818d892973a34009bd2b8ff9356d31cc69213c5c1960446",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 6.412884874999975,
+    "interpreter": 3.9542075829999987,
+    "jit": 3.946372083
+  },
+  "std_mir": null,
+  "cold_success_seconds": {
+    "native": 66.528193208,
+    "interpreter": 54.401636208,
+    "jit": 56.54763345800001
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "3667e5c4a6f59dac398223d8e030b13e2e1237adc05af1b93650a6069dc22c43",
+    "scripts/interpreter.py": "dc8f907ebf26c8888d1105eb2e3c1af157491ed7d3f33f9d32c980c52b637d14",
+    "scripts/workflow_cases.py": "6b830425e16113969286f015b32ca82bdd19bf2adac39bbada816daa4a47f247",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "vm_sha256": "4927aca542f62fabae395c6f280f06686f6878c59ddb09b19278b01a4e53a024",
+  "exporter_sha256": "4cb91dd88fa0d528e7ce8c1f8fcde4d73aad82b493cc5df149c940fda8bf6ce9",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 66.528193208,
+      "source_sha256": "3b932fe0ec04976ed4cea4d7c871d324fec904befe40ee215917aa72ad657f15",
+      "load": [
+        11.05615234375,
+        5.5908203125,
+        4.25
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 54.401636208,
+      "source_sha256": "3b932fe0ec04976ed4cea4d7c871d324fec904befe40ee215917aa72ad657f15",
+      "load": [
+        11.9833984375,
+        6.95947265625,
+        4.85205078125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 56.54763345800001,
+      "source_sha256": "3b932fe0ec04976ed4cea4d7c871d324fec904befe40ee215917aa72ad657f15",
+      "load": [
+        8.4541015625,
+        7.0146484375,
+        5.017578125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "double-each-range-step",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 4.780564999999996,
+      "source_sha256": "d92ce6ca2553e5e90de6e1427e348bcf9dbff3b0126cf4c9b9ca2ec82c402564",
+      "load": [
+        7.93701171875,
+        6.93115234375,
+        4.99951171875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "double-each-range-step",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 5.6151319999999885,
+      "source_sha256": "d92ce6ca2553e5e90de6e1427e348bcf9dbff3b0126cf4c9b9ca2ec82c402564",
+      "load": [
+        7.54150390625,
+        6.86572265625,
+        4.98779296875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "double-each-range-step",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 8.387941374999997,
+      "source_sha256": "d92ce6ca2553e5e90de6e1427e348bcf9dbff3b0126cf4c9b9ca2ec82c402564",
+      "load": [
+        9.6357421875,
+        7.35791015625,
+        5.185546875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "compute-rounded-quotient-once",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 4.264828334000015,
+      "source_sha256": "22ea29a0a1b3c11e68bf1d117ce3e4600c6de306fe7075e1db559dce5ca99c6f",
+      "load": [
+        9.6357421875,
+        7.35791015625,
+        5.185546875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "compute-rounded-quotient-once",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 4.063212875000005,
+      "source_sha256": "22ea29a0a1b3c11e68bf1d117ce3e4600c6de306fe7075e1db559dce5ca99c6f",
+      "load": [
+        8.94384765625,
+        7.251953125,
+        5.16064453125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "compute-rounded-quotient-once",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 6.412884874999975,
+      "source_sha256": "22ea29a0a1b3c11e68bf1d117ce3e4600c6de306fe7075e1db559dce5ca99c6f",
+      "load": [
+        7.7158203125,
+        7.04541015625,
+        5.11181640625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "name-scaled-value-before-rounding",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 6.252053541999999,
+      "source_sha256": "13ea7f239a11daca69ad5147f3c35d709b66550e0434cbfc5a632183f552e047",
+      "load": [
+        7.177734375,
+        6.94482421875,
+        5.08740234375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "name-scaled-value-before-rounding",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 3.909113500000018,
+      "source_sha256": "13ea7f239a11daca69ad5147f3c35d709b66550e0434cbfc5a632183f552e047",
+      "load": [
+        6.6826171875,
+        6.845703125,
+        5.06298828125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "name-scaled-value-before-rounding",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 4.003584625000002,
+      "source_sha256": "13ea7f239a11daca69ad5147f3c35d709b66550e0434cbfc5a632183f552e047",
+      "load": [
+        6.6826171875,
+        6.845703125,
+        5.06298828125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "name-range-direction",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 3.858862208000005,
+      "source_sha256": "44351d67f62017e16b2a233eb0ab2c64ad5f8ec686ecab9bae7e4eae724e6f51",
+      "load": [
+        6.3076171875,
+        6.76513671875,
+        5.044921875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "name-range-direction",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 3.9542075829999987,
+      "source_sha256": "44351d67f62017e16b2a233eb0ab2c64ad5f8ec686ecab9bae7e4eae724e6f51",
+      "load": [
+        7.56396484375,
+        7.017578125,
+        5.14404296875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "name-range-direction",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 6.3250363340000035,
+      "source_sha256": "44351d67f62017e16b2a233eb0ab2c64ad5f8ec686ecab9bae7e4eae724e6f51",
+      "load": [
+        7.1982421875,
+        6.95068359375,
+        5.13134765625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "compute-step-magnitude-once",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 6.4860178749999875,
+      "source_sha256": "31f5c431a3f952fc1ee98f20b41472010c021ba011fb4205de6f21a18e8a8bcf",
+      "load": [
+        10.78564453125,
+        7.6982421875,
+        5.40576171875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "compute-step-magnitude-once",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 3.866924666000017,
+      "source_sha256": "31f5c431a3f952fc1ee98f20b41472010c021ba011fb4205de6f21a18e8a8bcf",
+      "load": [
+        10.001953125,
+        7.5869140625,
+        5.3798828125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "compute-step-magnitude-once",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 3.946372083,
+      "source_sha256": "31f5c431a3f952fc1ee98f20b41472010c021ba011fb4205de6f21a18e8a8bcf",
+      "load": [
+        9.60107421875,
+        7.5439453125,
+        5.37744140625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "return-next-value-before-exhaustion",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 3.9042057080000063,
+      "source_sha256": "196176459559c084a69e3e9faa8e2d6b588c2a9e2d58db843327d76a9ae61970",
+      "load": [
+        8.912109375,
+        7.43505859375,
+        5.3515625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "return-next-value-before-exhaustion",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 4.022565124999971,
+      "source_sha256": "196176459559c084a69e3e9faa8e2d6b588c2a9e2d58db843327d76a9ae61970",
+      "load": [
+        8.5185546875,
+        7.3779296875,
+        5.34326171875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "return-next-value-before-exhaustion",
+      "tests": [
+        "value::range::tests::float_range_small_step_inclusive",
+        "value::range::tests::float_range_tiny_step_inclusive",
+        "value::range::tests::float_range_integer_step_noninteger_start",
+        "value::range::tests::float_range_decreasing",
+        "value::range::tests::float_range_explicit_step_clean_values",
+        "value::range::tests::float_range_rounds_last_value",
+        "value::range::tests::float_range_clean_serialization"
+      ],
+      "seconds": 7.317441791000022,
+      "source_sha256": "196176459559c084a69e3e9faa8e2d6b588c2a9e2d58db843327d76a9ae61970",
+      "load": [
+        8.076171875,
+        7.30517578125,
+        5.3291015625
+      ]
+    }
+  ]
+}

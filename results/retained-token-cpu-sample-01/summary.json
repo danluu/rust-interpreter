@@ -1,0 +1,77 @@
+{
+  "status": "One retained CPU sample partitioned with exact mapping and binary evidence",
+  "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+  "vm_sha256": "b8adadc580c53ce512ecafe01bc2e827b704163a54bd5afd5296e90d05e1c01f",
+  "artifact_sha256": "62f8191631eb29140b69a0088cbd0dede0525f3a6d1ed71d7f755d78c105dd9a",
+  "total_samples": 2554,
+  "requested_duration_seconds": 3,
+  "sampling_interval_ms": 1,
+  "disjoint_counts": {
+    "generated_code": 1259,
+    "dispatcher_self_unresolved": 550,
+    "frame_reservation_inclusive": 231,
+    "proven_local_argument_copies": 175,
+    "general_argument_copies": 61,
+    "return_result_copies": 135,
+    "other_or_unattributed_memory_copies": 54,
+    "heap_management": 84,
+    "jit_compilation": 4,
+    "switch_lookup": 1
+  },
+  "percentages": {
+    "generated_code": 49.29522317932655,
+    "dispatcher_self_unresolved": 21.53484729835552,
+    "frame_reservation_inclusive": 9.044635865309319,
+    "proven_local_argument_copies": 6.851996867658575,
+    "general_argument_copies": 2.3884103367267033,
+    "return_result_copies": 5.2858261550509,
+    "other_or_unattributed_memory_copies": 2.11433046202036,
+    "heap_management": 3.288958496476116,
+    "jit_compilation": 0.15661707126076743,
+    "switch_lookup": 0.03915426781519186
+  },
+  "generated_address_ranges": [
+    [
+      4376985600,
+      4393762816
+    ]
+  ],
+  "frame_clear_samples_inclusive": 119,
+  "host_call_sites": [
+    [
+      "000000010000bb60",
+      "Memory13reserve_frame",
+      "direct/indirect call frame reservation"
+    ],
+    [
+      "000000010000bc3c",
+      "copy_within",
+      "proven caller-local arguments"
+    ],
+    [
+      "000000010000bc80",
+      "Memory4copy",
+      "general call arguments"
+    ],
+    [
+      "000000010000bef8",
+      "Memory4copy",
+      "return result before frame truncation"
+    ]
+  ],
+  "performance_measurement": false,
+  "files": {
+    ".work/retained-token-cpu-sample-01/record.json": "5b3aae2e07e4bc2c16c35503cc267e648f3a222a401ff465e6527b0c6861e4ed",
+    ".work/retained-token-cpu-sample-01/sample.txt": "7acc229cd7cbe748aee8f27d57e05b11d91b7fe4cc774def71d8b18e69553f68",
+    ".work/retained-token-cpu-sample-01/vmmap.stdout": "b26b3e9595693742f831fd262f0f0b523d7cd71c36040a13cec394f9ed78182a",
+    ".work/retained-token-cpu-sample-01/retained-vm-disassembly.txt": "c8b216140bdaf3a44626ea059e57a2cd9bad8fad53adc2df10e8db4444e16844",
+    ".work/report_retained_token_cpu_01.py": "10aa298b7b06de00faa030991e6383b1d59b937830af94a13cc9a6815614cf22"
+  },
+  "limitations": [
+    "One three-second sample of the original exhaustive library-test body; shares are not predicted speedups.",
+    "Dispatcher self aggregates several machine PCs; its 550 samples are not attributed to a bytecode operation.",
+    "Generated PCs are validated against the live executable mapping but are not resolved to guest functions.",
+    "Frame clearing is a subset of frame reservation; do not add it to the disjoint counts.",
+    "Call-site roles follow exact disassembly and current source; 23 direct Memory::copy samples lack a parent call site."
+  ]
+}

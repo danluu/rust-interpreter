@@ -1,0 +1,952 @@
+{
+  "project": "fre",
+  "workflow": "fixed-predicate-word64",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+    "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+    "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+    "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+    "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+    "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+    "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+    "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+    "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+    "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+    "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+    "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+  ],
+  "edits": [
+    "separate-compact-state-advance-from-mask",
+    "separate-accounted-state-advance-from-mask",
+    "name-predicate-word-before-membership-test",
+    "match-compact-secondary-offset-explicitly",
+    "share-compact-anchor-cursor-advance"
+  ],
+  "workload": "All twelve existing fixed-predicate word-matcher tests, including exhaustive reference comparisons",
+  "case_sha256": "5312dd25339127fd08255d21b1d0ec1d5fc0e72def9b5b50109e2ad625261201",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02",
+  "build_tool_opt_level": null,
+  "instruction_limit": 10000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "guest_mir_opt_level": 3,
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [
+    "-Zmir-opt-level=3"
+  ],
+  "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.5952443330000001,
+    "baseline": 2.4240094170000006,
+    "candidate": 2.2619083750000044
+  },
+  "std_mir": null,
+  "cold_success_seconds": {
+    "native": 7.291911292,
+    "baseline": 6.592514500000001,
+    "candidate": 6.20489925
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "4ef5887439fea0b6b27ab8a0576711e1d14171cf927140764ff3fe8cb9067e67",
+    "scripts/interpreter.py": "60445b8ce8176b23e3162f78e9595ee78197a2f75d54dfdb8deaca0f22755ce6",
+    "scripts/workflow_cases.py": "f07186ef97e5a4d5f96c23ab56f102f95a61360f198badc1661cac6632d5a1d4",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "inline_leaves": true,
+      "vm_sha256": "5db13eb32101046730eb287cee19900ff4cb290919bd0078b19f04b5e0eccdd5",
+      "exporter_sha256": "6724d99a81084704d1962e49024356b2310796d189b2760d1e64c15cb91b58a0"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "inline_leaves": true,
+      "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+      "exporter_sha256": "c28fefa5accc3eee48aa3931aaca211648ddf9c1a498c1c35c8b223a0f9fee6a"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+  "exporter_sha256": "c28fefa5accc3eee48aa3931aaca211648ddf9c1a498c1c35c8b223a0f9fee6a",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 7.291911292,
+      "source_sha256": "5a6b9c6d11691f4d4517121f572f18b8e37b486a67bff3e4f933be71c24a2e69",
+      "load": [
+        5.61865234375,
+        4.419921875,
+        4.07958984375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 6.592514500000001,
+      "source_sha256": "5a6b9c6d11691f4d4517121f572f18b8e37b486a67bff3e4f933be71c24a2e69",
+      "load": [
+        5.32861328125,
+        4.37939453125,
+        4.0673828125
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/baseline/0-0.rbc",
+          "sha256": "3b0f4b3e4c61b296c3a79bcddb9f7ce9af6c98e40cf4d2dbaadc126179f5d8a6",
+          "bytes": 1277661
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 6.20489925,
+      "source_sha256": "5a6b9c6d11691f4d4517121f572f18b8e37b486a67bff3e4f933be71c24a2e69",
+      "load": [
+        5.30224609375,
+        4.3896484375,
+        4.07275390625
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/candidate/0-0.rbc",
+          "sha256": "3b0f4b3e4c61b296c3a79bcddb9f7ce9af6c98e40cf4d2dbaadc126179f5d8a6",
+          "bytes": 1277661
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "reject-valid-anchor-predicates",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 0.8596380840000002,
+      "source_sha256": "daab9ea095dc20c5bd752d8464fe5d9141dd4161a319e38820d4b00733adc79f",
+      "load": [
+        4.95751953125,
+        4.3330078125,
+        4.0546875
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/candidate/-1-0.rbc",
+          "sha256": "8ea7556890ef6f84bec92c3b2ccf4b18c69878a116c12168309913dfc3a4fb47",
+          "bytes": 1277725
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "reject-valid-anchor-predicates",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 0.8569376670000004,
+      "source_sha256": "daab9ea095dc20c5bd752d8464fe5d9141dd4161a319e38820d4b00733adc79f",
+      "load": [
+        4.95751953125,
+        4.3330078125,
+        4.0546875
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/baseline/-1-0.rbc",
+          "sha256": "8ea7556890ef6f84bec92c3b2ccf4b18c69878a116c12168309913dfc3a4fb47",
+          "bytes": 1277725
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-anchor-predicates",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 1.4880632089999999,
+      "source_sha256": "daab9ea095dc20c5bd752d8464fe5d9141dd4161a319e38820d4b00733adc79f",
+      "load": [
+        4.95751953125,
+        4.3330078125,
+        4.0546875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "separate-compact-state-advance-from-mask",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 1.6887204580000024,
+      "source_sha256": "32657dd2b2cb0a69d2d9fd5c78fdca1c05ce0a4d0a4b985dc46ab6e1a6e75964",
+      "load": [
+        4.95751953125,
+        4.3330078125,
+        4.0546875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "separate-compact-state-advance-from-mask",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.434625582999999,
+      "source_sha256": "32657dd2b2cb0a69d2d9fd5c78fdca1c05ce0a4d0a4b985dc46ab6e1a6e75964",
+      "load": [
+        4.64013671875,
+        4.27734375,
+        4.03662109375
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/baseline/1-0.rbc",
+          "sha256": "ccfd5a301e495d153818e9f58085689a0b0e0bc813d8658129e4f39a7fd62d18",
+          "bytes": 1277757
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "separate-compact-state-advance-from-mask",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.2419417499999987,
+      "source_sha256": "32657dd2b2cb0a69d2d9fd5c78fdca1c05ce0a4d0a4b985dc46ab6e1a6e75964",
+      "load": [
+        4.64013671875,
+        4.27734375,
+        4.03662109375
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/candidate/1-0.rbc",
+          "sha256": "ccfd5a301e495d153818e9f58085689a0b0e0bc813d8658129e4f39a7fd62d18",
+          "bytes": 1277757
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "separate-accounted-state-advance-from-mask",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 1.5952443330000001,
+      "source_sha256": "6e3fd9ef5dd04c381e8fda5ffd5dc9cd3b4d6a577c7b33781875e4def548f78d",
+      "load": [
+        4.3486328125,
+        4.22265625,
+        4.0185546875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "separate-accounted-state-advance-from-mask",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.2698032920000024,
+      "source_sha256": "6e3fd9ef5dd04c381e8fda5ffd5dc9cd3b4d6a577c7b33781875e4def548f78d",
+      "load": [
+        4.3486328125,
+        4.22265625,
+        4.0185546875
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/candidate/2-0.rbc",
+          "sha256": "60d15e5da0938a3a252a0f5e2cab27f99b1271332cba12f5e9d3995851f8c833",
+          "bytes": 1277853
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "separate-accounted-state-advance-from-mask",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.4015547500000025,
+      "source_sha256": "6e3fd9ef5dd04c381e8fda5ffd5dc9cd3b4d6a577c7b33781875e4def548f78d",
+      "load": [
+        4.3203125,
+        4.21875,
+        4.01806640625
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/baseline/2-0.rbc",
+          "sha256": "60d15e5da0938a3a252a0f5e2cab27f99b1271332cba12f5e9d3995851f8c833",
+          "bytes": 1277853
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "name-predicate-word-before-membership-test",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.452722125000001,
+      "source_sha256": "02af26f74c32d765818524c854d76e0bf21035750408dd9be304c27c292aeddc",
+      "load": [
+        4.3203125,
+        4.21875,
+        4.01806640625
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/baseline/3-0.rbc",
+          "sha256": "21a2a3bb92d1811d98caabb42b92dc5288aee507393f7a06a03016fb1f231c09",
+          "bytes": 1277917
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "name-predicate-word-before-membership-test",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 1.5901817920000028,
+      "source_sha256": "02af26f74c32d765818524c854d76e0bf21035750408dd9be304c27c292aeddc",
+      "load": [
+        4.3203125,
+        4.21875,
+        4.01806640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "name-predicate-word-before-membership-test",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.2619083750000044,
+      "source_sha256": "02af26f74c32d765818524c854d76e0bf21035750408dd9be304c27c292aeddc",
+      "load": [
+        4.05419921875,
+        4.1650390625,
+        4.0
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/candidate/3-0.rbc",
+          "sha256": "21a2a3bb92d1811d98caabb42b92dc5288aee507393f7a06a03016fb1f231c09",
+          "bytes": 1277917
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "match-compact-secondary-offset-explicitly",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.2735469580000043,
+      "source_sha256": "b05ccd9003afdfee78a77eebda441afffeaa7d18a97ad3066d1cc56295409756",
+      "load": [
+        4.05419921875,
+        4.1650390625,
+        4.0
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/candidate/4-0.rbc",
+          "sha256": "3eb81ae584c3eb95ef4e388fda40567ab61c5f235be8830878dbdf0d2ce8a575",
+          "bytes": 1277749
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "match-compact-secondary-offset-explicitly",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 1.6279652909999953,
+      "source_sha256": "b05ccd9003afdfee78a77eebda441afffeaa7d18a97ad3066d1cc56295409756",
+      "load": [
+        3.9697265625,
+        4.1455078125,
+        3.994140625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "match-compact-secondary-offset-explicitly",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.411866083999996,
+      "source_sha256": "b05ccd9003afdfee78a77eebda441afffeaa7d18a97ad3066d1cc56295409756",
+      "load": [
+        3.9697265625,
+        4.1455078125,
+        3.994140625
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/baseline/4-0.rbc",
+          "sha256": "3eb81ae584c3eb95ef4e388fda40567ab61c5f235be8830878dbdf0d2ce8a575",
+          "bytes": 1277749
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "share-compact-anchor-cursor-advance",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.4240094170000006,
+      "source_sha256": "34c157500dc6a435aa1eaf9faf739e678de014118ddd6d8e292f34e11b77c7b5",
+      "load": [
+        3.8916015625,
+        4.12646484375,
+        3.98828125
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/baseline/5-0.rbc",
+          "sha256": "7ea33204c1475dc30719f5635892cab2d86ba453a3ef27826e5c13a97c2fe08c",
+          "bytes": 1272981
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "share-compact-anchor-cursor-advance",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 2.261131667000001,
+      "source_sha256": "34c157500dc6a435aa1eaf9faf739e678de014118ddd6d8e292f34e11b77c7b5",
+      "load": [
+        3.8916015625,
+        4.12646484375,
+        3.98828125
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-word64-jit-local-fill-02/artifacts/candidate/5-0.rbc",
+          "sha256": "7ea33204c1475dc30719f5635892cab2d86ba453a3ef27826e5c13a97c2fe08c",
+          "bytes": 1272981
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "share-compact-anchor-cursor-advance",
+      "tests": [
+        "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+        "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+        "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+        "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+        "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+        "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+        "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+        "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+        "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+        "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+        "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+        "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit"
+      ],
+      "seconds": 1.5928967919999977,
+      "source_sha256": "34c157500dc6a435aa1eaf9faf739e678de014118ddd6d8e292f34e11b77c7b5",
+      "load": [
+        3.8916015625,
+        4.12646484375,
+        3.98828125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+    "candidate_tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "32657dd2b2cb0a69d2d9fd5c78fdca1c05ce0a4d0a4b985dc46ab6e1a6e75964",
+        "baseline_seconds": 2.434625582999999,
+        "candidate_seconds": 2.2419417499999987,
+        "difference_seconds": -0.19268383300000025,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.806057209,
+            "execution_seconds": 1.6008043330000001,
+            "artifact_hash_seconds": 0.0006021659999999596,
+            "launcher_seconds": 2.409646333
+          },
+          "candidate": {
+            "cargo_seconds": 0.761186583,
+            "execution_seconds": 1.4529589589999998,
+            "artifact_hash_seconds": 0.0006035419999999014,
+            "launcher_seconds": 2.216929125
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "6e3fd9ef5dd04c381e8fda5ffd5dc9cd3b4d6a577c7b33781875e4def548f78d",
+        "baseline_seconds": 2.4015547500000025,
+        "candidate_seconds": 2.2698032920000024,
+        "difference_seconds": -0.1317514580000001,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.749200084,
+            "execution_seconds": 1.624365584,
+            "artifact_hash_seconds": 0.0006064159999999985,
+            "launcher_seconds": 2.376394291
+          },
+          "candidate": {
+            "cargo_seconds": 0.7767955409999999,
+            "execution_seconds": 1.4649775420000002,
+            "artifact_hash_seconds": 0.000621957999999978,
+            "launcher_seconds": 2.24457925
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "02af26f74c32d765818524c854d76e0bf21035750408dd9be304c27c292aeddc",
+        "baseline_seconds": 2.452722125000001,
+        "candidate_seconds": 2.2619083750000044,
+        "difference_seconds": -0.19081374999999667,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.77556,
+            "execution_seconds": 1.6488823750000001,
+            "artifact_hash_seconds": 0.0006356670000000619,
+            "launcher_seconds": 2.427375833
+          },
+          "candidate": {
+            "cargo_seconds": 0.771091584,
+            "execution_seconds": 1.4621624999999998,
+            "artifact_hash_seconds": 0.0006337920000000219,
+            "launcher_seconds": 2.236104708
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "b05ccd9003afdfee78a77eebda441afffeaa7d18a97ad3066d1cc56295409756",
+        "baseline_seconds": 2.411866083999996,
+        "candidate_seconds": 2.2735469580000043,
+        "difference_seconds": -0.13831912599999185,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.7529774579999999,
+            "execution_seconds": 1.6311070829999998,
+            "artifact_hash_seconds": 0.0005954160000000153,
+            "launcher_seconds": 2.386871666
+          },
+          "candidate": {
+            "cargo_seconds": 0.776381708,
+            "execution_seconds": 1.47014825,
+            "artifact_hash_seconds": 0.0006404580000000104,
+            "launcher_seconds": 2.2494648340000003
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "34c157500dc6a435aa1eaf9faf739e678de014118ddd6d8e292f34e11b77c7b5",
+        "baseline_seconds": 2.4240094170000006,
+        "candidate_seconds": 2.261131667000001,
+        "difference_seconds": -0.16287774999999982,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.787156542,
+            "execution_seconds": 1.60912225,
+            "artifact_hash_seconds": 0.0006214999999999415,
+            "launcher_seconds": 2.399109833
+          },
+          "candidate": {
+            "cargo_seconds": 0.7596710419999999,
+            "execution_seconds": 1.4740001249999999,
+            "artifact_hash_seconds": 0.0006162079999999515,
+            "launcher_seconds": 2.2365144160000003
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 5,
+    "median_paired_difference_seconds": -0.16287774999999982
+  }
+}

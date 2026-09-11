@@ -1,0 +1,795 @@
+{
+  "project": "fre",
+  "workflow": "token-phrase-allocation",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+    "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+    "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+  ],
+  "edits": [
+    "name-literal-finder-result",
+    "reuse-short-count-input-length",
+    "reuse-short-span-input-length",
+    "orient-short-route-width-comparison",
+    "match-short-route-event-bound"
+  ],
+  "workload": "The original exhaustive token-phrase byte-semantics test plus directed restart and route-boundary tests. The custom VM uses an explicit150000 live-allocation budget; native Cargo has its normal allocator. Five production-body refactors leave every original test unchanged.",
+  "case_sha256": "ea7908ccd09784d147ca8060e5c353e69a35c1dbddd4a9942c9673cc1aa0356c",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/paired-native-paired-spills-token-phrase-01",
+  "build_tool_opt_level": 0,
+  "instruction_limit": 100000000000,
+  "allocation_limit": 150000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": true,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+  "candidate_tool_key_requested": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 2.192169249999999,
+    "baseline": 6.7684532090000005,
+    "candidate": 6.777460415999997
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.297467625,
+    "baseline": 11.177165708,
+    "candidate": 11.270773583
+  },
+  "scripts_sha256": {
+    ".work/native_compare_token_e2e_01.py": "f65d791c7a1d1284acdfa970842aaeefd61d6a0f5864be68afefb77c0310c80f",
+    ".work/allocation_budget_launcher_01.py": "6b012488ec9caed92d72a3e269126c52c32c12037ffecf06257510ce94690ab1",
+    ".work/allocation_budget_token_phrase_case_01.json": "4355eb856c4f304ca337319236f8bd143df1022acfd4c5f3b7b271e0619c4d7b",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "8e955819c52c1ba3a603ee76c8d0925c72aea37c6a6136a78f342cdaee5cf881",
+      "exporter_sha256": "03782acefdee23b4cbf42832bb64f036ee1bf07f4dcbf6f61e68cdfc47139064"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "35b60b8a59ad4b6dd7b54bd32a68d8f7247fdf9a309e273a6292acb8f17d5b61",
+      "exporter_sha256": "03782acefdee23b4cbf42832bb64f036ee1bf07f4dcbf6f61e68cdfc47139064"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "35b60b8a59ad4b6dd7b54bd32a68d8f7247fdf9a309e273a6292acb8f17d5b61",
+  "exporter_sha256": "03782acefdee23b4cbf42832bb64f036ee1bf07f4dcbf6f61e68cdfc47139064",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 7.297467625,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        2.068359375,
+        2.6328125,
+        4.5224609375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 11.177165708,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        4.8310546875,
+        3.25927734375,
+        4.71533203125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/baseline/0-0.rbc",
+          "sha256": "c263d8924ec053275d9e807c4b5dce5d1a4c7082c9019e75b5c0532242008334",
+          "bytes": 28814907
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 11.270773583,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        4.47509765625,
+        3.23388671875,
+        4.68896484375
+      ],
+      "engine": "jit",
+      "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/candidate/0-0.rbc",
+          "sha256": "c263d8924ec053275d9e807c4b5dce5d1a4c7082c9019e75b5c0532242008334",
+          "bytes": 28814907
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.3979979999999976,
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        4.47509765625,
+        3.23388671875,
+        4.68896484375
+      ],
+      "engine": "jit",
+      "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "5146721d474a30b53245479cb8c8d833f1a6acf0b8c0658e9c2b4ee8b0d8391b",
+          "bytes": 28815179
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.3936162919999973,
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        4.27685546875,
+        3.21337890625,
+        4.6728515625
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "5146721d474a30b53245479cb8c8d833f1a6acf0b8c0658e9c2b4ee8b0d8391b",
+          "bytes": 28815179
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.7932287500000044,
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        4.27685546875,
+        3.21337890625,
+        4.6728515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.192169249999999,
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        4.09423828125,
+        3.19287109375,
+        4.65673828125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.722474708,
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        4.08642578125,
+        3.2060546875,
+        4.65283203125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/baseline/1-0.rbc",
+          "sha256": "c7b405dabc8beef460556c430a3a737d977ec00ca2c115982f563b3cccb8b6c3",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.804651042000003,
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        4.3994140625,
+        3.28515625,
+        4.67236328125
+      ],
+      "engine": "jit",
+      "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/candidate/1-0.rbc",
+          "sha256": "c7b405dabc8beef460556c430a3a737d977ec00ca2c115982f563b3cccb8b6c3",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.028318083000002,
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        4.20703125,
+        3.263671875,
+        4.65625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.6965182080000005,
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        4.0302734375,
+        3.24267578125,
+        4.640625
+      ],
+      "engine": "jit",
+      "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/candidate/2-0.rbc",
+          "sha256": "cfa275e49030ac6516c85a4e07b4e8554979b1f8e6f8e445fe26052420d11d3e",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.9938771250000045,
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.7177734375,
+        3.201171875,
+        4.609375
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/baseline/2-0.rbc",
+          "sha256": "cfa275e49030ac6516c85a4e07b4e8554979b1f8e6f8e445fe26052420d11d3e",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.750442750000005,
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.580078125,
+        3.18115234375,
+        4.59375
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/baseline/3-0.rbc",
+          "sha256": "6f94fddf1990d2118c3fc6612ea241508e52907d25acfedf32f00ad48f6286a0",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.271222417000004,
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.580078125,
+        3.18115234375,
+        4.59375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.777460415999997,
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.33642578125,
+        3.1416015625,
+        4.56298828125
+      ],
+      "engine": "jit",
+      "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/candidate/3-0.rbc",
+          "sha256": "6f94fddf1990d2118c3fc6612ea241508e52907d25acfedf32f00ad48f6286a0",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.722810499999994,
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.22900390625,
+        3.12255859375,
+        4.5478515625
+      ],
+      "engine": "jit",
+      "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/candidate/4-0.rbc",
+          "sha256": "89b06209ee4edee2945ea9935661cd5901c5b701afd4f4ec3a37606f1876eed0",
+          "bytes": 28815355
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9882815829999885,
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.22900390625,
+        3.12255859375,
+        4.5478515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.806107333,
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.11962890625,
+        3.1015625,
+        4.5234375
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/baseline/4-0.rbc",
+          "sha256": "89b06209ee4edee2945ea9935661cd5901c5b701afd4f4ec3a37606f1876eed0",
+          "bytes": 28815355
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.7684532090000005,
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        3.10986328125,
+        3.099609375,
+        4.51416015625
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/baseline/5-0.rbc",
+          "sha256": "e4135f520ac576aaf585f84ab36ba9296742442c63ebb54b4090189163ed7ca4",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.889179499999997,
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        3.09228515625,
+        3.095703125,
+        4.49560546875
+      ],
+      "engine": "jit",
+      "tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-paired-spills-token-phrase-01/artifacts/candidate/5-0.rbc",
+          "sha256": "e4135f520ac576aaf585f84ab36ba9296742442c63ebb54b4090189163ed7ca4",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.362489999999994,
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        3.09228515625,
+        3.095703125,
+        4.49560546875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+    "candidate_tool_key": "438412760fcf1ec1d2b560a0e5726933b105d92b88c64bee5be31eecb59614b7",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "baseline_seconds": 6.722474708,
+        "candidate_seconds": 6.804651042000003,
+        "difference_seconds": 0.08217633400000324,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.292007291,
+            "execution_seconds": 5.339806666,
+            "artifact_hash_seconds": 0.009843665999999862,
+            "launcher_seconds": 6.6938312920000005
+          },
+          "candidate": {
+            "cargo_seconds": 1.332789375,
+            "execution_seconds": 5.386861458,
+            "artifact_hash_seconds": 0.009764332999999903,
+            "launcher_seconds": 6.77715275
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "baseline_seconds": 6.9938771250000045,
+        "candidate_seconds": 6.6965182080000005,
+        "difference_seconds": -0.29735891700000394,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.620729583,
+            "execution_seconds": 5.2861168329999995,
+            "artifact_hash_seconds": 0.010292040999999807,
+            "launcher_seconds": 6.965837125
+          },
+          "candidate": {
+            "cargo_seconds": 1.313291375,
+            "execution_seconds": 5.2970556250000005,
+            "artifact_hash_seconds": 0.009873374999999962,
+            "launcher_seconds": 6.669537458000001
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "baseline_seconds": 6.750442750000005,
+        "candidate_seconds": 6.777460415999997,
+        "difference_seconds": 0.02701766599999189,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.32980275,
+            "execution_seconds": 5.335466666,
+            "artifact_hash_seconds": 0.009835916999999972,
+            "launcher_seconds": 6.722777541999999
+          },
+          "candidate": {
+            "cargo_seconds": 1.4027835419999999,
+            "execution_seconds": 5.2893089170000005,
+            "artifact_hash_seconds": 0.009816499999999895,
+            "launcher_seconds": 6.7504227089999995
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "baseline_seconds": 6.806107333,
+        "candidate_seconds": 6.722810499999994,
+        "difference_seconds": -0.08329683300000568,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.412091792,
+            "execution_seconds": 5.3098114590000005,
+            "artifact_hash_seconds": 0.009893874999999941,
+            "launcher_seconds": 6.7797915
+          },
+          "candidate": {
+            "cargo_seconds": 1.367987625,
+            "execution_seconds": 5.270537957999999,
+            "artifact_hash_seconds": 0.009771541000000106,
+            "launcher_seconds": 6.695820125
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "baseline_seconds": 6.7684532090000005,
+        "candidate_seconds": 6.889179499999997,
+        "difference_seconds": 0.12072629099999688,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.3658379170000001,
+            "execution_seconds": 5.316460958,
+            "artifact_hash_seconds": 0.010006624999999936,
+            "launcher_seconds": 6.740358667
+          },
+          "candidate": {
+            "cargo_seconds": 1.485865791,
+            "execution_seconds": 5.317734165999999,
+            "artifact_hash_seconds": 0.010030207999999874,
+            "launcher_seconds": 6.862103125
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.02701766599999189
+  }
+}

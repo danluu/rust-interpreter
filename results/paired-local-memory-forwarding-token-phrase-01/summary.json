@@ -1,0 +1,795 @@
+{
+  "project": "fre",
+  "workflow": "token-phrase-allocation",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+    "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+    "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+  ],
+  "edits": [
+    "name-literal-finder-result",
+    "reuse-short-count-input-length",
+    "reuse-short-span-input-length",
+    "orient-short-route-width-comparison",
+    "match-short-route-event-bound"
+  ],
+  "workload": "The original exhaustive token-phrase byte-semantics test plus directed restart and route-boundary tests. The custom VM uses an explicit150000 live-allocation budget; native Cargo has its normal allocator. Five production-body refactors leave every original test unchanged.",
+  "case_sha256": "ea7908ccd09784d147ca8060e5c353e69a35c1dbddd4a9942c9673cc1aa0356c",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/paired-local-memory-forwarding-token-phrase-01",
+  "build_tool_opt_level": 0,
+  "instruction_limit": 100000000000,
+  "allocation_limit": 150000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": true,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+  "candidate_tool_key_requested": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.9797080000000022,
+    "baseline": 6.820221458000006,
+    "candidate": 6.4755680840000025
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.886252374999999,
+    "baseline": 11.398788040999998,
+    "candidate": 11.462286207999998
+  },
+  "scripts_sha256": {
+    ".work/native_compare_token_e2e_01.py": "f65d791c7a1d1284acdfa970842aaeefd61d6a0f5864be68afefb77c0310c80f",
+    ".work/allocation_budget_launcher_01.py": "6b012488ec9caed92d72a3e269126c52c32c12037ffecf06257510ce94690ab1",
+    ".work/allocation_budget_token_phrase_case_01.json": "4355eb856c4f304ca337319236f8bd143df1022acfd4c5f3b7b271e0619c4d7b",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "8e955819c52c1ba3a603ee76c8d0925c72aea37c6a6136a78f342cdaee5cf881",
+      "exporter_sha256": "03782acefdee23b4cbf42832bb64f036ee1bf07f4dcbf6f61e68cdfc47139064"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "98824128148f20854238d01e58b263d93da0c97b4788acd2e67a5e501fe0d369",
+      "exporter_sha256": "768787e482846e28aab48118e2801bde82616efc0e890e083bf367a3a0070019"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "98824128148f20854238d01e58b263d93da0c97b4788acd2e67a5e501fe0d369",
+  "exporter_sha256": "768787e482846e28aab48118e2801bde82616efc0e890e083bf367a3a0070019",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 7.886252374999999,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        3.97705078125,
+        5.35400390625,
+        5.5625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 11.398788040999998,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        4.20751953125,
+        5.35791015625,
+        5.5615234375
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/baseline/0-0.rbc",
+          "sha256": "c263d8924ec053275d9e807c4b5dce5d1a4c7082c9019e75b5c0532242008334",
+          "bytes": 28814907
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 11.462286207999998,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        7.69873046875,
+        6.11328125,
+        5.8291015625
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/candidate/0-0.rbc",
+          "sha256": "c263d8924ec053275d9e807c4b5dce5d1a4c7082c9019e75b5c0532242008334",
+          "bytes": 28814907
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.2339689999999983,
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        7.69873046875,
+        6.11328125,
+        5.8291015625
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "5146721d474a30b53245479cb8c8d833f1a6acf0b8c0658e9c2b4ee8b0d8391b",
+          "bytes": 28815179
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.371498917000004,
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        7.69873046875,
+        6.11328125,
+        5.8291015625
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "5146721d474a30b53245479cb8c8d833f1a6acf0b8c0658e9c2b4ee8b0d8391b",
+          "bytes": 28815179
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.4243660419999955,
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        7.322265625,
+        6.0615234375,
+        5.8125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9797080000000022,
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        7.322265625,
+        6.0615234375,
+        5.8125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.827072292000004,
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        6.5771484375,
+        5.943359375,
+        5.7734375
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/baseline/1-0.rbc",
+          "sha256": "c7b405dabc8beef460556c430a3a737d977ec00ca2c115982f563b3cccb8b6c3",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.486051500000002,
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        6.61083984375,
+        5.96044921875,
+        5.7802734375
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/candidate/1-0.rbc",
+          "sha256": "c7b405dabc8beef460556c430a3a737d977ec00ca2c115982f563b3cccb8b6c3",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9693852919999983,
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        6.61083984375,
+        5.96044921875,
+        5.7802734375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.559286415999999,
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        6.9453125,
+        6.05859375,
+        5.8173828125
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/candidate/2-0.rbc",
+          "sha256": "cfa275e49030ac6516c85a4e07b4e8554979b1f8e6f8e445fe26052420d11d3e",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.838582874999993,
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        6.7890625,
+        6.041015625,
+        5.8125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/baseline/2-0.rbc",
+          "sha256": "cfa275e49030ac6516c85a4e07b4e8554979b1f8e6f8e445fe26052420d11d3e",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.820221458000006,
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        6.8056640625,
+        6.056640625,
+        5.8193359375
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/baseline/3-0.rbc",
+          "sha256": "6f94fddf1990d2118c3fc6612ea241508e52907d25acfedf32f00ad48f6286a0",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9508833339999967,
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        6.34033203125,
+        5.97265625,
+        5.791015625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.4755680840000025,
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        5.99267578125,
+        5.90625,
+        5.7685546875
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/candidate/3-0.rbc",
+          "sha256": "6f94fddf1990d2118c3fc6612ea241508e52907d25acfedf32f00ad48f6286a0",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.4753901670000005,
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        5.5927734375,
+        5.82470703125,
+        5.740234375
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/candidate/4-0.rbc",
+          "sha256": "89b06209ee4edee2945ea9935661cd5901c5b701afd4f4ec3a37606f1876eed0",
+          "bytes": 28815355
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 3.535442666999998,
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        5.544921875,
+        5.810546875,
+        5.73583984375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.723497624999993,
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        5.1806640625,
+        5.73046875,
+        5.7080078125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/baseline/4-0.rbc",
+          "sha256": "89b06209ee4edee2945ea9935661cd5901c5b701afd4f4ec3a37606f1876eed0",
+          "bytes": 28815355
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.709503500000011,
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        4.61767578125,
+        5.5908203125,
+        5.658203125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/baseline/5-0.rbc",
+          "sha256": "e4135f520ac576aaf585f84ab36ba9296742442c63ebb54b4090189163ed7ca4",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.473760417000008,
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        4.40771484375,
+        5.53076171875,
+        5.63671875
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-token-phrase-01/artifacts/candidate/5-0.rbc",
+          "sha256": "e4135f520ac576aaf585f84ab36ba9296742442c63ebb54b4090189163ed7ca4",
+          "bytes": 28815099
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9964006250000068,
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        4.40771484375,
+        5.53076171875,
+        5.63671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+    "candidate_tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "baseline_seconds": 6.827072292000004,
+        "candidate_seconds": 6.486051500000002,
+        "difference_seconds": -0.3410207920000019,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.330767209,
+            "execution_seconds": 5.4090155,
+            "artifact_hash_seconds": 0.010136166999999974,
+            "launcher_seconds": 6.800021625
+          },
+          "candidate": {
+            "cargo_seconds": 1.32173325,
+            "execution_seconds": 5.0780009999999995,
+            "artifact_hash_seconds": 0.010017457999999868,
+            "launcher_seconds": 6.4589250830000005
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "baseline_seconds": 6.838582874999993,
+        "candidate_seconds": 6.559286415999999,
+        "difference_seconds": -0.279296458999994,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.348093708,
+            "execution_seconds": 5.404982542,
+            "artifact_hash_seconds": 0.009881792000000056,
+            "launcher_seconds": 6.812409667
+          },
+          "candidate": {
+            "cargo_seconds": 1.3670915000000001,
+            "execution_seconds": 5.103695083,
+            "artifact_hash_seconds": 0.009893458000000077,
+            "launcher_seconds": 6.531609416
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "baseline_seconds": 6.820221458000006,
+        "candidate_seconds": 6.4755680840000025,
+        "difference_seconds": -0.3446533740000035,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.285393209,
+            "execution_seconds": 5.448592124999999,
+            "artifact_hash_seconds": 0.009947041000000212,
+            "launcher_seconds": 6.793808707999999
+          },
+          "candidate": {
+            "cargo_seconds": 1.28539625,
+            "execution_seconds": 5.104588959,
+            "artifact_hash_seconds": 0.00996462500000006,
+            "launcher_seconds": 6.448425917
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "baseline_seconds": 6.723497624999993,
+        "candidate_seconds": 6.4753901670000005,
+        "difference_seconds": -0.24810745799999268,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.310066333,
+            "execution_seconds": 5.32582825,
+            "artifact_hash_seconds": 0.009930792000000022,
+            "launcher_seconds": 6.694350624999999
+          },
+          "candidate": {
+            "cargo_seconds": 1.3223455,
+            "execution_seconds": 5.0678853329999995,
+            "artifact_hash_seconds": 0.00991487499999999,
+            "launcher_seconds": 6.448719875
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "baseline_seconds": 6.709503500000011,
+        "candidate_seconds": 6.473760417000008,
+        "difference_seconds": -0.23574308300000268,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.2821183329999999,
+            "execution_seconds": 5.342411167,
+            "artifact_hash_seconds": 0.009575832999999978,
+            "launcher_seconds": 6.68273175
+          },
+          "candidate": {
+            "cargo_seconds": 1.279903459,
+            "execution_seconds": 5.108653875,
+            "artifact_hash_seconds": 0.009575875000000122,
+            "launcher_seconds": 6.447319584
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 5,
+    "median_paired_difference_seconds": -0.279296458999994
+  }
+}

@@ -1,0 +1,929 @@
+{
+  "project": "pgrust",
+  "workflow": "default",
+  "revision": "38d2517d3e09168a8fe222837730d435238ff358",
+  "tests": [
+    "tests::uint32_paths_match_byte_path",
+    "tests::extended_zero_seed_low_word_equals_hash_bytes",
+    "tests::murmurhash32_inverse_roundtrips",
+    "tests::dynahash_wrappers"
+  ],
+  "edits": [
+    "name-inverse-xorshift-intermediate",
+    "spell-out-four-byte-load",
+    "combine-constant-hash-initializers",
+    "name-string-hash-length-bound",
+    "use-immutable-hash-stages"
+  ],
+  "workload": "All four existing hashfn library unit tests, including the original 100,000-iteration roundtrip loop",
+  "case_sha256": "98a8ac961a4057c4429001c39b23156af64859522f4c864b260c93efcde8335a",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-paired-pgrust-cargo-timings-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.651760458,
+    "baseline": 0.5397721669999997,
+    "candidate": 0.5405452500000001
+  },
+  "std_mir": null,
+  "cold_success_seconds": {
+    "native": 1.954143459,
+    "baseline": 0.5621014999999998,
+    "candidate": 0.5513261249999997
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "76cc19c462a6ea356cfc6f316879035d45951586e9179867be4e961bdec34d83",
+    "scripts/interpreter.py": "88d607e173ea266ff6ea7de76f708f83fc65e8a67f6b6bb6af93eb22e571d055",
+    "scripts/workflow_cases.py": "1552b1998ca38835cb8604f86256c2b2a9b32ccf26e765079d3fad4b11c7a0f0",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "guest_rustflags": [],
+      "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+      "exporter_sha256": "facf0ba7fd252e4a1fbd249d511d2b8598b8a92f116b89e23404c5746a1e8d08"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "guest_rustflags": [],
+      "vm_sha256": "07d6322a893c38f2ee1a9b426363178a3bd98353220551eb23cb07abd0eb8e7f",
+      "exporter_sha256": "da7819bb20817801d29bc50fd4594341d80a095ef3686e87f4f08746e967f5cb"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "07d6322a893c38f2ee1a9b426363178a3bd98353220551eb23cb07abd0eb8e7f",
+  "exporter_sha256": "da7819bb20817801d29bc50fd4594341d80a095ef3686e87f4f08746e967f5cb",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 1.954143459,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        3.232421875,
+        5.07666015625,
+        5.14794921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/native/0-0.html",
+          "sha256": "7cb61cca32a4a69f9b6ab46d5e3f5ef7cec5113dc83791621afa72f55be83aaf",
+          "bytes": 28826
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5621014999999998,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        3.232421875,
+        5.07666015625,
+        5.14794921875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/baseline/0-0.rbc",
+          "sha256": "00ad2b1e3d4681692fc84a080f59b8bedc126e4176d9a62069e22bdf746f48f9",
+          "bytes": 198477
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/baseline/0-0.html",
+          "sha256": "32399f999e4ff3dc4114b4c875a12a5d88f0df5cc3c625a86017487ea8608e03",
+          "bytes": 29105
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5513261249999997,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        3.232421875,
+        5.07666015625,
+        5.14794921875
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/candidate/0-0.rbc",
+          "sha256": "00ad2b1e3d4681692fc84a080f59b8bedc126e4176d9a62069e22bdf746f48f9",
+          "bytes": 198477
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/candidate/0-0.html",
+          "sha256": "d849169db6806d6e8bb0f5a1ddfac0480b368fc66a63e843835b052fe4b7cabc",
+          "bytes": 29106
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.49860791699999973,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        3.232421875,
+        5.07666015625,
+        5.14794921875
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "5df6defe11c66d9f5ec34d5529ed5ad691d3416c3ccd4b764f1bb19550835572",
+          "bytes": 198477
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/candidate/-1-0.html",
+          "sha256": "65a9796f3491461a853ecdc6f82da702438795c8d5a8e65e1e5b43bab8a3d0bf",
+          "bytes": 29089
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.49625341600000006,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        3.232421875,
+        5.07666015625,
+        5.14794921875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "5df6defe11c66d9f5ec34d5529ed5ad691d3416c3ccd4b764f1bb19550835572",
+          "bytes": 198477
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/baseline/-1-0.html",
+          "sha256": "79c90c0fb6d2305a649a2d64ba946941bfa0a87a484b2a5ca5791b63214c46f5",
+          "bytes": 29089
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6997009159999994,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        3.232421875,
+        5.07666015625,
+        5.14794921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/native/-1-0.html",
+          "sha256": "b6018a79c7a5b01d7db9d5b94c8407c0e4abb9a27ef561e2b96ae45780eb47b9",
+          "bytes": 28841
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.640470208,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        3.232421875,
+        5.07666015625,
+        5.14794921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/native/1-0.html",
+          "sha256": "8ea89598fed44ffa16b66c5d6fe4e8de396d7f7e00e9f3e58756c623ce1f6bb6",
+          "bytes": 28841
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5401289169999997,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/baseline/1-0.rbc",
+          "sha256": "8d736e0d54b1d4c5ba281cc46e470f2326d2aabf3851304ef14c740831349be9",
+          "bytes": 198423
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/baseline/1-0.html",
+          "sha256": "70a3973962586c641162069c9411d5ed3c1b7ad83a9d64fce8bdbea4bd4b96fe",
+          "bytes": 29089
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5365599159999999,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/candidate/1-0.rbc",
+          "sha256": "8d736e0d54b1d4c5ba281cc46e470f2326d2aabf3851304ef14c740831349be9",
+          "bytes": 198423
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/candidate/1-0.html",
+          "sha256": "af4e6fa7c2b8266679e409c20c35e656496f63a8256aa84ad1785537322a558b",
+          "bytes": 29089
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6345563749999998,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/native/2-0.html",
+          "sha256": "a778d3faf536a5d35515eadc68bcc9ed95d5f81d77119e783a52d91466b4e67b",
+          "bytes": 28841
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5405452500000001,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/candidate/2-0.rbc",
+          "sha256": "20d6c6e6220bffe15b5ef817e61d829c1ff94119e6f91a932923cd6a0d27060e",
+          "bytes": 196488
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/candidate/2-0.html",
+          "sha256": "cf236fc7c93db4bc4e28890f7a7191103601d13976aad7545a3c4fe5c3c3f6e1",
+          "bytes": 29106
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5397721669999997,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/baseline/2-0.rbc",
+          "sha256": "20d6c6e6220bffe15b5ef817e61d829c1ff94119e6f91a932923cd6a0d27060e",
+          "bytes": 196488
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/baseline/2-0.html",
+          "sha256": "594f7f3e9d522cdf721de79d8c1be1e92cbb5369504fa6f80afceb6a9d01d33c",
+          "bytes": 29106
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5377407909999992,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/baseline/3-0.rbc",
+          "sha256": "4a737cb17fe2fecefc71d68030ea2e4b92aea897a4ee0c7af4cc28d3c710804a",
+          "bytes": 196488
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/baseline/3-0.html",
+          "sha256": "781d65ea5eee0956f95bcf72929e12eea6daf13105d44713b948e2b297009fb0",
+          "bytes": 29089
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.651760458,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/native/3-0.html",
+          "sha256": "bfe1228927d4c555d48cb0ac31e99feade557fd8e1724ec51f011d5170309885",
+          "bytes": 28841
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5361396670000005,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/candidate/3-0.rbc",
+          "sha256": "4a737cb17fe2fecefc71d68030ea2e4b92aea897a4ee0c7af4cc28d3c710804a",
+          "bytes": 196488
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/candidate/3-0.html",
+          "sha256": "0f4c427ee3bbbf6612688851745776980b12d69f83cb000ba8106f2e307538a9",
+          "bytes": 29089
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5415304589999987,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        3.13330078125,
+        5.025390625,
+        5.12939453125
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/candidate/4-0.rbc",
+          "sha256": "5ad202374f3837aaf1152bd139fae87e6e5666285ef6c57a7377086eb06c6a6d",
+          "bytes": 196488
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/candidate/4-0.html",
+          "sha256": "46af7a5ecbb8538d904f4b909885bcbb263681dee198002d83fe7b575fdebfd3",
+          "bytes": 29089
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6703871249999995,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        3.12255859375,
+        4.99169921875,
+        5.11669921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/native/4-0.html",
+          "sha256": "bde0d1bb89e0b5a79d719bb57ef4b6c369b53c5cede57b29671d262cbfd1b7ec",
+          "bytes": 28826
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5377517919999999,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        3.12255859375,
+        4.99169921875,
+        5.11669921875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/baseline/4-0.rbc",
+          "sha256": "5ad202374f3837aaf1152bd139fae87e6e5666285ef6c57a7377086eb06c6a6d",
+          "bytes": 196488
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/baseline/4-0.html",
+          "sha256": "595e08e6962dd882c26fb0bfa955c460774813626410b076bcf4e1ce56e1554a",
+          "bytes": 29089
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5425720840000015,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        3.12255859375,
+        4.99169921875,
+        5.11669921875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/baseline/5-0.rbc",
+          "sha256": "c1fffe553c6098ad478c5602075264f80bceb84512932a6b57a180af20b2a53c",
+          "bytes": 196072
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/baseline/5-0.html",
+          "sha256": "0cb1e05dd435097d495519ee4e49b64ab93371392b8deb8e2562567aa425f00e",
+          "bytes": 29106
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5492749580000016,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        3.12255859375,
+        4.99169921875,
+        5.11669921875
+      ],
+      "engine": "jit",
+      "tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/artifacts/candidate/5-0.rbc",
+          "sha256": "c1fffe553c6098ad478c5602075264f80bceb84512932a6b57a180af20b2a53c",
+          "bytes": 196072
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/candidate/5-0.html",
+          "sha256": "6a3b86a5cbb5384742e264c538af872f7e33c62302010eafcc13d8ec140b09c5",
+          "bytes": 29106
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6692059169999993,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        3.12255859375,
+        4.99169921875,
+        5.11669921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/e2e-paired-pgrust-cargo-timings-01/cargo-timings/native/5-0.html",
+          "sha256": "83fdfb0904335dc82a09a2076da4541c754e6bb5d9a25eb2e5de072209e437be",
+          "bytes": 28840
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+    "candidate_tool_key": "59f64b2c9085104906f46168a8dc10e8290b87a8ee1984544dfc4e860605a9d2",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "baseline_seconds": 0.5401289169999997,
+        "candidate_seconds": 0.5365599159999999,
+        "difference_seconds": -0.003569000999999794,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.469347625,
+            "execution_seconds": 0.043425875,
+            "artifact_hash_seconds": 0.00020054200000002576,
+            "launcher_seconds": 0.5151369579999999
+          },
+          "candidate": {
+            "cargo_seconds": 0.46584775,
+            "execution_seconds": 0.04369000000000001,
+            "artifact_hash_seconds": 0.0001942910000000131,
+            "launcher_seconds": 0.5118795829999999
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "baseline_seconds": 0.5397721669999997,
+        "candidate_seconds": 0.5405452500000001,
+        "difference_seconds": 0.0007730830000003408,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.469171709,
+            "execution_seconds": 0.04342929200000001,
+            "artifact_hash_seconds": 0.00019849999999999035,
+            "launcher_seconds": 0.514921625
+          },
+          "candidate": {
+            "cargo_seconds": 0.46954904199999997,
+            "execution_seconds": 0.044138917,
+            "artifact_hash_seconds": 0.00018341699999996353,
+            "launcher_seconds": 0.515998792
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "baseline_seconds": 0.5377407909999992,
+        "candidate_seconds": 0.5361396670000005,
+        "difference_seconds": -0.001601123999998677,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.466939542,
+            "execution_seconds": 0.04364033300000003,
+            "artifact_hash_seconds": 0.00018850000000003586,
+            "launcher_seconds": 0.512952875
+          },
+          "candidate": {
+            "cargo_seconds": 0.465483625,
+            "execution_seconds": 0.04356091700000003,
+            "artifact_hash_seconds": 0.00019016700000001885,
+            "launcher_seconds": 0.511410625
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "baseline_seconds": 0.5377517919999999,
+        "candidate_seconds": 0.5415304589999987,
+        "difference_seconds": 0.0037786669999988476,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.4671035,
+            "execution_seconds": 0.04371600000000003,
+            "artifact_hash_seconds": 0.00019574999999999454,
+            "launcher_seconds": 0.513205209
+          },
+          "candidate": {
+            "cargo_seconds": 0.47024245800000003,
+            "execution_seconds": 0.04365158300000005,
+            "artifact_hash_seconds": 0.00019654200000002175,
+            "launcher_seconds": 0.5162207080000001
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "baseline_seconds": 0.5425720840000015,
+        "candidate_seconds": 0.5492749580000016,
+        "difference_seconds": 0.006702874000000136,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.473768792,
+            "execution_seconds": 0.04175887499999997,
+            "artifact_hash_seconds": 0.0001890410000000009,
+            "launcher_seconds": 0.517856
+          },
+          "candidate": {
+            "cargo_seconds": 0.479432416,
+            "execution_seconds": 0.04242379099999999,
+            "artifact_hash_seconds": 0.00019383400000000384,
+            "launcher_seconds": 0.5242506250000001
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.0007730830000003408
+  }
+}

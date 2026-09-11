@@ -1,0 +1,473 @@
+{
+  "project": "pgrust",
+  "workflow": "sha1-vectors",
+  "revision": "38d2517d3e09168a8fe222837730d435238ff358",
+  "tests": [
+    "tests::vectors",
+    "tests::incremental_matches_oneshot"
+  ],
+  "edits": [
+    "name-schedule-read-range",
+    "name-schedule-write-range",
+    "share-round-index-for-function-and-constant",
+    "name-input-and-block-remaining-capacity",
+    "write-digest-by-exact-output-chunks"
+  ],
+  "workload": "Both existing SHA-1 unit tests: standard vectors including the original million-byte input, plus incremental hashing in seven-byte chunks",
+  "case_sha256": "d5cc13cbfa7eb010a1b14bdb0d89fdf7dfade3fbd772829ae99070b3a937484f",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-workflow-pgrust-sha1-inline8-simd-coverage-02",
+  "build_tool_opt_level": null,
+  "instruction_limit": 10000000000,
+  "guest_mir_opt_level": 3,
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.7834134169999984,
+    "interpreter": 5.2791957499999995,
+    "jit": 1.0063014159999994
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 0.9138384589999999,
+    "interpreter": 5.341644833,
+    "jit": 1.001297459
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "03670bea6dab74cb730adbe0a1ee9252c9554ba18bc9e39e9418cccd7418ca40",
+    "scripts/interpreter.py": "5304849738d798b44582f099fce12317265d41539611717382dc71ce8aefb987",
+    "scripts/workflow_cases.py": "f07186ef97e5a4d5f96c23ab56f102f95a61360f198badc1661cac6632d5a1d4",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "interpreter": {
+      "engine": "interpreter",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "88897abc87178852fb97517a05723a14448cd266b2907420b2f2f67a8eb227e4"
+    },
+    "jit": {
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "88897abc87178852fb97517a05723a14448cd266b2907420b2f2f67a8eb227e4"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+  "exporter_sha256": "88897abc87178852fb97517a05723a14448cd266b2907420b2f2f67a8eb227e4",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.9138384589999999,
+      "source_sha256": "3f99149c4ae7b81ed5e4d6354ddaa11734886cf660d6f429f532333b0e2b4fb2",
+      "load": [
+        5.373046875,
+        6.4169921875,
+        5.60302734375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 5.341644833,
+      "source_sha256": "3f99149c4ae7b81ed5e4d6354ddaa11734886cf660d6f429f532333b0e2b4fb2",
+      "load": [
+        5.1025390625,
+        6.34326171875,
+        5.58154296875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 1.001297459,
+      "source_sha256": "3f99149c4ae7b81ed5e4d6354ddaa11734886cf660d6f429f532333b0e2b4fb2",
+      "load": [
+        6.05517578125,
+        6.52001953125,
+        5.6484375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "perturb-first-round-constant",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.5731982919999998,
+      "source_sha256": "0eeb450d69037054609ee97abb33107a83d46a438477bc1923213c95b0d80777",
+      "load": [
+        6.05517578125,
+        6.52001953125,
+        5.6484375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "perturb-first-round-constant",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.5252252089999994,
+      "source_sha256": "0eeb450d69037054609ee97abb33107a83d46a438477bc1923213c95b0d80777",
+      "load": [
+        6.05517578125,
+        6.52001953125,
+        5.6484375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "perturb-first-round-constant",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.6289056249999998,
+      "source_sha256": "0eeb450d69037054609ee97abb33107a83d46a438477bc1923213c95b0d80777",
+      "load": [
+        6.05517578125,
+        6.52001953125,
+        5.6484375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "name-schedule-read-range",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 1.0063014159999994,
+      "source_sha256": "0ca2f05e36c04cc1749b56d45c5d558f6b1dcb301221b7d52110c09389dbdf24",
+      "load": [
+        6.05517578125,
+        6.52001953125,
+        5.6484375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "name-schedule-read-range",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 5.326744584,
+      "source_sha256": "0ca2f05e36c04cc1749b56d45c5d558f6b1dcb301221b7d52110c09389dbdf24",
+      "load": [
+        5.72998046875,
+        6.44482421875,
+        5.626953125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-schedule-read-range",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.7834134169999984,
+      "source_sha256": "0ca2f05e36c04cc1749b56d45c5d558f6b1dcb301221b7d52110c09389dbdf24",
+      "load": [
+        5.72998046875,
+        6.44482421875,
+        5.626953125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "name-schedule-write-range",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.7674775420000017,
+      "source_sha256": "c1803f1680236020dc6a449ab5883759014d8b3b25a6b38c418afafa3035467f",
+      "load": [
+        5.72998046875,
+        6.44482421875,
+        5.626953125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "name-schedule-write-range",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 5.258906958999997,
+      "source_sha256": "c1803f1680236020dc6a449ab5883759014d8b3b25a6b38c418afafa3035467f",
+      "load": [
+        5.7041015625,
+        6.41357421875,
+        5.625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "name-schedule-write-range",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 1.0001936659999977,
+      "source_sha256": "c1803f1680236020dc6a449ab5883759014d8b3b25a6b38c418afafa3035467f",
+      "load": [
+        5.7041015625,
+        6.41357421875,
+        5.625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "share-round-index-for-function-and-constant",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 1.0002300829999982,
+      "source_sha256": "f21e978e90f6e2723b0ed076cada0e0a5d1d238549066584edaf9ae2eebc9c5b",
+      "load": [
+        5.7041015625,
+        6.41357421875,
+        5.625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "share-round-index-for-function-and-constant",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 5.309510417000002,
+      "source_sha256": "f21e978e90f6e2723b0ed076cada0e0a5d1d238549066584edaf9ae2eebc9c5b",
+      "load": [
+        5.4072265625,
+        6.33984375,
+        5.603515625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "share-round-index-for-function-and-constant",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.7437204169999987,
+      "source_sha256": "f21e978e90f6e2723b0ed076cada0e0a5d1d238549066584edaf9ae2eebc9c5b",
+      "load": [
+        5.4072265625,
+        6.33984375,
+        5.603515625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-input-and-block-remaining-capacity",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.8002554169999989,
+      "source_sha256": "aeac40b82931c31995ea94e74a18be977d97ffc99397d61e45d754aa27ed49cf",
+      "load": [
+        5.4072265625,
+        6.33984375,
+        5.603515625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "name-input-and-block-remaining-capacity",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 5.242031209,
+      "source_sha256": "aeac40b82931c31995ea94e74a18be977d97ffc99397d61e45d754aa27ed49cf",
+      "load": [
+        5.13427734375,
+        6.267578125,
+        5.58203125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "name-input-and-block-remaining-capacity",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 1.0522199999999984,
+      "source_sha256": "aeac40b82931c31995ea94e74a18be977d97ffc99397d61e45d754aa27ed49cf",
+      "load": [
+        5.04296875,
+        6.2294921875,
+        5.57275390625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "write-digest-by-exact-output-chunks",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 1.013095290999999,
+      "source_sha256": "ed77121ef1f838215f4fba56d23c08bb31616691fbe0c3a117bc30cb9841b0ed",
+      "load": [
+        5.04296875,
+        6.2294921875,
+        5.57275390625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "write-digest-by-exact-output-chunks",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 5.2791957499999995,
+      "source_sha256": "ed77121ef1f838215f4fba56d23c08bb31616691fbe0c3a117bc30cb9841b0ed",
+      "load": [
+        4.798828125,
+        6.1591796875,
+        5.5517578125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "write-digest-by-exact-output-chunks",
+      "tests": [
+        "tests::vectors",
+        "tests::incremental_matches_oneshot"
+      ],
+      "seconds": 0.9326698329999985,
+      "source_sha256": "ed77121ef1f838215f4fba56d23c08bb31616691fbe0c3a117bc30cb9841b0ed",
+      "load": [
+        4.798828125,
+        6.1591796875,
+        5.5517578125
+      ]
+    }
+  ]
+}

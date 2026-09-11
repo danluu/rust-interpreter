@@ -1,0 +1,63 @@
+{
+  "status": "Retain as experimental baseline for the next capability implementation; no broad build-time improvement claim",
+  "continue_from_tool_key": "76af5541c56a2cd58ad9eae75b91ee9f3c6ad4327f0a8d082cde19573a2d6404",
+  "baseline_tool_key": "3e1ec3b40bafb89068221ede8e6023749fe3e9b601c226356fe1112627a25f7d",
+  "command_wins": 39,
+  "pairs": 60,
+  "candidate_native_wins": 42,
+  "compute_command_wins": 20,
+  "compute_execution_wins": 20,
+  "identical_artifact_runtime_wins": 23,
+  "runtime_pairs": 24,
+  "reason": "The four compute workflows improve every complete command and execution pair, consistent with the separate runtime screen on identical artifacts. The eight broader workflows win 19/40 commands and retain substantive Ruff/larger Nushell regressions located mainly in Cargo. Keep the VM improvement as the experimental baseline; do not claim causality for Cargo changes or a universal warm-build improvement.",
+  "retained_regressions": {
+    "ruff": {
+      "command_change_seconds": 0.17960820799999055,
+      "execution_change_seconds": -0.002064374999999341,
+      "cargo_change_seconds": 0.18023533400000025,
+      "pair_command_changes_seconds": [
+        0.47341975100002287,
+        -0.22935424899998225,
+        0.23361437500000193,
+        -0.9062234999999816,
+        0.17960820799999055
+      ]
+    },
+    "nushell-type-relations": {
+      "command_change_seconds": 0.38342350099998157,
+      "execution_change_seconds": 0.00019354100000068541,
+      "cargo_change_seconds": 0.3821644159999993,
+      "pair_command_changes_seconds": [
+        0.17107304100002807,
+        0.40418583299998545,
+        1.7010926250000011,
+        -0.8837564579999935,
+        0.38342350099998157
+      ]
+    }
+  },
+  "all_60_bytecode_pairs_identical": true,
+  "identical_exporter": false,
+  "coverage": "results/audit-execution-fre-native-exit-dispatch-01/summary.json",
+  "coverage_counts": {
+    "passed": 303,
+    "lowering-blocked": 62,
+    "ignored": 7,
+    "runtime-unsupported-call": 17
+  },
+  "original_tests_and_wrong_edits_verified": true,
+  "source_pins_restored": {
+    "fre": "e0df0b010b156b030a02f073588d28703f4267f3",
+    "pgrust": "38d2517d3e09168a8fe222837730d435238ff358",
+    "nushell": "9d3157963241cf89447119d34d6e887859f5e7e8",
+    "ruff": "d136bd8d002a648de5f344df602e492658306f1e",
+    "rg-aot": "474782386e976f80f7bcbc2643eaaeac1d787ad3"
+  },
+  "next": ".work/tls-destructor-capability-next-01.md",
+  "limitations": [
+    "Selected original tests, not whole applications.",
+    "Five pairs per workflow on a shared host do not establish confidence intervals.",
+    "No A/A subtraction or outlier removal.",
+    "No guest threads or actual guest unwinding support."
+  ]
+}

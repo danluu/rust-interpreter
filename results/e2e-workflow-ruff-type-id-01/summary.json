@@ -1,0 +1,426 @@
+{
+  "project": "ruff",
+  "workflow": "default",
+  "revision": "d136bd8d002a648de5f344df602e492658306f1e",
+  "tests": [
+    "registry::tests::documentation",
+    "registry::tests::rule_naming_convention",
+    "registry::tests::check_code_serialization",
+    "registry::tests::linter_parse_code",
+    "registry::tests::rule_size",
+    "registry::tests::linter_sorting"
+  ],
+  "edits": [
+    "match-optional-rule-code-explicitly",
+    "make-name-conversion-explicit",
+    "match-linter-prefix-result-explicitly",
+    "name-code-suffix-before-comparison",
+    "use-explicit-rule-search-loop"
+  ],
+  "workload": "All six existing registry tests, including rule-code roundtrips, naming patterns, and linter sorting",
+  "case_sha256": "74ce22dd5d862475efcf2d1f849514cda626aacd10cdcef63f3b1bffffc42bc8",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": true,
+  "raw": ".work/runs/e2e-workflow-ruff-type-id-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "guest_mir_opt_level": null,
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "9429702c8249a4e16792275c0796d18292119961c11024bd5d8fb50357f3c5a5",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 6.107752583000007,
+    "interpreter": 3.309045124999983,
+    "jit": 3.3982415000000117
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 60.461368082999996,
+    "interpreter": 27.716715167000004,
+    "jit": 26.821464457999994
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "66ee4737374ec0ef057fb3b4f46c1050bd07cc17859d5937be678839c7586c56",
+    "scripts/interpreter.py": "e910ac14237f77a4f3d6ba82208276a0a836db26a2e95645ca8436aa1c089df7",
+    "scripts/workflow_cases.py": "3e731b116a4d0737eec78a63a3b365684b5d67dd510b1cfa947ef1a4ba5debb0",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "vm_sha256": "0468a79b8db5a9570d3c684839f5f6929a90c56df84fef30a50af9804cab634c",
+  "exporter_sha256": "429fa495e2a2c151feb8b1a50c20adcebca7f3a0b88cb57246578ee6ab61df63",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 60.461368082999996,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        8.30224609375,
+        4.87646484375,
+        3.4853515625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 27.716715167000004,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        6.94482421875,
+        4.8359375,
+        3.51025390625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 26.821464457999994,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        8.55908203125,
+        5.56298828125,
+        3.8271484375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.9991224999999986,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        8.55908203125,
+        5.56298828125,
+        3.8271484375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.2141138340000026,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        8.11376953125,
+        5.52001953125,
+        3.822265625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.057867999999999,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        7.6240234375,
+        5.46142578125,
+        3.8115234375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.0988667090000064,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        7.25341796875,
+        5.42041015625,
+        3.806640625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.031550917000004,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        7.25341796875,
+        5.42041015625,
+        3.806640625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 6.176412916000004,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        6.59912109375,
+        5.34033203125,
+        3.796875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 4.635084333999998,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        6.23046875,
+        5.28466796875,
+        3.7861328125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.2596793339999977,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        6.23046875,
+        5.28466796875,
+        3.7861328125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.523707791999982,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        5.8916015625,
+        5.22998046875,
+        3.775390625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 2.9869094169999926,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        5.57958984375,
+        5.17626953125,
+        3.7646484375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 3.3923712080000143,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        5.57958984375,
+        5.17626953125,
+        3.7646484375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 7.61831325,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        5.115234375,
+        5.08837890625,
+        3.74951171875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 4.7460477500000025,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        5.18603515625,
+        5.10302734375,
+        3.7626953125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.309045124999983,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        5.18603515625,
+        5.10302734375,
+        3.7626953125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.6493197910000106,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        5.0908203125,
+        5.08447265625,
+        3.763671875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.3982415000000117,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        7.72607421875,
+        5.630859375,
+        3.9638671875
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.3609485000000063,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        7.72607421875,
+        5.630859375,
+        3.9638671875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.107752583000007,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        6.92529296875,
+        5.52734375,
+        3.9462890625
+      ]
+    }
+  ]
+}

@@ -1,0 +1,521 @@
+{
+  "project": "nushell",
+  "workflow": "span-signals",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "tests": [
+    "span::tests::try_from_row_column_first_line",
+    "span::tests::try_from_row_column_second_line",
+    "span::tests::try_from_row_column_last_char",
+    "span::tests::try_from_row_column_beyond_input",
+    "span::tests::try_from_row_column_interrupted_triggers_error",
+    "span::tests::try_from_row_column_short_input_skips_signal_check",
+    "span::tests::try_from_row_column_not_interrupted",
+    "span::tests::try_from_row_column_start_matches_from_row_column"
+  ],
+  "edits": [
+    "express-poll-interval-with-bit-mask",
+    "iterate-copied-bytes-explicitly",
+    "derive-highlight-end-from-current-byte",
+    "continue-after-advancing-the-row",
+    "name-end-of-input-position"
+  ],
+  "workload": "All eight existing row/column span tests, including the original 20,000-byte signal-interruption input, short-input polling behavior, and end-of-input boundaries",
+  "case_sha256": "4e48c49fd64029668c5cd140ce7cc84333275f2382ab45ec1cdbeb48748d0b6c",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-workflow-nushell-span-signals-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "guest_mir_opt_level": null,
+  "tool_key": "a9966e21d65a93997e30205edc28d4472a11d3affae0fade3fb9b77020099742",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 8.99937320799998,
+    "interpreter": 6.047450459000004,
+    "jit": 5.259866208000005
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 67.467931334,
+    "interpreter": 64.432771459,
+    "jit": 63.035322917
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "8adc01448e634133eaf29de6b9dd5da1441d563ea5a86e99bc0ee15fff08d326",
+    "scripts/interpreter.py": "e910ac14237f77a4f3d6ba82208276a0a836db26a2e95645ca8436aa1c089df7",
+    "scripts/workflow_cases.py": "804794050416587d33d39c158e409bc1d41af1a737a3eff2ee6490fcc79adc75",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "vm_sha256": "14c64da978a4557cfbe1c36df074529d9d920bee187579b3368b8a93562536b9",
+  "exporter_sha256": "8827504bc48023c45be46693abc21584b581181412426a9df53dfb709f963a10",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 67.467931334,
+      "source_sha256": "334defbef6ee292f2282005cbd7a12b1ca24f3e452ef0742f7d441220de80903",
+      "load": [
+        6.615234375,
+        3.56494140625,
+        2.88037109375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 64.432771459,
+      "source_sha256": "334defbef6ee292f2282005cbd7a12b1ca24f3e452ef0742f7d441220de80903",
+      "load": [
+        6.37451171875,
+        4.06591796875,
+        3.1123046875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 63.035322917,
+      "source_sha256": "334defbef6ee292f2282005cbd7a12b1ca24f3e452ef0742f7d441220de80903",
+      "load": [
+        5.8583984375,
+        4.49609375,
+        3.3505859375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "delay-signal-check-past-original-test-input",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 5.78125962499999,
+      "source_sha256": "f7c43eecfa1433e69534b0e624d41a36058bc9e786f4148f49801934edce0da5",
+      "load": [
+        5.94970703125,
+        4.53759765625,
+        3.37158203125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "delay-signal-check-past-original-test-input",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 5.802730290999989,
+      "source_sha256": "f7c43eecfa1433e69534b0e624d41a36058bc9e786f4148f49801934edce0da5",
+      "load": [
+        5.71337890625,
+        4.51171875,
+        3.369140625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "delay-signal-check-past-original-test-input",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 8.973107791000018,
+      "source_sha256": "f7c43eecfa1433e69534b0e624d41a36058bc9e786f4148f49801934edce0da5",
+      "load": [
+        5.2158203125,
+        4.44482421875,
+        3.3583984375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "express-poll-interval-with-bit-mask",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 5.259866208000005,
+      "source_sha256": "319a53482fd6ca5e614cba882aca41b0dc29bb325be50489b3bd0d9ff53abd68",
+      "load": [
+        5.1181640625,
+        4.43701171875,
+        3.36181640625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "express-poll-interval-with-bit-mask",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 5.228021417000008,
+      "source_sha256": "319a53482fd6ca5e614cba882aca41b0dc29bb325be50489b3bd0d9ff53abd68",
+      "load": [
+        4.8681640625,
+        4.396484375,
+        3.353515625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "express-poll-interval-with-bit-mask",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 9.043093707999986,
+      "source_sha256": "319a53482fd6ca5e614cba882aca41b0dc29bb325be50489b3bd0d9ff53abd68",
+      "load": [
+        4.6669921875,
+        4.36669921875,
+        3.3544921875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "iterate-copied-bytes-explicitly",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 8.99937320799998,
+      "source_sha256": "c53cd596c48ee72b8aca8f5bcb961a8af97e7ffe6829919cddc57c7f9ed491ef",
+      "load": [
+        8.38818359375,
+        5.20263671875,
+        3.6640625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "iterate-copied-bytes-explicitly",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 6.443709708,
+      "source_sha256": "c53cd596c48ee72b8aca8f5bcb961a8af97e7ffe6829919cddc57c7f9ed491ef",
+      "load": [
+        7.87646484375,
+        5.1494140625,
+        3.654296875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "iterate-copied-bytes-explicitly",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 5.951368000000002,
+      "source_sha256": "c53cd596c48ee72b8aca8f5bcb961a8af97e7ffe6829919cddc57c7f9ed491ef",
+      "load": [
+        7.40576171875,
+        5.0966796875,
+        3.64453125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "derive-highlight-end-from-current-byte",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 4.556031416999986,
+      "source_sha256": "8bf19a89870c35f13158beb9613f53c37186aa72334e0de34647a2d6c18b0bb2",
+      "load": [
+        7.1328125,
+        5.078125,
+        3.646484375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "derive-highlight-end-from-current-byte",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 6.047450459000004,
+      "source_sha256": "8bf19a89870c35f13158beb9613f53c37186aa72334e0de34647a2d6c18b0bb2",
+      "load": [
+        6.8818359375,
+        5.06005859375,
+        3.6484375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "derive-highlight-end-from-current-byte",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 10.068718500000045,
+      "source_sha256": "8bf19a89870c35f13158beb9613f53c37186aa72334e0de34647a2d6c18b0bb2",
+      "load": [
+        8.708984375,
+        5.52978515625,
+        3.83251953125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "continue-after-advancing-the-row",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 8.336559291000015,
+      "source_sha256": "1c177b93af0956aa86ff7bd79c9ad27b2149ca0ef6624a2546bfa206e7b7aca2",
+      "load": [
+        11.47216796875,
+        6.2470703125,
+        4.10791015625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "continue-after-advancing-the-row",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 6.40646566700002,
+      "source_sha256": "1c177b93af0956aa86ff7bd79c9ad27b2149ca0ef6624a2546bfa206e7b7aca2",
+      "load": [
+        10.71337890625,
+        6.17626953125,
+        4.09521484375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "continue-after-advancing-the-row",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 6.0171747079999705,
+      "source_sha256": "1c177b93af0956aa86ff7bd79c9ad27b2149ca0ef6624a2546bfa206e7b7aca2",
+      "load": [
+        9.3798828125,
+        6.03857421875,
+        4.0703125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "name-end-of-input-position",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 4.51239691699999,
+      "source_sha256": "38b07185368f7d603711eb9f2097654ad7284761dc028ec0b547e9aa0d047786",
+      "load": [
+        9.3798828125,
+        6.03857421875,
+        4.0703125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "name-end-of-input-position",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 4.4029916670000375,
+      "source_sha256": "38b07185368f7d603711eb9f2097654ad7284761dc028ec0b547e9aa0d047786",
+      "load": [
+        8.62841796875,
+        5.93798828125,
+        4.04638671875
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "name-end-of-input-position",
+      "tests": [
+        "span::tests::try_from_row_column_first_line",
+        "span::tests::try_from_row_column_second_line",
+        "span::tests::try_from_row_column_last_char",
+        "span::tests::try_from_row_column_beyond_input",
+        "span::tests::try_from_row_column_interrupted_triggers_error",
+        "span::tests::try_from_row_column_short_input_skips_signal_check",
+        "span::tests::try_from_row_column_not_interrupted",
+        "span::tests::try_from_row_column_start_matches_from_row_column"
+      ],
+      "seconds": 7.692528583000012,
+      "source_sha256": "38b07185368f7d603711eb9f2097654ad7284761dc028ec0b547e9aa0d047786",
+      "load": [
+        7.68212890625,
+        5.82421875,
+        4.02783203125
+      ]
+    }
+  ]
+}

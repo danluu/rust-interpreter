@@ -1,0 +1,781 @@
+{
+  "project": "ruff",
+  "workflow": "default",
+  "revision": "d136bd8d002a648de5f344df602e492658306f1e",
+  "tests": [
+    "registry::tests::documentation",
+    "registry::tests::rule_naming_convention",
+    "registry::tests::check_code_serialization",
+    "registry::tests::linter_parse_code",
+    "registry::tests::rule_size",
+    "registry::tests::linter_sorting"
+  ],
+  "edits": [
+    "match-optional-rule-code-explicitly",
+    "make-name-conversion-explicit",
+    "match-linter-prefix-result-explicitly",
+    "name-code-suffix-before-comparison",
+    "use-explicit-rule-search-loop"
+  ],
+  "workload": "All six existing registry tests, including rule-code roundtrips, naming patterns, and linter sorting",
+  "case_sha256": "74ce22dd5d862475efcf2d1f849514cda626aacd10cdcef63f3b1bffffc42bc8",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": true,
+  "raw": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+  "candidate_tool_key_requested": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 6.030008084000002,
+    "baseline": 2.951583416999995,
+    "candidate": 3.061397959000004
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 67.061898416,
+    "baseline": 36.358468375,
+    "candidate": 34.36857045800001
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "7af4e10fc5a676878319c8a0f0f7945328b07b6f307c36ab19120ece593bca88",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "b8adadc580c53ce512ecafe01bc2e827b704163a54bd5afd5296e90d05e1c01f",
+      "exporter_sha256": "2c71eab7a6cff77c877856bfe14cf255ae76c7f7500f1a054413f7737dc33b0c"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "d2170a25e7559c2fa4aeb3b91e3b75dfa41d6010ad7ba11e35626d3a37115f74",
+      "exporter_sha256": "0b525df2085b43efd7880a6b7f413757ef32b08524104d9c32d897a5d1848a8e"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "d2170a25e7559c2fa4aeb3b91e3b75dfa41d6010ad7ba11e35626d3a37115f74",
+  "exporter_sha256": "0b525df2085b43efd7880a6b7f413757ef32b08524104d9c32d897a5d1848a8e",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 67.061898416,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        10.5322265625,
+        9.552734375,
+        7.53369140625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 36.358468375,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        14.9619140625,
+        10.74609375,
+        8.046875
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/baseline/0-0.rbc",
+          "sha256": "833b0b222aeab42651e4a67972a377a2c3fa1c9ff7059f1e4b3bc3285f882d62",
+          "bytes": 4437351
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 34.36857045800001,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        13.58935546875,
+        10.9189453125,
+        8.220703125
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/candidate/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.697742207999994,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        12.9814453125,
+        10.8369140625,
+        8.20751953125
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.001444415999998,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        12.18212890625,
+        10.70654296875,
+        8.1767578125
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "7ab3ee674fcd71b35039dfc40ea5fb9a50fca96df008cd7cc50d6ae721746674",
+          "bytes": 4433093
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 7.968423959000006,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        11.84716796875,
+        10.6611328125,
+        8.17529296875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 6.030008084000002,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        11.37890625,
+        10.58349609375,
+        8.162109375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.20690912500001,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        11.02783203125,
+        10.52392578125,
+        8.1552734375
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/baseline/1-0.rbc",
+          "sha256": "fe457d7929045438bd8e12a2dbd198f9a7f68ed0ccf61c0458452a85d6eaa82a",
+          "bytes": 1449090
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.5305563750000033,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        10.46484375,
+        10.41552734375,
+        8.130859375
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/candidate/1-0.rbc",
+          "sha256": "43d46e7c618b066d0e9c5830157e5bfabc17530d6e6f11d8eae7ebc50fa84f83",
+          "bytes": 1400466
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 5.012410208999995,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        9.94677734375,
+        10.30859375,
+        8.1064453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.061397959000004,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        9.94677734375,
+        10.30859375,
+        8.1064453125
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/candidate/2-0.rbc",
+          "sha256": "ba2f1fccb7387b01f26652f7983ec64f34a760db26751c2170d419e9a2642f46",
+          "bytes": 1969112
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.221779708000014,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        9.79052734375,
+        10.27001953125,
+        8.10546875
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/baseline/2-0.rbc",
+          "sha256": "9671c07f6a4d5e0049a03c6f5e8f6cd3684cce84604c5b15d8acab22b15f1b8c",
+          "bytes": 2054747
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 2.912485457999992,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        9.24658203125,
+        10.14892578125,
+        8.0751953125
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/baseline/3-0.rbc",
+          "sha256": "88972231af48707676d4ec4544ec7b8fe71a3de607dcbdb86cd727a678eb63ea",
+          "bytes": 1682491
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 6.101232999999979,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        9.466796875,
+        10.17919921875,
+        8.09814453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 3.3002089160000025,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        9.26904296875,
+        10.1259765625,
+        8.09130859375
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/candidate/3-0.rbc",
+          "sha256": "5c81d1e398d823271d784274eb272b1f7d2b10540b328323fa4f02aea64490bf",
+          "bytes": 1611756
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.7725055420000047,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        9.26904296875,
+        10.1259765625,
+        8.09130859375
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/candidate/4-0.rbc",
+          "sha256": "b2728fe45618eee51a0ab3cf305ce7e523503de3f65002a00608bcc840cb0589",
+          "bytes": 1395658
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 4.639161958000017,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        8.7666015625,
+        10.00732421875,
+        8.06103515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.912973791000013,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        8.384765625,
+        9.9072265625,
+        8.037109375
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/baseline/4-0.rbc",
+          "sha256": "64d117569dfb2d64d832bebac9bcddee759ca13a225b8413441be0bfb127bcdf",
+          "bytes": 1444225
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.951583416999995,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        8.384765625,
+        9.9072265625,
+        8.037109375
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/baseline/5-0.rbc",
+          "sha256": "93e29756895897ea377c31d0bf7202935f03259bb2da776d3204bf58f105bd20",
+          "bytes": 4422196
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.9817147910000017,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        8.2734375,
+        9.85888671875,
+        8.03076171875
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-ruff-01/artifacts/candidate/5-0.rbc",
+          "sha256": "71766035d29b2008c216fbf04de340a0234e9bedff00a80b76e49951e5e5be2a",
+          "bytes": 4282034
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.053338709000002,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        7.77099609375,
+        9.72802734375,
+        7.9951171875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+    "candidate_tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline_seconds": 3.20690912500001,
+        "candidate_seconds": 3.5305563750000033,
+        "difference_seconds": 0.3236472499999934,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 3.080309917,
+            "execution_seconds": 0.04279983300000012,
+            "artifact_hash_seconds": 0.0007287499999999447,
+            "launcher_seconds": 3.1684669999999997
+          },
+          "candidate": {
+            "cargo_seconds": 3.422249791,
+            "execution_seconds": 0.04095154199999973,
+            "artifact_hash_seconds": 0.000669958000000026,
+            "launcher_seconds": 3.505515125
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline_seconds": 3.221779708000014,
+        "candidate_seconds": 3.061397959000004,
+        "difference_seconds": -0.16038174900000968,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 3.093973,
+            "execution_seconds": 0.0595340000000002,
+            "artifact_hash_seconds": 0.0009963329999997939,
+            "launcher_seconds": 3.195570459
+          },
+          "candidate": {
+            "cargo_seconds": 2.9197107079999998,
+            "execution_seconds": 0.057653541000000086,
+            "artifact_hash_seconds": 0.0009800420000001253,
+            "launcher_seconds": 3.0255215840000003
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline_seconds": 2.912485457999992,
+        "candidate_seconds": 3.3002089160000025,
+        "difference_seconds": 0.3877234580000106,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.793503208,
+            "execution_seconds": 0.05294133400000023,
+            "artifact_hash_seconds": 0.0007975419999999289,
+            "launcher_seconds": 2.887311042
+          },
+          "candidate": {
+            "cargo_seconds": 3.178991583,
+            "execution_seconds": 0.051042708000000214,
+            "artifact_hash_seconds": 0.0008144589999998786,
+            "launcher_seconds": 3.2707198749999997
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline_seconds": 2.912973791000013,
+        "candidate_seconds": 2.7725055420000047,
+        "difference_seconds": -0.14046824900000843,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.7823531249999998,
+            "execution_seconds": 0.04075866699999997,
+            "artifact_hash_seconds": 0.0007675419999997324,
+            "launcher_seconds": 2.8704962079999996
+          },
+          "candidate": {
+            "cargo_seconds": 2.667010458,
+            "execution_seconds": 0.04073608300000009,
+            "artifact_hash_seconds": 0.0007522500000001209,
+            "launcher_seconds": 2.7477143749999997
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline_seconds": 2.951583416999995,
+        "candidate_seconds": 2.9817147910000017,
+        "difference_seconds": 0.030131374000006872,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.812158917,
+            "execution_seconds": 0.07349879200000009,
+            "artifact_hash_seconds": 0.0018570829999999816,
+            "launcher_seconds": 2.927254584
+          },
+          "candidate": {
+            "cargo_seconds": 2.843212584,
+            "execution_seconds": 0.07190029200000003,
+            "artifact_hash_seconds": 0.0018486250000000481,
+            "launcher_seconds": 2.956710125
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.030131374000006872
+  }
+}

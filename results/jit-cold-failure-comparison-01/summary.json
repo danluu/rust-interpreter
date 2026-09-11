@@ -1,0 +1,164 @@
+{
+  "status": "58 bytecode tests and both-engine comparisons complete; not retained because word64 interpretation remains slower",
+  "production_benchmark_qualified": false,
+  "tool_key": "863dc7705bcfc6afc5d04ecaae6304212ff16ab4dc00974bf36c8d5491206a1c",
+  "bytecode_version": 5,
+  "binaries": {
+    "rust-interp-vm": "8ab1074b42ecb8a67145702508525be3fae6e2bc08ffd17e6dab25be2f622e83",
+    "rust-interp-mir-export": "1dc39d3ae41d51b4e00805c837ab47a7168adb6f77ad9b97abd903bc90502a08"
+  },
+  "binary_bytes": {
+    "rust-interp-vm": 714528,
+    "rust-interp-mir-export": 1762592
+  },
+  "build_log": ".work/jit-cold-failure-build-01.log",
+  "cargo_reported_build_seconds": 4.77,
+  "bytecode_tests": {
+    "passed": 58,
+    "log": ".work/jit-cold-failure-bytecode-tests-01.log"
+  },
+  "design": ".work/jit-cold-failure-design-01.json",
+  "change": "Move fault-message construction out of the forcibly inlined JIT transition into a cold helper; guest emission and messages unchanged.",
+  "parent_candidate": "results/jit-assertions-validation-01.json",
+  "control": "9429702c8249a4e16792275c0796d18292119961c11024bd5d8fb50357f3c5a5",
+  "paired_interpreter": {
+    "before_tool_key": "9429702c8249a4e16792275c0796d18292119961c11024bd5d8fb50357f3c5a5",
+    "after_tool_key": "863dc7705bcfc6afc5d04ecaae6304212ff16ab4dc00974bf36c8d5491206a1c",
+    "cases": {
+      "word64-default": {
+        "median_seconds": {
+          "before": 15.919598790999999,
+          "after": 16.277652957999997
+        },
+        "candidate_pair_wins": 0,
+        "same_bytecode": true,
+        "artifact_sha256": "b165ab5d8002e2f40f2558eb016b317379eebf7289e62b415712e45696e000b3",
+        "stats": {
+          "before": {
+            "instructions": 3336017284,
+            "peak_guest_memory": 107056,
+            "jit_bytes": 0,
+            "jit_operations": 0,
+            "jit_instructions": 0
+          },
+          "after": {
+            "instructions": 3336017284,
+            "peak_guest_memory": 107056,
+            "jit_bytes": 0,
+            "jit_operations": 0,
+            "jit_instructions": 0
+          }
+        }
+      },
+      "sha1-inline8": {
+        "median_seconds": {
+          "before": 5.2348842500000075,
+          "after": 5.139457125000007
+        },
+        "candidate_pair_wins": 1,
+        "same_bytecode": true,
+        "artifact_sha256": "681884a8e6cf74afedc6052b34f20687f48d7e75a55df1193607c4f68b346685",
+        "stats": {
+          "before": {
+            "instructions": 1378275772,
+            "peak_guest_memory": 1019120,
+            "jit_bytes": 0,
+            "jit_operations": 0,
+            "jit_instructions": 0
+          },
+          "after": {
+            "instructions": 1378275772,
+            "peak_guest_memory": 1019120,
+            "jit_bytes": 0,
+            "jit_operations": 0,
+            "jit_instructions": 0
+          }
+        }
+      }
+    }
+  },
+  "paired_interpreter_raw": ".work/jit-cold-failure-interpreter-paired-01",
+  "paired_runtime": {
+    "before_tool_key": "9429702c8249a4e16792275c0796d18292119961c11024bd5d8fb50357f3c5a5",
+    "after_tool_key": "863dc7705bcfc6afc5d04ecaae6304212ff16ab4dc00974bf36c8d5491206a1c",
+    "cases": {
+      "word64-default": {
+        "median_seconds": {
+          "before": 2.313136042,
+          "after": 2.3825442500000005
+        },
+        "candidate_pair_wins": 1,
+        "same_bytecode": true,
+        "artifact_sha256": "b165ab5d8002e2f40f2558eb016b317379eebf7289e62b415712e45696e000b3",
+        "stats": {
+          "before": {
+            "instructions": 3336017284,
+            "peak_guest_memory": 107056,
+            "jit_bytes": 751644,
+            "jit_operations": 48758,
+            "jit_instructions": 3202154192
+          },
+          "after": {
+            "instructions": 3336017284,
+            "peak_guest_memory": 107056,
+            "jit_bytes": 752976,
+            "jit_operations": 49030,
+            "jit_instructions": 3213146922
+          }
+        }
+      },
+      "word64-inline8": {
+        "median_seconds": {
+          "before": 1.5853359169999983,
+          "after": 1.5654918329999994
+        },
+        "candidate_pair_wins": 4,
+        "same_bytecode": true,
+        "artifact_sha256": "909d08b1a4ac496b0a0e4a5afa1053a458b7579b93061289d4b24ecc6dda8ad2",
+        "stats": {
+          "before": {
+            "instructions": 2892954629,
+            "peak_guest_memory": 105840,
+            "jit_bytes": 799388,
+            "jit_operations": 52810,
+            "jit_instructions": 2821808019
+          },
+          "after": {
+            "instructions": 2892954629,
+            "peak_guest_memory": 105840,
+            "jit_bytes": 800508,
+            "jit_operations": 53102,
+            "jit_instructions": 2831595657
+          }
+        }
+      },
+      "sha1-inline8": {
+        "median_seconds": {
+          "before": 0.6958364589999988,
+          "after": 0.6814671250000046
+        },
+        "candidate_pair_wins": 5,
+        "same_bytecode": true,
+        "artifact_sha256": "681884a8e6cf74afedc6052b34f20687f48d7e75a55df1193607c4f68b346685",
+        "stats": {
+          "before": {
+            "instructions": 1378275772,
+            "peak_guest_memory": 1019120,
+            "jit_bytes": 231000,
+            "jit_operations": 15278,
+            "jit_instructions": 1327977301
+          },
+          "after": {
+            "instructions": 1378275772,
+            "peak_guest_memory": 1019120,
+            "jit_bytes": 232192,
+            "jit_operations": 15412,
+            "jit_instructions": 1354510609
+          }
+        }
+      }
+    }
+  },
+  "paired_runtime_raw": ".work/jit-cold-failure-paired-01",
+  "decision": "Test a separate interpreter/JIT loop specialization independently; restore the original assertion error path for that comparison."
+}

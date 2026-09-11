@@ -1,0 +1,1123 @@
+{
+  "project": "fre",
+  "workflow": "folded-literal-trie",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+    "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+    "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+    "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+    "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+    "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+    "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+    "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+    "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+    "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+    "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+    "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+    "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+    "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+    "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+    "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+    "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+    "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+  ],
+  "edits": [
+    "test-ascii-leading-bit",
+    "express-continuation-prefix-as-shift",
+    "name-root-membership-mask",
+    "name-two-byte-scalar-fields",
+    "match-first-byte-explicitly"
+  ],
+  "workload": "All eighteen original folded-literal-trie tests, including complete short-byte-string/window differentials, malformed UTF-8, canonical folding, exact resource gates, SIMD prefilters and accounting",
+  "case_sha256": "9e0d625495cfb05db0be059f2d69f15c6f9be60f810dbd20de05e24343f35a67",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/paired-cfg-folded-literal-trie-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 100000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+  "candidate_tool_key_requested": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.9516625839999975,
+    "baseline": 3.002076250000002,
+    "candidate": 2.984524125
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.3247209589999995,
+    "baseline": 7.61828425,
+    "candidate": 7.440497125
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "0a5dd4678615d6f2e5fd5b5e4ed083c2e48df8c0ae7a3ad03232293d86ff5a96",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": false,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "f8b38f2d10482bd8aa7e1c7542c505c3cbeffa0feb896bb48b0b64205241f615",
+      "exporter_sha256": "9b1d38d06e26873d06205826a784861b82f1141757e031927f867e1b52f44f02"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": false,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "ac815c1c85f44026ca02cc3c891bc094c013f0e5f1f286f7b3f2654b28556302",
+      "exporter_sha256": "6b26ad033d69982c34278767a2227ed8556bf288024620ca4b778f053ef25c65"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "ac815c1c85f44026ca02cc3c891bc094c013f0e5f1f286f7b3f2654b28556302",
+  "exporter_sha256": "6b26ad033d69982c34278767a2227ed8556bf288024620ca4b778f053ef25c65",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 7.3247209589999995,
+      "source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "load": [
+        3.13671875,
+        3.0126953125,
+        2.755859375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 7.61828425,
+      "source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "load": [
+        3.20556640625,
+        3.02880859375,
+        2.7626953125
+      ],
+      "engine": "jit",
+      "tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/baseline/0-0.rbc",
+          "sha256": "b1881d9084443b0345e706192d049c5b48d1090734cb098ed0f0538c85afad96",
+          "bytes": 6826746
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 7.440497125,
+      "source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "load": [
+        3.18017578125,
+        3.02783203125,
+        2.7646484375
+      ],
+      "engine": "jit",
+      "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/candidate/0-0.rbc",
+          "sha256": "36cba0626bcf8b8a885a89024c4400420606069d94260580303d82ce5e6f1000",
+          "bytes": 6775508
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "break-ascii-scalar-decoding",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.031687166000001,
+      "source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "load": [
+        3.18017578125,
+        3.02783203125,
+        2.7646484375
+      ],
+      "engine": "jit",
+      "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "7f0f570e0200b0aa56f5311b51d7586e6530a4731d5d636ec094d76beb74db0e",
+          "bytes": 6775384
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "break-ascii-scalar-decoding",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 0.970597583,
+      "source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "load": [
+        3.18017578125,
+        3.02783203125,
+        2.7646484375
+      ],
+      "engine": "jit",
+      "tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "f659193f7d750c648cda50dee21f61a37ffa10b852b86ae81f5573b2d4891e4b",
+          "bytes": 6826622
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "break-ascii-scalar-decoding",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.0155044999999987,
+      "source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "load": [
+        3.18017578125,
+        3.02783203125,
+        2.7646484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "test-ascii-leading-bit",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.7867965000000012,
+      "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "load": [
+        5.32763671875,
+        3.4755859375,
+        2.923828125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "test-ascii-leading-bit",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.930275625,
+      "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "load": [
+        5.32763671875,
+        3.4755859375,
+        2.923828125
+      ],
+      "engine": "jit",
+      "tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/baseline/1-0.rbc",
+          "sha256": "c9348b398b221d07dd75f8a46412982d0011e76f002e6153223eb4370115e197",
+          "bytes": 6826810
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "test-ascii-leading-bit",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.984524125,
+      "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "load": [
+        5.14111328125,
+        3.46728515625,
+        2.923828125
+      ],
+      "engine": "jit",
+      "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/candidate/1-0.rbc",
+          "sha256": "32078a30ce0d1007b88c643555294b7e9af7b34114b47db8901982d1f2606a0a",
+          "bytes": 6775572
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "express-continuation-prefix-as-shift",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.9516625839999975,
+      "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "load": [
+        5.14111328125,
+        3.46728515625,
+        2.923828125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "express-continuation-prefix-as-shift",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.9309094589999987,
+      "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "load": [
+        4.88916015625,
+        3.44287109375,
+        2.91796875
+      ],
+      "engine": "jit",
+      "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/candidate/2-0.rbc",
+          "sha256": "f3413c657256db97d44f341e61291d333444ef38a98e218f31b9192ff63127e2",
+          "bytes": 6775588
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "express-continuation-prefix-as-shift",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.9892362080000012,
+      "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "load": [
+        4.88916015625,
+        3.44287109375,
+        2.91796875
+      ],
+      "engine": "jit",
+      "tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/baseline/2-0.rbc",
+          "sha256": "82ed590171e109ef234bf0939efc82fba052932fb3e0f3e016e05f5dfab027f4",
+          "bytes": 6826826
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "name-root-membership-mask",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 3.002076250000002,
+      "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "load": [
+        4.65771484375,
+        3.41845703125,
+        2.912109375
+      ],
+      "engine": "jit",
+      "tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/baseline/3-0.rbc",
+          "sha256": "393a3ac57316fd16ce0aad22ebbda6277d685469980a2b44db8c505987628a1c",
+          "bytes": 6826906
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "name-root-membership-mask",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.063487041000002,
+      "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "load": [
+        4.65771484375,
+        3.41845703125,
+        2.912109375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "name-root-membership-mask",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 3.0847442920000034,
+      "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "load": [
+        4.44482421875,
+        3.39453125,
+        2.90673828125
+      ],
+      "engine": "jit",
+      "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/candidate/3-0.rbc",
+          "sha256": "c4bc7b043d64d37332f71d07eb39b9855fa531db5ebf2c90bc1f131c89029389",
+          "bytes": 6775668
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-two-byte-scalar-fields",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.9723463329999973,
+      "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "load": [
+        4.3291015625,
+        3.3876953125,
+        2.9072265625
+      ],
+      "engine": "jit",
+      "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/candidate/4-0.rbc",
+          "sha256": "2412d68347f9ed15f701ecddb7513baa5eb09dd83c7684231eed96e0b6462e6d",
+          "bytes": 6775684
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-two-byte-scalar-fields",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.9768724169999956,
+      "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "load": [
+        4.3291015625,
+        3.3876953125,
+        2.9072265625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-two-byte-scalar-fields",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 3.0024501669999992,
+      "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "load": [
+        4.0625,
+        3.34765625,
+        2.89599609375
+      ],
+      "engine": "jit",
+      "tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/baseline/4-0.rbc",
+          "sha256": "7160788f2b85a4f514d744932e653b51fbe56b6b5350dd446aeef75569d9088e",
+          "bytes": 6826922
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "match-first-byte-explicitly",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 3.0281616249999956,
+      "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+      "load": [
+        4.0625,
+        3.34765625,
+        2.89599609375
+      ],
+      "engine": "jit",
+      "tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/baseline/5-0.rbc",
+          "sha256": "0fb2803382d5338f66cfeb3a861e37ae1f6f3fe950edb124724ee712989fb09f",
+          "bytes": 6826974
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "match-first-byte-explicitly",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 3.0039348330000024,
+      "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+      "load": [
+        4.05712890625,
+        3.3583984375,
+        2.90234375
+      ],
+      "engine": "jit",
+      "tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-cfg-folded-literal-trie-01/artifacts/candidate/5-0.rbc",
+          "sha256": "d9de0153dd3ceb4bb36c911862e7ad1833ea34cdd44b1ecf7f517a6120dc8569",
+          "bytes": 6775736
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "match-first-byte-explicitly",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.810129332999992,
+      "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+      "load": [
+        4.05712890625,
+        3.3583984375,
+        2.90234375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "57f31f5684651dacf24ff7da3d3de401adb552ac2208c44580a9fb24ed3757fe",
+    "candidate_tool_key": "9c9505a6d429bc029d681619a2dc33dd86719d3219f25a799cbcfbfa957eabd7",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+        "baseline_seconds": 2.930275625,
+        "candidate_seconds": 2.984524125,
+        "difference_seconds": 0.05424849999999992,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.8694067089999999,
+            "execution_seconds": 1.991359208,
+            "artifact_hash_seconds": 0.002376416000000048,
+            "launcher_seconds": 2.904737333
+          },
+          "candidate": {
+            "cargo_seconds": 0.92671925,
+            "execution_seconds": 1.9847812089999999,
+            "artifact_hash_seconds": 0.0025151249999999514,
+            "launcher_seconds": 2.9554741659999997
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+        "baseline_seconds": 2.9892362080000012,
+        "candidate_seconds": 2.9309094589999987,
+        "difference_seconds": -0.058326749000002565,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.909688917,
+            "execution_seconds": 2.00991475,
+            "artifact_hash_seconds": 0.0024571670000000934,
+            "launcher_seconds": 2.9639548749999998
+          },
+          "candidate": {
+            "cargo_seconds": 0.881931667,
+            "execution_seconds": 1.9796737919999998,
+            "artifact_hash_seconds": 0.0023673749999999494,
+            "launcher_seconds": 2.9060678330000003
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+        "baseline_seconds": 3.002076250000002,
+        "candidate_seconds": 3.0847442920000034,
+        "difference_seconds": 0.08266804200000166,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.927171666,
+            "execution_seconds": 2.005629666,
+            "artifact_hash_seconds": 0.0024577919999999587,
+            "launcher_seconds": 2.9770904999999996
+          },
+          "candidate": {
+            "cargo_seconds": 1.0410229579999999,
+            "execution_seconds": 1.968576167,
+            "artifact_hash_seconds": 0.002468458000000062,
+            "launcher_seconds": 3.054716791
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+        "baseline_seconds": 3.0024501669999992,
+        "candidate_seconds": 2.9723463329999973,
+        "difference_seconds": -0.03010383400000194,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.9167586249999999,
+            "execution_seconds": 2.011443125,
+            "artifact_hash_seconds": 0.002543791999999989,
+            "launcher_seconds": 2.97332175
+          },
+          "candidate": {
+            "cargo_seconds": 0.9008459169999999,
+            "execution_seconds": 2.0025039590000002,
+            "artifact_hash_seconds": 0.0025158750000000563,
+            "launcher_seconds": 2.9471682909999997
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+        "baseline_seconds": 3.0281616249999956,
+        "candidate_seconds": 3.0039348330000024,
+        "difference_seconds": -0.024226791999993225,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.9566522499999999,
+            "execution_seconds": 2.000727292,
+            "artifact_hash_seconds": 0.0024404999999998456,
+            "launcher_seconds": 3.003339209
+          },
+          "candidate": {
+            "cargo_seconds": 0.923397917,
+            "execution_seconds": 2.013078083,
+            "artifact_hash_seconds": 0.0023849160000000147,
+            "launcher_seconds": 2.979254667
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 3,
+    "median_paired_difference_seconds": -0.024226791999993225
+  }
+}

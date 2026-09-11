@@ -1,0 +1,83 @@
+{
+  "status": "Complete correctness and two production-edit comparisons; separate MIR follow-up complete",
+  "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+  "baseline_tool_key": "72fdc30d712f57ec4d783b4c35d6adfd3334ac35bc9f5111ca9648d690473ccc",
+  "binaries": {
+    "rust-interp-vm": "7635c5900cf8de5dfb64345cfc419a2faf36563d2e1cbc91202c607c5a969e8f",
+    "rust-interp-mir-export": "bd6580694ef3defb3e1816c0365aff1d8f30b328a19b38d06d4881a04214383d"
+  },
+  "bytecode_tests": 130,
+  "validation": "results/lazy-cached-guard-default-validation-01.json",
+  "tls": ".work/lazy-cached-guard-tls-native-01/summary.json",
+  "coverage": {
+    "guest_passes": 381,
+    "native_passes": 382,
+    "allocation_count_limited": 1,
+    "ignored": 7,
+    "previous_passes_preserved": 381
+  },
+  "coverage_sources": [
+    {
+      "path": ".work/lazy-cached-guard-code-limited-all-01/summary.json",
+      "sha256": "65049fc4e96ca7cf1126eadba02eb5674ebe730cfd3103a7dfb504bcef98d1ab"
+    },
+    {
+      "path": ".work/lazy-cached-guard-prior-passes-01/summary.json",
+      "sha256": "77dbf1b163200c18da819a68fea5af49a9874c88424beda22666da414abcd731"
+    }
+  ],
+  "runtime_screen": ".work/lazy-cached-guard-runtime-01/summary.json",
+  "edited_workflows": [
+    {
+      "workflow": "forward-anchored-tls",
+      "report": "results/paired-lazy-cached-guard-forward-anchored-tls-01/summary.json",
+      "report_sha256": "1c7379fcd671a7ce28be55700eec09c23df48b84aacda659a6cf1b41d335c286",
+      "medians": {
+        "native": 1.7382951250000005,
+        "baseline": 1.338483,
+        "candidate": 1.350296499999999
+      },
+      "wins": 2,
+      "native_wins": 5,
+      "paired_command_change": 0.015302374000000896,
+      "paired_stage_changes": {
+        "cargo_seconds": 0.019251916999999952,
+        "execution_seconds": -0.002461373999999905
+      },
+      "execution_wins": 5,
+      "cold_seconds": {
+        "native": 6.8720675,
+        "baseline": 6.07665175,
+        "candidate": 6.0024148749999995
+      },
+      "artifact_pairs_identical": 7
+    },
+    {
+      "workflow": "folded-literal-trie",
+      "report": "results/paired-lazy-cached-guard-folded-literal-trie-01/summary.json",
+      "report_sha256": "f2d5736b8b642c3efbc7dffd5d7526e1210ffd815ba3bd17dac24d0cbcb140d8",
+      "medians": {
+        "native": 3.858915292000006,
+        "baseline": 4.630812917,
+        "candidate": 4.5977215839999985
+      },
+      "wins": 3,
+      "native_wins": 0,
+      "paired_command_change": -0.18823412500000103,
+      "paired_stage_changes": {
+        "cargo_seconds": -0.04740479200000025,
+        "execution_seconds": -0.09573425000000046
+      },
+      "execution_wins": 5,
+      "cold_seconds": {
+        "native": 9.162462167,
+        "baseline": 8.395997333,
+        "candidate": 8.337934292
+      },
+      "artifact_pairs_identical": 7
+    }
+  ],
+  "decision": "Retain as experimental runtime improvement:10/10 execution-stage gains, but5/10 complete-command wins. No broad build-time gain established.",
+  "mir_followup": ".work/folded-mir-inline8-01/summary.json",
+  "whole_application_support": false
+}

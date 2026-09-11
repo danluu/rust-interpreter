@@ -1,0 +1,718 @@
+{
+  "status": "selected block linker passes all nine production workflows",
+  "production_benchmark_qualified": true,
+  "tool_key": "71c274f60a5f4a2be70300baba42f6ddec7b58857d50077c9ba163ee6a3f11d8",
+  "bytecode_version": 5,
+  "selection": {
+    "selected": true,
+    "retained": true,
+    "production_benchmark_qualified": true,
+    "tool_key": "71c274f60a5f4a2be70300baba42f6ddec7b58857d50077c9ba163ee6a3f11d8",
+    "baseline_tool_key": "152f5bca5be8152fe34a2de35f218789df3732e5a25a3f7ff4f89d7deac0d726",
+    "reason": "Retained after broad production qualification:73bytecode,23502native,99launcher pass; controlled JIT runtimes improve21/26/29% withall6/6pairs and near-flat interpretation. Paired production commands win15/15, saving438ms defaultword64,316ms inline8word64,189ms SHA1. All nine production workflows pass; native still wins the three paired compute workflows.",
+    "validation": "results/jit-region-linking-validation-01.json",
+    "runtime": "results/jit-region-linking-runtime-01/summary.json",
+    "paired": "results/paired-region-linking-e2e-01/summary.json"
+  },
+  "raw": ".work/jit-region-linking-corpus-01",
+  "source_revisions_restored": {
+    "pgrust": "38d2517d3e09168a8fe222837730d435238ff358",
+    "fre": "e0df0b010b156b030a02f073588d28703f4267f3",
+    "nushell": "9d3157963241cf89447119d34d6e887859f5e7e8",
+    "ruff": "d136bd8d002a648de5f344df602e492658306f1e",
+    "rg-aot": "474782386e976f80f7bcbc2643eaaeac1d787ad3"
+  },
+  "workflows": [
+    {
+      "label": "fre-word64",
+      "run_id": "e2e-workflow-fre-word64-jit-region-linking-01",
+      "median_seconds": {
+        "native": 2.049379291000008,
+        "interpreter": 15.315506792,
+        "jit": 2.484944709000004
+      },
+      "cold_success_seconds": {
+        "native": 7.288383,
+        "interpreter": 19.404571375000003,
+        "jit": 6.333625832999999
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": 3,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3"
+      ]
+    },
+    {
+      "label": "pgrust",
+      "run_id": "e2e-workflow-pgrust-jit-region-linking-01",
+      "median_seconds": {
+        "native": 0.6876591250000006,
+        "interpreter": 0.7594060000000002,
+        "jit": 0.5343519580000002
+      },
+      "cold_success_seconds": {
+        "native": 0.7900634579999999,
+        "interpreter": 0.791838625,
+        "jit": 0.5432085000000002
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "fre-class-sequence",
+      "run_id": "e2e-workflow-fre-class-sequence-jit-region-linking-01",
+      "median_seconds": {
+        "native": 1.3972760830000013,
+        "interpreter": 0.7229946659999982,
+        "jit": 0.7143027500000017
+      },
+      "cold_success_seconds": {
+        "native": 6.6048220419999994,
+        "interpreter": 4.223103542,
+        "jit": 4.314440625
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "nushell",
+      "run_id": "e2e-workflow-nushell-jit-region-linking-01",
+      "median_seconds": {
+        "native": 0.6260876250000109,
+        "interpreter": 0.43511833299999125,
+        "jit": 0.436767207999992
+      },
+      "cold_success_seconds": {
+        "native": 21.891697375,
+        "interpreter": 20.300750875,
+        "jit": 21.459030541000004
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "ruff",
+      "run_id": "e2e-workflow-ruff-jit-region-linking-01",
+      "median_seconds": {
+        "native": 5.540349416999987,
+        "interpreter": 2.922933959000005,
+        "jit": 2.842319042000014
+      },
+      "cold_success_seconds": {
+        "native": 56.215700542,
+        "interpreter": 26.931981958999998,
+        "jit": 28.700148874999996
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "rg-aot",
+      "run_id": "e2e-workflow-rg-aot-jit-region-linking-01",
+      "median_seconds": {
+        "native": 0.5197356670000008,
+        "interpreter": 0.19760375000000074,
+        "jit": 0.19518854100000027
+      },
+      "cold_success_seconds": {
+        "native": 3.4979850829999997,
+        "interpreter": 2.778414292,
+        "jit": 2.7245595409999996
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "nushell-type-relations",
+      "run_id": "e2e-workflow-nushell-type-relations-jit-region-linking-01",
+      "median_seconds": {
+        "native": 10.150554666999994,
+        "interpreter": 6.017861792000019,
+        "jit": 5.7588460000000055
+      },
+      "cold_success_seconds": {
+        "native": 88.906844625,
+        "interpreter": 164.600448708,
+        "jit": 63.53114208299999
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": null,
+      "guest_mir_inline_scale": null,
+      "guest_rustflags": []
+    },
+    {
+      "label": "fre-word64-inline8",
+      "run_id": "e2e-workflow-fre-word64-inline8-jit-region-linking-01",
+      "median_seconds": {
+        "native": 1.7529456250000024,
+        "interpreter": 13.005594666000007,
+        "jit": 1.8929694999999924
+      },
+      "cold_success_seconds": {
+        "native": 7.246864708,
+        "interpreter": 19.462726166,
+        "jit": 6.597692958
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": 3,
+      "guest_mir_inline_scale": 8,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ]
+    },
+    {
+      "label": "pgrust-sha1-inline8",
+      "run_id": "e2e-workflow-pgrust-sha1-inline8-jit-region-linking-01",
+      "median_seconds": {
+        "native": 0.7618737920000029,
+        "interpreter": 5.332692041999998,
+        "jit": 1.0083990829999934
+      },
+      "cold_success_seconds": {
+        "native": 0.898878917,
+        "interpreter": 5.5178055839999995,
+        "jit": 1.039005833
+      },
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "ba99b4fdcdcb88f8f8da4be6b9aed88086c7442d95ad9b6636238817ae268b3d",
+      "guest_mir_opt_level": 3,
+      "guest_mir_inline_scale": 8,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ]
+    }
+  ],
+  "stage_medians": {
+    "fre-word64": {
+      "interpreter": {
+        "cargo_seconds": 0.736227167,
+        "execution_seconds": 14.449985917000001,
+        "launcher_seconds": 15.2919505
+      },
+      "jit": {
+        "cargo_seconds": 0.7403870410000001,
+        "execution_seconds": 1.7151753749999998,
+        "launcher_seconds": 2.4605056669999996
+      }
+    },
+    "pgrust": {
+      "interpreter": {
+        "cargo_seconds": 0.440136,
+        "execution_seconds": 0.283880042,
+        "launcher_seconds": 0.7293312089999999
+      },
+      "jit": {
+        "cargo_seconds": 0.444181875,
+        "execution_seconds": 0.06251012499999997,
+        "launcher_seconds": 0.510532584
+      }
+    },
+    "fre-class-sequence": {
+      "interpreter": {
+        "cargo_seconds": 0.6915785,
+        "execution_seconds": 0.004717458000000008,
+        "launcher_seconds": 0.700047583
+      },
+      "jit": {
+        "cargo_seconds": 0.682756166,
+        "execution_seconds": 0.0046742079999999575,
+        "launcher_seconds": 0.6909715830000001
+      }
+    },
+    "nushell": {
+      "interpreter": {
+        "cargo_seconds": 0.36847087500000003,
+        "execution_seconds": 0.003845209000000016,
+        "launcher_seconds": 0.410792875
+      },
+      "jit": {
+        "cargo_seconds": 0.36685345900000005,
+        "execution_seconds": 0.005948708000000025,
+        "launcher_seconds": 0.41251612499999996
+      }
+    },
+    "ruff": {
+      "interpreter": {
+        "cargo_seconds": 2.638771041,
+        "execution_seconds": 0.15132408400000008,
+        "launcher_seconds": 2.893546083
+      },
+      "jit": {
+        "cargo_seconds": 2.7063402080000003,
+        "execution_seconds": 0.05801416700000006,
+        "launcher_seconds": 2.817190834
+      }
+    },
+    "rg-aot": {
+      "interpreter": {
+        "cargo_seconds": 0.165972958,
+        "execution_seconds": 0.0033436250000000167,
+        "launcher_seconds": 0.1733655
+      },
+      "jit": {
+        "cargo_seconds": 0.16133524999999999,
+        "execution_seconds": 0.00392504199999999,
+        "launcher_seconds": 0.169178292
+      }
+    },
+    "nushell-type-relations": {
+      "interpreter": {
+        "cargo_seconds": 5.9168415,
+        "execution_seconds": 0.009119083999999944,
+        "launcher_seconds": 5.9780845000000005
+      },
+      "jit": {
+        "cargo_seconds": 5.685051917,
+        "execution_seconds": 0.007524790999999809,
+        "launcher_seconds": 5.734364
+      }
+    },
+    "fre-word64-inline8": {
+      "interpreter": {
+        "cargo_seconds": 0.7707180419999999,
+        "execution_seconds": 12.176990708,
+        "launcher_seconds": 12.981486375000001
+      },
+      "jit": {
+        "cargo_seconds": 0.773331541,
+        "execution_seconds": 1.100118667,
+        "launcher_seconds": 1.868917542
+      }
+    },
+    "pgrust-sha1-inline8": {
+      "interpreter": {
+        "cargo_seconds": 0.48447070799999997,
+        "execution_seconds": 4.781727334,
+        "launcher_seconds": 5.307938
+      },
+      "jit": {
+        "cargo_seconds": 0.480319167,
+        "execution_seconds": 0.4621136659999999,
+        "launcher_seconds": 0.984079041
+      }
+    }
+  },
+  "cold_stages": {
+    "fre-word64": {
+      "interpreter": {
+        "cargo_seconds": 4.765719083,
+        "execution_seconds": 14.606391665999999,
+        "launcher_seconds": 19.377861334
+      },
+      "jit": {
+        "cargo_seconds": 4.572698542,
+        "execution_seconds": 1.7329387079999998,
+        "launcher_seconds": 6.3097636249999995
+      }
+    },
+    "pgrust": {
+      "interpreter": {
+        "cargo_seconds": 0.47894024999999996,
+        "execution_seconds": 0.284733208,
+        "launcher_seconds": 0.767627791
+      },
+      "jit": {
+        "cargo_seconds": 0.45183525,
+        "execution_seconds": 0.06336704199999998,
+        "launcher_seconds": 0.518961541
+      }
+    },
+    "fre-class-sequence": {
+      "interpreter": {
+        "cargo_seconds": 4.178635666,
+        "execution_seconds": 0.004961749999999654,
+        "launcher_seconds": 4.188623208999999
+      },
+      "jit": {
+        "cargo_seconds": 4.282084625,
+        "execution_seconds": 0.004811875000000576,
+        "launcher_seconds": 4.290965916
+      }
+    },
+    "nushell": {
+      "interpreter": {
+        "cargo_seconds": 20.128462958,
+        "execution_seconds": 0.10483387500000063,
+        "launcher_seconds": 20.275038917
+      },
+      "jit": {
+        "cargo_seconds": 21.277181083,
+        "execution_seconds": 0.08042587499999954,
+        "launcher_seconds": 21.417939750000002
+      }
+    },
+    "ruff": {
+      "interpreter": {
+        "cargo_seconds": 26.567505958,
+        "execution_seconds": 0.274020832999998,
+        "launcher_seconds": 26.900797959
+      },
+      "jit": {
+        "cargo_seconds": 28.42204425,
+        "execution_seconds": 0.20531541700000133,
+        "launcher_seconds": 28.674296458
+      }
+    },
+    "rg-aot": {
+      "interpreter": {
+        "cargo_seconds": 2.734508833,
+        "execution_seconds": 0.0030957909999997923,
+        "launcher_seconds": 2.7428885839999997
+      },
+      "jit": {
+        "cargo_seconds": 2.693749459,
+        "execution_seconds": 0.00358991700000022,
+        "launcher_seconds": 2.701166291
+      }
+    },
+    "nushell-type-relations": {
+      "interpreter": {
+        "cargo_seconds": 164.475077375,
+        "execution_seconds": 0.02048312499999838,
+        "launcher_seconds": 164.571548667
+      },
+      "jit": {
+        "cargo_seconds": 63.338716041999994,
+        "execution_seconds": 0.0975800410000005,
+        "launcher_seconds": 63.489800167000006
+      }
+    },
+    "fre-word64-inline8": {
+      "interpreter": {
+        "cargo_seconds": 7.1090821250000005,
+        "execution_seconds": 12.296109042,
+        "launcher_seconds": 19.425197792
+      },
+      "jit": {
+        "cargo_seconds": 5.437936792,
+        "execution_seconds": 1.0908567920000003,
+        "launcher_seconds": 6.549541791999999
+      }
+    },
+    "pgrust-sha1-inline8": {
+      "interpreter": {
+        "cargo_seconds": 0.577046041,
+        "execution_seconds": 4.874029542,
+        "launcher_seconds": 5.493634292
+      },
+      "jit": {
+        "cargo_seconds": 0.502781916,
+        "execution_seconds": 0.45793358299999987,
+        "launcher_seconds": 1.0050880420000001
+      }
+    }
+  },
+  "runtime_comparison": {
+    "before_tool_key": "152f5bca5be8152fe34a2de35f218789df3732e5a25a3f7ff4f89d7deac0d726",
+    "after_tool_key": "71c274f60a5f4a2be70300baba42f6ddec7b58857d50077c9ba163ee6a3f11d8",
+    "cases": {
+      "jit:word64-default": {
+        "median_seconds": {
+          "before": 2.195045208499999,
+          "after": 1.7249227294999994
+        },
+        "candidate_pair_wins": 6,
+        "paired_difference_seconds": [
+          -0.45993562499999996,
+          -0.4822634999999993,
+          -0.47248570900000075,
+          -0.46916966600000265,
+          -0.5494266660000005,
+          -0.4645784579999983
+        ],
+        "median_paired_difference_seconds": -0.4708276875000017,
+        "same_bytecode": true,
+        "artifact_sha256": "b165ab5d8002e2f40f2558eb016b317379eebf7289e62b415712e45696e000b3",
+        "stats": {
+          "before": {
+            "instructions": 3336017284,
+            "peak_guest_memory": 107056,
+            "jit_bytes": 752976,
+            "jit_operations": 49030,
+            "jit_instructions": 3213146922
+          },
+          "after": {
+            "instructions": 3336017284,
+            "peak_guest_memory": 107056,
+            "jit_bytes": 894776,
+            "jit_operations": 49030,
+            "jit_instructions": 3213146922,
+            "jit_entries": 72828899
+          }
+        }
+      },
+      "jit:word64-inline8": {
+        "median_seconds": {
+          "before": 1.4716933329999993,
+          "after": 1.0929138125000026
+        },
+        "candidate_pair_wins": 6,
+        "paired_difference_seconds": [
+          -0.38454324999999656,
+          -0.37058412499999704,
+          -0.3821743749999946,
+          -0.36820437500000125,
+          -0.3650751659999969,
+          -0.36553887400000207
+        ],
+        "median_paired_difference_seconds": -0.36939424999999915,
+        "same_bytecode": true,
+        "artifact_sha256": "909d08b1a4ac496b0a0e4a5afa1053a458b7579b93061289d4b24ecc6dda8ad2",
+        "stats": {
+          "before": {
+            "instructions": 2892954629,
+            "peak_guest_memory": 105840,
+            "jit_bytes": 800508,
+            "jit_operations": 53102,
+            "jit_instructions": 2831595657
+          },
+          "after": {
+            "instructions": 2892954629,
+            "peak_guest_memory": 105840,
+            "jit_bytes": 942108,
+            "jit_operations": 53102,
+            "jit_instructions": 2831595657,
+            "jit_entries": 35640770
+          }
+        }
+      },
+      "jit:sha1-inline8": {
+        "median_seconds": {
+          "before": 0.6456667084999985,
+          "after": 0.4600316460000009
+        },
+        "candidate_pair_wins": 6,
+        "paired_difference_seconds": [
+          -0.19443691700000443,
+          -0.18854333299999126,
+          -0.18510337399999344,
+          -0.17455574999999612,
+          -0.1739763750000023,
+          -0.18644762500000667
+        ],
+        "median_paired_difference_seconds": -0.18577549950000005,
+        "same_bytecode": true,
+        "artifact_sha256": "681884a8e6cf74afedc6052b34f20687f48d7e75a55df1193607c4f68b346685",
+        "stats": {
+          "before": {
+            "instructions": 1378275772,
+            "peak_guest_memory": 1019120,
+            "jit_bytes": 232192,
+            "jit_operations": 15412,
+            "jit_instructions": 1354510609
+          },
+          "after": {
+            "instructions": 1378275772,
+            "peak_guest_memory": 1019120,
+            "jit_bytes": 276820,
+            "jit_operations": 15412,
+            "jit_instructions": 1354510609,
+            "jit_entries": 14128429
+          }
+        }
+      },
+      "interpreter:word64-default": {
+        "median_seconds": {
+          "before": 14.5419496875,
+          "after": 14.492527374999995
+        },
+        "candidate_pair_wins": 4,
+        "paired_difference_seconds": [
+          0.20833416700000384,
+          -0.5684292500000083,
+          0.608014415999989,
+          -0.019578874999979234,
+          -0.27100716599997554,
+          -0.2036144580000041
+        ],
+        "median_paired_difference_seconds": -0.11159666649999167,
+        "same_bytecode": true,
+        "artifact_sha256": "b165ab5d8002e2f40f2558eb016b317379eebf7289e62b415712e45696e000b3",
+        "stats": {
+          "before": {
+            "instructions": 3336017284,
+            "peak_guest_memory": 107056,
+            "jit_bytes": 0,
+            "jit_operations": 0,
+            "jit_instructions": 0
+          },
+          "after": {
+            "instructions": 3336017284,
+            "peak_guest_memory": 107056,
+            "jit_bytes": 0,
+            "jit_operations": 0,
+            "jit_instructions": 0,
+            "jit_entries": 0
+          }
+        }
+      },
+      "interpreter:sha1-inline8": {
+        "median_seconds": {
+          "before": 4.726132958500003,
+          "after": 4.728770124999997
+        },
+        "candidate_pair_wins": 2,
+        "paired_difference_seconds": [
+          0.016135041000012507,
+          -0.10060779200000525,
+          0.18178379199997607,
+          0.03709483299999761,
+          0.09692104099997323,
+          -0.06385895800002572
+        ],
+        "median_paired_difference_seconds": 0.026614937000005057,
+        "same_bytecode": true,
+        "artifact_sha256": "681884a8e6cf74afedc6052b34f20687f48d7e75a55df1193607c4f68b346685",
+        "stats": {
+          "before": {
+            "instructions": 1378275772,
+            "peak_guest_memory": 1019120,
+            "jit_bytes": 0,
+            "jit_operations": 0,
+            "jit_instructions": 0
+          },
+          "after": {
+            "instructions": 1378275772,
+            "peak_guest_memory": 1019120,
+            "jit_bytes": 0,
+            "jit_operations": 0,
+            "jit_instructions": 0,
+            "jit_entries": 0
+          }
+        }
+      }
+    }
+  },
+  "paired_e2e": [
+    {
+      "label": "fre-word64",
+      "run_id": "e2e-paired-fre-word64-region-linking-01",
+      "returncode": 0,
+      "seconds": 65.92572200000001,
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/bench_e2e_workflow.py",
+        "--project",
+        "fre",
+        "--batch",
+        "--baseline-tool-key",
+        "152f5bca5be8152fe34a2de35f218789df3732e5a25a3f7ff4f89d7deac0d726",
+        "--comparison-engine",
+        "jit",
+        "--expect-identical-bytecode",
+        "--run-id",
+        "e2e-paired-fre-word64-region-linking-01",
+        "--workflow",
+        "fixed-predicate-word64",
+        "--instruction-limit",
+        "10000000000",
+        "--guest-mir-opt-level",
+        "3"
+      ],
+      "median_seconds": {
+        "native": 2.377365958999995,
+        "baseline": 3.0670546670000007,
+        "candidate": 2.628192792
+      },
+      "candidate_pair_wins": 5,
+      "median_paired_difference_seconds": -0.4375524160000026
+    },
+    {
+      "label": "fre-word64-inline8",
+      "run_id": "e2e-paired-fre-word64-inline8-region-linking-01",
+      "returncode": 0,
+      "seconds": 52.96077770800001,
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/bench_e2e_workflow.py",
+        "--project",
+        "fre",
+        "--batch",
+        "--baseline-tool-key",
+        "152f5bca5be8152fe34a2de35f218789df3732e5a25a3f7ff4f89d7deac0d726",
+        "--comparison-engine",
+        "jit",
+        "--expect-identical-bytecode",
+        "--run-id",
+        "e2e-paired-fre-word64-inline8-region-linking-01",
+        "--workflow",
+        "fixed-predicate-word64",
+        "--instruction-limit",
+        "10000000000",
+        "--guest-mir-opt-level",
+        "3",
+        "--guest-mir-inline-scale",
+        "8"
+      ],
+      "median_seconds": {
+        "native": 1.6747481670000006,
+        "baseline": 2.285870958000004,
+        "candidate": 1.9663254999999964
+      },
+      "candidate_pair_wins": 5,
+      "median_paired_difference_seconds": -0.31582758300000435
+    },
+    {
+      "label": "pgrust-sha1-inline8",
+      "run_id": "e2e-paired-pgrust-sha1-inline8-region-linking-01",
+      "returncode": 0,
+      "seconds": 19.55856258300001,
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/bench_e2e_workflow.py",
+        "--project",
+        "pgrust",
+        "--batch",
+        "--baseline-tool-key",
+        "152f5bca5be8152fe34a2de35f218789df3732e5a25a3f7ff4f89d7deac0d726",
+        "--comparison-engine",
+        "jit",
+        "--expect-identical-bytecode",
+        "--run-id",
+        "e2e-paired-pgrust-sha1-inline8-region-linking-01",
+        "--workflow",
+        "sha1-vectors",
+        "--std-mir",
+        "--instruction-limit",
+        "10000000000",
+        "--guest-mir-opt-level",
+        "3",
+        "--guest-mir-inline-scale",
+        "8"
+      ],
+      "median_seconds": {
+        "native": 0.7600097909999981,
+        "baseline": 1.154865333,
+        "candidate": 0.9716297919999999
+      },
+      "candidate_pair_wins": 5,
+      "median_paired_difference_seconds": -0.18915604100000039
+    }
+  ],
+  "limitations": "Selected existing tests, not full applications or suites. Five real production edits, unchanged original tests. Metadata-sysroot setup excluded. Separate historical corpus medians are not causal comparisons."
+}

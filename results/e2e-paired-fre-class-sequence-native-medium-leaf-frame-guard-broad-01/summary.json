@@ -1,0 +1,826 @@
+{
+  "project": "fre",
+  "workflow": "bounded-class-sequence",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+    "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+    "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+    "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+    "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+    "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+  ],
+  "edits": [
+    "separate-byte-class-word-and-mask",
+    "return-complete-run-emission-directly",
+    "separate-match-width-conversion",
+    "express-final-unit-selection-with-if-let",
+    "share-checked-input-scaling"
+  ],
+  "workload": "All six existing bounded class-sequence tests: greedy matching, scaling, accounting, and exact resource boundaries",
+  "case_sha256": "65bb04e4aac4e0adbcd73ae643fe2145a2fa207d61d842160d813810af345b5f",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.3714163330000027,
+    "baseline": 0.7855871669999992,
+    "candidate": 0.7628427500000008
+  },
+  "std_mir": null,
+  "cold_success_seconds": {
+    "native": 6.939563375,
+    "baseline": 4.616708667,
+    "candidate": 4.635639542
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "4141812159e10ef3160ecd43f03450ccb1febfe3af580a043d17216e163056a4",
+    "scripts/interpreter.py": "88d607e173ea266ff6ea7de76f708f83fc65e8a67f6b6bb6af93eb22e571d055",
+    "scripts/workflow_cases.py": "1552b1998ca38835cb8604f86256c2b2a9b32ccf26e765079d3fad4b11c7a0f0",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "guest_rustflags": [],
+      "vm_sha256": "bb56a58c95127cf261d541a77fb13057ec2e53c4805a8715bfa402990e6dd991",
+      "exporter_sha256": "da7819bb20817801d29bc50fd4594341d80a095ef3686e87f4f08746e967f5cb"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "guest_rustflags": [],
+      "vm_sha256": "bb56a58c95127cf261d541a77fb13057ec2e53c4805a8715bfa402990e6dd991",
+      "exporter_sha256": "210f490512a008be59ab7efa36cb113193d960186cb6fec203503a81de1db802"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "bb56a58c95127cf261d541a77fb13057ec2e53c4805a8715bfa402990e6dd991",
+  "exporter_sha256": "210f490512a008be59ab7efa36cb113193d960186cb6fec203503a81de1db802",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 6.939563375,
+      "source_sha256": "81b51ae370f3033659eb4c31eaf46a45546183aea1937403bd2c21004e8e4b3a",
+      "load": [
+        3.34912109375,
+        3.41162109375,
+        3.607421875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 4.616708667,
+      "source_sha256": "81b51ae370f3033659eb4c31eaf46a45546183aea1937403bd2c21004e8e4b3a",
+      "load": [
+        3.56103515625,
+        3.45458984375,
+        3.62109375
+      ],
+      "engine": "jit",
+      "tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/baseline/0-0.rbc",
+          "sha256": "658215e7c24c9860c7c174af1bbe09a7a7d235725e1ffaca168f52dff3ba7655",
+          "bytes": 589843
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 4.635639542,
+      "source_sha256": "81b51ae370f3033659eb4c31eaf46a45546183aea1937403bd2c21004e8e4b3a",
+      "load": [
+        3.595703125,
+        3.46337890625,
+        3.623046875
+      ],
+      "engine": "jit",
+      "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/candidate/0-0.rbc",
+          "sha256": "844e199ee731bff126c4502dcd44e74c7ad6f2ae090a48f7be31aa70ef328269",
+          "bytes": 591331
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "break-byte-class-membership",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.8148944169999979,
+      "source_sha256": "418ca74263d918e86173c5aa342c2df33dbc7d2d8b7996c2a8ba4680d3688c55",
+      "load": [
+        3.595703125,
+        3.46337890625,
+        3.623046875
+      ],
+      "engine": "jit",
+      "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "3d7e1e4a74f007f9ef2fa8e16c9396c341fc24e4f654f539193742b943741dba",
+          "bytes": 591331
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "break-byte-class-membership",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7716361250000006,
+      "source_sha256": "418ca74263d918e86173c5aa342c2df33dbc7d2d8b7996c2a8ba4680d3688c55",
+      "load": [
+        3.595703125,
+        3.46337890625,
+        3.623046875
+      ],
+      "engine": "jit",
+      "tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "02c04cf92453da98e860d479af10dc65a51aed8cca9c153f6d1228b93e7c3589",
+          "bytes": 589843
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "break-byte-class-membership",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 1.441933167000002,
+      "source_sha256": "418ca74263d918e86173c5aa342c2df33dbc7d2d8b7996c2a8ba4680d3688c55",
+      "load": [
+        3.595703125,
+        3.46337890625,
+        3.623046875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "separate-byte-class-word-and-mask",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 1.3505281250000003,
+      "source_sha256": "755f6c532b078ae9bb9259b37797ea677775b6bc2e7641032335a64583eeb865",
+      "load": [
+        3.7880859375,
+        3.50537109375,
+        3.63671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "separate-byte-class-word-and-mask",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7845280840000015,
+      "source_sha256": "755f6c532b078ae9bb9259b37797ea677775b6bc2e7641032335a64583eeb865",
+      "load": [
+        3.7880859375,
+        3.50537109375,
+        3.63671875
+      ],
+      "engine": "jit",
+      "tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/baseline/1-0.rbc",
+          "sha256": "0da3f8b27687302e44991a0504f91eddf6418639e6c486bfff405f90b48d7426",
+          "bytes": 589932
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "separate-byte-class-word-and-mask",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7576291249999976,
+      "source_sha256": "755f6c532b078ae9bb9259b37797ea677775b6bc2e7641032335a64583eeb865",
+      "load": [
+        3.7880859375,
+        3.50537109375,
+        3.63671875
+      ],
+      "engine": "jit",
+      "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/candidate/1-0.rbc",
+          "sha256": "2c3bf0981637eed5184edf16f1c1ec3cf14c4685d6cbc75c9e412784f3eab9f9",
+          "bytes": 591665
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "return-complete-run-emission-directly",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 1.3714163330000027,
+      "source_sha256": "c977ad98215185906cbba87c7daed6d244b37c3c77a00135ab564805a98caccd",
+      "load": [
+        3.7880859375,
+        3.50537109375,
+        3.63671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "return-complete-run-emission-directly",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7920777910000005,
+      "source_sha256": "c977ad98215185906cbba87c7daed6d244b37c3c77a00135ab564805a98caccd",
+      "load": [
+        3.7880859375,
+        3.50537109375,
+        3.63671875
+      ],
+      "engine": "jit",
+      "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/candidate/2-0.rbc",
+          "sha256": "85650f6e8dd1a4a1bb1c4765177f95b7bc088be60527c08346432796aa2611f6",
+          "bytes": 590561
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "return-complete-run-emission-directly",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7962728339999998,
+      "source_sha256": "c977ad98215185906cbba87c7daed6d244b37c3c77a00135ab564805a98caccd",
+      "load": [
+        3.7880859375,
+        3.50537109375,
+        3.63671875
+      ],
+      "engine": "jit",
+      "tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/baseline/2-0.rbc",
+          "sha256": "b24f54f9880152c32f6a69c5c968afdb219542dd9acd3dde5fd0e16da15f9054",
+          "bytes": 588887
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "separate-match-width-conversion",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7855871669999992,
+      "source_sha256": "101b7ad460cefa16b5835e00e9cb03bd96c39e5aac5fdc464c4e3013ec4cb620",
+      "load": [
+        3.96484375,
+        3.54638671875,
+        3.650390625
+      ],
+      "engine": "jit",
+      "tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/baseline/3-0.rbc",
+          "sha256": "f60f3be8f45d6595dbaf88300a2394b76b7847564cda5967b53083a0110da31a",
+          "bytes": 588887
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "separate-match-width-conversion",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 1.4276743749999987,
+      "source_sha256": "101b7ad460cefa16b5835e00e9cb03bd96c39e5aac5fdc464c4e3013ec4cb620",
+      "load": [
+        3.96484375,
+        3.54638671875,
+        3.650390625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "separate-match-width-conversion",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7628427500000008,
+      "source_sha256": "101b7ad460cefa16b5835e00e9cb03bd96c39e5aac5fdc464c4e3013ec4cb620",
+      "load": [
+        3.96484375,
+        3.54638671875,
+        3.650390625
+      ],
+      "engine": "jit",
+      "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/candidate/3-0.rbc",
+          "sha256": "a698aa3e8016c3e28ccaf08b1843497eceba0b1b2a00c352903d0c6beff8159c",
+          "bytes": 590561
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "express-final-unit-selection-with-if-let",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7587752919999993,
+      "source_sha256": "b097e14a7abca0dd688dd8bc379da868410bbd87c9e667d4987a35dcccd34738",
+      "load": [
+        3.96484375,
+        3.54638671875,
+        3.650390625
+      ],
+      "engine": "jit",
+      "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/candidate/4-0.rbc",
+          "sha256": "4b92dec50b10797f2df383a4a919f78859dc292bf2ad57f0788be923ec36f302",
+          "bytes": 590513
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "express-final-unit-selection-with-if-let",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 1.3105470839999995,
+      "source_sha256": "b097e14a7abca0dd688dd8bc379da868410bbd87c9e667d4987a35dcccd34738",
+      "load": [
+        3.96484375,
+        3.54638671875,
+        3.650390625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "express-final-unit-selection-with-if-let",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7649949579999991,
+      "source_sha256": "b097e14a7abca0dd688dd8bc379da868410bbd87c9e667d4987a35dcccd34738",
+      "load": [
+        3.96728515625,
+        3.5537109375,
+        3.65234375
+      ],
+      "engine": "jit",
+      "tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/baseline/4-0.rbc",
+          "sha256": "0044706a2d12bab54d08f73672bd6a55a36bd758d919f27bb91fedc214cecaaa",
+          "bytes": 588839
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "share-checked-input-scaling",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.7907680830000032,
+      "source_sha256": "75c1fd661404446e6ac3ddffdb3f56f911b2d327138b1807e9072f7102def322",
+      "load": [
+        3.96728515625,
+        3.5537109375,
+        3.65234375
+      ],
+      "engine": "jit",
+      "tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/baseline/5-0.rbc",
+          "sha256": "dcb2e55baf1248ea0203a73a7b1bc17beaf2c700b7f5e4a30061d87adfa59cf5",
+          "bytes": 591117
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "share-checked-input-scaling",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 0.772446458000001,
+      "source_sha256": "75c1fd661404446e6ac3ddffdb3f56f911b2d327138b1807e9072f7102def322",
+      "load": [
+        3.96728515625,
+        3.5537109375,
+        3.65234375
+      ],
+      "engine": "jit",
+      "tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-class-sequence-native-medium-leaf-frame-guard-broad-01/artifacts/candidate/5-0.rbc",
+          "sha256": "df235a544d7ddc960dfb8fac6f4da8031bb4e7a52f734b067bfced417d7d34b8",
+          "bytes": 592196
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "share-checked-input-scaling",
+      "tests": [
+        "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+        "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+        "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+        "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+        "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+        "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure"
+      ],
+      "seconds": 1.4879131659999985,
+      "source_sha256": "75c1fd661404446e6ac3ddffdb3f56f911b2d327138b1807e9072f7102def322",
+      "load": [
+        3.96728515625,
+        3.5537109375,
+        3.65234375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "cd9af4b45682d513b3b2079791e1e23b202efe97e0c09ba83a1902d6c1a9a722",
+    "candidate_tool_key": "816dd7991102154c355a7b3925d12e344bea795045ba8fafd2654be1b1e6ef65",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "755f6c532b078ae9bb9259b37797ea677775b6bc2e7641032335a64583eeb865",
+        "baseline_seconds": 0.7845280840000015,
+        "candidate_seconds": 0.7576291249999976,
+        "difference_seconds": -0.02689895900000394,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.743534167,
+            "execution_seconds": 0.006714208999999971,
+            "artifact_hash_seconds": 0.0003486249999999913,
+            "launcher_seconds": 0.7528100839999999
+          },
+          "candidate": {
+            "cargo_seconds": 0.724337542,
+            "execution_seconds": 0.006101875000000034,
+            "artifact_hash_seconds": 0.00035166699999999995,
+            "launcher_seconds": 0.733074417
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "c977ad98215185906cbba87c7daed6d244b37c3c77a00135ab564805a98caccd",
+        "baseline_seconds": 0.7962728339999998,
+        "candidate_seconds": 0.7920777910000005,
+        "difference_seconds": -0.004195042999999288,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.762187417,
+            "execution_seconds": 0.006248833999999981,
+            "artifact_hash_seconds": 0.0003581249999999869,
+            "launcher_seconds": 0.771121833
+          },
+          "candidate": {
+            "cargo_seconds": 0.757924333,
+            "execution_seconds": 0.0060426670000000016,
+            "artifact_hash_seconds": 0.000338207999999951,
+            "launcher_seconds": 0.766706625
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "101b7ad460cefa16b5835e00e9cb03bd96c39e5aac5fdc464c4e3013ec4cb620",
+        "baseline_seconds": 0.7855871669999992,
+        "candidate_seconds": 0.7628427500000008,
+        "difference_seconds": -0.022744416999998407,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.7511224590000001,
+            "execution_seconds": 0.006216957999999995,
+            "artifact_hash_seconds": 0.00036162500000003206,
+            "launcher_seconds": 0.759953667
+          },
+          "candidate": {
+            "cargo_seconds": 0.728320334,
+            "execution_seconds": 0.006542625000000024,
+            "artifact_hash_seconds": 0.0003565419999999042,
+            "launcher_seconds": 0.7375309170000001
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "b097e14a7abca0dd688dd8bc379da868410bbd87c9e667d4987a35dcccd34738",
+        "baseline_seconds": 0.7649949579999991,
+        "candidate_seconds": 0.7587752919999993,
+        "difference_seconds": -0.0062196659999997905,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.724909292,
+            "execution_seconds": 0.006068334000000064,
+            "artifact_hash_seconds": 0.00033516699999991406,
+            "launcher_seconds": 0.733533
+          },
+          "candidate": {
+            "cargo_seconds": 0.725301375,
+            "execution_seconds": 0.006046125000000013,
+            "artifact_hash_seconds": 0.00034004100000006865,
+            "launcher_seconds": 0.733932166
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "75c1fd661404446e6ac3ddffdb3f56f911b2d327138b1807e9072f7102def322",
+        "baseline_seconds": 0.7907680830000032,
+        "candidate_seconds": 0.772446458000001,
+        "difference_seconds": -0.01832162500000223,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.757696209,
+            "execution_seconds": 0.0060177079999998995,
+            "artifact_hash_seconds": 0.0003347920000000837,
+            "launcher_seconds": 0.766255709
+          },
+          "candidate": {
+            "cargo_seconds": 0.739684167,
+            "execution_seconds": 0.00604179199999999,
+            "artifact_hash_seconds": 0.00033649999999996183,
+            "launcher_seconds": 0.7482833329999999
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 5,
+    "median_paired_difference_seconds": -0.01832162500000223
+  }
+}

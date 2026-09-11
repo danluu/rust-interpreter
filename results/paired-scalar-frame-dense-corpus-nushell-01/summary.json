@@ -1,0 +1,761 @@
+{
+  "project": "nushell",
+  "workflow": "default",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "tests": [
+    "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+    "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+    "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+    "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+  ],
+  "edits": [
+    "express-membership-with-any",
+    "reject-empty-name-early",
+    "filter-spaces-before-utf8-conversion",
+    "chain-keyword-tables-for-membership",
+    "make-utf8-result-handling-explicit"
+  ],
+  "workload": "All four existing parser-keyword tests, including collection of single-word keywords",
+  "case_sha256": "9d94b6856a360257ca0e9f92dfda3797ea2708ba2d9fce148329ee3501526f9f",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": true,
+  "raw": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+  "candidate_tool_key_requested": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.643565124999995,
+    "baseline": 0.4501263340000037,
+    "candidate": 0.44237908399999526
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 22.864175916,
+    "baseline": 19.238912167,
+    "candidate": 20.835203792
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "0a5dd4678615d6f2e5fd5b5e4ed083c2e48df8c0ae7a3ad03232293d86ff5a96",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "83c9f16c422f60c67e72776e83ac9e1f2e9d2f27ed12cd4e7a6437448701ecec",
+      "exporter_sha256": "220d1817b8d498609f674f5c31208eebb56a6d98b72b116cc88ee96e65b5d98f"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "83c9f16c422f60c67e72776e83ac9e1f2e9d2f27ed12cd4e7a6437448701ecec",
+      "exporter_sha256": "a0dd4437b17398c17506576a07760a2246cefa741cd6600cd062de04faf39fa4"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "83c9f16c422f60c67e72776e83ac9e1f2e9d2f27ed12cd4e7a6437448701ecec",
+  "exporter_sha256": "a0dd4437b17398c17506576a07760a2246cefa741cd6600cd062de04faf39fa4",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 22.864175916,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        2.23974609375,
+        2.2060546875,
+        2.5947265625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 19.238912167,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        3.11474609375,
+        2.40625,
+        2.6591796875
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/baseline/0-0.rbc",
+          "sha256": "b920c85f50cd8390054405cf7225b4c361e72bdaae0beecb7f58c872c6cf833d",
+          "bytes": 715077
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 20.835203792,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        3.60693359375,
+        2.58056640625,
+        2.7138671875
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/candidate/0-0.rbc",
+          "sha256": "cfce91ef6b3e88daa6502684bec6dbea4594ee7d5996e6c2412b11bdb49aece3",
+          "bytes": 715077
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.708909417000001,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        3.60693359375,
+        2.58056640625,
+        2.7138671875
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "177fbaedca462881b5796b07be61d7326ba5b856d73f7260e3f202e91a30a926",
+          "bytes": 708339
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.7461715000000027,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        3.60693359375,
+        2.58056640625,
+        2.7138671875
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "187a72518bec6a14c919146d74cd8d99b46478bbfaba83ae8a456d19290a7b20",
+          "bytes": 708339
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.9935188339999996,
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        3.60693359375,
+        2.58056640625,
+        2.7138671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.6649740840000078,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        3.60693359375,
+        2.58056640625,
+        2.7138671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.46019666600000164,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        3.60693359375,
+        2.58056640625,
+        2.7138671875
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/baseline/1-0.rbc",
+          "sha256": "495b8080099da189c16f11d3bdd412c6c5a6b364a40dd6c79a8ea4e3c5402f9b",
+          "bytes": 25259
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries"
+      ],
+      "seconds": 0.44237908399999526,
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        3.60693359375,
+        2.58056640625,
+        2.7138671875
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/candidate/1-0.rbc",
+          "sha256": "97a2170f70918a895f7543f4c8068b7a81d7b728022bac9207c8b1c2913829f0",
+          "bytes": 25259
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.643565124999995,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        3.60693359375,
+        2.58056640625,
+        2.7138671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.44905629199999453,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/candidate/2-0.rbc",
+          "sha256": "d12ed38b9236dd2c5d042536d1c7c5b664e6cf11bedaf2b6a1293fb8ea7a9545",
+          "bytes": 20395
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names"
+      ],
+      "seconds": 0.4501263340000037,
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/baseline/2-0.rbc",
+          "sha256": "84d1bcdd3f162b7efb50a370b3dcd78281257e294de103b113ee1e60ff937760",
+          "bytes": 20395
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4771717089999896,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/baseline/3-0.rbc",
+          "sha256": "5a6f17d8e24df7548bd2133005d0ce67b86d161a15ad5e437ce75fda424af3ff",
+          "bytes": 729526
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6636223329999922,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4822231249999902,
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/candidate/3-0.rbc",
+          "sha256": "d6a12cfbd2ad4f97a6677f7b4712bb86cfd3b8ca73d49f1e97526be847e1b4df",
+          "bytes": 729526
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.44000866700000074,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/candidate/4-0.rbc",
+          "sha256": "2f1737bc4f8fdb1046385a0b43d9a6e36f66aef233324bdf7990ca3f8e8bb798",
+          "bytes": 745908
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.626778250000001,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4397265000000061,
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/baseline/4-0.rbc",
+          "sha256": "9f5e6b186332f0d1048a7ba1e6e036eda2cb729827b2958597daea3ecb1e8c49",
+          "bytes": 745908
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.44506191700000386,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/baseline/5-0.rbc",
+          "sha256": "9b5feb966393f9f33b2d4584ccdb10e25c50c2cba21715e36513c05c59738430",
+          "bytes": 739123
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.44010058400000673,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        3.63818359375,
+        2.60400390625,
+        2.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-frame-dense-corpus-nushell-01/artifacts/candidate/5-0.rbc",
+          "sha256": "5822554cad91118fea1f000fbdf39d19424603c0bd05ed86d247bd6264a6037c",
+          "bytes": 739123
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6174695840000055,
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        3.5068359375,
+        2.59375,
+        2.716796875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "cd347c7a9cc797f182df3a95deef5f649bdee536d1e80a2992e928ae09acb9ed",
+    "candidate_tool_key": "106eef0cd295590b613cf69bae62a3cc58e25dcadb307859bd90b7d047618766",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "baseline_seconds": 0.46019666600000164,
+        "candidate_seconds": 0.44237908399999526,
+        "difference_seconds": -0.017817582000006382,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.392407042,
+            "execution_seconds": 0.002653167000000012,
+            "artifact_hash_seconds": 0.00012820899999999025,
+            "launcher_seconds": 0.434338583
+          },
+          "candidate": {
+            "cargo_seconds": 0.375688959,
+            "execution_seconds": 0.0029075000000000073,
+            "artifact_hash_seconds": 0.00013020900000004776,
+            "launcher_seconds": 0.417935
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "baseline_seconds": 0.4501263340000037,
+        "candidate_seconds": 0.44905629199999453,
+        "difference_seconds": -0.0010700420000091526,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.383289833,
+            "execution_seconds": 0.002895333,
+            "artifact_hash_seconds": 0.000554082999999983,
+            "launcher_seconds": 0.42565329199999996
+          },
+          "candidate": {
+            "cargo_seconds": 0.380225833,
+            "execution_seconds": 0.0029582089999999894,
+            "artifact_hash_seconds": 0.000123209000000013,
+            "launcher_seconds": 0.422245458
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "baseline_seconds": 0.4771717089999896,
+        "candidate_seconds": 0.4822231249999902,
+        "difference_seconds": 0.005051416000000586,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.40902604200000003,
+            "execution_seconds": 0.0046215419999999785,
+            "artifact_hash_seconds": 0.00043087499999999723,
+            "launcher_seconds": 0.4524065
+          },
+          "candidate": {
+            "cargo_seconds": 0.41257729099999996,
+            "execution_seconds": 0.004985332999999981,
+            "artifact_hash_seconds": 0.000405084,
+            "launcher_seconds": 0.45697825
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "baseline_seconds": 0.4397265000000061,
+        "candidate_seconds": 0.44000866700000074,
+        "difference_seconds": 0.00028216699999461525,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.370210792,
+            "execution_seconds": 0.005025458000000038,
+            "artifact_hash_seconds": 0.0004438749999999825,
+            "launcher_seconds": 0.41516875
+          },
+          "candidate": {
+            "cargo_seconds": 0.370932208,
+            "execution_seconds": 0.005193333000000022,
+            "artifact_hash_seconds": 0.0004191250000000202,
+            "launcher_seconds": 0.415301041
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "baseline_seconds": 0.44506191700000386,
+        "candidate_seconds": 0.44010058400000673,
+        "difference_seconds": -0.004961332999997126,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.376089125,
+            "execution_seconds": 0.004715582999999968,
+            "artifact_hash_seconds": 0.0004129159999999854,
+            "launcher_seconds": 0.420397458
+          },
+          "candidate": {
+            "cargo_seconds": 0.37049525,
+            "execution_seconds": 0.0047358750000000005,
+            "artifact_hash_seconds": 0.000433542000000009,
+            "launcher_seconds": 0.415224625
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 3,
+    "median_paired_difference_seconds": -0.0010700420000091526
+  }
+}

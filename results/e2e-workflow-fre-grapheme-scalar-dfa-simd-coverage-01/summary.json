@@ -1,0 +1,794 @@
+{
+  "project": "fre",
+  "workflow": "grapheme-scalar-dfa",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+    "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+    "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+    "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+    "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+    "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+    "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+    "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+    "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+    "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+    "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+    "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+    "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+    "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+    "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+    "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+    "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+  ],
+  "edits": [
+    "convert-ascii-with-cast",
+    "recognize-ascii-by-high-bit",
+    "match-reduce-multiplication-overflow-explicitly",
+    "match-classification-segment-explicitly",
+    "halve-comparison-bound-with-shift"
+  ],
+  "workload": "All seventeen existing grapheme scalar DFA tests: UTF-8 decoding, cluster semantics, exact resource bounds, overflow and publication failures",
+  "case_sha256": "05c1f4b42ca94b8f5944bf8ecce39f84b1d90956bd4898d00dc93c6e980eac34",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-workflow-fre-grapheme-scalar-dfa-simd-coverage-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "guest_mir_opt_level": null,
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.9511131249999991,
+    "interpreter": 1.233604875000001,
+    "jit": 1.1637221659999994
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.746462625,
+    "interpreter": 5.136296458000001,
+    "jit": 4.9254881249999976
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "03670bea6dab74cb730adbe0a1ee9252c9554ba18bc9e39e9418cccd7418ca40",
+    "scripts/interpreter.py": "5304849738d798b44582f099fce12317265d41539611717382dc71ce8aefb987",
+    "scripts/workflow_cases.py": "f07186ef97e5a4d5f96c23ab56f102f95a61360f198badc1661cac6632d5a1d4",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "interpreter": {
+      "engine": "interpreter",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "88897abc87178852fb97517a05723a14448cd266b2907420b2f2f67a8eb227e4"
+    },
+    "jit": {
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "88897abc87178852fb97517a05723a14448cd266b2907420b2f2f67a8eb227e4"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+  "exporter_sha256": "88897abc87178852fb97517a05723a14448cd266b2907420b2f2f67a8eb227e4",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 7.746462625,
+      "source_sha256": "fb2cbb90446fa89c9304311bb13da29ee8742419121ecb78336739532d879814",
+      "load": [
+        4.29248046875,
+        6.2236328125,
+        5.40234375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 5.136296458000001,
+      "source_sha256": "fb2cbb90446fa89c9304311bb13da29ee8742419121ecb78336739532d879814",
+      "load": [
+        4.26904296875,
+        6.1865234375,
+        5.39404296875
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 4.9254881249999976,
+      "source_sha256": "fb2cbb90446fa89c9304311bb13da29ee8742419121ecb78336739532d879814",
+      "load": [
+        4.3271484375,
+        6.16650390625,
+        5.3916015625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "reject-ascii-in-decoder",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.1530978330000003,
+      "source_sha256": "374b8b66d81b970c63850bda113aafde1dca66806d681086d767dce8476c9590",
+      "load": [
+        4.3271484375,
+        6.16650390625,
+        5.3916015625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "reject-ascii-in-decoder",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.055125792000002,
+      "source_sha256": "374b8b66d81b970c63850bda113aafde1dca66806d681086d767dce8476c9590",
+      "load": [
+        4.3271484375,
+        6.16650390625,
+        5.3916015625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-ascii-in-decoder",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 2.3052269160000023,
+      "source_sha256": "374b8b66d81b970c63850bda113aafde1dca66806d681086d767dce8476c9590",
+      "load": [
+        7.6640625,
+        6.82763671875,
+        5.62939453125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "convert-ascii-with-cast",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.1742385419999977,
+      "source_sha256": "cff7d460bbca5efb5b5cbbf066a748c0e4ebc8da762137a501928860a693272f",
+      "load": [
+        7.6640625,
+        6.82763671875,
+        5.62939453125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "convert-ascii-with-cast",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.233604875000001,
+      "source_sha256": "cff7d460bbca5efb5b5cbbf066a748c0e4ebc8da762137a501928860a693272f",
+      "load": [
+        7.6640625,
+        6.82763671875,
+        5.62939453125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "convert-ascii-with-cast",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.9511131249999991,
+      "source_sha256": "cff7d460bbca5efb5b5cbbf066a748c0e4ebc8da762137a501928860a693272f",
+      "load": [
+        7.21044921875,
+        6.7470703125,
+        5.60791015625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "recognize-ascii-by-high-bit",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.7967477909999978,
+      "source_sha256": "7f55b06052829223bed83028223bd0b8e517408a9bf66b2e3fb068770ff0fdb5",
+      "load": [
+        7.21044921875,
+        6.7470703125,
+        5.60791015625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "recognize-ascii-by-high-bit",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.22658925,
+      "source_sha256": "7f55b06052829223bed83028223bd0b8e517408a9bf66b2e3fb068770ff0fdb5",
+      "load": [
+        7.21044921875,
+        6.7470703125,
+        5.60791015625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "recognize-ascii-by-high-bit",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.452699041999999,
+      "source_sha256": "7f55b06052829223bed83028223bd0b8e517408a9bf66b2e3fb068770ff0fdb5",
+      "load": [
+        7.21044921875,
+        6.7470703125,
+        5.60791015625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "match-reduce-multiplication-overflow-explicitly",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.0899744170000005,
+      "source_sha256": "7805a9a298403b318a046117f5dd8274c05f07a430a5b2cc26b00d78d5b76d62",
+      "load": [
+        6.953125,
+        6.701171875,
+        5.59814453125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "match-reduce-multiplication-overflow-explicitly",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.2320572080000005,
+      "source_sha256": "7805a9a298403b318a046117f5dd8274c05f07a430a5b2cc26b00d78d5b76d62",
+      "load": [
+        6.953125,
+        6.701171875,
+        5.59814453125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "match-reduce-multiplication-overflow-explicitly",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 2.028597167000001,
+      "source_sha256": "7805a9a298403b318a046117f5dd8274c05f07a430a5b2cc26b00d78d5b76d62",
+      "load": [
+        6.953125,
+        6.701171875,
+        5.59814453125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "match-classification-segment-explicitly",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 2.1852320830000025,
+      "source_sha256": "eb3d31275cc298559b561509caee4e7a5fde921eac656d75c4f9206a915455c9",
+      "load": [
+        6.79638671875,
+        6.6728515625,
+        5.59423828125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "match-classification-segment-explicitly",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.2478596249999967,
+      "source_sha256": "eb3d31275cc298559b561509caee4e7a5fde921eac656d75c4f9206a915455c9",
+      "load": [
+        6.79638671875,
+        6.6728515625,
+        5.59423828125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "match-classification-segment-explicitly",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.1637221659999994,
+      "source_sha256": "eb3d31275cc298559b561509caee4e7a5fde921eac656d75c4f9206a915455c9",
+      "load": [
+        6.79638671875,
+        6.6728515625,
+        5.59423828125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "halve-comparison-bound-with-shift",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.162964291999998,
+      "source_sha256": "29f6aa301f236508c58cf52cfbae492ac0266ac8676f2aee0a97cf3a46f2f573",
+      "load": [
+        6.79638671875,
+        6.6728515625,
+        5.59423828125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "halve-comparison-bound-with-shift",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.2920069589999983,
+      "source_sha256": "29f6aa301f236508c58cf52cfbae492ac0266ac8676f2aee0a97cf3a46f2f573",
+      "load": [
+        6.65234375,
+        6.64501953125,
+        5.59033203125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "halve-comparison-bound-with-shift",
+      "tests": [
+        "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+        "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+        "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+        "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+        "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+        "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+        "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+        "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+        "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+        "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+        "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+        "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+        "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+        "grapheme_scalar_dfa::tests::ordered_cluster_traps"
+      ],
+      "seconds": 1.9218160420000032,
+      "source_sha256": "29f6aa301f236508c58cf52cfbae492ac0266ac8676f2aee0a97cf3a46f2f573",
+      "load": [
+        6.65234375,
+        6.64501953125,
+        5.59033203125
+      ]
+    }
+  ]
+}

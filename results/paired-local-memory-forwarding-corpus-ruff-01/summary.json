@@ -1,0 +1,781 @@
+{
+  "project": "ruff",
+  "workflow": "default",
+  "revision": "d136bd8d002a648de5f344df602e492658306f1e",
+  "tests": [
+    "registry::tests::documentation",
+    "registry::tests::rule_naming_convention",
+    "registry::tests::check_code_serialization",
+    "registry::tests::linter_parse_code",
+    "registry::tests::rule_size",
+    "registry::tests::linter_sorting"
+  ],
+  "edits": [
+    "match-optional-rule-code-explicitly",
+    "make-name-conversion-explicit",
+    "match-linter-prefix-result-explicitly",
+    "name-code-suffix-before-comparison",
+    "use-explicit-rule-search-loop"
+  ],
+  "workload": "All six existing registry tests, including rule-code roundtrips, naming patterns, and linter sorting",
+  "case_sha256": "74ce22dd5d862475efcf2d1f849514cda626aacd10cdcef63f3b1bffffc42bc8",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": true,
+  "raw": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+  "candidate_tool_key_requested": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 5.602686667,
+    "baseline": 2.851544208000007,
+    "candidate": 2.8933006659999876
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 55.328159834,
+    "baseline": 26.655410499999995,
+    "candidate": 27.040808833
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "7af4e10fc5a676878319c8a0f0f7945328b07b6f307c36ab19120ece593bca88",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "8e955819c52c1ba3a603ee76c8d0925c72aea37c6a6136a78f342cdaee5cf881",
+      "exporter_sha256": "03782acefdee23b4cbf42832bb64f036ee1bf07f4dcbf6f61e68cdfc47139064"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "98824128148f20854238d01e58b263d93da0c97b4788acd2e67a5e501fe0d369",
+      "exporter_sha256": "768787e482846e28aab48118e2801bde82616efc0e890e083bf367a3a0070019"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "98824128148f20854238d01e58b263d93da0c97b4788acd2e67a5e501fe0d369",
+  "exporter_sha256": "768787e482846e28aab48118e2801bde82616efc0e890e083bf367a3a0070019",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 55.328159834,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        7.36865234375,
+        6.42236328125,
+        6.78515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 26.655410499999995,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        6.34814453125,
+        6.28076171875,
+        6.72119140625
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/baseline/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 27.040808833,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        5.39990234375,
+        6.06396484375,
+        6.62939453125
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/candidate/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.7878539169999925,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        5.39990234375,
+        6.06396484375,
+        6.62939453125
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.115918792000002,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        5.52783203125,
+        6.0791015625,
+        6.63134765625
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.105200666999991,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        5.1650390625,
+        5.99462890625,
+        6.59814453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 5.687125084000002,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        5.0712890625,
+        5.96142578125,
+        6.58251953125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.968829250000013,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        4.9052734375,
+        5.912109375,
+        6.5615234375
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/baseline/1-0.rbc",
+          "sha256": "43d46e7c618b066d0e9c5830157e5bfabc17530d6e6f11d8eae7ebc50fa84f83",
+          "bytes": 1400466
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.145806792000002,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        4.83251953125,
+        5.8798828125,
+        6.54638671875
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/candidate/1-0.rbc",
+          "sha256": "43d46e7c618b066d0e9c5830157e5bfabc17530d6e6f11d8eae7ebc50fa84f83",
+          "bytes": 1400466
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 4.622361708,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        4.845703125,
+        5.865234375,
+        6.537109375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.6969834580000054,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        4.845703125,
+        5.865234375,
+        6.537109375
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/candidate/2-0.rbc",
+          "sha256": "ba2f1fccb7387b01f26652f7983ec64f34a760db26751c2170d419e9a2642f46",
+          "bytes": 1969112
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.9138046250000116,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        4.69775390625,
+        5.8173828125,
+        6.51611328125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/baseline/2-0.rbc",
+          "sha256": "ba2f1fccb7387b01f26652f7983ec64f34a760db26751c2170d419e9a2642f46",
+          "bytes": 1969112
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 2.7417275829999994,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        4.69775390625,
+        5.8173828125,
+        6.51611328125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/baseline/3-0.rbc",
+          "sha256": "5c81d1e398d823271d784274eb272b1f7d2b10540b328323fa4f02aea64490bf",
+          "bytes": 1611756
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 5.602686667,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        4.5615234375,
+        5.7705078125,
+        6.4951171875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 3.0347869999999944,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        4.75634765625,
+        5.79052734375,
+        6.498046875
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/candidate/3-0.rbc",
+          "sha256": "5c81d1e398d823271d784274eb272b1f7d2b10540b328323fa4f02aea64490bf",
+          "bytes": 1611756
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.6651160829999867,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        4.455078125,
+        5.7109375,
+        6.4658203125
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/candidate/4-0.rbc",
+          "sha256": "b2728fe45618eee51a0ab3cf305ce7e523503de3f65002a00608bcc840cb0589",
+          "bytes": 1395658
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 3.993143707999991,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        4.455078125,
+        5.7109375,
+        6.4658203125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.7197599579999974,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        4.25830078125,
+        5.64892578125,
+        6.439453125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/baseline/4-0.rbc",
+          "sha256": "b2728fe45618eee51a0ab3cf305ce7e523503de3f65002a00608bcc840cb0589",
+          "bytes": 1395658
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.851544208000007,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        4.25830078125,
+        5.64892578125,
+        6.439453125
+      ],
+      "engine": "jit",
+      "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/baseline/5-0.rbc",
+          "sha256": "71766035d29b2008c216fbf04de340a0234e9bedff00a80b76e49951e5e5be2a",
+          "bytes": 4282034
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.8933006659999876,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        4.3974609375,
+        5.654296875,
+        6.4365234375
+      ],
+      "engine": "jit",
+      "tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-local-memory-forwarding-corpus-ruff-01/artifacts/candidate/5-0.rbc",
+          "sha256": "71766035d29b2008c216fbf04de340a0234e9bedff00a80b76e49951e5e5be2a",
+          "bytes": 4282034
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.07243466700001,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        4.525390625,
+        5.65966796875,
+        6.43359375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+    "candidate_tool_key": "af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline_seconds": 2.968829250000013,
+        "candidate_seconds": 3.145806792000002,
+        "difference_seconds": 0.17697754199998883,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.847346083,
+            "execution_seconds": 0.040955041999999775,
+            "artifact_hash_seconds": 0.0006971670000002206,
+            "launcher_seconds": 2.930903041
+          },
+          "candidate": {
+            "cargo_seconds": 3.038158125,
+            "execution_seconds": 0.04218008399999995,
+            "artifact_hash_seconds": 0.0008522920000002543,
+            "launcher_seconds": 3.11999675
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline_seconds": 2.9138046250000116,
+        "candidate_seconds": 2.6969834580000054,
+        "difference_seconds": -0.2168211670000062,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.78837425,
+            "execution_seconds": 0.059556208000000055,
+            "artifact_hash_seconds": 0.0010067500000001672,
+            "launcher_seconds": 2.88885725
+          },
+          "candidate": {
+            "cargo_seconds": 2.563554792,
+            "execution_seconds": 0.056968417000000215,
+            "artifact_hash_seconds": 0.000903749999999981,
+            "launcher_seconds": 2.662229916
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline_seconds": 2.7417275829999994,
+        "candidate_seconds": 3.0347869999999944,
+        "difference_seconds": 0.29305941699999494,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.624653458,
+            "execution_seconds": 0.050502666999999946,
+            "artifact_hash_seconds": 0.000972083000000179,
+            "launcher_seconds": 2.715543083
+          },
+          "candidate": {
+            "cargo_seconds": 2.900304458,
+            "execution_seconds": 0.05117174999999996,
+            "artifact_hash_seconds": 0.0008698749999997979,
+            "launcher_seconds": 2.995668541
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline_seconds": 2.7197599579999974,
+        "candidate_seconds": 2.6651160829999867,
+        "difference_seconds": -0.05464387500001067,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.600043334,
+            "execution_seconds": 0.03979241600000005,
+            "artifact_hash_seconds": 0.0009420420000001428,
+            "launcher_seconds": 2.682924625
+          },
+          "candidate": {
+            "cargo_seconds": 2.5605422079999998,
+            "execution_seconds": 0.040323250000000144,
+            "artifact_hash_seconds": 0.0006737919999997288,
+            "launcher_seconds": 2.640648417
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline_seconds": 2.851544208000007,
+        "candidate_seconds": 2.8933006659999876,
+        "difference_seconds": 0.04175645799998051,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.713104917,
+            "execution_seconds": 0.07414504099999997,
+            "artifact_hash_seconds": 0.0018840419999999192,
+            "launcher_seconds": 2.827063459
+          },
+          "candidate": {
+            "cargo_seconds": 2.751144791,
+            "execution_seconds": 0.074600416,
+            "artifact_hash_seconds": 0.0019911249999999825,
+            "launcher_seconds": 2.8679025
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.04175645799998051
+  }
+}

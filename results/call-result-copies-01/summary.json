@@ -1,0 +1,904 @@
+{
+  "status": "Both call-result alternatives parked without integration",
+  "builds": {
+    "zero": {
+      "status": "Isolated zero-result copy elimination built;167bytecode tests pass",
+      "source_key": "1c477a75592eef74d2223ee087b9523f4e85634011a01e710a4977cbaba9fcff",
+      "parent_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "source": ".work/zero-return-copy-build-01/tool-source",
+      "binaries": {
+        "rust-interp-vm": "5de09719157c218bfbdf959ec1bb04778b4d4c8a368c57642367d5036cab9453",
+        "rust-interp-mir-export": "392365d4f8d62322b40e1b84e855dd911a07bd3d3129c32fbe6fffd8c2dfd43d"
+      },
+      "bytecode_tests": 167,
+      "focused_tests": 2,
+      "default_allocation_limit": 100000,
+      "maximum_allocation_limit": 1000000,
+      "root_unchanged": true,
+      "jit_emitter_unchanged": true,
+      "target": ".work/diagnostic-builds/zero-return-copy-01",
+      "performance_qualification": false
+    },
+    "local": {
+      "status": "Isolated caller-local result copying built;172bytecode tests pass",
+      "source_key": "7bc0f25d7427dc31d8c935d5f346e88e2df865cd60ff119aa3c869abdab00b3a",
+      "parent_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "source": ".work/local-return-copy-build-01/tool-source",
+      "binaries": {
+        "rust-interp-vm": "dccb2d23dcc7bc0e0467bb1aadf83898e863e1e70059423f8e715071136fd814",
+        "rust-interp-mir-export": "dc15c34cdf8ff1fcf7b93ca9c5c1e95ae3eed542b1ab1635394342fc0ffe3cdd"
+      },
+      "bytecode_tests": 172,
+      "focused_tests": 7,
+      "default_allocation_limit": 100000,
+      "maximum_allocation_limit": 1000000,
+      "root_unchanged": true,
+      "jit_emitter_unchanged": true,
+      "target": ".work/diagnostic-builds/local-return-copy-01",
+      "performance_qualification": false
+    }
+  },
+  "screen": {
+    "status": "Completed three-way same-artifact screen; no E2E qualification",
+    "tool_keys": {
+      "baseline": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "zero": "1c477a75592eef74d2223ee087b9523f4e85634011a01e710a4977cbaba9fcff",
+      "local": "7bc0f25d7427dc31d8c935d5f346e88e2df865cd60ff119aa3c869abdab00b3a"
+    },
+    "vm_hashes": {
+      "baseline": "b8adadc580c53ce512ecafe01bc2e827b704163a54bd5afd5296e90d05e1c01f",
+      "zero": "5de09719157c218bfbdf959ec1bb04778b4d4c8a368c57642367d5036cab9453",
+      "local": "dccb2d23dcc7bc0e0467bb1aadf83898e863e1e70059423f8e715071136fd814"
+    },
+    "results": [
+      {
+        "label": "token-phrase",
+        "engine": "jit",
+        "medians": {
+          "baseline": 5.439707583500002,
+          "zero": 5.370484145999999,
+          "local": 5.35810425
+        },
+        "comparisons": {
+          "zero-vs-baseline": {
+            "wins": 5,
+            "paired_change": -0.06922343750000337,
+            "paired_cpu_change": -0.07240349999999429,
+            "changes": [
+              -0.021895374999999717,
+              -0.09469574999999963,
+              -0.08095191700001436,
+              -0.374106917000006,
+              0.03888083200000381,
+              -0.05749495799999238
+            ]
+          },
+          "local-vs-baseline": {
+            "wins": 6,
+            "paired_change": -0.09098625000000382,
+            "paired_cpu_change": -0.0886494999999905,
+            "changes": [
+              -0.03427579099999534,
+              -0.1215873330000008,
+              -0.060385167000006845,
+              -0.45157679199999734,
+              -0.1258687929999951,
+              -0.01889304199998776
+            ]
+          },
+          "local-vs-zero": {
+            "wins": 4,
+            "paired_change": -0.01963599949999839,
+            "paired_cpu_change": -0.018638499999998004,
+            "changes": [
+              -0.01238041599999562,
+              -0.026891583000001162,
+              0.020566750000007517,
+              -0.07746987499999136,
+              -0.1647496249999989,
+              0.03860191600000462
+            ]
+          }
+        }
+      },
+      {
+        "label": "folded",
+        "engine": "jit",
+        "medians": {
+          "baseline": 1.8046940834999958,
+          "zero": 1.7879252915000095,
+          "local": 1.7705639375000075
+        },
+        "comparisons": {
+          "zero-vs-baseline": {
+            "wins": 4,
+            "paired_change": -0.028773291499987863,
+            "paired_cpu_change": -0.027740000000004317,
+            "changes": [
+              0.026702708000001962,
+              -0.017513708999985056,
+              -0.047375207999976965,
+              -0.04003287399999067,
+              0.010951208000022916,
+              -0.09895054099999356
+            ]
+          },
+          "local-vs-baseline": {
+            "wins": 6,
+            "paired_change": -0.044834541499994884,
+            "paired_cpu_change": -0.043176499999992624,
+            "changes": [
+              -0.01047904200000005,
+              -0.04695483399999034,
+              -0.058960582999986855,
+              -0.04271424899999943,
+              -0.018207625999991706,
+              -0.07693629099998134
+            ]
+          },
+          "local-vs-zero": {
+            "wins": 5,
+            "paired_change": -0.020372104500012256,
+            "paired_cpu_change": -0.019241499999996803,
+            "changes": [
+              -0.03718175000000201,
+              -0.029441125000005286,
+              -0.01158537500000989,
+              -0.0026813750000087566,
+              -0.029158834000014622,
+              0.022014250000012225
+            ]
+          }
+        }
+      },
+      {
+        "label": "sha1",
+        "engine": "jit",
+        "medians": {
+          "baseline": 0.27001229149999517,
+          "zero": 0.26913545850000276,
+          "local": 0.2696714374999942
+        },
+        "comparisons": {
+          "zero-vs-baseline": {
+            "wins": 4,
+            "paired_change": -0.0005642079999859106,
+            "paired_cpu_change": -5.4999999998806004e-05,
+            "changes": [
+              -0.0015140410000071824,
+              0.0005640000000255441,
+              -0.003296167000002015,
+              -0.0008151250000025811,
+              0.001275667000015801,
+              -0.00031329099996924015
+            ]
+          },
+          "local-vs-baseline": {
+            "wins": 3,
+            "paired_change": 3.0062500002259185e-05,
+            "paired_cpu_change": -4.200000000165183e-05,
+            "changes": [
+              0.0005783339999823056,
+              -0.0005182089999777872,
+              -0.0034212500000023738,
+              -0.0017205830000079914,
+              0.0015773750000107611,
+              0.0010175840000101743
+            ]
+          },
+          "local-vs-zero": {
+            "wins": 3,
+            "paired_change": 8.831249999730062e-05,
+            "paired_cpu_change": -3.500000022249594e-06,
+            "changes": [
+              0.002092374999989488,
+              -0.0010822090000033313,
+              -0.00012508300000035888,
+              -0.0009054580000054102,
+              0.0003017079999949601,
+              0.0013308749999794145
+            ]
+          }
+        }
+      },
+      {
+        "label": "tls",
+        "engine": "jit",
+        "medians": {
+          "baseline": 0.2163038124999872,
+          "zero": 0.2156522710000104,
+          "local": 0.21433858299999997
+        },
+        "comparisons": {
+          "zero-vs-baseline": {
+            "wins": 5,
+            "paired_change": -0.0003579789999861305,
+            "paired_cpu_change": -0.00042049999998661214,
+            "changes": [
+              0.00034550000000876935,
+              -0.0008651670000006106,
+              -0.0001418339999759155,
+              -0.0005741239999963454,
+              -0.0006340419999730784,
+              -9.49159999947824e-05
+            ]
+          },
+          "local-vs-baseline": {
+            "wins": 4,
+            "paired_change": -0.001311958000002278,
+            "paired_cpu_change": -0.0011515000000107412,
+            "changes": [
+              0.0011473330000058013,
+              0.00031891700001551726,
+              -0.002536875000004102,
+              -0.001703708000007964,
+              -0.002554876000004924,
+              -0.0009202079999965918
+            ]
+          },
+          "local-vs-zero": {
+            "wins": 4,
+            "paired_change": -0.000977438000006714,
+            "paired_cpu_change": -0.0004044999999994747,
+            "changes": [
+              0.000801832999997032,
+              0.001184084000016128,
+              -0.0023950410000281863,
+              -0.0011295840000116186,
+              -0.0019208340000318458,
+              -0.0008252920000018094
+            ]
+          }
+        }
+      },
+      {
+        "label": "pgrust-interpreter",
+        "engine": "interpreter",
+        "medians": {
+          "baseline": 0.36488506250000796,
+          "zero": 0.36277581250000424,
+          "local": 0.36330652050000367
+        },
+        "comparisons": {
+          "zero-vs-baseline": {
+            "wins": 3,
+            "paired_change": -0.0009351460000033285,
+            "paired_cpu_change": -0.0009800000000117493,
+            "changes": [
+              -0.0028032910000206357,
+              0.0009329990000139787,
+              -0.014058749999975362,
+              0.0028736659999992753,
+              -0.007027375000006941,
+              0.0027537910000035026
+            ]
+          },
+          "local-vs-baseline": {
+            "wins": 4,
+            "paired_change": -0.004485146000007489,
+            "paired_cpu_change": -0.004254500000030248,
+            "changes": [
+              -0.007410500000020193,
+              0.0018981240000073285,
+              -0.011790791999970907,
+              -0.0015597919999947862,
+              -0.008173749999997426,
+              0.0005699160000176562
+            ]
+          },
+          "local-vs-zero": {
+            "wins": 4,
+            "paired_change": -0.0016651249999881657,
+            "paired_cpu_change": -0.0014079999999915271,
+            "changes": [
+              -0.004607208999999557,
+              0.0009651249999933498,
+              0.0022679580000044552,
+              -0.0044334579999940615,
+              -0.0011463749999904849,
+              -0.0021838749999858464
+            ]
+          }
+        }
+      }
+    ],
+    "profiles": [
+      {
+        "label": "token-phrase",
+        "full_logical_trace_equal_to_baseline": {
+          "zero": false,
+          "local": false
+        },
+        "stats": {
+          "baseline": {
+            "instructions": 14471857933,
+            "peak_guest_memory": 8168856,
+            "jit_bytes": 9564588,
+            "jit_operations": 432842,
+            "jit_compile_ns": 41208864,
+            "jit_instructions": 14214488502,
+            "jit_entries": 186711770,
+            "jit_compiled_functions": 1572,
+            "jit_declined_functions": 0
+          },
+          "zero": {
+            "instructions": 14471854199,
+            "peak_guest_memory": 8168856,
+            "jit_bytes": 9564588,
+            "jit_operations": 432842,
+            "jit_compile_ns": 40756128,
+            "jit_instructions": 14214485057,
+            "jit_entries": 186711634,
+            "jit_compiled_functions": 1572,
+            "jit_declined_functions": 0
+          },
+          "local": {
+            "instructions": 14471847802,
+            "peak_guest_memory": 8168856,
+            "jit_bytes": 9564588,
+            "jit_operations": 432842,
+            "jit_compile_ns": 41508245,
+            "jit_instructions": 14214478642,
+            "jit_entries": 186711599,
+            "jit_compiled_functions": 1572,
+            "jit_declined_functions": 0
+          }
+        },
+        "different_functions": {
+          "zero": [
+            2398,
+            2764,
+            2853,
+            2860,
+            3325,
+            3326,
+            3423,
+            3732,
+            3798,
+            3945,
+            4111,
+            4154,
+            4173,
+            4283,
+            4464,
+            4494
+          ],
+          "local": [
+            259,
+            2398,
+            2764,
+            2853,
+            2860,
+            3325,
+            3326,
+            3423,
+            3798,
+            3945,
+            4154,
+            4173,
+            4283,
+            4464,
+            4494
+          ]
+        }
+      },
+      {
+        "label": "folded",
+        "full_logical_trace_equal_to_baseline": {
+          "zero": true,
+          "local": true
+        },
+        "stats": {
+          "baseline": {
+            "instructions": 4428759008,
+            "peak_guest_memory": 102369,
+            "jit_bytes": 4211396,
+            "jit_operations": 199146,
+            "jit_compile_ns": 18871453,
+            "jit_instructions": 4370421613,
+            "jit_entries": 44893929,
+            "jit_compiled_functions": 419,
+            "jit_declined_functions": 0
+          },
+          "zero": {
+            "instructions": 4428759008,
+            "peak_guest_memory": 102369,
+            "jit_bytes": 4211396,
+            "jit_operations": 199146,
+            "jit_compile_ns": 19285243,
+            "jit_instructions": 4370421613,
+            "jit_entries": 44893929,
+            "jit_compiled_functions": 419,
+            "jit_declined_functions": 0
+          },
+          "local": {
+            "instructions": 4428759008,
+            "peak_guest_memory": 102369,
+            "jit_bytes": 4211396,
+            "jit_operations": 199146,
+            "jit_compile_ns": 19005155,
+            "jit_instructions": 4370421613,
+            "jit_entries": 44893929,
+            "jit_compiled_functions": 419,
+            "jit_declined_functions": 0
+          }
+        },
+        "different_functions": {
+          "zero": [],
+          "local": []
+        }
+      }
+    ],
+    "root_unchanged": true,
+    "guest_jit_emitter_unchanged": true,
+    "caveat": "Six balanced cycles per artifact; all wall and child-CPU samples retained. The interpreter path also uses the changed call-result handling."
+  },
+  "workflows": [
+    {
+      "status": "Complete isolated production-edit comparison",
+      "label": "token-phrase",
+      "tool_key": "7bc0f25d7427dc31d8c935d5f346e88e2df865cd60ff119aa3c869abdab00b3a",
+      "baseline_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "report": "results/paired-call-results-local-token-phrase-01/summary.json",
+      "report_sha256": "2658bae5d3fd1705076a0e00d37ea361818054320ab1ad6a5a4db92be1caedd4",
+      "medians": {
+        "native": 2.312243207999998,
+        "baseline": 7.085754457999997,
+        "candidate": 7.064025750000006
+      },
+      "cold_seconds": {
+        "native": 8.03572125,
+        "baseline": 12.051149666,
+        "candidate": 12.317579000000002
+      },
+      "wins": 3,
+      "native_wins": 0,
+      "paired_change": -0.04913595799999371,
+      "stage_changes": {
+        "cargo_seconds": 0.020985374999999973,
+        "execution_seconds": -0.07510079199999975
+      },
+      "all_seven_artifacts_identical_to_retained": true,
+      "root_unchanged": true,
+      "broad_qualification": false
+    },
+    {
+      "status": "Complete isolated production-edit comparison",
+      "label": "folded-literal-trie",
+      "tool_key": "7bc0f25d7427dc31d8c935d5f346e88e2df865cd60ff119aa3c869abdab00b3a",
+      "baseline_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "report": "results/paired-call-results-local-folded-literal-trie-01/summary.json",
+      "report_sha256": "9585be97fc47103663c692005fa9d9df00897114b477f7decdf9bbf4afc9f03e",
+      "medians": {
+        "native": 1.8933518340000006,
+        "baseline": 2.825689833000002,
+        "candidate": 2.876567666999996
+      },
+      "cold_seconds": {
+        "native": 7.489984167,
+        "baseline": 7.618456417,
+        "candidate": 7.548883625
+      },
+      "wins": 2,
+      "native_wins": 0,
+      "paired_change": 0.014088832999998857,
+      "stage_changes": {
+        "cargo_seconds": 0.06490124999999991,
+        "execution_seconds": 0.00421545900000031
+      },
+      "all_seven_artifacts_identical_to_retained": true,
+      "root_unchanged": true,
+      "broad_qualification": false
+    }
+  ],
+  "decision": {
+    "status": "Both call-result alternatives parked without integration",
+    "root_integrated": false,
+    "retained_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+    "zero_tool_key": "1c477a75592eef74d2223ee087b9523f4e85634011a01e710a4977cbaba9fcff",
+    "local_tool_key": "7bc0f25d7427dc31d8c935d5f346e88e2df865cd60ff119aa3c869abdab00b3a",
+    "local_command_wins": 5,
+    "pairs": 10,
+    "native_wins": 0,
+    "zero_only_edited_workflows": 0,
+    "decision": "Park both alternatives. The caller-local version saves a paired49ms per edited token-phrase command, including75ms in execution, but folded-trie regresses14ms per command and4ms in execution. These five wins in ten commands do not confirm the consistent same-artifact runtime improvement. Native wins all ten comparisons. This is a prioritization decision, not a correctness rejection or proof that the minimal alternative cannot help. Keep both implementations and all evidence; measure a larger MIR scalar-promotion opportunity next. Root remains88c01c.",
+    "next_hypothesis": ".work/MIR-SCALAR-PROMOTION-PLAN-20260910.md",
+    "created_at": 1789078049.549703
+  },
+  "cpu_sample": "results/retained-token-cpu-sample-01/summary.json",
+  "opportunity": {
+    "status": "Typed call-boundary observation complete; no guest execution or timing claim",
+    "parent_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+    "cases": [
+      {
+        "argument_sizes": {
+          "1": 18874815,
+          "112": 447922,
+          "12": 16,
+          "120": 0,
+          "128": 1343752,
+          "136": 1748040,
+          "144": 0,
+          "16": 47848337,
+          "160": 0,
+          "2": 196,
+          "20": 4,
+          "216": 0,
+          "24": 1738857,
+          "240": 0,
+          "256": 24,
+          "272": 2,
+          "288": 2,
+          "3": 12,
+          "304": 0,
+          "32": 4931,
+          "320": 0,
+          "328": 0,
+          "336": 12,
+          "352": 0,
+          "3584": 12,
+          "384": 12,
+          "4": 1052893,
+          "40": 228,
+          "440": 0,
+          "48": 239296,
+          "528": 16,
+          "56": 26,
+          "64": 24,
+          "72": 28,
+          "8": 204887657,
+          "80": 0,
+          "800": 8,
+          "96": 0,
+          "960": 2
+        },
+        "call_result_sizes": {
+          "0": 21235213,
+          "1": 41177929,
+          "10": 0,
+          "104": 0,
+          "112": 852268,
+          "12": 0,
+          "128": 6001,
+          "136": 895824,
+          "1400": 12,
+          "144": 6,
+          "1440": 4,
+          "1448": 4,
+          "16": 2763935,
+          "160": 36,
+          "1600": 12,
+          "168": 4,
+          "176": 8,
+          "2": 52,
+          "200": 2,
+          "208": 12,
+          "216": 0,
+          "24": 2525853,
+          "240": 0,
+          "256": 26,
+          "272": 2,
+          "288": 12,
+          "3": 46,
+          "304": 447896,
+          "32": 1092185,
+          "328": 12,
+          "336": 0,
+          "352": 4,
+          "3584": 4,
+          "3600": 4,
+          "3616": 4,
+          "376": 8,
+          "384": 0,
+          "4": 112856,
+          "40": 15202108,
+          "400": 12,
+          "424": 2,
+          "440": 4,
+          "448": 36,
+          "464": 4,
+          "472": 0,
+          "48": 1135300,
+          "480": 2,
+          "488": 4,
+          "496": 4,
+          "5152": 4,
+          "528": 10,
+          "56": 16,
+          "576": 20,
+          "592": 0,
+          "6": 0,
+          "64": 83,
+          "704": 4,
+          "72": 281,
+          "720": 4,
+          "8": 10909794,
+          "80": 200,
+          "800": 32,
+          "88": 12,
+          "9": 117,
+          "96": 4,
+          "960": 2
+        },
+        "caller_local_result_sizes": {
+          "0": 18627195,
+          "1": 41177929,
+          "10": 0,
+          "104": 0,
+          "112": 852268,
+          "12": 0,
+          "128": 6001,
+          "136": 895824,
+          "1400": 12,
+          "144": 6,
+          "1440": 4,
+          "1448": 4,
+          "16": 2763935,
+          "160": 36,
+          "1600": 12,
+          "168": 4,
+          "176": 8,
+          "2": 52,
+          "200": 2,
+          "208": 12,
+          "216": 0,
+          "24": 2525853,
+          "240": 0,
+          "256": 26,
+          "272": 2,
+          "288": 12,
+          "3": 46,
+          "304": 447896,
+          "32": 1092185,
+          "328": 12,
+          "336": 0,
+          "352": 4,
+          "3584": 4,
+          "3600": 4,
+          "3616": 4,
+          "376": 8,
+          "384": 0,
+          "4": 112856,
+          "40": 15202108,
+          "400": 12,
+          "424": 2,
+          "440": 4,
+          "448": 36,
+          "464": 4,
+          "472": 0,
+          "48": 1135300,
+          "480": 2,
+          "488": 4,
+          "496": 4,
+          "5152": 4,
+          "528": 10,
+          "56": 16,
+          "576": 20,
+          "592": 0,
+          "6": 0,
+          "64": 83,
+          "704": 4,
+          "72": 281,
+          "720": 4,
+          "8": 10909794,
+          "80": 200,
+          "800": 32,
+          "88": 12,
+          "9": 117,
+          "96": 4,
+          "960": 2
+        },
+        "counts": {
+          "caller_local_result_calls": 95750275,
+          "declared_argument_bytes": 2941129071,
+          "direct_calls": 97514524,
+          "executed_call_sites": 2677,
+          "indirect_calls": 843769,
+          "nonzero_caller_local_result_calls": 77123080,
+          "proven_local_argument_calls": 79599159,
+          "static_call_sites": 11812,
+          "zero_result_calls": 21235213
+        },
+        "executed_return_sizes": {
+          "0": 21235214,
+          "1": 41177929,
+          "10": 0,
+          "104": 0,
+          "112": 852268,
+          "12": 0,
+          "128": 6001,
+          "136": 895824,
+          "1400": 12,
+          "144": 6,
+          "1440": 4,
+          "1448": 4,
+          "16": 2763935,
+          "160": 36,
+          "1600": 12,
+          "168": 4,
+          "176": 8,
+          "2": 52,
+          "200": 2,
+          "208": 12,
+          "216": 0,
+          "24": 2525853,
+          "240": 0,
+          "256": 26,
+          "272": 2,
+          "288": 12,
+          "3": 46,
+          "304": 447896,
+          "32": 1092185,
+          "328": 12,
+          "336": 0,
+          "352": 4,
+          "3584": 4,
+          "3600": 4,
+          "3616": 4,
+          "376": 8,
+          "384": 0,
+          "4": 112856,
+          "40": 15202108,
+          "400": 12,
+          "424": 2,
+          "440": 4,
+          "448": 36,
+          "464": 4,
+          "472": 0,
+          "48": 1135300,
+          "480": 2,
+          "488": 4,
+          "496": 4,
+          "5152": 4,
+          "528": 10,
+          "56": 16,
+          "576": 20,
+          "592": 0,
+          "6": 0,
+          "64": 83,
+          "704": 4,
+          "72": 281,
+          "720": 4,
+          "8": 10909794,
+          "80": 200,
+          "800": 32,
+          "88": 12,
+          "9": 117,
+          "96": 4,
+          "960": 2
+        },
+        "label": "token-phrase",
+        "logical_instructions": 14471846678
+      },
+      {
+        "argument_sizes": {
+          "1": 7110096,
+          "129": 1687,
+          "16": 14945795,
+          "2": 7,
+          "20": 14,
+          "224": 6,
+          "24": 5668,
+          "3": 4,
+          "32": 45,
+          "4": 521129,
+          "40": 4,
+          "464": 5,
+          "48": 6,
+          "56": 26,
+          "64": 120,
+          "72": 98,
+          "8": 40349907,
+          "80": 18915861
+        },
+        "call_result_sizes": {
+          "0": 9383531,
+          "1": 2302835,
+          "104": 6,
+          "112": 10574363,
+          "136": 7,
+          "16": 82703,
+          "160": 8,
+          "168": 1156,
+          "176": 14,
+          "192": 2,
+          "2": 42,
+          "24": 1252904,
+          "304": 14,
+          "32": 8443,
+          "320": 7,
+          "40": 5,
+          "400": 19,
+          "416": 35,
+          "48": 2130250,
+          "64": 77,
+          "8": 6026,
+          "88": 755621,
+          "880": 82
+        },
+        "caller_local_result_sizes": {
+          "0": 6283745,
+          "1": 2302835,
+          "104": 6,
+          "112": 10574363,
+          "136": 7,
+          "16": 82703,
+          "160": 8,
+          "168": 1156,
+          "176": 14,
+          "192": 2,
+          "2": 42,
+          "24": 1252904,
+          "304": 14,
+          "32": 8443,
+          "320": 7,
+          "40": 5,
+          "400": 19,
+          "416": 35,
+          "48": 2130250,
+          "64": 77,
+          "8": 6026,
+          "88": 755621,
+          "880": 82
+        },
+        "counts": {
+          "caller_local_result_calls": 23398364,
+          "declared_argument_bytes": 2084771173,
+          "direct_calls": 26495637,
+          "executed_call_sites": 927,
+          "indirect_calls": 2513,
+          "nonzero_caller_local_result_calls": 17114619,
+          "proven_local_argument_calls": 24907853,
+          "static_call_sites": 2345,
+          "zero_result_calls": 9383531
+        },
+        "executed_return_sizes": {
+          "0": 9383532,
+          "1": 2302835,
+          "104": 6,
+          "112": 10574363,
+          "136": 7,
+          "16": 82703,
+          "160": 8,
+          "168": 1156,
+          "176": 14,
+          "192": 2,
+          "2": 42,
+          "24": 1252904,
+          "304": 14,
+          "32": 8443,
+          "320": 7,
+          "4": 0,
+          "40": 5,
+          "400": 19,
+          "416": 35,
+          "48": 2130250,
+          "64": 77,
+          "72": 0,
+          "8": 6026,
+          "80": 0,
+          "88": 755621,
+          "880": 82
+        },
+        "label": "folded",
+        "logical_instructions": 4428759008
+      }
+    ],
+    "root_unchanged": true,
+    "guest_executed": false,
+    "production_emitter_unchanged": true,
+    "limitations": [
+      "Calls and returns are counted separately; TLS callbacks and entry returns need not have an ordinary incoming Call.",
+      "Destination eligibility is a conservative block-local Local proof; it does not infer actual dynamic pointer values.",
+      "The helper is diagnostic-only. Any production use needs writer/CFG/boundary/alias tests and end-to-end measurements."
+    ]
+  },
+  "root_integrated": false,
+  "broad_native_tls_fre_qualification_run": false,
+  "controlled_rng_trace_pairs": 0,
+  "zero_only_edited_workflows": 0,
+  "local_edited_workflows": 2,
+  "identical_artifact_pairs": 14,
+  "broad_warm_build_gain_established": false,
+  "whole_application_support": false
+}

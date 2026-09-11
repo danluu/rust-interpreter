@@ -1,0 +1,786 @@
+{
+  "project": "pgrust",
+  "workflow": "default",
+  "revision": "38d2517d3e09168a8fe222837730d435238ff358",
+  "tests": [
+    "tests::uint32_paths_match_byte_path",
+    "tests::extended_zero_seed_low_word_equals_hash_bytes",
+    "tests::murmurhash32_inverse_roundtrips",
+    "tests::dynahash_wrappers"
+  ],
+  "edits": [
+    "name-inverse-xorshift-intermediate",
+    "spell-out-four-byte-load",
+    "combine-constant-hash-initializers",
+    "name-string-hash-length-bound",
+    "use-immutable-hash-stages"
+  ],
+  "workload": "All four existing hashfn library unit tests, including the original 100,000-iteration roundtrip loop",
+  "case_sha256": "98a8ac961a4057c4429001c39b23156af64859522f4c864b260c93efcde8335a",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/paired-native-wide-corpus-pgrust-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+  "candidate_tool_key_requested": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.632537000000001,
+    "baseline": 0.511725375000001,
+    "candidate": 0.5100793340000003
+  },
+  "std_mir": null,
+  "cold_success_seconds": {
+    "native": 1.84679525,
+    "baseline": 0.5342765839999999,
+    "candidate": 0.5113786249999999
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "0a5dd4678615d6f2e5fd5b5e4ed083c2e48df8c0ae7a3ad03232293d86ff5a96",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "7635c5900cf8de5dfb64345cfc419a2faf36563d2e1cbc91202c607c5a969e8f",
+      "exporter_sha256": "bd6580694ef3defb3e1816c0365aff1d8f30b328a19b38d06d4881a04214383d"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "c85c7efb896e568dc30fed32ad6f5eaa78c196016c4010d8e5a721542036e8ee",
+      "exporter_sha256": "bd6580694ef3defb3e1816c0365aff1d8f30b328a19b38d06d4881a04214383d"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "c85c7efb896e568dc30fed32ad6f5eaa78c196016c4010d8e5a721542036e8ee",
+  "exporter_sha256": "bd6580694ef3defb3e1816c0365aff1d8f30b328a19b38d06d4881a04214383d",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 1.84679525,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        2.287109375,
+        3.25439453125,
+        3.111328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5342765839999999,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        2.287109375,
+        3.25439453125,
+        3.111328125
+      ],
+      "engine": "jit",
+      "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/baseline/0-0.rbc",
+          "sha256": "8e88b459614fb7f24c530a17506fc2f0bb0530bb5ca71cc4b658ff6bb5d32d64",
+          "bytes": 199030
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5113786249999999,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        2.287109375,
+        3.25439453125,
+        3.111328125
+      ],
+      "engine": "jit",
+      "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/candidate/0-0.rbc",
+          "sha256": "8e88b459614fb7f24c530a17506fc2f0bb0530bb5ca71cc4b658ff6bb5d32d64",
+          "bytes": 199030
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.460426333,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        2.287109375,
+        3.25439453125,
+        3.111328125
+      ],
+      "engine": "jit",
+      "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "c5be3efc0de5c02cb36d6ea02b00a8a51289abd386324a5e5ce7053054140737",
+          "bytes": 199030
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.45824549999999986,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        2.287109375,
+        3.25439453125,
+        3.111328125
+      ],
+      "engine": "jit",
+      "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "c5be3efc0de5c02cb36d6ea02b00a8a51289abd386324a5e5ce7053054140737",
+          "bytes": 199030
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8029498330000004,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        2.287109375,
+        3.25439453125,
+        3.111328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6615291250000004,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5118114580000004,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": "jit",
+      "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/baseline/1-0.rbc",
+          "sha256": "9dcb64737ea09ed0d29c9e573966da2cf61549fab7d1d2681085f15053c8c18e",
+          "bytes": 198976
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5064802500000001,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": "jit",
+      "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/candidate/1-0.rbc",
+          "sha256": "9dcb64737ea09ed0d29c9e573966da2cf61549fab7d1d2681085f15053c8c18e",
+          "bytes": 198976
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6697757080000004,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5321640829999996,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": "jit",
+      "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/candidate/2-0.rbc",
+          "sha256": "1dea622db241666c5c26650c1987c59dea2bfb1927a4a7926a1020d1f74bbded",
+          "bytes": 197358
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5163545000000003,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": "jit",
+      "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/baseline/2-0.rbc",
+          "sha256": "1dea622db241666c5c26650c1987c59dea2bfb1927a4a7926a1020d1f74bbded",
+          "bytes": 197358
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.511725375000001,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": "jit",
+      "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/baseline/3-0.rbc",
+          "sha256": "6e7c539e7104e23cd4725fd31eeb8ad4c3e7d27ad6f2c1e7df1bd007a7bc7d7b",
+          "bytes": 197358
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.632537000000001,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5202634170000007,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        2.18359375,
+        3.216796875,
+        3.0986328125
+      ],
+      "engine": "jit",
+      "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/candidate/3-0.rbc",
+          "sha256": "6e7c539e7104e23cd4725fd31eeb8ad4c3e7d27ad6f2c1e7df1bd007a7bc7d7b",
+          "bytes": 197358
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.509174625,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        2.40869140625,
+        3.24609375,
+        3.109375
+      ],
+      "engine": "jit",
+      "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/candidate/4-0.rbc",
+          "sha256": "edea1e3073500c115a484f018f7f9dbff8c7721921ad53436d5ae4bc39b83aaf",
+          "bytes": 197358
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6293513750000006,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        2.40869140625,
+        3.24609375,
+        3.109375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5068870839999988,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        2.40869140625,
+        3.24609375,
+        3.109375
+      ],
+      "engine": "jit",
+      "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/baseline/4-0.rbc",
+          "sha256": "edea1e3073500c115a484f018f7f9dbff8c7721921ad53436d5ae4bc39b83aaf",
+          "bytes": 197358
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5093167919999999,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        2.40869140625,
+        3.24609375,
+        3.109375
+      ],
+      "engine": "jit",
+      "tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/baseline/5-0.rbc",
+          "sha256": "3756c23e79b4e659fe424720cfe9d727cb8f3bc2c67184fb84932489720bfafd",
+          "bytes": 196942
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5100793340000003,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        2.40869140625,
+        3.24609375,
+        3.109375
+      ],
+      "engine": "jit",
+      "tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-native-wide-corpus-pgrust-01/artifacts/candidate/5-0.rbc",
+          "sha256": "3756c23e79b4e659fe424720cfe9d727cb8f3bc2c67184fb84932489720bfafd",
+          "bytes": 196942
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6302562080000005,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        2.40869140625,
+        3.24609375,
+        3.109375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "19139c68253653632fffbadee082ee5ff629e29874c1f41e1585f8d9f66eb7ba",
+    "candidate_tool_key": "81967134638a29bfec7ef37ee8b1addf3819e712007acb31fd5991efe68e13c7",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "baseline_seconds": 0.5118114580000004,
+        "candidate_seconds": 0.5064802500000001,
+        "difference_seconds": -0.005331208000000309,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.436637334,
+            "execution_seconds": 0.039544791999999995,
+            "artifact_hash_seconds": 0.00018224999999999492,
+            "launcher_seconds": 0.478938708
+          },
+          "candidate": {
+            "cargo_seconds": 0.440600458,
+            "execution_seconds": 0.039365375000000036,
+            "artifact_hash_seconds": 0.00017858300000000993,
+            "launcher_seconds": 0.482253708
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "baseline_seconds": 0.5163545000000003,
+        "candidate_seconds": 0.5321640829999996,
+        "difference_seconds": 0.01580958299999935,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.448141333,
+            "execution_seconds": 0.039941249999999984,
+            "artifact_hash_seconds": 0.00019904199999998262,
+            "launcher_seconds": 0.490502041
+          },
+          "candidate": {
+            "cargo_seconds": 0.456136208,
+            "execution_seconds": 0.04034700000000002,
+            "artifact_hash_seconds": 0.00019599999999997397,
+            "launcher_seconds": 0.49936100000000005
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "baseline_seconds": 0.511725375000001,
+        "candidate_seconds": 0.5202634170000007,
+        "difference_seconds": 0.008538041999999635,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.44500399999999996,
+            "execution_seconds": 0.04056333299999998,
+            "artifact_hash_seconds": 0.0001870829999999768,
+            "launcher_seconds": 0.4878985
+          },
+          "candidate": {
+            "cargo_seconds": 0.453289959,
+            "execution_seconds": 0.040237625,
+            "artifact_hash_seconds": 0.0001947079999999879,
+            "launcher_seconds": 0.4959245
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "baseline_seconds": 0.5068870839999988,
+        "candidate_seconds": 0.509174625,
+        "difference_seconds": 0.0022875410000011698,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.440053875,
+            "execution_seconds": 0.04040495799999999,
+            "artifact_hash_seconds": 0.00019387500000001,
+            "launcher_seconds": 0.482835834
+          },
+          "candidate": {
+            "cargo_seconds": 0.442272041,
+            "execution_seconds": 0.040119709,
+            "artifact_hash_seconds": 0.0002003750000000304,
+            "launcher_seconds": 0.48481487500000003
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "baseline_seconds": 0.5093167919999999,
+        "candidate_seconds": 0.5100793340000003,
+        "difference_seconds": 0.0007625420000003658,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.44445283300000005,
+            "execution_seconds": 0.038548666000000065,
+            "artifact_hash_seconds": 0.00019333300000001774,
+            "launcher_seconds": 0.485382
+          },
+          "candidate": {
+            "cargo_seconds": 0.445177166,
+            "execution_seconds": 0.03852983400000004,
+            "artifact_hash_seconds": 0.00018970800000001065,
+            "launcher_seconds": 0.486134416
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 1,
+    "median_paired_difference_seconds": 0.0022875410000011698
+  }
+}

@@ -1,0 +1,823 @@
+{
+  "project": "fre",
+  "workflow": "packed-literal-set",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+    "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+    "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+    "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+    "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+    "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+  ],
+  "edits": [
+    "name-byte-class-bit-mask",
+    "name-preceding-rank-mask",
+    "spell-out-factored-width-bounds",
+    "match-search-work-overflow-explicitly",
+    "reuse-window-origin-in-result-offsets"
+  ],
+  "workload": "Six existing packed literal-set tests covering SIMD matcher, factored byte classes, windows, resource accounting and shape refusal; the seventh regex-reference test remains lowering-blocked.",
+  "case_sha256": "00d22235f99a3da65a9160171e9d0775e9b23137a984fa9cedf349db82014ebb",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "guest_mir_opt_level": null,
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.5186475410000035,
+    "baseline": 0.9279593750000004,
+    "candidate": 0.9189839169999985
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.0981835,
+    "baseline": 4.769750041,
+    "candidate": 4.708190332999999
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "4ef5887439fea0b6b27ab8a0576711e1d14171cf927140764ff3fe8cb9067e67",
+    "scripts/interpreter.py": "60445b8ce8176b23e3162f78e9595ee78197a2f75d54dfdb8deaca0f22755ce6",
+    "scripts/workflow_cases.py": "f07186ef97e5a4d5f96c23ab56f102f95a61360f198badc1661cac6632d5a1d4",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "inline_leaves": true,
+      "vm_sha256": "5db13eb32101046730eb287cee19900ff4cb290919bd0078b19f04b5e0eccdd5",
+      "exporter_sha256": "6724d99a81084704d1962e49024356b2310796d189b2760d1e64c15cb91b58a0"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "inline_leaves": true,
+      "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+      "exporter_sha256": "c28fefa5accc3eee48aa3931aaca211648ddf9c1a498c1c35c8b223a0f9fee6a"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+  "exporter_sha256": "c28fefa5accc3eee48aa3931aaca211648ddf9c1a498c1c35c8b223a0f9fee6a",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 7.0981835,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        5.3466796875,
+        7.037109375,
+        6.38525390625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 4.769750041,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        5.15869140625,
+        6.9697265625,
+        6.365234375
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/baseline/0-0.rbc",
+          "sha256": "16d0ca3fa30ba657caf4ed8619cebfe229b18091c5bf0da83a6b7980b04df069",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 4.708190332999999,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        5.0654296875,
+        6.92041015625,
+        6.35107421875
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/candidate/0-0.rbc",
+          "sha256": "16d0ca3fa30ba657caf4ed8619cebfe229b18091c5bf0da83a6b7980b04df069",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9371974590000001,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        5.0654296875,
+        6.92041015625,
+        6.35107421875
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/candidate/-1-0.rbc",
+          "sha256": "21af9d01759e2d35d77d06c4dafd29b354dcbb7a2026293a16cdd73329baccc6",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.8760068339999982,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        5.0654296875,
+        6.92041015625,
+        6.35107421875
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/baseline/-1-0.rbc",
+          "sha256": "21af9d01759e2d35d77d06c4dafd29b354dcbb7a2026293a16cdd73329baccc6",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.4620047910000018,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        4.73974609375,
+        6.82177734375,
+        6.3193359375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.567195041999998,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        4.73974609375,
+        6.82177734375,
+        6.3193359375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9279593750000004,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        4.73974609375,
+        6.82177734375,
+        6.3193359375
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/baseline/1-0.rbc",
+          "sha256": "2d64e542ba00a009bf18d263490304b0158b20c06137b4a4dc0c9492ab820ea7",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9407559580000004,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        4.73974609375,
+        6.82177734375,
+        6.3193359375
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/candidate/1-0.rbc",
+          "sha256": "2d64e542ba00a009bf18d263490304b0158b20c06137b4a4dc0c9492ab820ea7",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.4403572500000017,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        5.40087890625,
+        6.92431640625,
+        6.3583984375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9192424579999994,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        5.40087890625,
+        6.92431640625,
+        6.3583984375
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/candidate/2-0.rbc",
+          "sha256": "914e1bcf3be35feef2d67a272b2d22c64f7a40e96032ff2901011e937e6bb0a1",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.975382917000001,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        5.40087890625,
+        6.92431640625,
+        6.3583984375
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/baseline/2-0.rbc",
+          "sha256": "914e1bcf3be35feef2d67a272b2d22c64f7a40e96032ff2901011e937e6bb0a1",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.8715168750000011,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        5.40087890625,
+        6.92431640625,
+        6.3583984375
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/baseline/3-0.rbc",
+          "sha256": "6ec8cafd919ba47887c8cc45e6fadcee208900e714f0342356320b136f1cad86",
+          "bytes": 3328247
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.393622999999998,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        5.40087890625,
+        6.92431640625,
+        6.3583984375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.8989361249999988,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        5.28857421875,
+        6.87548828125,
+        6.34423828125
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/candidate/3-0.rbc",
+          "sha256": "6ec8cafd919ba47887c8cc45e6fadcee208900e714f0342356320b136f1cad86",
+          "bytes": 3328247
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9189839169999985,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        5.28857421875,
+        6.87548828125,
+        6.34423828125
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/candidate/4-0.rbc",
+          "sha256": "84ac0f7b0861367168a3390019be8517289c1cb851d86830720a8384f65763c3",
+          "bytes": 3324840
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.5186475410000035,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        5.28857421875,
+        6.87548828125,
+        6.34423828125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9652257919999983,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        5.28857421875,
+        6.87548828125,
+        6.34423828125
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/baseline/4-0.rbc",
+          "sha256": "84ac0f7b0861367168a3390019be8517289c1cb851d86830720a8384f65763c3",
+          "bytes": 3324840
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.8997976670000014,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        5.28857421875,
+        6.87548828125,
+        6.34423828125
+      ],
+      "engine": "jit",
+      "tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/baseline/5-0.rbc",
+          "sha256": "41b095967fd82706a73463475967ffc8439189f4402353e01748abf71c1e23d2",
+          "bytes": 3326411
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9163592909999991,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        5.10498046875,
+        6.81103515625,
+        6.32421875
+      ],
+      "engine": "jit",
+      "tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-jit-local-fill-broad-03/artifacts/candidate/5-0.rbc",
+          "sha256": "41b095967fd82706a73463475967ffc8439189f4402353e01748abf71c1e23d2",
+          "bytes": 3326411
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.5942542499999988,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        5.10498046875,
+        6.81103515625,
+        6.32421875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "96de44552a92fa3faebd94e058dc269ecc72f5ee3cb14efbde2722b03868cbc7",
+    "candidate_tool_key": "67a3a330361963416e615816c84c0f80cf2dae3d865e5d41a9e5e97e285ac71e",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+        "baseline_seconds": 0.9279593750000004,
+        "candidate_seconds": 0.9407559580000004,
+        "difference_seconds": 0.012796583000000084,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.817319709,
+            "execution_seconds": 0.035094625000000046,
+            "artifact_hash_seconds": 0.0014139169999999313,
+            "launcher_seconds": 0.894005125
+          },
+          "candidate": {
+            "cargo_seconds": 0.8408515,
+            "execution_seconds": 0.03418958299999997,
+            "artifact_hash_seconds": 0.001449291999999991,
+            "launcher_seconds": 0.9163415
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+        "baseline_seconds": 0.975382917000001,
+        "candidate_seconds": 0.9192424579999994,
+        "difference_seconds": -0.05614045900000164,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.8755115830000001,
+            "execution_seconds": 0.03429220799999999,
+            "artifact_hash_seconds": 0.001433125000000035,
+            "launcher_seconds": 0.950599084
+          },
+          "candidate": {
+            "cargo_seconds": 0.814666958,
+            "execution_seconds": 0.033619166000000034,
+            "artifact_hash_seconds": 0.00141304199999992,
+            "launcher_seconds": 0.889081958
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+        "baseline_seconds": 0.8715168750000011,
+        "candidate_seconds": 0.8989361249999988,
+        "difference_seconds": 0.027419249999997675,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.771486041,
+            "execution_seconds": 0.03447787499999999,
+            "artifact_hash_seconds": 0.0014421669999999942,
+            "launcher_seconds": 0.846683708
+          },
+          "candidate": {
+            "cargo_seconds": 0.796372,
+            "execution_seconds": 0.03397933400000008,
+            "artifact_hash_seconds": 0.0014300419999999647,
+            "launcher_seconds": 0.8709512500000001
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+        "baseline_seconds": 0.9652257919999983,
+        "candidate_seconds": 0.9189839169999985,
+        "difference_seconds": -0.046241874999999766,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.860892375,
+            "execution_seconds": 0.033954791999999956,
+            "artifact_hash_seconds": 0.0015228749999999236,
+            "launcher_seconds": 0.936465959
+          },
+          "candidate": {
+            "cargo_seconds": 0.818865042,
+            "execution_seconds": 0.03366970899999999,
+            "artifact_hash_seconds": 0.0016111250000000465,
+            "launcher_seconds": 0.893831917
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+        "baseline_seconds": 0.8997976670000014,
+        "candidate_seconds": 0.9163592909999991,
+        "difference_seconds": 0.01656162399999772,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.800501708,
+            "execution_seconds": 0.034469582999999915,
+            "artifact_hash_seconds": 0.0013921249999999663,
+            "launcher_seconds": 0.8747565
+          },
+          "candidate": {
+            "cargo_seconds": 0.8165939170000001,
+            "execution_seconds": 0.03385533299999999,
+            "artifact_hash_seconds": 0.0014027500000000082,
+            "launcher_seconds": 0.891373041
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.012796583000000084
+  }
+}

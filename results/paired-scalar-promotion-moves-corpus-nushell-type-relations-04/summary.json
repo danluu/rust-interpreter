@@ -1,0 +1,1328 @@
+{
+  "project": "nushell",
+  "workflow": "type-relations",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "tests": [
+    "ty::tests::oneof::oneof_lhs",
+    "ty::tests::oneof::oneof_rhs",
+    "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+    "ty::tests::oneof_flattening::test_oneof_deduplicates",
+    "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+    "ty::tests::subtype_relation::table_list_oneof_covariance",
+    "ty::tests::subtype_relation::test_any_is_top_type",
+    "ty::tests::subtype_relation::test_list_covariance",
+    "ty::tests::subtype_relation::test_number_supertype",
+    "ty::tests::subtype_relation::test_reflexivity",
+    "ty::tests::widen_shortcuts::test_chain_shortcut",
+    "ty::tests::widen_shortcuts::test_glob_string_union",
+    "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+    "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+  ],
+  "edits": [
+    "combine-equal-and-supertype-widening-arms",
+    "collect-oneof-from-explicit-iterator",
+    "return-unrelated-widening-pair-early",
+    "express-subtype-test-with-is-some-and",
+    "make-union-pair-iterator-explicit"
+  ],
+  "workload": "All fourteen existing type-relation tests: enum cross-product covariance, OneOf hashing/deduplication, nested collections, and the original 100-step widening chain",
+  "case_sha256": "71efbef9c1c396130a892eefdddf7309dce7f00c6a2467eb8f2ca50c2749cab2",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": true,
+  "vary_selection": false,
+  "raw": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+  "candidate_tool_key_requested": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 9.827431875000002,
+    "baseline": 5.7368567919999975,
+    "candidate": 6.016224332999997
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 72.67610225,
+    "baseline": 64.63228362499999,
+    "candidate": 69.830505708
+  },
+  "scripts_sha256": {
+    ".work/bench_scalar_promotion_cargo_cpu_04.py": "43dcdd6b011f691724715bf29de2ec507b1ccc0cc6b8382168b2c7b0d6b07cb7",
+    "scripts/interpreter.py": "7af4e10fc5a676878319c8a0f0f7945328b07b6f307c36ab19120ece593bca88",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "b8adadc580c53ce512ecafe01bc2e827b704163a54bd5afd5296e90d05e1c01f",
+      "exporter_sha256": "2c71eab7a6cff77c877856bfe14cf255ae76c7f7500f1a054413f7737dc33b0c"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "d2170a25e7559c2fa4aeb3b91e3b75dfa41d6010ad7ba11e35626d3a37115f74",
+      "exporter_sha256": "0b525df2085b43efd7880a6b7f413757ef32b08524104d9c32d897a5d1848a8e"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    }
+  ],
+  "vm_sha256": "d2170a25e7559c2fa4aeb3b91e3b75dfa41d6010ad7ba11e35626d3a37115f74",
+  "exporter_sha256": "0b525df2085b43efd7880a6b7f413757ef32b08524104d9c32d897a5d1848a8e",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 72.67610225,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        12.0859375,
+        7.18603515625,
+        7.0166015625
+      ],
+      "child_resource_usage": {
+        "ru_utime": 199.60160000000002,
+        "ru_stime": 31.094367,
+        "ru_minflt": 9380842,
+        "ru_majflt": 80285,
+        "ru_nvcsw": 35461,
+        "ru_nivcsw": 501207
+      },
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/native/0-0.html",
+          "sha256": "2bbadaa4fb1d10eab367e4e5251d62835577993ccfd8967f4199156ff01b4599",
+          "bytes": 490875
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 64.63228362499999,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        9.51611328125,
+        7.42236328125,
+        7.1181640625
+      ],
+      "child_resource_usage": {
+        "ru_utime": 159.52232600000002,
+        "ru_stime": 31.124411000000002,
+        "ru_minflt": 11302306,
+        "ru_majflt": 51222,
+        "ru_nvcsw": 33701,
+        "ru_nivcsw": 293620
+      },
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/baseline/0-0.rbc",
+          "sha256": "741035ffcba11630d55305afef97748218d04b34b60198eefebae74deec3e7f3",
+          "bytes": 1013301
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/baseline/0-0.html",
+          "sha256": "3d7d0a81dffc205f1d8274e07c6505322f4570576fb8c788f112aae481bd86e1",
+          "bytes": 635422
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 69.830505708,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        10.97412109375,
+        8.3076171875,
+        7.47265625
+      ],
+      "child_resource_usage": {
+        "ru_utime": 171.73465399999992,
+        "ru_stime": 34.15192,
+        "ru_minflt": 11279914,
+        "ru_majflt": 70679,
+        "ru_nvcsw": 50980,
+        "ru_nivcsw": 461875
+      },
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/candidate/0-0.rbc",
+          "sha256": "f94507b63ef7e575dbdfa2ec0c9800dcef238bd89bb5aa724274547ea2950b8e",
+          "bytes": 950120
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/candidate/0-0.html",
+          "sha256": "04d7598662795268b48f5f0ca7b785cea00d950d6228e3804ad058e5fe5e1480",
+          "bytes": 638171
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.0234274169999935,
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        10.49560546875,
+        8.25244140625,
+        7.4580078125
+      ],
+      "child_resource_usage": {
+        "ru_utime": 4.8452800000000025,
+        "ru_stime": 2.074362000000008,
+        "ru_minflt": 482896,
+        "ru_majflt": 9187,
+        "ru_nvcsw": 9054,
+        "ru_nivcsw": 12539
+      },
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/candidate/-1-0.rbc",
+          "sha256": "63bedb586ab8f547d535376c6f674324fb4df7623f986db863a3d8bbd8ed3d13",
+          "bytes": 950120
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/candidate/-1-0.html",
+          "sha256": "109204d1ca52913488550b93dde827cbeea92d13f11e8e6558e34d9c7d907b8b",
+          "bytes": 43501
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 6.304345500000011,
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        9.87744140625,
+        8.1943359375,
+        7.4462890625
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.1261740000001055,
+        "ru_stime": 2.4232709999999997,
+        "ru_minflt": 440618,
+        "ru_majflt": 51901,
+        "ru_nvcsw": 11158,
+        "ru_nivcsw": 35732
+      },
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/baseline/-1-0.rbc",
+          "sha256": "51900a42c897303eeb2f0b5a2bad865c9d7cd3ccc1a5f9bdbb54e5cc8a9ed7af",
+          "bytes": 1013301
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/baseline/-1-0.html",
+          "sha256": "5d672eb98d11584209ab885aa176039e5f6554dd80fef7a85437316bb2e1c164",
+          "bytes": 43528
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 10.640479,
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        12.67626953125,
+        8.873046875,
+        7.69677734375
+      ],
+      "child_resource_usage": {
+        "ru_utime": 6.8689059999999245,
+        "ru_stime": 6.776002999999989,
+        "ru_minflt": 504485,
+        "ru_majflt": 111298,
+        "ru_nvcsw": 11215,
+        "ru_nivcsw": 112525
+      },
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/native/-1-0.html",
+          "sha256": "e1dd52b49652691bdf814dca1839be35a312265e11d5ff026046ea3748221500",
+          "bytes": 44650
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "combine-equal-and-supertype-widening-arms",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 6.016224332999997,
+      "source_sha256": "2b991eae528eb2f8824ff145397ffa0dd83e271515525c10bd8938e20bcbdafa",
+      "load": [
+        12.1416015625,
+        8.8251953125,
+        7.6865234375
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.081710000000044,
+        "ru_stime": 2.421699000000004,
+        "ru_minflt": 447362,
+        "ru_majflt": 51204,
+        "ru_nvcsw": 10572,
+        "ru_nivcsw": 32663
+      },
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/candidate/1-0.rbc",
+          "sha256": "6687183a8944f02e48bd732171535a60a3aa02b50070377d595e569cf91668ef",
+          "bytes": 949990
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/candidate/1-0.html",
+          "sha256": "9432b8cfb11db0d447afc481605fe4461fdd968e00ee4e27127bee644e7cdd5d",
+          "bytes": 43958
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "combine-equal-and-supertype-widening-arms",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.7368567919999975,
+      "source_sha256": "2b991eae528eb2f8824ff145397ffa0dd83e271515525c10bd8938e20bcbdafa",
+      "load": [
+        11.6494140625,
+        8.77783203125,
+        7.67626953125
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.021841999999992,
+        "ru_stime": 2.375618000000003,
+        "ru_minflt": 452959,
+        "ru_majflt": 45734,
+        "ru_nvcsw": 10052,
+        "ru_nivcsw": 28310
+      },
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/baseline/1-0.rbc",
+          "sha256": "54403614e38f55c509d971db1cde17fbcb990304615ddd45b548ca9098ac81da",
+          "bytes": 1013148
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/baseline/1-0.html",
+          "sha256": "14a467d713732a3acdc04cbc333a018e5702628335fd986e9b178aa7af6625e1",
+          "bytes": 43706
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "combine-equal-and-supertype-widening-arms",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 7.910051167000006,
+      "source_sha256": "2b991eae528eb2f8824ff145397ffa0dd83e271515525c10bd8938e20bcbdafa",
+      "load": [
+        11.0078125,
+        8.7353515625,
+        7.67333984375
+      ],
+      "child_resource_usage": {
+        "ru_utime": 6.84866999999997,
+        "ru_stime": 6.821206000000004,
+        "ru_minflt": 581103,
+        "ru_majflt": 48976,
+        "ru_nvcsw": 5797,
+        "ru_nivcsw": 49431
+      },
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/native/1-0.html",
+          "sha256": "0474040d073f4340f1564732186c9ccd50738adb06d7e63f9eab0b500cc5cf0f",
+          "bytes": 44221
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "collect-oneof-from-explicit-iterator",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.983487166999993,
+      "source_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+      "load": [
+        13.9697265625,
+        9.38671875,
+        7.9091796875
+      ],
+      "child_resource_usage": {
+        "ru_utime": 6.0049209999999675,
+        "ru_stime": 2.4848069999999893,
+        "ru_minflt": 476453,
+        "ru_majflt": 33578,
+        "ru_nvcsw": 11592,
+        "ru_nivcsw": 27701
+      },
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/baseline/2-0.rbc",
+          "sha256": "eab5a91c685e1e7215cf9d141cc216cb7b5b30de1e7ef471b736c477554c8bde",
+          "bytes": 1014616
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/baseline/2-0.html",
+          "sha256": "a811a599fc8c1c5a9e52b13c9c4e3bf9b4699c0c3dff8b7bf1e964b1caf64006",
+          "bytes": 43681
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "collect-oneof-from-explicit-iterator",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.940157499999998,
+      "source_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+      "load": [
+        13.1708984375,
+        9.296875,
+        7.88623046875
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.835875000000101,
+        "ru_stime": 2.4515440000000126,
+        "ru_minflt": 475556,
+        "ru_majflt": 33602,
+        "ru_nvcsw": 14150,
+        "ru_nivcsw": 24425
+      },
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/candidate/2-0.rbc",
+          "sha256": "62212e5c1ef519d1ca4059db8587fb50ab0eacaea1110332e45ad696c7bc6bec",
+          "bytes": 951458
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/candidate/2-0.html",
+          "sha256": "6addcdf0525eed2dc0f3b89c74dc97428cc7dff96a87fca62e7867f1488ebafa",
+          "bytes": 43890
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "collect-oneof-from-explicit-iterator",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 15.176407457999971,
+      "source_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+      "load": [
+        11.4345703125,
+        9.1015625,
+        7.8408203125
+      ],
+      "child_resource_usage": {
+        "ru_utime": 24.150098999999955,
+        "ru_stime": 7.257693000000003,
+        "ru_minflt": 861269,
+        "ru_majflt": 76529,
+        "ru_nvcsw": 20599,
+        "ru_nivcsw": 109126
+      },
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/native/2-0.html",
+          "sha256": "f1e231c1d731b5d78f849562dab32bbe52640f6cd32b152d811d0bcc4cfeebe6",
+          "bytes": 45645
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "return-unrelated-widening-pair-early",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 6.786644874999979,
+      "source_sha256": "268d5bc7071e9f2d4811ca1a9df4b93e81aeedaed0061c36d067888a3cfaa7eb",
+      "load": [
+        14.42919921875,
+        9.84765625,
+        8.12158203125
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.355564999999956,
+        "ru_stime": 2.651018999999991,
+        "ru_minflt": 443242,
+        "ru_majflt": 54508,
+        "ru_nvcsw": 14645,
+        "ru_nivcsw": 39852
+      },
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/candidate/3-0.rbc",
+          "sha256": "7552b03c1d7495ff0ad300901494241353d48dee473acd2dbd6f94c5cf71d486",
+          "bytes": 951986
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/candidate/3-0.html",
+          "sha256": "56826af13f8d84c680e3969b69d0b22f0042a98c7a8dd22a4903d5915aeca474",
+          "bytes": 43725
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "return-unrelated-widening-pair-early",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 9.827431875000002,
+      "source_sha256": "268d5bc7071e9f2d4811ca1a9df4b93e81aeedaed0061c36d067888a3cfaa7eb",
+      "load": [
+        13.212890625,
+        9.7373046875,
+        8.10205078125
+      ],
+      "child_resource_usage": {
+        "ru_utime": 6.974423000000002,
+        "ru_stime": 7.216329999999999,
+        "ru_minflt": 549335,
+        "ru_majflt": 80618,
+        "ru_nvcsw": 20305,
+        "ru_nivcsw": 89527
+      },
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/native/3-0.html",
+          "sha256": "992caf5f41ca9dafaa1a79d8196637a1dc90692173a10a0efd014390940bdc52",
+          "bytes": 44975
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "return-unrelated-widening-pair-early",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 6.548045666000007,
+      "source_sha256": "268d5bc7071e9f2d4811ca1a9df4b93e81aeedaed0061c36d067888a3cfaa7eb",
+      "load": [
+        12.63525390625,
+        9.6748046875,
+        8.08935546875
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.224013000000014,
+        "ru_stime": 2.5631060000000048,
+        "ru_minflt": 446294,
+        "ru_majflt": 52075,
+        "ru_nvcsw": 14648,
+        "ru_nivcsw": 36296
+      },
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/baseline/3-0.rbc",
+          "sha256": "39a39b1f6fc142a0202482af79f0f33f51c81fdba461a46ffc3d2603be1e1102",
+          "bytes": 1015328
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/baseline/3-0.html",
+          "sha256": "62893c4d20d9b058d2f47d2fdaa38fb1b360909fb905aab96f4f38b126fef848",
+          "bytes": 43819
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "express-subtype-test-with-is-some-and",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.2421834579999995,
+      "source_sha256": "4a4786a0576cf152a0f36e2de5da099120d2409e6a6c1272a4635da6875aebd8",
+      "load": [
+        12.103515625,
+        9.61376953125,
+        8.07666015625
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.13255700000002,
+        "ru_stime": 2.2764980000000037,
+        "ru_minflt": 499742,
+        "ru_majflt": 262,
+        "ru_nvcsw": 10921,
+        "ru_nivcsw": 9322
+      },
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/baseline/4-0.rbc",
+          "sha256": "013d1ef83aa045a27099744163899b6b095ceb3f94e66da356d4da45c770770e",
+          "bytes": 1017134
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/baseline/4-0.html",
+          "sha256": "2d2cfe61a4f2a4d50d380337e6b744571de387aaf52e16db09c24ebcb001d26d",
+          "bytes": 43896
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "express-subtype-test-with-is-some-and",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 10.471724208000012,
+      "source_sha256": "4a4786a0576cf152a0f36e2de5da099120d2409e6a6c1272a4635da6875aebd8",
+      "load": [
+        11.9814453125,
+        9.67431640625,
+        8.1162109375
+      ],
+      "child_resource_usage": {
+        "ru_utime": 7.395216000000005,
+        "ru_stime": 7.210486000000003,
+        "ru_minflt": 528426,
+        "ru_majflt": 102220,
+        "ru_nvcsw": 17800,
+        "ru_nivcsw": 108108
+      },
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/native/4-0.html",
+          "sha256": "17d353c8fcfd3a1595a4adb04be6d14402969eb7c3824efc1c2689605db42a79",
+          "bytes": 45186
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "express-subtype-test-with-is-some-and",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 6.541583166999999,
+      "source_sha256": "4a4786a0576cf152a0f36e2de5da099120d2409e6a6c1272a4635da6875aebd8",
+      "load": [
+        11.42236328125,
+        9.5966796875,
+        8.09765625
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.166082999999958,
+        "ru_stime": 2.47343699999999,
+        "ru_minflt": 447925,
+        "ru_majflt": 52048,
+        "ru_nvcsw": 16304,
+        "ru_nivcsw": 33602
+      },
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/candidate/4-0.rbc",
+          "sha256": "42c976647b65a3c3f7bc2f4ae9962a5db66543ca2bceec9ba3904662a921e991",
+          "bytes": 953797
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/candidate/4-0.html",
+          "sha256": "6c6b01fc5bef47c92a29023b2f17e8082505e1cff7967502064a281c27e9daa5",
+          "bytes": 43906
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "make-union-pair-iterator-explicit",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 7.682003875000021,
+      "source_sha256": "26be19f11e2bf168c19f5a39322a9454392fe2f594ab7aa450090e767840ae6e",
+      "load": [
+        10.74169921875,
+        9.5107421875,
+        8.083984375
+      ],
+      "child_resource_usage": {
+        "ru_utime": 6.842134999999985,
+        "ru_stime": 6.803361999999993,
+        "ru_minflt": 634517,
+        "ru_majflt": 577,
+        "ru_nvcsw": 14972,
+        "ru_nivcsw": 31333
+      },
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/native/5-0.html",
+          "sha256": "736e7caff9e3295a1b2a4054c5ee0eef31ce4a4985c73f058d05c9d4f7865e78",
+          "bytes": 44529
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "make-union-pair-iterator-explicit",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 4.653255708000017,
+      "source_sha256": "26be19f11e2bf168c19f5a39322a9454392fe2f594ab7aa450090e767840ae6e",
+      "load": [
+        10.52197265625,
+        9.4853515625,
+        8.0830078125
+      ],
+      "child_resource_usage": {
+        "ru_utime": 4.870705000000044,
+        "ru_stime": 2.320418000000018,
+        "ru_minflt": 493133,
+        "ru_majflt": 106,
+        "ru_nvcsw": 7239,
+        "ru_nivcsw": 7239
+      },
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/candidate/5-0.rbc",
+          "sha256": "12fa05d5b0d165a4a38c1976177c4cee487337c928da145fd84a9080dfb27545",
+          "bytes": 954919
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/candidate/5-0.html",
+          "sha256": "c95a9500c5221e170cf91ceac299f014bc072167687c1253fcac07ab77897ccc",
+          "bytes": 43267
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "make-union-pair-iterator-explicit",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.533127540999999,
+      "source_sha256": "26be19f11e2bf168c19f5a39322a9454392fe2f594ab7aa450090e767840ae6e",
+      "load": [
+        10.15966796875,
+        9.42724609375,
+        8.07080078125
+      ],
+      "child_resource_usage": {
+        "ru_utime": 5.013284999999996,
+        "ru_stime": 2.578372999999999,
+        "ru_minflt": 459128,
+        "ru_majflt": 33290,
+        "ru_nvcsw": 10746,
+        "ru_nivcsw": 19441
+      },
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/artifacts/baseline/5-0.rbc",
+          "sha256": "85e0fb2edb73ec16c52dd3c5fefef141071256ad3ca5980ef992b6baba1190ab",
+          "bytes": 1018256
+        }
+      ],
+      "cargo_timings": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-nushell-type-relations-04/cargo-timings/baseline/5-0.html",
+          "sha256": "5830b76befb7d4514e90cf38ce339037926f494d51c7ed98962325a0967ba9d1",
+          "bytes": 43934
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+    "candidate_tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "2b991eae528eb2f8824ff145397ffa0dd83e271515525c10bd8938e20bcbdafa",
+        "baseline_seconds": 5.7368567919999975,
+        "candidate_seconds": 6.016224332999997,
+        "difference_seconds": 0.27936754099999916,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 5.658498083,
+            "execution_seconds": 0.009171999999999514,
+            "artifact_hash_seconds": 0.0006228750000003558,
+            "launcher_seconds": 5.711499667
+          },
+          "candidate": {
+            "cargo_seconds": 5.920587875,
+            "execution_seconds": 0.007850499999999982,
+            "artifact_hash_seconds": 0.0005200420000006645,
+            "launcher_seconds": 5.974367042
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+        "baseline_seconds": 5.983487166999993,
+        "candidate_seconds": 5.940157499999998,
+        "difference_seconds": -0.04332966699999474,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 5.895701375,
+            "execution_seconds": 0.007940833000000147,
+            "artifact_hash_seconds": 0.0007221249999993518,
+            "launcher_seconds": 5.948576084
+          },
+          "candidate": {
+            "cargo_seconds": 5.8562041250000005,
+            "execution_seconds": 0.0077762090000002,
+            "artifact_hash_seconds": 0.0005181659999999866,
+            "launcher_seconds": 5.907658833
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "268d5bc7071e9f2d4811ca1a9df4b93e81aeedaed0061c36d067888a3cfaa7eb",
+        "baseline_seconds": 6.548045666000007,
+        "candidate_seconds": 6.786644874999979,
+        "difference_seconds": 0.23859920899997178,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 6.444364875,
+            "execution_seconds": 0.01272558299999993,
+            "artifact_hash_seconds": 0.0005315829999998911,
+            "launcher_seconds": 6.504327291
+          },
+          "candidate": {
+            "cargo_seconds": 6.6866660829999995,
+            "execution_seconds": 0.008376624999999471,
+            "artifact_hash_seconds": 0.0005264579999995078,
+            "launcher_seconds": 6.742682709
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "4a4786a0576cf152a0f36e2de5da099120d2409e6a6c1272a4635da6875aebd8",
+        "baseline_seconds": 5.2421834579999995,
+        "candidate_seconds": 6.541583166999999,
+        "difference_seconds": 1.2993997089999993,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 5.162259834,
+            "execution_seconds": 0.00771204200000053,
+            "artifact_hash_seconds": 0.0005253329999996836,
+            "launcher_seconds": 5.213787291
+          },
+          "candidate": {
+            "cargo_seconds": 6.4366505,
+            "execution_seconds": 0.012755791000000016,
+            "artifact_hash_seconds": 0.0005097919999998979,
+            "launcher_seconds": 6.494630584
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "26be19f11e2bf168c19f5a39322a9454392fe2f594ab7aa450090e767840ae6e",
+        "baseline_seconds": 5.533127540999999,
+        "candidate_seconds": 4.653255708000017,
+        "difference_seconds": -0.8798718329999815,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 5.458334542,
+            "execution_seconds": 0.007490708000000623,
+            "artifact_hash_seconds": 0.0005244160000001941,
+            "launcher_seconds": 5.508593542
+          },
+          "candidate": {
+            "cargo_seconds": 4.550157917,
+            "execution_seconds": 0.007512874999999752,
+            "artifact_hash_seconds": 0.0005078750000002685,
+            "launcher_seconds": 4.606749458
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.23859920899997178
+  },
+  "instrumented_diagnostic": true,
+  "child_resource_usage_collected": true
+}

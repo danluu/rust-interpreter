@@ -1,0 +1,552 @@
+{
+  "project": "fre",
+  "workflow": "packed-literal-set",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+    "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+    "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+    "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+    "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+    "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+  ],
+  "edits": [
+    "name-byte-class-bit-mask",
+    "name-preceding-rank-mask",
+    "spell-out-factored-width-bounds",
+    "match-search-work-overflow-explicitly",
+    "reuse-window-origin-in-result-offsets"
+  ],
+  "workload": "Six existing packed literal-set tests covering SIMD matcher, factored byte classes, windows, resource accounting and shape refusal; the seventh regex-reference test remains lowering-blocked.",
+  "case_sha256": "00d22235f99a3da65a9160171e9d0775e9b23137a984fa9cedf349db82014ebb",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-workflow-fre-packed-literal-set-02",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "guest_mir_opt_level": null,
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "2f2cbd71a938829cd1efeef1658aed5fee4353843f8bfe35226716c415f96266",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.5079209169999999,
+    "interpreter": 0.9709383339999995,
+    "jit": 0.9512865420000054
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 6.913482416,
+    "interpreter": 4.7310268330000005,
+    "jit": 4.624090917000002
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "03670bea6dab74cb730adbe0a1ee9252c9554ba18bc9e39e9418cccd7418ca40",
+    "scripts/interpreter.py": "5304849738d798b44582f099fce12317265d41539611717382dc71ce8aefb987",
+    "scripts/workflow_cases.py": "f07186ef97e5a4d5f96c23ab56f102f95a61360f198badc1661cac6632d5a1d4",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "interpreter": {
+      "engine": "interpreter",
+      "tool_key": "2f2cbd71a938829cd1efeef1658aed5fee4353843f8bfe35226716c415f96266",
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "344f76803db6b669daaaff5b3ad6097407ad79fbe58f3f2577a96934bfd1cdea"
+    },
+    "jit": {
+      "engine": "jit",
+      "tool_key": "2f2cbd71a938829cd1efeef1658aed5fee4353843f8bfe35226716c415f96266",
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "344f76803db6b669daaaff5b3ad6097407ad79fbe58f3f2577a96934bfd1cdea"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "native",
+        "interpreter",
+        "jit"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "jit",
+        "interpreter",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+  "exporter_sha256": "344f76803db6b669daaaff5b3ad6097407ad79fbe58f3f2577a96934bfd1cdea",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 6.913482416,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        2.3203125,
+        2.59326171875,
+        2.78955078125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 4.7310268330000005,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        2.37451171875,
+        2.599609375,
+        2.79052734375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 4.624090917000002,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        2.34423828125,
+        2.58935546875,
+        2.78564453125
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9073556249999974,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        2.34423828125,
+        2.58935546875,
+        2.78564453125
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9021192079999985,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        2.34423828125,
+        2.58935546875,
+        2.78564453125
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.6151992499999999,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        2.236328125,
+        2.5625,
+        2.77490234375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9732101670000013,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        2.236328125,
+        2.5625,
+        2.77490234375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.965803416,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        2.236328125,
+        2.5625,
+        2.77490234375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.5079209169999999,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        2.236328125,
+        2.5625,
+        2.77490234375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.394121000000002,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        2.13720703125,
+        2.5361328125,
+        2.76416015625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9392259999999979,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        2.13720703125,
+        2.5361328125,
+        2.76416015625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9457150409999997,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        2.13720703125,
+        2.5361328125,
+        2.76416015625
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.861885333,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        2.13720703125,
+        2.5361328125,
+        2.76416015625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9709383339999995,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        2.1259765625,
+        2.52685546875,
+        2.75927734375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.3908107909999998,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        2.1259765625,
+        2.52685546875,
+        2.75927734375
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.5178747500000007,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        2.1259765625,
+        2.52685546875,
+        2.75927734375
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.0516798749999978,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        2.1259765625,
+        2.52685546875,
+        2.75927734375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9526999580000037,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        2.1259765625,
+        2.52685546875,
+        2.75927734375
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 0.9512865420000054,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        2.19580078125,
+        2.53466796875,
+        2.76025390625
+      ]
+    },
+    {
+      "mode": "interpreter",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.045047290999996,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        2.19580078125,
+        2.53466796875,
+        2.76025390625
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.60835625,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        2.19580078125,
+        2.53466796875,
+        2.76025390625
+      ]
+    }
+  ]
+}

@@ -1,0 +1,408 @@
+#![feature(rustc_private)]
+extern crate rustc_abi;
+extern crate rustc_ast;
+extern crate rustc_driver;
+extern crate rustc_hir;
+extern crate rustc_incremental;
+extern crate rustc_interface;
+extern crate rustc_middle;
+extern crate rustc_session;
+extern crate rustc_span;
+
+mod lower;
+mod audit;
+
+use rustc_driver::{Callbacks, Compilation};
+use rustc_interface::interface;
+use rustc_middle::ty::TyCtxt;
+use std::path::{Path, PathBuf};
+use std::time::Instant;
+
+struct Export {
+    entries: Vec<String>,
+    output: PathBuf,
+    started: Instant,
+    demand: bool,
+    demand_cache: bool,
+    audit_selection: Option<PathBuf>,
+    retain_audit_bodies: bool,
+    test_body: bool,
+    inline_leaves: bool,
+    trap_unsupported_calls: bool,
+    run_try_callbacks: bool,
+}
+impl Export {
+    fn publish(&self, tcx: TyCtxt<'_>, bytes: &[u8], suffix: &str) -> Result<(), String> {
+        self.publish_to(tcx, bytes, suffix, &self.output)
+    }
+    fn publish_to(&self, tcx: TyCtxt<'_>, bytes: &[u8], suffix: &str, output: &Path) -> Result<(), String> {
+        let temp = output.with_extension(format!("tmp-{}", std::process::id()));
+        std::fs::write(&temp, bytes).map_err(|e| e.to_string())?;
+        std::fs::rename(&temp, output).map_err(|e| e.to_string())?;
+        if !self.demand {
+            if let rustc_session::config::OutFileName::Real(metadata) =
+                rustc_session::output::filename_for_metadata(tcx.sess, tcx.output_filenames(())) {
+                let mut sidecar = metadata.into_os_string(); sidecar.push(suffix);
+                let sidecar = PathBuf::from(sidecar);
+                let temp = sidecar.with_extension(format!("tmp-{}", std::process::id()));
+                std::fs::write(&temp, bytes).map_err(|e| e.to_string())?;
+                std::fs::rename(temp, sidecar).map_err(|e| e.to_string())?;
+            }
+        }
+        Ok(())
+    }
+    fn emit<'tcx>(&mut self, tcx: TyCtxt<'tcx>) -> Compilation {
+        let checked = Instant::now();
+        if self.audit_selection.is_some() {
+            let report = audit::report(tcx, &self.entries,
+                self.retain_audit_bodies.then_some(self.output.as_path()), self.inline_leaves, self.trap_unsupported_calls, self.run_try_callbacks)
+                .unwrap_or_else(|error| tcx.dcx().fatal(format!("cannot retain lowering audit: {error}")));
+            let bytes = serde_json::to_vec(&report).expect("serialize lowering audit");
+            if let Err(error) = self.publish(tcx, &bytes, ".audit.json") {
+                tcx.dcx().fatal(format!("cannot publish lowering audit: {error}"));
+            }
+            return Compilation::Continue;
+        }
+        match lower::export(tcx, &self.entries, self.demand, self.test_body, self.inline_leaves, self.trap_unsupported_calls, self.run_try_callbacks).and_then(|exported| {
+            let program = &exported.program;
+            rust_interp_bytecode::validate(&program)?;
+            let bytes = bincode::serialize(&program).map_err(|e| e.to_string())?;
+            // Associate bytecode with Cargo's exact metadata artifact, including
+            // configuration reverts that reuse a previous artifact directly.
+            self.publish(tcx, &bytes, ".rbc")?;
+            if self.trap_unsupported_calls {
+                use sha2::Digest;
+                let report = serde_json::json!({"kind":"unavailable-calls","schema_version":1,
+                    "trap_unsupported_calls":true,"run_try_callbacks":self.run_try_callbacks,"strict_frontend":!self.demand,
+                    "artifact_sha256":format!("{:x}",sha2::Sha256::digest(&bytes)),
+                    "unavailable_calls":exported.unavailable_calls()});
+                let mut output = self.output.as_os_str().to_owned();
+                output.push(".calls.json");
+                self.publish_to(tcx, &serde_json::to_vec(&report).map_err(|e|e.to_string())?,
+                    ".rbc.calls.json", Path::new(&output))?;
+            }
+            eprintln!("rust-interp-export: frontend_ms={:.3} lowering_ms={:.3} functions={} ops={} bytes={}",
+                checked.duration_since(self.started).as_secs_f64() * 1000.0,
+                checked.elapsed().as_secs_f64() * 1000.0,
+                program.functions.len(), program.functions.iter().map(|f| f.code.len()).sum::<usize>(), bytes.len());
+            Ok(())
+        }) {
+            Ok(()) => if self.demand { Compilation::Stop } else { Compilation::Continue },
+            Err(error) => tcx.dcx().fatal(format!("custom interpreter cannot lower this entry: {error}")),
+        }
+    }
+}
+impl Callbacks for Export {
+    fn config(&mut self, config: &mut interface::Config) {
+        let previous = config.track_state.take();
+        let audit_selection = self.audit_selection.clone();
+        config.track_state = Some(Box::new(move |sess| {
+            if let Some(previous) = previous {
+                previous(sess);
+            }
+            // Cargo must rebuild this selected crate when the requested
+            // execution graph changes, even if its Rust source is unchanged.
+            // Library dependencies delegated to ordinary rustc do not record
+            // these inputs, so their checked artifacts can be shared.
+            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS"] {
+                sess.env_depinfo.borrow_mut().insert((
+                    rustc_span::Symbol::intern(key),
+                    std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
+                ));
+            }
+            if let Some(path) = &audit_selection {
+                sess.file_depinfo.borrow_mut().insert(rustc_span::Symbol::intern(&path.to_string_lossy()));
+            }
+        }));
+    }
+    fn after_crate_root_parsing(
+        &mut self,
+        compiler: &interface::Compiler,
+        krate: &mut rustc_ast::Crate,
+    ) -> Compilation {
+        if !self.demand_cache {
+            return Compilation::Continue;
+        }
+        // Own the compiler-context lifecycle so a bytecode-only compilation
+        // can commit semantic queries without producing fake Cargo metadata.
+        let (hash, session) =
+            rustc_interface::create_and_enter_global_ctxt(compiler, krate.clone(), |tcx| {
+                let _ = tcx.resolver_for_lowering();
+                self.after_expansion(compiler, tcx);
+                let hash = tcx
+                    .sess
+                    .opts
+                    .incremental
+                    .as_ref()
+                    .map(|_| tcx.crate_hash(rustc_hir::def_id::LOCAL_CRATE));
+                tcx.dep_graph.with_ignore(|| {
+                    rustc_incremental::save_work_product_index(
+                        tcx.sess,
+                        tcx.incr_comp_session,
+                        &tcx.dep_graph,
+                        Default::default(),
+                    )
+                });
+                hash
+            });
+        rustc_incremental::finalize_session_directory(&compiler.sess, session, hash);
+        Compilation::Stop
+    }
+    fn after_expansion<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        if !self.demand {
+            return Compilation::Continue;
+        }
+        // Experimental partial checking. Keep global type/impl consistency;
+        // the lowerer checks each selected local body before asking for its MIR.
+        let _ = tcx.ensure_result().check_type_wf(());
+        for &id in tcx.all_local_trait_impls(()).keys() {
+            let _ = tcx.ensure_result().coherent_trait(id);
+        }
+        let _ = tcx.ensure_result().crate_inherent_impls_validity_check(());
+        let _ = tcx.ensure_result().crate_inherent_impls_overlap_check(());
+        tcx.dcx().abort_if_errors();
+        self.emit(tcx)
+    }
+    fn after_analysis<'tcx>(&mut self, _: &interface::Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        self.emit(tcx)
+    }
+}
+
+fn main() {
+    let mut args: Vec<String> = std::env::args().collect();
+    if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
+        println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks"]}));
+        return;
+    }
+    // Cargo's RUSTC_WRAPPER convention supplies the real rustc as argv[1].
+    let wrapper = args.get(1).is_some_and(|s| {
+        std::path::Path::new(s)
+            .file_stem()
+            .is_some_and(|s| s == "rustc")
+    });
+    if wrapper {
+        args.remove(0);
+    }
+    if wrapper && let Ok(sysroot) = std::env::var("RUST_INTERP_STD_SYSROOT") {
+        let value = |flag: &str| {
+            args.iter().enumerate().find_map(|(index, arg)| {
+                arg.strip_prefix(&format!("{flag}=")).map(str::to_owned)
+                    .or_else(|| (arg == flag).then(|| args.get(index + 1).cloned()).flatten())
+            })
+        };
+        // An explicit Cargo target separates guest dependencies from native
+        // build scripts and proc macros, which keep the installed host sysroot.
+        if let Some(target) = value("--target") {
+            if std::env::var("RUST_INTERP_STD_TARGET").ok().as_ref() != Some(&target) {
+                eprintln!("standard-library MIR target does not match rustc's target");
+                std::process::exit(2);
+            }
+            if value("--sysroot").is_some_and(|existing| existing != sysroot) {
+                eprintln!("--std-mir conflicts with an explicit rustc --sysroot");
+                std::process::exit(2);
+            }
+            if value("--sysroot").is_none() {
+                args.extend(["--sysroot".into(), sysroot]);
+            }
+        }
+    }
+    let crate_name = args
+        .windows(2)
+        .find(|a| a[0] == "--crate-name")
+        .map(|a| a[1].clone());
+    let selected = std::env::var("RUST_INTERP_EXPORT_CRATE").ok();
+    let package = std::env::var("RUST_INTERP_EXPORT_PACKAGE").ok();
+    let library = args
+        .windows(2)
+        .any(|a| a[0] == "--crate-type" && a[1].split(',').any(|t| t == "lib" || t == "rlib"));
+    if wrapper && library {
+        // Ordinary dependency metadata may omit non-generic, non-inline MIR.
+        // Keep it available for our cross-crate execution graph. Appending to
+        // the rustc invocation preserves Cargo's configured target/rustflags
+        // precedence. The install hash (and isolated target directory) includes
+        // this wrapper, so artifacts from the old policy cannot be reused.
+        args.push("-Zalways-encode-mir=yes".into());
+    }
+    let wrong_package = package.as_ref().is_some_and(|p| {
+        std::env::var("CARGO_PKG_NAME").ok().as_ref() != Some(p)
+            || std::env::var_os("CARGO_PRIMARY_PACKAGE").is_none()
+    });
+    let wants_test = std::env::var("RUST_INTERP_EXPORT_TEST").is_ok_and(|s| s == "1");
+    // Cargo uses --cfg test for harness=false targets. Keep their custom
+    // attribute expansion and main intact; adding --test would change which
+    // bodies exist (Nushell, for example, also emits empty libtest stubs).
+    let test_compilation = args.iter().any(|a| a == "--test" || a == "--cfg=test")
+        || args.windows(2).any(|a| a[0] == "--cfg" && a[1] == "test");
+    let wrong_manifest = std::env::var_os("RUST_INTERP_EXPORT_MANIFEST").is_some_and(|p| {
+        std::env::var_os("CARGO_MANIFEST_DIR")
+            .is_none_or(|dir| PathBuf::from(p) != PathBuf::from(dir))
+    });
+    if wrapper
+        && ((selected.is_none() && package.is_none())
+            || (selected.is_some() && crate_name != selected)
+            || wrong_package
+            || (package.is_some() && !wants_test && !library)
+            || wrong_manifest
+            || (wants_test && !test_compilation))
+    {
+        let status = std::process::Command::new(&args[0])
+            .args(&args[1..])
+            .status()
+            .expect("start rustc");
+        std::process::exit(status.code().unwrap_or(1));
+    }
+    let audit_selection = std::env::var_os("RUST_INTERP_AUDIT_SELECTION").map(PathBuf::from);
+    let entries = if let Some(path) = &audit_selection {
+        if std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some() {
+            eprintln!("audit selection cannot be combined with execution entries");
+            std::process::exit(2);
+        }
+        audit::read_entries(path).unwrap_or_else(|error| {
+            eprintln!("invalid audit selection: {error}"); std::process::exit(2);
+        })
+    } else { match std::env::var("RUST_INTERP_ENTRIES") {
+        Ok(value) => match serde_json::from_str::<Vec<String>>(&value) {
+            Ok(entries) => entries,
+            Err(error) => {
+                eprintln!("RUST_INTERP_ENTRIES must be a JSON array of entry names: {error}");
+                std::process::exit(2);
+            }
+        },
+        Err(_) => vec![std::env::var("RUST_INTERP_ENTRY")
+            .unwrap_or_else(|_| "rust_interp_entry".into())],
+    }};
+    if !args
+        .iter()
+        .any(|a| a == "--sysroot" || a.starts_with("--sysroot="))
+    {
+        args.extend(["--sysroot".into(), env!("RUST_INTERP_SYSROOT").into()]);
+    }
+    let output = PathBuf::from(
+        std::env::var_os("RUST_INTERP_OUTPUT").expect("RUST_INTERP_OUTPUT is required"),
+    );
+    // A failed source revision or configuration must not leave this standalone
+    // output looking like the result of the failed request.
+    if let Err(e) = std::fs::remove_file(&output) {
+        if e.kind() != std::io::ErrorKind::NotFound {
+            eprintln!("cannot remove old artifact: {e}");
+            std::process::exit(2);
+        }
+    }
+    let retain_audit_bodies = match std::env::var_os("RUST_INTERP_RETAIN_AUDIT_BODIES") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_RETAIN_AUDIT_BODIES must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    if retain_audit_bodies && (audit_selection.is_none() || !wants_test) {
+        eprintln!("retaining audit bodies requires an audit selection and a test target");
+        std::process::exit(2);
+    }
+    let inline_leaves = match std::env::var_os("RUST_INTERP_INLINE_LEAVES") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_INLINE_LEAVES must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    let trap_unsupported_calls = match std::env::var_os("RUST_INTERP_TRAP_UNSUPPORTED_CALLS") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_TRAP_UNSUPPORTED_CALLS must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    let run_try_callbacks = match std::env::var_os("RUST_INTERP_RUN_TRY_CALLBACKS") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_RUN_TRY_CALLBACKS must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    if run_try_callbacks && !trap_unsupported_calls {
+        eprintln!("running try callbacks requires explicit unavailable-call trapping; unwinding remains unsupported");
+        std::process::exit(2);
+    }
+    let demand = std::env::var("RUST_INTERP_DEMAND_BODIES").is_ok_and(|s| s == "1");
+    if trap_unsupported_calls && demand {
+        eprintln!("unavailable-call reachability requires ordinary strict frontend checking");
+        std::process::exit(2);
+    }
+    let demand_cache = demand && std::env::var("RUST_INTERP_DEMAND_CACHE").is_ok_and(|s| s == "1");
+    if audit_selection.is_some() && demand {
+        eprintln!("lowering audits require ordinary strict frontend checking");
+        std::process::exit(2);
+    }
+    if wrapper && demand {
+        eprintln!("demand checking is a standalone experiment; it does not produce Cargo metadata");
+        std::process::exit(2);
+    }
+    if let Some(capture) = std::env::var_os("RUST_INTERP_CAPTURE") {
+        let environment: std::collections::BTreeMap<_, _> = std::env::vars()
+            .filter(|(k, _)| {
+                k.starts_with("CARGO_PKG_")
+                    || k.starts_with("CARGO_FEATURE_")
+                    || k.starts_with("CARGO_CFG_")
+                    || [
+                        "OUT_DIR",
+                        "CARGO_MANIFEST_DIR",
+                        "CARGO_MANIFEST_PATH",
+                        "CARGO_CRATE_NAME",
+                        "CARGO_PRIMARY_PACKAGE",
+                        "CARGO_BIN_NAME",
+                    ]
+                    .contains(&k.as_str())
+            })
+            .collect();
+        let record = serde_json::json!({"args":args,"cwd":std::env::current_dir().expect("compiler cwd"),"env":environment});
+        std::fs::write(
+            capture,
+            serde_json::to_vec_pretty(&record).expect("serialize invocation"),
+        )
+        .expect("save compiler invocation");
+    }
+    // Refuse codegen: the application path must never silently use LLVM.
+    let mut emissions = Vec::new();
+    for (i, arg) in args.iter().enumerate() {
+        let value = arg.strip_prefix("--emit=").or_else(|| {
+            (arg == "--emit")
+                .then(|| args.get(i + 1).map(String::as_str))
+                .flatten()
+        });
+        if let Some(value) = value {
+            emissions.extend(
+                value
+                    .split(',')
+                    .map(|part| part.split('=').next().unwrap_or("")),
+            );
+        }
+    }
+    if !emissions.contains(&"metadata")
+        || emissions
+            .iter()
+            .any(|kind| !["metadata", "dep-info"].contains(kind))
+    {
+        eprintln!("rust-interp-export requires --emit=metadata (use cargo check)");
+        std::process::exit(2);
+    }
+    let mut callbacks = Export {
+        entries,
+        output,
+        started: Instant::now(),
+        demand,
+        demand_cache,
+        audit_selection,
+        retain_audit_bodies,
+        test_body: wants_test,
+        inline_leaves,
+        trap_unsupported_calls,
+        run_try_callbacks,
+    };
+    rustc_driver::run_compiler(&args, &mut callbacks);
+}

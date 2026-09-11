@@ -1,0 +1,18 @@
+{
+  "status": "blocked before custom guest execution",
+  "tests": 10,
+  "native_original_passed": true,
+  "native_cold_seconds": 68.693,
+  "attempts": [
+    {
+      "raw": ".work/runs/e2e-workflow-nushell-last-result-01",
+      "blocker": "ptr_mask in standard-library Once; subsequently implemented and validated"
+    },
+    {
+      "raw": ".work/last-result-pointer-mask-probe-01",
+      "blocker": "std::thread::current::CURRENT thread-local state"
+    }
+  ],
+  "source_restored": true,
+  "decision": "Retain the full ten-test workflow as blocked. Benchmark the complete eight-test span family next, which became independently lowerable through nested layout support. TLS needs guest thread/test lifecycle and destructor semantics before support; do not substitute shared globals."
+}

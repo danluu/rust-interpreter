@@ -1,0 +1,53 @@
+{
+  "status": "Retain as experimental runtime improvement; broad build-time improvement not established",
+  "continue_from_tool_key": "588cad897ac2dcee91ddb0982aebbf15db434b3e66297daf2d1cc4a47d294e52",
+  "baseline_tool_key": "bbdc58166a62ba0fef9374fc134371702aea89d2c80e5e241c99036e51196ca7",
+  "corpus_sha256": "222b13dcc76728ac6fb632d6cf730f2197a08cc4c739012ed8195b13bbe164a6",
+  "totals": {
+    "workflows": 13,
+    "pairs": 65,
+    "command_wins": 37,
+    "execution_wins": 49,
+    "native_comparison_wins": 42,
+    "changed_artifact_pairs": 58,
+    "changed_artifact_command_wins": 32
+  },
+  "groups": {
+    "new-TLS-workflow": {
+      "workflows": 1,
+      "pairs": 5,
+      "command_wins": 5,
+      "execution_wins": 5,
+      "native_comparison_wins": 0,
+      "changed_artifact_pairs": 5,
+      "changed_artifact_command_wins": 5
+    },
+    "compute": {
+      "workflows": 4,
+      "pairs": 20,
+      "command_wins": 16,
+      "execution_wins": 18,
+      "native_comparison_wins": 2,
+      "changed_artifact_pairs": 15,
+      "changed_artifact_command_wins": 13
+    },
+    "broader": {
+      "workflows": 8,
+      "pairs": 40,
+      "command_wins": 16,
+      "execution_wins": 26,
+      "native_comparison_wins": 40,
+      "changed_artifact_pairs": 38,
+      "changed_artifact_command_wins": 14
+    }
+  },
+  "qualification": "Selected library workflows only; whole applications, arbitrary OS/FFI calls, guest threads and native unwinding remain unsupported.",
+  "reason": [
+    "The firstTLS workflow improves allfivecommands by paired median203.543ms and removes10,468,047 dynamic calls without code/layout growth.",
+    "The three changed-artifact compute workflows improve13/15 edited commands; includingTLS gives18/20. SHA1 hasnoartifactchanges andits smalltimingdifferences are not attributed toforwarding.",
+    "The eight broader workflows improve16/40 commands. Ruff loses5/5 by97.634ms median andlargeNu loses4/5 by263.516ms, mostlyinCargo; no causal explanation is established.",
+    "All125bytecode tests, broad native suites,245TLS checks andfresh320/62/7 fre classifications pass; all91 artifactpairs audited."
+  ],
+  "next": "Compare explicitMIR1 andMIR3 onthe17-test TLS workflow using thesame currentcustomJIT. Verifyallseven MIR1 artifacts against retaineddefault beforecallingMIR1 thedefault. Continueusing realchanged-code commands, native controls, originaltests andall samples.",
+  "created_at": 1789043470.408298
+}

@@ -1,0 +1,768 @@
+{
+  "project": "ruff",
+  "workflow": "default",
+  "revision": "d136bd8d002a648de5f344df602e492658306f1e",
+  "tests": [
+    "registry::tests::documentation",
+    "registry::tests::rule_naming_convention",
+    "registry::tests::check_code_serialization",
+    "registry::tests::linter_parse_code",
+    "registry::tests::rule_size",
+    "registry::tests::linter_sorting"
+  ],
+  "edits": [
+    "match-optional-rule-code-explicitly",
+    "make-name-conversion-explicit",
+    "match-linter-prefix-result-explicitly",
+    "name-code-suffix-before-comparison",
+    "use-explicit-rule-search-loop"
+  ],
+  "workload": "All six existing registry tests, including rule-code roundtrips, naming patterns, and linter sorting",
+  "case_sha256": "74ce22dd5d862475efcf2d1f849514cda626aacd10cdcef63f3b1bffffc42bc8",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": true,
+  "raw": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "guest_mir_opt_level": null,
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 5.800281874999996,
+    "baseline": 2.942752791999993,
+    "candidate": 2.7893017080000106
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 56.627630041,
+    "baseline": 29.566626749999998,
+    "candidate": 29.117787375000006
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "263f7f0084a6652be3253460bf7562321650643787c0ac7fe024ce46a7e8152d",
+    "scripts/interpreter.py": "60445b8ce8176b23e3162f78e9595ee78197a2f75d54dfdb8deaca0f22755ce6",
+    "scripts/workflow_cases.py": "f07186ef97e5a4d5f96c23ab56f102f95a61360f198badc1661cac6632d5a1d4",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "inline_leaves": false,
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "88897abc87178852fb97517a05723a14448cd266b2907420b2f2f67a8eb227e4"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "inline_leaves": true,
+      "vm_sha256": "5db13eb32101046730eb287cee19900ff4cb290919bd0078b19f04b5e0eccdd5",
+      "exporter_sha256": "ff2d87352dbf3e5d3a21eeeb9013469c6438ca271635d90be0202f1e828026e0"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "5db13eb32101046730eb287cee19900ff4cb290919bd0078b19f04b5e0eccdd5",
+  "exporter_sha256": "ff2d87352dbf3e5d3a21eeeb9013469c6438ca271635d90be0202f1e828026e0",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 56.627630041,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        5.1220703125,
+        4.83203125,
+        4.146484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 29.566626749999998,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        5.38623046875,
+        4.91015625,
+        4.19384765625
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/baseline/0-0.rbc",
+          "sha256": "157079d4a04dc75feb02d6f0cc8d35ee6450c8925e9e9e69fdb0cf1ecfcbf3b4",
+          "bytes": 3822216
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 29.117787375000006,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        5.9609375,
+        5.10595703125,
+        4.2890625
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/candidate/0-0.rbc",
+          "sha256": "8525161dda3447442b8360c4661404723a79db94e019e94d27e32c85dda3d9b4",
+          "bytes": 4465356
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.1859407500000003,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        5.8837890625,
+        5.10400390625,
+        4.29296875
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "77641922ade79fc80b780ad6eb759613af1e9258f5fbdca5602446c186efc116",
+          "bytes": 4461086
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.5537501249999934,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        5.49267578125,
+        5.03564453125,
+        4.2734375
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "b3b6008ce642d0e43c6e33a6a90b903a40162df068fc97aa1507d00a188ed4c2",
+          "bytes": 3817924
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.969950707999985,
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        5.373046875,
+        5.01806640625,
+        4.271484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 6.05256962499999,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        5.0224609375,
+        4.951171875,
+        4.251953125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.95948924999999,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        4.8603515625,
+        4.91845703125,
+        4.244140625
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/baseline/1-0.rbc",
+          "sha256": "3cf1d6b96dfacd4396b2ae23f3e77c8a9b3db398ae2b6ec81037fb470251f1b8",
+          "bytes": 1220168
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.7893017080000106,
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        4.8603515625,
+        4.91845703125,
+        4.244140625
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/candidate/1-0.rbc",
+          "sha256": "dfe9572a4e5a273be093764e3a93684c8f736d727628c83c11b0eea851d68dfd",
+          "bytes": 1468836
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 4.201614000000006,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        4.791015625,
+        4.90283203125,
+        4.24267578125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.7847578330000147,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        4.8076171875,
+        4.904296875,
+        4.2470703125
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/candidate/2-0.rbc",
+          "sha256": "71d251e7fdd7573edae879df2af5accc10f8522bdf8495437800e6fea8f07f83",
+          "bytes": 2074971
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.942752791999993,
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        4.8076171875,
+        4.904296875,
+        4.2470703125
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/baseline/2-0.rbc",
+          "sha256": "58e946caa2cce356d3b843d6803fd21565e13aaecbbba71a4befca314c055485",
+          "bytes": 1685759
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 2.7701765839999837,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        4.82275390625,
+        4.90576171875,
+        4.25146484375
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/baseline/3-0.rbc",
+          "sha256": "cc47209537a1429a72abae3d9c4fad78515fea1257ae6de2be0e8f3467f812d5",
+          "bytes": 1391316
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 5.800281874999996,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        4.6767578125,
+        4.8740234375,
+        4.24365234375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code"
+      ],
+      "seconds": 2.8039767079999933,
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        4.62255859375,
+        4.859375,
+        4.2421875
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/candidate/3-0.rbc",
+          "sha256": "4fbd7e2e5a1cbc20a7d9d0399d084038b35cf70809220d6d659710c4dbac02c5",
+          "bytes": 1705180
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.6767180000000224,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        4.62255859375,
+        4.859375,
+        4.2421875
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/candidate/4-0.rbc",
+          "sha256": "78a9f4341e3ec19489c505c0defe78a7e605a8cdbd423f38f9ffe900addb0b7e",
+          "bytes": 1463959
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 4.2590433750000045,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        4.65234375,
+        4.861328125,
+        4.24658203125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::check_code_serialization"
+      ],
+      "seconds": 2.8136868329999913,
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        5.00048828125,
+        4.9296875,
+        4.2744140625
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/baseline/4-0.rbc",
+          "sha256": "adc6c84f95acca74941eda00b444539e9aeff8660b8ee4d0542e557ac9f10cef",
+          "bytes": 1217338
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.0678727499999923,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        5.00048828125,
+        4.9296875,
+        4.2744140625
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/baseline/5-0.rbc",
+          "sha256": "a31bcf272df153ebf336658d868d54fd2df4558aaf8a79d296b94215692eb49a",
+          "bytes": 3810089
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.2216872919999844,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        4.83984375,
+        4.8974609375,
+        4.2666015625
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-ruff-leaf-inline-broad-01/artifacts/candidate/5-0.rbc",
+          "sha256": "9eee0d32e0aec3d9f5a1aa61bb974026e2cd374e110e6ff028e5b7643916e0b6",
+          "bytes": 4450003
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 5.835208916999989,
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        4.9326171875,
+        4.91552734375,
+        4.2763671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+    "candidate_tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline_seconds": 2.95948924999999,
+        "candidate_seconds": 2.7893017080000106,
+        "difference_seconds": -0.17018754199997943,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.837925083,
+            "execution_seconds": 0.04618429199999996,
+            "artifact_hash_seconds": 0.0007053750000003411,
+            "launcher_seconds": 2.926474583
+          },
+          "candidate": {
+            "cargo_seconds": 2.6755419579999997,
+            "execution_seconds": 0.04707345800000029,
+            "artifact_hash_seconds": 0.0009464170000001992,
+            "launcher_seconds": 2.764155042
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline_seconds": 2.942752791999993,
+        "candidate_seconds": 2.7847578330000147,
+        "difference_seconds": -0.1579949589999785,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.803736541,
+            "execution_seconds": 0.07358891699999992,
+            "artifact_hash_seconds": 0.0008127500000001397,
+            "launcher_seconds": 2.917828541
+          },
+          "candidate": {
+            "cargo_seconds": 2.637319334,
+            "execution_seconds": 0.07298879100000022,
+            "artifact_hash_seconds": 0.0009642919999999222,
+            "launcher_seconds": 2.752550792
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline_seconds": 2.7701765839999837,
+        "candidate_seconds": 2.8039767079999933,
+        "difference_seconds": 0.033800124000009646,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.645813917,
+            "execution_seconds": 0.05949408399999978,
+            "artifact_hash_seconds": 0.000687749999999987,
+            "launcher_seconds": 2.745294083
+          },
+          "candidate": {
+            "cargo_seconds": 2.674078708,
+            "execution_seconds": 0.059155083000000275,
+            "artifact_hash_seconds": 0.0008094169999997014,
+            "launcher_seconds": 2.775213084
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline_seconds": 2.8136868329999913,
+        "candidate_seconds": 2.6767180000000224,
+        "difference_seconds": -0.13696883299996898,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.6983892079999996,
+            "execution_seconds": 0.04497579199999979,
+            "artifact_hash_seconds": 0.0006488749999999932,
+            "launcher_seconds": 2.785924792
+          },
+          "candidate": {
+            "cargo_seconds": 2.5627136249999998,
+            "execution_seconds": 0.047843124999999986,
+            "artifact_hash_seconds": 0.0009663749999999638,
+            "launcher_seconds": 2.651104583
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline_seconds": 3.0678727499999923,
+        "candidate_seconds": 3.2216872919999844,
+        "difference_seconds": 0.15381454199999212,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.905843875,
+            "execution_seconds": 0.09046041700000007,
+            "artifact_hash_seconds": 0.0016937920000001938,
+            "launcher_seconds": 3.0409741250000004
+          },
+          "candidate": {
+            "cargo_seconds": 3.067298167,
+            "execution_seconds": 0.088540917,
+            "artifact_hash_seconds": 0.0018640409999997054,
+            "launcher_seconds": 3.1974227500000003
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 3,
+    "median_paired_difference_seconds": -0.13696883299996898
+  }
+}

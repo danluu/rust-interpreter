@@ -1,0 +1,469 @@
+{
+  "project": "fre",
+  "workflow": "token-phrase-allocation",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+    "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+    "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+  ],
+  "edits": [
+    "name-literal-finder-result",
+    "reuse-short-count-input-length",
+    "reuse-short-span-input-length",
+    "orient-short-route-width-comparison",
+    "match-short-route-event-bound"
+  ],
+  "workload": "The original exhaustive token-phrase byte-semantics test plus directed restart and route-boundary tests. The custom VM uses an explicit150000 live-allocation budget; native Cargo has its normal allocator. Five production-body refactors leave every original test unchanged.",
+  "case_sha256": "ea7908ccd09784d147ca8060e5c353e69a35c1dbddd4a9942c9673cc1aa0356c",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-allocation-budget-token-phrase-01",
+  "build_tool_opt_level": 0,
+  "instruction_limit": 100000000000,
+  "allocation_limit": 150000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": false,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": true,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+  "candidate_tool_key_requested": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 2.0372593329999944,
+    "jit": 7.3147835830000005
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.72238425,
+    "jit": 12.294108582999998
+  },
+  "scripts_sha256": {
+    ".work/allocation_budget_e2e_01.py": "68f8882c683357f49605ba51a8dca8c00d5bf4029debb844ff12340c187c3204",
+    ".work/allocation_budget_launcher_01.py": "6b012488ec9caed92d72a3e269126c52c32c12037ffecf06257510ce94690ab1",
+    ".work/allocation_budget_token_phrase_case_01.json": "4355eb856c4f304ca337319236f8bd143df1022acfd4c5f3b7b271e0619c4d7b",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "jit": {
+      "engine": "jit",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "bcdbad2831ed7af5d87869d99115e3b454b5112fbbd6ffec32aaf00e8f6ded66",
+      "exporter_sha256": "2c71eab7a6cff77c877856bfe14cf255ae76c7f7500f1a054413f7737dc33b0c"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "jit"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "jit",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "jit",
+        "native"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "jit"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "jit",
+        "native"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "native",
+        "jit"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "jit",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "bcdbad2831ed7af5d87869d99115e3b454b5112fbbd6ffec32aaf00e8f6ded66",
+  "exporter_sha256": "2c71eab7a6cff77c877856bfe14cf255ae76c7f7500f1a054413f7737dc33b0c",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 7.72238425,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        3.27587890625,
+        2.853515625,
+        3.3603515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "jit",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 12.294108582999998,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        3.38671875,
+        2.890625,
+        3.3671875
+      ],
+      "engine": "jit",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-allocation-budget-token-phrase-01/artifacts/jit/0-0.rbc",
+          "sha256": "37f8a49154f66fa13d2e743bb8575f463a197de28d4313abc32bc0b232d6f491",
+          "bytes": 30171236
+        }
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": -1,
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.4545090840000015,
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        3.515625,
+        2.92529296875,
+        3.37646484375
+      ],
+      "engine": "jit",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-allocation-budget-token-phrase-01/artifacts/jit/-1-0.rbc",
+          "sha256": "3f84d60e5fa7819cf1729d029ea6ef8f0156061e89110647a068efebb7bc0786",
+          "bytes": 30171536
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.6746389159999993,
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        3.515625,
+        2.92529296875,
+        3.37646484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "jit",
+      "state": 1,
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 7.1851665419999975,
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.31396484375,
+        2.89306640625,
+        3.3623046875
+      ],
+      "engine": "jit",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-allocation-budget-token-phrase-01/artifacts/jit/1-0.rbc",
+          "sha256": "8e80928dc6fb7568048678977a50b6ea44492c661b79ce3ee0152ff2c3f7cec4",
+          "bytes": 30171428
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.047341540999998,
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.44873046875,
+        2.927734375,
+        3.37158203125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.0372593329999944,
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.44873046875,
+        2.927734375,
+        3.37158203125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "jit",
+      "state": 2,
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 7.079419167000005,
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.45947265625,
+        2.9462890625,
+        3.37255859375
+      ],
+      "engine": "jit",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-allocation-budget-token-phrase-01/artifacts/jit/2-0.rbc",
+          "sha256": "3fedce7ee38b3ad8ac37f0ca2b50736fe289fa541965ab1452e4e221163229ea",
+          "bytes": 30171428
+        }
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 3,
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 7.3147835830000005,
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.66259765625,
+        2.99658203125,
+        3.3876953125
+      ],
+      "engine": "jit",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-allocation-budget-token-phrase-01/artifacts/jit/3-0.rbc",
+          "sha256": "6f836d41f119de83e4a3cf64a9afbbe8c8b780a1e1c56ef8a16a0f5e2f5bea33",
+          "bytes": 30171428
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.1171142079999967,
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.66259765625,
+        2.99658203125,
+        3.3876953125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9715902499999984,
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        7.1328125,
+        3.72705078125,
+        3.64306640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "jit",
+      "state": 4,
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 7.527177915999999,
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        7.0419921875,
+        3.7646484375,
+        3.65673828125
+      ],
+      "engine": "jit",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-allocation-budget-token-phrase-01/artifacts/jit/4-0.rbc",
+          "sha256": "89e1a8dc4d35665a9e3a97050bb42f88d0744bc31afdaf3b4518285c31b4e1bc",
+          "bytes": 30171684
+        }
+      ]
+    },
+    {
+      "mode": "jit",
+      "state": 5,
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 7.4752775830000004,
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        6.72119140625,
+        3.8046875,
+        3.671875
+      ],
+      "engine": "jit",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-allocation-budget-token-phrase-01/artifacts/jit/5-0.rbc",
+          "sha256": "94ace6e2c208a98da67262f85c35fd41ef61461bb6ad1fb832759ac2839ff819",
+          "bytes": 30171428
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.016587041000008,
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        6.72119140625,
+        3.8046875,
+        3.671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ]
+}

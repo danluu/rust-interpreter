@@ -1,0 +1,786 @@
+{
+  "project": "pgrust",
+  "workflow": "default",
+  "revision": "38d2517d3e09168a8fe222837730d435238ff358",
+  "tests": [
+    "tests::uint32_paths_match_byte_path",
+    "tests::extended_zero_seed_low_word_equals_hash_bytes",
+    "tests::murmurhash32_inverse_roundtrips",
+    "tests::dynahash_wrappers"
+  ],
+  "edits": [
+    "name-inverse-xorshift-intermediate",
+    "spell-out-four-byte-load",
+    "combine-constant-hash-initializers",
+    "name-string-hash-length-bound",
+    "use-immutable-hash-stages"
+  ],
+  "workload": "All four existing hashfn library unit tests, including the original 100,000-iteration roundtrip loop",
+  "case_sha256": "98a8ac961a4057c4429001c39b23156af64859522f4c864b260c93efcde8335a",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+  "candidate_tool_key_requested": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.6643481250000001,
+    "baseline": 0.49828370799999977,
+    "candidate": 0.4992165830000008
+  },
+  "std_mir": null,
+  "cold_success_seconds": {
+    "native": 0.863305333,
+    "baseline": 0.523349208,
+    "candidate": 0.501179
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "7af4e10fc5a676878319c8a0f0f7945328b07b6f307c36ab19120ece593bca88",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "b8adadc580c53ce512ecafe01bc2e827b704163a54bd5afd5296e90d05e1c01f",
+      "exporter_sha256": "2c71eab7a6cff77c877856bfe14cf255ae76c7f7500f1a054413f7737dc33b0c"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "d2170a25e7559c2fa4aeb3b91e3b75dfa41d6010ad7ba11e35626d3a37115f74",
+      "exporter_sha256": "0b525df2085b43efd7880a6b7f413757ef32b08524104d9c32d897a5d1848a8e"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "d2170a25e7559c2fa4aeb3b91e3b75dfa41d6010ad7ba11e35626d3a37115f74",
+  "exporter_sha256": "0b525df2085b43efd7880a6b7f413757ef32b08524104d9c32d897a5d1848a8e",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.863305333,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        5.01904296875,
+        5.11328125,
+        5.20556640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.523349208,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        5.01904296875,
+        5.11328125,
+        5.20556640625
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/baseline/0-0.rbc",
+          "sha256": "6b745d9771eac47278adeb36607f988ae487b1956a457c4e84f02816460989e3",
+          "bytes": 196219
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.501179,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        5.01904296875,
+        5.11328125,
+        5.20556640625
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/candidate/0-0.rbc",
+          "sha256": "1a77cd67597541750e3f930f7b1e8c38bf55a935e71a4caed139ed647c013939",
+          "bytes": 185007
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.48570887500000026,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        5.01904296875,
+        5.11328125,
+        5.20556640625
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "10b22f6a2a9a3565a6804ebea578b7111af152323a7ae15b272cb7c51533f77d",
+          "bytes": 185007
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.4844716250000003,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        5.01904296875,
+        5.11328125,
+        5.20556640625
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "0a35b5fee0105f2fdd1cfb43d069a2537aa7a3a026863680a001c8af0a6a6624",
+          "bytes": 196219
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.628578166,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        5.01904296875,
+        5.11328125,
+        5.20556640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6562404580000005,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        5.01904296875,
+        5.11328125,
+        5.20556640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5043362079999998,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/baseline/1-0.rbc",
+          "sha256": "ad0e912b5951b4ecd03e9d0efb23ef708cf59aa3a69f9b247848da0530ddbeeb",
+          "bytes": 196165
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.49892037499999997,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/candidate/1-0.rbc",
+          "sha256": "a49039cd7394aa97e230d6ae8d17a4380f1546df6cf5843740de74bfd9f4c575",
+          "bytes": 185005
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6642494169999997,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5128504169999992,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/candidate/2-0.rbc",
+          "sha256": "69246beb14ac7fde95805627ac383f6ab2e54f4e1b8d96a8a495a89b5083b323",
+          "bytes": 184515
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.4968418330000004,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/baseline/2-0.rbc",
+          "sha256": "40fdef8cee70e78b37f5e7a5bf9f31921bec651fc79f140635d73979a47d074e",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.49828370799999977,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/baseline/3-0.rbc",
+          "sha256": "fc7c81391ebfbe523c7621fcc89401cf6ea06fa04f2f80c86380df7bbee5645d",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.7297870409999998,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5121289999999998,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/candidate/3-0.rbc",
+          "sha256": "c650002193863f2bec2aa2e1ec576345ac13b7f10c31d1b5deb2f2077c7858e2",
+          "bytes": 184515
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.4974774999999987,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        4.93701171875,
+        5.0947265625,
+        5.1982421875
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/candidate/4-0.rbc",
+          "sha256": "c510388dcfb01e6ba11f9d54ead5ba1a5dd2040e7c278e887630ea4944f63e1a",
+          "bytes": 184515
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6765561670000011,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        4.62158203125,
+        5.0263671875,
+        5.17333984375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5102613749999989,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        4.62158203125,
+        5.0263671875,
+        5.17333984375
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/baseline/4-0.rbc",
+          "sha256": "b10b51b87e74a5bd0950f2dc519cf614c9feccca0521800bc9ec0cac982b8c1b",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.49590916600000057,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        4.62158203125,
+        5.0263671875,
+        5.17333984375
+      ],
+      "engine": "jit",
+      "tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/baseline/5-0.rbc",
+          "sha256": "64258fd3c360d47c2d1054bd73588fa845429ee2a4a06d80e0fb624018206bd0",
+          "bytes": 195593
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.4992165830000008,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        4.62158203125,
+        5.0263671875,
+        5.17333984375
+      ],
+      "engine": "jit",
+      "tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-scalar-promotion-moves-corpus-pgrust-01/artifacts/candidate/5-0.rbc",
+          "sha256": "846c60725badf42833c45eb28b63b0694746eda6c7c45b4ca92ac2528c2b4683",
+          "bytes": 184271
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6643481250000001,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        4.62158203125,
+        5.0263671875,
+        5.17333984375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "88c01c00d0fa5a0f4d93992af4a9cb3cfc815de8acab10b4628795bd77a07278",
+    "candidate_tool_key": "81e0146dbd9d729d77040c50f9f50f71fbb2beb67a5ffc7c8a336d1baf328ff0",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "baseline_seconds": 0.5043362079999998,
+        "candidate_seconds": 0.49892037499999997,
+        "difference_seconds": -0.0054158329999998145,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.443609792,
+            "execution_seconds": 0.032064125,
+            "artifact_hash_seconds": 0.00017816600000003513,
+            "launcher_seconds": 0.478082625
+          },
+          "candidate": {
+            "cargo_seconds": 0.441725208,
+            "execution_seconds": 0.030894666999999987,
+            "artifact_hash_seconds": 0.0001942499999999514,
+            "launcher_seconds": 0.47501079199999996
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "baseline_seconds": 0.4968418330000004,
+        "candidate_seconds": 0.5128504169999992,
+        "difference_seconds": 0.016008583999998827,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.438330708,
+            "execution_seconds": 0.03181770900000003,
+            "artifact_hash_seconds": 0.000195541999999993,
+            "launcher_seconds": 0.472543709
+          },
+          "candidate": {
+            "cargo_seconds": 0.44388620900000003,
+            "execution_seconds": 0.03040154200000006,
+            "artifact_hash_seconds": 0.000185875000000002,
+            "launcher_seconds": 0.47723629199999995
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "baseline_seconds": 0.49828370799999977,
+        "candidate_seconds": 0.5121289999999998,
+        "difference_seconds": 0.013845292000000065,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.44017812500000003,
+            "execution_seconds": 0.03186008400000001,
+            "artifact_hash_seconds": 0.0002034999999999676,
+            "launcher_seconds": 0.47445125
+          },
+          "candidate": {
+            "cargo_seconds": 0.44254854099999996,
+            "execution_seconds": 0.030555957999999994,
+            "artifact_hash_seconds": 0.0001971669999999981,
+            "launcher_seconds": 0.4761453749999999
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "baseline_seconds": 0.5102613749999989,
+        "candidate_seconds": 0.4974774999999987,
+        "difference_seconds": -0.012783875000000222,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.439618208,
+            "execution_seconds": 0.03176137499999998,
+            "artifact_hash_seconds": 0.00019208399999998127,
+            "launcher_seconds": 0.474322417
+          },
+          "candidate": {
+            "cargo_seconds": 0.440082333,
+            "execution_seconds": 0.030889374999999997,
+            "artifact_hash_seconds": 0.00023366699999999296,
+            "launcher_seconds": 0.473414875
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "baseline_seconds": 0.49590916600000057,
+        "candidate_seconds": 0.4992165830000008,
+        "difference_seconds": 0.0033074170000002567,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.439221333,
+            "execution_seconds": 0.030214666,
+            "artifact_hash_seconds": 0.00018779200000001994,
+            "launcher_seconds": 0.471810458
+          },
+          "candidate": {
+            "cargo_seconds": 0.444038041,
+            "execution_seconds": 0.028990915999999978,
+            "artifact_hash_seconds": 0.00019854200000002376,
+            "launcher_seconds": 0.475444125
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.0033074170000002567
+  }
+}

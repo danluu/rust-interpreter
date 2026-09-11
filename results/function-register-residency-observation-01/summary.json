@@ -1,0 +1,61 @@
+{
+  "status": "Typed diagnostic complete; optimistic bound only, no performance claim",
+  "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+  "artifact_sha256": "0b266be5fc28def9af2f43a4f2de3b5c543484a79a73479c674cdb7aec19669e",
+  "profile_sha256": "9cec98190a3bb08d159f070b5969dd1f76ada694659b06923319381c91062fd9",
+  "native_bytes": 3723276,
+  "generated_machine_code_identical": true,
+  "original_profile_identical": true,
+  "external_entries": 43732357,
+  "totals": {
+    "loads": 83067757,
+    "stores": 1551389928,
+    "address_words": 550157664,
+    "exit_stores": 1262283302
+  },
+  "optimistic_net_transfer_equivalents": 43690524,
+  "selected_function_count": 20,
+  "root_unchanged": true,
+  "measured_runtime": false,
+  "original_tests": 18,
+  "original_assertions_preserved": true,
+  "limitations": [
+    "Counts are generated register-array LDR/STR executions weighted by block hits, not hardware memory traffic.",
+    "Savings use a per-function best-four oracle; no implementable static selection or speedup is established.",
+    "Added costs count 64-bit transfer equivalents; paired instructions and address-generation costs need separate accounting.",
+    "Collector code is byte-identical across diagnostic builds and reproduces measured native byte count; runtime code was not dumped."
+  ],
+  "observation": ".work/function-register-residency-observation-01/summary.json",
+  "observation_sha256": "7a1ae94dbf44d4ed0159a4b24b063ae180c340a5670345cd7d7632dd3b7e51d5",
+  "paired_spill_proposal": {
+    "status": "Prepared isolated STP spill candidate; no implementation or timing result yet",
+    "tool_key": "6bf10fda528666a64f4b59b0869da9a0d01ade862e822cf45dc1768dc57f9757",
+    "categories": {
+      "near": {
+        "static_pairs": 1485,
+        "weighted_pairs": 49965898,
+        "static_address_words_saved": 0,
+        "weighted_address_words_saved": 0
+      },
+      "middle": {
+        "static_pairs": 23740,
+        "weighted_pairs": 588306722,
+        "static_address_words_saved": 0,
+        "weighted_address_words_saved": 0
+      },
+      "far": {
+        "static_pairs": 5376,
+        "weighted_pairs": 137422344,
+        "static_address_words_saved": 10752,
+        "weighted_address_words_saved": 274844688
+      }
+    },
+    "predicate": "Pair spill halves only when reg <= 31 or reg >= 2048; middle unsigned-offset STR pairs remain unchanged.",
+    "predicted_native_bytes_removed": 70452,
+    "predicted_weighted_machine_instructions_removed": 462232930,
+    "original_native_bytes": 3723276,
+    "root_unchanged": true,
+    "performance_claim": false
+  },
+  "decision": "Park the four-full-width-home proposal: even a hit-count oracle removes only2.67% of register-array transfer equivalents after transition costs. Evaluate paired spills without extra transition overhead first; no static residency selector has been implemented."
+}

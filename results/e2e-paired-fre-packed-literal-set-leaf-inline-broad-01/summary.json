@@ -1,0 +1,822 @@
+{
+  "project": "fre",
+  "workflow": "packed-literal-set",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+    "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+    "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+    "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+    "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+    "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+  ],
+  "edits": [
+    "name-byte-class-bit-mask",
+    "name-preceding-rank-mask",
+    "spell-out-factored-width-bounds",
+    "match-search-work-overflow-explicitly",
+    "reuse-window-origin-in-result-offsets"
+  ],
+  "workload": "Six existing packed literal-set tests covering SIMD matcher, factored byte classes, windows, resource accounting and shape refusal; the seventh regex-reference test remains lowering-blocked.",
+  "case_sha256": "00d22235f99a3da65a9160171e9d0775e9b23137a984fa9cedf349db82014ebb",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "guest_mir_opt_level": null,
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 2.0640797500000048,
+    "baseline": 1.1794524590000002,
+    "candidate": 1.1505054579999978
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.487558792000001,
+    "baseline": 5.054295666,
+    "candidate": 4.901881417000002
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "263f7f0084a6652be3253460bf7562321650643787c0ac7fe024ce46a7e8152d",
+    "scripts/interpreter.py": "60445b8ce8176b23e3162f78e9595ee78197a2f75d54dfdb8deaca0f22755ce6",
+    "scripts/workflow_cases.py": "f07186ef97e5a4d5f96c23ab56f102f95a61360f198badc1661cac6632d5a1d4",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "inline_leaves": false,
+      "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+      "exporter_sha256": "88897abc87178852fb97517a05723a14448cd266b2907420b2f2f67a8eb227e4"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "inline_leaves": true,
+      "vm_sha256": "5db13eb32101046730eb287cee19900ff4cb290919bd0078b19f04b5e0eccdd5",
+      "exporter_sha256": "ff2d87352dbf3e5d3a21eeeb9013469c6438ca271635d90be0202f1e828026e0"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "5db13eb32101046730eb287cee19900ff4cb290919bd0078b19f04b5e0eccdd5",
+  "exporter_sha256": "ff2d87352dbf3e5d3a21eeeb9013469c6438ca271635d90be0202f1e828026e0",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 7.487558792000001,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        5.91552734375,
+        6.7802734375,
+        5.69677734375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 5.054295666,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        6.001953125,
+        6.78369140625,
+        5.7041015625
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/baseline/0-0.rbc",
+          "sha256": "0af736c1c1fc8e4bdd1cbd2d2967e2f844b4ae673321cb2c3a1ea1842c5f4716",
+          "bytes": 2556843
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 4.901881417000002,
+      "source_sha256": "5d13e2be34894019a0ff07c962568c864683fa6d1f7ef16590ecebc303c7ece4",
+      "load": [
+        6.001953125,
+        6.78369140625,
+        5.7041015625
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/candidate/0-0.rbc",
+          "sha256": "16d0ca3fa30ba657caf4ed8619cebfe229b18091c5bf0da83a6b7980b04df069",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.3885745000000007,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        5.76123046875,
+        6.720703125,
+        5.68798828125
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "21af9d01759e2d35d77d06c4dafd29b354dcbb7a2026293a16cdd73329baccc6",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.1691741249999978,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        5.76123046875,
+        6.720703125,
+        5.68798828125
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "8d8ceccac076518730e3f06f4d592bbe7729e527156ee3ffb75a442edf8ca00f",
+          "bytes": 2556843
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 2.004618292,
+      "source_sha256": "00ea15bbf4842c2783bce8afb58ee58ab1962861da1eca22076a71847b2f8330",
+      "load": [
+        5.76123046875,
+        6.720703125,
+        5.68798828125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 2.3205256669999983,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        5.4599609375,
+        6.64208984375,
+        5.666015625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.1794524590000002,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        5.4599609375,
+        6.64208984375,
+        5.666015625
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/baseline/1-0.rbc",
+          "sha256": "b5cda41e3b44ad4893eac986b41c2c1f4008c7d8035e75f59321fdac3db2f221",
+          "bytes": 2556843
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-byte-class-bit-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.1298250420000002,
+      "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+      "load": [
+        5.4599609375,
+        6.64208984375,
+        5.666015625
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/candidate/1-0.rbc",
+          "sha256": "2d64e542ba00a009bf18d263490304b0158b20c06137b4a4dc0c9492ab820ea7",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.9477156250000007,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        5.4228515625,
+        6.61474609375,
+        5.662109375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.1711445410000003,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        5.4228515625,
+        6.61474609375,
+        5.662109375
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/candidate/2-0.rbc",
+          "sha256": "914e1bcf3be35feef2d67a272b2d22c64f7a40e96032ff2901011e937e6bb0a1",
+          "bytes": 3334367
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "name-preceding-rank-mask",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.1915896669999988,
+      "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+      "load": [
+        5.4228515625,
+        6.61474609375,
+        5.662109375
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/baseline/2-0.rbc",
+          "sha256": "5be06f3b7ca3e1127c3c8ed06e0bcac4bf667a85fc5254592e6ac63ae1171d2e",
+          "bytes": 2556843
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.111732,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        5.4228515625,
+        6.61474609375,
+        5.662109375
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/baseline/3-0.rbc",
+          "sha256": "f765d60dbe7824f77c45bcdbaa73a47cb8247c95991418505e49d9eb096b7a8d",
+          "bytes": 2553668
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 2.0640797500000048,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        5.388671875,
+        6.587890625,
+        5.658203125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "spell-out-factored-width-bounds",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.1505054579999978,
+      "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+      "load": [
+        5.388671875,
+        6.587890625,
+        5.658203125
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/candidate/3-0.rbc",
+          "sha256": "6ec8cafd919ba47887c8cc45e6fadcee208900e714f0342356320b136f1cad86",
+          "bytes": 3328247
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.1407824580000039,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        5.388671875,
+        6.587890625,
+        5.658203125
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/candidate/4-0.rbc",
+          "sha256": "84ac0f7b0861367168a3390019be8517289c1cb851d86830720a8384f65763c3",
+          "bytes": 3324840
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 2.0545182919999974,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        5.27734375,
+        6.544921875,
+        5.6484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "match-search-work-overflow-explicitly",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.2345410420000036,
+      "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+      "load": [
+        5.27734375,
+        6.544921875,
+        5.6484375
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/baseline/4-0.rbc",
+          "sha256": "c96571500444324c4cdc68b7d8fa0e08e449d6812ae438e3115a5d290450d58f",
+          "bytes": 2552403
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.150005667000002,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        5.27734375,
+        6.544921875,
+        5.6484375
+      ],
+      "engine": "jit",
+      "tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/baseline/5-0.rbc",
+          "sha256": "8f267347c56eefbaca90c37a93b387ec115751be88be6ed0bbfe2417a0135e1e",
+          "bytes": 2552340
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 1.1548271250000042,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        5.27734375,
+        6.544921875,
+        5.6484375
+      ],
+      "engine": "jit",
+      "tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-packed-literal-set-leaf-inline-broad-01/artifacts/candidate/5-0.rbc",
+          "sha256": "41b095967fd82706a73463475967ffc8439189f4402353e01748abf71c1e23d2",
+          "bytes": 3326411
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "reuse-window-origin-in-result-offsets",
+      "tests": [
+        "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+        "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+        "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+        "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+        "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+        "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit"
+      ],
+      "seconds": 2.1892785419999967,
+      "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+      "load": [
+        5.0947265625,
+        6.48583984375,
+        5.6328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "0d0d7b9092fe9e29320b35d7b04eed4655a81b7d21e0cd90bff9abaecf85ed34",
+    "candidate_tool_key": "4227fc2287d5cf25e18327d9c7261bb95feb0f41e038bec050f15f1abcc8ffb6",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "b2cab4c95ed39f4f51e10ba996abbe1a9dacd3f367e809f12a9207b190d17462",
+        "baseline_seconds": 1.1794524590000002,
+        "candidate_seconds": 1.1298250420000002,
+        "difference_seconds": -0.04962741699999995,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.068153458,
+            "execution_seconds": 0.033150374999999954,
+            "artifact_hash_seconds": 0.001108959000000187,
+            "launcher_seconds": 1.14138475
+          },
+          "candidate": {
+            "cargo_seconds": 1.030683,
+            "execution_seconds": 0.034603917000000095,
+            "artifact_hash_seconds": 0.0014726250000001162,
+            "launcher_seconds": 1.105487291
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 2,
+        "source_sha256": "ee5a7486f6f1a81f8cf107b902b6446a56588ba3e5c9103bcb8e946430098051",
+        "baseline_seconds": 1.1915896669999988,
+        "candidate_seconds": 1.1711445410000003,
+        "difference_seconds": -0.02044512599999848,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.093340083,
+            "execution_seconds": 0.032268709000000007,
+            "artifact_hash_seconds": 0.0011268749999999716,
+            "launcher_seconds": 1.166629667
+          },
+          "candidate": {
+            "cargo_seconds": 1.0651825419999998,
+            "execution_seconds": 0.034954042000000074,
+            "artifact_hash_seconds": 0.0016236670000000508,
+            "launcher_seconds": 1.141105666
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 3,
+        "source_sha256": "e423aabcac241131bb1c3b239a6c6532cf7bc57f11aefadc2a24495c713b43af",
+        "baseline_seconds": 1.111732,
+        "candidate_seconds": 1.1505054579999978,
+        "difference_seconds": 0.03877345799999787,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.0140289169999999,
+            "execution_seconds": 0.03306979099999996,
+            "artifact_hash_seconds": 0.0011380830000000675,
+            "launcher_seconds": 1.086577042
+          },
+          "candidate": {
+            "cargo_seconds": 1.04604575,
+            "execution_seconds": 0.03510687499999987,
+            "artifact_hash_seconds": 0.0015417920000000418,
+            "launcher_seconds": 1.122000084
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 4,
+        "source_sha256": "b34bcef51f5ea7b0e7737fc041f55ca781415c2d87e55b1cede35f6f02ae7db2",
+        "baseline_seconds": 1.2345410420000036,
+        "candidate_seconds": 1.1407824580000039,
+        "difference_seconds": -0.0937585839999997,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.125444125,
+            "execution_seconds": 0.03276858399999982,
+            "artifact_hash_seconds": 0.0011075839999998838,
+            "launcher_seconds": 1.201510541
+          },
+          "candidate": {
+            "cargo_seconds": 1.04139175,
+            "execution_seconds": 0.0343143749999999,
+            "artifact_hash_seconds": 0.0015849999999999476,
+            "launcher_seconds": 1.115963375
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "state": 5,
+        "source_sha256": "8d659d4be6c5a705095319d5eff788e8c19a2ca9918ac3e959ecdb94e4b04d90",
+        "baseline_seconds": 1.150005667000002,
+        "candidate_seconds": 1.1548271250000042,
+        "difference_seconds": 0.00482145800000211,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.051180958,
+            "execution_seconds": 0.0329439170000001,
+            "artifact_hash_seconds": 0.0011135840000000563,
+            "launcher_seconds": 1.125117875
+          },
+          "candidate": {
+            "cargo_seconds": 1.054802125,
+            "execution_seconds": 0.03464212499999997,
+            "artifact_hash_seconds": 0.0017015410000000841,
+            "launcher_seconds": 1.130024917
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 3,
+    "median_paired_difference_seconds": -0.02044512599999848
+  }
+}

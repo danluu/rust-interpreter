@@ -1,0 +1,1421 @@
+{
+  "kind": "capability-and-execution-evidence",
+  "tool_key": "2f2cbd71a938829cd1efeef1658aed5fee4353843f8bfe35226716c415f96266",
+  "vm_sha256": "ef85afdc64c4f90cb042dac2d169699a8a202087fdb876dd1733808af4df55ea",
+  "intrinsic": "llvm.aarch64.neon.tbl1.v16i8",
+  "implementation": "Own scalar bytecode lowering; VM and wire version unchanged",
+  "selected": 389,
+  "lowered": 227,
+  "blocked": 162,
+  "newly_lowered_and_passing": 29,
+  "rerun_changed_bytecode_and_passing": 41,
+  "identical_prior_bytecode_and_vm_with_prior_passes": 157,
+  "new_survey_counts": {
+    "passed": 67,
+    "instruction-limited": 3
+  },
+  "retry_counts": {
+    "passed": 3
+  },
+  "combined_passed": 227,
+  "performance_qualification": false,
+  "phases": [
+    "results/audit-execution-fre-simd-table-01/summary.json",
+    "results/audit-execution-fre-simd-table-limit-retry-01/summary.json",
+    "results/audit-execution-fre-combined-01/summary.json"
+  ],
+  "artifact_comparison": ".work/simd-table-fre-bytecode-comparison-01.json",
+  "blockers": [
+    {
+      "error": "MIR unavailable for libc::unix::pthread_mutex_trylock",
+      "count": 62
+    },
+    {
+      "error": "MIR unavailable for std::sys::sync::thread_parking::darwin::dispatch_semaphore_signal",
+      "count": 59
+    },
+    {
+      "error": "thread-local destructor registration is not yet supported",
+      "count": 28
+    },
+    {
+      "error": "MIR unavailable for libc::unix::bsd::apple::clock_gettime",
+      "count": 6
+    },
+    {
+      "error": "expected SIMD vector, got u8",
+      "count": 6
+    },
+    {
+      "error": "MIR unavailable for libc::unix::fstat",
+      "count": 1
+    }
+  ],
+  "results": [
+    {
+      "entry": "anchored_line_capture::tests::ambiguous_and_nullable_boundaries_are_rejected",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "fa11cc8443917c4b3e3c6991a51ae730cc06790369965a9d38e678f179a66b5a"
+    },
+    {
+      "entry": "anchored_line_capture::tests::byte_masks_cover_all_bytes_and_disjointness",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e34196de77b7b0068e19be85db2b439ebfa86371d2b88f5daad3d47470c162a9"
+    },
+    {
+      "entry": "anchored_line_capture::tests::empty_trailing_lf_crlf_and_lone_cr_are_distinct",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e749aeed048e968c8b4c28ce72371749e498ec8bfb8f2d4a4211c838ddd94303"
+    },
+    {
+      "entry": "anchored_line_capture::tests::every_run_limit_has_a_one_below_boundary",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "1b942636f0c95e02d168137fb831c9e9f80c258352864ba593a98ef137062700"
+    },
+    {
+      "entry": "anchored_line_capture::tests::malformed_bytes_are_ordinary_byte_content",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "9f00ee0796f537d748f5fb54339f8a4d88c9c8076a1df3d486c15afc832d0870"
+    },
+    {
+      "entry": "anchored_line_capture::tests::target_shape_matches_raw_bstr_line_rules",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "a8403b2bca59fe65b8771f6aca1d2b26a4b006ea90ea03ce50fcb653e6d11b7f"
+    },
+    {
+      "entry": "anchored_line_capture::tests::terminal_end_requires_full_line_and_keeps_empty_captures",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "ad636eb1eb24da721ea047e152ecab12758bccdf91ac2a7fc8b10f808b002d3d"
+    },
+    {
+      "entry": "blocking_delimiter::tests::build_attempt_reports_exact_success_and_partial_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "5d7bcf7e0f81bf995472dd10cf3b89533fd3976aa5ba0e4e0a3342107a5284d3"
+    },
+    {
+      "entry": "blocking_delimiter::tests::every_positive_limit_is_preflighted_at_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e9f74345f9b9718f9c3d7922b5d127c7f3352f60351a0f4860d74205a362b954"
+    },
+    {
+      "entry": "blocking_delimiter::tests::identity_and_construction_refusals_are_exact",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "21fe07f6c60e36e2a84ea2d5688ddc5e492030fa83ee61968a94b8e9ebbdaa5c"
+    },
+    {
+      "entry": "bounded_class_sequence::tests::build_attempt_reports_exact_success_and_partial_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "89f44c5545f913b8a6c8df094e3ea1c56c2f3be2eb4ca0244ac7cec07304a30d"
+    },
+    {
+      "entry": "bounded_class_sequence::tests::capitals_sequence_exact_work_boundary_is_hand_derived",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "44676bb537125e8e26538878509052bfe7876d067c5e6a159a8e5b542daa30c1"
+    },
+    {
+      "entry": "bounded_class_sequence::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "a48162c3c10f436d8b9c7af83d6140499cb2ebb6507866a77a7fa327220e3cb9"
+    },
+    {
+      "entry": "bounded_class_sequence::tests::every_nonzero_reduce_limit_is_preflighted_at_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "6a6b34d3fcb39518b5437ba614ade99560bcaa5ff837e38bd8970c52ab729adb"
+    },
+    {
+      "entry": "bounded_class_sequence::tests::execution_scales_with_n_and_not_source_range_count",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "694813f0370d92b897571a8702292f967e15d295e63c9b3619fe06f3c3428378"
+    },
+    {
+      "entry": "bounded_class_sequence::tests::greedy_maximal_chunks_do_not_rebalance_a_short_remainder",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e37bbc9a255362455956855c47ce3488fcef69ce43dfda16982cde5bd0398f55"
+    },
+    {
+      "entry": "bounded_context::tests::bounded_affix_bordered_literal_uses_endpoint_fallback",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "e37df755305b8bc640851d804a0465157d0cfaca1574dce26b24df18b4401a3b"
+    },
+    {
+      "entry": "bounded_context::tests::bounded_affix_overflow_precedes_work_limit",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0c7224e01e649cfcc783d902e7ff112a4680281364eefa62d25e9249b48b130d"
+    },
+    {
+      "entry": "bounded_context::tests::build_attempt_reports_exact_success_and_partial_traversal_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "f88146ca991d150b8bee22b6cfbc6a32687381ec8dac79f893b1331a473f929e"
+    },
+    {
+      "entry": "bounded_context::tests::count_and_span_sum_records_preserve_the_fixed_frame_envelope",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "d3d5327b88f45d8e22994ea95c3908c8aaabbdcb529521c9c5f12a7380676f06"
+    },
+    {
+      "entry": "bounded_context::tests::deceptive_exact_size_iterator_is_charged_by_actual_yields",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "2942fd95ba8dc90635b2400241cecf6d6dec07953e09cf9d24dfc2a66623610d"
+    },
+    {
+      "entry": "bounded_context::tests::rebar_row_curated_10_bounded_repeat_context_exact_limit_and_one_below",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "a4d34a181794e4c3d1626c2ddf78deb37c85f67ddaaf53263509ceb73c8d7858"
+    },
+    {
+      "entry": "bounded_context::tests::rebar_row_curated_10_bounded_repeat_context_linear_scaling_bounds",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "fb1d3a11e0e3629f78c659f7b33bf5be7eb972086260cd7a3b9cb6a5849afa97"
+    },
+    {
+      "entry": "bounded_literal_pair::tests::build_attempt_reports_exact_success_and_partial_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "8af8cc2009c7ec5b125d9268c3813050ce43c2e858d6c55ea36aecb86fe797f9"
+    },
+    {
+      "entry": "bounded_literal_pair::tests::build_limits_are_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "8cfc672f929a30a23e58135138f852105507b83c2fac996a8fe8a49a1defe9ba"
+    },
+    {
+      "entry": "bounded_literal_pair::tests::directed_greed_lf_and_restart_cases",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "fae4dbf5b1645358afd79114f2ed320fe632636a34d1c9dc55c6fd8f17d5a07f"
+    },
+    {
+      "entry": "bounded_literal_pair::tests::exhaustive_small_haystacks_match_greedy_reference",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "1d9522cdd7887327c753f7a891f216844337fdbdcabc3251034ba61961097919"
+    },
+    {
+      "entry": "bounded_literal_pair::tests::reduce_limits_are_exact_one_below_and_actual_is_bounded",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "10b93d829645bba25af32cc055c8eee64b3ed1f6d9e84e4296dc8456d65f8ede"
+    },
+    {
+      "entry": "bounded_literal_pair::tests::shape_refusals_and_overflow_precede_traversal",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "08892ba593bf387a03783c4c53ab03b7843bc9073e7b98a48b847a5ed3180503"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::build_attempt_reports_exact_success_and_partial_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "180f07555d7603c27b7c60330fd22ad375f27ce7676edd7f54dcd426ba8fdd24"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::compact_value_reuses_every_preflight_limit_and_refuses_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "8e3d49fa02169d0bf9ff6cc9c1b85de79abcf7ce56c25e29fbba940a3c6e5d2d"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::empty_capable_priority_invalid_bytes_and_crlf_remain_raw_byte_semantics",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "69728e154f79f16ef56903efa4b9acc409796725df288386c5627c53cb39d040"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::every_public_resource_bound_is_checked_before_execution",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "7d8bbb71e3125dc70bd731a104432e1b4aeddc300a7c45f6c50aa5bb9759e2f2"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::exact_work_limit_and_one_below_fail_closed",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "ef10c0d6ac9d4b94a2683b6c08d08443c56b0439a4d309f8901ef9d7aa76ac6a"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::imported_ip_size_fits_the_unchanged_public_work_cap",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "5c69ca0f30171ca285efa18d7eaaebf1c1b4521eb130d67a7d6e1689c6c634ee"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::malformed_and_near_miss_sources_are_rejected",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "9779d2ff8e05dbc8e5b8b0d8c071b1a1ec65b3cbf6c5daa8c013b98199512f09"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::prioritized_optional_backtracking_and_non_overlapping_count",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "c679744639224485f93ca4cf14b08476f4f7e72653c4045a24c27369f02da503"
+    },
+    {
+      "entry": "bounded_separated_fields::tests::two_through_eight_fields_publish_exact_prospective_access_bounds",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "5bb421b03f9d2c149376615d643801520b1cdf177b5953e1117c3032c83d4ab7"
+    },
+    {
+      "entry": "byte_candidate_stream::tests::exact_and_every_positive_one_below_build_limit_precede_source_and_allocation",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "acacd66038c42a957d807b3657ef2fcb9e48691994637148a86f03a6427f9cee"
+    },
+    {
+      "entry": "byte_candidate_stream::tests::exact_and_every_positive_one_below_scan_limit_precede_source",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "b96548c0565048ee951affc414e9f9da12634441c3d85d59660d71f0f94093ef"
+    },
+    {
+      "entry": "byte_candidate_stream::tests::exhaustive_small_alphabet_matches_naive_ordered_stream",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "35a60845f12e830a2eeffd240bc15f9167eca3f5eafaebf270d99fa5c236101e"
+    },
+    {
+      "entry": "byte_candidate_stream::tests::fixed_program_doubling_envelopes_remain_linear",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "54260464f32770c18d46faf7ca6765aa8df287166953d4cea2e589f1b235fe03"
+    },
+    {
+      "entry": "byte_candidate_stream::tests::overlaps_duplicates_windows_offsets_and_order_are_complete",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "a4506c050f6e7d12432c956c3d3faa89b955aeeaa2c87debbabe07d162d9068b"
+    },
+    {
+      "entry": "byte_candidate_stream::tests::prospective_overflow_is_typed_without_source_access",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0399ba1b446ad3ea449858381d88cbc722705fe7e2cc95b46bd73bf2b9ba591a"
+    },
+    {
+      "entry": "byte_candidate_stream::tests::same_end_priority_is_governed_by_start_then_source_order",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "490a83e95411096911aa3e80210ff077c50375f6fb363081602c1b56a7b02fb2"
+    },
+    {
+      "entry": "byte_candidate_stream::tests::structural_selection_and_empty_fallback_are_exact",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "da66fe1f32712568bb12662f1a004ed273de2e47ea843deff5180e66625698a1"
+    },
+    {
+      "entry": "byte_start_map::tests::byte_start_map_build_limits_are_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "9f8e49dffa1d666345937364a8cfd4a5f4d3c2e5f0ce5febcf68f6ea03b03b77"
+    },
+    {
+      "entry": "byte_start_map::tests::byte_start_map_custom_terminator_has_documented_precedence",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "21db0b32f2e42c909682f0d7457cc5613a47868a392e136510523c376bb2821a"
+    },
+    {
+      "entry": "byte_start_map::tests::byte_start_map_exhaustive_context_matches_pinned_public_config",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "05be3425d20a596a4bbaf83629a069bb7a7bd3548dcab2f7728a2e2fa83fd228"
+    },
+    {
+      "entry": "byte_start_map::tests::byte_start_map_invalid_windows_fail_before_resource_admission",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e97f5cb474b528bf53ff6d2f2cd8ec33851c98d28db563ca98eee979516e9b31"
+    },
+    {
+      "entry": "byte_start_map::tests::byte_start_map_lookup_limits_are_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "9e24ec1b7deb9649ba53aa6f7125b6655b71c945a34131ff4c60044a11d0fe07"
+    },
+    {
+      "entry": "byte_start_map::tests::byte_start_map_reproduces_upstream_start_vectors",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "4656b7f43bd1955db910823b5d568c7ad96accf56dfa97fd316bb4e743eb7dde"
+    },
+    {
+      "entry": "determinize_state_codec::tests::malformed_and_one_below_refuse",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "3c7022b7b639ae28c586f4a08148ec9be313125a73109ffc165110e21821c799"
+    },
+    {
+      "entry": "determinize_state_codec::tests::signed_roundtrips_boundaries",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0472089cb9c1a3e9925597328c58e2f231a6a10071e4aa81fc59acd11cf6ac35"
+    },
+    {
+      "entry": "determinize_state_codec::tests::unsigned_roundtrips_boundaries",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "1f9d7947294e4be91a02ba03669f0db881d1230eab1b99aa95d5853d05ad7cb4"
+    },
+    {
+      "entry": "fixed_absolute_domain::tests::endpoint_every_descriptor_build_fence_is_preallocation_and_exact",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "323cb01718083d6e84542590ae38537f698e5c12c65d3cd189bac87578a03a80"
+    },
+    {
+      "entry": "fixed_absolute_domain::tests::endpoint_mask_failure_retains_cumulative_construction_actual",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "bc62e1ceeae7f6920829af83fd33fa96d3e16d7574f591605baa55b3a997cc9a"
+    },
+    {
+      "entry": "fixed_absolute_domain::tests::endpoint_operation_identity_binds_equal_dimension_descriptor_content",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "68c04097c7a0ed02649b293556aa68f2fb0ba9c63e148b0a38d10b18636f4018"
+    },
+    {
+      "entry": "fixed_absolute_domain::tests::endpoint_precounted_words_publish_before_source_and_retain_mismatch_actuals",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "7c6a4ee1e25539f4e78d79b6b94bc4658445d89c0369eb4ece85ef21f0af6056"
+    },
+    {
+      "entry": "fixed_absolute_domain::tests::endpoint_prefix_copy_preserves_reversed_and_duplicate_hir_ordinals",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "dc7b6e4102294a9bf6181b03c0b45251482a5b84a3047685af2e15ccdb170aad"
+    },
+    {
+      "entry": "fixed_absolute_domain::tests::endpoint_second_word_allocation_failure_retains_first_allocation_and_planning_work",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "1a00cd8d0b503ad40516e9cb1a3f757af8163289eb4d582104d273c11d1b59f7"
+    },
+    {
+      "entry": "fixed_absolute_domain::tests::endpoint_successful_manual_build_receipts_equal_every_prospective_dimension",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "15f8843d24f7eb20ca5c8e9157ab806683e4a03df3c2bb787421feb0d2f9c5a4"
+    },
+    {
+      "entry": "fixed_class_sandwich::tests::build_attempt_reports_exact_success_and_partial_range_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "f03ec2536d48cfa3b3a1a70914c75fb072da1745aff37215c9716ba8f1ef50b7"
+    },
+    {
+      "entry": "fixed_class_sandwich::tests::byte_masks_match_every_canonical_range_value_and_skip_binary_search",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "77a9dbd2c3090d2a491c870387eeb2ff1b3139f3c0b734675ac9bc316419591c"
+    },
+    {
+      "entry": "fixed_class_sandwich::tests::execution_refuses_before_traversal_when_window_scratch_is_starved",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "94af3b900ae92b3104fff73d10e077e7b0a795084bf24b0834471d9a2aef882b"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::build_attempt_receipts_close_success_partial_failure_and_preflight_refusal",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "c0de4f246dfdba16ade56d8c4804a7f53e16c2d9b36b61fa487aa3c432e26bea"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::build_limits_accept_exact_and_refuse_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "b40aeea36fb633e2a2d60500287b7289264a65a7eb7719dad7949a06a4ce3dfd"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::fixed_anchor_matches_exhaustive_short_reference_and_restarts_on_accept",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "6d807027a78c3c8c4687c4d43af401f7df21f25f41ab6be61b43edba15807ac3"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::inclusive_full_byte_ranges_union_without_allocation",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "d13f6fc3b3cfaa94e60baeeccc315ec4f9762637ce60afde823849c29018acda"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::one_byte_anchor_compact_values_match_exhaustive_reference",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "94ce82b46560d5f5a5c025f0b651da29e4f39b407d999cc20fe96ee73df72712"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::partially_overlapping_predicates_match_the_reference",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "350f33486ae282e8421d2ee0202db4cd93103ba2738d248e4d5d1407c8e8b2a1"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::reduce_limits_accept_exact_and_refuse_every_nonzero_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "6349050cc21866568a9861e8c0dc6a331e78fa78813bb01ca5181e4c674e7422"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::secondary_exact_anchor_rejects_false_candidates_before_broad_predicates",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "8708473c7d9d7ee0f8b3c071f1fe1239bc09d0d4901441a4cff58edf91a1ff84"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::sherlock_shape_accepts_all_cases_for_count_and_span_sum",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0949e6da3300c76d0e6082d60f036f499f58835200c7f8a92431f12751227faf"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::shift_and_fallback_matches_exhaustive_short_reference_and_resets_on_accept",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "768faf5968a6401622c2fbe9cbfef812429e3f5808180e470d064510f031cfd5"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::width_and_range_semantic_boundaries_are_closed",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "d45dc603389b6842c0270681d1a097b35b088c84eb42715e21d0806d4d4f8ee3"
+    },
+    {
+      "entry": "fixed_predicate_word64::tests::width_one_value_projection_closes_every_prospective_limit",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e014a394a3010aea1d35869fa653b88122ebbd524972166a4be5ef563518eba4"
+    },
+    {
+      "entry": "forward_anchored::tests::every_nonzero_build_limit_has_exact_and_one_below_behavior",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "11156316b839a86b2c7ceb5450c8f08c8f39ac29f7e9c41ba806a2a7b928bf38"
+    },
+    {
+      "entry": "forward_anchored::tests::exact_suffix_copy_has_exact_capacity_and_typed_failure",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "6d7138dd741f5ecfabe97ad4fb01064856e13283c5e47856967bddf042ceb450"
+    },
+    {
+      "entry": "forward_anchored::tests::fixed_construction_caps_refuse_before_the_only_copy",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "5d45a60ee08c5c864422fadfe406a7b28742caa619d236a6d7a296df89349491"
+    },
+    {
+      "entry": "forward_anchored::tests::fixed_construction_has_one_exact_copy_and_specialized_geometry",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "10fae4e2debdeb6a594e4121bc7b18b0b3a5ab7f78d882a279603863227b23c7"
+    },
+    {
+      "entry": "forward_anchored::tests::fixed_exact_copy_failures_are_typed_without_retry_or_fallback",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "09729f7fe0f3d5e5bd3c8ea9a98307d1c6d43e608ad31e323913d4ef77d94951"
+    },
+    {
+      "entry": "forward_anchored::tests::fixed_semantic_refusals_are_typed_before_copy",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "f88445ee54c0e8550a2704644331d0dc3226269b8b997b015d45c5882ff8f7b3"
+    },
+    {
+      "entry": "forward_anchored::tests::packed_range_mask_is_exhaustive_for_every_u8_interval_and_byte",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "3bcd3d2a831614f66d3df9c4fe1c3b8a2cbbc2af9d324bce4fe3044dd0f5cf1a"
+    },
+    {
+      "entry": "forward_anchored::tests::persistent_and_peak_caps_precede_suffix_copy_and_allocation",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "747b0f7bb018c8333e1a3f5d1974aeaf12829493f2697837bbf5a125be2ff1a5"
+    },
+    {
+      "entry": "forward_anchored::tests::small_set_scanners_cover_block_lanes_tails_and_arbitrary_bytes",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "e3b489859ecf36c3a32c5b49aa2890e78e2b036ad53b11c82fb4be1cb5bb3f38"
+    },
+    {
+      "entry": "forward_anchored::tests::swar_range_scanner_matches_scalar_at_every_word_lane_and_tail",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e67e44e8dbf7aeec3eded1792c84102cab511f47140788f235f0913d3b98f136"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::arithmetic_overflow_paths_are_named_and_fail_closed",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "40e6254ab8c5a1b4c5c57f3fdd708addfc4e7d29eb663d6c87e290062d729b42"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::build_attempt_reports_exact_success_and_partial_stream_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "8f3ce9369b335c997e3e968d99856c2905482e5ab961276c96339d3d9c220e34"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::build_rejects_missing_and_inexact_derived_roles",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0acfd95374b6474795f50573fa749958a1e04c8c4d909a9a618634e65c0e4733"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::counted_stream_length_mismatch_fails_before_plan_publication",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0ef7e885cb3233df58c0fa7fb5f9ca9b6fed68cf6c768a43b3f8a0980020a136"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::default_empty_reductions_admit_exact_fixed_scratch",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "5fed8515e7562295100c82879c4b19195afbe5c5c8e88ad0ff1609f0b236d5a3"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::direct_limits_precede_overflow_prone_derived_bounds",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "3d8da771f2896b866d80c8d07165ebb2a5b27fda1aee94d9eec75f55fbede3b3"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::every_build_resource_is_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "c3bcd629aa6a50e141eb6ea59ce5d5402d4e55f38b14a4d234715ba76c89d32d"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::every_count_resource_is_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "9caf7fc909bb09077db51b8f398662e2cb6b653a4823fd6d0ed204881c449e14"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::every_published_actual_counter_is_reconciled",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "bcfdb6eff3e8ecb48346f31d97f0d31643d39e27f16e443ab5d4c8f3361d4845"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::every_span_sum_resource_is_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "9db03f54c47cc878e6844299a6649606667df0cdc2626764b60c099af11fd06f"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::exact_reduce_bounds_are_enforced_before_traversal",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "90e486f1f34b8bc746a6376e83a87fdd3dde47da92228b7c5e5ecb675f9b5432"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::hand_calculated_n_scaling",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "7caff86059c8156a8dd2b3470fdffb472c56a6527b717f646bdacff336599b1d"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::hand_calculated_q_scaling",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "b90ed13c8a84861598955e25f846188be69eb36d360f1c6825727c9981ae8138"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::large_input_transition_bound_is_exact_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "5cb53888d0746fca98a6397d3edb57cc168beffc2b513da7d9a87fa4a2299fbd"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::malformed_utf8_advances_one_byte_without_matching",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e45c26d7485e93b1fb355822d304bde959ba43efbf4eb7d4f91c42ff0831a9e5"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::max_event_preflight_and_transitions_stay_bounded",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "b81bd0a4e3dbc317cdb519baaca05bcb6f58fe0f05352ebc437778807a5d2335"
+    },
+    {
+      "entry": "grapheme_scalar_dfa::tests::ordered_cluster_traps",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "7b32caf5dc969079d8be0bcac2c92b1dbfa79b6f1a49ea63c82dce0ffbe4b634"
+    },
+    {
+      "entry": "literal_aggregate::tests::arithmetic_boundaries_and_scaling_are_checked_before_execution",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "3b779fa2fb557b9c7cffb6efaed87b3015819372b4baa6b4ed547fd33c97aa93"
+    },
+    {
+      "entry": "literal_aggregate::tests::build_attempt_reports_exact_success_and_preflight_failure_effects",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "1cbd7f99241294dbd52533c8ea8ce4246e96926b6f767bc7c2d6dc39dcc993d6"
+    },
+    {
+      "entry": "literal_aggregate::tests::bulk_execution_reconstructs_the_incremental_logical_ledger",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "d41ff517357a881d9aabf92d117180f86eef995a4f8afabeaa837e1ab979c3e0"
+    },
+    {
+      "entry": "literal_aggregate::tests::empty_is_explicit_unicode_off_byte_boundary_formula",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "db8a8d603aeff12a5a85957fcd72d786b1d2565ce77d24c0f6c396e9301647b8"
+    },
+    {
+      "entry": "literal_aggregate::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "579408fe7dab27e8a0b2dd633c09f560bcda347b31097c2870c2e9571ef3a172"
+    },
+    {
+      "entry": "literal_aggregate::tests::every_nonzero_operation_limit_has_an_exact_and_one_below_boundary",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "f3f314e2c3184f20f4eed0b971e0828c2c7b2af213aee0a1b577126ad9266da0"
+    },
+    {
+      "entry": "literal_aggregate::tests::external_origin_is_word_sized_redacted_and_single_assignment",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "a620928385346b8db435a9fbce36e9ff91d599727f9a6000f64c575d92917d8e"
+    },
+    {
+      "entry": "literal_aggregate::tests::injected_execution_faults_retain_nonzero_bounded_partial_a",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "d31fa7ac2dddc6bb8c15d9fa0635c3f0f48deee5b89876587a25b12c3993344c"
+    },
+    {
+      "entry": "literal_aggregate::tests::nonempty_iteration_is_leftmost_nonoverlapping_for_arbitrary_bytes",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "44671e4e52c436eb4152c04445b8e342f8cb668f84f7ff1645506ec60104cc18"
+    },
+    {
+      "entry": "literal_aggregate::tests::prepublication_arithmetic_failures_retain_no_p_and_zero_a",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "c34ec82d6f83ed685b7bbb7808a5406c0191f511c28c14026c51810add553eec"
+    },
+    {
+      "entry": "literal_aggregate::tests::public_terminal_closure_rejects_source_stage_and_receipt_field_mutations",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "45c067546f0ac712b74b793199305b6c86f4d231a315ba4d07d76f961141d124"
+    },
+    {
+      "entry": "literal_aggregate::tests::release_containment_rejects_every_forged_actual_dimension_before_commit",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "6cd8eae31e2c7113591ab3169fa5dc25730329814e2bf8a4267def6c186639c6"
+    },
+    {
+      "entry": "literal_aggregate::tests::successful_attempts_require_canonical_identity_build_p_and_success_phase",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "e36d14a53f44d4aa29e6813a47f2a9060f7b73a96ae5af272213a59bd64a371c"
+    },
+    {
+      "entry": "literal_anchor::tests::boundary_misses_and_malformed_candidates_are_typed",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "60957635cdbff893defded5352164d9aaced1f3586bdb4e32ff1e2c83b90894a"
+    },
+    {
+      "entry": "literal_anchor::tests::exact_and_bounded_recovery_preserve_original_offsets",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "eb4c6b43f205195250c2aca5296e2f827f23adbfdd1a7dff316d069e2626fa4c"
+    },
+    {
+      "entry": "literal_assertions::tests::build_and_reduce_limits_are_exact_and_preflighted",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "645394ddc3d4affa36fc8ebe7fa04a21408085086d0e12c234b3809092b3669a"
+    },
+    {
+      "entry": "literal_assertions::tests::build_attempt_reports_exact_success_and_preflight_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "9401e4bf945dbedff9d4f22d5b365c963a7494831e967dc0309179fc3a29640e"
+    },
+    {
+      "entry": "literal_class_run_literal::tests::a_literal_anchor_is_required",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "99d11afd90dd6b844345909505bbc6ede866041773f6ef38ff232dfef6fa2c08"
+    },
+    {
+      "entry": "literal_class_run_literal::tests::build_accounting_and_every_nonzero_limit_are_exact",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "190c6645b062136281455a412d12ad6d57f64a9badfa84a50ccfd843ea598883"
+    },
+    {
+      "entry": "literal_class_run_literal::tests::build_attempt_reports_exact_success_and_partial_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "4643f252ebb1fef6dc32e5f22e10e3b7638bfd262640fd8b91d724435689149c"
+    },
+    {
+      "entry": "literal_class_run_literal::tests::complete_ascii_word_run_builder_revalidates_every_guard",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "39837706e11497d02ae9b0fd034fefd95d189ec672e3d5df8bafd5aeb65ec2f8"
+    },
+    {
+      "entry": "literal_class_run_literal::tests::construction_rejects_noncanonical_and_ambiguous_boundaries",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "2283fe33ab8a1be030a49def38d112d4259287a4638379a3676b9b810dbc97d1"
+    },
+    {
+      "entry": "literal_class_run_literal::tests::generalized_builder_revalidates_search_only_guards_and_exact_limits",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "8caa497c333c9523fe9e4025fc6f5a29ad9cfc71c4c1eb88bd3f301c8edbf672"
+    },
+    {
+      "entry": "literal_class_run_literal::tests::overflow_is_refused_before_source_traversal",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "7e5f3e42e764b65499d1cd170547dc66bfe9bab36b3f310b2c9c60d1f8804740"
+    },
+    {
+      "entry": "literal_set::tests::concrete_dfa_owner_preserves_clone_accounting_priority_and_iteration",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "a585c0137cfc715253a5357b670761db5d32c4a4ddf2f41ba9f0bad8a85baf3b"
+    },
+    {
+      "entry": "literal_set::tests::construction_limits_are_checked_before_the_dfa",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "525e040547105bfb5cab5514409171d5bc74cdc309df4891c1ec476c3cc6fc50"
+    },
+    {
+      "entry": "literal_set::tests::leftmost_first_preserves_alternative_order_and_empty_patterns",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "813918d3a03b29ac1db75bc32699144c767ec054f67aa5cdb0614e9f3b253507"
+    },
+    {
+      "entry": "literal_set::tests::one_checked_iterator_reports_forward_matches_and_exact_full_input_bound",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "cf1d192435ce1f7f215a84934cadb3e346593875b5a5d3a0fa354e16ee214225"
+    },
+    {
+      "entry": "literal_set::tests::streaming_any_iteration_avoids_leftmost_lookahead_replay",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "013967ee6d127d0da7f0c5ba7622ba5e226f1620944fe6ae873a1c6332445a64"
+    },
+    {
+      "entry": "literal_set::tests::windows_keep_original_offsets_and_limits_preflight",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "07a3e659cf91d67497cb327463ee6399deaad85b4c7715d646b6de7c29abf5a1"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::build_attempt_receipts_close_success_and_partial_allocation_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "8e576f28dfd8cf2b38387f4122783d38c385f7095860668c61880d299fafb716"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::cache_identity_preserves_order_duplicates_empties_and_bytes",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "1cfed220e88335662dab9a545c53ec9158ea13773f2f0674b6959cb6c83d6168"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::caller_owned_workspaces_preserve_first_cost_and_remove_steady_initialization",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "95b4286cddc3bf1ca8c7d9c3c496fa571aa2eea74e2042ed43f427043496ba5a"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::constant_reverse_run_retains_only_future_readable_wrapped_slots",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "bff4cb339da7810bb91352a291fb8ae4e5ff847b8cc73ce783061b6057da7b28"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::directed_root_skip_differential_covers_empty_duplicates_priority_and_failure",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "59286c3741387b8ff3a6de56c1f00a5eb8b4b5d12123c43863674272a7a380ce"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::empty_only_empty_haystack_has_zero_transitions_and_one_position",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "673c06397f7e09f36b93a2e30b8ce82767353c51ca0a4b2866853349b80e1b3c"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::empty_pattern_set_is_a_typed_refusal",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "7a983edf91885dc5699dcc2a96f99662cf3258b3cd14445480d18518a1bc83eb"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::every_build_limit_has_exact_and_one_below_behavior",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "4ca73097fce616f54084af4ad0e55aa7e90897bf760e8d2b6dc81eed4abd6e17"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::every_reducer_limit_has_exact_and_one_below_behavior",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "4c400ed287ebbedd540979be47914e8809eb9f2444b7b3856ec1276eeabf66f0"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::fixed_pattern_fixed_haystack_and_joint_scaling_are_explicit",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "025d7bfdd776253d8064b3ad1a20772d8b55c1967508023c5777e262976a7d0e"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::nonempty_unit_unions_reduce_directly_for_count_and_span_sum",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0199de120152dad12149a41f234d89e04bf059c76bb78e24b7be864c1997220e"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::output_priority_covers_root_terminal_and_failure_inheritance",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "42d044ad3b12e04f1ccd98ec4f8e735d9be48d10be289aef72274c9d9309b5ef"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::quadratic_restart_adversary_has_exact_linear_transition_scaling",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "c39293459e6aec9f4277a1770df56557af818e9530be0db8b5bfe9e68ecbc718"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::retained_root_interest_exactly_matches_constructed_root_transitions",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "9e0553bfcd4ee77b075b14da89e48b8d5b2ec565db51da373e317cd23a8a63ea"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::rolling_dp_slots_match_direct_remainders",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0641517aed366ab098ced26e21ac7675029142563088ae630eef5277bc2ecce2"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::root_interest_accelerates_only_memrchr_widths",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "5ee5bb54372babf0e1f165b5432ec048d4c263bc3ac961bc512c941f8e6e9835"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::root_skip_overwrites_stale_workspace_at_boundary_ring_alignments",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "3ccd8f3d94f1982b9a5aff3fd23d466e1b23b73c5a4fd37e5a513f06b9343910"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::root_skip_preserves_logical_accounting_and_exact_limit_refusals",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "3a152515a42502d76b49bfcbdaa60d85cd68a203f9cf09972e8c06ac32602348"
+    },
+    {
+      "entry": "ordered_literal_aggregate::tests::single_pattern_results_match_exact_literal_aggregate",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "d1224bef02bf3cc338eb1fe3a4c30f7f45af58e1e3d8d6746c12a10446f22e67"
+    },
+    {
+      "entry": "packed_literal_set::tests::cardinality_above_teddy_requires_a_complete_factored_language",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "c86bb4579d2d1fadbe44f6cef630a91a1ffe0660087e22b5a89ea8b16c2b0ee1"
+    },
+    {
+      "entry": "packed_literal_set::tests::complete_cartesian_columns_use_one_anchored_scan_and_reject_missing_tuples",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "ed56f717c34d91c394f1f1dd672a60fb47545df3719dbd07a32e9815e14120b3"
+    },
+    {
+      "entry": "packed_literal_set::tests::factored_search_covers_two_and_three_byte_anchor_classes",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "e2635f3d5ff283fa5cf407950ff617328d5edd3a71abd3b379f0f3ffe0166b9a"
+    },
+    {
+      "entry": "packed_literal_set::tests::leftmost_first_and_window_offsets_match_the_contract",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "0b55f2b32c6ca9019f627974048d94332f9d4eae6967cbc137d72a119003d0cd"
+    },
+    {
+      "entry": "packed_literal_set::tests::native_and_factored_certificates_preserve_windows_limits_and_accounting",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "e9d900d6f2ca73814d18c0597f638bee23e4774668310e3b9ca7969bb20aa752"
+    },
+    {
+      "entry": "packed_literal_set::tests::unsupported_shapes_and_work_caps_are_explicit",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "c3c0f79ef56c2d0c55ef0c66a02039ab2310c0d0e7168dc3a87fafa6e5dfe886"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::build_attempt_reports_exact_success_and_partial_validation_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "024ec45f6669d258b5ed19771b18b794d34a5dbd8f1bc860659a0c590b337fd4"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::deceptive_exact_size_ranges_are_single_pass_and_exactly_charged",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "0ad63b9e472172ae46bf998f0ec32855315507940c996d0b690eed66c6c8188b"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::rebar_row_imported_leipzig_huck_saw_additive_n_and_q_witnesses",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "55083d49e88e27df58d6e758723ab9746990eeb4ac29b797aa2fe5edb5134ee0"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::rebar_row_imported_leipzig_huck_saw_exact_256_and_one_below_255",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "f8c1d5f8db52a32a636b590c9ba002bd5ec6d70dcfe16d843b1b8988df947d98"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::rebar_row_imported_leipzig_huck_saw_span_sum_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "944b90b3c20fa1b936b417dacc1bfc5e1b20865da9803562d8767224501ae037"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::rust_functions_uniform_participation_actual_counters_are_linear_at_all_densities",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "8b1416f1f2bcc6a708edda5241ccc95e730177ecc9e4b614849d29ba90d1c172"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::rust_functions_uniform_participation_exact_and_every_positive_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e6ba9f8b4b381958e4e4beb095eee2ed373ec32d6d50799295749b7e40733a86"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::rust_functions_uniform_participation_n_2n_4n_is_deterministic",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "c20384bd086ec667735b6225603ed39441682d5528b45e1e7c82dbc36c874991"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::uniform_participation_overflow_is_typed_before_source_access",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "6dd0665c1fa8494281367f8fff72bc46111db8f42dcd94140374f9e10e543f61"
+    },
+    {
+      "entry": "prefix_class_alternation::tests::uniform_participation_post_source_refusal_retains_p_and_cumulative_a",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "6e985bede82d4b24ffa9eb080ecbce6046daaef2b37f1a34f226af4d1196456a"
+    },
+    {
+      "entry": "required_internal_anchor::tests::candidate_failures_resume_but_successes_raise_the_nonoverlap_floor",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "482991cb5a321cfa793cd3caa4e5445f87663eb03c1b5b6ced4fb553f68a65b8"
+    },
+    {
+      "entry": "required_internal_anchor::tests::construction_proves_anchor_and_phase_invariants_before_allocation",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "d241de7afc3e728622f11cb78e1ab5be0a03d725c13dc0fa43cede9d03f0eefc"
+    },
+    {
+      "entry": "required_internal_anchor::tests::dense_all_candidate_input_refuses_before_verification",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "71e1d8eb2b6ff76100798841f0d2e29e1b4d3572a58dcb6383776783e6cca725"
+    },
+    {
+      "entry": "required_internal_anchor::tests::every_semantic_refusal_is_behind_the_build_work_preflight",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "a7836c19cf7ebc833da1915c434fa859ea5a0e70e7d9b93eac416d84e1436e8a"
+    },
+    {
+      "entry": "required_internal_anchor::tests::explicit_anchor_scan_is_exact_on_dense_late_mismatches",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "1e69e7fef0cd353f7cf8ddafbb2602c043ffc6b752f701a93224d06826089ba2"
+    },
+    {
+      "entry": "required_internal_anchor::tests::native_anchor_stream_exhaustively_matches_scalar_results_and_resource_ledger",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "86983328688cf6c2b63ce120c249de2c55ce9d93cde9f123dadcae78041175fb"
+    },
+    {
+      "entry": "required_internal_anchor::tests::source_dimensions_refuse_before_search_at_exact_one_below",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "200bb5977ee7b0590321e3a84bebbc047ed0f880a47aeb2ad3130c8f764a3b71"
+    },
+    {
+      "entry": "required_internal_anchor::tests::state_dimensions_refuse_before_search_at_exact_one_below",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "dbac62d3269a31a5b3c2aad5f29d150641ac19898305bda0eca73a465abcf98a"
+    },
+    {
+      "entry": "required_internal_anchor::tests::terminal_attempt_retains_source_effects_and_legacy_error",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "7522a30ec5cba9c0285a97c210a5a24631db580618391b2ac21cae0f4b3c6774"
+    },
+    {
+      "entry": "required_internal_anchor::tests::uri_shape_counts_leftmost_greedy_nonoverlap_and_malformed_bytes",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "7959c2dbbc11c9c4e225bc13b25749f26a8f7f9ca8b5c866b88a2a0fd6f36831"
+    },
+    {
+      "entry": "required_literal::tests::anchors_keep_original_haystack_context",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "13ed9bb340e296d57f5e3441e06327e3d933e88f59aa12eec895d9ff621cb740"
+    },
+    {
+      "entry": "required_literal::tests::arbitrary_bytes_are_not_utf8_dependent",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "d4249987ca29be147bdfc9ed7a925748e85634a8af787241be96cf126c7837ae"
+    },
+    {
+      "entry": "required_literal::tests::bounded_repetition_matches_independent_greedy_reference_exhaustively",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "de803467d9290c1485a7888bc42892feb576919fe55407a1f2a48b62c6d54286"
+    },
+    {
+      "entry": "required_literal::tests::bounded_repetition_selects_leftmost_start_and_greedy_count",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "ebf21acb275ffd6a602dbfaabb86a1826de5a9dbca23060645e1fcfa70026a56"
+    },
+    {
+      "entry": "required_literal::tests::every_limit_has_an_exact_success_boundary",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "e9af91fc2e97c2e5b6500aa2eb38a7ce472f5c7b4826102a8e38ecad300ec4b8"
+    },
+    {
+      "entry": "required_literal::tests::invalid_repetition_bounds_are_typed_refusals",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "bbade1a6f1571ba127883e85201439ae8271c490f4e113fb82afcbd54b2dfb92"
+    },
+    {
+      "entry": "required_literal::tests::proof_refusals_retain_counterexamples",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "bcf5e9682af288022396d58a61b1d0d7f9d69eac76fa866c3ad84eaca0bd1b6a"
+    },
+    {
+      "entry": "required_literal::tests::spans_windows_and_accounting_are_exact",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "8eb5d7933f7ef239db2d671e315c8d35be8ce9d479ca94a655358e44f4f1146a"
+    },
+    {
+      "entry": "reverse_inner::tests::build_receipt_exact_limits_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e688c86bdddb784fdb537cdd8ed27523e0118699d609369ca782159a3aa0e24e"
+    },
+    {
+      "entry": "reverse_inner::tests::construction_refuses_unsound_shapes",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "a765d6f2a0615f0947a7d315b96d994bc7b35151df96b8b0ea0754301ef9b4f7"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::build_attempt_receipts_close_success_and_partial_identity_failure",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "082cff51f43dfd47ff6c629d1b843fa2199a3a7d52e5397a220fd6c53eb08afb"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::concrete_borrowed_source_capacity_is_bounded_and_consumed_once",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "980383d6e7773a4c2713cafcbfa7c6c225d41bcb578477379a595d6c5df663df"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::every_build_dimension_has_exact_limit_and_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "308febf67ab9cdd42b694a60c0771ad360ced6a1070d099572f819bbc1b10c6b"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::every_reduce_dimension_has_exact_limit_and_one_below",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "7692e6c80fc3a8f977098ea05d133cc3a1fc1c36bf4c847579af8688f3270f43"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::failure_link_builder_boundary_preserves_output_before_dequeue",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "f972112c541cdcada241b96f8a8e81cf099cf4b247a31e1cfffe8ab718a1ce5e"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::failure_queue_refusal_precedes_dequeue_mutation",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "c598074c743c8e438ab94fab34bcc1a5e67d63a80f1ec52ec9014d24272fd7c0"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::hand_calculated_sparse_build_and_reduce_work_are_exact_and_refuse_one_below",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "c36067b433bb28eb6497b6dd2bdc9cc102cbf0da4f71eaad792f6b2a977451f4"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::root_table_dispatches_hits_and_misses_without_binary_search",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "e25dc2dcaccbb13ad04f2bf6de256ad09fff5c88cdbde8fdf55a1cf974f03280"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::source_index_priority_covers_terminal_and_failure_outputs",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "73a0d3beadcf7cd61ea36b0acee613ab892c646c23a06ea4318aeb6304a97e81"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::sparse_storage_and_work_scale_linearly_without_dense_alphabet_rows",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "dd31f4952d7e4f1e0928b126a468a07aa8b0d627614855a33b05352feac8f7f9"
+    },
+    {
+      "entry": "sparse_ordered_literal_aggregate::tests::upper_bound_covers_failure_chain_and_manual_binary_search_counters",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "ddb3d9efd11494a87cda7079d7bbec5fdc0e86ceac64c483682ee114cbd71599"
+    },
+    {
+      "entry": "tests::checked_literal_preflight_seals_accounting_limit_and_portable_execution",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "8a9e4c622aa5577d5b971aca9c6896f45cab1eb094acc33c62d0a7ec46552df4"
+    },
+    {
+      "entry": "tests::checked_literal_preflight_splits_exact_candidate_ownership_without_reaccounting",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "5bba8ec21d62d301043a0a8235bb4270417aaa044ea499f8780583d83473ef7b"
+    },
+    {
+      "entry": "tests::every_declared_limit_fails_before_search",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "00e1ecc59ec480375da15933dad8f7dc0eb2b36503179dfc3bd070f50beaf038"
+    },
+    {
+      "entry": "tests::exact_literal_copy_failures_are_typed_without_retry",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "fd7f3790b040e72d6e501ac29f5946dad7d0b832e320858390713a147f8c4d8f"
+    },
+    {
+      "entry": "tests::exact_literal_copy_has_exact_capacity",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "167743ee9d86b2c6782f47867a8b82fea6190d171047927c966a77667ac274e6"
+    },
+    {
+      "entry": "tests::exact_literal_plan_owns_the_fallibly_copied_needle",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "5e6641b41c3b8c7e75143371f554efecc47a1998e00990f1b2d87381c988a5ee"
+    },
+    {
+      "entry": "tests::literals_and_empty_needles_keep_exact_offsets",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "c44fe11647a25b6519f55d40ea26f986b361d8f7413d9c94904303d6c06ca4d0"
+    },
+    {
+      "entry": "tests::ranges_do_not_match_across_their_end",
+      "status": "passed",
+      "evidence": "fresh-native-and-jit",
+      "artifact_sha256": "94ff96c28d847c8187183e0be3dc292ab25a3c51bfed49995d6cb4aacc0e4a42"
+    },
+    {
+      "entry": "tests::scalar_literal_preflight_is_the_plan_independent_refusal_contract",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "a91e7d99a453c49a547a636bc066b032402dfa7fdadf17e54e1079cdf26201eb"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::ascii_runs_preserve_match_position_and_scale_at_n_2n_4n",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "b2f1d03e533d4dac9f4c4a2a14bde5c71eb5aa1d67ace4464fbed451acdedd7f"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::build_attempt_reports_exact_success_and_partial_range_failure",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "2e0b3095c4f4da2bb6b45387b0cb78ab2452da3d77fd110716dead55834b6817"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::compact_values_cover_every_repetition_specialization_on_first_and_steady_calls",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "56bccadc64f46d1e2060ab8c40f3b08402b451606fef807e332381a44fd1ebfa"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::every_nonzero_build_limit_has_an_exact_and_one_below_boundary",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "03c0d6412da77d98fd52f284fbc23b96ce4a09a4d05178fc9619bc6a99bc7dbb"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::every_nonzero_reduce_limit_has_an_exact_and_one_below_boundary",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e2437f160973eba58bc03ccf9086d255f8402de627766fcaf67f983f46915604"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::inline_decoder_matches_general_decoder_at_utf8_boundaries",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "ba49182650d652bc78fb97a109fe5ceb5f84fae55b2014a820921c8e5ca09493"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::malformed_overlong_surrogate_truncated_and_out_of_range_never_match",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "f802791277a288c92526a4690a9452cb5bd76977d96cf8c36dea2d6f9252f1a4"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::nonnullable_counted_repetitions_have_exact_identity_and_linear_work",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "c8475dacbee0b778d91344bb5f00c7dcfa9fd9d78c1fcd26b428477dff53eccb"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::run_reducer_limit_and_n_2n_4n_structure_are_exact",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "d1ef826e2319fcddf16fcc01693d8d0be21945153c3e72c20f3b6c2d91e20d6b"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::structural_counters_double_with_n_and_scratch_stays_zero",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "267d233aa649601bd10c0d48e6cc8d9fae570921791b3502b63b98c5593190d6"
+    },
+    {
+      "entry": "unicode_scalar_aggregate::tests::worst_case_range_scaling_is_logarithmic_and_comparisons_are_exact",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "023f3f368aeb807dc397e82472253eb537eac1681712ad85c18a441c853922e1"
+    },
+    {
+      "entry": "url_aggregate::tests::allocation_and_deallocation_actions_are_prepaid",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "25bafe4b5617b549fa6eea7d6e180c0a2e98c8bdc3032a366b4ac7c65c9f3f89"
+    },
+    {
+      "entry": "url_aggregate::tests::build_rejects_priority_conflict_and_duplicates",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "da0b3e1717c06de079430db76f67b352584c358328e1d91852f71f59f9ca5bb5"
+    },
+    {
+      "entry": "url_aggregate::tests::exact_observed_limits_fail_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "7a809a7113f5538e10e90c5a0263b90339263d408b4fcf7b65d8b9457f8795c0"
+    },
+    {
+      "entry": "url_aggregate::tests::extension_and_ipv4_context_source_accesses_are_exactly_bounded",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "728716a945227accce52896645b015ebbef3ea5bfb36708b1d705be96fa8cf3f"
+    },
+    {
+      "entry": "url_aggregate::tests::external_build_authority_is_transactional_and_limit_precedes_action",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "49615dbd350ae91edcf20495a6d758dab83eb41b9b52d713a6bca09e4c6c799e"
+    },
+    {
+      "entry": "url_aggregate::tests::input_only_upper_bounds_cover_long_segments_and_scratch_one_below",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "018092da6c0db982f956459c1f1b692415a86db57d8c2ee288ffbe4d60c85c7a"
+    },
+    {
+      "entry": "url_aggregate::tests::terminal_attempt_retains_reads_and_committed_workspace_allocation",
+      "status": "passed",
+      "evidence": "identical-bytecode-and-VM-prior-pass",
+      "artifact_sha256": "e56d66506d2f3cc6d745aefb07c0326e485b06eeff0aa745c0f78f695ba9b441"
+    }
+  ],
+  "production_workflow": "results/e2e-workflow-fre-packed-literal-set-02/summary.json",
+  "production_workflow_passed": true,
+  "production_benchmark_qualified": "One new six-test production workflow; full expanded corpus not yet run"
+}

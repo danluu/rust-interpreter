@@ -1,0 +1,786 @@
+{
+  "project": "pgrust",
+  "workflow": "default",
+  "revision": "38d2517d3e09168a8fe222837730d435238ff358",
+  "tests": [
+    "tests::uint32_paths_match_byte_path",
+    "tests::extended_zero_seed_low_word_equals_hash_bytes",
+    "tests::murmurhash32_inverse_roundtrips",
+    "tests::dynahash_wrappers"
+  ],
+  "edits": [
+    "name-inverse-xorshift-intermediate",
+    "spell-out-four-byte-load",
+    "combine-constant-hash-initializers",
+    "name-string-hash-length-bound",
+    "use-immutable-hash-stages"
+  ],
+  "workload": "All four existing hashfn library unit tests, including the original 100,000-iteration roundtrip loop",
+  "case_sha256": "98a8ac961a4057c4429001c39b23156af64859522f4c864b260c93efcde8335a",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/paired-allocation-budget-pgrust-interpreter-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 1000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+  "candidate_tool_key_requested": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.6600066250000012,
+    "baseline": 0.8101359590000001,
+    "candidate": 0.8228243749999997
+  },
+  "std_mir": null,
+  "cold_success_seconds": {
+    "native": 1.1848854580000001,
+    "baseline": 0.8405703330000001,
+    "candidate": 0.8307429159999997
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "d0c05258e36452105ad364d6c87edae6bc82996d29b464c5206939415b20cdd8",
+    "scripts/interpreter.py": "0a5dd4678615d6f2e5fd5b5e4ed083c2e48df8c0ae7a3ad03232293d86ff5a96",
+    "scripts/workflow_cases.py": "cef5821f149325db3a4b3595bbe216aac7827a4b32025ddfe60b6942fb922403",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "interpreter",
+      "tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "8091cdd59c2fe971137e1d67fd907e59b26b82c98498fc62e68841bd4b65532b",
+      "exporter_sha256": "a0dd4437b17398c17506576a07760a2246cefa741cd6600cd062de04faf39fa4"
+    },
+    "candidate": {
+      "engine": "interpreter",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "bcdbad2831ed7af5d87869d99115e3b454b5112fbbd6ffec32aaf00e8f6ded66",
+      "exporter_sha256": "2c71eab7a6cff77c877856bfe14cf255ae76c7f7500f1a054413f7737dc33b0c"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "bcdbad2831ed7af5d87869d99115e3b454b5112fbbd6ffec32aaf00e8f6ded66",
+  "exporter_sha256": "2c71eab7a6cff77c877856bfe14cf255ae76c7f7500f1a054413f7737dc33b0c",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 1.1848854580000001,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        3.037109375,
+        3.7119140625,
+        3.677734375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8405703330000001,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        3.037109375,
+        3.7119140625,
+        3.677734375
+      ],
+      "engine": "interpreter",
+      "tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/baseline/0-0.rbc",
+          "sha256": "6b745d9771eac47278adeb36607f988ae487b1956a457c4e84f02816460989e3",
+          "bytes": 196219
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8307429159999997,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        3.037109375,
+        3.7119140625,
+        3.677734375
+      ],
+      "engine": "interpreter",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/candidate/0-0.rbc",
+          "sha256": "6b745d9771eac47278adeb36607f988ae487b1956a457c4e84f02816460989e3",
+          "bytes": 196219
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.4769731249999998,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        3.19384765625,
+        3.73291015625,
+        3.68505859375
+      ],
+      "engine": "interpreter",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "0a35b5fee0105f2fdd1cfb43d069a2537aa7a3a026863680a001c8af0a6a6624",
+          "bytes": 196219
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.4902704579999999,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        3.19384765625,
+        3.73291015625,
+        3.68505859375
+      ],
+      "engine": "interpreter",
+      "tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "0a35b5fee0105f2fdd1cfb43d069a2537aa7a3a026863680a001c8af0a6a6624",
+          "bytes": 196219
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6421041249999999,
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        3.19384765625,
+        3.73291015625,
+        3.68505859375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.7233403330000003,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        3.19384765625,
+        3.73291015625,
+        3.68505859375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8129864170000003,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        3.19384765625,
+        3.73291015625,
+        3.68505859375
+      ],
+      "engine": "interpreter",
+      "tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/baseline/1-0.rbc",
+          "sha256": "ad0e912b5951b4ecd03e9d0efb23ef708cf59aa3a69f9b247848da0530ddbeeb",
+          "bytes": 196165
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8228243749999997,
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        3.19384765625,
+        3.73291015625,
+        3.68505859375
+      ],
+      "engine": "interpreter",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/candidate/1-0.rbc",
+          "sha256": "ad0e912b5951b4ecd03e9d0efb23ef708cf59aa3a69f9b247848da0530ddbeeb",
+          "bytes": 196165
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6578412499999997,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        3.19384765625,
+        3.73291015625,
+        3.68505859375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8410762500000004,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        3.01806640625,
+        3.6875,
+        3.6689453125
+      ],
+      "engine": "interpreter",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/candidate/2-0.rbc",
+          "sha256": "40fdef8cee70e78b37f5e7a5bf9f31921bec651fc79f140635d73979a47d074e",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8072243750000005,
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        3.01806640625,
+        3.6875,
+        3.6689453125
+      ],
+      "engine": "interpreter",
+      "tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/baseline/2-0.rbc",
+          "sha256": "40fdef8cee70e78b37f5e7a5bf9f31921bec651fc79f140635d73979a47d074e",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8101359590000001,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        3.01806640625,
+        3.6875,
+        3.6689453125
+      ],
+      "engine": "interpreter",
+      "tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/baseline/3-0.rbc",
+          "sha256": "fc7c81391ebfbe523c7621fcc89401cf6ea06fa04f2f80c86380df7bbee5645d",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6600066250000012,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        3.01806640625,
+        3.6875,
+        3.6689453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8334054999999996,
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        3.01806640625,
+        3.6875,
+        3.6689453125
+      ],
+      "engine": "interpreter",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/candidate/3-0.rbc",
+          "sha256": "fc7c81391ebfbe523c7621fcc89401cf6ea06fa04f2f80c86380df7bbee5645d",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.820013792000001,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        3.01806640625,
+        3.6875,
+        3.6689453125
+      ],
+      "engine": "interpreter",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/candidate/4-0.rbc",
+          "sha256": "b10b51b87e74a5bd0950f2dc519cf614c9feccca0521800bc9ec0cac982b8c1b",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.9387130829999997,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        3.0966796875,
+        3.6923828125,
+        3.67041015625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8460349159999989,
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        3.0966796875,
+        3.6923828125,
+        3.67041015625
+      ],
+      "engine": "interpreter",
+      "tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/baseline/4-0.rbc",
+          "sha256": "b10b51b87e74a5bd0950f2dc519cf614c9feccca0521800bc9ec0cac982b8c1b",
+          "bytes": 196009
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8091982499999997,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        3.0966796875,
+        3.6923828125,
+        3.67041015625
+      ],
+      "engine": "interpreter",
+      "tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/baseline/5-0.rbc",
+          "sha256": "64258fd3c360d47c2d1054bd73588fa845429ee2a4a06d80e0fb624018206bd0",
+          "bytes": 195593
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.8091870409999995,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        3.0966796875,
+        3.6923828125,
+        3.67041015625
+      ],
+      "engine": "interpreter",
+      "tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+      "artifacts": [
+        {
+          "path": ".work/runs/paired-allocation-budget-pgrust-interpreter-01/artifacts/candidate/5-0.rbc",
+          "sha256": "64258fd3c360d47c2d1054bd73588fa845429ee2a4a06d80e0fb624018206bd0",
+          "bytes": 195593
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6355591249999986,
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        3.0966796875,
+        3.6923828125,
+        3.67041015625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "interpreter",
+    "baseline_tool_key": "87abbc57cc78894283c98debcd64ffb855c4eaaa699b9ddf14c82c87e36b271c",
+    "candidate_tool_key": "96ebe61c955d79841e03ff55159996a1ae93f95bcb2b6b6bdcd0a60c9e9b8ca9",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "baseline_seconds": 0.8129864170000003,
+        "candidate_seconds": 0.8228243749999997,
+        "difference_seconds": 0.009837957999999425,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.434059959,
+            "execution_seconds": 0.34209849999999997,
+            "artifact_hash_seconds": 0.00019158299999999517,
+            "launcher_seconds": 0.779032375
+          },
+          "candidate": {
+            "cargo_seconds": 0.43437620800000004,
+            "execution_seconds": 0.36081283299999994,
+            "artifact_hash_seconds": 0.00017991600000000219,
+            "launcher_seconds": 0.797592792
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "baseline_seconds": 0.8072243750000005,
+        "candidate_seconds": 0.8410762500000004,
+        "difference_seconds": 0.033851874999999865,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.437142917,
+            "execution_seconds": 0.343583209,
+            "artifact_hash_seconds": 0.0001903750000000204,
+            "launcher_seconds": 0.783056333
+          },
+          "candidate": {
+            "cargo_seconds": 0.44009041699999996,
+            "execution_seconds": 0.362036583,
+            "artifact_hash_seconds": 0.0001782919999999688,
+            "launcher_seconds": 0.8049991670000001
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "baseline_seconds": 0.8101359590000001,
+        "candidate_seconds": 0.8334054999999996,
+        "difference_seconds": 0.02326954099999945,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.43818850000000004,
+            "execution_seconds": 0.344753084,
+            "artifact_hash_seconds": 0.0001750409999999869,
+            "launcher_seconds": 0.7852983339999999
+          },
+          "candidate": {
+            "cargo_seconds": 0.440206667,
+            "execution_seconds": 0.354896125,
+            "artifact_hash_seconds": 0.00017824999999999092,
+            "launcher_seconds": 0.7979440830000001
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "baseline_seconds": 0.8460349159999989,
+        "candidate_seconds": 0.820013792000001,
+        "difference_seconds": -0.026021123999997897,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.462884833,
+            "execution_seconds": 0.356379292,
+            "artifact_hash_seconds": 0.00019025000000000292,
+            "launcher_seconds": 0.821689917
+          },
+          "candidate": {
+            "cargo_seconds": 0.434638167,
+            "execution_seconds": 0.35887112499999996,
+            "artifact_hash_seconds": 0.00017600000000000948,
+            "launcher_seconds": 0.795831875
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "baseline_seconds": 0.8091982499999997,
+        "candidate_seconds": 0.8091870409999995,
+        "difference_seconds": -1.1209000000178548e-05,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.452844958,
+            "execution_seconds": 0.32861587500000006,
+            "artifact_hash_seconds": 0.0002031250000000262,
+            "launcher_seconds": 0.7839344589999999
+          },
+          "candidate": {
+            "cargo_seconds": 0.445255625,
+            "execution_seconds": 0.336537375,
+            "artifact_hash_seconds": 0.00018612499999998144,
+            "launcher_seconds": 0.784208083
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.009837957999999425
+  }
+}

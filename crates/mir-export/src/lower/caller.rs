@@ -1,0 +1,33 @@
+//! Rust caller locations travel through the ordinary guest call ABI.
+use super::*;
+
+enum Source {
+    Inherited(Slot),
+    Constant(rustc_span::Span),
+}
+
+impl<'a, 'tcx> Lower<'a, 'tcx> {
+    pub(super) fn caller_argument(&mut self, source_info: mir::SourceInfo) -> Result<Reg> {
+        // This compiler helper also handles MIR-inlined source scopes: an
+        // untracked inlined function ends propagation just like a real frame.
+        let source = self.body.caller_location_span(
+            source_info, self.caller_location.map(Source::Inherited), self.tcx(), Source::Constant,
+        );
+        match source {
+            Source::Inherited(slot) => Ok(self.local(slot.offset)),
+            Source::Constant(span) => {
+                let value = self.tcx().span_as_caller_location(span);
+                let ConstValue::Scalar(Scalar::Ptr(pointer, _)) = value else {
+                    return Err("caller location is not a constant pointer".into());
+                };
+                let base = self.exporter.alloc(pointer.provenance.alloc_id())?;
+                let pointer = (base as u64).checked_add(pointer.prov_and_relative_offset().1.bytes())
+                    .ok_or("caller-location address overflow")?;
+                let address = self.temporary(8);
+                let value = self.imm(pointer as u128);
+                self.store(address, value, 8)?;
+                Ok(address)
+            }
+        }
+    }
+}

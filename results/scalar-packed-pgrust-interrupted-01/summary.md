@@ -1,0 +1,3 @@
+The first pgrust corpus attempt ended with 18 completed commands and four complete edited pairs. The fifth edit did not finish. Its original records and stale running receipts are preserved; the recorded processes were absent when checked. The cause is unknown. No missing sample is substituted.
+
+All recorded successes and deliberate wrong-edit failures were audited, and the twelve custom artifacts match their historical counterparts. The source file exactly matched the intended fifth benchmark edit; both versions were saved before restoring the pinned original. A new complete attempt must use a new run identifier and fresh caches. These partial timings remain descriptive evidence, separate from the complete cohort.

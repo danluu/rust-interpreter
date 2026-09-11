@@ -1,0 +1,948 @@
+{
+  "project": "fre",
+  "workflow": "forward-anchored",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "tests": [
+    "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+    "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+    "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+    "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+    "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+    "forward_anchored::tests::search_limits_are_checked_before_scanning",
+    "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+    "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+    "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+    "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+    "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+  ],
+  "edits": [
+    "name-byte-class-membership-mask",
+    "combine-empty-class-words",
+    "match-canonical-member-count-explicitly",
+    "match-inclusive-range-cardinality",
+    "use-iterator-for-inclusive-insertion"
+  ],
+  "workload": "All eleven newly executable forward-anchored original tests, including the exhaustive arbitrary-class/suffix differential, windows, canonical class selection, exact limits and work accounting; unavailable-call stops are explicit and reached boundaries are failures",
+  "case_sha256": "110054b02db0bde9667e905c20aea185ef76be7abd956c546b73a6e01136ca2b",
+  "test_source_unchanged": true,
+  "batch": true,
+  "vary_selection": false,
+  "raw": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01",
+  "build_tool_opt_level": null,
+  "instruction_limit": 100000000000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": true,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3"
+  ],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [
+    "-Zmir-opt-level=3"
+  ],
+  "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 2.258778291999999,
+    "baseline": 1.6577720829999976,
+    "candidate": 1.5596026659999964
+  },
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 7.321047958,
+    "baseline": 5.537297207999999,
+    "candidate": 5.488981875
+  },
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "51a37a9249877090ce69254ab8591308e45adbb8df3bcb6643756352bd88d90d",
+    "scripts/interpreter.py": "88d607e173ea266ff6ea7de76f708f83fc65e8a67f6b6bb6af93eb22e571d055",
+    "scripts/workflow_cases.py": "4ed667af108c9e9b19163a595c4705c06627059b4cdd4ee8fe5a83224badaa5c",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3"
+      ],
+      "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+      "exporter_sha256": "443d506bdf93a946c96a11136e52ce624057c25fe522512fbfd5edd8d529a16d"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "inline_leaves": true,
+      "trap_unsupported_calls": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3"
+      ],
+      "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+      "exporter_sha256": "facf0ba7fd252e4a1fbd249d511d2b8598b8a92f116b89e23404c5746a1e8d08"
+    }
+  },
+  "mode_orders": [
+    {
+      "state": 0,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": -1,
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "state": 1,
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "state": 2,
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "state": 3,
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "state": 4,
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "state": 5,
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "cee14b91e89c8535bce5bb866bd946307b958cec9a12b75f5bee18801c5c68f9",
+  "exporter_sha256": "facf0ba7fd252e4a1fbd249d511d2b8598b8a92f116b89e23404c5746a1e8d08",
+  "samples": [
+    {
+      "mode": "native",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 7.321047958,
+      "source_sha256": "9feaed6f5d75de2569636df9a88221351a517ec88a05dcbd02d30b31302a7ea0",
+      "load": [
+        3.97314453125,
+        3.9443359375,
+        3.7861328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 5.537297207999999,
+      "source_sha256": "9feaed6f5d75de2569636df9a88221351a517ec88a05dcbd02d30b31302a7ea0",
+      "load": [
+        7.33837890625,
+        4.64208984375,
+        4.033203125
+      ],
+      "engine": "jit",
+      "tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/baseline/0-0.rbc",
+          "sha256": "c5579d3832df4925966c144271231385dc155df3b30ca86a5dad5fef53c74f6e",
+          "bytes": 2230398
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 0,
+      "label": "cold-original",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 5.488981875,
+      "source_sha256": "9feaed6f5d75de2569636df9a88221351a517ec88a05dcbd02d30b31302a7ea0",
+      "load": [
+        7.15087890625,
+        4.64794921875,
+        4.03857421875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/candidate/0-0.rbc",
+          "sha256": "c5579d3832df4925966c144271231385dc155df3b30ca86a5dad5fef53c74f6e",
+          "bytes": 2230398
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.099427084000002,
+      "source_sha256": "2a3803d22c9020d813ff6a7d424989cc81616e5b78ca359a50ce2ed472b99900",
+      "load": [
+        6.73828125,
+        4.603515625,
+        4.0263671875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "ff717564f17eec796d28eda3c31d41ec36446e4c977f7f67cc84e06f854e83ec",
+          "bytes": 2230414
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.3440220829999987,
+      "source_sha256": "2a3803d22c9020d813ff6a7d424989cc81616e5b78ca359a50ce2ed472b99900",
+      "load": [
+        6.73828125,
+        4.603515625,
+        4.0263671875
+      ],
+      "engine": "jit",
+      "tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "ff717564f17eec796d28eda3c31d41ec36446e4c977f7f67cc84e06f854e83ec",
+          "bytes": 2230414
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": -1,
+      "label": "invert-byte-class-membership",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 2.117478375000001,
+      "source_sha256": "2a3803d22c9020d813ff6a7d424989cc81616e5b78ca359a50ce2ed472b99900",
+      "load": [
+        6.73828125,
+        4.603515625,
+        4.0263671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "state": 1,
+      "label": "name-byte-class-membership-mask",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.9829508750000002,
+      "source_sha256": "1fc34dadcda7ab60f3813040ff0d3dafd2f109a84c157b8cefbbee8d8ebead8b",
+      "load": [
+        6.5185546875,
+        4.59326171875,
+        4.02587890625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 1,
+      "label": "name-byte-class-membership-mask",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.6889615000000013,
+      "source_sha256": "1fc34dadcda7ab60f3813040ff0d3dafd2f109a84c157b8cefbbee8d8ebead8b",
+      "load": [
+        6.5185546875,
+        4.59326171875,
+        4.02587890625
+      ],
+      "engine": "jit",
+      "tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/baseline/1-0.rbc",
+          "sha256": "120fa065d36d7d86845fa8dc6dea7d2aa995070d0c409c63642d97db1bc96d4b",
+          "bytes": 2230414
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 1,
+      "label": "name-byte-class-membership-mask",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.5753218330000003,
+      "source_sha256": "1fc34dadcda7ab60f3813040ff0d3dafd2f109a84c157b8cefbbee8d8ebead8b",
+      "load": [
+        6.5185546875,
+        4.59326171875,
+        4.02587890625
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/candidate/1-0.rbc",
+          "sha256": "120fa065d36d7d86845fa8dc6dea7d2aa995070d0c409c63642d97db1bc96d4b",
+          "bytes": 2230414
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 2,
+      "label": "combine-empty-class-words",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 2.258778291999999,
+      "source_sha256": "8472046fffafb84e036df259818b690e664383081563a57143f97d943e4223b4",
+      "load": [
+        6.556640625,
+        4.6328125,
+        4.04296875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 2,
+      "label": "combine-empty-class-words",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.5456878749999987,
+      "source_sha256": "8472046fffafb84e036df259818b690e664383081563a57143f97d943e4223b4",
+      "load": [
+        6.556640625,
+        4.6328125,
+        4.04296875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/candidate/2-0.rbc",
+          "sha256": "c9dd3265a75ec22786129d5c297359b7e3c884fb69c82223c2eafd4e12a4e13c",
+          "bytes": 2230444
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 2,
+      "label": "combine-empty-class-words",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.6577720829999976,
+      "source_sha256": "8472046fffafb84e036df259818b690e664383081563a57143f97d943e4223b4",
+      "load": [
+        6.556640625,
+        4.6328125,
+        4.04296875
+      ],
+      "engine": "jit",
+      "tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/baseline/2-0.rbc",
+          "sha256": "c9dd3265a75ec22786129d5c297359b7e3c884fb69c82223c2eafd4e12a4e13c",
+          "bytes": 2230444
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 3,
+      "label": "match-canonical-member-count-explicitly",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.5632091670000037,
+      "source_sha256": "777523bb74f81af2130f061cf94b6859b5247bb205720ed6949115db97c16984",
+      "load": [
+        6.3515625,
+        4.6220703125,
+        4.04248046875
+      ],
+      "engine": "jit",
+      "tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/baseline/3-0.rbc",
+          "sha256": "3ccf85bea4b90e2580bba2bf63a90bbf2fa447dbe2f25c93530646b441be9a1e",
+          "bytes": 2230444
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 3,
+      "label": "match-canonical-member-count-explicitly",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 2.023353790999998,
+      "source_sha256": "777523bb74f81af2130f061cf94b6859b5247bb205720ed6949115db97c16984",
+      "load": [
+        6.3515625,
+        4.6220703125,
+        4.04248046875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "state": 3,
+      "label": "match-canonical-member-count-explicitly",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.513390790999999,
+      "source_sha256": "777523bb74f81af2130f061cf94b6859b5247bb205720ed6949115db97c16984",
+      "load": [
+        6.1630859375,
+        4.611328125,
+        4.0419921875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/candidate/3-0.rbc",
+          "sha256": "3ccf85bea4b90e2580bba2bf63a90bbf2fa447dbe2f25c93530646b441be9a1e",
+          "bytes": 2230444
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 4,
+      "label": "match-inclusive-range-cardinality",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.5596026659999964,
+      "source_sha256": "3f89051c7cb71998b036e8277c38b4f27660052fec18b2ba7ea167b172281723",
+      "load": [
+        6.1630859375,
+        4.611328125,
+        4.0419921875
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/candidate/4-0.rbc",
+          "sha256": "934787cd516766f921dfdc9bcb099933ef94298e0af3de53099a109b4a78666b",
+          "bytes": 2230476
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 4,
+      "label": "match-inclusive-range-cardinality",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 2.2782715829999987,
+      "source_sha256": "3f89051c7cb71998b036e8277c38b4f27660052fec18b2ba7ea167b172281723",
+      "load": [
+        6.1630859375,
+        4.611328125,
+        4.0419921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "state": 4,
+      "label": "match-inclusive-range-cardinality",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.6164708749999974,
+      "source_sha256": "3f89051c7cb71998b036e8277c38b4f27660052fec18b2ba7ea167b172281723",
+      "load": [
+        6.39013671875,
+        4.68408203125,
+        4.07080078125
+      ],
+      "engine": "jit",
+      "tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/baseline/4-0.rbc",
+          "sha256": "934787cd516766f921dfdc9bcb099933ef94298e0af3de53099a109b4a78666b",
+          "bytes": 2230476
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "state": 5,
+      "label": "use-iterator-for-inclusive-insertion",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.7460968329999957,
+      "source_sha256": "b079c1d68f9d9054c05f18b78f77db3d94069dd4a9a7432ede0504ce5ba12855",
+      "load": [
+        6.39013671875,
+        4.68408203125,
+        4.07080078125
+      ],
+      "engine": "jit",
+      "tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/baseline/5-0.rbc",
+          "sha256": "f49e03b8f55a37d7d04734577efd5408bf5588e3f5609684d7b94b400406af7e",
+          "bytes": 2246333
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "state": 5,
+      "label": "use-iterator-for-inclusive-insertion",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 1.7839384590000051,
+      "source_sha256": "b079c1d68f9d9054c05f18b78f77db3d94069dd4a9a7432ede0504ce5ba12855",
+      "load": [
+        6.39013671875,
+        4.68408203125,
+        4.07080078125
+      ],
+      "engine": "jit",
+      "tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+      "artifacts": [
+        {
+          "path": ".work/runs/e2e-paired-fre-forward-anchored-wide-pointer-01/artifacts/candidate/5-0.rbc",
+          "sha256": "f49e03b8f55a37d7d04734577efd5408bf5588e3f5609684d7b94b400406af7e",
+          "bytes": 2246333
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "state": 5,
+      "label": "use-iterator-for-inclusive-insertion",
+      "tests": [
+        "forward_anchored::tests::bitset_probe_rejects_a_short_anchored_run_before_whole_window_prefiltering",
+        "forward_anchored::tests::candidate_prefix_change_preserves_range_and_bitset_paths",
+        "forward_anchored::tests::empty_one_byte_mismatch_and_anchor_cases_are_exact",
+        "forward_anchored::tests::exhaustive_kernel_differential_covers_arbitrary_classes_and_suffix_borders",
+        "forward_anchored::tests::late_full_block_mismatch_charges_the_rescan_before_execution",
+        "forward_anchored::tests::search_limits_are_checked_before_scanning",
+        "forward_anchored::tests::selects_canonical_small_sets_and_unchanged_floors",
+        "forward_anchored::tests::start_range_swar8_high_bit_ranges_preserve_boundary_and_accounting",
+        "forward_anchored::tests::start_range_swar8_threshold_and_failed_word_lanes_are_exact",
+        "forward_anchored::tests::theorem_accepts_bordered_suffix_and_rejects_disjointness_failures",
+        "forward_anchored::tests::windows_keep_original_anchor_context_and_validate_first"
+      ],
+      "seconds": 3.2508858750000016,
+      "source_sha256": "b079c1d68f9d9054c05f18b78f77db3d94069dd4a9a7432ede0504ce5ba12855",
+      "load": [
+        8.68115234375,
+        5.18701171875,
+        4.251953125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    }
+  ],
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "95f1f1d009f495943b1f567ef5c2e25d6f429064aaf6a4bb96f1ab1b94b7f07e",
+    "candidate_tool_key": "07d14b7319a258900c1501322e65f3e43cd0977334920c8044035b42bfed9c9f",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "state": 1,
+        "source_sha256": "1fc34dadcda7ab60f3813040ff0d3dafd2f109a84c157b8cefbbee8d8ebead8b",
+        "baseline_seconds": 1.6889615000000013,
+        "candidate_seconds": 1.5753218330000003,
+        "difference_seconds": -0.11363966700000105,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.216794917,
+            "execution_seconds": 0.400923041,
+            "artifact_hash_seconds": 0.0010849579999998582,
+            "launcher_seconds": 1.6610459160000002
+          },
+          "candidate": {
+            "cargo_seconds": 1.1044211670000001,
+            "execution_seconds": 0.4044191669999999,
+            "artifact_hash_seconds": 0.0011041670000000448,
+            "launcher_seconds": 1.5501222920000002
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 2,
+        "source_sha256": "8472046fffafb84e036df259818b690e664383081563a57143f97d943e4223b4",
+        "baseline_seconds": 1.6577720829999976,
+        "candidate_seconds": 1.5456878749999987,
+        "difference_seconds": -0.11208420799999885,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.1696795,
+            "execution_seconds": 0.4144099589999999,
+            "artifact_hash_seconds": 0.0009067499999999562,
+            "launcher_seconds": 1.62970225
+          },
+          "candidate": {
+            "cargo_seconds": 1.057709167,
+            "execution_seconds": 0.41903983300000003,
+            "artifact_hash_seconds": 0.0011244580000000504,
+            "launcher_seconds": 1.520165708
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 3,
+        "source_sha256": "777523bb74f81af2130f061cf94b6859b5247bb205720ed6949115db97c16984",
+        "baseline_seconds": 1.5632091670000037,
+        "candidate_seconds": 1.513390790999999,
+        "difference_seconds": -0.049818376000004605,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.081360166,
+            "execution_seconds": 0.41510358400000014,
+            "artifact_hash_seconds": 0.0008372079999998672,
+            "launcher_seconds": 1.5375550839999998
+          },
+          "candidate": {
+            "cargo_seconds": 1.035666333,
+            "execution_seconds": 0.40623104199999993,
+            "artifact_hash_seconds": 0.0008335830000001376,
+            "launcher_seconds": 1.48439275
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 4,
+        "source_sha256": "3f89051c7cb71998b036e8277c38b4f27660052fec18b2ba7ea167b172281723",
+        "baseline_seconds": 1.6164708749999974,
+        "candidate_seconds": 1.5596026659999964,
+        "difference_seconds": -0.056868209000001,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.129751375,
+            "execution_seconds": 0.413644417,
+            "artifact_hash_seconds": 0.0008429590000000875,
+            "launcher_seconds": 1.587029625
+          },
+          "candidate": {
+            "cargo_seconds": 1.081086958,
+            "execution_seconds": 0.4098917499999999,
+            "artifact_hash_seconds": 0.001219582999999913,
+            "launcher_seconds": 1.5329502080000001
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "state": 5,
+        "source_sha256": "b079c1d68f9d9054c05f18b78f77db3d94069dd4a9a7432ede0504ce5ba12855",
+        "baseline_seconds": 1.7460968329999957,
+        "candidate_seconds": 1.7839384590000051,
+        "difference_seconds": 0.0378416260000094,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.245613875,
+            "execution_seconds": 0.4313524579999999,
+            "artifact_hash_seconds": 0.0010523749999999943,
+            "launcher_seconds": 1.720197959
+          },
+          "candidate": {
+            "cargo_seconds": 1.274435583,
+            "execution_seconds": 0.4376972909999999,
+            "artifact_hash_seconds": 0.0012057089999999437,
+            "launcher_seconds": 1.756733667
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 4,
+    "median_paired_difference_seconds": -0.056868209000001
+  }
+}

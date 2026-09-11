@@ -1,0 +1,496 @@
+{
+  "status": "qualified: native differential/rejection, installed-sysroot probes, launcher, full lowering audit, and all nine production workflows passed",
+  "production_benchmark_qualified": true,
+  "tool_key": "9429702c8249a4e16792275c0796d18292119961c11024bd5d8fb50357f3c5a5",
+  "bytecode_version": 5,
+  "binaries": {
+    "rust-interp-vm": "0468a79b8db5a9570d3c684839f5f6929a90c56df84fef30a50af9804cab634c",
+    "rust-interp-mir-export": "429fa495e2a2c151feb8b1a50c20adcebca7f3a0b88cb57246578ee6ab61df63"
+  },
+  "vm_unchanged_from": "f48aa0309249d84249dc43f8a3ef703f2a63f2980640edc453c65a5e7f3d4979",
+  "change": "Treat symbolic TypeId allocations as zero relocation bases, preserving compiler-provided numeric hash fragments in every pointer-sized segment.",
+  "build_log": ".work/type-id-build-01.log",
+  "baseline_probe": {
+    "status": "baseline probe completed; native controls passed",
+    "tool_key": "f48aa0309249d84249dc43f8a3ef703f2a63f2980640edc453c65a5e7f3d4979",
+    "source_sha256": "0da53687f474af364d373e36674fa0de12e1af2cf4eccd6ab0b9864eb90fd05d",
+    "std_mir_key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "native_inputs": [
+      0,
+      1,
+      2,
+      127,
+      9223372036854775808,
+      18446744073709551615
+    ],
+    "results": [
+      {
+        "mode": "debug",
+        "entry": "type_id_entry",
+        "returncode": 101,
+        "artifact_exists": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: type_id_entry: unsupported constant allocation: TypeId { ty: u8 }",
+          "error: aborting due to 1 previous error"
+        ]
+      },
+      {
+        "mode": "debug",
+        "entry": "any_entry",
+        "returncode": 101,
+        "artifact_exists": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: <(dyn std::any::Any + 'static)>::is: unsupported constant allocation: TypeId { ty: u64 }",
+          "error: aborting due to 1 previous error"
+        ]
+      },
+      {
+        "mode": "debug",
+        "entry": "io_error_entry",
+        "returncode": 101,
+        "artifact_exists": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: <(dyn std::error::Error + std::marker::Send + std::marker::Sync + 'static)>::is: unsupported constant allocation: TypeId { ty: ErrorPayload }",
+          "error: aborting due to 1 previous error"
+        ]
+      },
+      {
+        "mode": "debug",
+        "entry": "rust_interp_entry",
+        "returncode": 101,
+        "artifact_exists": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: type_id_entry: unsupported constant allocation: TypeId { ty: u8 }",
+          "error: aborting due to 1 previous error"
+        ]
+      },
+      {
+        "mode": "inline8",
+        "entry": "type_id_entry",
+        "returncode": 101,
+        "artifact_exists": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: type_id_entry: unsupported constant allocation: TypeId { ty: u8 }",
+          "error: aborting due to 1 previous error"
+        ]
+      },
+      {
+        "mode": "inline8",
+        "entry": "any_entry",
+        "returncode": 101,
+        "artifact_exists": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: any_entry: unsupported constant allocation: TypeId { ty: u64 }",
+          "error: aborting due to 1 previous error"
+        ]
+      },
+      {
+        "mode": "inline8",
+        "entry": "io_error_entry",
+        "returncode": 101,
+        "artifact_exists": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: io_error_entry: unsupported constant allocation: TypeId { ty: ErrorPayload }",
+          "error: aborting due to 1 previous error"
+        ]
+      },
+      {
+        "mode": "inline8",
+        "entry": "rust_interp_entry",
+        "returncode": 101,
+        "artifact_exists": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: type_id_entry: unsupported constant allocation: TypeId { ty: u8 }",
+          "error: aborting due to 1 previous error"
+        ]
+      }
+    ],
+    "performance_result": false,
+    "raw": ".work/type-id-baseline-probe-01"
+  },
+  "native_differential": {
+    "raw": ".work/interpreter-validation-1788981175674950000",
+    "differential_inputs_per_policy": 111,
+    "policies": [
+      "strict",
+      "demand",
+      "demand-cache"
+    ],
+    "engines": [
+      "interpreter",
+      "jit"
+    ],
+    "rejected_invalid_sources": [
+      "uncalled-type-error",
+      "uncalled-borrow-error",
+      "bad-constant"
+    ],
+    "rejected_unsupported": [
+      "custom-global-allocator",
+      "float16",
+      "external-call"
+    ],
+    "heap_differential_inputs": 111,
+    "simd_differential_inputs": 111,
+    "dynamic_differential_inputs": 111,
+    "nested_dst_differential_inputs_per_mode": 111,
+    "nested_dst_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "nested_dst_alignment_packing_upcasts_and_drop_checked": true,
+    "pointer_mask_inputs_per_mode": 111,
+    "pointer_mask_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "type_id_native_inputs_per_mode": 111,
+    "type_id_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "type_id_hashes_aggregates_any_and_io_error_downcasts_checked": true,
+    "type_id_sysroot": "metadata",
+    "pointer_mask_stack_heap_mutability_and_metadata_checked": true,
+    "checked_arithmetic_native_inputs_per_mode": 111,
+    "checked_arithmetic_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "checked_arithmetic_integer_types": 12,
+    "division_native_inputs_per_mode": 111,
+    "division_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "division_integer_types": 12,
+    "scalar_constant_native_inputs_per_mode": 111,
+    "scalar_constant_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "scalar_constant_numeric_bits_call_storage_and_pointer_relocations_checked": true,
+    "carrying_mul_add_inputs_per_configuration": 111,
+    "carrying_mul_add_integer_types": 12,
+    "carrying_mul_add_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "carrying_mul_add_sysroots": [
+      "installed",
+      "metadata"
+    ],
+    "ordinary_intrinsic_bodies_lowered_in_custom_engine": true,
+    "structural_coercion_inputs_per_configuration": 111,
+    "structural_coercion_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "structural_coercion_sysroots": [
+      "installed",
+      "metadata"
+    ],
+    "smart_pointer_weak_drop_allocator_and_aliasing_checked": true,
+    "arc_overflow_shim_crate_identity_checked": true,
+    "closure_pointer_inputs_per_configuration": 111,
+    "closure_pointer_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "closure_pointer_sysroots": [
+      "installed",
+      "metadata"
+    ],
+    "closure_pointer_constants_tuples_aggregates_and_unsafe_calls_checked": true,
+    "zero_sized_argument_evaluation_alignment_and_drop_checked": true,
+    "float_differential_inputs": 111,
+    "atomic_differential_inputs": 111,
+    "sequential_atomic_operations_and_arc_checked": true,
+    "dynamic_std_mir_key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "virtual_calls_upcasts_and_dynamic_slice_drop_checked": true,
+    "exact_division_remainder_checked": true,
+    "immutable_static_cycles_and_alignment_checked": true,
+    "foreign_statics_and_tls_destructor_registration_rejected": true,
+    "single_thread_tls_native_inputs_per_mode": 111,
+    "tls_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "tls_batch_process_statics_preserved_and_tls_reset": true,
+    "tls_randomstate_hashmap_semantics_checked": true,
+    "uninhabited_branches_and_reachable_foreign_rejections_checked": true,
+    "foreign_system_shim_names_and_signatures_checked": true,
+    "overflow_traps": true,
+    "corrupt_artifact_rejected": true,
+    "partial_modes_accept_uncalled_errors": true,
+    "partial_modes_reject_called_errors": [
+      "called-type-error",
+      "called-borrow-error",
+      "called-unsafety-error"
+    ],
+    "committed_cache_edit_states": 5,
+    "committed_cache_present": true,
+    "native_emission_requests_rejected": true,
+    "audits_reject_partial_checking": true,
+    "result_unwrap_and_panic_namespace_checked": true,
+    "integer_overflow_panic_cases": 26,
+    "integer_overflow_panic_modes": [
+      "debug",
+      "mir3",
+      "optimized",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "slice_range_bounds_checked": true,
+    "string_slice_bounds_and_utf8_checked": true,
+    "indirect_calls_and_address_only_bodies_checked": true,
+    "external_constructors_native_inputs": 111,
+    "native_test_result_cases": {
+      "unit_ok": true,
+      "tagged_ok": true,
+      "niche_ok": true,
+      "bool_ok": true,
+      "empty_error": true,
+      "large_ok": true,
+      "string_ok": true,
+      "alias_ok": true,
+      "tagged_err": false,
+      "niche_err": false,
+      "bool_err": false,
+      "large_err": false,
+      "string_err": false,
+      "alias_err": false
+    },
+    "mutable_static_native_inputs": 111,
+    "caller_location_native_inputs_per_mode": 111,
+    "caller_location_modes": [
+      "ordinary",
+      "mir-inline",
+      "mir-inline2",
+      "mir-inline4",
+      "mir-inline8"
+    ],
+    "mir_inlining_configurations": {
+      "mir-inline2": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=100",
+        "-Zinline-mir-hint-threshold=200",
+        "-Zinline-mir-forwarder-threshold=60"
+      ],
+      "mir-inline4": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=200",
+        "-Zinline-mir-hint-threshold=400",
+        "-Zinline-mir-forwarder-threshold=120"
+      ],
+      "mir-inline8": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ]
+    },
+    "inputs_sha256": {
+      "tests/interpreter_fixture.rs": "c99ab420ea055b585755ad34e175d61dc1a0c1d78b89af9d8517bc39608993e2",
+      "tests/constructor_dependency.rs": "0200afaae3199a69a1cdbefa271786d109f9097ec5ab2798d66d51c1380fd1a3",
+      "tests/constructor_fixture.rs": "41792ed472c9a3b78dd4a23945a38790930e4645132545dd6a99272826ec485b",
+      "tests/result_test_fixture.rs": "663d1a63894d6d75211bf51db094baa74f4de53c3138f9491f2bbc930f932864",
+      "tests/heap_fixture.rs": "39b836d4461144c1257862df77b2f92eafbe5f47c62bfb36176d2893a1b9a283",
+      "tests/simd_fixture.rs": "206b4c02b221517c4865c65dfef759cc0af5b486f195dfbed45e7dd6444376a6",
+      "tests/dynamic_fixture.rs": "285b20cfaa17384c54f5ca00a7acf4c015e2dff5e26ac3de25b260faef1969a4",
+      "tests/dst_fixture.rs": "baf9c8c64077f2bffbed9f0785f576d201a0f263f2838c651b60ed874428fa13",
+      "tests/pointer_mask_fixture.rs": "4c99e75489092bf5c0f69d6101ea9fb1525f868f6771c610b5b42f1f28e2a312",
+      "tests/checked_arithmetic_fixture.rs": "e101289c8f68a298ebe77ce56ff7fc6df42211f2b92566b213fc8528b8361589",
+      "tests/division_fixture.rs": "bd55a110192065903d55e15ef4371a4d35cd24d03a5d9060c61d63d7bafa143a",
+      "tests/scalar_constant_fixture.rs": "3536c2c1a4e9537ac1113142b10570afa18029ccf2d5c49f1c979786a97a144a",
+      "tests/type_id_fixture.rs": "0da53687f474af364d373e36674fa0de12e1af2cf4eccd6ab0b9864eb90fd05d",
+      "tests/carrying_fixture.rs": "53af26412a71cfc98078efceb694c9797a2c652dce05720cb84b0cc1117ac42a",
+      "tests/coercion_fixture.rs": "3bac45bbb54a328f93c95b84c6dbd4fa42b6104449941c6c75a8d23036044c24",
+      "tests/closure_pointer_fixture.rs": "5c1ad17299fe675bcc86e767c3697caa86957c9449f4bcb6da5b3440f0861b85",
+      "tests/float_fixture.rs": "74811826cec44270a58ace1a388af38d54a97165465bb3a1f9ee7107ea521178",
+      "tests/atomic_fixture.rs": "8ec74c6fe80db933fc068fdcbf2c9ad84307355534f74378d87fb216945424d8",
+      "tests/static_fixture.rs": "fd23e2a49f992d5febfa967bb4738267e05fcf9ae5de0b08dfa96d4418966438",
+      "tests/tls_fixture.rs": "bd11e4e71c5b618989816245bd8deb439ebcc667caec47bd7a050d88ebb1cca8",
+      "tests/tls_batch_fixture.rs": "ff90da00ad68f1be4387fddfbe8cfc460069a5bff0a73e15e3002f8a97ce7926",
+      "tests/uninhabited_fixture.rs": "ac899134090ce4c861ae6555399c9eff6eea82958e046c78544fb6911c3c2633",
+      "tests/caller_fixture.rs": "9ab1a27970ab63a0d3b33d87de4d983bcbe15d052bf41b36c470cd59c48dc5fc",
+      "tests/integer_panic_fixture.rs": "038b2ce09eca8fa0e5d089cd09b5d0aa8f15fed621b33338543f9b5a67959c41",
+      "scripts/validate_interpreter.py": "48f9d4a9e7ce987b881b1cc2e1be31d28ba375ddba150bf329501f3e822a720d",
+      ".work/interpreter-build/release/rust-interp-vm": "0468a79b8db5a9570d3c684839f5f6929a90c56df84fef30a50af9804cab634c",
+      ".work/interpreter-build/release/rust-interp-mir-export": "429fa495e2a2c151feb8b1a50c20adcebca7f3a0b88cb57246578ee6ab61df63"
+    },
+    "completed_commands": 23277,
+    "elapsed_seconds": 109.10366925,
+    "subprocess_seconds": 106.17841039299894
+  },
+  "installed_probe": {
+    "tool_key": "9429702c8249a4e16792275c0796d18292119961c11024bd5d8fb50357f3c5a5",
+    "sysroot": "installed",
+    "results": [
+      {
+        "entry": "type_id_entry",
+        "mode": "debug",
+        "export_returncode": 0,
+        "source_sha256": "0da53687f474af364d373e36674fa0de12e1af2cf4eccd6ab0b9864eb90fd05d",
+        "native_adapter_sha256": "bad33a6ebd41fda95675cfa9d2cd40ef6ad445b8562fc2cc5d6a44e2f0e244a7",
+        "executed": true,
+        "native_inputs_per_engine": 6
+      },
+      {
+        "entry": "type_id_entry",
+        "mode": "inline8",
+        "export_returncode": 0,
+        "source_sha256": "0da53687f474af364d373e36674fa0de12e1af2cf4eccd6ab0b9864eb90fd05d",
+        "native_adapter_sha256": "bad33a6ebd41fda95675cfa9d2cd40ef6ad445b8562fc2cc5d6a44e2f0e244a7",
+        "executed": true,
+        "native_inputs_per_engine": 6
+      },
+      {
+        "entry": "any_entry",
+        "mode": "debug",
+        "export_returncode": 0,
+        "source_sha256": "0da53687f474af364d373e36674fa0de12e1af2cf4eccd6ab0b9864eb90fd05d",
+        "native_adapter_sha256": "5308a7cbb32bb390466f579e3784af908addba35515aa707e20da9516e366c8b",
+        "executed": true,
+        "native_inputs_per_engine": 6
+      },
+      {
+        "entry": "any_entry",
+        "mode": "inline8",
+        "export_returncode": 0,
+        "source_sha256": "0da53687f474af364d373e36674fa0de12e1af2cf4eccd6ab0b9864eb90fd05d",
+        "native_adapter_sha256": "5308a7cbb32bb390466f579e3784af908addba35515aa707e20da9516e366c8b",
+        "executed": true,
+        "native_inputs_per_engine": 6
+      },
+      {
+        "entry": "io_error_entry",
+        "mode": "debug",
+        "export_returncode": 101,
+        "source_sha256": "0da53687f474af364d373e36674fa0de12e1af2cf4eccd6ab0b9864eb90fd05d",
+        "native_adapter_sha256": "eb7a1d8ef57788fd7f7b55f4be2cbb49e1c6ab4b557608e02bc61def7447243b",
+        "executed": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: core::io::error::os_functions::get_os_functions: MIR unavailable for core::io::error::os_functions::get_os_functions",
+          "error: aborting due to 1 previous error"
+        ]
+      },
+      {
+        "entry": "io_error_entry",
+        "mode": "inline8",
+        "export_returncode": 101,
+        "source_sha256": "0da53687f474af364d373e36674fa0de12e1af2cf4eccd6ab0b9864eb90fd05d",
+        "native_adapter_sha256": "eb7a1d8ef57788fd7f7b55f4be2cbb49e1c6ab4b557608e02bc61def7447243b",
+        "executed": false,
+        "errors": [
+          "error: custom interpreter cannot lower this entry: core::io::error::os_functions::get_os_functions: MIR unavailable for core::io::error::os_functions::get_os_functions",
+          "error: aborting due to 1 previous error"
+        ]
+      }
+    ],
+    "performance_result": false,
+    "commands": 60,
+    "raw": ".work/type-id-installed-probe-01",
+    "native_adapter_scope": "Only the main function call target differs; all compared fixture function bodies are byte-for-byte identical."
+  },
+  "before_audit": "results/lowering-audit-nushell-08/summary.json",
+  "scope": "TypeId and Any execute with the installed sysroot. The full custom io::Error fixture uses metadata MIR; installed sysroot stops at missing core::io::error::os_functions::get_os_functions MIR. No guest runtime fallback was added.",
+  "launcher_validation": {
+    "checks": 93,
+    "log": ".work/type-id-launcher-validation-01.log"
+  },
+  "after_audit": "results/lowering-audit-nushell-09/summary.json",
+  "audit_comparison": {
+    "before_lowered": 162,
+    "after_lowered": 162,
+    "requested": 279,
+    "lowering_regressions": [],
+    "type_id_blockers_changed": [
+      {
+        "entry": "errors::shell_error::bridge::tests::test_bridge_io_error_roundtrip",
+        "before": "alloc::io::error::<impl std::io::Error>::downcast: unsupported constant allocation: TypeId { ty: errors::shell_error::bridge::ShellErrorBridge }",
+        "after": "std::sys::sync::thread_parking::darwin::dispatch_semaphore_signal: MIR unavailable for std::sys::sync::thread_parking::darwin::dispatch_semaphore_signal",
+        "after_status": "blocked"
+      },
+      {
+        "entry": "pipeline::byte_stream::tests::chunks_read_binary_passthrough",
+        "before": "alloc::io::error::<impl std::io::Error>::downcast: unsupported constant allocation: TypeId { ty: errors::shell_error::bridge::ShellErrorBridge }",
+        "after": "libc::unix::close: MIR unavailable for libc::unix::close",
+        "after_status": "blocked"
+      },
+      {
+        "entry": "pipeline::byte_stream::tests::chunks_read_string_clean",
+        "before": "alloc::io::error::<impl std::io::Error>::downcast: unsupported constant allocation: TypeId { ty: errors::shell_error::bridge::ShellErrorBridge }",
+        "after": "libc::unix::close: MIR unavailable for libc::unix::close",
+        "after_status": "blocked"
+      },
+      {
+        "entry": "pipeline::byte_stream::tests::chunks_read_string_split_boundary",
+        "before": "alloc::io::error::<impl std::io::Error>::downcast: unsupported constant allocation: TypeId { ty: errors::shell_error::bridge::ShellErrorBridge }",
+        "after": "libc::unix::close: MIR unavailable for libc::unix::close",
+        "after_status": "blocked"
+      },
+      {
+        "entry": "pipeline::byte_stream::tests::chunks_read_string_utf8_error",
+        "before": "alloc::io::error::<impl std::io::Error>::downcast: unsupported constant allocation: TypeId { ty: errors::shell_error::bridge::ShellErrorBridge }",
+        "after": "std::sys::thread_local::guard::apple::enable: thread-local destructor registration is not yet supported",
+        "after_status": "blocked"
+      },
+      {
+        "entry": "pipeline::byte_stream::tests::chunks_read_unknown_fallback",
+        "before": "alloc::io::error::<impl std::io::Error>::downcast: unsupported constant allocation: TypeId { ty: errors::shell_error::bridge::ShellErrorBridge }",
+        "after": "libc::unix::close: MIR unavailable for libc::unix::close",
+        "after_status": "blocked"
+      },
+      {
+        "entry": "pipeline::byte_stream::tests::read_binary_shares_data",
+        "before": "alloc::io::error::<impl std::io::Error>::downcast: unsupported constant allocation: TypeId { ty: errors::shell_error::bridge::ShellErrorBridge }",
+        "after": "libc::unix::read: MIR unavailable for libc::unix::read",
+        "after_status": "blocked"
+      }
+    ],
+    "executed": false
+  },
+  "production_corpus": "results/e2e-type-id-corpus-01/summary.json"
+}

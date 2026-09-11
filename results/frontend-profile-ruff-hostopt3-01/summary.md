@@ -1,0 +1,62 @@
+# Frontend pass profile: ruff
+
+3 actual production edits, followed by the same existing test batch each time. Host build-tool optimization level is 3. The first build primes a separate artifact cache and is excluded from the pass medians. These are instrumented diagnostic timings, not a performance comparison. Nested phases overlap; do not sum them.
+
+| Compiler pass | Median seconds |
+|---|---:|
+| macro_expand_crate | 0.732164 |
+| expand_crate | 0.732143 |
+| type_check_crate | 0.251784 |
+| misc_checking_3 | 0.209691 |
+| resolve_crate | 0.166563 |
+| coherence_checking | 0.160566 |
+| serialize_dep_graph | 0.154573 |
+| incr_comp_persist_result_cache | 0.152456 |
+| late_resolve_crate | 0.130586 |
+| drop_ast | 0.108637 |
+| misc_checking_1 | 0.105584 |
+| incr_comp_serialize_result_cache | 0.094965 |
+| encode_query_values | 0.080950 |
+| MIR_borrow_checking | 0.073170 |
+| lint_checking | 0.016008 |
+| module_lints | 0.015977 |
+| maybe_building_test_harness | 0.013491 |
+| resolve_postprocess | 0.010169 |
+| finalize_imports | 0.009585 |
+| AST_validation | 0.008779 |
+| finalize_macro_resolutions | 0.007441 |
+| write_dep_info | 0.005490 |
+| incr_comp_garbage_collect_session_directories | 0.005004 |
+| complete_gated_feature_checking | 0.004987 |
+| compute_effective_visibilities | 0.004287 |
+| resolve_check_unused | 0.003132 |
+| incr_comp_persist_dep_graph | 0.001896 |
+| looking_for_entry_point | 0.001538 |
+| privacy_checking_modules | 0.001449 |
+| emit_ast_lowering_delayed_lints | 0.001104 |
+| incr_comp_prepare_session_directory | 0.000757 |
+| check_lint_expectations | 0.000739 |
+| lint_reexports | 0.000729 |
+| link | 0.000478 |
+| serialize_work_products | 0.000206 |
+| incr_comp_finalize_session_directory | 0.000163 |
+| parse_crate | 0.000159 |
+| link_crate | 0.000049 |
+| crate_injection | 0.000024 |
+| link_binary | 0.000021 |
+| unused_lib_feature_checking | 0.000014 |
+| check_externally_implementable_items | 0.000010 |
+| codegen_crate | 0.000006 |
+| finish_ongoing_codegen | 0.000006 |
+| looking_for_derive_registrar | 0.000005 |
+| assert_dep_graph | 0.000003 |
+| crate_lints | 0.000002 |
+| check_unused_macros | 0.000002 |
+| maybe_create_a_macro_crate | 0.000002 |
+| resolve_main | 0.000002 |
+| resolve_report_errors | 0.000002 |
+| layout_testing | 0.000001 |
+| abi_testing | 0.000001 |
+| check_clean | 0.000001 |
+| link_binary_remove_temps | 0.000001 |
+| link_binary_check_files_are_writeable | 0.000001 |
