@@ -51,8 +51,11 @@ def main():
     for mode in ['baseline', 'candidate']:
         key = report['comparison'][mode + '_tool_key']
         directory, _ = installed_tools(key)
-        tool_paths[mode] = directory / 'rust-interp-mir-export'
-        identities[mode] = dict(tool_key=key, exporter_sha256=sha(tool_paths[mode]))
+        manifest = json.loads((directory / 'ready.json').read_text())
+        name = 'rust-interp-rustc-wrapper' if 'rust-interp-rustc-wrapper' in manifest else 'rust-interp-mir-export'
+        tool_paths[mode] = directory / name
+        identities[mode] = dict(tool_key=key, wrapper_name=name, wrapper_sha256=sha(tool_paths[mode]),
+                               exporter_sha256=manifest['rust-interp-mir-export'])
     out = ROOT / 'results' / args.run_id
     raw = ROOT / '.work/runs' / args.run_id
     require(not out.exists() and not raw.exists(), 'run already exists')

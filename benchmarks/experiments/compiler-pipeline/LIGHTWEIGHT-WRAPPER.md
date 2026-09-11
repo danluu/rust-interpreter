@@ -49,7 +49,11 @@ cannot pass this criterion. Do not pool costs across projects or filter samples
 for host load. Native-call performance gates remain failed and separate; this
 experiment does not change them or the runtime defaults.
 
-Status: shared router, std-only binary, manifest/launcher integration and eleven
-routing tests implemented. `lightweight-wrapper-debug-01` passes all 268 workspace
-tests, one ignored, with unchanged archived sources. Release/build publication,
-subprocess/launcher qualification and real-project comparisons remain pending.
+Status: source `b54dc6e`, installed tool `c341296c`. All 268 workspace tests pass
+in debug/release (one ignored); VM is byte-identical to 78e60cdd. Fifteen process
+commands/five manifest checks pass, and only libSystem is linked by the wrapper.
+All 99 original launcher checks pass with unchanged assertions, plus historical
+two-binary execution. Startup probes reduce paired overhead from 10.530 to
+1.751 ms, which is diagnostic only. Pgrust's one-cycle API-edit qualification
+passes twelve commands/six matching artifacts. Nushell's qualification is active;
+repeated warm and cold comparisons remain pending. No retention claim yet.

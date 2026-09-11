@@ -118,6 +118,20 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Item 4.1 now has a std-only exec wrapper and shared Cargo routing rules in
+  `b54dc6e` / `c341296c`. [Debug/release qualification](../results/lightweight-wrapper-release-01/assessment.md)
+  passes 268 tests, fifteen actual process probes/dylib commands, five manifest
+  checks, 99 original launcher checks and historical-tool execution. The VM is
+  unchanged. Version-probe overhead falls from 10.53 to 1.75 ms; this is not
+  project build-time evidence. The pgrust API qualification passes with identical
+  artifacts; Nushell and repeated warm/cold measurements follow. New manifests
+  verify the third executable and preserve historical two-binary compatibility.
+- Item 1.5 now includes [actual Cargo unit attribution](../results/interface-nushell-units-01/assessment.md)
+  for a generic API edit: all modes rebuild 19 units. Native nu-command takes
+  6.57s versus 1.12/1.24s custom checks in this instrumented sample. Distinct
+  host/library/test nu-protocol configurations are required; crate-name-only
+  merging is unjustified. Overlap and instrumentation remain explicit.
+
 - Item 2.5 now has pinned generic-interface case specifications and a tracked
   `--case-file` harness with independent reconstruction of source states, test
   selection and mode order. [Pgrust qualification](../results/interface-pgrust-qualification-01/assessment.md)

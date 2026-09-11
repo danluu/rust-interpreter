@@ -111,12 +111,16 @@ handling differ; do not attribute the three-unit count solely to custom
 `--target`, remove dependencies, or assume name-only artifact sharing is valid.
 
 The [lightweight wrapper](benchmarks/experiments/compiler-pipeline/LIGHTWEIGHT-WRAPPER.md)
-is implemented and passes 268 debug workspace tests, one ignored. New std-only
+is implemented in `b54dc6e` / `c341296c` and passes 268 debug/release workspace
+tests, one ignored. New std-only
 `rust-interp-rustc-wrapper` execs ordinary rustc or the adjacent exporter using a
 shared routing module. New manifests verify all three binaries; historical
-two-binary tools keep their existing path. Release, actual subprocess/launcher
-qualification and end-to-end comparisons are pending. The guest VM is unchanged.
-Keep its code and installer frozen during the release check.
+two-binary tools keep their existing path. Fifteen process commands/five manifest
+checks and all 99 original launcher checks pass, plus a historical-tool execution.
+The wrapper links only libSystem and reduces measured version-probe overhead
+from 10.53 to 1.75ms. The VM is byte-identical to 78e60cdd. Pgrust's API
+qualification verifies twelve commands/six artifacts; Nushell's is running.
+Repeated warm/cold comparisons remain pending; no retention claim follows yet.
 
 The [typed Nushell history comparison](results/interface-nushell-artifact-diff-01/assessment.md)
 finds 415 immediate changes in 115 functions and 16 additional readonly bytes
@@ -204,11 +208,13 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-All interface/diagnostic/debug runs above are terminal0. Next launch
-`lightweight-wrapper-release-01` through the supervisor with
-`check_workspace.py --release --install-tool`; exact live identities belong in
-its receipt and `.work/continuation-state.json`. Freeze its sources until it
-finishes. Then qualify the actual wrapper/launcher before real-project timings.
+Only `lightweight-wrapper-nushell-qualification-01` is active: supervisor95690,
+controller95693, started September11 at05:55:53. Earlier runs above are terminal0.
+Freeze its Rust/case/interpreter/harness inputs until it finishes, then verify
+source restoration/frozen inputs/commands/artifacts. Baseline78 and candidatec341
+both use ordinary JIT with resumable/persistent calls OFF, matched leaf inlining,
+std-MIR, native18/O0/incremental/defaultthreads, custom4 and independent checking.
+Repeat warm/cold comparisons only after both one-cycle qualifications pass.
 The old held-out run's stale status is preserved ENOSPC evidence, not a live task.
 Its separate recovery assessment verifies all seven complete cases. Both token
 failures persist. The unbounded goal remains active; inspect receipts before acting.
