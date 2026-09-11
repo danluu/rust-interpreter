@@ -54,10 +54,15 @@ The [broader driver](scripts/qualify_native_execution.py) now stages the existin
 full validator with immutable tool/mode selection and unchanged assertion ASTs.
 Its [helper qualification](results/resumable-execution-driver-01/summary.json)
 passes three staging configurations and both archived mode checks; false
-resumable claims are rejected. Full new-tool execution is still outstanding. The tracked TLS driver preserves
-its complete archived case matrix; the fre replay now exposes runtime flags
-and allocation limits. Nine coverage-driver CLI checks pass. Actual coverage
-runs remain outstanding.
+resumable claims are rejected. Full new-tool execution now passes all 47,004
+mixed commands in `resumable-bulk-native-01`, including 22,238 JIT invocations
+with the exact options and real native Call/Return counters. No successful JIT
+run declined functions. The separate `resumable-bulk-tls-01` passes 245 commands,
+including original destructor order/reset and normal callbacks. Both are terminal0.
+The tracked fresh-body coordinator and explicit audit tool selection preserve
+old audit assertions; 18 CLI checks pass. Next run the first 16 fre bodies,
+inspect actual receipts, then resume all 389. Fresh body replay and held-out
+workflows remain outstanding.
 [Broader recipe](benchmarks/experiments/resumable-native-calls/BROADER-QUALIFICATION.md).
 
 Exact-code profiles of `035ef708` resolved every generated PC across three
@@ -119,8 +124,9 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-All preceding task runs are terminal0. The full selected-tool native validator
-is ready to start under the benchmark lock.
+No task validation is active at this checkpoint. The native, TLS and
+`resumable-body-drivers-01` runs are terminal0. Start the fre replay next;
+inspect exact supervisor/child receipts before acting.
 The unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal

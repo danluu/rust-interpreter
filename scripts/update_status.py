@@ -21,6 +21,11 @@ def render():
     experiment = json.loads((ROOT / EXPERIMENT).read_text())
     experimental_checks = json.loads((ROOT / 'results' / EXPERIMENT_RUN / 'final-verification.json').read_text())['counts']
     experimental_release = json.loads((ROOT / 'results/resumable-bulk-release-01/summary.json').read_text())
+    experimental_native = json.loads((ROOT / 'results/resumable-bulk-native-01/summary.json').read_text())
+    experimental_tls = json.loads((ROOT / 'results/resumable-bulk-tls-01/summary.json').read_text())
+    for qualification in [experimental_native, experimental_tls]:
+        if qualification['status'] != 'passed' or qualification['tool_key'] != experiment['tool_key']:
+            raise RuntimeError('broader qualification does not match the experimental tool')
     rows = corpus['workflows']
     options = corpus['plan']['options']
     key = options['candidate_tool_key']
@@ -59,8 +64,9 @@ def render():
         'passes; token narrowly misses its target (ratio 0.8003441753 versus 0.8).',
         'Both fixed-tool runs fail the token gate. The first improved folded 19.51%',
         'and token 19.95%; this replication improved 19.15% and 19.97%. All pairs',
-        'and both decisions are preserved. Broader experimental compatibility',
-        'checks are next; defaults and original criteria remain unchanged.',
+        'and both decisions are preserved. Broader native differential and TLS',
+        'checks now pass; fre body replay and held-out',
+        'workflows follow. Defaults and original criteria remain unchanged.',
         '[Both runs and per-edit variation](results/resumable-bulk-replication-01/assessment.md).',
         f'[Result and limitations](results/{EXPERIMENT_RUN}/assessment.md).', '',
         '## Full-corpus baseline', '',
@@ -113,8 +119,13 @@ def render():
         'exports and rejection checks across two inlining modes. These are command',
         'counts, not unique test cases. [Recount](results/historical-validation-counts-01/assessment.md).',
         'A separate 245-command TLS qualification also passed.',
-        'Those broader suites have not been rerun on the codegen-limit fix or',
-        'the new experimental native-call engine.', '',
+        f"Experimental `{experiment['tool_key'][:8]}` now independently passes {experimental_native['commands']:,} mixed commands",
+        'with its exact runtime options: 22,238 JIT and 22,238 interpreter',
+        'invocations across two modes, plus native controls/exports/rejections.',
+        'Both modes executed resumable Calls/Returns; successful JIT runs had',
+        'no declined functions. [Validation](results/resumable-bulk-native-01/assessment.md).',
+        f"Its separate {experimental_tls['commands']}-command [TLS/destructor suite](results/resumable-bulk-tls-01/assessment.md) also passes.",
+        'This does not transfer the older fre replay to the experimental tool.', '',
         'That earlier fre replay selected 389 original bodies: 382 passed and 7 were ignored.',
         'This required `--allocation-limit 150000 --trap-unsupported-calls` and',
         '`--run-try-callbacks`, plus the recorded MIR/inlining settings. It invokes',
@@ -131,6 +142,9 @@ def render():
         report_sha256=r['report_sha256'], measured_tool_key=key,
         native_seconds=r['medians']['native'], custom_seconds=r['medians']['candidate']) for r in rows]
     for category, report in [
+        ('experimental-native-validation', 'results/resumable-bulk-native-01/summary.json'),
+        ('experimental-tls-validation', 'results/resumable-bulk-tls-01/summary.json'),
+        ('body-driver-qualification', 'results/resumable-body-drivers-01/summary.json'),
         ('historical-count-correction', 'results/historical-validation-counts-01/summary.json'),
         ('runtime-replication', 'results/resumable-bulk-replication-01/summary.json'),
         ('first-bulk-run', 'results/resumable-bulk-e2e-01/summary.json'),

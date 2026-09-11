@@ -45,8 +45,30 @@ seven ignored), with fresh native controls and the documented 150,000 allocation
 limit, unsupported-call trapping and normal try callbacks. Flag every unsupported
 or failed execution explicitly. A lowered audit body is not a passed test; this
 remains body replay, not unfiltered libtest. The replay driver now carries explicit runtime modes and an optional allocation
-limit. Nine coverage-driver CLI checks and the preserved TLS case matrix pass;
-actual new-tool execution is still required.
+limit. The full selected-tool native run now passes all 47,004 mixed commands in
+`resumable-bulk-native-01`. The separate `resumable-bulk-tls-01` passes 245
+commands and actual native Call/Return counters. No new unwind support is claimed.
+
+The tracked `scripts/qualify_test_bodies.py` replaces the archived fre coordinator.
+It accepts project/list/discovery/tool/options, freshly collects bounded packs,
+then runs the existing replay driver with a fresh native build and fresh processes.
+It preserves every per-body outcome and compares old artifact hashes without
+requiring unchanged layouts. Completed batches are resumable; incomplete child
+outputs require inspection. No cleanup runs. Eighteen driver CLI checks, original
+audit assertion ASTs and the complete TLS case matrix pass.
+
+The fre invocation uses `--project fre --package fre-kernels --batch-size 16`,
+`--entries .work/guest-tls-fre-01/entries.json`,
+`--discovery-record .work/guest-tls-fre-01/discovery.json`,
+`--previous-results .work/local-memory-forwarding-fre-fresh-01/results.json`,
+`--std-mir --inline-leaves --trap-unsupported-calls --run-try-callbacks`,
+`--guest-mir-opt-level 3 --guest-mir-inline-scale 8`,
+`--instruction-limit 100000000000 --allocation-limit 150000`, and
+`--jit-resumable-calls --jit-persistent-registers` with the full `78e60cdd` key.
+First use `--stop-after-batches 1`, inspect actual collection/replay evidence, then
+continue the same run with `--resume` and no stop bound. Each child and each
+coordinator verification phase takes the benchmark lock without holding it
+across a child that needs it. Actual new-tool fre coverage remains outstanding.
 
 Run all seven held-out real-edit workflows with the same original b2 baseline,
 three cycles, flags, source pins, wrong edits, identical paired artifacts,

@@ -10,7 +10,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
-from interpreter import ROOT, TOOLCHAIN, checked_tools
+from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools
 
 
 def main():
@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--package',required=True)
     parser.add_argument('--entries',type=Path,required=True,help='JSON names from the native test listing')
     parser.add_argument('--discovery-record',type=Path,required=True,help='native --list command and provenance JSON')
+    parser.add_argument('--tool-key',help='use an immutable installed exporter instead of building current sources')
     subset=parser.add_mutually_exclusive_group()
     subset.add_argument('--sample',type=int,help='deterministic name-hash sample; default is the complete list')
     subset.add_argument('--selection',type=Path,help='explicit subset of the verified native listing, for bounded audit batches')
@@ -31,6 +32,7 @@ def main():
     parser.add_argument('--retain-audit-bodies',action='store_true',help='retain bounded, hashed programs for a separate execution survey')
     parser.add_argument('--run-id',default='lowering-audit-'+str(time.time_ns()))
     args=parser.parse_args()
+    if not __debug__ or sys.flags.optimize:parser.error('lowering audits require enabled Python assertions')
     if args.guest_mir_inline_scale is not None and args.guest_mir_opt_level!=3:
         parser.error('--guest-mir-inline-scale requires --guest-mir-opt-level=3')
     guest_flags=[]
@@ -56,7 +58,7 @@ def main():
     assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=source,text=True).strip()
     lock=(ROOT/'.work/benchmark.lock').open('a')
     fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-    tools,key=checked_tools()
+    tools,key=installed_tools(args.tool_key) if args.tool_key else checked_tools()
     selected=sorted(names)
     if args.selection is not None:
         selected=json.loads(args.selection.read_text())
@@ -79,7 +81,7 @@ def main():
     if guest_flags:env['RUSTFLAGS']=' '.join(guest_flags)
     command=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',str(source/'Cargo.toml'),
              '--package',args.package,'--test-body','--audit-entries',str(selection),
-             '--cache-namespace',args.run_id]
+             '--cache-namespace',args.run_id,'--tool-key',key]
     if args.std_mir:command+=['--std-mir']
     if args.inline_leaves:command+=['--inline-leaves']
     if args.trap_unsupported_calls:command+=['--trap-unsupported-calls']
