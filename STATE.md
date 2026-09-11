@@ -123,6 +123,12 @@ relaxation, wrapper retention or conditional held-out testing is claimed.
 
 ## Resource planning
 
+The next storage operation is inventory preparation for
+`.work/cache-batches/worker-cold-storage-batch-05.json`: 32 exact completed
+public targets, including cold03 and earlier fre comparisons. Review and commit
+its inventories before application; no competing lock waiter during the batch.
+Cold04 remains unstarted. Current completed archive count is 121.
+
 The [latest eight-target selection](results/worker-cold-storage-batch-03/assessment.md)
 completed seven archives before a shared-volume space drop rejected the final
 child at preflight. Its original files were untouched. The [separate recovery](results/worker-cold-storage-batch-03-recovery-01/assessment.md)
