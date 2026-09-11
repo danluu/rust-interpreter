@@ -1,0 +1,1 @@
+Ruff admission stopped at the nonblocking benchmark lock before checking space. No benchmark or cache operation started. The external lock holder was inspected read-only and left untouched. Original supervisor records are preserved; a fresh supervisor identity will be used when the lock becomes available.
