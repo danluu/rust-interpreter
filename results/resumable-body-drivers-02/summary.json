@@ -1,0 +1,313 @@
+{
+  "status": "passed",
+  "original_tls_case_matrix_unchanged": true,
+  "cli_checks": [
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/validate_tls_destructors.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: validate_tls_destructors.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                                   [--jit-native-calls]\n                                   [--jit-native-call-stubs]\n                                   [--jit-persistent-registers]\n                                   [--jit-resumable-calls]\n\nQualify real TLS destructor ordering and normal callbacks with a selected VM.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --run-id RUN_ID\n  --tool-key TOOL_KEY\n  --jit-native-calls\n  --jit-native-call-stubs\n  --jit-persistent-registers\n  --jit-resumable-calls\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/validate_tls_destructors.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--jit-resumable-calls",
+        "--jit-native-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: validate_tls_destructors.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                                   [--jit-native-calls]\n                                   [--jit-native-call-stubs]\n                                   [--jit-persistent-registers]\n                                   [--jit-resumable-calls]\nvalidate_tls_destructors.py: error: resumable calls exclude native tree/stub calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/validate_tls_destructors.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--jit-native-call-stubs"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: validate_tls_destructors.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                                   [--jit-native-calls]\n                                   [--jit-native-call-stubs]\n                                   [--jit-persistent-registers]\n                                   [--jit-resumable-calls]\nvalidate_tls_destructors.py: error: native Call stubs require native calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "-O",
+        "/Users/danluu/dev/rust-interp/scripts/validate_tls_destructors.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: validate_tls_destructors.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                                   [--jit-native-calls]\n                                   [--jit-native-call-stubs]\n                                   [--jit-persistent-registers]\n                                   [--jit-resumable-calls]\nvalidate_tls_destructors.py: error: TLS qualification requires enabled Python assertions\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\n\nCompare retained ordinary tests with fresh native processes; no speedup claim.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --collection COLLECTION\n                        corpus audit summary.json\n  --entries ENTRIES     optional JSON list selecting bodies from the verified\n                        collection\n  --vm-tool-key VM_TOOL_KEY\n                        optional immutable tool build whose VM executes the\n                        retained bytecode\n  --native-control-provenance NATIVE_CONTROL_PROVENANCE\n                        reuse a verified native control from a previous batch\n                        at the same source pin and toolchain; fresh processes\n                        still run each test\n  --instruction-limit INSTRUCTION_LIMIT\n  --allocation-limit ALLOCATION_LIMIT\n                        explicit live-allocation allowance; omitted preserves\n                        the VM default\n  --jit-native-calls\n  --jit-native-call-stubs\n  --jit-persistent-registers\n  --jit-resumable-calls\n  --run-id RUN_ID\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--run-id",
+        "unused",
+        "--collection",
+        "unused",
+        "--jit-resumable-calls",
+        "--jit-native-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\nsurvey_audit_execution.py: error: resumable calls exclude native tree/stub calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--run-id",
+        "unused",
+        "--collection",
+        "unused",
+        "--jit-native-call-stubs"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\nsurvey_audit_execution.py: error: native Call stubs require native calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--run-id",
+        "unused",
+        "--collection",
+        "unused",
+        "--allocation-limit",
+        "-1"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\nsurvey_audit_execution.py: error: allocation limit must fit an unsigned 64-bit count\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "-O",
+        "/Users/danluu/dev/rust-interp/scripts/survey_audit_execution.py",
+        "--run-id",
+        "unused",
+        "--collection",
+        "unused"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: survey_audit_execution.py [-h] --collection COLLECTION\n                                 [--entries ENTRIES]\n                                 [--vm-tool-key VM_TOOL_KEY]\n                                 [--native-control-provenance NATIVE_CONTROL_PROVENANCE]\n                                 [--instruction-limit INSTRUCTION_LIMIT]\n                                 [--allocation-limit ALLOCATION_LIMIT]\n                                 [--jit-native-calls]\n                                 [--jit-native-call-stubs]\n                                 [--jit-persistent-registers]\n                                 [--jit-resumable-calls] [--run-id RUN_ID]\nsurvey_audit_execution.py: error: execution surveys require enabled Python assertions\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/qualify_test_bodies.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: qualify_test_bodies.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                              --project {pgrust,fre,nushell,ruff} --package\n                              PACKAGE --entries ENTRIES --discovery-record\n                              DISCOVERY_RECORD\n                              [--previous-results PREVIOUS_RESULTS]\n                              [--batch-size BATCH_SIZE]\n                              [--stop-after-batches STOP_AFTER_BATCHES]\n                              [--resume]\n                              [--instruction-limit INSTRUCTION_LIMIT]\n                              [--allocation-limit ALLOCATION_LIMIT]\n                              [--std-mir] [--inline-leaves]\n                              [--trap-unsupported-calls] [--run-try-callbacks]\n                              [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--jit-native-calls] [--jit-native-call-stubs]\n                              [--jit-persistent-registers]\n                              [--jit-resumable-calls]\n\nFreshly collect and replay a discovered test list in bounded, recorded\nbatches. This is body execution coverage, not a full libtest or performance\nmeasurement. Each collection and replay child takes the benchmark lock. The\ncoordinator releases its lock before launching either child to avoid waiting\non itself. No compiler cache or artifact is deleted. A failed child needs an\nexplicit audit; resume accepts only fully committed batches followed by an\nuntouched next batch.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --run-id RUN_ID\n  --tool-key TOOL_KEY\n  --project {pgrust,fre,nushell,ruff}\n  --package PACKAGE\n  --entries ENTRIES\n  --discovery-record DISCOVERY_RECORD\n  --previous-results PREVIOUS_RESULTS\n                        compare every outcome and available artifact hash\n  --batch-size BATCH_SIZE\n  --stop-after-batches STOP_AFTER_BATCHES\n                        stop at a completed batch boundary; --resume continues\n  --resume\n  --instruction-limit INSTRUCTION_LIMIT\n  --allocation-limit ALLOCATION_LIMIT\n  --std-mir\n  --inline-leaves\n  --trap-unsupported-calls\n  --run-try-callbacks\n  --guest-mir-opt-level {0,1,2,3}\n  --guest-mir-inline-scale {1,2,4,8}\n  --jit-native-calls\n  --jit-native-call-stubs\n  --jit-persistent-registers\n  --jit-resumable-calls\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/qualify_test_bodies.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--project",
+        "fre",
+        "--package",
+        "fre-kernels",
+        "--entries",
+        "unused",
+        "--discovery-record",
+        "unused",
+        "--jit-resumable-calls",
+        "--jit-native-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: qualify_test_bodies.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                              --project {pgrust,fre,nushell,ruff} --package\n                              PACKAGE --entries ENTRIES --discovery-record\n                              DISCOVERY_RECORD\n                              [--previous-results PREVIOUS_RESULTS]\n                              [--batch-size BATCH_SIZE]\n                              [--stop-after-batches STOP_AFTER_BATCHES]\n                              [--resume]\n                              [--instruction-limit INSTRUCTION_LIMIT]\n                              [--allocation-limit ALLOCATION_LIMIT]\n                              [--std-mir] [--inline-leaves]\n                              [--trap-unsupported-calls] [--run-try-callbacks]\n                              [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--jit-native-calls] [--jit-native-call-stubs]\n                              [--jit-persistent-registers]\n                              [--jit-resumable-calls]\nqualify_test_bodies.py: error: resumable calls exclude native tree/stub calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/qualify_test_bodies.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--project",
+        "fre",
+        "--package",
+        "fre-kernels",
+        "--entries",
+        "unused",
+        "--discovery-record",
+        "unused",
+        "--jit-native-call-stubs"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: qualify_test_bodies.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                              --project {pgrust,fre,nushell,ruff} --package\n                              PACKAGE --entries ENTRIES --discovery-record\n                              DISCOVERY_RECORD\n                              [--previous-results PREVIOUS_RESULTS]\n                              [--batch-size BATCH_SIZE]\n                              [--stop-after-batches STOP_AFTER_BATCHES]\n                              [--resume]\n                              [--instruction-limit INSTRUCTION_LIMIT]\n                              [--allocation-limit ALLOCATION_LIMIT]\n                              [--std-mir] [--inline-leaves]\n                              [--trap-unsupported-calls] [--run-try-callbacks]\n                              [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--jit-native-calls] [--jit-native-call-stubs]\n                              [--jit-persistent-registers]\n                              [--jit-resumable-calls]\nqualify_test_bodies.py: error: native Call stubs require native calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/qualify_test_bodies.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--project",
+        "fre",
+        "--package",
+        "fre-kernels",
+        "--entries",
+        "unused",
+        "--discovery-record",
+        "unused",
+        "--batch-size",
+        "0"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: qualify_test_bodies.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                              --project {pgrust,fre,nushell,ruff} --package\n                              PACKAGE --entries ENTRIES --discovery-record\n                              DISCOVERY_RECORD\n                              [--previous-results PREVIOUS_RESULTS]\n                              [--batch-size BATCH_SIZE]\n                              [--stop-after-batches STOP_AFTER_BATCHES]\n                              [--resume]\n                              [--instruction-limit INSTRUCTION_LIMIT]\n                              [--allocation-limit ALLOCATION_LIMIT]\n                              [--std-mir] [--inline-leaves]\n                              [--trap-unsupported-calls] [--run-try-callbacks]\n                              [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--jit-native-calls] [--jit-native-call-stubs]\n                              [--jit-persistent-registers]\n                              [--jit-resumable-calls]\nqualify_test_bodies.py: error: batch size must be between 1 and 64\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/qualify_test_bodies.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--project",
+        "fre",
+        "--package",
+        "fre-kernels",
+        "--entries",
+        "unused",
+        "--discovery-record",
+        "unused",
+        "--run-try-callbacks"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: qualify_test_bodies.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                              --project {pgrust,fre,nushell,ruff} --package\n                              PACKAGE --entries ENTRIES --discovery-record\n                              DISCOVERY_RECORD\n                              [--previous-results PREVIOUS_RESULTS]\n                              [--batch-size BATCH_SIZE]\n                              [--stop-after-batches STOP_AFTER_BATCHES]\n                              [--resume]\n                              [--instruction-limit INSTRUCTION_LIMIT]\n                              [--allocation-limit ALLOCATION_LIMIT]\n                              [--std-mir] [--inline-leaves]\n                              [--trap-unsupported-calls] [--run-try-callbacks]\n                              [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--jit-native-calls] [--jit-native-call-stubs]\n                              [--jit-persistent-registers]\n                              [--jit-resumable-calls]\nqualify_test_bodies.py: error: try callbacks require explicit unsupported-call trapping\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/qualify_test_bodies.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--project",
+        "fre",
+        "--package",
+        "fre-kernels",
+        "--entries",
+        "unused",
+        "--discovery-record",
+        "unused",
+        "--guest-mir-inline-scale",
+        "8"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: qualify_test_bodies.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                              --project {pgrust,fre,nushell,ruff} --package\n                              PACKAGE --entries ENTRIES --discovery-record\n                              DISCOVERY_RECORD\n                              [--previous-results PREVIOUS_RESULTS]\n                              [--batch-size BATCH_SIZE]\n                              [--stop-after-batches STOP_AFTER_BATCHES]\n                              [--resume]\n                              [--instruction-limit INSTRUCTION_LIMIT]\n                              [--allocation-limit ALLOCATION_LIMIT]\n                              [--std-mir] [--inline-leaves]\n                              [--trap-unsupported-calls] [--run-try-callbacks]\n                              [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--jit-native-calls] [--jit-native-call-stubs]\n                              [--jit-persistent-registers]\n                              [--jit-resumable-calls]\nqualify_test_bodies.py: error: MIR inline scaling requires MIR level 3\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "-O",
+        "/Users/danluu/dev/rust-interp/scripts/qualify_test_bodies.py",
+        "--run-id",
+        "unused",
+        "--tool-key",
+        "unused",
+        "--project",
+        "fre",
+        "--package",
+        "fre-kernels",
+        "--entries",
+        "unused",
+        "--discovery-record",
+        "unused"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: qualify_test_bodies.py [-h] --run-id RUN_ID --tool-key TOOL_KEY\n                              --project {pgrust,fre,nushell,ruff} --package\n                              PACKAGE --entries ENTRIES --discovery-record\n                              DISCOVERY_RECORD\n                              [--previous-results PREVIOUS_RESULTS]\n                              [--batch-size BATCH_SIZE]\n                              [--stop-after-batches STOP_AFTER_BATCHES]\n                              [--resume]\n                              [--instruction-limit INSTRUCTION_LIMIT]\n                              [--allocation-limit ALLOCATION_LIMIT]\n                              [--std-mir] [--inline-leaves]\n                              [--trap-unsupported-calls] [--run-try-callbacks]\n                              [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--jit-native-calls] [--jit-native-call-stubs]\n                              [--jit-persistent-registers]\n                              [--jit-resumable-calls]\nqualify_test_bodies.py: error: coverage qualification requires enabled Python assertions\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/audit_test_lowering.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: audit_test_lowering.py [-h] --project {pgrust,fre,nushell,ruff}\n                              --package PACKAGE --entries ENTRIES\n                              --discovery-record DISCOVERY_RECORD\n                              [--tool-key TOOL_KEY]\n                              [--sample SAMPLE | --selection SELECTION]\n                              [--std-mir] [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--inline-leaves] [--trap-unsupported-calls]\n                              [--run-try-callbacks] [--retain-audit-bodies]\n                              [--run-id RUN_ID]\n\nSurvey selected existing test bodies without executing them.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --project {pgrust,fre,nushell,ruff}\n  --package PACKAGE\n  --entries ENTRIES     JSON names from the native test listing\n  --discovery-record DISCOVERY_RECORD\n                        native --list command and provenance JSON\n  --tool-key TOOL_KEY   use an immutable installed exporter instead of\n                        building current sources\n  --sample SAMPLE       deterministic name-hash sample; default is the\n                        complete list\n  --selection SELECTION\n                        explicit subset of the verified native listing, for\n                        bounded audit batches\n  --std-mir\n  --guest-mir-opt-level {0,1,2,3}\n                        explicit MIR optimization for the collected guest\n                        programs\n  --guest-mir-inline-scale {1,2,4,8}\n                        scale pinned MIR inlining thresholds; requires\n                        --guest-mir-opt-level=3\n  --inline-leaves       apply the experimental bounded leaf inliner to each\n                        exported body\n  --trap-unsupported-calls\n                        retain explicit runtime stops for unavailable direct\n                        foreign calls and catch_unwind intrinsics\n  --run-try-callbacks   run catch_unwind try callbacks; actual unwinding\n                        remains unsupported\n  --retain-audit-bodies\n                        retain bounded, hashed programs for a separate\n                        execution survey\n  --run-id RUN_ID\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "-O",
+        "/Users/danluu/dev/rust-interp/scripts/audit_test_lowering.py",
+        "--project",
+        "fre",
+        "--package",
+        "fre-kernels",
+        "--entries",
+        "unused",
+        "--discovery-record",
+        "unused"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: audit_test_lowering.py [-h] --project {pgrust,fre,nushell,ruff}\n                              --package PACKAGE --entries ENTRIES\n                              --discovery-record DISCOVERY_RECORD\n                              [--tool-key TOOL_KEY]\n                              [--sample SAMPLE | --selection SELECTION]\n                              [--std-mir] [--guest-mir-opt-level {0,1,2,3}]\n                              [--guest-mir-inline-scale {1,2,4,8}]\n                              [--inline-leaves] [--trap-unsupported-calls]\n                              [--run-try-callbacks] [--retain-audit-bodies]\n                              [--run-id RUN_ID]\naudit_test_lowering.py: error: lowering audits require enabled Python assertions\n"
+    }
+  ],
+  "frozen": {
+    "benchmarks/experiments/resumable-native-calls/check_coverage_drivers.py": "c537a508afcd32c0c54478ba87962dcfedfa544563ea62163de682800bf6081a",
+    ".work/validate_local_memory_forwarding_tls_01.py": "d942f7548f7dfcb087b94b9e820f30e63df8a11f3dc5d6fa31456d9d1d641f73",
+    "scripts/validate_tls_destructors.py": "faff52aaf8d38ca8bba5afa161a4aa3b74202d8dc1b71e3c55c5ed71cbef75ea",
+    "scripts/survey_audit_execution.py": "bad43b0cb6ef817d1d6708988046b406d7185fce1e378e42d08b76543bcf8879",
+    "scripts/audit_test_lowering.py": "f950bf75379395e7f628c6aeb00b70a598e28739b16edfc29892a627f931f82e",
+    "scripts/qualify_test_bodies.py": "5e21fb59f79c8256fea96326cd5080f60b451ba097badb3162db6492ab2c9076",
+    ".work/audit_local_memory_forwarding_01.py": "c916ba6e1345def272fc10bd803fd00ed46145f27b6655606cb39c13ebf8f698",
+    "scripts/qualify_native_execution.py": "4b0df2f7d6c60a536fb7dfbd194adc07692075fec4de72bb6be240292adc7b41"
+  },
+  "original_audit_assertions_unchanged": true,
+  "actual_coverage_execution": false,
+  "performance_measurement": false
+}

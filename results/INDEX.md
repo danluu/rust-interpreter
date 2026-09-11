@@ -17,7 +17,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | workflow | [nushell-type-relations](native-controls-corpus-01-nushell-type-relations/summary.json) |
 | experimental-native-validation | [resumable-bulk-native-01/summary.json](resumable-bulk-native-01/summary.json) |
 | experimental-tls-validation | [resumable-bulk-tls-01/summary.json](resumable-bulk-tls-01/summary.json) |
-| body-driver-qualification | [resumable-body-drivers-01/summary.json](resumable-body-drivers-01/summary.json) |
+| body-driver-qualification | [resumable-body-drivers-02/summary.json](resumable-body-drivers-02/summary.json) |
 | historical-count-correction | [historical-validation-counts-01/summary.json](historical-validation-counts-01/summary.json) |
 | runtime-replication | [resumable-bulk-replication-01/summary.json](resumable-bulk-replication-01/summary.json) |
 | first-bulk-run | [resumable-bulk-e2e-01/summary.json](resumable-bulk-e2e-01/summary.json) |

@@ -60,9 +60,12 @@ with the exact options and real native Call/Return counters. No successful JIT
 run declined functions. The separate `resumable-bulk-tls-01` passes 245 commands,
 including original destructor order/reset and normal callbacks. Both are terminal0.
 The tracked fresh-body coordinator and explicit audit tool selection preserve
-old audit assertions; 18 CLI checks pass. Next run the first 16 fre bodies,
-inspect actual receipts, then resume all 389. Fresh body replay and held-out
-workflows remain outstanding.
+old audit assertions; 18 CLI checks pass on the committed driver source.
+The first 16 fresh fre bodies pass with identical old artifact hashes, actual
+resumable transitions and zero declines. The remaining 24 batches are running
+as `resumable-bulk-fre-remaining-01`; its coordinator state is
+`.work/resumable-bulk-fre-01/status.json`. Freeze Rust/audit/replay/coordinator
+inputs until completion. Fresh body replay and held-out workflows remain outstanding.
 [Broader recipe](benchmarks/experiments/resumable-native-calls/BROADER-QUALIFICATION.md).
 
 Exact-code profiles of `035ef708` resolved every generated PC across three
@@ -124,9 +127,11 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-No task validation is active at this checkpoint. The native, TLS and
-`resumable-body-drivers-01` runs are terminal0. Start the fre replay next;
-inspect exact supervisor/child receipts before acting.
+Only `resumable-bulk-fre-remaining-01` is active. Native, TLS, both body-driver
+checks and the first fre batch are terminal0. After fre completes, qualify the
+extended gate evaluator by checking both existing primary receipts without
+overwriting them, then run the seven held-out workflows. Inspect exact
+supervisor/child receipts before acting.
 The unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal

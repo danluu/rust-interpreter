@@ -144,7 +144,7 @@ def render():
     for category, report in [
         ('experimental-native-validation', 'results/resumable-bulk-native-01/summary.json'),
         ('experimental-tls-validation', 'results/resumable-bulk-tls-01/summary.json'),
-        ('body-driver-qualification', 'results/resumable-body-drivers-01/summary.json'),
+        ('body-driver-qualification', 'results/resumable-body-drivers-02/summary.json'),
         ('historical-count-correction', 'results/historical-validation-counts-01/summary.json'),
         ('runtime-replication', 'results/resumable-bulk-replication-01/summary.json'),
         ('first-bulk-run', 'results/resumable-bulk-e2e-01/summary.json'),

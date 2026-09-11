@@ -1,13 +1,15 @@
 # Resumable native Calls over an explicit guest frame stack
 
-**Implementation status:** `5574d10` / `e1bec3e`, tool `035ef708`, now connects
-native Call/Return emission and VM integration. All 256 debug/release tests,
-12 CLI controls and both original artifacts pass. The completed
-[three-cycle E2E comparison](../../../results/resumable-e2e-01/assessment.md)
-improves folded 10.6% paired and token 15.0%, with CPU improving. Folded passes;
-token misses its original 20% target. The combined gate fails and the option
-stays experimental. Fresh exact-code profiles are next. The initial rationale
-and requirements below remain the qualification contract.
+**Implementation status:** `5574d10` / `e1bec3e` connect native Call/Return
+emission and VM integration; `001065a` adds exact bulk initialization, tool
+`78e60cdd`. All 257 debug/release tests, 12 CLI controls and both original
+artifacts pass. [Two fixed-tool E2E runs](../../../results/resumable-bulk-replication-01/assessment.md)
+improve folded 19.51%/19.15% and token 19.95%/19.97%, with CPU improving.
+Both narrowly miss token's original 20% target; neither failure is waived.
+The option stays experimental. Full native differential and TLS qualifications
+now pass; fresh fre body replay is running, followed by seven held-out workflows.
+[Broader qualification](BROADER-QUALIFICATION.md). The initial rationale and
+requirements below remain the qualification contract.
 
 The preceding custom JIT (`d664bce` / `e89de7f8`) improves token real edited commands
 23.6% paired and folded 4.2% against `b2aa6efe`. Token passes its original gate;
@@ -129,4 +131,5 @@ Nine new tests cover backing reuse and checked native cursor publication; all
 model descriptor/cursor mutations; they do not execute resumable machine code.
 The later `5574d10` implementation connects emitted execution; see the status
 above and the [emitter contract](EMITTER-NEXT.md). Primary E2E gates have now
-been evaluated; held-out and broader execution qualification remain outstanding.
+been evaluated. Native/TLS validation passes; fre replay and held-out workflows
+remain outstanding.
