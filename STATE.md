@@ -35,19 +35,22 @@ that tool. The broader 47,004 native differential commands, TLS checks and
 ## Next action
 
 Implement the [bounded native call-tree experiment](benchmarks/experiments/bounded-native-calls/PLAN.md).
-The `experiment/bounded-native-calls` branch now executes complete native trees
-behind `--engine jit --jit-native-calls`. Default execution remains separate.
-All 225 workspace tests pass (one ignored), including VM limit/fallback/profile
-boundaries, TLS descendants and the standalone 64-frame ABI/copy checks.
-[Check evidence](results/bounded-native-vm-03/summary.json). Seven CLI checks pass.
-The failed `bounded-native-vm-02` check preserves an invalid-errno test fixture;
-03 corrects its setup and passes. C allocation operations now enable JIT heap
-addressing. No new performance result or installed release tool is claimed yet.
+Experimental source `09de2a9`, tool `c98d995b`, executes complete native trees
+behind `--engine jit --jit-native-calls`. The default engine remains separate.
+All 225 workspace tests pass in debug and release (one ignored); seven CLI
+checks and both saved real workload smoke checks pass. [Release/tool evidence](results/bounded-native-release-01/summary.json).
+[Smoke assessment](results/bounded-native-real-smoke-01/assessment.md). The Git
+build index verifies the new source key and installed binaries.
 
-Next run the recorded full-workspace release check with tool installation, then
-three-cycle folded/token real edit/build/test comparisons against b2aa6efe using
-`--candidate-jit-native-calls`. Preserve predeclared gates and run held-out
-workflows before retention. [Internal ABI](benchmarks/experiments/bounded-native-calls/INTERNAL-ABI.md).
+**Active:** `bounded-native-e2e-01`, three balanced edit cycles each for folded
+trie and token phrase, baseline b2aa6efe / candidate c98d995b with native calls,
+plus O0/incremental native Cargo and independent checks. Supervisor 26925,
+controller 26928; exact current workflow child is in
+`.work/corpus-runs/bounded-native-e2e-01/status.json`. Do not change frozen
+benchmark scripts or measured inputs while active. Early folded pairs regress;
+wait for complete controls and retain every result. No performance retention
+claim yet. Review original gates, then use the planned regular-region native
+Call stubs if outer VM transitions prevent the targeted gains.
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -62,10 +65,10 @@ regression. Broader execution qualification is required for production retention
 
 ## Process and ownership
 
-Recent supervisors/controllers are terminal. `bounded-native-vm-01` passed 224
-tests; `02` failed the new fixture; `03` passed all 225.
-Their terminal receipts remain under `.work/experiments`; no task process is
-currently running. Re-check actual identities before treating old receipts as live.
+The release/tool check and smoke run are terminal with return code zero.
+The two-workflow E2E corpus above is active; re-check its receipts before treating
+any PID as live. The earlier `bounded-native-vm-02` failure used an invalid errno
+test fixture; `03` corrects the setup and passes. All evidence remains preserved.
 Detailed pointers/pins are in `.work/continuation-state.json`.
 
 No subagents or independent model calls. No AWS activation, unrelated process
