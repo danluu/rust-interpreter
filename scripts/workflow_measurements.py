@@ -4,14 +4,34 @@ import resource
 import statistics
 
 
+def initial_modes(defaults, requested=None):
+    if requested is None:
+        return list(defaults)
+    if (not isinstance(requested, list) or len(requested) != len(defaults) or
+            not all(isinstance(m, str) for m in requested) or set(requested) != set(defaults)):
+        raise ValueError('initial mode order must contain each comparison mode exactly once')
+    return list(requested)
+
+
+def mode_order(modes, cycle, state, paired):
+    """Order one source state; arbitrary initial permutations balance cold runs."""
+    order = list(modes if state % 2 == 0 else reversed(modes))
+    if paired and state > 0:
+        permutations = list(itertools.permutations(modes))
+        permutations = [permutations[i] for i in [0, 1, 2, 4, 3, 5]]
+        order = list(permutations[(state - 1) % len(permutations)])
+    if (cycle // len(modes)) % 2:
+        order.reverse()
+    rotation = cycle % len(modes)
+    return order[rotation:] + order[:rotation]
+
+
 def source_states(original, case, cycles, modes, paired):
     """Replay real edits after an original-source anchor in every cycle."""
     if cycles < 1:
         raise ValueError('cycles must be positive')
     if len(modes) != 3 or len(set(modes)) != 3:
         raise ValueError('expected three distinct comparison modes')
-    permutations = list(itertools.permutations(modes))
-    permutations = [permutations[i] for i in [0, 1, 2, 4, 3, 5]]
     marker = '\n#[cfg(test)]\nmod tests {'
     if original.count(marker) != 1:
         raise ValueError('expected exactly one original test module')
@@ -33,17 +53,8 @@ def source_states(original, case, cycles, modes, paired):
                 candidate = candidate.replace(before, after)
             if candidate.count(marker) != 1 or candidate.split(marker)[1] != original_tests:
                 raise ValueError('test source changed')
-            order = list(modes if state % 2 == 0 else reversed(modes))
-            if paired and state > 0:
-                order = list(permutations[(state - 1) % len(permutations)])
-            # Each edit visits every mode position once in three cycles, and
-            # all six permutations in six cycles. Cycle zero keeps old order.
-            if (cycle // len(modes)) % 2:
-                order.reverse()
-            rotation = cycle % len(modes)
-            order = order[rotation:] + order[:rotation]
             yield dict(cycle=cycle, state=state, phase=phase, label=label,
-                       source=candidate.encode(), modes=order)
+                       source=candidate.encode(), modes=mode_order(modes, cycle, state, paired))
 
 
 def child_usage():

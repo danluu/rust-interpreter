@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import time
 
+from workflow_measurements import initial_modes, mode_order
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -31,6 +33,14 @@ def verify(report, reference=None):
     states = [0, -1, *range(1, edits + 1)]
     custom_modes = ['baseline', 'candidate'] if 'comparison' in report else ['interpreter', 'jit']
     modes = ['native', *custom_modes]
+    scheduled_modes = initial_modes(modes, report.get('initial_mode_order'))
+    expected_orders = [dict(cycle=c, state=s,
+        phase=('cold' if c == 0 else 'anchor') if s == 0 else ('wrong-edit' if s == -1 else 'edit'),
+        modes=mode_order(scheduled_modes, c, s, 'comparison' in report))
+        for c in range(cycles) for s in states]
+    require(report['mode_orders'] == expected_orders, 'recorded mode schedule differs')
+    require([(r['cycle'], r['state'], r['mode']) for r in rows] ==
+        [(o['cycle'], o['state'], m) for o in expected_orders for m in o['modes']], 'command order differs from schedule')
     expected = {(c, s, m) for c in range(cycles) for s in states for m in modes}
     actual = [(r['cycle'], r['state'], r['mode']) for r in rows]
     require(len(set(actual)) == len(actual) and set(actual) == expected, 'missing or duplicate samples')

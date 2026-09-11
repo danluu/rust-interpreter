@@ -14,7 +14,7 @@ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require
 
 
 from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
-from workflow_measurements import child_usage, child_cpu_since, per_edit_spread, sample_path, source_states
+from workflow_measurements import child_usage, child_cpu_since, initial_modes, per_edit_spread, sample_path, source_states
 from workflow_controls import native_command, native_environment, exporter_seconds
 from workflow_io import SourceEdit, capture, require_space, write_json
 from workflow_case_file import load as load_case_file, source_file
@@ -44,6 +44,7 @@ def main():
     parser.add_argument('--case-file',type=Path,help='bounded public workflow JSON inside this workspace; mutually exclusive with a named workflow')
     parser.add_argument('--batch',action='store_true',help='invoke all custom test entries in one command')
     parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
+    parser.add_argument('--initial-mode-order',type=lambda value:value.split(','),help='comma-separated permutation of the three modes; rotates cold-run order without changing mode settings')
     parser.add_argument('--minimum-free-gib',type=int,default=8,help='refuse to start a command below this free-space threshold; not a disk reservation')
     parser.add_argument('--jobs',type=int,default=4,help='Cargo jobs for custom engines and, by default, native (1..256)')
     parser.add_argument('--native-jobs',type=int,help='override native/check Cargo jobs (1..256)')
@@ -73,6 +74,9 @@ def main():
     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
     args=parser.parse_args()
+    try:
+        scheduled_modes=initial_modes(['native','baseline','candidate'] if args.baseline_tool_key is not None else ['native','interpreter','jit'],args.initial_mode_order)
+    except ValueError as error:parser.error(str(error))
     if args.candidate_jit_native_call_stubs and not args.candidate_jit_native_calls:parser.error('--candidate-jit-native-call-stubs requires --candidate-jit-native-calls')
     if args.candidate_jit_persistent_registers and (args.baseline_tool_key is None or args.comparison_engine=='interpreter'):parser.error('--candidate-jit-persistent-registers requires a paired JIT comparison')
     if args.candidate_jit_resumable_calls and (args.baseline_tool_key is None or args.comparison_engine=='interpreter'):parser.error('--candidate-jit-resumable-calls requires a paired JIT comparison')
@@ -186,7 +190,7 @@ def main():
     subprocess.run(['git','ls-files','--error-unmatch','--',case['file']],cwd=source,check=True,stdout=subprocess.DEVNULL)
     original=file.read_bytes();current=original
     # Detect missing/ambiguous replacements or test mutations before commands.
-    list(source_states(original.decode(),case,1,modes,args.baseline_tool_key is not None))
+    list(source_states(original.decode(),case,1,scheduled_modes,args.baseline_tool_key is not None))
     env=os.environ.copy()
     for name in list(env):
         if name.startswith(('RUST_INTERP_','CARGO_PROFILE_')) or name in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','CARGO_INCREMENTAL','CARGO_TARGET_DIR','CARGO_BUILD_TARGET']:
@@ -350,7 +354,7 @@ def main():
         # Different modes each have their own caches. A cold successful original
         # build is followed by a wrong production edit, then cumulative body
         # refactors. Test code is byte-for-byte unchanged throughout.
-        for sample in source_states(original.decode(),case,args.cycles,modes,args.baseline_tool_key is not None):
+        for sample in source_states(original.decode(),case,args.cycles,scheduled_modes,args.baseline_tool_key is not None):
             cycle=sample['cycle'];state=sample['state']
             if file.read_bytes()!=current:raise RuntimeError('source changed outside this benchmark')
             previous=hashlib.sha256(current).hexdigest()
@@ -377,7 +381,7 @@ def main():
             if args.check_floor:check_reference(sample)
     assert all(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest for path,digest in frozen_scripts.items()),'benchmark scripts changed during the run'
     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
-    result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,
+    result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,initial_mode_order=scheduled_modes,
                 minimum_free_gib=args.minimum_free_gib,
                 tests=f'{len(tests)} existing private test bodies' if private else tests,
                 edits=[e[0] for e in edits],

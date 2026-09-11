@@ -78,7 +78,7 @@ def source_file(source, case):
 
 def verify_snapshot(root, report, rows):
     """Reconstruct the specified source states independently of captured hashes."""
-    from workflow_measurements import source_states
+    from workflow_measurements import initial_modes, source_states
     proof = report['case_file']
     snapshot = Path(root) / report['raw'] / 'case.json'
     require(proof['snapshot'] == str(snapshot.relative_to(root)), 'unexpected case snapshot path')
@@ -93,6 +93,7 @@ def verify_snapshot(root, report, rows):
     source = Path(root) / '.work/sources' / report['project']
     original = subprocess.check_output(['git', 'show', revision + ':' + case['file']], cwd=source, text=True)
     modes = ['native', 'baseline', 'candidate'] if 'comparison' in report else ['native', 'interpreter', 'jit']
+    modes = initial_modes(modes, report.get('initial_mode_order'))
     states = list(source_states(original, case, report['cycles'], modes, 'comparison' in report))
     expected = {(s['cycle'], s['state']): s for s in states}
     require(len(rows) == len(states) * len(modes), 'case command count differs')
