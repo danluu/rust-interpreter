@@ -21,7 +21,12 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
    now execute natively. Follow the [recorded profile protocol](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
    on the exact current artifacts. Fresh captures now show 41.01% folded and
    12.23% token samples in clearing, with token boundary self only 2.23%.
-   Map hot clearing sites to callee frames and investigate a substantial
+   The typed arena split accounts for all clearing samples as guest memory;
+   register clearing has zero hits, so a stronger register proof is parked.
+   Compare ordinary MIR inlining budgets with the current enlarged settings
+   under the cheaper native Call ABI before broader frame analysis. Retain
+   both artifacts and native reference results for this compiler comparison.
+   If inlining does not help, investigate a substantial
    read-before-write proof including alias/call effects before implementing
    another initialization change. Preserve exact budgets,
    initialization, fault order and guest state. Earlier narrow frame-reuse

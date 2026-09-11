@@ -63,8 +63,18 @@ folded. The analyzers are unchanged; one relative-path analysis-wrapper failure
 is preserved, and analysis alone was rerun with absolute paths. Next map hot
 clearing sites to callee frames and determine whether a substantial set of
 bytes is provably written before any read, including alias/call effects.
+The [typed arena split](results/register-clearing-attribution-01/assessment.md)
+now attributes all 942 folded and 879 token clearing samples to guest memory,
+with zero register-array hits. Twenty positive cases and 140 rejected mutants
+qualify the analyzer; all six original captures reproduce. A stronger register
+proof is parked. The hottest folded frame has 18,224 bytes, of which 16,704 are
+MIR locals in the existing verified inventory. Before broader aggregate alias
+and padding analysis, compare ordinary MIR inlining budgets against the current
+enlarged budgets with the same cheap native Call ABI. This deliberately changes
+artifacts and needs a compiler-configuration comparison with original native
+controls. No new runtime optimization has been implemented yet.
 Do not reopen the parked narrow argument/private-array optimizations or tune
-clearing batches. No new runtime optimization has been implemented yet.
+clearing batches.
 
 Function-level reuse remains correctness/design work: the [Nushell reduction](results/allocation-history-reduction-02/assessment.md)
 and [built-MIR observer](results/allocation-history-mir-dumps-02/assessment.md)
