@@ -72,6 +72,19 @@ unchecked lazy execution or fake synchronization/unwind behavior is introduced.
 
 Status: `compiler-timing-parser-01` passes four preserved captures, nineteen
 malformed inputs and synthetic overlap/feature/duplicate checks. Both repeated
-interface runs are complete. `interface-nushell-units-01` is the active one-cycle
-instrumented comparison; ordinary verification and analysis are pending.
-Preserve its frozen case/harness/verifier/Rust inputs until it finishes.
+interface runs and the nine-snapshot instrumented comparison are complete and
+verified. The lightweight wrapper's warm comparisons are complete; one of six
+fixed cold histories is complete and the others remain required.
+
+[Cold timeline inspection](../../../results/compiler-cold-concurrency-01/assessment.md)
+now finds 800 custom timed Cargo units under four jobs versus 608 native units
+under eighteen jobs. Custom cold CPU/wall is about 3.1, versus about 1.5 after
+the API edit. Reported overlap is broad during cold commands and much narrower
+after edits; it does not reveal a ready queue or establish a critical path.
+This makes an isolated custom-worker-count comparison a candidate next direction
+after the fixed wrapper comparison. Do not change its current four-job controls
+or infer that the extra host/target units are interchangeable. A subsequent
+experiment must freeze one tool in both arms, qualify mode-specific job recording,
+predeclare its cold/warm samples and criteria, and retain all original assertions,
+wrong edits, independent checks and artifact comparisons. Stable allocation and
+relocation identity remains necessary before pursuing function-level reuse.

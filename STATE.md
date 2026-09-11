@@ -224,10 +224,11 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-The first balanced cold history `lightweight-wrapper-nushell-cold-01` and its
-verifier are complete. Its native cache is now being archived as
-`lightweight-wrapper-nushell-cold-01-native-archive-01`; inspect the application
-receipt before further cleanup or benchmarking. Nushell15 and its verifier
+The first balanced cold history `lightweight-wrapper-nushell-cold-01`, its
+verifier and its native archive are complete. `cold-storage-batch-01-apply` is
+active under supervisor 35143: six reviewed completed check/custom targets are
+being archived sequentially. Inspect its receipt before further cleanup or
+benchmarking. Nushell15 and its verifier
 are terminal0; all source/frozen-input checks and ninety compiler-wrapper traces
 verify. All earlier wrapper qualifications and pgrust15 are also complete.
 The remaining measurements are the six fixed balanced Nushell cold histories;
@@ -277,12 +278,22 @@ payloads and evidence verified, and one archived `nu-protocol` fingerprint was
 read through the bounded inspector with the original hash. About 21.25 GiB was
 free before cold01 started; about 9.65 GiB remained afterward. Five actual
 archives are complete. Cold01's reviewed native inventory has 22,485 paths and
-4.34 GiB unique payloads. Finish its archival, then preserve other exact
-completed check/custom targets to regain room for cold02. Its required initial
+4.34 GiB unique payloads and is now archived in about 1.39 GiB. The six-target
+batch inventories 99,327 paths/15.06 GiB unique contents. Finish its applications
+and verify available space before cold02. Its required initial
 order is candidate,baseline,native. Preserve query metadata
 in archives, private caches,
 installed tools and all historical evidence. Do not start cold runs before
 adequate space is available or change their gates.
+
+[Read-only cold timeline inspection](results/compiler-cold-concurrency-01/assessment.md)
+reproduces all nine old instrumented captures. Cold custom builds have 800 timed
+Cargo units under four jobs and CPU/wall about 3.1; native has 608 under eighteen
+jobs and about 7.1. Custom edited CPU/wall is about 1.5. Overlap is broad in cold
+commands and narrow after edits; it is not CPU utilization or ready-queue proof.
+This motivates considering worker counts in a separate future experiment, with
+identical binaries and fresh cold/warm measurements. Current wrapper controls
+and gates remain fixed. Constant/relocation identity remains required for reuse.
 The small Ruff/Nushell object inventories remain unapplied and are bound to the
 older cleanup driver; using either now would require a fresh reviewed inventory.
 
