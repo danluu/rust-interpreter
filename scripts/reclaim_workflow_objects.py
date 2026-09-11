@@ -93,7 +93,7 @@ def corpus_member(corpus, corpus_id, run_id, report_path, report):
             cases[0]['workflow'] == report['workflow'], 'corpus case identity differs')
 
 
-def workflow(run_id, corpus_id=None):
+def workflow(run_id, corpus_id=None, *, recovered=False):
     """Derive a single target from completed commands, never from an arbitrary path."""
     run_id = identifier(run_id)
     report_path = ROOT / 'results' / run_id / 'summary.json'
@@ -104,8 +104,10 @@ def workflow(run_id, corpus_id=None):
     supervisor_id = identifier(corpus_id) if corpus_id else run_id
     status_path = ROOT / '.work/experiments' / supervisor_id / 'status.json'
     status = json.loads(status_path.read_text())
-    require(status['owner'] == str(ROOT) and status['cwd'] == str(ROOT) and
-            status['status'] == 'finished' and status['returncode'] == 0, 'workflow is not completed under this owner')
+    require(status['owner'] == str(ROOT) and status['cwd'] == str(ROOT), 'workflow owner differs')
+    require(recovered or (status['status'] == 'finished' and status['returncode'] == 0),
+            'workflow is not completed under this owner')
+    require(not recovered or corpus_id is not None, 'recovery evidence requires a corpus')
     command = status['command']
     expected_script = 'bench_workflow_corpus.py' if corpus_id else 'bench_e2e_workflow.py'
     require(Path(command[1]).name == expected_script and
@@ -113,12 +115,19 @@ def workflow(run_id, corpus_id=None):
     supervisor_plan = status_path.with_name('plan.json')
     require(sha(supervisor_plan) == status['plan_sha256'], 'supervisor plan changed')
     extra_proofs = [supervisor_plan]
+    extra_pids = []
     if corpus_id:
-        corpus_path = ROOT / 'results' / corpus_id / 'summary.json'
-        corpus_member(json.loads(corpus_path.read_text()), corpus_id, run_id, report_path, report)
-        extra_proofs.append(corpus_path)
+        if recovered:
+            from recovered_corpus_cache_evidence import evidence
+            corpus, proofs, extra_pids = evidence(ROOT, corpus_id, run_id, sha)
+            extra_proofs += proofs
+        else:
+            corpus_path = ROOT / 'results' / corpus_id / 'summary.json'
+            corpus = json.loads(corpus_path.read_text())
+            extra_proofs.append(corpus_path)
+        corpus_member(corpus, corpus_id, run_id, report_path, report)
     # PID reuse is harmless; a still-live command for this same run is not.
-    check = subprocess.run(['ps', '-p', str(status['supervisor_pid']) + ',' + str(status['child_pid']),
+    check = subprocess.run(['ps', '-p', ','.join(map(str, [status['supervisor_pid'], status['child_pid'], *extra_pids])),
                             '-o', 'pid,ppid,lstart,command'], capture_output=True, text=True)
     require(check.returncode in [0, 1] and not check.stderr and
             not any(supervisor_id in line for line in check.stdout.splitlines()[1:]), 'original workflow process is still live or ps failed')

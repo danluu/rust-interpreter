@@ -22,7 +22,8 @@ SOURCES = [Path(__file__).resolve(), ROOT / 'scripts/cache_archive.py',
     ROOT / 'scripts/reclaim_workflow_objects.py', ROOT / 'scripts/verify_repeated_workflow.py',
     ROOT / 'scripts/workflow_case_file.py', ROOT / 'scripts/workflow_measurements.py', ROOT / 'scripts/workflow_io.py',
     ROOT / 'scripts/workflow_cache_evidence.py', ROOT / 'scripts/workflow_jobs.py',
-    ROOT / 'scripts/workspace_check_evidence.py', ROOT / 'scripts/host_cache_evidence.py']
+    ROOT / 'scripts/workspace_check_evidence.py', ROOT / 'scripts/host_cache_evidence.py',
+    ROOT / 'scripts/recovered_corpus_cache_evidence.py']
 
 
 def read(path):
@@ -44,17 +45,21 @@ def sources():
 
 
 def selected_cache(run_id, corpus, mode, kind='workflow'):
-    require(kind in ['workflow', 'workspace-check'], 'unknown cache provenance kind')
+    require(kind in ['workflow', 'recovered-workflow', 'workspace-check'], 'unknown cache provenance kind')
     identifier(run_id)
     if kind == 'workspace-check':
         require(corpus is None and mode == 'host', 'host cache cannot have a corpus or guest mode')
         return debug_workspace_cache(ROOT, run_id, sha)
     require(mode in ['native', 'check', 'baseline', 'candidate'], 'unknown workflow cache mode')
-    return workflow_cache(ROOT, run_id, corpus, mode, workflow, sha)
+    proof = workflow
+    if kind == 'recovered-workflow':
+        require(corpus is not None, 'recovered workflow requires a corpus')
+        proof = lambda run, parent: workflow(run, parent, recovered=True)
+    return workflow_cache(ROOT, run_id, corpus, mode, proof, sha)
 
 
 def selection_guard(target, mode, kind):
-    require(kind in ['workflow', 'workspace-check'], 'unknown cache provenance kind')
+    require(kind in ['workflow', 'recovered-workflow', 'workspace-check'], 'unknown cache provenance kind')
     if kind == 'workspace-check':
         require(mode == 'host', 'host cache mode differs')
         # check_workspace.py uses the same enclosing benchmark lock.
@@ -116,9 +121,10 @@ def load(name):
             sha(work / 'plan.json') == status['plan_sha256'] and
             read(BASE / 'targets.json').get(plan['target']) == name, 'archive ownership, reservation or plan changed')
     kind, mode = plan.get('proof_kind', 'workflow'), plan.get('mode', 'native')
-    require(kind in ['workflow', 'workspace-check'] and
+    require(kind in ['workflow', 'recovered-workflow', 'workspace-check'] and
             ((kind == 'workspace-check' and mode == 'host' and plan['corpus'] is None) or
-             (kind == 'workflow' and mode in ['native', 'check', 'baseline', 'candidate'])),
+             (kind in ['workflow', 'recovered-workflow'] and mode in ['native', 'check', 'baseline', 'candidate'] and
+              (kind != 'recovered-workflow' or plan['corpus'] is not None))),
             'archive provenance kind or mode differs')
     archive.validate(plan['manifest'])
     return work, plan, status
@@ -228,6 +234,7 @@ def main():
     parser.add_argument('--mode', choices=['native', 'check', 'baseline', 'candidate'],
                         help='completed cache mode; preparation only, defaults to native')
     parser.add_argument('--corpus')
+    parser.add_argument('--recovered-corpus', action='store_true', help='use explicitly qualified recovery evidence for a complete public case in an interrupted corpus')
     parser.add_argument('--member')
     parser.add_argument('--maximum-bytes', type=int, default=1024 * 1024)
     parser.add_argument('--restore-id')
@@ -236,6 +243,8 @@ def main():
             'supply exactly one completed source only when preparing')
     require(not args.mode or args.prepare, 'supply --mode only when preparing')
     require(not args.corpus or args.prepare, 'supply --corpus only when preparing')
+    require(not args.recovered_corpus or (args.prepare and args.workflow and args.corpus),
+            'recovered-corpus requires a workflow and corpus during preparation')
     require(not args.workspace_check or (args.mode is None and args.corpus is None),
             'host cache preparation cannot have --mode or --corpus')
     require(bool(args.inspect) == bool(args.member), 'supply --member only when inspecting')
@@ -248,7 +257,8 @@ def main():
             if args.workspace_check:
                 prepare(name, args.workspace_check, None, 'host', 'workspace-check')
             else:
-                prepare(name, args.workflow, args.corpus, args.mode or 'native')
+                prepare(name, args.workflow, args.corpus, args.mode or 'native',
+                        'recovered-workflow' if args.recovered_corpus else 'workflow')
         elif args.apply:
             apply(name)
         else:

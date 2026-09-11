@@ -30,6 +30,8 @@ def main():
         raw.mkdir()
         host = dict(archive='host', workflow='completed-check', mode='host', proof_kind='workspace-check')
         guest = dict(archive='guest', workflow='completed-workflow', mode='candidate', corpus='completed-corpus')
+        recovered = dict(archive='recovered', workflow='completed-recovered-case', mode='candidate',
+                         corpus='assessed-interrupted-corpus', proof_kind='recovered-workflow')
         rejected, routes = [], []
 
         def invoke(label, entries, action='prepare', altered=None, should_fail=False):
@@ -75,23 +77,31 @@ def main():
                 routes.append(dict(label=label, commands=calls))
             return calls
 
-        calls = invoke('mixed-prepare', [host, guest])
+        calls = invoke('mixed-prepare', [host, guest, recovered])
         require(calls[0][2:] == ['--prepare', 'host', '--workspace-check', 'completed-check'] and
                 calls[1][2:] == ['--prepare', 'guest', '--workflow', 'completed-workflow',
-                                '--mode', 'candidate', '--corpus', 'completed-corpus'], 'selector arguments differ')
-        calls = invoke('mixed-apply', [host, guest], action='apply')
-        require(calls[0][2:] == ['--apply', 'host'] and calls[1][2:] == ['--apply', 'guest'], 'apply arguments differ')
+                                '--mode', 'candidate', '--corpus', 'completed-corpus'] and
+                calls[2][2:] == ['--prepare', 'recovered', '--workflow', 'completed-recovered-case', '--mode',
+                                'candidate', '--corpus', 'assessed-interrupted-corpus', '--recovered-corpus'],
+                'selector arguments differ')
+        calls = invoke('mixed-apply', [host, guest, recovered], action='apply')
+        require([call[2:] for call in calls] == [['--apply', name] for name in ['host', 'guest', 'recovered']],
+                'apply arguments differ')
         for label, changed in [
             ('host-with-guest-mode', dict(host, mode='native')),
             ('host-with-corpus', dict(host, corpus='unexpected')),
             ('unknown-provenance', dict(host, proof_kind='unknown')),
             ('workflow-with-host-mode', {k: v for k, v in host.items() if k != 'proof_kind'}),
             ('explicit-workflow-kind', dict(guest, proof_kind='workflow')),
+            ('recovered-with-host-mode', dict(recovered, mode='host')),
+            ('recovered-without-corpus', {k: v for k, v in recovered.items() if k != 'corpus'}),
         ]:
             # Invalid later entries must prevent even the valid prefix running.
             invoke(label, [dict(guest, archive='valid-prefix'), changed], should_fail=True)
         invoke('duplicate-host-target', [host, dict(host, archive='second')], should_fail=True)
         invoke('duplicate-archive-id', [host, dict(guest, archive='host')], should_fail=True)
+        invoke('same-target-different-proof-kind', [guest, dict(recovered, workflow=guest['workflow'])], should_fail=True)
+        invoke('changed-recovered-kind', [recovered], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)
         for label, altered in [('changed-kind', {'proof_kind': 'workflow'}),
                                ('changed-mode', {'mode': 'native'}),
                                ('changed-corpus', {'corpus': 'unexpected'}),

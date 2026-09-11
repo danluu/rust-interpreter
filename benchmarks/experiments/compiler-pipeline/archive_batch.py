@@ -31,10 +31,11 @@ def main():
     entries = plan['entries']
     require(isinstance(entries, list) and 1 <= len(entries) <= 32, 'invalid batch size')
     fields = {'archive', 'workflow', 'mode'}
-    require(all(isinstance(e, dict) and set(e) in [fields, fields | {'corpus'}, fields | {'proof_kind'}] for e in entries),
+    require(all(isinstance(e, dict) and set(e) in [fields, fields | {'corpus'}, fields | {'proof_kind'},
+                fields | {'corpus', 'proof_kind'}] for e in entries),
             'invalid batch entry')
     require(len({e['archive'] for e in entries}) == len(entries) and
-            len({(e.get('proof_kind', 'workflow'), e['workflow'], e['mode']) for e in entries}) == len(entries),
+            len({(e['workflow'], e['mode']) for e in entries}) == len(entries),
             'duplicate batch target')
     commands = []
     for entry in entries:
@@ -44,6 +45,8 @@ def main():
         kind = entry.get('proof_kind', 'workflow')
         require((kind == 'workspace-check' and entry['mode'] == 'host' and corpus is None) or
                 (kind == 'workflow' and 'proof_kind' not in entry and
+                 entry['mode'] in ['native', 'check', 'baseline', 'candidate']) or
+                (kind == 'recovered-workflow' and corpus is not None and
                  entry['mode'] in ['native', 'check', 'baseline', 'candidate']),
                 'unknown or inconsistent cache provenance/mode')
         work = ROOT / '.work/workflow-cache-archives' / entry['archive']
@@ -56,6 +59,8 @@ def main():
                 command += ['--prepare', entry['archive'], '--workflow', entry['workflow'], '--mode', entry['mode']]
             if corpus is not None:
                 command += ['--corpus', corpus]
+            if kind == 'recovered-workflow':
+                command += ['--recovered-corpus']
         else:
             prepared = json.loads((work / 'plan.json').read_text())
             status = json.loads((work / 'status.json').read_text())

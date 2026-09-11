@@ -215,7 +215,7 @@ def main():
         require((changed / 'metadata.json').read_bytes() == b'changed', 'failed archive changed original')
 
         coordination = []
-        for scenario in ['success', 'write-failure', 'verification-failure', 'retirement-interruption']:
+        for scenario in ['success', 'recovered-success', 'write-failure', 'verification-failure', 'retirement-interruption']:
             root = raw / ('coordinator-' + scenario)
             target = root / '.work/runs/fixture/native'
             before = fixture(target, many=scenario == 'retirement-interruption')
@@ -223,14 +223,21 @@ def main():
             outside = root / 'evidence.json'
             outside.write_bytes(b'preserved outside target\n')
             outside_sha = sha(outside)
-            proof = lambda run_id, corpus: (target, {'evidence.json': sha(outside)}, {'fixture': True})
+            def proof(run_id, corpus, *, recovered=False):
+                require(recovered == (scenario == 'recovered-success'), 'recovery proof routing differs')
+                return target, {'evidence.json': sha(outside)}, {'fixture': True}
             with replace(coordinator, 'ROOT', root), replace(coordinator, 'BASE', root / '.work/workflow-cache-archives'), \
                  replace(coordinator, 'workflow', proof), replace(coordinator, 'sources', lambda: {'fixture': 'fixed'}):
                 coordinator.owned_root()
-                coordinator.prepare('archive', 'fixture', None)
-                prepared = json.loads((coordinator.BASE / 'archive/plan.json').read_text())['manifest']
+                recovered = scenario == 'recovered-success'
+                coordinator.prepare('archive', 'fixture', 'assessed-parent' if recovered else None,
+                                    'native', 'recovered-workflow' if recovered else 'workflow')
+                plan = json.loads((coordinator.BASE / 'archive/plan.json').read_text())
+                require(plan.get('proof_kind', 'workflow') == ('recovered-workflow' if recovered else 'workflow'),
+                        'archive lost provenance kind')
+                prepared = plan['manifest']
                 require(archive.stable(prepared) == archive.stable(before), 'preparation changed fixture contents')
-                if scenario == 'success':
+                if scenario in ['success', 'recovered-success']:
                     coordinator.apply('archive')
                     require(not list(target.iterdir()), 'successful retirement left files')
                 elif scenario == 'write-failure':
@@ -265,7 +272,7 @@ def main():
                     archive.verify_archive(archive_path, prepared)
                     archive.restore(archive_path, prepared, root / 'recovered')
                     archive.unchanged(root / 'recovered', before, restored=True)
-                if scenario != 'success':
+                if scenario not in ['success', 'recovered-success']:
                     rejects(scenario + ' automatic retry', lambda: coordinator.apply('archive'))
                     rejects(scenario + ' new identity retry', lambda: coordinator.prepare('retry', 'fixture', None))
                 require(sha(outside) == outside_sha, 'outside evidence changed')

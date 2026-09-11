@@ -1,0 +1,1 @@
+Initial read-only recovery qualification passes eight intended targets and forty rejection cases. The archive batch subsequently gained an additional duplicate-target guard; evidence02 verifies the final source hashes. No compiler cache was prepared or retired.

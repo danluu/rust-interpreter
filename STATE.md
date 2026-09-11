@@ -63,6 +63,12 @@ No default change. The [eight completed comparison caches](results/copy-comparis
 are archived and verified. The [eight original-comparison caches](results/copy-qualification-storage-01/assessment.md)
 are also archived and verified. About 9.4 GiB is currently available on the shared
 volume; the large held-out histories still need a bounded storage strategy.
+The [recovered-case archive extension](results/recovered-cache-evidence-02/assessment.md)
+passes eight target checks and forty rejections. Its archive core passes 44
+rejections/five coordinator cases, and mixed batch routing passes fifteen
+rejections. This permits separately reviewed archival of the completed old
+Nushell/Ruff cases while preserving their interrupted parent and recovery records.
+No cache has yet been archived using this new provenance path.
 
 ## Closed worker-count experiment
 
