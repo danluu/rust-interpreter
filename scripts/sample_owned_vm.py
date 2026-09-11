@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--allocation-limit', type=int, default=150_000)
     parser.add_argument('--jit-native-calls', action='store_true')
     parser.add_argument('--jit-native-call-stubs', action='store_true')
+    parser.add_argument('--dump-code', action='store_true', help='save emitted code from each sampled process after execution')
     args = parser.parse_args()
     if args.jit_native_call_stubs and not args.jit_native_calls:
         parser.error('--jit-native-call-stubs requires --jit-native-calls')
@@ -68,6 +69,7 @@ def main():
         source_files=frozen, repetitions=args.repetitions, sample_seconds=args.duration,
         instruction_limit=args.instruction_limit, allocation_limit=args.allocation_limit,
         jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
+        dump_code=args.dump_code,
         performance_measurement=False))
     env = os.environ.copy()
     for name in list(env):
@@ -91,6 +93,8 @@ def main():
             command.append('--jit-native-calls')
         if args.jit_native_call_stubs:
             command.append('--jit-native-call-stubs')
+        if args.dump_code:
+            command += ['--jit-code-dump', str(run / 'jit-code')]
         command.append(str(artifact))
         with (run / 'vm.stdout').open('x') as stdout, (run / 'vm.stderr').open('x') as stderr:
             child = subprocess.Popen(command, cwd=ROOT, env=env, stdout=stdout, stderr=stderr)
@@ -157,7 +161,7 @@ def main():
             raise RuntimeError('native Call stubs did not execute')
         record = dict(index=index, identity=identity, mapped=mapped, sample_returncode=sample_code,
                       performance_measurement=False, statistics=stats,
-                      files={p.name: digest(p) for p in run.iterdir() if p.is_file()})
+                      files={str(p.relative_to(run)): digest(p) for p in run.rglob('*') if p.is_file()})
         write(run / 'record.json', record)
         results.append(record)
         write(work / 'records.json', results)

@@ -374,6 +374,9 @@ pub struct Limits {
     pub jit_native_calls: bool,
     /// Also link outer direct Calls with ordinary regions. Requires native calls.
     pub jit_native_call_stubs: bool,
+    /// Diagnostic only: create a new directory containing published JIT bytes
+    /// and address ranges after successful execution. Requires Engine::Jit.
+    pub jit_code_dump: Option<std::path::PathBuf>,
 }
 impl Default for Limits {
     fn default() -> Self {
@@ -385,6 +388,7 @@ impl Default for Limits {
             jit_code_bytes: jit::MAX_CODE_BYTES,
             jit_native_calls: false,
             jit_native_call_stubs: false,
+            jit_code_dump: None,
         }
     }
 }
@@ -611,6 +615,9 @@ fn execute_observed<const PROFILE: bool>(
     // engine's transition path and its temporaries completely.
     if limits.jit_native_call_stubs && !limits.jit_native_calls {
         return Err("native Call stubs require native calls".into());
+    }
+    if engine == Engine::Interpreter && limits.jit_code_dump.is_some() {
+        return Err("native code dumps require the JIT engine".into());
     }
     match engine {
         Engine::Interpreter if limits.jit_native_calls => Err("native calls require the JIT engine".into()),
@@ -1117,6 +1124,9 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
             }
         }
     };
+    if let Some(path) = &limits.jit_code_dump {
+        jit.as_ref().ok_or("missing JIT for native code dump")?.dump_code(path)?;
+    }
     let tree_stats = jit.as_ref().map_or((0, 0, 0, 0, 0), |j| j.tree_stats());
     Ok(Execution { value, instructions: steps, peak_memory: memory.peak,
         jit_bytes: jit.as_ref().map_or(0, |j| j.bytes),

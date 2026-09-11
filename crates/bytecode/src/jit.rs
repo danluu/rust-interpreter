@@ -16,6 +16,7 @@ mod trees;
 #[allow(dead_code)]
 mod native_calls;
 mod native_regions;
+mod code_dump;
 
 #[cfg(test)]
 mod limit_tests;
@@ -123,6 +124,12 @@ mod platform {
         used: usize,
     }
     impl Code {
+        pub fn published(&self) -> (usize, &[u8]) {
+            // SAFETY: append initializes exactly [ptr, ptr+used), used <= len.
+            // The mapping is readable in execution mode, remains owned by
+            // self, and cannot be unmapped or appended through this borrow.
+            (self.ptr as usize, unsafe { std::slice::from_raw_parts(self.ptr.cast(), self.used) })
+        }
         #[cfg(test)]
         pub unsafe fn tree_abi_probe(&self, offset: usize, arguments: [usize;8]) -> [usize;7] {
             assert!(offset < self.used);
@@ -218,6 +225,7 @@ mod platform {
 mod platform {
     pub struct Code;
     impl Code {
+        pub fn published(&self) -> (usize, &[u8]) { unreachable!() }
         pub fn reserve(_: usize) -> Result<Self, String> {
             Err("the custom JIT currently requires Apple Silicon macOS".into())
         }

@@ -40,7 +40,7 @@ pub(super) struct State {
     profile_pending: Vec<usize>,
 }
 pub(super) struct Entry {
-    wrapper: usize,
+    pub(super) wrapper: usize,
     internal: usize,
     pub ends: Vec<Option<usize>>,
 }
