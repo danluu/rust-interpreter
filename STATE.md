@@ -105,7 +105,13 @@ correctly rejects the available 15.57 GiB against the 25.99 GiB estimate.
 No fresh benchmark was started. The [retry decision](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md)
 records the required new history ID and unchanged controls; its aggregation
 amendment still needs implementation/qualification. More task-owned build-cache
-space is required before that launch.
+space is required before that launch. The [legacy native cache catalog](benchmarks/legacy-native-cache-catalog.json)
+now has [qualified ownership evidence](results/legacy-native-cache-evidence-03/assessment.md)
+for twenty exact targets across seven completed public histories. All 274 recorded
+commands are terminal and source restoration verifies. Thirty-four invalid
+scopes/records/hashes are rejected; the archive core passes 44 rejections/seven
+coordinator cases and batch routing rejects 23 invalid cases. The pilot's older
+repeated A/B format remains distinct. No legacy cache has been retired yet.
 
 ## Closed worker-count experiment
 

@@ -34,6 +34,8 @@ def main():
                          corpus='assessed-interrupted-corpus', proof_kind='recovered-workflow')
         stopped = dict(archive='stopped', workflow='assessed-stopped-case', mode='native',
                        corpus='assessed-stopped-corpus', proof_kind='stopped-workflow')
+        legacy = dict(archive='legacy', workflow='legacy-complete-case', mode='native',
+                      corpus='legacy-complete-corpus', proof_kind='legacy-native')
         rejected, routes = [], []
 
         def invoke(label, entries, action='prepare', altered=None, should_fail=False):
@@ -79,17 +81,19 @@ def main():
                 routes.append(dict(label=label, commands=calls))
             return calls
 
-        calls = invoke('mixed-prepare', [host, guest, recovered, stopped])
+        calls = invoke('mixed-prepare', [host, guest, recovered, stopped, legacy])
         require(calls[0][2:] == ['--prepare', 'host', '--workspace-check', 'completed-check'] and
                 calls[1][2:] == ['--prepare', 'guest', '--workflow', 'completed-workflow',
                                 '--mode', 'candidate', '--corpus', 'completed-corpus'] and
                 calls[2][2:] == ['--prepare', 'recovered', '--workflow', 'completed-recovered-case', '--mode',
                                 'candidate', '--corpus', 'assessed-interrupted-corpus', '--recovered-corpus'] and
                 calls[3][2:] == ['--prepare', 'stopped', '--workflow', 'assessed-stopped-case', '--mode',
-                                'native', '--corpus', 'assessed-stopped-corpus', '--stopped-corpus'],
+                                'native', '--corpus', 'assessed-stopped-corpus', '--stopped-corpus'] and
+                calls[4][2:] == ['--prepare', 'legacy', '--workflow', 'legacy-complete-case', '--mode',
+                                'native', '--corpus', 'legacy-complete-corpus', '--legacy-native'],
                 'selector arguments differ')
-        calls = invoke('mixed-apply', [host, guest, recovered, stopped], action='apply')
-        require([call[2:] for call in calls] == [['--apply', name] for name in ['host', 'guest', 'recovered', 'stopped']],
+        calls = invoke('mixed-apply', [host, guest, recovered, stopped, legacy], action='apply')
+        require([call[2:] for call in calls] == [['--apply', name] for name in ['host', 'guest', 'recovered', 'stopped', 'legacy']],
                 'apply arguments differ')
         for label, changed in [
             ('host-with-guest-mode', dict(host, mode='native')),
@@ -97,6 +101,8 @@ def main():
             ('unknown-provenance', dict(host, proof_kind='unknown')),
             ('workflow-with-host-mode', {k: v for k, v in host.items() if k != 'proof_kind'}),
             ('explicit-workflow-kind', dict(guest, proof_kind='workflow')),
+            ('legacy-with-candidate-mode', dict(legacy, mode='candidate')),
+            ('legacy-without-corpus', {k: v for k, v in legacy.items() if k != 'corpus'}),
             ('stopped-with-host-mode', dict(stopped, mode='host')),
             ('stopped-without-corpus', {k: v for k, v in stopped.items() if k != 'corpus'}),
             ('recovered-with-host-mode', dict(recovered, mode='host')),
@@ -107,6 +113,8 @@ def main():
         invoke('duplicate-host-target', [host, dict(host, archive='second')], should_fail=True)
         invoke('duplicate-archive-id', [host, dict(guest, archive='host')], should_fail=True)
         invoke('same-target-different-proof-kind', [guest, dict(recovered, workflow=guest['workflow'])], should_fail=True)
+        invoke('changed-legacy-kind', [legacy], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)
+        invoke('duplicate-legacy-target', [legacy, dict(legacy, archive='second')], should_fail=True)
         invoke('changed-stopped-kind', [stopped], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)
         invoke('duplicate-stopped-target', [stopped, dict(stopped, archive='second')], should_fail=True)
         invoke('changed-recovered-kind', [recovered], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)

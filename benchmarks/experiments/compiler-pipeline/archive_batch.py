@@ -46,6 +46,7 @@ def main():
         require((kind == 'workspace-check' and entry['mode'] == 'host' and corpus is None) or
                 (kind == 'workflow' and 'proof_kind' not in entry and
                  entry['mode'] in ['native', 'check', 'baseline', 'candidate']) or
+                (kind == 'legacy-native' and corpus is not None and entry['mode'] == 'native') or
                 (kind in ['recovered-workflow', 'stopped-workflow'] and corpus is not None and
                  entry['mode'] in ['native', 'check', 'baseline', 'candidate']),
                 'unknown or inconsistent cache provenance/mode')
@@ -59,8 +60,10 @@ def main():
                 command += ['--prepare', entry['archive'], '--workflow', entry['workflow'], '--mode', entry['mode']]
             if corpus is not None:
                 command += ['--corpus', corpus]
-            if kind in ['recovered-workflow', 'stopped-workflow']:
-                command += ['--recovered-corpus' if kind == 'recovered-workflow' else '--stopped-corpus']
+            selector = {'recovered-workflow': '--recovered-corpus', 'stopped-workflow': '--stopped-corpus',
+                        'legacy-native': '--legacy-native'}.get(kind)
+            if selector:
+                command += [selector]
         else:
             prepared = json.loads((work / 'plan.json').read_text())
             status = json.loads((work / 'status.json').read_text())
