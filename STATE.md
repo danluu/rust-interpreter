@@ -224,16 +224,16 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-The first balanced cold history `lightweight-wrapper-nushell-cold-01`, its
-verifier and its native archive are complete. `cold-storage-batch-01-apply` is
-active under supervisor 35143: six reviewed completed check/custom targets are
-being archived sequentially. Inspect its receipt before further cleanup or
-benchmarking. Nushell15 and its verifier
+The second balanced cold history `lightweight-wrapper-nushell-cold-02` is active
+under supervisor 52272, in candidate,baseline,native order. Cold01 and its
+verification are complete. The first cold history's four caches and the six
+reviewed batch targets are now archived; 221 distinct evidence hashes verify.
+Inspect cold02's receipt before further cleanup or benchmarking. Nushell15 and its verifier
 are terminal0; all source/frozen-input checks and ninety compiler-wrapper traces
 verify. All earlier wrapper qualifications and pgrust15 are also complete.
 The remaining measurements are the six fixed balanced Nushell cold histories;
-the first verifies twelve commands/six artifacts and the other five have not
-started. Cold wall is 61.439s baseline versus 61.539s candidate, ratio
+the first verifies twelve commands/six artifacts, the second is running and
+the other four have not started. Cold01 wall is 61.439s baseline versus 61.539s candidate, ratio
 1.0016210970; CPU ratio is 1.0046207955. All ten frozen inputs, six wrapper
 traces and byte-for-byte source restoration verify. There is no cold gain in
 this sample and no retention decision. Preserve baseline78/candidatec341, ordinary JIT, matched leaf
@@ -279,9 +279,9 @@ read through the bounded inspector with the original hash. About 21.25 GiB was
 free before cold01 started; about 9.65 GiB remained afterward. Five actual
 archives are complete. Cold01's reviewed native inventory has 22,485 paths and
 4.34 GiB unique payloads and is now archived in about 1.39 GiB. The six-target
-batch inventories 99,327 paths/15.06 GiB unique contents. Finish its applications
-and verify available space before cold02. Its required initial
-order is candidate,baseline,native. Preserve query metadata
+batch preserves 99,327 paths/15.06 GiB unique contents and has completed.
+About 22.67 GiB was free before cold02 began. Its required initial order is
+candidate,baseline,native; cold03 will use baseline,candidate,native. Preserve query metadata
 in archives, private caches,
 installed tools and all historical evidence. Do not start cold runs before
 adequate space is available or change their gates.
