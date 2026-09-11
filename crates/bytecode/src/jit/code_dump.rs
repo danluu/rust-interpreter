@@ -25,6 +25,7 @@ struct Dump<'a> {
     profiled: bool,
     native_call_stubs: bool,
     persistent_registers: bool,
+    resumable_calls: bool,
     ranges: Vec<Range<'a>>,
     note: &'static str,
 }
@@ -42,7 +43,11 @@ impl Jit<'_> {
                 let Some(block) = block else { continue; };
                 ranges.push(Range { offset: block.offset, end: 0, function,
                     name: &self.program.functions[function].name,
-                    kind: if matches!(self.program.functions[function].code[pc], Op::Call { .. }) { "call_stub" } else { "ordinary_region" },
+                    kind: if self.resumable.is_some() {
+                        match self.program.functions[function].code[pc] {
+                            Op::Call { .. } => "resumable_call", Op::Return => "resumable_return", _ => "resumable_region",
+                        }
+                    } else if matches!(self.program.functions[function].code[pc], Op::Call { .. }) { "call_stub" } else { "ordinary_region" },
                     pc: Some(pc), pc_end: Some(block.end) });
             }
         }
@@ -69,7 +74,7 @@ impl Jit<'_> {
         let dump = Dump { schema_version: 1, pid: std::process::id(),
             architecture: "aarch64", byte_order: "little", arena_base, code_bytes: bytes.len(),
             profiled: self.profiled, native_call_stubs: self.native_call_stubs,
-            persistent_registers: self.persistent_registers, ranges,
+            persistent_registers: self.persistent_registers, resumable_calls: self.resumable.is_some(), ranges,
             note: "Published code from this process after successful execution. Entry ranges include wrappers, failure tails and fallbacks. Native-tree ranges cover whole functions, not individual bytecode operations. Diagnostic I/O is not benchmark evidence." };
         let write = || -> Result<(), Box<dyn std::error::Error>> {
             std::fs::create_dir(path)?;

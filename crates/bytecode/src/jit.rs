@@ -16,6 +16,7 @@ mod trees;
 #[allow(dead_code)]
 mod native_calls;
 mod native_regions;
+mod resumable;
 mod code_dump;
 mod values;
 
@@ -283,6 +284,7 @@ struct CompiledFunction<'a> {
     local_forwarding: Vec<(usize, &'static str)>,
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
+    resumes: Vec<Option<usize>>,
     operations: usize,
     assertions: Vec<Assertion<'a>>,
     register_pairs: usize,
@@ -311,6 +313,7 @@ pub(crate) struct Jit<'a> {
     pub region_plans: Vec<native_regions::RegionPlan>,
     pub call_stubs: usize,
     persistent_registers: bool,
+    resumable: Option<resumable::Entries>,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -336,7 +339,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0,
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -380,11 +383,27 @@ impl<'a> Jit<'a> {
             }
             Err(EmitError::InvalidRelocation(message)) => return Err(message.into()),
         };
+        // Allocate the immutable target table before publishing code. A cold
+        // or declined function keeps a null table and is entered by the VM.
+        let mut resumes = Vec::new();
+        if resumes.try_reserve_exact(staged.resumes.len()).is_err() {
+            self.prepared[id] = true;
+            self.declined_functions += 1;
+            return Ok(true);
+        }
+        resumes.resize(staged.resumes.len(), 0usize);
         if !staged.words.is_empty() {
             self.assertions.try_reserve(staged.assertions.len())
                 .map_err(|_| "JIT assertion table allocation failed")?;
             if self.code.is_none() { self.code = Some(platform::Code::reserve(self.capacity)?); }
             let offset = self.code.as_mut().unwrap().append(&staged.words)?;
+            if let Some(tables) = &mut self.resumable {
+                let arena = self.code.as_ref().unwrap().published().0;
+                for (out, entry) in resumes.iter_mut().zip(&staged.resumes) {
+                    if let Some(entry) = entry { *out = arena + offset + entry * 4; }
+                }
+                tables.publish(id, resumes);
+            }
             for entry in staged.entries.iter_mut().flatten() { entry.offset += offset; }
             self.bytes += staged.words.len() * 4;
             self.compiled_functions += 1;
@@ -393,8 +412,10 @@ impl<'a> Jit<'a> {
         }
         self.operations += staged.operations;
         self.liveness_declines += usize::from(staged.liveness_declined);
-        self.call_stubs += staged.entries.iter().enumerate().filter(|(pc, entry)|
-            entry.is_some() && matches!(self.program.functions[id].code[*pc], Op::Call { .. })).count();
+        if self.native_call_stubs {
+            self.call_stubs += staged.entries.iter().enumerate().filter(|(pc, entry)|
+                entry.is_some() && matches!(self.program.functions[id].code[*pc], Op::Call { .. })).count();
+        }
         self.assertions.extend(staged.assertions);
         self.blocks[id] = staged.entries;
         self.prepared[id] = true;
@@ -402,6 +423,8 @@ impl<'a> Jit<'a> {
     }
 
     fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        let resumable = self.resumable.is_some();
+        if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) { return Ok(None); }
         let mut words = vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
@@ -413,6 +436,8 @@ impl<'a> Jit<'a> {
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc);
         let mut entries = vec![None; f.code.len()];
         let mut internal_entries = vec![None; f.code.len()];
+        // The extra null entry handles a caller's one-past-code continuation.
+        let mut resumes = if resumable { vec![None; f.code.len() + 1] } else { vec![] };
         let mut links = vec![];
         let mut starts = vec![false; f.code.len()];
         starts[0] = true;
@@ -446,7 +471,7 @@ impl<'a> Jit<'a> {
             {
                 pc += 1;
             }
-            if pc - start >= 3 {
+            if pc - start >= if resumable { 1 } else { 3 } {
                 let offset = words.len() * 4;
                 let mut a = Assembler {
                     heap: self.uses_heap,
@@ -455,11 +480,13 @@ impl<'a> Jit<'a> {
                     region_start: start,
                     region_end: pc,
                     values: values.as_ref(),
+                    resumable,
                     ..Assembler::default()
                 };
                 // External entries preserve the C ABI. Native successors
                 // enter after this prologue and keep the same live storage.
-                a.external_entry();
+                let resume = a.external_entry();
+                if resumable { resumes[start] = Some(words.len() + resume); }
                 internal_entries[start] = Some(words.len() + a.words.len());
                 // Every native cycle consumes virtual instructions. When
                 // the next block does not fit, let the VM execute its tail
@@ -541,6 +568,16 @@ impl<'a> Jit<'a> {
                 operations += pc - start;
             }
             if pc == start {
+                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
+                    let offset = words.len() * 4;
+                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref())?;
+                    if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
+                    resumes[pc] = Some(words.len() + resume);
+                    internal_entries[pc] = Some(words.len() + internal);
+                    entries[pc] = Some(Block { offset, end: pc + 1 });
+                    operations += 1;
+                    words.extend(a.words);
+                }
                 if self.native_call_stubs {
                     if let Op::Call { function, args, destination } = &f.code[pc] {
                         if let Some((plan, target)) = self.ready_tree(*function) {
@@ -566,7 +603,7 @@ impl<'a> Jit<'a> {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
-        Ok(Some(CompiledFunction { words, entries, operations, assertions,
+        Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
             #[cfg(test)] local_forwarding }))
@@ -841,6 +878,7 @@ enum Fact {
 struct Assembler<'a> {
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
+    resumable: bool,
     local_values: Vec<local_memory::Value>,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
@@ -875,12 +913,16 @@ impl Assembler<'_> {
         self.emit(if expected { 0x54000000 } else { 0x54000001 }); // b.eq / b.ne failure
     }
     fn return_to_vm(&mut self) {
+        if self.resumable { self.resumable_save_memory(); }
         self.restore_external_values();
         self.emit(0xd65f03c0);
     }
     fn return_pc(&mut self, pc: usize) {
         self.spill_values_at(pc);
-        self.imm(0, pc as u64);
+        if self.resumable {
+            self.resumable_save_pc(pc);
+            self.mov(0, 31);
+        } else { self.imm(0, pc as u64); }
         self.return_to_vm();
     }
     fn successor(&mut self, pc: usize) {

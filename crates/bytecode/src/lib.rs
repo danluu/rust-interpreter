@@ -7,7 +7,6 @@ mod heap;
 mod linear_memory;
 mod frames;
 mod native_execution;
-#[allow(dead_code)] // Boundary qualification precedes resumable native emission.
 mod native_continuation;
 mod jit;
 mod float;
@@ -380,6 +379,9 @@ pub struct Limits {
     pub jit_native_call_stubs: bool,
     /// Experimental full-width register pairs retained across native edges.
     pub jit_persistent_registers: bool,
+    /// Experimental native Calls/Returns with exact guest-frame continuations.
+    /// Requires JIT and cannot be combined with the tree/stub experiment.
+    pub jit_resumable_calls: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -395,6 +397,7 @@ impl Default for Limits {
             jit_native_calls: false,
             jit_native_call_stubs: false,
             jit_persistent_registers: false,
+            jit_resumable_calls: false,
             jit_code_dump: None,
         }
     }
@@ -427,6 +430,8 @@ pub struct Execution {
     pub jit_register_functions: usize,
     pub jit_register_pairs: usize,
     pub jit_liveness_declines: usize,
+    pub jit_resumable_calls: u64,
+    pub jit_resumable_returns: u64,
 }
 
 struct Memory {
@@ -624,16 +629,23 @@ fn execute_observed<const PROFILE: bool>(
     if engine == Engine::Interpreter && limits.jit_persistent_registers {
         return Err("persistent registers require the JIT engine".into());
     }
+    if limits.jit_resumable_calls {
+        if engine != Engine::Jit { return Err("resumable calls require the JIT engine".into()); }
+        if limits.jit_native_calls || limits.jit_native_call_stubs {
+            return Err("resumable calls cannot be combined with native tree/stub calls".into());
+        }
+        return execute_impl::<PROFILE, true, false, false, true>(program, arguments, limits, profile);
+    }
     match engine {
         Engine::Interpreter if limits.jit_native_calls => Err("native calls require the JIT engine".into()),
-        Engine::Interpreter => execute_impl::<PROFILE, false, false, false>(program, arguments, limits, profile),
-        Engine::Jit if limits.jit_native_call_stubs => execute_impl::<PROFILE, true, true, true>(program, arguments, limits, profile),
-        Engine::Jit if limits.jit_native_calls => execute_impl::<PROFILE, true, true, false>(program, arguments, limits, profile),
-        Engine::Jit => execute_impl::<PROFILE, true, false, false>(program, arguments, limits, profile),
+        Engine::Interpreter => execute_impl::<PROFILE, false, false, false, false>(program, arguments, limits, profile),
+        Engine::Jit if limits.jit_native_call_stubs => execute_impl::<PROFILE, true, true, true, false>(program, arguments, limits, profile),
+        Engine::Jit if limits.jit_native_calls => execute_impl::<PROFILE, true, true, false, false>(program, arguments, limits, profile),
+        Engine::Jit => execute_impl::<PROFILE, true, false, false, false>(program, arguments, limits, profile),
     }
 }
 
-fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool, const CALL_STUBS: bool>(
+fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool, const CALL_STUBS: bool, const RESUMABLE: bool>(
     program: &Program,
     arguments: &[u128],
     limits: Limits,
@@ -645,7 +657,9 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     }
     let started = std::time::Instant::now();
     let mut jit = if USE_JIT {
-        Some(if limits.jit_persistent_registers {
+        Some(if RESUMABLE {
+            jit::Jit::new_resumable(program, PROFILE, limits.jit_code_bytes, limits.jit_persistent_registers)?
+        } else if limits.jit_persistent_registers {
             jit::Jit::new_with_options(program, PROFILE, limits.jit_code_bytes, CALL_STUBS, true)?
         } else if CALL_STUBS {
             jit::Jit::new_with_call_stubs(program, PROFILE, limits.jit_code_bytes, true)?
@@ -656,6 +670,11 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     if let Some(jit) = &mut jit { jit.compile_nanos = started.elapsed().as_nanos(); }
     let mut jit_instructions = 0;
     let mut jit_entries = 0;
+    let mut resumable_calls = 0;
+    let mut resumable_returns = 0;
+    let resumable_profiles: Vec<_> = if RESUMABLE && PROFILE {
+        profile.as_deref_mut().unwrap().functions.iter_mut().map(|f| f.jit_blocks.as_mut_ptr()).collect()
+    } else { vec![] };
     let mut native = if NATIVE_CALLS { Some(native_execution::Context::new(profile.as_deref_mut())) } else { None };
     if limits.frames == 0 {
         return Err("interpreter call-depth limit exceeded".into());
@@ -704,8 +723,9 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     // Host elements always stay initialized. On reuse, functions proven to
     // overwrite every register before reading it need no repeated clearing.
     // Other functions retain the bytecode's initial-zero semantics.
-    let needs_register_zeroes: Vec<_> = program.functions.iter()
-        .map(registers::needs_initial_zeroes).collect();
+    let needs_register_zeroes: Vec<_> = if RESUMABLE {
+        jit.as_ref().unwrap().resumable_register_zeroes().to_vec()
+    } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() };
     let local_call_arguments = calls::local_arguments(program);
     let mut registers = vec![0; entry.registers];
     let mut frames = Frames::from(Frame {
@@ -723,9 +743,30 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         if steps >= limits.instructions {
             return Err("interpreter instruction limit exceeded".into());
         }
+        if RESUMABLE {
+            let entry = *frames.last().ok_or("missing frame")?;
+            let jit = jit.as_ref().unwrap();
+            if let Some(block) = jit.blocks[entry.function].get(entry.pc).copied().flatten() {
+                if (block.end - entry.pc) as u64 <= limits.instructions - steps {
+                    // SAFETY: this program is validated and all guest backing,
+                    // descriptors, profile arrays and native metadata are owned
+                    // exclusively by this synchronous VM. No borrowed top Frame
+                    // survives the call; descendants may become the new top.
+                    let run = unsafe { jit.run_resumable(block, limits.instructions - steps,
+                        &limits, &mut memory, &mut registers, &mut frames, &mut register_bytes,
+                        &resumable_profiles) }?;
+                    steps += run.instructions;
+                    jit_instructions += run.instructions;
+                    jit_entries += 1;
+                    resumable_calls += run.calls;
+                    resumable_returns += run.returns;
+                    if steps >= limits.instructions { return Err("interpreter instruction limit exceeded".into()); }
+                }
+            }
+        }
         let active_frames = frames.len();
         let frame = frames.last_mut().ok_or("missing frame")?;
-        if let Some(jit) = &mut jit {
+        if !RESUMABLE { if let Some(jit) = &mut jit {
             if let Some(block) = jit.blocks[frame.function].get(frame.pc).copied().flatten() {
                 let count = (block.end - frame.pc) as u64;
                 // Interpret the tail when the budget is smaller than a block,
@@ -777,7 +818,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     }
                 }
             }
-        }
+        } }
         steps += 1;
         let function = &program.functions[frame.function];
         let instruction = function.code.get(frame.pc).ok_or("invalid bytecode PC")?;
@@ -1154,7 +1195,8 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         jit_stub_calls: native.as_ref().map_or(0, |n| n.stub_calls),
         jit_register_functions: jit.as_ref().map_or(0, |j| j.register_functions),
         jit_register_pairs: jit.as_ref().map_or(0, |j| j.register_pairs),
-        jit_liveness_declines: jit.as_ref().map_or(0, |j| j.liveness_declines) })
+        jit_liveness_declines: jit.as_ref().map_or(0, |j| j.liveness_declines),
+        jit_resumable_calls: resumable_calls, jit_resumable_returns: resumable_returns })
 }
 
 #[inline(always)]

@@ -13,9 +13,9 @@ fn fixture(code: Vec<Op>) -> Program {
         }],
     }
 }
-fn engines() -> Vec<Engine> {
-    let mut engines = vec![Engine::Interpreter];
-    if cfg!(all(target_arch="aarch64",target_os="macos")) { engines.push(Engine::Jit); }
+fn engines() -> Vec<(Engine, bool)> {
+    let mut engines = vec![(Engine::Interpreter, false)];
+    if cfg!(all(target_arch="aarch64",target_os="macos")) { engines.extend([(Engine::Jit, false), (Engine::Jit, true)]); }
     engines
 }
 #[test]
@@ -31,8 +31,8 @@ fn reset_restores_only_tls_and_preserves_shared_statics() {
         Op::Local { dst: 4, offset: 8 }, Op::Copy { dst: 4, src: 1, size: 8 },
         Op::Return,
     ]);
-    for engine in engines() {
-        assert_eq!(execute_with_engine(&p, &[], Limits::default(), engine).unwrap().value, 7 | 99u128 << 64);
+    for (engine, resumable) in engines() {
+        assert_eq!(execute(&p, &[], Limits::default(), engine, resumable).unwrap().value, 7 | 99u128 << 64);
     }
 }
 #[test]
@@ -41,8 +41,8 @@ fn nested_reset_is_rejected() {
     let mut root = p.functions[0].clone();
     root.code = vec![Op::Local { dst: 0, offset: 0 }, Op::Call { function: 0, args: vec![], destination: 0 }, Op::Return];
     p.functions.push(root); p.entry = 1;
-    for engine in engines() {
-        assert!(execute_with_engine(&p, &[], Limits::default(), engine).unwrap_err().contains("root frame"));
+    for (engine, resumable) in engines() {
+        assert!(execute(&p, &[], Limits::default(), engine, resumable).unwrap_err().contains("root frame"));
     }
 }
 #[test]
@@ -59,7 +59,7 @@ fn random_bytes_checks_complete_destination_before_host_call() {
     for (address, size) in [(16, 1), (31, 2), (usize::MAX, 2), (HEAP_POINTER_TAG as usize + 47, 2)] {
         let p = fixture(vec![Op::Imm { dst: 0, value: address as u128 }, Op::Imm { dst: 1, value: size },
             Op::RandomBytes { dst: 0, address: 0, size: 1 }, Op::Return]);
-        for engine in engines() { assert!(execute_with_engine(&p, &[], Limits::default(), engine).is_err()); }
+        for (engine, resumable) in engines() { assert!(execute(&p, &[], Limits::default(), engine, resumable).is_err()); }
     }
 }
 
@@ -71,10 +71,17 @@ fn random_bytes_returns_success_for_checked_stack_heap_and_empty_ranges() {
         let p = fixture(vec![Op::Imm { dst: 0, value: address as u128 }, Op::Imm { dst: 1, value: size },
             Op::RandomBytes { dst: 0, address: 0, size: 1 }, Op::Local { dst: 2, offset: 0 },
             Op::Store { address: 2, src: 0, size: 16 }, Op::Return]);
-        for engine in engines() { assert_eq!(execute_with_engine(&p, &[], Limits::default(), engine).unwrap().value, 0); }
+        for (engine, resumable) in engines() { assert_eq!(execute(&p, &[], Limits::default(), engine, resumable).unwrap().value, 0); }
     }
     let p = fixture(vec![Op::Local { dst: 0, offset: 0 }, Op::Imm { dst: 1, value: 16 },
         Op::RandomBytes { dst: 0, address: 0, size: 1 }, Op::Local { dst: 2, offset: 0 },
         Op::Store { address: 2, src: 0, size: 16 }, Op::Return]);
-    for engine in engines() { assert_eq!(execute_with_engine(&p, &[], Limits::default(), engine).unwrap().value, 0); }
+    for (engine, resumable) in engines() { assert_eq!(execute(&p, &[], Limits::default(), engine, resumable).unwrap().value, 0); }
+}
+
+fn execute(p: &Program, args: &[u128], mut limits: Limits, engine: Engine, resumable: bool)
+    -> Result<rust_interp_bytecode::Execution, String> {
+    limits.jit_resumable_calls = resumable;
+    limits.jit_persistent_registers = resumable;
+    execute_with_engine(p, args, limits, engine)
 }

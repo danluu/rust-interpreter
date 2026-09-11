@@ -18,9 +18,7 @@ pub(crate) struct Frame {
     pub tls_callback: bool,
 }
 
-// The resumable emitter is connected in the next implementation stage. Keep
-// its layout and storage primitives together with the checked VM backing now.
-#[allow(dead_code)]
+// Keep native host-layout offsets beside the checked VM backing.
 pub(crate) mod layout {
     use super::Frame;
 
@@ -93,7 +91,6 @@ impl Frames {
     }
 }
 
-#[allow(dead_code)] // Exercised below; native consumer is the next stage.
 impl Frames {
     /// Prepare initialized descriptors outside generated execution. The caller
     /// bounds speculative storage and treats allocation failure as a decline.

@@ -8,13 +8,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut engine = Engine::Interpreter;
     let mut profile_path = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
             "--jit-native-calls" => limits.jit_native_calls = true,
             "--jit-native-call-stubs" => limits.jit_native_call_stubs = true,
             "--jit-persistent-registers" => limits.jit_persistent_registers = true,
+            "--jit-resumable-calls" => limits.jit_resumable_calls = true,
             "--jit-code-dump" => {
                 if limits.jit_code_dump.is_some() { return Err("duplicate native code dump path".into()); }
                 limits.jit_code_dump = Some(args.next().ok_or("missing native code dump path")?.into());
@@ -96,6 +97,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             result.jit_compiled_functions,
             result.jit_declined_functions
         );
+        eprintln!("jit_resumable_calls={} jit_resumable_returns={}", result.jit_resumable_calls, result.jit_resumable_returns);
         eprintln!("jit_tree_entries={} jit_tree_calls={} jit_tree_instructions={} jit_tree_bytes={} jit_tree_operations={} jit_tree_compiled_functions={} jit_tree_declined_functions={} jit_tree_compile_ns={}",
             result.jit_tree_entries, result.jit_tree_calls, result.jit_tree_instructions,
             result.jit_tree_bytes, result.jit_tree_operations, result.jit_tree_compiled_functions,

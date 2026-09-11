@@ -9,8 +9,8 @@ fn limits(instructions: u64, memory: usize, frames: usize, native: bool) -> Limi
 }
 fn same(p: &Program, instructions: u64, memory: usize, frames: usize) {
     let reference = execute_with_engine(p, &[], limits(instructions, memory, frames, false), Engine::Interpreter);
-    for persistent in [false, true] { for stubs in [false, true] { for profiled in [false, true] {
-        let config = || Limits { jit_persistent_registers: persistent, jit_native_call_stubs: stubs, ..limits(instructions, memory, frames, true) };
+    for persistent in [false, true] { for (native, stubs, resumable) in [(true, false, false), (true, true, false), (false, false, true)] { for profiled in [false, true] {
+        let config = || Limits { jit_persistent_registers: persistent, jit_native_call_stubs: stubs, jit_resumable_calls: resumable, ..limits(instructions, memory, frames, native) };
         let got = if profiled {
             execute_profiled(p, &[], config(), Engine::Jit).map(|(r, profile)| {
                 let mut charged = 0;
@@ -234,4 +234,61 @@ fn a_vm_callee_with_larger_alignment_invalidates_prepared_region_extent() {
     for memory in [4096, 4200, 4448, 4449, 8192, 65536] { same(&p, 1000, memory, 10); }
     let steps = execute_with_engine(&p, &[], Limits::default(), Engine::Interpreter).unwrap().instructions;
     for budget in 0..=steps { same(&p, budget, 65536, 10); }
+}
+
+#[test]
+fn warm_native_calls_keep_ordered_arguments_aliases_and_large_result_copies() {
+    for case in cases::cases() {
+        if case.expected.is_err() { continue; }
+        let mut p = case.program;
+        // Repeating each original direct call makes the second target ready.
+        // These fixtures have no caller branches requiring PC relocation.
+        let mut code = vec![];
+        for op in &p.functions[0].code {
+            code.push(op.clone());
+            if matches!(op, Op::Call { .. }) { code.push(op.clone()); }
+        }
+        p.functions[0].code = code;
+        same(&p, 10000, 65536, 10);
+        let got = execute_with_engine(&p, &[], Limits { jit_resumable_calls: true,
+            ..Limits::default() }, Engine::Jit).unwrap();
+        assert!(got.jit_resumable_calls > 0, "{}", case.name);
+    }
+
+    for size in [0usize, 1, 7, 8, 15, 16, 17, 31, 32, 63, 64, 65, 127, 128, 129, 257] {
+        let shift = size / 2;
+        let a: Vec<u8> = (0..size).map(|i| (i * 17 + 3) as u8).collect();
+        let b: Vec<u8> = (0..size).map(|i| (i * 29 + 7) as u8).collect();
+        let mut expected = vec![0; size + shift];
+        expected[..size].copy_from_slice(&a);
+        expected[shift..].copy_from_slice(&b);
+        let mut code = vec![Op::Local { dst: 0, offset: 0 }, Op::Imm { dst: 1, value: 16 },
+            Op::Copy { dst: 0, src: 1, size: size * 2 }, Op::Local { dst: 2, offset: size },
+            Op::Local { dst: 3, offset: size * 2 },
+            Op::Call { function: 1, args: vec![0, 2], destination: 3 },
+            Op::Call { function: 1, args: vec![0, 2], destination: 3 }];
+        for (i, &value) in expected[..size].iter().enumerate() {
+            code.extend([
+                Op::Local { dst: 4, offset: size * 2 + i }, Op::Load { dst: 5, address: 4, size: 1 },
+                Op::Imm { dst: 6, value: value as u128 },
+                Op::Binary { dst: 5, overflow: 7, op: Binary::Eq, a: 5, b: 6, bits: 8, signed: false },
+                Op::Assert { value: 5, expected: true, message: format!("ordered copy {size}/{i}") },
+            ]);
+        }
+        code.push(Op::Return);
+        let mut root = function(size * 3 + 16, 16, code);
+        root.registers = 8;
+        root.result = Slot { offset: size * 2, size: size.min(8) };
+        let mut child = function((size + shift).max(1), 16, vec![Op::Return]);
+        child.args = vec![Slot { offset: 0, size }, Slot { offset: shift, size }];
+        child.result.size = size;
+        let mut data = vec![0; 16];
+        data.extend(a); data.extend(b);
+        let p = Program { version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0,
+            functions: vec![root, child], data, statics: vec![], thread_locals: vec![] };
+        same(&p, 10000, 65536, 10);
+        let got = execute_with_engine(&p, &[], Limits { jit_resumable_calls: true,
+            jit_persistent_registers: true, ..Limits::default() }, Engine::Jit).unwrap();
+        assert_eq!((got.jit_resumable_calls, got.jit_resumable_returns), (1, 2));
+    }
 }

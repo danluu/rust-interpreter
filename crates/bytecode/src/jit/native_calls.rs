@@ -415,7 +415,7 @@ impl Assembler<'_> {
     }
 
     /// Zero the prechecked host range [x11,x12); no other persistent state.
-    fn zero_range(&mut self) -> Result<(), EmitError> {
+    pub(super) fn zero_range(&mut self) -> Result<(), EmitError> {
         let chunks = self.words.len();
         self.three(0xcb000000, 9, 12, 11);
         self.imm(10, 16);
@@ -441,7 +441,7 @@ impl Assembler<'_> {
 
     /// Memmove between complete prechecked host ranges, x11 -> x12. Argument
     /// slots can overlap each other or their sources; snapshot only this copy.
-    fn abi_copy(&mut self, size: usize) -> Result<(), EmitError> {
+    pub(super) fn abi_copy(&mut self, size: usize) -> Result<(), EmitError> {
         if size == 0 { return Ok(()); }
         if size <= 16 {
             self.load_mem(9, 10, 11, size);

@@ -174,16 +174,25 @@ impl Assembler<'_> {
             }
         }
     }
-    pub(super) fn external_entry(&mut self) {
-        self.push_pair(19, 30, 16 + self.assigned_count() * 16);
-        self.save_value_pairs(false, 16);
+    pub(super) fn external_entry(&mut self) -> usize {
+        if self.resumable { self.resumable_save_host(false); }
+        else {
+            self.push_pair(19, 30, 16 + self.assigned_count() * 16);
+            self.save_value_pairs(false, 16);
+        }
         self.mov(19, 7);
         if self.heap { self.mov(7, 5); self.mov(8, 6); }
+        if self.resumable { self.resumable_current_frame(); }
+        let resume = self.words.len();
         self.load_values();
+        resume
     }
     pub(super) fn restore_external_values(&mut self) {
-        self.save_value_pairs(true, 16);
-        self.pop_pair(19, 30, 16 + self.assigned_count() * 16);
+        if self.resumable { self.resumable_save_host(true); }
+        else {
+            self.save_value_pairs(true, 16);
+            self.pop_pair(19, 30, 16 + self.assigned_count() * 16);
+        }
     }
     pub(super) fn spill_values_at(&mut self, pc: usize) {
         // Continuations arrive with x0 still pointing to the current caller's
