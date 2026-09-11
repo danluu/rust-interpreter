@@ -17,6 +17,7 @@ mod trees;
 mod native_calls;
 mod native_regions;
 mod code_dump;
+mod values;
 
 #[cfg(test)]
 mod limit_tests;
@@ -718,113 +719,7 @@ fn read_registers(f: &Function) -> Vec<Option<(usize, usize)>> {
             let range = used[r as usize].get_or_insert((pc, pc));
             range.1 = pc;
         };
-        match op {
-            Op::RandomBytes { address, size, .. } => { mark(*address); mark(*size); }
-            Op::CpuFeatureQuery { name, output, output_len, new_data, new_len, .. } => {
-                for r in [name, output, output_len, new_data, new_len] { mark(*r); }
-            }
-            Op::CAllocate { count, size, errno, .. } => {
-                for r in [count, size, errno] { mark(*r); }
-            }
-            Op::CDeallocate { pointer } => mark(*pointer),
-            Op::RegisterTlsDestructor { callback, argument } => { mark(*callback); mark(*argument); }
-            Op::CReallocate { pointer, size, errno, .. } => {
-                for r in [pointer, size, errno] { mark(*r); }
-            }
-            Op::CAlignedAllocate { output, align, size, .. } => {
-                for r in [output, align, size] { mark(*r); }
-            }
-            Op::Load { address, .. } => mark(*address),
-            Op::Store { address, src, .. } => {
-                mark(*address);
-                mark(*src);
-            }
-            Op::Copy { dst, src, .. } => {
-                mark(*dst);
-                mark(*src);
-            }
-            Op::CopyDynamic { dst, src, size } => {
-                mark(*dst);
-                mark(*src);
-                mark(*size);
-            }
-            Op::FillBytes {
-                address,
-                value,
-                size,
-            } => {
-                mark(*address);
-                mark(*value);
-                mark(*size);
-            }
-            Op::CompareBytes {
-                left, right, size, ..
-            } => {
-                mark(*left);
-                mark(*right);
-                mark(*size);
-            }
-            Op::Binary { a, b, .. } | Op::FloatBinary { a, b, .. } => {
-                mark(*a);
-                mark(*b);
-            }
-            Op::Unary { src, .. } | Op::Cast { src, .. }
-            | Op::FloatUnary { src, .. } | Op::FloatConvert { src, .. } => mark(*src),
-            Op::Select {
-                condition, yes, no, ..
-            } => {
-                mark(*condition);
-                mark(*yes);
-                mark(*no);
-            }
-            Op::Switch { value, .. } | Op::Assert { value, .. } => mark(*value),
-            Op::Call {
-                args, destination, ..
-            } => {
-                mark(*destination);
-                for r in args {
-                    mark(*r);
-                }
-            }
-            Op::CallIndirect {
-                callee,
-                args,
-                destination,
-                ..
-            } => {
-                mark(*callee);
-                mark(*destination);
-                for r in args {
-                    mark(*r);
-                }
-            }
-            Op::Allocate { size, align, .. } => {
-                mark(*size);
-                mark(*align);
-            }
-            Op::Deallocate {
-                pointer,
-                size,
-                align,
-            } => {
-                mark(*pointer);
-                mark(*size);
-                mark(*align);
-            }
-            Op::Reallocate {
-                pointer,
-                old_size,
-                align,
-                new_size,
-                ..
-            } => {
-                mark(*pointer);
-                mark(*old_size);
-                mark(*align);
-                mark(*new_size);
-            }
-            _ => {}
-        }
+        crate::registers::visit_registers(op, &mut mark, |_| {});
     }
     used
 }
