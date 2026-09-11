@@ -22,6 +22,8 @@ import time
 
 ROOT=Path(__file__).resolve().parents[1]
 TOOLCHAIN='nightly-2026-09-08'
+LEGACY_TOOL_BINARIES=('rust-interp-vm','rust-interp-mir-export')
+CURRENT_TOOL_BINARIES=(*LEGACY_TOOL_BINARIES,'rust-interp-rustc-wrapper')
 
 
 def installed_tools(key):
@@ -33,7 +35,7 @@ def installed_tools(key):
         manifest=json.loads((directory/'ready.json').read_text())
     except (OSError,ValueError) as error:
         raise RuntimeError('cannot read installed tool build '+key+': '+str(error)) from error
-    if not isinstance(manifest,dict) or set(manifest)!={'rust-interp-vm','rust-interp-mir-export'}:
+    if not isinstance(manifest,dict) or set(manifest) not in (set(LEGACY_TOOL_BINARIES),set(CURRENT_TOOL_BINARIES)):
         raise RuntimeError('invalid installed tool manifest')
     for name,digest in manifest.items():
         if not isinstance(digest,str) or len(digest)!=64 or any(c not in '0123456789abcdef' for c in digest):
@@ -69,7 +71,7 @@ def _checked_tools_locked():
         if fingerprint()!=key:raise RuntimeError('compiler sources changed while building')
         directory.mkdir(parents=True,exist_ok=True)
         manifest={}
-        for name in ['rust-interp-vm','rust-interp-mir-export']:
+        for name in CURRENT_TOOL_BINARIES:
             source=ROOT/'.work/interpreter-build/release'/name
             shutil.copy2(source,directory/name)
             manifest[name]=hashlib.sha256(source.read_bytes()).hexdigest()
@@ -242,7 +244,10 @@ def main():
     # and compiler selection are isolated from native build directories.
     for name in list(env):
         if name.startswith('RUST_INTERP_'):env.pop(name)
-    env.update(RUSTC_WRAPPER=str(tools/'rust-interp-mir-export'),RUSTC_WORKSPACE_WRAPPER='',
+    tool_manifest=json.loads((tools/'ready.json').read_text())
+    wrapper_name='rust-interp-rustc-wrapper' if 'rust-interp-rustc-wrapper' in tool_manifest else 'rust-interp-mir-export'
+    timings['compiler_wrapper']=dict(name=wrapper_name,sha256=tool_manifest[wrapper_name])
+    env.update(RUSTC_WRAPPER=str(tools/wrapper_name),RUSTC_WORKSPACE_WRAPPER='',
                RUST_INTERP_EXPORT_PACKAGE=args.package,
                RUST_INTERP_OUTPUT=str(work/('audit.json' if auditing else 'program.rbc')),RUST_INTERP_EXPORT_TEST='1' if args.test_body else '0',CARGO_TARGET_DIR=str(work/'target'))
     if args.inline_leaves:env['RUST_INTERP_INLINE_LEAVES']='1'

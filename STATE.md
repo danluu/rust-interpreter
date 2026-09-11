@@ -95,13 +95,13 @@ nu-protocol; keep that real cost. These stage results favor investigating
 frontend/build reuse for this workload after the interface comparisons; they
 do not establish a safe invalidation shortcut or a whole-application win.
 
-The next [compiler-pipeline diagnostic](benchmarks/experiments/compiler-pipeline/PLAN.md)
-reuses the existing `--cargo-timings` harness on one complete Nushell interface
-cycle after the repeated run. `cargo_timing_data.py` now matches four preserved
-Cargo captures, rejects nineteen malformed inputs and passes overlap/feature/
-duplicate-unit checks in `compiler-timing-parser-01`. The instrumented cycle
-`interface-nushell-units-01` is running; analyzer execution is pending. After
-terminal0, run its ordinary verifier, then analyze hashed snapshots.
+The [compiler-pipeline diagnostic](results/interface-nushell-units-01/assessment.md)
+is complete: nine primary commands, three independent checks, six paired
+artifacts and nine hashed Cargo snapshots. Parser qualification matches four
+preserved captures and rejects nineteen malformed inputs. All three edited
+commands rebuilt 19 units. Native nu-command took 6.57s versus 1.12/1.24s checks.
+The separate 90-command routing diagnostic found about 9.7ms added per ordinary
+rustc probe through the heavy exporter; this is not a build-time speedup claim.
 Keep compiler-unit overlap/duplicate descriptions distinct from CPU or critical
 path attribution. An older profile already captures the host/library/test chain.
 The [current read-only inventory](results/compiler-unit-fingerprints-01/assessment.md)
@@ -109,6 +109,20 @@ finds three nu-protocol configurations in all four completed histories,
 including native and independent check. Features, profile hashes and flag
 handling differ; do not attribute the three-unit count solely to custom
 `--target`, remove dependencies, or assume name-only artifact sharing is valid.
+
+The [lightweight wrapper](benchmarks/experiments/compiler-pipeline/LIGHTWEIGHT-WRAPPER.md)
+is implemented and passes 268 debug workspace tests, one ignored. New std-only
+`rust-interp-rustc-wrapper` execs ordinary rustc or the adjacent exporter using a
+shared routing module. New manifests verify all three binaries; historical
+two-binary tools keep their existing path. Release, actual subprocess/launcher
+qualification and end-to-end comparisons are pending. The guest VM is unchanged.
+Keep its code and installer frozen during the release check.
+
+The [typed Nushell history comparison](results/interface-nushell-artifact-diff-01/assessment.md)
+finds 415 immediate changes in 115 functions and 16 additional readonly bytes
+for the original/wrong-edit states; headers/op counts/statics/TLS are identical.
+The API-edit state is identical. This narrows the discrepancy without proving
+equivalence or establishing a root cause.
 
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.
@@ -190,15 +204,14 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-Only `interface-nushell-units-01` is active: supervisor 35367, controller 35377,
-started September 11 at 05:39:54. Freeze its Rust/case/interpreter/verifier inputs
-until terminal. Expected totals: nine primary commands, three independent
-checks, six paired bytecode artifacts and nine Cargo HTML snapshots. After
-terminal0, verify the ordinary report without a reference, then run
-`analyze_cargo_timings.py` with a fresh output ID. The old held-out run's stale
-status is preserved evidence of ENOSPC, not a live task. Its separate recovery
-assessment already verifies all seven complete cases. Both token failures persist.
-The unbounded goal remains active; inspect exact receipts before acting.
+All interface/diagnostic/debug runs above are terminal0. Next launch
+`lightweight-wrapper-release-01` through the supervisor with
+`check_workspace.py --release --install-tool`; exact live identities belong in
+its receipt and `.work/continuation-state.json`. Freeze its sources until it
+finishes. Then qualify the actual wrapper/launcher before real-project timings.
+The old held-out run's stale status is preserved ENOSPC evidence, not a live task.
+Its separate recovery assessment verifies all seven complete cases. Both token
+failures persist. The unbounded goal remains active; inspect receipts before acting.
 
 Detailed current state, exact tool hashes, all five source pins and terminal
 receipts are in `.work/continuation-state.json`. Toolchain is

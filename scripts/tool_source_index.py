@@ -34,11 +34,8 @@ def index(ref):
     binaries = None
     if (directory / 'ready.json').exists():
         binaries = json.loads((directory / 'ready.json').read_text())
-        if set(binaries) != {'rust-interp-vm', 'rust-interp-mir-export'}:
-            raise RuntimeError('unexpected ready schema')
-        for name, expected in binaries.items():
-            if hashlib.sha256((directory / name).read_bytes()).hexdigest() != expected:
-                raise RuntimeError('installed binary hash mismatch: ' + key + '/' + name)
+        from interpreter import installed_tools
+        installed_tools(key)
     return dict(commit=commit, tool_key=key, files=files, binaries=binaries)
 
 

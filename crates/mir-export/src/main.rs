@@ -11,6 +11,7 @@ extern crate rustc_span;
 
 mod lower;
 mod audit;
+mod wrapper_route;
 
 use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface;
@@ -175,77 +176,15 @@ fn main() {
             "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks"]}));
         return;
     }
-    // Cargo's RUSTC_WRAPPER convention supplies the real rustc as argv[1].
-    let wrapper = args.get(1).is_some_and(|s| {
-        std::path::Path::new(s)
-            .file_stem()
-            .is_some_and(|s| s == "rustc")
+    let environment = wrapper_route::Environment::read();
+    let route = wrapper_route::route(args, &environment).unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
     });
-    if wrapper {
-        args.remove(0);
-    }
-    if wrapper && let Ok(sysroot) = std::env::var("RUST_INTERP_STD_SYSROOT") {
-        let value = |flag: &str| {
-            args.iter().enumerate().find_map(|(index, arg)| {
-                arg.strip_prefix(&format!("{flag}=")).map(str::to_owned)
-                    .or_else(|| (arg == flag).then(|| args.get(index + 1).cloned()).flatten())
-            })
-        };
-        // An explicit Cargo target separates guest dependencies from native
-        // build scripts and proc macros, which keep the installed host sysroot.
-        if let Some(target) = value("--target") {
-            if std::env::var("RUST_INTERP_STD_TARGET").ok().as_ref() != Some(&target) {
-                eprintln!("standard-library MIR target does not match rustc's target");
-                std::process::exit(2);
-            }
-            if value("--sysroot").is_some_and(|existing| existing != sysroot) {
-                eprintln!("--std-mir conflicts with an explicit rustc --sysroot");
-                std::process::exit(2);
-            }
-            if value("--sysroot").is_none() {
-                args.extend(["--sysroot".into(), sysroot]);
-            }
-        }
-    }
-    let crate_name = args
-        .windows(2)
-        .find(|a| a[0] == "--crate-name")
-        .map(|a| a[1].clone());
-    let selected = std::env::var("RUST_INTERP_EXPORT_CRATE").ok();
-    let package = std::env::var("RUST_INTERP_EXPORT_PACKAGE").ok();
-    let library = args
-        .windows(2)
-        .any(|a| a[0] == "--crate-type" && a[1].split(',').any(|t| t == "lib" || t == "rlib"));
-    if wrapper && library {
-        // Ordinary dependency metadata may omit non-generic, non-inline MIR.
-        // Keep it available for our cross-crate execution graph. Appending to
-        // the rustc invocation preserves Cargo's configured target/rustflags
-        // precedence. The install hash (and isolated target directory) includes
-        // this wrapper, so artifacts from the old policy cannot be reused.
-        args.push("-Zalways-encode-mir=yes".into());
-    }
-    let wrong_package = package.as_ref().is_some_and(|p| {
-        std::env::var("CARGO_PKG_NAME").ok().as_ref() != Some(p)
-            || std::env::var_os("CARGO_PRIMARY_PACKAGE").is_none()
-    });
-    let wants_test = std::env::var("RUST_INTERP_EXPORT_TEST").is_ok_and(|s| s == "1");
-    // Cargo uses --cfg test for harness=false targets. Keep their custom
-    // attribute expansion and main intact; adding --test would change which
-    // bodies exist (Nushell, for example, also emits empty libtest stubs).
-    let test_compilation = args.iter().any(|a| a == "--test" || a == "--cfg=test")
-        || args.windows(2).any(|a| a[0] == "--cfg" && a[1] == "test");
-    let wrong_manifest = std::env::var_os("RUST_INTERP_EXPORT_MANIFEST").is_some_and(|p| {
-        std::env::var_os("CARGO_MANIFEST_DIR")
-            .is_none_or(|dir| PathBuf::from(p) != PathBuf::from(dir))
-    });
-    if wrapper
-        && ((selected.is_none() && package.is_none())
-            || (selected.is_some() && crate_name != selected)
-            || wrong_package
-            || (package.is_some() && !wants_test && !library)
-            || wrong_manifest
-            || (wants_test && !test_compilation))
-    {
+    args = route.args;
+    let wrapper = route.wrapper;
+    let wants_test = environment.export_test;
+    if !route.export {
         let status = std::process::Command::new(&args[0])
             .args(&args[1..])
             .status()

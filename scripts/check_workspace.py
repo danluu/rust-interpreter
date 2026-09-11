@@ -45,7 +45,8 @@ def install_tool(target, env, work, status, receipt, frozen):
         digest.update(str(p.relative_to(ROOT)).encode() + b'\0' + p.read_bytes())
     key = digest.hexdigest()
     directory = ROOT / '.work/interpreter-tools' / key
-    binaries = {name: sha(target / 'release' / name) for name in ['rust-interp-vm', 'rust-interp-mir-export']}
+    from interpreter import CURRENT_TOOL_BINARIES
+    binaries = {name: sha(target / 'release' / name) for name in CURRENT_TOOL_BINARIES}
     # Lock ordering matches the workflow driver: benchmark lock, then tool lock.
     with (ROOT / '.work/interpreter-tools.lock').open('a') as publication:
         fcntl.flock(publication, fcntl.LOCK_EX)
