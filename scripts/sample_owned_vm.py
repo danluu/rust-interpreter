@@ -130,7 +130,11 @@ def main():
                 code, cwd = diagnostic('cwd', ['/usr/sbin/lsof', '-a', '-p', str(child.pid), '-d', 'cwd', '-Fn'])
                 if code != 0 or 'n' + str(ROOT) not in cwd.splitlines() or child.poll() is not None:
                     raise RuntimeError('owned VM working directory/liveness check failed')
-                for attempt in range(8):
+                # A newly published Mach-O can still be in loader setup after
+                # several fast vmmap calls. Bound elapsed readiness time, not
+                # a small count of immediate inspections; never signal it.
+                mapping_deadline = time.monotonic() + 5
+                for attempt in range(64):
                     if child.poll() is not None:
                         break
                     code, mapping = diagnostic('vmmap-' + str(attempt), ['/usr/bin/vmmap', str(child.pid)])
@@ -138,6 +142,9 @@ def main():
                         (run / 'vmmap.stdout').write_text(mapping)
                         mapped = True
                         break
+                    if time.monotonic() >= mapping_deadline:
+                        break
+                    time.sleep(.05)
                 if mapped and child.poll() is None:
                     print('SAMPLE', index, 'owned PID', child.pid, flush=True)
                     sample_code, _ = diagnostic('sample', ['/usr/bin/sample', str(child.pid), str(args.duration),
