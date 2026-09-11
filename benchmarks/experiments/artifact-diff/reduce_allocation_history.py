@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import stat
 import sys
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -42,9 +43,23 @@ def check_guest_panic(row, seed, wrong):
             'literal probe did not reach its expected panic site')
 
 
+def dump_inventory(directory):
+    entries, total = {}, 0
+    for path in sorted(directory.iterdir()):
+        info = path.lstat()
+        require(stat.S_ISREG(info.st_mode) and path.suffix == '.mir' and len(entries) < 2048,
+                'unexpected or excessive MIR dumps')
+        total += info.st_size
+        require(total <= 64 * 1024 * 1024, 'MIR dumps exceed byte bound')
+        entries[path.name] = dict(inode=info.st_ino, bytes=info.st_size,
+            mtime_ns=info.st_mtime_ns, ctime_ns=info.st_ctime_ns, sha256=sha(path))
+    return entries
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--dump-mir', action='store_true', help='observe MIR pass output and compare bytecode to the uninstrumented reduction')
     args = parser.parse_args()
     require(Path(args.run_id).name == args.run_id and args.run_id not in ['', '.', '..'], 'invalid run ID')
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -88,6 +103,18 @@ def main():
             *(Path(__file__).with_name(p) for p in
             ['inspect_allocation_origins.py', 'check_allocation_trace.py', 'qualify_trace_launcher.py'])]
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in inputs}
+        reference = None
+        dump_directories = {}
+        if args.dump_mir:
+            reference_path = ROOT / 'results/allocation-history-reduction-02/summary.json'
+            reference = json.loads(reference_path.read_text())
+            require(reference['status'] == 'completed diagnostic' and reference['binaries'] == binaries and
+                    reference['sources_sha256']['tests/allocation_history_fixture.rs'] == sha(original_path),
+                    'uninstrumented reference differs')
+            frozen[str(reference_path.relative_to(ROOT))] = sha(reference_path)
+            for incremental in ['1', '0']:
+                dump_directories[incremental] = raw / ('mir-dumps-incremental-' + incremental)
+                dump_directories[incremental].mkdir()
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
                    'RUSTC_WORKSPACE_WRAPPER', 'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET']}
@@ -110,6 +137,7 @@ def main():
         run('lockfile', ['cargo', '+' + TOOLCHAIN, 'generate-lockfile', '--manifest-path', manifest, '--offline'])
         frozen[str((fixture / 'Cargo.lock').relative_to(ROOT))] = sha(fixture / 'Cargo.lock')
         write_json(raw / 'plan.json', dict(tool_key=key, binaries=binaries, std_key=std_key, seeds=SEEDS,
+            dump_mir=args.dump_mir,
             predicted_allocation_counts={'1': [1, 1, 2, 2], '0': [1, 1, 1, 1]},
             states=[dict(label=label, source_sha256=hashlib.sha256(payload).hexdigest()) for label, payload in states],
             sources_sha256=frozen, note='Controlled reduction; predictions are not acceptance conditions. No performance inference.'))
@@ -134,6 +162,11 @@ def main():
                     native_results[seed] = row
                 for incremental in ['1', '0']:
                     selected_env = dict(env, CARGO_INCREMENTAL=incremental)
+                    before_dumps = None
+                    if args.dump_mir:
+                        selected_env['RUSTFLAGS'] = '-Zdump-mir=first&built|depends_on_api&built|third&built -Zdump-mir-dir=' + str(dump_directories[incremental])
+                        require(' ' not in str(dump_directories[incremental]), 'dump path cannot be represented in RUSTFLAGS')
+                        before_dumps = dump_inventory(dump_directories[incremental])
                     base = [sys.executable, ROOT / 'scripts/interpreter.py', '--manifest-path', manifest,
                         '--package', PACKAGE, '--tool-key', key, '--jobs', '2', '--engine', 'jit',
                         '--inline-leaves', '--std-mir', '--allocation-trace', '--instruction-limit', '100000000',
@@ -170,10 +203,24 @@ def main():
                                 check_guest_panic(executed, seed, wrong)
                             else:
                                 require(executed['stdout'] == native_results[seed]['stdout'], 'native/guest result differs')
-                    observations.append(dict(state=state, incremental=incremental, allocations=len(query['matches']),
+                    observation = dict(state=state, incremental=incremental, allocations=len(query['matches']),
                         origins=sum(len(m['origins']) for m in query['matches']), artifact=str(saved.relative_to(ROOT)),
                         trace=str(trace.relative_to(ROOT)), artifact_sha256=sha(saved), trace_sha256=sha(trace),
-                        query=str(query_path.relative_to(ROOT)), query_sha256=sha(query_path)))
+                        query=str(query_path.relative_to(ROOT)), query_sha256=sha(query_path))
+                    if args.dump_mir:
+                        after_dumps = dump_inventory(dump_directories[incremental])
+                        require(set(before_dumps).issubset(after_dumps), 'a MIR dump disappeared')
+                        changed = [name for name, info in after_dumps.items() if before_dumps.get(name) != info]
+                        dump_record = raw / (state + '-incremental-' + incremental + '-dump-changes.json')
+                        write_json(dump_record, dict(directory=str(dump_directories[incremental].relative_to(ROOT)),
+                            before=before_dumps, after=after_dumps, changed_files=changed, rustflags=selected_env['RUSTFLAGS']))
+                        matched = [o for o in reference['observations'] if o['state'] == state and o['incremental'] == incremental]
+                        require(len(matched) == 1 and sha(ROOT / matched[0]['artifact']) == matched[0]['artifact_sha256'],
+                                'reference artifact differs')
+                        observation.update(dump_changes=str(dump_record.relative_to(ROOT)),
+                            dump_changes_sha256=sha(dump_record), dump_files_written=len(changed),
+                            reference_artifact_identical=sha(saved) == matched[0]['artifact_sha256'])
+                    observations.append(observation)
                     write_json(raw / 'observations.json', observations)
                 print(json.dumps(dict(state=state, allocations=[o['allocations'] for o in observations[-2:]], commands=len(rows))), flush=True)
         require(source.read_bytes() == original and all(sha(ROOT / p) == d for p, d in frozen.items()),
@@ -182,6 +229,8 @@ def main():
         out.mkdir()
         counts = {inc: [o['allocations'] for o in observations if o['incremental'] == inc] for inc in ['1', '0']}
         write_json(out / 'summary.json', dict(status='completed diagnostic', tool_key=key, binaries=binaries, std_key=std_key,
+            dump_mir=args.dump_mir,
+            all_reference_artifacts_identical=all(o.get('reference_artifact_identical', False) for o in observations) if args.dump_mir else None,
             commands=len(rows), observations=observations, allocation_counts=counts,
             predicted_split_reproduced=counts == {'1': [1, 1, 2, 2], '0': [1, 1, 1, 1]},
             original_assertions_unchanged=True, wrong_body_assertions_verified=True, source_restored=True,
