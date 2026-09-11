@@ -108,7 +108,13 @@ before startup. Four required cases remain. Their [historical caches](results/co
 are all smaller than a conservative 4 GiB budget; each fresh admission requires
 15.05 GiB including growth, the running floor, archive and evidence reserves.
 A lock-only inspection stop and an overstrict object-file guard are preserved;
-no cache was changed. Launch case04 forward-anchored TLS next.
+no cache was changed. [Case04 forward-anchored TLS](results/resumable-copy-heldout-01-case-04/assessment.md)
+now verifies 84 commands, fifteen pairs and 42 corresponding artifacts: paired
+wall −6.04%, CPU −6.00%, passing both guards. Cross-cycle identity remains false.
+Case05 pgrust SHA-1 is active, started 14:56:42 local under supervisor 27585.
+After it completes, verify its gate, then run case06 pgrust and case07 rg-aot.
+The [post-copy profile plan](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
+is recorded for after all held-out measurements; no profile has started.
 
 Storage maintenance has verified 205 archives. Recent batches include
 [eight recovered histories' caches](results/heldout-recovery-storage-01/assessment.md),

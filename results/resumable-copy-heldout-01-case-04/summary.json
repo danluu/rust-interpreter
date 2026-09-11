@@ -1,0 +1,97 @@
+{
+  "plan": {
+    "schema_version": 1,
+    "options": {
+      "run_id": "resumable-copy-heldout-01-case-04",
+      "candidate_tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "baseline_tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "candidate_jit_native_call_stubs": false,
+      "candidate_jit_resumable_calls": true,
+      "candidate_jit_persistent_registers": true,
+      "candidate_jit_native_calls": false,
+      "baseline_jit_resumable_calls": false,
+      "baseline_jit_persistent_registers": false,
+      "only": [
+        "forward-anchored-tls"
+      ],
+      "cycles": 3,
+      "jobs": 4,
+      "native_jobs": 18,
+      "baseline_jobs": null,
+      "candidate_jobs": null,
+      "native_profile": "o0-incremental",
+      "native_test_threads": "default",
+      "native_rustflag": [],
+      "lock_wait_seconds": 600,
+      "minimum_free_gib": 8,
+      "_specified_job_counts": [
+        "jobs",
+        "native_jobs"
+      ]
+    },
+    "cases": [
+      {
+        "label": "forward-anchored-tls",
+        "project": "fre",
+        "workflow": "forward-anchored-tls",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--instruction-limit",
+          "100000000000",
+          "--guest-mir-opt-level",
+          "3",
+          "--guest-mir-inline-scale",
+          "8"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-forward-anchored-tls-01/summary.json",
+        "reference_report_sha256": "56b813844ac7ab85fa950b0f4f2285187fedcae11bff3ca8b119732eb629b056"
+      }
+    ],
+    "frozen": {
+      "scripts/bench_e2e_workflow.py": "14b4ce01da0c377692c0bce7b04979b3edc9f7617e4a3c7ac39e86ed88dfd961",
+      "scripts/interpreter.py": "bb7abab2614f27090a1a0d4f647ac31a1de5973a563ae0134b4f53d12667497b",
+      "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+      "scripts/workflow_case_file.py": "4a138ac3b497b9871b3d0781b0272f68da886ef118a26b8795cb7c59141588d7",
+      "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+      "scripts/workflow_measurements.py": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132",
+      "scripts/workflow_io.py": "29e006c3397fb762743783d13bfe3a2fca1d45091bfb2110380fe083108a4119",
+      "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+      "scripts/workflow_jobs.py": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5",
+      "scripts/verify_repeated_workflow.py": "83ae5abf8757f573649a56a20af8e7d3c2f70d23d9dd080eaac0fcfd39b71e4b",
+      "scripts/bench_workflow_corpus.py": "48021057abb3e978d4f045ae35b69e352986efdffed03f57dd47a113d2f061f7",
+      "benchmarks/workflow-corpus.json": "53c845a5a862a3022816c23fea7f8e6d843da2e65b8c3afe48b17d2e4841916d"
+    },
+    "purpose": "Repeated complete-command control comparison; preserve original assertions, wrong edits, cache histories and all regressions. No fastest-native, significance or retention decision is automatic."
+  },
+  "workflows": [
+    {
+      "label": "forward-anchored-tls",
+      "report": "results/resumable-copy-heldout-01-case-04-forward-anchored-tls/summary.json",
+      "report_sha256": "9c52bd65e5a2d55dcda00eaba2f932fb1d0f5598d8e947fe43f3c50a9cafe55b",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 1.457271457999994,
+        "baseline": 1.0688931250000024,
+        "candidate": 0.9975715419999887
+      },
+      "cpu_medians": {
+        "native": 1.9044209999999886,
+        "baseline": 1.0313469999999967,
+        "candidate": 0.9779310000000052
+      },
+      "check_median_seconds": 0.617480999999998,
+      "cross_cycle_bytecode_identical": false
+    }
+  ],
+  "status": "All requested workflows completed; compare separate workload groups before selecting a native configuration or runtime direction"
+}
