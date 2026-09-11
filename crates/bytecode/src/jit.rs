@@ -198,6 +198,8 @@ struct Assertion<'a> {
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
+    #[cfg(test)]
+    local_forwarding: Vec<(usize, &'static str)>,
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
     operations: usize,
@@ -274,6 +276,8 @@ impl<'a> Jit<'a> {
 
     fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, String> {
         let mut words = vec![];
+        #[cfg(test)]
+        let mut local_forwarding = vec![];
         let mut assertions = vec![];
         let mut operations = 0;
         let reads = read_registers(f);
@@ -410,6 +414,8 @@ impl<'a> Jit<'a> {
                 if a.words.len() > word_budget.saturating_sub(words.len()) {
                     return Ok(None);
                 }
+                #[cfg(test)]
+                local_forwarding.extend(a.local_forwarding);
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
                 operations += pc - start;
@@ -422,7 +428,8 @@ impl<'a> Jit<'a> {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
-        Ok(Some(CompiledFunction { words, entries, operations, assertions }))
+        Ok(Some(CompiledFunction { words, entries, operations, assertions,
+            #[cfg(test)] local_forwarding }))
     }
     // This transition runs once per emitted region. Keep the small dispatch
     // wrapper in the VM loop even when cold fault paths grow.
@@ -747,6 +754,9 @@ enum Fact {
 
 #[derive(Default)]
 struct Assembler<'a> {
+    local_values: Vec<local_memory::Value>,
+    #[cfg(test)]
+    local_forwarding: Vec<(usize, &'static str)>,
     words: Vec<u32>,
     links: Vec<(usize, usize)>,
     failures: Vec<(usize, Failure)>,
@@ -1045,6 +1055,7 @@ impl Assembler<'_> {
         self.cache_recent = slot;
     }
     fn forget_cached(&mut self, reg: Reg) {
+        self.forget_local_register(reg);
         for owner in &mut self.cached {
             if *owner == Some(reg) { *owner = None; }
         }
@@ -1359,6 +1370,7 @@ impl Assembler<'_> {
         }
     }
     fn local_fill(&mut self, fill: LocalFill) {
+        self.invalidate_local_memory(Some(fill.offset), fill.size);
         // The entire writable range is within the allocated active frame.
         // No native operation can move its storage. These are plain byte
         // writes, matching FillBytes even for unaligned starts and short tails.
@@ -1387,6 +1399,7 @@ impl Assembler<'_> {
     }
 
     fn lower(&mut self, op: &Op) {
+        self.review_local_memory_effect(op);
         if self.fold(op) { return; }
         match *op {
             Op::Imm { dst, value } => {
@@ -1400,26 +1413,41 @@ impl Assembler<'_> {
                 self.put(dst, 9, 31);
             }
             Op::Load { dst, address, size } => {
-                self.address(11, address, size as usize, false);
-                self.load_mem(9, 10, 11, size as usize);
+                let local = self.local_range(address, size as usize);
+                if let Some((_, value)) = self.local_value(local, size as usize) {
+                    self.forward_local_value(value, size as usize, "Load");
+                } else {
+                    self.address(11, address, size as usize, false);
+                    self.load_mem(9, 10, 11, size as usize);
+                }
                 self.put(dst, 9, if size <= 8 { 31 } else { 10 });
+                self.remember_local_memory(local, size as usize, dst);
             }
             Op::Store { address, src, size } => {
+                let local = self.local_range(address, size as usize);
                 self.address(11, address, size as usize, true);
                 self.get(9, src, false);
                 self.get(10, src, true);
                 self.store_mem(9, 10, 11, size as usize);
+                self.invalidate_local_memory(local, size as usize);
+                self.remember_local_memory(local, size as usize, src);
             }
             Op::CompareBytes { dst, left, right, size } => {
                 self.compare_bytes(dst, left, right, size);
             }
             Op::Copy { dst, src, size } => {
                 if (17..=32).contains(&size) { self.evict_cached(true); }
-                self.address(11, src, size, false);
+                let source_local = self.local_range(src, size);
+                let destination_local = self.local_range(dst, size);
+                let forwarded = self.local_value(source_local, size);
+                if forwarded.is_none() { self.address(11, src, size, false); }
                 self.address(12, dst, size, true);
                 // Read all bytes before writing so even overlapping copies
                 // preserve the interpreter's memmove behavior.
-                if size <= 16 {
+                if let Some((_, value)) = forwarded {
+                    self.forward_local_value(value, size, "Copy");
+                    self.store_mem(9, 31, 12, size);
+                } else if size <= 16 {
                     self.load_mem(9, 10, 11, size);
                     self.store_mem(9, 10, 12, size);
                 } else if size <= 32 {
@@ -1451,6 +1479,10 @@ impl Assembler<'_> {
                         self.emit(0x91000000 | ((chunks as u32 * 16) << 10) | (12 << 5) | 12);
                         self.store_mem(9, 10, 12, tail);
                     }
+                }
+                self.invalidate_local_memory(destination_local, size);
+                if let Some((source, _)) = forwarded {
+                    self.remember_local_memory(destination_local, size, source);
                 }
             }
             Op::Binary {
@@ -1698,3 +1730,9 @@ mod register_cache_tests;
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
 #[path = "jit/compare_bytes_tests.rs"]
 mod compare_bytes_tests;
+
+#[path="jit/local_memory.rs"]
+mod local_memory;
+#[cfg(all(test,target_arch="aarch64",target_os="macos"))]
+#[path="jit/local_memory_tests.rs"]
+mod local_memory_tests;

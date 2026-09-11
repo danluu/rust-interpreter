@@ -1,4 +1,42 @@
-Current checkpoint, 2026-09-10: **6bf10fda is the retained experimental build**.
+Current checkpoint, 2026-09-10: **57a54edd is the retained experimental build**.
+Its production VM/exporter binaries are exactly those measured as af9aa691.
+The only subsequent source change corrects a new test's expected result and
+comment; all 183 bytecode tests pass again. Local-memory forwarding reuses
+available scalar values for exact proven local ranges, while preserving writes,
+destination checks, final spills, budgets and strict rustc checking.
+[Current report](results/local-memory-forwarding-01/summary.md).
+
+All nine real source-edit/build/test workflows are complete: 25/45 commands
+improve against 6bf, 30/45 against native, and 29/45 execution stages improve.
+The four compute workflows win 14/20 complete commands and 19/20 execution stages.
+Paired command savings are 279 ms for token, 56 ms for folded, 30 ms for SHA-1
+and 7 ms for TLS. Preserve folded's 148 ms marginal-median regression, slower
+individual commands, Ruff's 42 ms and larger Nushell's 33 ms paired regressions,
+and all cold regressions. Native remains much faster on token and folded.
+No timing correction or causal claim about Cargo is applied.
+
+Qualification passes all 183 bytecode and 11 exporter tests, 47,004 native
+differential commands, 245 TLS checks, and 382 fresh fre tests against fresh
+native executions; seven fre tests remain ignored. All 63 new workflow artifacts
+and every fre artifact match 6bf. Independent builds reproduce both production
+binaries exactly. The original failed new-test comparison, all measured sources,
+and all regressions remain preserved. Whole applications, actual unwinding,
+general OS/FFI and threads remain unsupported.
+
+Next: sample the exact retained VM on the original token workload, verify its
+live native-code arena, and identify the remaining dispatcher/frame/copy costs
+against its own disassembly. Use several diagnostic windows, keep original RNG
+and assertions, and treat sample shares as evidence for choosing a candidate,
+not as speedup predictions. Then test a bounded generic change with actual
+production edits before broader qualification. Avoid rerunning parked register
+compaction, paired spills or fixed-register residency without new evidence.
+
+Git now records the baseline and ongoing source/report changes. Build caches,
+private checkouts and raw private evidence remain local. All builds, tests,
+benchmarks and cleanup remain serialized. Only processes created for this task
+may be controlled. Earlier checkpoints below describe historical states.
+
+Historical checkpoint before local-memory forwarding: **6bf10fda**.
 It combines restricted MIR scalar promotion, entry-register initialization
 proofs and move forwarding with the packed native register cache. The exact
 qualified source is integrated; f45 remains archived as the previous reference.

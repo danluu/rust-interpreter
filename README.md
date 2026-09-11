@@ -5,7 +5,28 @@ frontend checking and MIR. The engine runs selected existing library tests in
 pgrust, fre, Nushell, Ruff, and private rg-aot. Whole applications, arbitrary
 OS/FFI calls, guest threads, and native unwinding remain unsupported.
 
-The retained experimental build combines restricted MIR scalar promotion with
+The retained experimental JIT forwards scalar loads from values already available
+for the same proven local-frame bytes. Across nine real source-edit/build/test
+workflows it improves **25/45 complete commands** against the preceding engine
+and **30/45 against native Cargo**. The compute workflows save paired medians of
+**279 ms on token-phrase, 56 ms on folded trie, 30 ms on SHA-1 and 7 ms on TLS**.
+Ruff regresses 42 ms and larger Nushell 33 ms. Folded's marginal command median
+regresses 148 ms despite its lower paired median. Native remains much faster on
+token and folded; this does not establish a general warm-compilation gain.
+[Complete results, including cold costs](results/local-memory-forwarding-01/summary.md).
+
+All **183 bytecode tests**, **11 exporter tests**, **47,004 native differential
+commands** and **245 TLS/callback checks** pass. All **382 active fre tests** pass
+against fresh native executions; seven remain ignored. All 63 new workflow
+artifacts and every fre artifact match the preceding build. Independent builds
+reproduce the measured binaries exactly. A final correction to a new test's
+expected result also reproduces those binaries; it changes the source key to
+`57a54edd` from measured `af9aa691`. Original tests, strict frontend checking,
+writes, destination checks, final register spills and instruction budgets remain
+intact. [Qualification](results/local-memory-forwarding-01/qualification.json),
+[next work](RUNTIME-NEXT.md).
+
+The preceding experimental build combines restricted MIR scalar promotion with
 the custom native register cache. Across nine real source-edit/build/test
 workflows it wins **30/45 complete commands** against its parent and **33/45
 against native Cargo**. The four compute workflows save paired medians of

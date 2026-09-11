@@ -1,6 +1,25 @@
 # Custom interpreter and linked AArch64 JIT
 
-The retained experimental build is `6bf10fda`: restricted MIR scalar promotion
+The retained experimental build is `57a54edd` (the production binaries measured
+as `af9aa691`). It adds local-memory forwarding to the preceding scalar-promotion
+and packed-register-cache engine. A bounded table of 16 exact local byte ranges
+records currently materializable values for widths 1, 2, 4 and 8. Loads and copy
+sources can reuse them. Register overwrite/eviction and overlapping or unknown
+writes invalidate facts; region boundaries reset the table. Forwarding preserves
+truncation, memmove source capture, destination checks, stores, cache replacement
+order, final dynamic spills and logical instruction budgets. It never reloads
+an evicted dead register from an array slot that may not have been spilled.
+
+Qualification passes 183 bytecode tests, 11 exporter tests, 47,004 native
+differential commands, 245 TLS checks and 382 fresh fre tests against native;
+seven fre tests remain ignored. The final test-only oracle correction leaves
+both production binaries identical. Across nine actual edit workflows, 25/45
+complete commands improve against the preceding build, 30/45 against native and
+29/45 execution stages improve. All four compute workflows have lower paired
+command medians, but corpus and cold results are mixed. Native remains much
+faster on token and folded. [Full evidence](results/local-memory-forwarding-01/summary.md).
+
+The preceding experimental build is `6bf10fda`: restricted MIR scalar promotion
 combined with the packed native cache. Proven non-addressed primitive locals
 use VM registers. Entry-initialization proofs prevent unnecessary whole-frame
 register clearing, and block-local move forwarding preserves values across
