@@ -80,3 +80,11 @@ qualified archival only for separately reviewed, completed owned targets outside
 measurements. If higher concurrency produces differing bytecode or correctness
 failures, prioritize allocation/relocation identity and lowering correctness;
 do not hide them by relaxing equality or changing test selection.
+
+Staged groundwork: `scripts/workflow_jobs.py` resolves independent mode counts,
+reads historical/new receipts and checks canonical executed job arguments. Its
+[standalone qualification](../../../results/worker-count-helper-01/assessment.md)
+passes six configurations, 48 rejections, sixteen parser cases and checks 756
+historical commands. It is not yet imported by the workflow harness or verifier;
+no measured wrapper input changed. Integrate and qualify the actual command path
+only after the six fixed wrapper histories and warm controls have been assessed.

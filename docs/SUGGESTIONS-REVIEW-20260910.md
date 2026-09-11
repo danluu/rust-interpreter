@@ -123,8 +123,8 @@ review are not commitments or evidence of feasibility.
   preserved query metadata and executed snapshots. [The format qualification](../results/cache-archive-qualification-06/assessment.md)
   passes 44 rejection checks, four coordinator cases and restoration of both
   earlier formats; [cache selection](../results/workflow-cache-evidence-01/assessment.md)
-  passes 31 rejections and nine historical targets. Twenty exact native/check/
-  custom archives completed, including the [second batch](../results/cold-storage-batch-02/assessment.md). This made room for the pending cold comparisons;
+  passes 31 rejections and nine historical targets. Twenty-eight exact native/check/
+  custom archives completed, including the [third batch](../results/cold-storage-batch-03/assessment.md). This made room for the pending cold comparisons;
   it is storage maintenance outside their timers, not a compilation speedup.
 
 - Item 4.1 now has a std-only exec wrapper and shared Cargo routing rules in

@@ -38,15 +38,15 @@ std-MIR. Installation/downloads/std-MIR setup are excluded from cold timing.
 | 01 | native,baseline,candidate | 1.0016210970 | verified |
 | 02 | candidate,baseline,native | 0.9868934347 | verified |
 | 03 | baseline,candidate,native | 1.0085092329 | verified |
-| 04 | native,candidate,baseline | — | pending |
+| 04 | native,candidate,baseline | — | running |
 | 05 | candidate,native,baseline | — | pending |
 | 06 | baseline,native,candidate | — | pending |
 
 All first three histories verify twelve commands and six artifacts each.
-Active maintenance: `cold-storage-batch-03-prepare`, supervisor **20366**,
-started September 11 at 08:18:34 local. Review the eight inventories before
-separate application. Cold04 follows with order native,candidate,baseline,
-after enough space is available. Inspect receipts before inferring liveness.
+Active run: `lightweight-wrapper-nushell-cold-04`, supervisor **1665**,
+controller **1675**, started September 11 at 08:28:56 local. After
+success, run the workflow verifier and `assess_wrapper_cold.py --index 4` through
+separate supervised commands. Inspect receipts before inferring liveness.
 
 Retention requires at least 5% median cold wall improvement and no unresolved
 warm paired wall regression over 5%. Only then run held-out Ruff/private rg-aot/
@@ -56,15 +56,16 @@ unexecuted until all six histories exist. No retention decision yet.
 
 ## Resource planning
 
-[Completed batch02](results/cold-storage-batch-02/assessment.md) preserves eight
+[Completed batch03](results/cold-storage-batch-03/assessment.md) preserves eight
 exact completed targets: 84,317 paths / 21.42 GiB unique contents in 7.21 GiB
 of archives. Final receipts, reviewed inventories and all 38 distinct external
-source/evidence hashes verify. Twenty actual archives are now complete, including
-[batch01](results/cold-storage-batch-01/assessment.md). All payloads were decoded
-and hashed before original-file retirement. Executed snapshots and reports stay
-in place. About 23.7 GiB was free before cold03 and 11.4 GiB afterward. Batch03 will
-archive its four caches and the four older wrapper qualification caches,
-after completed-workflow ownership and inventory review.
+source/evidence hashes verify. Twenty-eight actual archives are now complete,
+including [batch01](results/cold-storage-batch-01/assessment.md) and
+[batch02](results/cold-storage-batch-02/assessment.md). All payloads were decoded
+and hashed before retirement. Executed snapshots and reports remain in place.
+About 25.8 GiB was free before cold04. More completed-cache archival will be
+needed between large histories. The completed `interface-nushell-units-01`
+targets are potential candidates after cold04, subject to fresh exact inventories.
 
 The [archive implementation](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
 passes 44 rejection checks, four coordinator cases and two legacy restores.
@@ -84,7 +85,12 @@ Overlap does not establish CPU utilization, a ready queue or a critical path.
 The [worker-count plan](benchmarks/experiments/compiler-pipeline/WORKER-COUNT-NEXT.md)
 is a separate next experiment: identical tool78 in both arms, four versus eighteen
 jobs, qualification followed by fixed cold/warm samples and original controls.
-Do not change the active wrapper's four-job controls.
+Do not change the active wrapper's four-job controls. The staged
+[worker helper](results/worker-count-helper-01/assessment.md) passes six
+configurations, 48 rejection checks, sixteen parser rejections and worker-count
+checks on 756 historical commands. Those commands were inspected, not rerun.
+Harness/launcher/verifier integration and project qualification remain pending;
+integrate only after the current six cold histories have been assessed.
 
 [Constant-history inspection](results/interface-nushell-literal-history-01/assessment.md)
 finds an extra `Expected OneOf` literal and changed guest offsets after edit/revert.
