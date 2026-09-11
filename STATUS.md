@@ -5,28 +5,23 @@ native-control corpus. [Assessment](results/native-controls-corpus-01/assessment
 
 ## Latest native-call and register experiment
 
-Experimental `e89de7f8`, Git `d664bce`, passes 240 workspace
+Experimental `035ef708`, Git `e1bec3e`, passes 256 workspace
 tests in debug and release. Three repeated source-edit cycles completed
 168 commands with 84 identical-within-pair artifacts.
 1 of 2 original performance gates pass; the options remain disabled by default.
 
 | Workload | Native | Baseline JIT | Experimental JIT | Paired change |
 | --- | ---: | ---: | ---: | ---: |
-| folded-literal-trie | 1.634 s | 2.472 s | 2.373 s | -4.2% |
-| token-phrase | 1.952 s | 6.482 s | 4.959 s | -23.6% |
+| folded-literal-trie | 1.881 s | 2.477 s | 2.198 s | -10.6% |
+| token-phrase | 2.208 s | 6.641 s | 5.715 s | -15.0% |
 
 Paired change is the median within-edit ratio; command columns are marginal
 medians. The targets remain −20% token and −10% folded against b2aa6efe.
-Full-width values now persist across native branches and calls. Token passes
-its primary gate, but folded misses its target. Broader qualification remains
-required. A qualified private-array reuse census found negligible scope;
-the next runtime direction is resumable native Calls over guest frames.
-[Result and limitations](results/persistent-e2e-01/assessment.md).
-
-Initialized VM/TLS frame backing and typed native continuation checks
-(`fca1e96`, `1264921`) pass 249 workspace tests in debug and release.
-Resumable emission and VM integration remain outstanding; this groundwork
-has no new performance result. [Qualification](results/resumable-boundary-release-01/assessment.md).
+Calls and Returns now resume across native functions over explicit guest
+frames. Folded passes its target; token misses its target. The combined
+gate fails. Fresh exact-code profiles will guide the next change; seven
+held-out workflows and broader execution qualification remain required.
+[Result and limitations](results/resumable-e2e-01/assessment.md).
 
 ## Full-corpus baseline
 

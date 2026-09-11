@@ -1,6 +1,15 @@
 # Resumable native Calls over an explicit guest frame stack
 
-The current custom JIT (`d664bce` / `e89de7f8`) improves token real edited commands
+**Implementation status:** `5574d10` / `e1bec3e`, tool `035ef708`, now connects
+native Call/Return emission and VM integration. All 256 debug/release tests,
+12 CLI controls and both original artifacts pass. The completed
+[three-cycle E2E comparison](../../../results/resumable-e2e-01/assessment.md)
+improves folded 10.6% paired and token 15.0%, with CPU improving. Folded passes;
+token misses its original 20% target. The combined gate fails and the option
+stays experimental. Fresh exact-code profiles are next. The initial rationale
+and requirements below remain the qualification contract.
+
+The preceding custom JIT (`d664bce` / `e89de7f8`) improves token real edited commands
 23.6% paired and folded 4.2% against `b2aa6efe`. Token passes its original gate;
 folded misses 10%. Fresh folded profiles attribute 11.6% to native-boundary self
 and 11.9% to dispatcher self; token has 11.5% and 11.0%. These are partial,
@@ -106,7 +115,7 @@ Then require the seven held-out workflows (including large-project controls),
 no unresolved >5% regression and broader native/TLS/fre qualification before
 retention. No production default changes merely because a prototype executes.
 
-[Current E2E result](../../../results/persistent-e2e-01/assessment.md) ·
+[Preceding E2E result](../../../results/persistent-e2e-01/assessment.md) ·
 [Fresh profiles](../../../results/persistent-folded-sample-01/assessment.md) ·
 [Parked array census](../../../results/aggregate-reuse-weights-01/assessment.md) ·
 [Original call/ABI audit](../../../docs/NATIVE-CALL-EXPERIMENT.md)
@@ -118,5 +127,6 @@ it. `1264921` implements the typed `Boundary`/`State`/`Run` publication contract
 Nine new tests cover backing reuse and checked native cursor publication; all
 249 workspace tests pass in debug and release (one ignored). Boundary tests
 model descriptor/cursor mutations; they do not execute resumable machine code.
-The emitter/VM specialization and E2E qualification remain outstanding.
-[Concrete next implementation](EMITTER-NEXT.md).
+The later `5574d10` implementation connects emitted execution; see the status
+above and the [emitter contract](EMITTER-NEXT.md). Primary E2E gates have now
+been evaluated; held-out and broader execution qualification remain outstanding.

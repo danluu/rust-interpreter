@@ -197,3 +197,13 @@ that a production Rust development engine is complete.
   [release](../results/resumable-boundary-release-01/summary.json), one ignored.
   The nine new tests qualify storage/publication invariants. Resumable native
   emission, VM integration and the original E2E gates remain outstanding.
+
+- Item 3.1 now has a working resumable Call/Return emitter and VM specialization
+  (`5574d10`, integration `e1bec3e`, tool `035ef708`). All 256 debug/release tests
+  pass, including recursion through 1024 frames, exact descendant fallback,
+  host ABI, limits, warm alias copies and TLS. Twelve CLI checks and
+  [both original artifacts](../results/resumable-real-smoke-01/assessment.md)
+  pass. The [completed original E2E comparison](../results/resumable-e2e-01/assessment.md)
+  improves folded 10.6% and token 15.0%, with CPU improving. Only folded passes;
+  the combined gate fails. Fresh exact-code profiles will guide the next change.
+  These results do not qualify the runtime for large-project adoption.

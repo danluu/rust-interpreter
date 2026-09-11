@@ -1,9 +1,11 @@
-# Connect resumable emission to the qualified guest storage
+# Resumable emitter implementation contract
 
-Groundwork: `fca1e96` / `1264921`. All 249 workspace tests pass in debug and
-release, one ignored. These tests validate storage and cursor publication; no
-resumable machine code or public runtime option exists yet. The existing
-`d664bce` / `e89de7f8` remains the latest measured experimental runtime.
+Implemented by runtime `5574d10` and launcher/gate integration `e1bec3e`, tool
+`035ef708`. All 256 workspace tests pass in debug/release, one ignored. Twelve
+CLI checks and both original real artifacts pass. The original three-cycle
+E2E run improves folded 10.6% and token 15.0%; only folded passes its original
+gate. Exact-code profiles are next. The notes below document the selected contract;
+follow-up work must preserve it and the original performance/held-out gates.
 
 ## Existing code to reuse
 

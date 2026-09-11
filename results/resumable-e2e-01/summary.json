@@ -1,0 +1,134 @@
+{
+  "plan": {
+    "schema_version": 1,
+    "options": {
+      "run_id": "resumable-e2e-01",
+      "candidate_tool_key": "035ef708b13f55f2aa30b9d6b9c8edb8d59f7edc54b4dc888b57cc58442f0e9a",
+      "baseline_tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "candidate_jit_native_call_stubs": false,
+      "candidate_jit_resumable_calls": true,
+      "candidate_jit_persistent_registers": true,
+      "candidate_jit_native_calls": false,
+      "only": [
+        "folded-literal-trie",
+        "token-phrase"
+      ],
+      "cycles": 3,
+      "jobs": 4,
+      "native_jobs": 18,
+      "native_profile": "o0-incremental",
+      "native_test_threads": "default",
+      "native_rustflag": [],
+      "lock_wait_seconds": 600,
+      "minimum_free_gib": 30
+    },
+    "cases": [
+      {
+        "label": "folded-literal-trie",
+        "project": "fre",
+        "workflow": "folded-literal-trie",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--trap-unsupported-calls",
+          "--std-mir",
+          "--instruction-limit",
+          "100000000000",
+          "--guest-mir-opt-level",
+          "3",
+          "--guest-mir-inline-scale",
+          "8"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-folded-literal-trie-01/summary.json",
+        "reference_report_sha256": "6752f92775367dec9c4d67b93946ded47fb1eda397b7dacd991b3ad5a475ce6f"
+      },
+      {
+        "label": "token-phrase",
+        "project": "fre",
+        "workflow": "token-phrase-allocation",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--instruction-limit",
+          "100000000000",
+          "--allocation-limit",
+          "150000",
+          "--guest-mir-opt-level",
+          "3",
+          "--guest-mir-inline-scale",
+          "8",
+          "--build-tool-opt-level",
+          "0"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-token-phrase-01/summary.json",
+        "reference_report_sha256": "7b77faf88608b34a5adbe7503c179d98ab58abf5f3ee0d54bcd1db2132221daf"
+      }
+    ],
+    "frozen": {
+      "scripts/bench_e2e_workflow.py": "995b85fba76c991e237a9fbcfff0dc9fa1345e352e6acbb3812a08c1f023ce19",
+      "scripts/interpreter.py": "7fe4928e7e57e6cca62a29a59dd0dbefceb05283940e2f5289379d3e3cd0f077",
+      "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+      "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+      "scripts/workflow_measurements.py": "8f28b001e51c118f1e96a37d9232083a3927b5c020374dadfdbbb911a7796a3c",
+      "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+      "scripts/verify_repeated_workflow.py": "cb05aefe7947696950ce3b2f2353aa4929abadd77f8040252d590a69cb935832",
+      "scripts/bench_workflow_corpus.py": "b0562b2f8c2a4bf9188646d294174eec9a05572e0e9bb4775efcf7504dfd9abb",
+      "benchmarks/workflow-corpus.json": "53c845a5a862a3022816c23fea7f8e6d843da2e65b8c3afe48b17d2e4841916d"
+    },
+    "purpose": "Repeated complete-command control comparison; preserve original assertions, wrong edits, cache histories and all regressions. No fastest-native, significance or retention decision is automatic."
+  },
+  "workflows": [
+    {
+      "label": "folded-literal-trie",
+      "report": "results/resumable-e2e-01-folded-literal-trie/summary.json",
+      "report_sha256": "60a8f48ec72b1cd7abab9f832f814e1fde24564c36977eac7c8ab2735001b8ee",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 1.8809306249999977,
+        "baseline": 2.4772304589999976,
+        "candidate": 2.1977581670000177
+      },
+      "cpu_medians": {
+        "native": 2.225771999999999,
+        "baseline": 2.3977860000000213,
+        "candidate": 2.138347999999999
+      },
+      "check_median_seconds": 0.7178164590000051,
+      "cross_cycle_bytecode_identical": false
+    },
+    {
+      "label": "token-phrase",
+      "report": "results/resumable-e2e-01-token-phrase/summary.json",
+      "report_sha256": "2dc511c7d7647e6869e86ee951bb53329f3a5d21037f37b77108005a0295571c",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 2.207758541000004,
+        "baseline": 6.64140441699999,
+        "candidate": 5.714539250000001
+      },
+      "cpu_medians": {
+        "native": 2.557025000000003,
+        "baseline": 6.4339029999999795,
+        "candidate": 5.485048999999986
+      },
+      "check_median_seconds": 0.7802672500000085,
+      "cross_cycle_bytecode_identical": false
+    }
+  ],
+  "status": "All requested workflows completed; compare separate workload groups before selecting a native configuration or runtime direction"
+}

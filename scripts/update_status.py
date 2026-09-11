@@ -9,7 +9,7 @@ CORPUS = 'results/native-controls-corpus-01/summary.json'
 PREVIOUS = 'results/local-memory-forwarding-01/summary.json'
 REPEATED = 'results/paired-repeated-token-01/summary.json'
 COMPUTE = {'folded-literal-trie', 'token-phrase', 'forward-anchored-tls', 'pgrust-sha1-inline8'}
-EXPERIMENT_RUN = 'persistent-e2e-01'
+EXPERIMENT_RUN = 'resumable-e2e-01'
 EXPERIMENT = 'results/' + EXPERIMENT_RUN + '/gate-evaluation.json'
 
 
@@ -19,8 +19,7 @@ def render():
     repeated = json.loads((ROOT / REPEATED).read_text())
     experiment = json.loads((ROOT / EXPERIMENT).read_text())
     experimental_checks = json.loads((ROOT / 'results' / EXPERIMENT_RUN / 'final-verification.json').read_text())['counts']
-    experimental_release = json.loads((ROOT / 'results/persistent-release-01/summary.json').read_text())
-    continuation_release = json.loads((ROOT / 'results/resumable-boundary-release-01/summary.json').read_text())
+    experimental_release = json.loads((ROOT / 'results/resumable-release-01/summary.json').read_text())
     rows = corpus['workflows']
     options = corpus['plan']['options']
     key = options['candidate_tool_key']
@@ -55,15 +54,11 @@ def render():
           for r in experiment['evaluated']], '',
         'Paired change is the median within-edit ratio; command columns are marginal',
         'medians. The targets remain −20% token and −10% folded against b2aa6efe.',
-        'Full-width values now persist across native branches and calls. Token passes',
-        'its primary gate, but folded misses its target. Broader qualification remains',
-        'required. A qualified private-array reuse census found negligible scope;',
-        'the next runtime direction is resumable native Calls over guest frames.',
+        'Calls and Returns now resume across native functions over explicit guest',
+        'frames. Folded passes its target; token misses its target. The combined',
+        'gate fails. Fresh exact-code profiles will guide the next change; seven',
+        'held-out workflows and broader execution qualification remain required.',
         f'[Result and limitations](results/{EXPERIMENT_RUN}/assessment.md).', '',
-        'Initialized VM/TLS frame backing and typed native continuation checks',
-        f"(`fca1e96`, `1264921`) pass {continuation_release['workspace_passed']} workspace tests in debug and release.",
-        'Resumable emission and VM integration remain outstanding; this groundwork',
-        'has no new performance result. [Qualification](results/resumable-boundary-release-01/assessment.md).', '',
         '## Full-corpus baseline', '',
         f"Full-corpus engine `{key[:8]}`, Git `{commit[:7]}`; paired baseline `{options['baseline_tool_key'][:8]}`.",
         'The current change fixes codegen-limit handling; these measurements do not',
@@ -132,8 +127,10 @@ def render():
         ('runtime-experiment', 'results/' + EXPERIMENT_RUN + '/summary.json'),
         ('runtime-gates', EXPERIMENT),
         ('runtime-verification', 'results/' + EXPERIMENT_RUN + '/final-verification.json'),
-        ('release-qualification', 'results/persistent-release-01/summary.json'),
-        ('execution-smoke', 'results/persistent-real-smoke-01/summary.json'),
+        ('release-qualification', 'results/resumable-release-01/summary.json'),
+        ('execution-smoke', 'results/resumable-real-smoke-01/summary.json'),
+        ('cli-qualification', 'results/resumable-cli-01/summary.json'),
+        ('previous-runtime-experiment', 'results/persistent-e2e-01/summary.json'),
         ('previous-runtime-experiment', 'results/native-region-e2e-01/summary.json'),
         ('generated-code-attribution', 'results/persistent-folded-sample-01/generated-attribution.json'),
         ('generated-code-attribution', 'results/persistent-token-sample-01/generated-attribution.json'),

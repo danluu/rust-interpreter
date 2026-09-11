@@ -4,24 +4,20 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Implement resumable native Calls over a guest frame stack.**
-   Full-width register values now persist across native branches and calls.
-   `d664bce` / `e89de7f8` passes 240 debug/release tests. Three real-edit cycles
-   improve token 23.6% paired and folded 4.2%. Token passes its original gate;
-   folded misses 10%, so the options stay experimental. Fresh exact-code
-   profiles retain substantial native-boundary/dispatcher cost. The qualified
-   [private-array census](results/aggregate-reuse-weights-01/assessment.md) finds
-   only 0.0000073% additional folded frame-byte reduction and 0.1233% token;
-   that narrow layout change is parked. Stable guest frames and typed continuation
-   checks (`fca1e96`, `1264921`) now pass 249 debug/release tests. The resumable
-   emitter and VM specialization remain to be connected. Remove whole-function eligibility
-   restrictions using exact guest-frame continuations at unsupported operations,
-   budget tails and preparation boundaries. Preserve initialization and all call,
-   return, TLS and profile semantics; moving setup into native code alone is not
-   a gain. [Implementation plan](benchmarks/experiments/resumable-native-calls/PLAN.md).
-   Keep the original b2aa6efe gates, then require held-out and broader qualification.
-   [Result](results/persistent-e2e-01/assessment.md),
-   [profiling protocol](benchmarks/experiments/bounded-native-calls/PROFILING.md).
+1. **Profile the resumable native-call tradeoff.** Runtime `5574d10`, integration
+   `e1bec3e`, tool `035ef708` passes all 256 debug/release tests, 12 CLI checks
+   and both original artifacts. Its completed three-cycle E2E run improves
+   folded 10.6% paired and token 15.0%, with CPU improving. Only folded passes;
+   the combined gate fails. Native remains faster on both. Qualify profile flag
+   and exact-code attribution, then capture this tool on both originals before
+   selecting the next implementation. Preserve the −20% token/−10% folded gates,
+   all seven held-out workflows and broader native/TLS/fre qualification before
+   retention. [Result](results/resumable-e2e-01/assessment.md),
+   [plan](benchmarks/experiments/resumable-native-calls/PLAN.md).
+   The private-array census is parked: 0.0000073% folded and 0.1233% token scope.
+   The previous tree/stub experiment (`e89de7f8`) improved token 23.6% and folded
+   4.2%; its combined gate also failed. Cross-run differences do not isolate the
+   cause. Required initialization still costs work when native Calls perform it.
 2. **Finish native configuration qualification.** Nine workflows now have three
    real-edit cycles, child CPU, explicit root O0/incremental native settings,
    18 native build jobs, default test concurrency and independent checks.

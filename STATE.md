@@ -7,79 +7,63 @@ Local Git commits are authorized; no remote or push was requested.
 
 ## Active work
 
-Branch `experiment/resumable-native-calls`; current groundwork is `1264921`.
-The latest measured runtime remains `d664bce`, installed tool `e89de7f8`. Bounded full-CFG liveness (`b252588`) and up to three persistent
-u128 register pairs now span native branches and calls. VM continuations spill
-live values before returning, and native children preserve assigned host GPRs.
-Analysis limits decline to the existing emitter. The option stays experimental.
-[Plan and implementation](benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md).
-[Exact ABI](benchmarks/experiments/bounded-native-calls/INTERNAL-ABI.md).
+Branch `experiment/resumable-native-calls`. Runtime `5574d10`, launcher/gate
+integration `e1bec3e`, installed tool `035ef708`. The dedicated custom AArch64
+emitter now executes direct Calls and Returns over initialized guest frames.
+It compiles one body per function, preserves the complete external host ABI,
+reloads per-function persistent registers on transitions and returns the actual
+descendant frame/PC to the VM at unsupported operations or budget/storage/code
+readiness boundaries. Guest recursion does not consume recursive host frames.
+The option is `--jit-resumable-calls`, optionally with persistent registers; it
+excludes the old tree/stub options and stays disabled by default.
 
-- All 240 workspace tests pass in [debug](results/persistent-native-04/summary.json)
-  and [release](results/persistent-release-01/summary.json), one ignored. Existing
-  cache, local-memory and native-call helpers exercise both register modes.
-  New checks cover wide loops, VM fallback, far registers, budgets and x19–x28,
-  SP/LR through 64 native children, on returns and faults. The initial ABI test
-  omitted the valid PC 4 budget continuation; failed `persistent-native-02` is
-  preserved and corrected checks `03`/`04` pass.
-- [Ten CLI checks](results/persistent-cli-01/summary.json) pass, including rejected
-  option combinations. The receipt verifier rechecks both historical workflows
-  and rejects falsely claimed runtime flags. [Build index](benchmarks/tool-builds.json)
-  reconstructs the Git source key and verifies installed binaries.
-- [Both original artifacts](results/persistent-real-smoke-01/assessment.md) pass
-  with all assertions and existing limits. Persistent assignments publish in
-  100 folded / 228 token code instances; three token analyses decline at bounds.
-  Token uses guest random bytes; its independent instruction counts differ and
-  do not prove identical traces. This smoke check is not E2E performance evidence.
+- All **256 workspace tests pass in debug and release**, one ignored:
+  [debug](results/resumable-native-03/summary.json),
+  [release](results/resumable-release-01/summary.json). Seven new execution tests
+  add looping/recursive callees (through depth 1024), deepest VM fallbacks,
+  budgets, preparation boundaries, all required GPRs/SP/LR, warm ordered/alias
+  copies through 257 bytes, and rejected option combinations. Existing native
+  call, error-order, heap-growth and TLS suites now also run the new mode.
+  Profile checks compare full logical per-PC counts, not just output values.
+- [Twelve CLI checks](results/resumable-cli-01/summary.json) pass. Four historical
+  workflow receipts still verify; false claims of the new runtime option are
+  rejected. Launch commands, timing metadata and gates carry the new flag.
+  [Build index](benchmarks/tool-builds.json) reconstructs source and binary hashes.
+- [Both original real artifacts](results/resumable-real-smoke-01/assessment.md)
+  pass all assertions. Folded executes 25,913,904 native Calls with 85,769 native
+  entries versus b2's 43,732,357 entries, with identical logical instructions.
+  Token executes 110,504,850 native Calls. Both stay within the original code
+  budget with zero declined functions. Token uses randomness; independent
+  instruction counts differ. This smoke run is not E2E performance evidence.
 
-The [completed E2E run](results/persistent-e2e-01/assessment.md) contains 168
-commands, 30 edited pairs and 84 identical paired artifacts. All flags, source
-pins and restoration are verified. Token improves 23.6% paired (CPU −23.6%);
-folded improves 4.2% (CPU −3.9%). Token passes its original 20% target, folded
-misses 10%; the combined gate fails. The options remain experimental.
-Marginal command medians: folded native 1.634 / b2 2.472 / candidate 2.373 s;
-token native 1.952 / b2 6.482 / candidate 4.959 s. Native remains faster on both.
+[The completed E2E comparison](results/resumable-e2e-01/assessment.md) verified
+168 commands, 30 edited pairs and 84 identical paired artifacts. Folded improves
+10.6% paired (CPU −11.4%) and token 15.0% (CPU −14.7%) against `b2aa6efe`.
+Folded passes its original 10% target; token misses 20%, so the combined gate
+fails. Native remains faster on both. No default retention. Next qualify profile
+helpers and capture three exact-code windows of this tool on each original
+artifact, then use the measured call/transition costs to select the next change.
+Seven held-out workflows and broader native/TLS/fre qualification have not run
+on this tool; they remain required before retention.
 
-Fresh three-window [folded](results/persistent-folded-sample-01/assessment.md)
-and [token](results/persistent-token-sample-01/assessment.md) captures pass original
-assertions and resolve all generated PCs. Folded has 24.9% VM frame reservation,
-9.0% generated zeroing and 3.6% direct register-array stores. Token has 4.2%,
-12.8% and 7.4%, respectively. These are perturbed shares, not savings estimates.
-The helper rechecks all 12 old/new windows with unchanged counts and hashes;
-its initial tuple-versus-JSON-array comparison failure remains documented.
+[Design/qualification plan](benchmarks/experiments/resumable-native-calls/PLAN.md)
+and [emitter contract](benchmarks/experiments/resumable-native-calls/EMITTER-NEXT.md).
+Groundwork `fca1e96` / `1264921` qualified initialized frame backing and checked
+cursor publication before emitted execution; its 249-test count is historical.
 
-The [additional private-array census](results/aggregate-reuse-weights-01/assessment.md)
-is complete and rules out that narrow optimization: only 3,116 additional bytes
-across 42.5 billion folded direct-call frame bytes (0.0000073%) and 0.1233% for
-token. The isolated observer (`f9bd49c`, tool `71605527`) passes 15 exporter/observer
-tests and uses the exact `e89de7f8` VM. Both fresh exports are byte-identical to
-the original artifacts and pass original assertions. New profiles also pass.
-Three typed weighting tests pass; actual function IDs and every profile operation
-are verified, with exact instruction accounting and no unattributed direct frames.
-All three runs are terminal with return code zero. No production layout changed.
+The preceding E2E result is
+[persistent-e2e-01](results/persistent-e2e-01/assessment.md), tool `e89de7f8`,
+Git `d664bce`: 168 commands, 30 edited pairs, 84 identical artifacts. Token
+improves 23.6% paired and folded 4.2%; only token passes. Marginal command medians
+are folded native 1.634 / b2 2.472 / candidate 2.373 s and token native 1.952 /
+b2 6.482 / candidate 4.959 s. Native remains faster on both in that run.
 
-The first stages of [resumable native Calls](benchmarks/experiments/resumable-native-calls/PLAN.md)
-are now implemented. `fca1e96` moves VM/TLS frames to initialized reusable backing
-with a separate active prefix; 243 workspace tests pass. `1264921` adds a typed
-native continuation boundary that checks backing identity, guest budgets, exact
-call/depth accounting and the actual resulting top frame before publishing live
-frame/memory/register extents. All 249 workspace tests pass in
-[debug](results/resumable-boundary-01/summary.json) and
-[release](results/resumable-boundary-release-01/summary.json), one ignored.
-Nine new tests cover storage and boundary invariants. They model native cursor
-changes; no resumable machine code is emitted yet and no speedup is claimed.
-
-Next connect the dedicated emitter and VM specialization, starting with the
-[entry/Call/Return implementation notes](benchmarks/experiments/resumable-native-calls/EMITTER-NEXT.md). A descendant must resume at its
-actual frame/PC after an unsupported operation, budget tail or preparation
-boundary. Do not map guest recursion onto host-stack recursion. Preserve complete
-initialization, argument/error order, result copies, full-width registers,
-profiling, guest budgets and root/TLS completion. This removes whole-function
-eligibility restrictions; it does not promise to remove frame-clearing costs.
-
-Keep the original b2 gates. Seven held-out workflows and broader native/TLS/fre
-qualification remain required before retention; no unresolved >5% held-out
-regression is allowed. These broader suites have not been run on `e89de7f8`.
+The qualified [private-array census](results/aggregate-reuse-weights-01/assessment.md)
+found only 3,116 additional bytes across 42.5 billion folded direct-call frame
+bytes (0.0000073%), and 0.1233% token. That narrow layout change is parked. No
+production frame layout changed. Broader aggregate reuse still needs padding,
+escape and lifetime proofs; do not resume narrow opcode/frame tweaks without
+new end-to-end evidence.
 
 ## Evidence guiding this experiment
 
