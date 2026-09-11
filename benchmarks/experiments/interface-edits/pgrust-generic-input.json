@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "label": "pgrust-generic-input",
+  "project": "pgrust",
+  "revision": "38d2517d3e09168a8fe222837730d435238ff358",
+  "edit_class": "public-interface-generic",
+  "case": {
+    "package": "hashfn",
+    "file": "crates/common/hashfn/src/lib.rs",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "negative": [
+      "break-hash-multiplier",
+      "h = h.wrapping_mul(0x85eb_ca6b);",
+      "h = h.wrapping_mul(0x85eb_ca6a);"
+    ],
+    "workload": "Generalize a public byte-hash input to borrowed AsRef containers. Existing array and slice callers can instantiate different generic ABIs; all four original hashfn tests remain unchanged.",
+    "edits": [
+      [
+        "generalize-byte-hash-input",
+        "pub fn hash_bytes(k: &[u8]) -> u32 {",
+        "pub fn hash_bytes<K: AsRef<[u8]> + ?Sized>(k: &K) -> u32 {\n    let k = k.as_ref();"
+      ]
+    ],
+    "selections": [
+      [
+        0,
+        1,
+        2,
+        3
+      ]
+    ]
+  }
+}
