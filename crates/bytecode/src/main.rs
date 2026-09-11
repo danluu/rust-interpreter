@@ -8,10 +8,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut engine = Engine::Interpreter;
     let mut profile_path = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
+            "--jit-native-calls" => limits.jit_native_calls = true,
             "--profile" => {
                 if profile_path.is_some() { return Err("duplicate profile path".into()); }
                 profile_path = Some(args.next().ok_or("missing profile path")?);
@@ -89,6 +90,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             result.jit_compiled_functions,
             result.jit_declined_functions
         );
+        eprintln!("jit_tree_entries={} jit_tree_calls={} jit_tree_instructions={} jit_tree_bytes={} jit_tree_operations={} jit_tree_compiled_functions={} jit_tree_declined_functions={} jit_tree_compile_ns={}",
+            result.jit_tree_entries, result.jit_tree_calls, result.jit_tree_instructions,
+            result.jit_tree_bytes, result.jit_tree_operations, result.jit_tree_compiled_functions,
+            result.jit_tree_declined_functions, result.jit_tree_compile_nanos);
     }
     Ok(())
 }

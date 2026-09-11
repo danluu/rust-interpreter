@@ -2,7 +2,7 @@
 
 The storage, metadata and dedicated emitter described here are implemented in
 `linear_memory.rs`, `jit/trees.rs` and `jit/native_calls.rs`. Direct-entry native
-checks pass; the VM integration section remains the next step. These checks do
+checks and opt-in VM integration pass. These checks do
 not establish a runtime or end-to-end performance gain.
 
 ## State already implemented
@@ -111,3 +111,30 @@ return destinations and heap copies. Retained-byte snapshots and canaries check
 copy effects beyond the final live prefix. A native assembly probe verifies
 x19–x22 and SP/LR for success and fault propagation through up to 64 functions.
 [Recorded check](../../../results/bounded-native-emitter-02/summary.json).
+
+## VM integration qualification
+
+`native_execution.rs` connects the option after the ordinary VM Call has copied
+arguments and checked root depth/working memory. Conservative full-tree guards
+can decline without introducing early guest errors; the original push/dispatch
+path remains available. Memory initialization is prepared separately from the
+live extent, then the returned cursor is checked and committed. Register backing
+is retained while active register accounting returns to the caller.
+
+The default engine loop has a separate specialization without this transition.
+Root and TLS completion remain in the VM. Profiles have independent tree block
+counts/endpoints; counters distinguish host tree entries from nested native
+Calls. Total JIT instruction/entry/byte counters include trees; ordinary JIT
+operation/function counters and their tree equivalents are reported separately.
+Code-generation time includes tree analysis/preparation, also reported separately.
+
+Six integration suites cover exact instruction boundaries, tight depth/memory
+limits, insufficient code capacity, ordinary fallback, cold branches/recursion,
+the shared call-copy cases and TLS callback descendants. The C-allocator fixture
+exposed a missing heap-presence classification for C allocation opcodes; those
+now enable heap addressing in both regular regions and native returns. The first
+fixture used an invalid errno pointer and was corrected without weakening the
+expected behavior. The failed check remains recorded as `bounded-native-vm-02`;
+`bounded-native-vm-03` passes all 225 workspace tests (one ignored). Seven CLI
+checks validate the new option and invalid combinations. Release/real workflow
+qualification remains separate.

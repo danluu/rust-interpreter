@@ -57,3 +57,13 @@ checked dependency readiness, ABI copies/zeroing, return truncation and named
 fault propagation. Direct-entry differential checks and a 64-frame callee-saved
 register/stack probe pass; 219 workspace tests pass in total. The normal VM path
 is not connected yet, and no new performance result is claimed.
+
+### Opt-in VM native calls
+
+Connected complete trees through `Limits.jit_native_calls` and CLI
+`--jit-native-calls`; added separate tree profiling/stats and candidate-only
+benchmark forwarding. Whole-tree readiness/limit declines preserve VM fallback;
+root/TLS completion stays in the VM. Fixed heap detection for C allocation
+operations. All 225 workspace tests and seven CLI checks pass. Added optional
+release tool publication after the recorded workspace check. No speedup result
+yet; the path remains experimental and disabled by default.

@@ -74,6 +74,10 @@ impl LinearMemory {
 
     pub(crate) fn initialized_len(&self) -> usize { self.initialized.len() }
 
+    /// Raw access to initialized backing, including retained non-live bytes.
+    /// A native caller must still enforce its separate guest live extent.
+    pub(crate) fn prepared_mut_ptr(&mut self) -> *mut u8 { self.initialized.as_mut_ptr() }
+
     /// Commit a native call tree's final prefix after checking its cursor.
     /// All elements are initialized, but callers must separately establish the
     /// guest initialization/copy semantics for any newly visible range.

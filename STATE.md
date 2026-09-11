@@ -35,15 +35,19 @@ that tool. The broader 47,004 native differential commands, TLS checks and
 ## Next action
 
 Implement the [bounded native call-tree experiment](benchmarks/experiments/bounded-native-calls/PLAN.md).
-The `experiment/bounded-native-calls` branch now implements initialized storage,
-bounded metadata and a dedicated direct AArch64 Call/Return emitter. All 219
-workspace tests pass (one ignored), including complete-tree differential checks,
-overlapping/heap copies, original fault identities and a 64-frame ABI probe.
-[Check evidence](results/bounded-native-emitter-02/summary.json).
-The VM transition is still pending; there is no new speedup measurement or
-installed release tool. Next connect the explicit experimental option to VM
-Call, preserve guest limits/profile accounting, then run real end-to-end
-comparisons against b2aa6efe. [Internal ABI](benchmarks/experiments/bounded-native-calls/INTERNAL-ABI.md).
+The `experiment/bounded-native-calls` branch now executes complete native trees
+behind `--engine jit --jit-native-calls`. Default execution remains separate.
+All 225 workspace tests pass (one ignored), including VM limit/fallback/profile
+boundaries, TLS descendants and the standalone 64-frame ABI/copy checks.
+[Check evidence](results/bounded-native-vm-03/summary.json). Seven CLI checks pass.
+The failed `bounded-native-vm-02` check preserves an invalid-errno test fixture;
+03 corrects its setup and passes. C allocation operations now enable JIT heap
+addressing. No new performance result or installed release tool is claimed yet.
+
+Next run the recorded full-workspace release check with tool installation, then
+three-cycle folded/token real edit/build/test comparisons against b2aa6efe using
+`--candidate-jit-native-calls`. Preserve predeclared gates and run held-out
+workflows before retention. [Internal ABI](benchmarks/experiments/bounded-native-calls/INTERNAL-ABI.md).
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -58,8 +62,8 @@ regression. Broader execution qualification is required for production retention
 
 ## Process and ownership
 
-All recent supervisors/controllers finished with return code zero, including
-`bounded-native-emitter-01` (217 passes) and `bounded-native-emitter-02` (219).
+Recent supervisors/controllers are terminal. `bounded-native-vm-01` passed 224
+tests; `02` failed the new fixture; `03` passed all 225.
 Their terminal receipts remain under `.work/experiments`; no task process is
 currently running. Re-check actual identities before treating old receipts as live.
 Detailed pointers/pins are in `.work/continuation-state.json`.

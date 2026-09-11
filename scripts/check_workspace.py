@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import time
 
@@ -23,13 +24,71 @@ def write(path, value):
     temporary.replace(path)
 
 
+def install_tool(target, env, work, status, receipt, frozen):
+    """Build after passing release tests and publish an immutable local tool."""
+    command = ['cargo', '+nightly-2026-09-08', 'build', '--release', '--locked', '--offline',
+        '--jobs', '2', '--target-dir', str(target), '-p', 'rust-interp-bytecode', '-p', 'rust-interp-mir-export']
+    with (work / 'build.log').open('x') as log:
+        child = subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL,
+                                 stdout=log, stderr=subprocess.STDOUT)
+        status.update(status='building release tool', child_pid=child.pid, command=command, child_started_at=time.time())
+        write(receipt, status)
+        code = child.wait()
+    if code or any(sha(ROOT / p) != digest for p, digest in frozen.items()):
+        raise RuntimeError('tool build failed or frozen source changed')
+    paths = [ROOT / p for p in ['Cargo.toml', 'Cargo.lock']]
+    for crate in ['bytecode', 'mir-export']:
+        paths += sorted((ROOT / 'crates' / crate).rglob('*.rs'))
+        paths.append(ROOT / 'crates' / crate / 'Cargo.toml')
+    digest = hashlib.sha256()
+    for p in paths:
+        digest.update(str(p.relative_to(ROOT)).encode() + b'\0' + p.read_bytes())
+    key = digest.hexdigest()
+    directory = ROOT / '.work/interpreter-tools' / key
+    binaries = {name: sha(target / 'release' / name) for name in ['rust-interp-vm', 'rust-interp-mir-export']}
+    # Lock ordering matches the workflow driver: benchmark lock, then tool lock.
+    with (ROOT / '.work/interpreter-tools.lock').open('a') as publication:
+        fcntl.flock(publication, fcntl.LOCK_EX)
+        if (directory / 'ready.json').exists():
+            from interpreter import installed_tools
+            installed_tools(key)
+            if json.loads((directory / 'ready.json').read_text()) != binaries:
+                raise RuntimeError('same source key produced different binaries; existing tool preserved')
+        else:
+            directory.mkdir(exist_ok=False)
+            for name in binaries:
+                shutil.copy2(target / 'release' / name, directory / name)
+            probe = subprocess.run([str(directory / 'rust-interp-mir-export'), '--rust-interp-capabilities'],
+                env=env, capture_output=True, text=True, check=True, timeout=10)
+            capabilities = json.loads(probe.stdout)
+            if capabilities.get('schema_version') != 1:
+                raise RuntimeError('unknown exporter capability schema')
+            capabilities.update(tool_key=key, exporter_sha256=binaries['rust-interp-mir-export'])
+            write(directory / 'capabilities.json', capabilities)
+            plan = json.loads((work / 'plan.json').read_text())
+            compiler = subprocess.run(['rustc', '+nightly-2026-09-08', '-vV'], env=env,
+                capture_output=True, text=True, check=True, timeout=10).stdout
+            write(directory / 'source.json', dict(tool_key=key, source_commit=plan['source_commit'],
+                files={str(p.relative_to(ROOT)): sha(p) for p in paths},
+                source_archive=plan['source_archive'], toolchain='nightly-2026-09-08',
+                compiler=compiler,
+                target='aarch64-apple-darwin', test_plan_sha256=sha(work / 'plan.json'),
+                key_algorithm='legacy source-only SHA256 with pathlib path ordering; compiler identity recorded separately'))
+            write(directory / 'ready.json', binaries)
+    return dict(tool_key=key, binaries=binaries, build_log=str((work / 'build.log').relative_to(ROOT)),
+                build_log_sha256=sha(work / 'build.log'))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--package', action='append')
     parser.add_argument('--release', action='store_true')
+    parser.add_argument('--install-tool', action='store_true', help='publish a release tool after successful full-workspace release tests')
     parser.add_argument('--wait-for-lock', type=int, default=600)
     args = parser.parse_args()
+    if args.install_tool and (not args.release or args.package):
+        parser.error('--install-tool requires --release and the full workspace')
     if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..']:
         parser.error('run-id must be a directory name')
     if not 0 <= args.wait_for_lock <= 3600:
@@ -56,6 +115,8 @@ def main():
                 raise
             time.sleep(1)
     paths = [ROOT / p for p in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/check_workspace.py']]
+    if args.install_tool:
+        paths.append(ROOT / 'scripts/interpreter.py')
     paths += [p for p in (ROOT / 'crates').rglob('*') if p.is_file() and
               (p.suffix == '.rs' or p.name == 'Cargo.toml')]
     frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
@@ -104,6 +165,9 @@ def main():
             workspace_passed=passed, workspace_ignored=sum(t['ignored'] for t in tests), tests=tests,
             raw_log=str(log.relative_to(ROOT)), raw_log_sha256=sha(log),
             source_archive=str(archive.relative_to(ROOT)), frozen=frozen, performance_measurement=False)
+        write(work / 'test-summary.json', summary)
+        if success and args.install_tool:
+            summary['installed_tool'] = install_tool(target, env, work, status, receipt, frozen)
         output = ROOT / 'results' / args.run_id
         output.mkdir(exist_ok=False)
         write(output / 'summary.json', summary)

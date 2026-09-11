@@ -1,5 +1,4 @@
-//! Experimental complete acyclic native call trees. No VM transition is wired
-//! yet: direct-entry differential tests exercise this ABI before integration.
+//! Complete acyclic native call trees, selected by the experimental VM option.
 use super::*;
 use super::trees::{Plan, analyze};
 
@@ -31,6 +30,8 @@ pub(super) struct State {
     pub operations: usize,
     pub compiled: usize,
     pub declined: usize,
+    pub compile_nanos: u128,
+    profile_pending: Vec<usize>,
 }
 pub(super) struct Entry {
     wrapper: usize,
@@ -56,17 +57,23 @@ impl<'a> Jit<'a> {
     /// before publishing any parent. Immutable entries share the region arena.
     pub(crate) fn ensure_tree(&mut self, id: usize) -> Result<Option<Plan>, String> {
         if self.trees.is_none() {
+            let started = std::time::Instant::now();
             let n = self.program.functions.len();
             self.trees = Some(State { plans: analyze(self.program), prepared: vec![false; n],
                 entries: (0..n).map(|_| None).collect(), bytes: 0, operations: 0,
-                compiled: 0, declined: 0 });
+                compiled: 0, declined: 0, compile_nanos: 0, profile_pending: vec![] });
+            let elapsed = started.elapsed().as_nanos();
+            self.compile_nanos += elapsed;
+            self.trees.as_mut().unwrap().compile_nanos += elapsed;
         }
         let tree = self.trees.as_ref().unwrap();
         let Ok(plan) = tree.plans[id] else { return Ok(None); };
         if !tree.prepared[id] {
             let started = std::time::Instant::now();
             let prepared = self.prepare_tree_dependencies(id);
-            self.compile_nanos += started.elapsed().as_nanos();
+            let elapsed = started.elapsed().as_nanos();
+            self.compile_nanos += elapsed;
+            self.trees.as_mut().unwrap().compile_nanos += elapsed;
             prepared?;
         }
         Ok(self.trees.as_ref().unwrap().entries[id].as_ref().map(|_| plan))
@@ -110,8 +117,24 @@ impl<'a> Jit<'a> {
             tree.compiled += 1;
             tree.bytes += bytes;
             tree.operations += self.program.functions[id].code.len();
+            if self.profiled { tree.profile_pending.push(id); }
         }
         Ok(())
+    }
+
+    pub(crate) fn sync_tree_profile(&mut self, profile: &mut crate::ExecutionProfile) {
+        let Some(tree) = &mut self.trees else { return; };
+        for id in tree.profile_pending.drain(..) {
+            let ends = &tree.entries[id].as_ref().unwrap().ends;
+            for (out, end) in profile.functions[id].jit_tree_block_ends.iter_mut().zip(ends) {
+                *out = end.unwrap_or(0);
+            }
+        }
+    }
+
+    pub(crate) fn tree_stats(&self) -> (usize, usize, usize, usize, u128) {
+        self.trees.as_ref().map_or((0, 0, 0, 0, 0), |t|
+            (t.bytes, t.operations, t.compiled, t.declined, t.compile_nanos))
     }
 
     fn emit_tree(&self, id: usize, word_budget: usize) -> Result<Option<Staged<'a>>, EmitError> {

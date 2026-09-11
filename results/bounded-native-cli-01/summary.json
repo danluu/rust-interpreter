@@ -1,0 +1,56 @@
+{
+  "checks": [
+    {
+      "script": "scripts/interpreter.py",
+      "check": "help",
+      "returncode": 0
+    },
+    {
+      "script": "scripts/bench_e2e_workflow.py",
+      "check": "help",
+      "returncode": 0
+    },
+    {
+      "script": "scripts/bench_workflow_corpus.py",
+      "check": "help",
+      "returncode": 0
+    },
+    {
+      "script": "scripts/check_workspace.py",
+      "check": "help",
+      "returncode": 0
+    },
+    {
+      "script": "scripts/interpreter.py",
+      "arguments": [
+        "--package",
+        "unused",
+        "--entry",
+        "unused",
+        "--jit-native-calls"
+      ],
+      "check": "invalid-option combination",
+      "returncode": 2
+    },
+    {
+      "script": "scripts/bench_e2e_workflow.py",
+      "arguments": [
+        "--candidate-jit-native-calls"
+      ],
+      "check": "invalid-option combination",
+      "returncode": 2
+    },
+    {
+      "script": "scripts/check_workspace.py",
+      "arguments": [
+        "--run-id",
+        "unused",
+        "--install-tool"
+      ],
+      "check": "invalid-option combination",
+      "returncode": 2
+    }
+  ],
+  "status": "passed",
+  "performance_measurement": false
+}

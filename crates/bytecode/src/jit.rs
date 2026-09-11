@@ -1,6 +1,7 @@
 //! A small, direct AArch64 emitter for bytecode regions and their branch exits.
 //!
-//! The existing machine still owns calls, region dispatch, and guest allocations.
+//! The machine owns region dispatch and guest allocations. An explicit
+//! experiment also compiles complete bounded native call trees.
 //! Generated leaf functions receive current storage pointers on every entry;
 //! they never retain pointers across a VM call or allocation. Unsupported
 //! operations remain in our own interpreter. No assembler or codegen library
@@ -285,7 +286,8 @@ impl<'a> Jit<'a> {
     pub fn new(program: &'a Program, profiled: bool, capacity: usize) -> Result<Self, String> {
         if capacity > MAX_CODE_BYTES { return Err("JIT code budget exceeds supported range".into()); }
         let uses_heap = !program.statics.is_empty() || program.functions.iter().flat_map(|f| &f.code).any(|op| {
-            matches!(op, Op::Allocate { .. } | Op::Deallocate { .. } | Op::Reallocate { .. })
+            matches!(op, Op::Allocate { .. } | Op::Deallocate { .. } | Op::Reallocate { .. }
+                | Op::CAllocate { .. } | Op::CReallocate { .. } | Op::CAlignedAllocate { .. })
         });
         Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
             prepared: vec![false; program.functions.len()],

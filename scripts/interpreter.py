@@ -168,6 +168,7 @@ def main():
     parser.add_argument('--instruction-limit',type=int,help='maximum VM instructions (default: 100000000)')
     parser.add_argument('--allocation-limit',type=int,help='maximum live guest allocations, independent of byte memory (0..1000000; default: 100000)')
     parser.add_argument('--engine',choices=['interpreter','jit'],default='interpreter')
+    parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
     parser.add_argument('--inline-leaves',action='store_true',help='experimental bounded bytecode leaf inlining at export; intended for JIT comparisons')
@@ -178,6 +179,7 @@ def main():
     parser.add_argument('--test-body',action='store_true',help='invoke a function from the library unit-test target directly; libtest attributes are not implemented')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    if args.jit_native_calls and args.engine != 'jit':parser.error('--jit-native-calls requires --engine=jit')
     if not 1<=args.jobs<=256:parser.error('--jobs must be in 1..256')
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
@@ -210,7 +212,7 @@ def main():
     if args.trap_unsupported_calls:require_export_option(tools,key,'trap-unsupported-calls')
     if args.run_try_callbacks:require_export_option(tools,key,'run-try-callbacks')
     timings['tools_seconds']=time.perf_counter()-stage
-    if stats:timings.update(tool_key=key,engine=args.engine,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
+    if stats:timings.update(tool_key=key,engine=args.engine,jit_native_calls=args.jit_native_calls,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
     std=None
     if args.std_mir:
         from std_mir import checked_std_mir
@@ -325,6 +327,7 @@ def main():
     values=args.arguments
     if values and values[0]=='--':values=values[1:]
     vm_command=[str(tools/'rust-interp-vm'),'--engine',args.engine]
+    if args.jit_native_calls:vm_command.append('--jit-native-calls')
     if args.instruction_limit is not None:vm_command+=['--instruction-limit',str(args.instruction_limit)]
     if args.allocation_limit is not None:vm_command+=['--allocation-limit',str(args.allocation_limit)]
     if stats:timings['allocation_limit']=args.allocation_limit if args.allocation_limit is not None else 100_000

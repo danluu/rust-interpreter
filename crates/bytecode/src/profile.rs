@@ -19,6 +19,9 @@ pub struct FunctionProfile {
     pub jit_blocks: Vec<u64>,
     /// Exclusive end PC for each compiled block; zero where no block starts.
     pub jit_block_ends: Vec<usize>,
+    /// Complete native trees have different block boundaries from VM regions.
+    pub jit_tree_blocks: Vec<u64>,
+    pub jit_tree_block_ends: Vec<usize>,
 }
 
 impl ExecutionProfile {
@@ -32,6 +35,8 @@ impl ExecutionProfile {
                 interpreted: vec![0; f.code.len()],
                 jit_blocks: vec![0; f.code.len()],
                 jit_block_ends: vec![0; f.code.len()],
+                jit_tree_blocks: vec![0; f.code.len()],
+                jit_tree_block_ends: vec![0; f.code.len()],
             }).collect(),
         }
     }

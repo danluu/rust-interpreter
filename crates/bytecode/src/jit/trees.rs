@@ -44,7 +44,7 @@ pub(super) struct Requirements {
 }
 
 impl Plan {
-    pub fn requirements(&self, active_memory: usize, active_registers: usize, active_frames: usize)
+    pub(super) fn requirements(&self, active_memory: usize, active_registers: usize, active_frames: usize)
         -> Option<Requirements>
     {
         let root_base = active_memory.checked_add(self.frame_align - 1)? & !(self.frame_align - 1);

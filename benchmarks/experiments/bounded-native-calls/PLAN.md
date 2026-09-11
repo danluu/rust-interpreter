@@ -1,10 +1,12 @@
 # Bounded native call-tree experiment
 
-Status: initialized storage, conservative metadata and the complete direct
-AArch64 tree emitter are implemented on `experiment/bounded-native-calls`.
-[219 workspace tests pass](../../../results/bounded-native-emitter-02/summary.json),
-including direct native-entry differential checks and a 64-frame ABI probe.
-VM integration and real edit/build/test performance measurements remain pending.
+Status: the complete native call-tree path is connected behind
+`--engine jit --jit-native-calls` (or `Limits.jit_native_calls`).
+[225 workspace tests pass](../../../results/bounded-native-vm-03/summary.json).
+The launcher forwards this runtime option without changing the MIR workspace
+identity. Paired benchmarks enable it only with `--candidate-jit-native-calls`.
+An optimized tool build and real edit/build/test measurements are next; this
+experimental branch is not a retained performance improvement yet.
 
 The current implementation caps speculative frame span at 256 KiB, register
 storage at 65,536 u128 slots and native nesting at 64 frames. These are

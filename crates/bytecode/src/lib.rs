@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 extern crate self as rust_interp_bytecode;
 mod heap;
 mod linear_memory;
+mod native_execution;
 mod jit;
 mod float;
 mod profile;
@@ -369,6 +370,8 @@ pub struct Limits {
     pub frames: usize,
     /// Native code budget, at most 16 MiB. Declined functions use our interpreter.
     pub jit_code_bytes: usize,
+    /// Experimental complete acyclic native call trees; requires Engine::Jit.
+    pub jit_native_calls: bool,
 }
 impl Default for Limits {
     fn default() -> Self {
@@ -378,6 +381,7 @@ impl Default for Limits {
             instructions: 100_000_000,
             frames: 4096,
             jit_code_bytes: jit::MAX_CODE_BYTES,
+            jit_native_calls: false,
         }
     }
 }
@@ -395,6 +399,14 @@ pub struct Execution {
     pub jit_instructions: u64,
     /// Host-to-generated-code calls; one call can execute several linked blocks.
     pub jit_entries: u64,
+    pub jit_tree_entries: u64,
+    pub jit_tree_calls: u64,
+    pub jit_tree_instructions: u64,
+    pub jit_tree_bytes: usize,
+    pub jit_tree_operations: usize,
+    pub jit_tree_compiled_functions: usize,
+    pub jit_tree_declined_functions: usize,
+    pub jit_tree_compile_nanos: u128,
 }
 
 struct Frame {
@@ -593,12 +605,14 @@ fn execute_observed<const PROFILE: bool>(
     // Select once at entry. Each loop specialization can omit the other
     // engine's transition path and its temporaries completely.
     match engine {
-        Engine::Interpreter => execute_impl::<PROFILE, false>(program, arguments, limits, profile),
-        Engine::Jit => execute_impl::<PROFILE, true>(program, arguments, limits, profile),
+        Engine::Interpreter if limits.jit_native_calls => Err("native calls require the JIT engine".into()),
+        Engine::Interpreter => execute_impl::<PROFILE, false, false>(program, arguments, limits, profile),
+        Engine::Jit if limits.jit_native_calls => execute_impl::<PROFILE, true, true>(program, arguments, limits, profile),
+        Engine::Jit => execute_impl::<PROFILE, true, false>(program, arguments, limits, profile),
     }
 }
 
-fn execute_impl<const PROFILE: bool, const USE_JIT: bool>(
+fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool>(
     program: &Program,
     arguments: &[u128],
     limits: Limits,
@@ -615,6 +629,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool>(
     if let Some(jit) = &mut jit { jit.compile_nanos = started.elapsed().as_nanos(); }
     let mut jit_instructions = 0;
     let mut jit_entries = 0;
+    let mut native = if NATIVE_CALLS { Some(native_execution::Context::new(profile.as_deref_mut())) } else { None };
     if limits.frames == 0 {
         return Err("interpreter call-depth limit exceeded".into());
     }
@@ -1029,6 +1044,21 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool>(
                 if needs_register_zeroes[callee_id] {
                     registers[register_base..register_end].fill(0);
                 }
+                if NATIVE_CALLS {
+                    // The ordinary root Call has already reserved/initialized
+                    // its frame, copied arguments and checked depth in VM order.
+                    // A declined tree continues through the existing push path.
+                    if let Some(run) = native.as_mut().unwrap().run::<PROFILE>(
+                        jit.as_mut().unwrap(), callee_id, return_address, base, register_base,
+                        frames.len(), limits.instructions - steps, &limits,
+                        &mut memory, &mut registers, &mut profile)? {
+                        steps += run;
+                        jit_instructions += run;
+                        jit_entries += 1;
+                        register_bytes = register_base * 16;
+                        continue;
+                    }
+                }
                 frames.push(Frame {
                     function: callee_id,
                     pc: 0,
@@ -1070,12 +1100,19 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool>(
             }
         }
     };
+    let tree_stats = jit.as_ref().map_or((0, 0, 0, 0, 0), |j| j.tree_stats());
     Ok(Execution { value, instructions: steps, peak_memory: memory.peak,
         jit_bytes: jit.as_ref().map_or(0, |j| j.bytes),
         jit_operations: jit.as_ref().map_or(0, |j| j.operations),
         jit_compiled_functions: jit.as_ref().map_or(0, |j| j.compiled_functions),
         jit_declined_functions: jit.as_ref().map_or(0, |j| j.declined_functions),
-        jit_compile_nanos: jit.as_ref().map_or(0, |j| j.compile_nanos), jit_instructions, jit_entries })
+        jit_compile_nanos: jit.as_ref().map_or(0, |j| j.compile_nanos), jit_instructions, jit_entries,
+        jit_tree_entries: native.as_ref().map_or(0, |n| n.entries),
+        jit_tree_calls: native.as_ref().map_or(0, |n| n.calls),
+        jit_tree_instructions: native.as_ref().map_or(0, |n| n.instructions),
+        jit_tree_bytes: tree_stats.0, jit_tree_operations: tree_stats.1,
+        jit_tree_compiled_functions: tree_stats.2, jit_tree_declined_functions: tree_stats.3,
+        jit_tree_compile_nanos: tree_stats.4 })
 }
 
 #[inline(always)]
