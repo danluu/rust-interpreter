@@ -56,7 +56,9 @@ Status: the harness and independent snapshot verifier now support `--case-file`.
 Two specifications pass input checks and 25 malformed/tampered case rejections;
 135 synthetic receipt rows validate the fifteen-cycle rotation. Ten IO-failure
 checks pass, with actual children drained before restoration. Historical bulk
-primary receipts still verify. No Rust interface qualification has run yet.
+primary receipts still verify. The [first pgrust interface qualification](../../../results/interface-pgrust-qualification-01/assessment.md)
+now passes nine primary commands, three checks and six matching paired artifacts.
+Nushell interface qualification and repeated interface measurements are pending.
 
 Run one pgrust interface cycle first to exercise the integrated source/receipt
 changes cheaply. Then retry the missing original Nushell held-out workflow under

@@ -118,6 +118,20 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Item 2.5 now has pinned generic-interface case specifications and a tracked
+  `--case-file` harness with independent reconstruction of source states, test
+  selection and mode order. [Pgrust qualification](../results/interface-pgrust-qualification-01/assessment.md)
+  passes all four original tests and wrong-edit controls after generalizing the
+  hash API; nine primary commands, three checks and six paired artifacts verify.
+  This is one qualification cycle, not an interface-performance conclusion.
+  Nushell interface execution and repeated interface measurements remain pending.
+- A real disk-full failure exposed unsafe benchmark recovery. The original
+  [partial held-out run](../results/resumable-bulk-heldout-failure-01/assessment.md)
+  is preserved and its source restored. Atomic source/receipt publication,
+  staged restoration and waited-for children pass ten failure-injection checks,
+  including three real child processes. The missing Nushell case is being
+  retried separately; no unrelated process or cache was changed.
+
 - The current resumable/bulk engine (`001065a` / `78e60cdd`) independently passes
   [47,004 mixed validation commands](../results/resumable-bulk-native-01/assessment.md),
   [245 TLS/destructor commands](../results/resumable-bulk-tls-01/assessment.md) and

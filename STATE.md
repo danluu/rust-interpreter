@@ -61,18 +61,26 @@ and three check records. Retry only the missing case with a new run/cache identi
 The harness now stages source restoration before mutation, publishes source and
 JSON atomically, waits/drains children on receipt failures and checks free space
 before commands. [Ten failure-injection checks](results/workflow-io-faults-01/summary.json)
-pass using three real child processes. Actual integrated Rust qualification is
-next: one pgrust interface cycle, then the missing Nushell workflow. Runtime/tool options and failed primary gates are unchanged.
+pass using three real child processes. [One actual pgrust interface cycle](results/interface-pgrust-qualification-01/assessment.md)
+now passes all original tests, negative controls and independent source/artifact
+verification: nine primary commands, three checks and six paired artifacts.
+The missing original Nushell case is running as `resumable-bulk-heldout-retry-02`
+with fresh caches and unchanged tool/control options. Retry01 was rejected for
+a mistyped tool key before compilation; its failed command is preserved. Runtime/tool options and failed primary gates are unchanged.
 
 The next workflow check is [generic interface edits](benchmarks/experiments/interface-edits/PLAN.md):
 pgrust's byte-hash API becomes generic over borrowed `AsRef<[u8]>`, and Nushell's
 list-type constructor accepts `Into<Type>`. All original test source is preserved.
 Two pinned case files, a bounded public case loader and input-check helper are
 committed in `38962af`. The input helper now passes two valid specifications and
-25 malformed/tampered cases; no Rust interface edit has run yet. The harness
+25 malformed/tampered cases. The first Rust interface qualification now passes. The harness
 and independent verifier now integrate frozen case snapshots and reconstruct
-all source states/selections/orders. Qualify one pgrust cycle, retry the missing
-held-out case, qualify Nushell, then fifteen cycles of each single interface edit.
+all source states/selections/orders. Finish the missing held-out case, qualify
+Nushell, then fifteen cycles of each single interface edit. The
+[recovery assessment plan](benchmarks/experiments/resumable-native-calls/HELDOUT-RECOVERY.md)
+keeps the failed run and two harness histories distinct; its new driver is
+prepared but cannot run until the retry is terminal. Current corpus, interpreter,
+verifier and Rust sources are frozen while that benchmark runs.
 
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.
