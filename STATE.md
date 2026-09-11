@@ -244,11 +244,18 @@ free space was about10.02GiB afterward. This is insufficient for a new large
 cold history plus the eight-GiB guard.
 
 [Reversible cache archival](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
-is the next resource step: qualify a complete byte-preserving compressed archive
-and recovery before retiring any exact completed public cache. This is a design,
-not an implemented or executed mechanism. It must preserve query metadata,
-private caches, installed tools, snapshots and all historical evidence. Do not
-start the cold runs before adequate space is available or change their gates.
+is implemented and passes 40 rejection checks plus four coordinator scenarios,
+including restoration after an interrupted retirement and preservation of two
+observed Cargo root attributes. The first actual completed native archive,
+`interface-nushell-native-cache-archive-02`, preserves 5,012 paths/4,988 payloads
+in a 1.09 GiB archive. Every payload and all 90 external bytecode snapshots
+verify. Available space rose by 1.19 GiB to about 10.92 GiB; logical byte savings
+are not physical reclamation on APFS. First fixture/preparation failures remain
+recorded. Extend exact provenance to completed check/custom targets next; their
+recorded commands, unique cache namespaces and executed snapshots must verify
+before allowing archival. Preserve query metadata in archives, private caches,
+installed tools and all historical evidence. Do not start cold runs before
+adequate space is available or change their gates.
 The small Ruff/Nushell object inventories remain unapplied and are bound to the
 older cleanup driver; using either now would require a fresh reviewed inventory.
 

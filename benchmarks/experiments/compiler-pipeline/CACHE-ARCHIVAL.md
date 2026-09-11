@@ -56,19 +56,24 @@ holds the lock. Do not lower the eight-GiB command guard, alter the cold sample
 count or treat this logistical work as a compiler speedup.
 
 Status: implemented by `scripts/archive_workflow_cache.py` and
-`scripts/cache_archive.py`. [Qualification03](../../../results/cache-archive-qualification-03/assessment.md)
-passes37 rejection checks, hardlink/mode/access/modification-time restoration
-and four coordinator cases, including recovery after1,000 retired fixture paths.
-The first real public native preparation refused Cargo root-directory xattrs
-before any archive or retirement. Preserve that refusal; add and qualify exact
-round-trip support for the two observed root markers before retrying. No real
-cache has yet been retired by this mechanism.
+`scripts/cache_archive.py`. [Qualification04](../../../results/cache-archive-qualification-04/assessment.md)
+passes 40 rejection checks, hardlink/mode/access/modification-time restoration
+and four coordinator cases, including recovery after 1,000 retired fixture paths.
+It also preserves the two exact Cargo root-directory attributes that caused
+the first real preparation to refuse. That refusal remains recorded.
+[The first actual archive](../../../results/interface-nushell-native-cache-archive-02/assessment.md)
+preserves 5,012 paths/4,988 unique payloads in 1.09 GiB. Every payload and all
+90 external executed snapshots verify. Observed free space rose by 1.19 GiB;
+logical byte differences do not predict physical reclamation on APFS.
 
 The bounded format uses ZIP/DEFLATE payloads and a JSON manifest, storing each
 inode's bytes once. It preserves regular-file/directory permission bits,
 access/modification times and internal hardlink groups. It refuses special
-files, external hardlinks, file flags and xattrs; inodes, ctimes, birth times and
-ACLs are not recreated. ZIP entry names are never used as extraction paths.
+files, external hardlinks, file flags and other xattrs. On macOS, the root's
+`com.apple.fileprovider.ignore#P` and
+`com.apple.metadata:com_apple_backup_excludeItem` values are preserved; these
+attributes below the root are refused. Inodes, ctimes, birth times and ACLs
+are not recreated. ZIP entry names are never used as extraction paths.
 
 Use a unique archive ID to prepare the exact completed workflow's native target:
 

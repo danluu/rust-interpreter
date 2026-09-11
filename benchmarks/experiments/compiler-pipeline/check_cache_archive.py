@@ -20,6 +20,12 @@ from reclaim_workflow_objects import no_open_files, sha
 from verify_repeated_workflow import require
 from workflow_io import write_json
 
+ROOT_ATTRIBUTES = {
+    'com.apple.fileprovider.ignore#P': '31',
+    'com.apple.metadata:com_apple_backup_excludeItem':
+        '62706c69737430305f1011636f6d2e6170706c652e6261636b75706408000000000000010100000000000000010000000000000000000000000000001c',
+}
+
 
 def fixture(target, many=False):
     target.mkdir(parents=True, mode=0o700)
@@ -34,6 +40,8 @@ def fixture(target, many=False):
     if many:
         for index in range(1001):
             (target / f'object-{index:04d}.o').write_bytes(str(index).encode())
+    if sys.platform == 'darwin':
+        archive.set_root_xattrs(target, ROOT_ATTRIBUTES)
     timestamp = 1_700_000_000_123456789
     for path in sorted(target.rglob('*'), key=lambda p: len(p.parts), reverse=True):
         os.utime(path, ns=(timestamp - 100, timestamp))
@@ -80,6 +88,8 @@ def main():
         archive.unchanged(original, manifest)
         restored = raw / 'restored'
         archive.restore(packed, manifest, restored)
+        require(manifest.get('root_xattrs') == (ROOT_ATTRIBUTES if sys.platform == 'darwin' else {}),
+                'root attributes were not captured')
         for group in manifest['groups']:
             restored_info = archive.information(restored / group['paths'][0])
             require(restored_info['atime_ns'] == group['atime_ns'] and
@@ -116,6 +126,12 @@ def main():
         altered = deepcopy(manifest)
         altered['groups'][0]['bytes'] = archive.LIMIT_BYTES + 1
         rejects('oversized declared payload', lambda: archive.validate(altered))
+        altered = deepcopy(manifest)
+        altered['root_xattrs'] = {'com.apple.quarantine': '00'}
+        rejects('unsupported root attribute', lambda: archive.validate(altered))
+        altered = deepcopy(manifest)
+        altered['root_xattrs'] = {'com.apple.fileprovider.ignore#P': 'not-hex'}
+        rejects('invalid root attribute encoding', lambda: archive.validate(altered))
 
         with zipfile.ZipFile(packed) as source:
             entries = [(name, source.read(name)) for name in source.namelist()]
@@ -166,6 +182,9 @@ def main():
         else:
             subprocess.run(['/usr/bin/xattr', '-d', 'rust_interp.archive_fixture',
                             str(special / 'metadata.json')], check=True)
+        if sys.platform == 'darwin':
+            archive.set_root_xattrs(special / 'empty', ROOT_ATTRIBUTES)
+            rejects('root marker below the root', lambda: archive.snapshot(special))
         added = raw / 'added-source'
         before_added = fixture(added)
         (added / 'late.bin').write_bytes(b'new file after inventory')
@@ -235,11 +254,19 @@ def main():
                 coordination.append(dict(scenario=scenario,
                     status=json.loads((coordinator.BASE / 'archive/status.json').read_text())['status'],
                     evidence_preserved=True))
-        require(len(rejected) == 37, f'unexpected rejection count: {len(rejected)}')
+        legacy = ROOT / '.work/runs/cache-archive-qualification-03/cache.zip'
+        with zipfile.ZipFile(legacy) as prior:
+            legacy_manifest = json.loads(prior.read('manifest.json'))
+        require('root_xattrs' not in legacy_manifest, 'expected the earlier archive layout')
+        archive.verify_archive(legacy, legacy_manifest)
+        archive.restore(legacy, legacy_manifest, raw / 'legacy-restored')
+        require(len(rejected) == (40 if sys.platform == 'darwin' else 39),
+                f'unexpected rejection count: {len(rejected)}')
         output.mkdir()
         write_json(output / 'summary.json', dict(status='passed', rejected=rejected, coordinator_cases=coordination,
             restored_payloads=len(manifest['groups']), restored_paths=sum(len(g['paths']) for g in manifest['groups']),
             hardlinks_verified=True, timestamps_and_modes_verified=True, outside_evidence_preserved=True,
+            root_attributes_verified=manifest.get('root_xattrs'), legacy_archive_verified=True,
             real_compiler_cache_modified=False, raw=str(raw.relative_to(ROOT)),
             sources={str(p.relative_to(ROOT)): sha(p) for p in [Path(__file__), *coordinator.SOURCES]}))
         print(json.dumps(dict(status='passed', rejections=len(rejected), coordinator_cases=len(coordination))))
