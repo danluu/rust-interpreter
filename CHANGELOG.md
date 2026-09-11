@@ -1,5 +1,12 @@
 # Checked-in changes
 
+- Native region Call experiment `26833c3` / `2f31c6a0`: 231 workspace tests pass
+  in debug/release; repeated real edits improve token 19.3% paired and regress
+  folded 1.4%. Both original gates fail. Preserve 168 commands/84 verified artifacts
+  and keep the options experimental. Added reproducible gate evaluation and fresh
+  owned-process sampling to select the next runtime change.
+
+
 ## 2026-09-11 bounded-call experiment
 
 - Added active-prefix linear memory with initialized spare storage. Guest bounds,

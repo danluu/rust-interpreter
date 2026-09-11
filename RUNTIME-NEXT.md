@@ -4,15 +4,16 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Link native Calls with ordinary JIT regions.** The bounded-tree path is
-   implemented and passes 225 debug/release workspace tests. Its three-cycle
-   real-edit result improves token 14.4% paired but regresses folded 3.0%; both
-   original gates are missed. It still performs millions of outer calls through
-   the VM. Keep `c98d995b` experimental and implement direct Call stubs that preserve
-   readiness, budgets, storage bounds, copy semantics and fault exits. Compare
-   against b2aa6efe with the same gates, then run held-out/broader qualification
-   before retention. [Result](results/bounded-native-e2e-01/assessment.md),
-   [implementation notes](benchmarks/experiments/bounded-native-calls/REGION-CALLS-NEXT.md).
+1. **Profile the native Call implementation and change the remaining costly path.**
+   Ordinary Call stubs now link with generated regions. Source `26833c3` / tool
+   `2f31c6a0` passes 231 debug/release tests. Three real-edit cycles improve token
+   19.3% paired but regress folded 1.4%; both original gates fail. Keep the options
+   experimental. Fresh profiles of this exact candidate identify remaining host
+   transitions versus generated setup/copies/register traffic. Inspect generated
+   code before selecting the next ABI/register architecture. Keep the original
+   b2aa6efe gates, then require held-out and broader qualification before retention.
+   [Result](results/native-region-e2e-01/assessment.md),
+   [profiling protocol](benchmarks/experiments/bounded-native-calls/PROFILING.md).
 2. **Finish native configuration qualification.** Nine workflows now have three
    real-edit cycles, child CPU, explicit root O0/incremental native settings,
    18 native build jobs, default test concurrency and independent checks.

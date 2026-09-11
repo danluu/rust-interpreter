@@ -49,15 +49,21 @@ Both original targets fail. [Assessment](results/bounded-native-e2e-01/assessmen
 Do not retain or enable this intermediate candidate by default. The seven held-out
 workflows and broader native/TLS/fre qualification were not run on it.
 
-The `experiment/native-region-calls` branch now links outer direct Call stubs
-with ordinary JIT regions behind `--jit-native-calls --jit-native-call-stubs`.
-All 231 workspace tests and seven CLI checks pass. The earlier modes remain
-available. [Implementation/ABI notes](benchmarks/experiments/bounded-native-calls/REGION-CALLS-NEXT.md).
-Source `26833c3`, optimized tool `2f31c6a0`, passes the same 231 workspace tests
-in release and both saved real-artifact smoke checks. The three-cycle folded/token
-E2E comparison `native-region-e2e-01` is running against b2aa6efe with both native
-flags. Keep c98d995b as an intermediate comparison; the original gates and broader
-qualification remain. [Release receipt](results/native-region-release-01/summary.json).
+The `experiment/native-region-calls` branch links outer direct Call stubs with
+ordinary JIT regions behind `--jit-native-calls --jit-native-call-stubs`.
+Source `26833c3`, tool `2f31c6a0`, passes 231 workspace tests in debug/release,
+seven CLI checks and both real-artifact smoke checks. Its completed 168-command
+E2E corpus improves token 19.3% paired but regresses folded 1.4%; both original
+gates fail. [Assessment](results/native-region-e2e-01/assessment.md). All five
+pins and 84 paired artifacts were reverified. Keep the options experimental.
+
+Fresh three-window profiles of that exact candidate pass original assertions.
+Folded: 48.1% generated, 21.9% frame reservation, 12.0% native boundary and
+9.3% dispatcher self. Token: 61.7% generated, 11.2% native boundary and 10.4%
+dispatcher self. These are perturbed sample shares, not gain predictions.
+The next concrete task is a diagnostic code dump tied to the sampled process:
+published bytes plus ordinary/stub/tree entry ranges, to identify which generated
+paths are costly before choosing the next call/continuation/register change.
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -72,13 +78,11 @@ regression. Broader execution qualification is required for production retention
 
 ## Process and ownership
 
-The first tree E2E corpus, both native-region workspace checks, optimized build
-and saved-artifact smoke are terminal with return code zero. The region E2E
-supervisor is PID 11215, controller 11220, initially folded child 11225;
-recorded identities/commands are in `.work/experiments/native-region-e2e-01/`
-and `.work/corpus-runs/native-region-e2e-01/status.json`. Re-check live state
-before treating these PIDs as current. Frozen benchmark scripts must stay fixed
-until this corpus finishes. Detailed pointers/pins are in `.work/continuation-state.json`.
+All E2E, release and three-window sampling runs are terminal with return code
+zero. The profile-report helper initially rejected a relative test-fixture path;
+the corrected helper passes synthetic partition/error checks and reproduces
+all three historical generated sample totals. No task process is active.
+Detailed evidence and pinned identities are in `.work/continuation-state.json`.
 
 No subagents or independent model calls. No AWS activation, unrelated process
 control, broad cache deletion, private cleanup or quarantine deletion. A separate

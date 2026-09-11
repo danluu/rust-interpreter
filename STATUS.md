@@ -5,20 +5,20 @@ native-control corpus. [Assessment](results/native-controls-corpus-01/assessment
 
 ## Latest native-call experiment
 
-Experimental `c98d995b`, Git `09de2a9`, passes 225 workspace
+Experimental `2f31c6a0`, Git `26833c3`, passes 231 workspace
 tests in debug and release. Three repeated source-edit cycles completed
 168 commands with 84 identical-within-pair artifacts. Both original
 performance gates failed; the option remains disabled by default.
 
 | Workload | Native | Baseline JIT | Experimental calls | Paired change |
 | --- | ---: | ---: | ---: | ---: |
-| folded-literal-trie | 1.681 s | 2.559 s | 2.603 s | +3.0% |
-| token-phrase | 1.968 s | 6.504 s | 5.565 s | -14.4% |
+| folded-literal-trie | 1.626 s | 2.509 s | 2.541 s | +1.4% |
+| token-phrase | 1.958 s | 6.610 s | 5.334 s | -19.3% |
 
 Paired change is the median within-edit ratio; command columns are marginal
 medians. The targets remain −20% token and −10% folded against b2aa6efe.
-Next remove outer VM transitions by linking Call stubs with ordinary regions.
-[Result and limitations](results/bounded-native-e2e-01/assessment.md).
+Call stubs now link with ordinary regions; next profile the remaining generated and host costs.
+[Result and limitations](results/native-region-e2e-01/assessment.md).
 
 ## Full-corpus baseline
 

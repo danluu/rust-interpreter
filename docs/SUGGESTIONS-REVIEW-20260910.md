@@ -155,5 +155,9 @@ review are not commitments or evidence of feasibility.
   the native-call direction without claiming readiness or resetting success criteria.
 
 The [ordinary-region Call integration](../benchmarks/experiments/bounded-native-calls/REGION-CALLS-NEXT.md)
-is next. The remaining accepted design work above is prioritized follow-up,
-not a claim that a production Rust development engine is complete.
+is implemented in `26833c3` / `2f31c6a0`, with 231 workspace tests passing in
+debug/release. Its [three-cycle E2E result](../results/native-region-e2e-01/assessment.md)
+improves token 19.3% paired but regresses folded 1.4%, missing both original gates.
+The options remain experimental. Fresh runtime profiles guide the next change.
+The remaining accepted design work above is prioritized follow-up, not a claim
+that a production Rust development engine is complete.
