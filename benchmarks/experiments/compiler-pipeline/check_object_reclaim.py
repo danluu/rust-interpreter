@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check object-only reclamation against small owned files and live descriptors."""
 import argparse
+from copy import deepcopy
 import fcntl
 import json
 from pathlib import Path
@@ -8,7 +9,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from reclaim_workflow_objects import identity, inventory, no_open_files, sha, validate_inventory
+from reclaim_workflow_objects import corpus_member, inventory, no_open_files, sha, validate_inventory
 from workflow_io import write_json
 
 
@@ -75,9 +76,30 @@ def main():
     validate_inventory(target, plan, removed=True)
     require(all(sha(target / name) == digest for name, digest in retained.items()), 'retained file changed')
     require(len(rejected) == 6, 'missing rejection cases')
+    corpus_id = 'resumable-bulk-heldout-retry-02'
+    workflow_id = corpus_id + '-nushell-type-relations'
+    report_path = ROOT / 'results' / workflow_id / 'summary.json'
+    report = json.loads(report_path.read_text())
+    corpus = json.loads((ROOT / 'results' / corpus_id / 'summary.json').read_text())
+    corpus_member(corpus, corpus_id, workflow_id, report_path, report)
+    changes = [
+        ('changed report digest', lambda c: c['workflows'][0].update(report_sha256='0' * 64)),
+        ('another report path', lambda c: c['workflows'][0].update(report='results/another/summary.json')),
+        ('duplicate completed report', lambda c: c['workflows'].append(deepcopy(c['workflows'][0]))),
+        ('missing completed report', lambda c: c['workflows'].clear()),
+        ('wrong case project', lambda c: c['plan']['cases'][0].update(project='ruff')),
+        ('wrong case workflow', lambda c: c['plan']['cases'][0].update(workflow='other')),
+        ('wrong case label', lambda c: c['workflows'][0].update(label='other')),
+    ]
+    for label, change in changes:
+        altered = deepcopy(corpus)
+        change(altered)
+        rejects(label, lambda: corpus_member(altered, corpus_id, workflow_id, report_path, report))
+    require(len(rejected) == 13, 'missing corpus provenance rejections')
     out.mkdir()
     write_json(out / 'summary.json', dict(status='passed', rejected=rejected,
         removable_objects=1, retained_files_verified=len(retained), compiler_cache_modified=False,
+        real_corpus_provenance_verified=True,
         raw=str(raw.relative_to(ROOT)), sources={str(p.relative_to(ROOT)): sha(p) for p in
             [Path(__file__), ROOT / 'scripts/reclaim_workflow_objects.py', ROOT / 'scripts/workflow_io.py']}))
     print(json.dumps(dict(rejections=len(rejected), retained_files=len(retained))))

@@ -82,7 +82,18 @@ def no_open_files(target):
                 stderr=check.stderr, checked_at=time.time())
 
 
-def workflow(run_id):
+def corpus_member(corpus, corpus_id, run_id, report_path, report):
+    matches = [w for w in corpus['workflows'] if w['report'] == str(report_path.relative_to(ROOT))]
+    require(len(matches) == 1 and matches[0]['report_sha256'] == sha(report_path),
+            'corpus does not uniquely identify the exact completed report')
+    member = matches[0]
+    require(run_id == corpus_id + '-' + member['label'], 'workflow ID does not match corpus case')
+    cases = [c for c in corpus['plan']['cases'] if c['label'] == member['label']]
+    require(len(cases) == 1 and cases[0]['project'] == report['project'] and
+            cases[0]['workflow'] == report['workflow'], 'corpus case identity differs')
+
+
+def workflow(run_id, corpus_id=None):
     """Derive a single target from completed commands, never from an arbitrary path."""
     run_id = identifier(run_id)
     report_path = ROOT / 'results' / run_id / 'summary.json'
@@ -90,18 +101,27 @@ def workflow(run_id):
     require(report['project'] in ['pgrust', 'nushell', 'ruff', 'fre'], 'public workflow required')
     raw = ROOT / '.work/runs' / run_id
     require(report['raw'] == str(raw.relative_to(ROOT)) and raw.resolve(strict=True) == raw, 'unexpected workflow root')
-    status_path = ROOT / '.work/experiments' / run_id / 'status.json'
+    supervisor_id = identifier(corpus_id) if corpus_id else run_id
+    status_path = ROOT / '.work/experiments' / supervisor_id / 'status.json'
     status = json.loads(status_path.read_text())
     require(status['owner'] == str(ROOT) and status['cwd'] == str(ROOT) and
             status['status'] == 'finished' and status['returncode'] == 0, 'workflow is not completed under this owner')
     command = status['command']
-    require(Path(command[1]).name == 'bench_e2e_workflow.py' and
-            command[command.index('--run-id') + 1] == run_id, 'not a standalone completed workflow')
+    expected_script = 'bench_workflow_corpus.py' if corpus_id else 'bench_e2e_workflow.py'
+    require(Path(command[1]).name == expected_script and
+            command[command.index('--run-id') + 1] == supervisor_id, 'completed supervisor command differs')
+    supervisor_plan = status_path.with_name('plan.json')
+    require(sha(supervisor_plan) == status['plan_sha256'], 'supervisor plan changed')
+    extra_proofs = [supervisor_plan]
+    if corpus_id:
+        corpus_path = ROOT / 'results' / corpus_id / 'summary.json'
+        corpus_member(json.loads(corpus_path.read_text()), corpus_id, run_id, report_path, report)
+        extra_proofs.append(corpus_path)
     # PID reuse is harmless; a still-live command for this same run is not.
     check = subprocess.run(['ps', '-p', str(status['supervisor_pid']) + ',' + str(status['child_pid']),
                             '-o', 'pid,ppid,lstart,command'], capture_output=True, text=True)
     require(check.returncode in [0, 1] and not check.stderr and
-            not any(run_id in line for line in check.stdout.splitlines()[1:]), 'original workflow process is still live or ps failed')
+            not any(supervisor_id in line for line in check.stdout.splitlines()[1:]), 'original workflow process is still live or ps failed')
     verified = verify(report)
     stored = json.loads(report_path.with_name('verification.json').read_text())
     # The separate reference-history comparison is not rerun here. The complete
@@ -117,7 +137,7 @@ def workflow(run_id):
                 require(command[command.index('--target-dir') + 1] == str(target), 'native commands name another target')
     proof_paths = [report_path, report_path.with_name('verification.json'), status_path,
         raw / 'records.json', raw / 'source-transitions.json', raw / 'active-command.json']
-    proof_paths += [p for p in [raw / 'check-records.json', raw / 'case.json'] if p.exists()]
+    proof_paths += [p for p in [raw / 'check-records.json', raw / 'case.json'] if p.exists()] + extra_proofs
     return target, {str(p.relative_to(ROOT)): sha(p) for p in proof_paths}, verified
 
 
@@ -127,8 +147,10 @@ def main():
     action.add_argument('--prepare', metavar='CLEANUP_ID')
     action.add_argument('--apply', metavar='CLEANUP_ID')
     parser.add_argument('--workflow', help='completed public workflow; required for --prepare')
+    parser.add_argument('--corpus', help='completed parent corpus identifying this exact report; preparation only')
     args = parser.parse_args()
     require(bool(args.workflow) == bool(args.prepare), 'supply --workflow only when preparing')
+    require(not args.corpus or args.prepare, 'supply --corpus only when preparing')
     cleanup_id = identifier(args.prepare or args.apply)
     work = ROOT / '.work/reclaims' / cleanup_id
     require(not (ROOT / 'results' / cleanup_id).exists(), 'cleanup result already exists')
@@ -136,12 +158,12 @@ def main():
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     if args.prepare:
         require(not work.exists(), 'cleanup identity already exists')
-        target, proofs, verified = workflow(args.workflow)
+        target, proofs, verified = workflow(args.workflow, args.corpus)
         work.mkdir(parents=True)
         opened = no_open_files(target)
         entries = inventory(target)
         require(any(item['remove'] for item in entries), 'no removable objects')
-        plan = dict(schema_version=1, owner=str(ROOT), workflow=args.workflow, target=str(target),
+        plan = dict(schema_version=1, owner=str(ROOT), workflow=args.workflow, corpus=args.corpus, target=str(target),
             prepared_at=time.time(), driver_sha256=sha(Path(__file__)), proofs=proofs,
             verification=verified, process_and_open_file_check=opened, entries=entries)
         write_json(work / 'plan.json', plan)
@@ -157,7 +179,7 @@ def main():
     plan = json.loads((work / 'plan.json').read_text())
     require(plan['owner'] == str(ROOT) and plan['schema_version'] == 1 and
             plan['driver_sha256'] == sha(Path(__file__)), 'cleanup owner/schema/driver differs')
-    target, proofs, verified = workflow(plan['workflow'])
+    target, proofs, verified = workflow(plan['workflow'], plan.get('corpus'))
     require(str(target) == plan['target'] and proofs == plan['proofs'] and verified == plan['verification'],
             'workflow changed after preparation')
     entries = plan['entries']
