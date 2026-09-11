@@ -6,7 +6,7 @@ using real source-edit/build/test measurements. Every user suggestion has an
 is user-owned, unchanged and intentionally untracked. Local commits are authorized;
 no push was requested. Branch: `experiment/resumable-native-calls`.
 
-## Active worker-count experiment
+## Closed worker-count experiment
 
 The [worker plan](benchmarks/experiments/compiler-pipeline/WORKER-COUNT-NEXT.md)
 compares four versus eighteen Cargo workers using identical tool **78e60cdd**
