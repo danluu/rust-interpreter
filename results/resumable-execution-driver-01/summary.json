@@ -1,0 +1,128 @@
+{
+  "status": "passed",
+  "historical": [
+    {
+      "mode": "default",
+      "counts": {
+        "counts": {
+          "jit": 11119,
+          "interpreter": 11119,
+          "default_rejection": 1
+        },
+        "statistics": {
+          "resumable_calls": 0,
+          "resumable_returns": 0,
+          "maximum_generated_bytes": 0,
+          "executions_with_declines": 0
+        }
+      },
+      "false_new_mode_rejected": true
+    },
+    {
+      "mode": "inline",
+      "counts": {
+        "counts": {
+          "jit": 11119,
+          "interpreter": 11119,
+          "default_rejection": 1
+        },
+        "statistics": {
+          "resumable_calls": 0,
+          "resumable_returns": 0,
+          "maximum_generated_bytes": 0,
+          "executions_with_declines": 0
+        }
+      },
+      "false_new_mode_rejected": true
+    }
+  ],
+  "staging": [
+    {
+      "flags": [],
+      "replacements": [
+        [
+          "ROOT = Path(__file__).resolve().parents[1]",
+          "ROOT = Path('/Users/danluu/dev/rust-interp')"
+        ],
+        [
+          "BUILD = ROOT / '.work/interpreter-build/release'",
+          "BUILD = Path('/Users/danluu/dev/rust-interp/.work/interpreter-tools/af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e')"
+        ],
+        [
+          "(ROOT / 'results/interpreter-validation.json').write_text",
+          "(work / 'summary.json').write_text"
+        ],
+        [
+          "        p = subprocess.run(list(map(str, command)),",
+          "        if list(map(str, command[:3])) == [str(BUILD / 'rust-interp-vm'), '--engine', 'jit']:\n            command = [*command[:3], *[], *command[3:]]\n        p = subprocess.run(list(map(str, command)),"
+        ]
+      ],
+      "assertions_unchanged": true
+    },
+    {
+      "flags": [
+        "--jit-resumable-calls",
+        "--jit-persistent-registers"
+      ],
+      "replacements": [
+        [
+          "ROOT = Path(__file__).resolve().parents[1]",
+          "ROOT = Path('/Users/danluu/dev/rust-interp')"
+        ],
+        [
+          "BUILD = ROOT / '.work/interpreter-build/release'",
+          "BUILD = Path('/Users/danluu/dev/rust-interp/.work/interpreter-tools/af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e')"
+        ],
+        [
+          "(ROOT / 'results/interpreter-validation.json').write_text",
+          "(work / 'summary.json').write_text"
+        ],
+        [
+          "        p = subprocess.run(list(map(str, command)),",
+          "        if list(map(str, command[:3])) == [str(BUILD / 'rust-interp-vm'), '--engine', 'jit']:\n            command = [*command[:3], *['--jit-resumable-calls', '--jit-persistent-registers'], *command[3:]]\n        p = subprocess.run(list(map(str, command)),"
+        ]
+      ],
+      "assertions_unchanged": true
+    },
+    {
+      "flags": [
+        "--jit-native-calls",
+        "--jit-native-call-stubs",
+        "--jit-persistent-registers"
+      ],
+      "replacements": [
+        [
+          "ROOT = Path(__file__).resolve().parents[1]",
+          "ROOT = Path('/Users/danluu/dev/rust-interp')"
+        ],
+        [
+          "BUILD = ROOT / '.work/interpreter-build/release'",
+          "BUILD = Path('/Users/danluu/dev/rust-interp/.work/interpreter-tools/af9aa691f5639013104f498d78c57c30c53c3fa609e99f00eacd11f7369e089e')"
+        ],
+        [
+          "(ROOT / 'results/interpreter-validation.json').write_text",
+          "(work / 'summary.json').write_text"
+        ],
+        [
+          "        p = subprocess.run(list(map(str, command)),",
+          "        if list(map(str, command[:3])) == [str(BUILD / 'rust-interp-vm'), '--engine', 'jit']:\n            command = [*command[:3], *['--jit-native-calls', '--jit-native-call-stubs', '--jit-persistent-registers'], *command[3:]]\n        p = subprocess.run(list(map(str, command)),"
+        ]
+      ],
+      "assertions_unchanged": true
+    }
+  ],
+  "frozen": {
+    "benchmarks/experiments/resumable-native-calls/check_execution_driver.py": "ac0e4ca19200beea3d2ffe5f47f355a0f701dbfa7fd4dac69eea80fc50038447",
+    "scripts/validate_interpreter.py": "ea99adccca0fc8afa9944bd3e05f2812c27b446391d680407188cb773642fd70",
+    "scripts/qualify_native_execution.py": "4b0df2f7d6c60a536fb7dfbd194adc07692075fec4de72bb6be240292adc7b41",
+    "scripts/audit_validation_counts.py": "8cf6ef4f3b6e3e9a07cb5a6c2f67629c635d10a49fdf1c3dc87fb5f05085274c",
+    "scripts/interpreter.py": "7fe4928e7e57e6cca62a29a59dd0dbefceb05283940e2f5289379d3e3cd0f077"
+  },
+  "evidence": {
+    ".work/local-memory-forwarding-native-01/summary.json": "525eaf27972c0bf11af27edd94de924c280784e0514b51aff01c0ccddc9b2967",
+    ".work/interpreter-validation-1789101480014967000/commands.jsonl": "400e6c44fe39a3b9a691c447102192b8d72dacede74f321ce2625b384e07acd2",
+    ".work/interpreter-validation-1789101635068898000/commands.jsonl": "6321d4b0e1dafc0cc4cbd03a6ce0469a23ed7945856176036bdca0f764e53e89"
+  },
+  "performance_measurement": false,
+  "full_validator_executed": false
+}

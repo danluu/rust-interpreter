@@ -9,7 +9,7 @@ CORPUS = 'results/native-controls-corpus-01/summary.json'
 PREVIOUS = 'results/local-memory-forwarding-01/summary.json'
 REPEATED = 'results/paired-repeated-token-01/summary.json'
 COMPUTE = {'folded-literal-trie', 'token-phrase', 'forward-anchored-tls', 'pgrust-sha1-inline8'}
-EXPERIMENT_RUN = 'resumable-e2e-01'
+EXPERIMENT_RUN = 'resumable-bulk-e2e-01'
 EXPERIMENT = 'results/' + EXPERIMENT_RUN + '/gate-evaluation.json'
 
 
@@ -20,7 +20,7 @@ def render():
     repeated = json.loads((ROOT / REPEATED).read_text())
     experiment = json.loads((ROOT / EXPERIMENT).read_text())
     experimental_checks = json.loads((ROOT / 'results' / EXPERIMENT_RUN / 'final-verification.json').read_text())['counts']
-    experimental_release = json.loads((ROOT / 'results/resumable-release-01/summary.json').read_text())
+    experimental_release = json.loads((ROOT / 'results/resumable-bulk-release-01/summary.json').read_text())
     rows = corpus['workflows']
     options = corpus['plan']['options']
     key = options['candidate_tool_key']
@@ -51,15 +51,15 @@ def render():
         f"{sum(r['passed'] for r in experiment['evaluated'])} of {len(experiment['evaluated'])} original performance gates pass; the options remain disabled by default.", '',
         '| Workload | Native | Baseline JIT | Experimental JIT | Paired change |',
         '| --- | ---: | ---: | ---: | ---: |',
-        *[f"| {r['workload']} | {r['medians']['native']:.3f} s | {r['medians']['baseline']:.3f} s | {r['medians']['candidate']:.3f} s | {(r['median_paired_ratio']-1)*100:+.1f}% |"
+        *[f"| {r['workload']} | {r['medians']['native']:.3f} s | {r['medians']['baseline']:.3f} s | {r['medians']['candidate']:.3f} s | {(r['median_paired_ratio']-1)*100:+.2f}% |"
           for r in experiment['evaluated']], '',
         'Paired change is the median within-edit ratio; command columns are marginal',
         'medians. The targets remain −20% token and −10% folded against b2aa6efe.',
-        'Calls and Returns now resume across native functions over explicit guest',
-        'frames. Folded passes its target; token misses its target. The combined',
-        'gate fails. Fresh exact-code samples put 56.3% of folded and 17.4% of',
-        'token in required clearing. A bounded bulk-clearing experiment is next;',
-        'seven held-out workflows and broader qualification remain required.',
+        'Resumable Calls and Returns now batch required initialization. Folded',
+        'passes; token narrowly misses its target (ratio 0.8004639304 versus 0.8).',
+        'The combined gate fails. One unchanged-tool replication will examine',
+        'repeatability; the first failure stays in the record. Seven held-out',
+        'workflows and broader execution qualification remain required.',
         f'[Result and limitations](results/{EXPERIMENT_RUN}/assessment.md).', '',
         '## Full-corpus baseline', '',
         f"Full-corpus engine `{key[:8]}`, Git `{commit[:7]}`; paired baseline `{options['baseline_tool_key'][:8]}`.",
@@ -110,7 +110,7 @@ def render():
         f"{validation_counts['counts']['vm-jit']:,} JIT and {validation_counts['counts']['vm-interpreter']:,} interpreter invocations, plus native builds/runs,",
         'exports and rejection checks across two inlining modes. These are command',
         'counts, not unique test cases. [Recount](results/historical-validation-counts-01/assessment.md).',
-        'A separate 245-command TLS qualification also passed.', 
+        'A separate 245-command TLS qualification also passed.',
         'Those broader suites have not been rerun on the codegen-limit fix or',
         'the new experimental native-call engine.', '',
         'That earlier fre replay selected 389 original bodies: 382 passed and 7 were ignored.',
@@ -133,9 +133,11 @@ def render():
         ('runtime-experiment', 'results/' + EXPERIMENT_RUN + '/summary.json'),
         ('runtime-gates', EXPERIMENT),
         ('runtime-verification', 'results/' + EXPERIMENT_RUN + '/final-verification.json'),
-        ('release-qualification', 'results/resumable-release-01/summary.json'),
-        ('execution-smoke', 'results/resumable-real-smoke-01/summary.json'),
-        ('cli-qualification', 'results/resumable-cli-01/summary.json'),
+        ('release-qualification', 'results/resumable-bulk-release-01/summary.json'),
+        ('execution-smoke', 'results/resumable-bulk-real-smoke-01/summary.json'),
+        ('cli-qualification', 'results/resumable-bulk-cli-01/summary.json'),
+        ('previous-runtime-experiment', 'results/resumable-e2e-01/summary.json'),
+        ('execution-driver-qualification', 'results/resumable-execution-driver-01/summary.json'),
         ('previous-runtime-experiment', 'results/persistent-e2e-01/summary.json'),
         ('previous-runtime-experiment', 'results/native-region-e2e-01/summary.json'),
         ('generated-code-attribution', 'results/resumable-folded-sample-01/generated-attribution.json'),

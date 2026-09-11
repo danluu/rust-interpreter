@@ -213,3 +213,14 @@ that a production Rust development engine is complete.
   improves folded 10.6% and token 15.0%, with CPU improving. Only folded passes;
   the combined gate fails. Fresh exact-code profiles will guide the next change.
   These results do not qualify the runtime for large-project adoption.
+
+- Fresh exact-code profiles of resumable Calls found 56.3% folded and 17.4%
+  token samples in required clearing. One bounded 64-byte initialization change
+  (`001065a` / `78e60cdd`) preserves every byte and passes 257 debug/release tests.
+  Its [E2E result](../results/resumable-bulk-e2e-01/assessment.md) improves folded
+  19.51% and token 19.95%; token narrowly misses its 20% gate. One fixed-tool
+  replication is planned before further runtime tuning. The failed gate stays
+  recorded; current performance/coverage still does not qualify large-project use.
+- The full native validator now has a tracked immutable-tool/mode driver with
+  unchanged assertion checks and verified VM command flags. Helper qualification
+  passes; full new-mode execution, separate TLS and fre coverage are pending.

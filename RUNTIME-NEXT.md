@@ -4,21 +4,17 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Qualify bounded bulk initialization.** Runtime `5574d10`, integration
-   `e1bec3e`, tool `035ef708` passes all 256 debug/release tests, 12 CLI checks
-   and both original artifacts. Its completed three-cycle E2E run improves
-   folded 10.6% paired and token 15.0%, with CPU improving. Only folded passes;
-   the combined gate fails. Native remains faster on both. Fresh exact-code
-   profiles find 56.3% folded /17.4% token clearing shares and 13.5% token native
-   boundary self. The bounded 64-byte clearing path now awaits debug/release,
-   original-artifact and E2E qualification. Preserve the −20% token/−10% folded gates,
-   all seven held-out workflows and broader native/TLS/fre qualification before
-   retention. [Result](results/resumable-e2e-01/assessment.md),
-   [plan](benchmarks/experiments/resumable-native-calls/BULK-CLEAR-NEXT.md).
-   The private-array census is parked: 0.0000073% folded and 0.1233% token scope.
-   The previous tree/stub experiment (`e89de7f8`) improved token 23.6% and folded
-   4.2%; its combined gate also failed. Cross-run differences do not isolate the
-   cause. Required initialization still costs work when native Calls perform it.
+1. **Replicate the nearly-threshold bulk initialization result once.**
+   Source `001065a`, tool `78e60cdd` passes 257 debug/release tests, 12 CLI checks
+   and both original artifacts. Its three-cycle E2E run improves folded 19.51%
+   and token 19.95%, with CPU improving about 20.5%. Folded passes, while token's
+   ratio 0.8004639304 narrowly misses the original 0.8 maximum. Keep that failure
+   and run exactly one unchanged-tool replication under the original controls.
+   Do not round into a pass or retry until passing. [Protocol](benchmarks/experiments/resumable-native-calls/REPLICATION.md),
+   [result](results/resumable-bulk-e2e-01/assessment.md). Native remains faster on
+   both. Seven held-out workflows and broader native/TLS/fre qualification are
+   still required before retention. The tracked full-validator helper is now
+   qualified; its first actual selected-tool run is pending.
 2. **Finish native configuration qualification.** Nine workflows now have three
    real-edit cycles, child CPU, explicit root O0/incremental native settings,
    18 native build jobs, default test concurrency and independent checks.

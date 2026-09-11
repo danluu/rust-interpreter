@@ -7,75 +7,62 @@ Local Git commits are authorized; no remote or push was requested.
 
 ## Active work
 
-Branch `experiment/resumable-native-calls`. Runtime `5574d10`, launcher/gate
-integration `e1bec3e`, installed tool `035ef708`. The dedicated custom AArch64
-emitter now executes direct Calls and Returns over initialized guest frames.
-It compiles one body per function, preserves the complete external host ABI,
-reloads per-function persistent registers on transitions and returns the actual
-descendant frame/PC to the VM at unsupported operations or budget/storage/code
-readiness boundaries. Guest recursion does not consume recursive host frames.
-The option is `--jit-resumable-calls`, optionally with persistent registers; it
-excludes the old tree/stub options and stays disabled by default.
+Branch `experiment/resumable-native-calls`. Runtime `5574d10`, integration
+`e1bec3e`, bulk initialization `001065a`, installed tool `78e60cdd`. The custom
+AArch64 emitter executes resumable Calls/Returns over initialized guest frames,
+with exact descendant VM continuation, one host ABI frame and no recursive
+host-stack growth. Known large frame/register ranges now clear in exact 64-byte
+batches. Every required byte, argument-copy order and budget check is preserved.
+The option remains `--jit-resumable-calls` with optional persistent registers;
+it excludes tree/stub mode and stays disabled by default.
 
-- All **256 workspace tests pass in debug and release**, one ignored:
-  [debug](results/resumable-native-03/summary.json),
-  [release](results/resumable-release-01/summary.json). Seven new execution tests
-  add looping/recursive callees (through depth 1024), deepest VM fallbacks,
-  budgets, preparation boundaries, all required GPRs/SP/LR, warm ordered/alias
-  copies through 257 bytes, and rejected option combinations. Existing native
-  call, error-order, heap-growth and TLS suites now also run the new mode.
-  Profile checks compare full logical per-PC counts, not just output values.
-- [Twelve CLI checks](results/resumable-cli-01/summary.json) pass. Four historical
-  workflow receipts still verify; false claims of the new runtime option are
-  rejected. Launch commands, timing metadata and gates carry the new flag.
-  [Build index](benchmarks/tool-builds.json) reconstructs source and binary hashes.
-- [Both original real artifacts](results/resumable-real-smoke-01/assessment.md)
-  pass all assertions. Folded executes 25,913,904 native Calls with 85,769 native
-  entries versus b2's 43,732,357 entries, with identical logical instructions.
-  Token executes 110,504,850 native Calls. Both stay within the original code
-  budget with zero declined functions. Token uses randomness; independent
-  instruction counts differ. This smoke run is not E2E performance evidence.
+- All **257 workspace tests pass in debug and release**, one ignored. The new
+  emitted-code test checks dirty ranges, conservative minimums, all alignments
+  modulo 64, boundaries through 4096 bytes and an empty one-past-end. Existing
+  recursion (through 1024), descendant fallbacks, full host ABI, budget/storage/
+  capacity, warm alias copies and TLS/profile tests pass.
+  [Qualification](results/resumable-bulk-release-01/assessment.md).
+- [Twelve CLI checks](results/resumable-bulk-cli-01/summary.json), four historical
+  workflow verifications and [both original artifacts](results/resumable-bulk-real-smoke-01/assessment.md)
+  pass. Folded has identical 4,138,403,285 instructions and 25,913,904 native
+  Calls. Token retains original randomness. Code sizes are 5,867,588 and
+  14,722,684 bytes, with zero declined functions. The exporter is byte-identical
+  to the preceding resumable tool. [Build index](benchmarks/tool-builds.json).
 
-[The completed E2E comparison](results/resumable-e2e-01/assessment.md) verified
+[The completed bulk E2E run](results/resumable-bulk-e2e-01/assessment.md) verified
 168 commands, 30 edited pairs and 84 identical paired artifacts. Folded improves
-10.6% paired (CPU −11.4%) and token 15.0% (CPU −14.7%) against `b2aa6efe`.
-Folded passes its original 10% target; token misses 20%, so the combined gate
-fails. Native remains faster on both. No default retention. Fresh three-window
-exact-code profiles of this tool now resolve every generated PC. Required
-clearing accounts for 56.3% of folded and 17.4% of token thread samples; token
-also has 13.5% native-boundary self samples. These are partial perturbed windows,
-not speedup predictions. [Folded](results/resumable-folded-sample-01/assessment.md),
+**19.51% paired** and token **19.95%** against original b2; CPU improves 20.60%/
+20.54%. Folded passes. Token's ratio is **0.8004639304**, just above its original
+0.8 maximum, so the combined numerical gate fails. Do not round it into a pass.
+Native remains faster on both. The first resumable tool (`035ef708`) improved
+folded 10.6% and token 15.0%; cross-run differences are not isolated component gains.
+
+Next run exactly one unchanged-tool replication `resumable-bulk-e2e-02`, using
+[the recorded protocol](benchmarks/experiments/resumable-native-calls/REPLICATION.md).
+Keep the first failure, both run decisions and all pairs; no retry-until-pass or
+new pooled retention rule. The narrow cutoff miss calls for repeatability
+before another runtime change. Seven held-out workflows and broader native/
+TLS/fre qualification remain required before retention and have not run on this tool.
+
+The [broader driver](scripts/qualify_native_execution.py) now stages the existing
+full validator with immutable tool/mode selection and unchanged assertion ASTs.
+Its [helper qualification](results/resumable-execution-driver-01/summary.json)
+passes three staging configurations and both archived mode checks; false
+resumable claims are rejected. Full new-tool execution is still outstanding.
+[Broader recipe](benchmarks/experiments/resumable-native-calls/BROADER-QUALIFICATION.md).
+
+Exact-code profiles of `035ef708` resolved every generated PC across three
+windows each. Required zeroing accounted for 56.3% folded /17.4% token samples,
+and token native-boundary self 13.5%. These partial perturbed windows motivated
+bulk clearing; they are not speedup forecasts or current-tool profiles.
+[Folded](results/resumable-folded-sample-01/assessment.md),
 [token](results/resumable-token-sample-01/assessment.md).
 
-The [bounded bulk-clearing experiment](benchmarks/experiments/resumable-native-calls/BULK-CLEAR-NEXT.md)
-is committed as `001065a`, tool `78e60cdd`, and passes all 257 debug/release
-workspace tests, one ignored. Twelve installed-tool CLI checks and both original
-artifacts pass; no function declines and code remains below 16 MiB.
-It clears exactly the same bytes in 64-byte batches when a sufficient minimum
-is known; short ranges use the previous helper. The original three-cycle
-`resumable-bulk-e2e-01` comparison is running. No performance result exists for it yet.
-
-Seven held-out workflows and broader native/TLS/fre qualification have not run
-on this tool; they remain required before retention.
-
-[Design/qualification plan](benchmarks/experiments/resumable-native-calls/PLAN.md)
-and [emitter contract](benchmarks/experiments/resumable-native-calls/EMITTER-NEXT.md).
-Groundwork `fca1e96` / `1264921` qualified initialized frame backing and checked
-cursor publication before emitted execution; its 249-test count is historical.
-
-The preceding E2E result is
-[persistent-e2e-01](results/persistent-e2e-01/assessment.md), tool `e89de7f8`,
-Git `d664bce`: 168 commands, 30 edited pairs, 84 identical artifacts. Token
-improves 23.6% paired and folded 4.2%; only token passes. Marginal command medians
-are folded native 1.634 / b2 2.472 / candidate 2.373 s and token native 1.952 /
-b2 6.482 / candidate 4.959 s. Native remains faster on both in that run.
-
 The qualified [private-array census](results/aggregate-reuse-weights-01/assessment.md)
-found only 3,116 additional bytes across 42.5 billion folded direct-call frame
-bytes (0.0000073%), and 0.1233% token. That narrow layout change is parked. No
-production frame layout changed. Broader aggregate reuse still needs padding,
-escape and lifetime proofs; do not resume narrow opcode/frame tweaks without
-new end-to-end evidence.
+found only 0.0000073% additional folded frame-byte scope and 0.1233% token.
+That layout change remains parked, alongside argument-only zero elision and
+unused-MIR-local removal. Broader aggregate reuse still needs padding/alias/
+lifetime proofs; do not restart batch-size/opcode tuning by default.
 
 ## Evidence guiding this experiment
 
@@ -123,8 +110,8 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-Only `resumable-bulk-e2e-01` is active; observe its exact supervisor/corpus
-receipts and keep workflow scripts frozen. The unbounded goal remains active.
+All task executions are terminal0; one unchanged-tool E2E replication is ready
+to start. The unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal
 receipts are in `.work/continuation-state.json`. Toolchain is

@@ -5,24 +5,24 @@ native-control corpus. [Assessment](results/native-controls-corpus-01/assessment
 
 ## Latest native-call and register experiment
 
-Experimental `035ef708`, Git `e1bec3e`, passes 256 workspace
+Experimental `78e60cdd`, Git `001065a`, passes 257 workspace
 tests in debug and release. Three repeated source-edit cycles completed
 168 commands with 84 identical-within-pair artifacts.
 1 of 2 original performance gates pass; the options remain disabled by default.
 
 | Workload | Native | Baseline JIT | Experimental JIT | Paired change |
 | --- | ---: | ---: | ---: | ---: |
-| folded-literal-trie | 1.881 s | 2.477 s | 2.198 s | -10.6% |
-| token-phrase | 2.208 s | 6.641 s | 5.715 s | -15.0% |
+| folded-literal-trie | 1.725 s | 2.544 s | 2.065 s | -19.51% |
+| token-phrase | 2.246 s | 6.765 s | 5.421 s | -19.95% |
 
 Paired change is the median within-edit ratio; command columns are marginal
 medians. The targets remain −20% token and −10% folded against b2aa6efe.
-Calls and Returns now resume across native functions over explicit guest
-frames. Folded passes its target; token misses its target. The combined
-gate fails. Fresh exact-code samples put 56.3% of folded and 17.4% of
-token in required clearing. A bounded bulk-clearing experiment is next;
-seven held-out workflows and broader qualification remain required.
-[Result and limitations](results/resumable-e2e-01/assessment.md).
+Resumable Calls and Returns now batch required initialization. Folded
+passes; token narrowly misses its target (ratio 0.8004639304 versus 0.8).
+The combined gate fails. One unchanged-tool replication will examine
+repeatability; the first failure stays in the record. Seven held-out
+workflows and broader execution qualification remain required.
+[Result and limitations](results/resumable-bulk-e2e-01/assessment.md).
 
 ## Full-corpus baseline
 
