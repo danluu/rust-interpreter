@@ -118,6 +118,15 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Item 9.2 now has bounded completed-cache archival, with exact workflow and
+  invocation ownership, decoded payload verification before retirement, and
+  preserved query metadata and executed snapshots. [The format qualification](../results/cache-archive-qualification-06/assessment.md)
+  passes 44 rejection checks, four coordinator cases and restoration of both
+  earlier formats; [cache selection](../results/workflow-cache-evidence-01/assessment.md)
+  passes 31 rejections and nine historical targets. Five exact native/check/
+  custom archives completed. This made room for the pending cold comparisons;
+  it is storage maintenance outside their timers, not a compilation speedup.
+
 - Item 4.1 now has a std-only exec wrapper and shared Cargo routing rules in
   `b54dc6e` / `c341296c`. [Debug/release qualification](../results/lightweight-wrapper-release-01/assessment.md)
   passes 268 tests, fifteen actual process probes/dylib commands, five manifest
