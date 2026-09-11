@@ -28,8 +28,11 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
    inlining and preserve all 168 commands and 84 artifacts. Follow the
    [broader aggregate byte-write plan](benchmarks/experiments/aggregate-reuse-census/BYTE-WRITES-NEXT.md):
    actual full-byte writes, partial writes/padding, alias exclusions and normal
-   Call-return edges. Require substantial additional scope before implementing
-   a compiler storage transformation. Preserve exact budgets,
+   Call-return edges. The unchanged-code observer now finds 55.97% additional
+   weighted byte scope folded and 31.90% token, passing the 25% folded gate.
+   Implement the separate [relocation experiment](benchmarks/experiments/aggregate-byte-writes/RELOCATION-NEXT.md)
+   and qualify actual layouts and original assertions before timed edit comparisons.
+   Byte scope predicts no speedup. Preserve exact budgets,
    initialization, fault order and guest state. Earlier narrow frame-reuse
    censuses are parked; their tiny measured opportunities do not justify a
    new optimization without evidence.

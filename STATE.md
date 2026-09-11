@@ -8,6 +8,16 @@ no push was requested. Branch: `experiment/resumable-native-calls`.
 
 ## Active direction
 
+The [aggregate byte-write observer](results/aggregate-byte-writes-weights-01/assessment.md)
+now passes its scope gate: 55.97% additional weighted direct-frame-byte scope on
+folded and 31.90% on token. Fresh exports preserve both original bytecode hashes
+and assertions; 35 compiler tests (nine observer) and two typed join tests pass.
+No direct-frame bytes are unobserved or declined. Counts are historical executions
+of identical artifacts, not fresh timings. The first compile failure is preserved.
+Next implement the separately qualified [frame relocation](benchmarks/experiments/aggregate-byte-writes/RELOCATION-NEXT.md)
+using named MIR local origins, complete ABI/scratch relocation and atomic fallback.
+The production compiler and current runtime are unchanged; speed remains unmeasured.
+
 Source `aa2f6ea` / tool `0e94d6d8` now completes the current runtime qualification.
 Our direct AArch64 JIT keeps checked dynamic/large copies inside resumable
 native regions and retains values across native branches/calls. The

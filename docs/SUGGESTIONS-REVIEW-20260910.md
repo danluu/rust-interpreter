@@ -118,6 +118,14 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- The [broader aggregate observer](../results/aggregate-byte-writes-weights-01/assessment.md)
+  passes the fixed scope gate: 55.97% additional weighted local-byte scope folded,
+  31.90% token. Fresh exports and assertions match original artifacts; 35 compiler
+  tests and two typed profile-join tests pass. All observed direct-frame bytes
+  have accepted inventories. Historical counts are labeled; no speedup is claimed.
+  Proceed to [separate frame relocation](../benchmarks/experiments/aggregate-byte-writes/RELOCATION-NEXT.md)
+  with named-local identities, ABI/scratch checks and complete-command gates.
+
 - Items 1.1/3.1/3.2 now have a [typed clearing split](../results/register-clearing-attribution-01/assessment.md):
   all 942 folded and 879 token clearing samples concern guest memory, with zero
   register-array hits. A stronger register proof is parked. The subsequent
