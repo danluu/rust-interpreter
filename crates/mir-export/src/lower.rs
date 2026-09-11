@@ -26,6 +26,7 @@ mod system;
 mod c_allocator;
 mod tls;
 mod reachability;
+mod allocation;
 fn env<'tcx>() -> ty::TypingEnv<'tcx> {
     ty::TypingEnv::fully_monomorphized()
 }
@@ -146,6 +147,7 @@ impl UnavailableCall {
 pub struct Exported {
     pub program: Program,
     unavailable_calls: BTreeSet<UnavailableCall>,
+    pub(crate) allocation_trace: Option<crate::allocation_trace::Trace>,
 }
 impl Exported {
     pub fn unavailable_calls(&self) -> Vec<serde_json::Value> {
@@ -154,7 +156,11 @@ impl Exported {
 }
 
 pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bool,
-              inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool) -> Result<Exported> {
+              inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool,
+              allocation_trace: bool) -> Result<Exported> {
+    if allocation_trace && demand {
+        return Err("allocation tracing requires ordinary strict frontend checking".into());
+    }
     if tcx.data_layout.pointer_size().bits() != 64
         || tcx.data_layout.endian != rustc_abi::Endian::Little
     {
@@ -237,7 +243,17 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         trap_unsupported_calls,
         run_try_callbacks,
         unavailable_calls: BTreeSet::new(),
+        trace: allocation_trace.then(crate::allocation_trace::Trace::new),
+        trace_parent: None,
+        trace_function: None,
     };
+    exporter.trace_event(|_| serde_json::json!({"kind": "allocation-trace", "schema_version": 1,
+        "target": tcx.sess.opts.target_triple.to_string(), "strict_frontend": !demand,
+        "compiler_allocation_ids": "session-local, not stable cache keys",
+        "function_indices": "lowering graph before bytecode optimization",
+        "max_events": crate::allocation_trace::MAX_EVENTS,
+        "max_bytes": crate::allocation_trace::MAX_BYTES,
+        "max_allocation_bytes": crate::allocation_trace::MAX_ALLOCATION_BYTES}))?;
     let mut entry_ids = Vec::new();
     for id in selected {
         let mut instance = Instance::mono(tcx, id);
@@ -257,6 +273,11 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         }
         let instance = exporter.instances[index];
         let name = tcx.def_path_str(instance.def_id());
+        exporter.trace_function = Some(index);
+        exporter.trace_event(|tcx| serde_json::json!({"kind": "function", "index": index,
+            "definition": tcx.def_path_str(instance.def_id()),
+            "instance_kind": format!("{:?}", instance.def),
+            "generic_arguments": format!("{:?}", instance.args)}))?;
         let f = Lower::new(&mut exporter, instance)
             .and_then(|lower| lower.lower())
             .map_err(|e| format!("{name}: {e}"))?;
@@ -294,6 +315,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     for (entry, output) in entry_ids.iter_mut().zip(test_results) {
         if let Some(output) = output {
             let instance = exporter.instances[*entry];
+            exporter.trace_function = Some(*entry);
             let adapter = Lower::test_adapter(&mut exporter, instance, *entry, output)?;
             *entry = functions.len();
             functions.push(adapter);
@@ -369,7 +391,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     let cfg = rust_interp_bytecode::optimize_control_flow(&mut program)?;
     eprintln!("rust-interp-cfg: before={} after={} seconds={:.6}",
         cfg.old_operations, cfg.new_operations, started.elapsed().as_secs_f64());
-    Ok(Exported { program, unavailable_calls: exporter.unavailable_calls })
+    Ok(Exported { program, unavailable_calls: exporter.unavailable_calls,
+        allocation_trace: exporter.trace })
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -399,6 +422,9 @@ struct Exporter<'tcx> {
     data: Vec<u8>,
     statics: Vec<u8>,
     demand: bool,
+    trace: Option<crate::allocation_trace::Trace>,
+    trace_parent: Option<usize>,
+    trace_function: Option<usize>,
 }
 impl<'tcx> Exporter<'tcx> {
     fn register(&mut self, instance: Instance<'tcx>) -> usize {
@@ -484,29 +510,54 @@ impl<'tcx> Exporter<'tcx> {
         }
     }
     fn alloc(&mut self, id: AllocId) -> Result<usize> {
+        if self.trace.is_none() {
+            return self.alloc_inner(id);
+        }
+        let cached = self.allocations.get(&id).copied();
+        let request = self.trace_event(|_| serde_json::json!({"kind": "allocation-request",
+            "allocation_id": id.0.get().to_string(), "cache_hit": cached.is_some(),
+            "cached_pointer": cached}))?;
+        let result = self.with_trace_parent(request, |this| this.alloc_inner(id))?;
+        self.trace_event(|_| serde_json::json!({"kind": "allocation-resolved", "parent": request,
+            "allocation_id": id.0.get().to_string(), "pointer": result}))?;
+        Ok(result)
+    }
+    fn alloc_inner(&mut self, id: AllocId) -> Result<usize> {
         if let Some(offset) = self.allocations.get(&id) {
             return Ok(*offset);
         }
         let alloc = match self.tcx.global_alloc(id) {
-            GlobalAlloc::Memory(a) => a,
+            GlobalAlloc::Memory(a) => {
+                self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "memory"}))?;
+                a
+            }
             GlobalAlloc::Function { instance } => {
+                self.trace_event(|tcx| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "function",
+                    "definition": tcx.def_path_str(instance.def_id()),
+                    "instance_kind": format!("{:?}", instance.def), "generic_arguments": format!("{:?}", instance.args)}))?;
                 let pointer = self.function_pointer(instance) as usize;
                 self.allocations.insert(id, pointer);
                 return Ok(pointer);
             }
             GlobalAlloc::VTable(ty,predicates) => {
+                self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "vtable",
+                    "type": format!("{ty:?}"), "predicates": format!("{predicates:?}")}))?;
                 let pointer=self.vtable(ty,predicates.principal())?;
                 self.allocations.insert(id,pointer);
                 return Ok(pointer);
             }
             GlobalAlloc::Static(def) => {
+                self.trace_event(|tcx| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "static",
+                    "definition": tcx.def_path_str(def), "definition_id": format!("{def:?}")}))?;
                 if self.tcx.is_thread_local_static(def) || self.tcx.is_foreign_item(def) {
                     return Err(format!("thread-local or foreign static unsupported: {}", self.tcx.def_path_str(def)));
                 }
                 self.tcx.eval_static_initializer(def)
                     .map_err(|e| format!("static initializer: {e:?}"))?
             }
-            GlobalAlloc::TypeId { .. } => {
+            GlobalAlloc::TypeId { ty } => {
+                self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "type-id",
+                    "type": format!("{ty:?}")}))?;
                 // These provenances decorate the numeric pieces of a TypeId.
                 // Each relative offset already contains its compiler-provided
                 // hash bits; no guest allocation or address rebasing is needed.
@@ -517,6 +568,18 @@ impl<'tcx> Exporter<'tcx> {
         self.materialize(alloc, Some(id), None)
     }
     fn thread_local(&mut self, def: rustc_hir::def_id::DefId) -> Result<usize> {
+        if self.trace.is_none() {
+            return self.thread_local_inner(def);
+        }
+        let cached = self.tls_addresses.get(&def).copied();
+        let request = self.trace_event(|tcx| serde_json::json!({"kind": "tls-request",
+            "definition": tcx.def_path_str(def), "definition_id": format!("{def:?}"),
+            "cache_hit": cached.is_some(), "cached_pointer": cached}))?;
+        let pointer = self.with_trace_parent(request, |this| this.thread_local_inner(def))?;
+        self.trace_event(|_| serde_json::json!({"kind": "tls-resolved", "parent": request, "pointer": pointer}))?;
+        Ok(pointer)
+    }
+    fn thread_local_inner(&mut self, def: rustc_hir::def_id::DefId) -> Result<usize> {
         if let Some(&address) = self.tls_addresses.get(&def) { return Ok(address); }
         if !self.tcx.is_thread_local_static(def) || self.tcx.is_foreign_item(def) {
             return Err("foreign or invalid thread-local static".into());
@@ -535,12 +598,14 @@ impl<'tcx> Exporter<'tcx> {
         if align > rust_interp_bytecode::MAX_ALIGNMENT {
             return Err("constant alignment exceeds the engine limit".into());
         }
+        let length = if writable { self.statics.len() } else { self.data.len() };
+        let offset = (length.max(16) + align - 1) & !(align - 1);
+        let pointer = offset + if writable { rust_interp_bytecode::HEAP_POINTER_TAG as usize } else { 0 };
+        let materialization = self.trace_materialization(alloc, id, tls, pointer, align)?;
         let bytes = if writable { &mut self.statics } else { &mut self.data };
-        let offset = (bytes.len().max(16) + align - 1) & !(align - 1);
         bytes.resize(offset, 0);
         bytes
             .extend_from_slice(a.inspect_with_uninit_and_ptr_outside_interpreter(0..a.len()));
-        let pointer = offset + if writable { rust_interp_bytecode::HEAP_POINTER_TAG as usize } else { 0 };
         if let Some(id) = id { self.allocations.insert(id, pointer); }
         if let Some(def) = tls {
             self.tls_addresses.insert(def, pointer);
@@ -556,7 +621,10 @@ impl<'tcx> Exporter<'tcx> {
                     .try_into()
                     .map_err(|_| "constant pointer")?,
             );
-            let base = self.alloc(provenance.alloc_id())?;
+            let edge = self.trace_event(|_| serde_json::json!({"kind": "relocation", "parent": materialization,
+                "byte_offset": at.bytes(), "relative_value": original,
+                "target_allocation_id": provenance.alloc_id().0.get().to_string()}))?;
+            let base = self.with_trace_parent(edge, |this| this.alloc(provenance.alloc_id()))?;
             // Relocations store a target-width relative pointer offset. Rust
             // permits wrapping pointer values outside their allocation; guest
             // accesses still go through the VM's ordinary memory checks.
@@ -953,12 +1021,19 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         let value = cv
             .eval(self.tcx(), env(), c.span)
             .map_err(|e| format!("constant evaluation: {e:?}"))?;
+        let origin = if matches!(&value, ConstValue::Scalar(Scalar::Ptr(..))
+            | ConstValue::Indirect { .. } | ConstValue::Slice { .. }) {
+            self.exporter.trace_event(|tcx| serde_json::json!({"kind": "constant-origin",
+                "operand": format!("{cv:?}"), "evaluated": format!("{value:?}"),
+                "source": tcx.sess.source_map().span_to_diagnostic_string(c.span),
+                "size": size, "as_scalar": as_scalar}))?
+        } else { None };
         let address = match value {
             ConstValue::Scalar(s) => {
                 let bits = match s {
                     Scalar::Int(i) => i.to_bits(i.size()),
                     Scalar::Ptr(p, _) => {
-                        (self.exporter.alloc(p.provenance.alloc_id())? as u128)
+                        (self.exporter.with_trace_parent(origin, |e| e.alloc(p.provenance.alloc_id()))? as u128)
                             + p.prov_and_relative_offset().1.bytes() as u128
                     }
                 };
@@ -978,11 +1053,11 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 address
             }
             ConstValue::Indirect { alloc_id, offset } => {
-                let at = self.exporter.alloc(alloc_id)? + offset.bytes_usize();
+                let at = self.exporter.with_trace_parent(origin, |e| e.alloc(alloc_id))? + offset.bytes_usize();
                 self.imm(at as u128)
             }
             ConstValue::Slice { alloc_id, meta } => {
-                let at = self.exporter.alloc(alloc_id)?;
+                let at = self.exporter.with_trace_parent(origin, |e| e.alloc(alloc_id))?;
                 let bits = (at as u128) | ((meta as u128) << 64);
                 let src = self.imm(bits);
                 let address = self.temporary(16);

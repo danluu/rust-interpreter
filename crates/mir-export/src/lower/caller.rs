@@ -20,7 +20,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 let ConstValue::Scalar(Scalar::Ptr(pointer, _)) = value else {
                     return Err("caller location is not a constant pointer".into());
                 };
-                let base = self.exporter.alloc(pointer.provenance.alloc_id())?;
+                let origin = self.exporter.trace_event(|tcx| serde_json::json!({"kind": "caller-location-origin",
+                    "source": tcx.sess.source_map().span_to_diagnostic_string(span)}))?;
+                let base = self.exporter.with_trace_parent(origin, |e| e.alloc(pointer.provenance.alloc_id()))?;
                 let pointer = (base as u64).checked_add(pointer.prov_and_relative_offset().1.bytes())
                     .ok_or("caller-location address overflow")?;
                 let address = self.temporary(8);

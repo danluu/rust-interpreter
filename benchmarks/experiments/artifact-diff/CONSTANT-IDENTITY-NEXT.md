@@ -7,10 +7,12 @@ whose low/high halves change from `(224, 14)` to `(368, 14)`. Three original tes
 branches use that literal. Allocation sharing through rustc's `AllocId` is the
 next hypothesis to test. The exporter never iterates its allocation HashMap.
 
-This is preparation for suggestions 1.4/4.3. It does not supersede the active
-fixed-tool wrapper experiment, change its gates, or authorize editing its frozen
-inputs. Finish that experiment's required measurements and resource planning
-before building or running an instrumented exporter.
+This prepares suggestions 1.4/4.3. The wrapper study has since stopped for
+verified futility. The independent worker-count study is active; keep its frozen
+workflow/launcher inputs and gates unchanged. Source work on an opt-in exporter
+trace can proceed against immutable measured tools. Serialize diagnostic builds
+and runs after the active benchmark and its receipt assessment, and do not
+change its launcher until the worker experiment releases those frozen inputs.
 
 Add opt-in diagnostic output at allocation requests and materialization. Give
 each request its originating function index, complete compiler instance kind,
@@ -50,3 +52,38 @@ layout/MIR-option dependencies, instance identities, symbolic relocations and
 preserved alias relationships. Reusing machine code additionally requires its
 ABI and code/data lifetime rules. Equal byte strings or integer-looking
 immediates cannot supply those guarantees.
+
+
+## Implementation and qualification (September 11)
+
+The exporter observes existing allocation requests, cache hits, function
+instance kinds/generic arguments, static/TLS definitions, constant/caller/vtable
+origins, and each relocation before rebasing. It records initialization bits
+alongside raw bytes and does not coalesce, reorder or reuse allocations. IDs are
+session-local; function indices refer to the graph before bytecode optimization.
+The pinned compiler APIs were inspected in the installed `rustc-src` component,
+including allocation init masks and the full GlobalAlloc/InstanceKind variants.
+
+`RUST_INTERP_ALLOCATION_TRACE=1` enables the direct-export diagnostic. Partial
+checking and audit mode combinations are rejected. The newline-delimited JSON
+trace has a completed footer bound to the bytecode hash. Event and output bounds
+are one million records / 64 MiB, with a 16 MiB individual-allocation limit.
+A partial record is rolled back and poisons the trace, so limit failures cannot
+produce a successful truncated report. Trace completion precedes artifact
+publication. The output and Cargo metadata sidecar use `.allocations.jsonl`;
+stale standalone diagnostic output is removed with the requested artifact.
+
+Four Rust unit tests cover record boundaries, escaped data, exact byte/event
+limits and poisoned failures. The tracked `check_allocation_trace.py` driver
+reuses the original scalar-constant, cyclic-static, TLS and caller fixtures,
+including every assertion. It will compare old-tool, trace-disabled and enabled
+bytecode, and execute thirteen fresh inputs in native Rust and both custom
+engines. It validates request/resolution pairs, parent edges, original relocation
+bytes, init-mask bounds and artifact binding, and checks three invalid modes.
+
+The [debug workspace check](../../../results/allocation-trace-debug-01/assessment.md)
+passes all 272 tests, one existing ignored, including the four new trace tests.
+Release installation and original-fixture differential qualification remain
+pending. Worker measurements use installed tool78 and are unaffected. No launcher
+option, large Nushell trace, bytecode reuse or optimization is implemented by this
+diagnostic. Qualification must pass before the original/edit/revert history above.

@@ -10,6 +10,7 @@ extern crate rustc_session;
 extern crate rustc_span;
 
 mod lower;
+mod allocation_trace;
 mod audit;
 mod wrapper_route;
 
@@ -31,6 +32,7 @@ struct Export {
     inline_leaves: bool,
     trap_unsupported_calls: bool,
     run_try_callbacks: bool,
+    allocation_trace: bool,
 }
 impl Export {
     fn publish(&self, tcx: TyCtxt<'_>, bytes: &[u8], suffix: &str) -> Result<(), String> {
@@ -64,10 +66,19 @@ impl Export {
             }
             return Compilation::Continue;
         }
-        match lower::export(tcx, &self.entries, self.demand, self.test_body, self.inline_leaves, self.trap_unsupported_calls, self.run_try_callbacks).and_then(|exported| {
+        match lower::export(tcx, &self.entries, self.demand, self.test_body, self.inline_leaves,
+                            self.trap_unsupported_calls, self.run_try_callbacks, self.allocation_trace).and_then(|mut exported| {
             let program = &exported.program;
             rust_interp_bytecode::validate(&program)?;
             let bytes = bincode::serialize(&program).map_err(|e| e.to_string())?;
+            // Finish the bounded trace before publishing any successful output.
+            let trace = match exported.allocation_trace.take() {
+                Some(trace) => {
+                    use sha2::Digest;
+                    Some(trace.finish(&format!("{:x}", sha2::Sha256::digest(&bytes)))?)
+                }
+                None => None,
+            };
             // Associate bytecode with Cargo's exact metadata artifact, including
             // configuration reverts that reuse a previous artifact directly.
             self.publish(tcx, &bytes, ".rbc")?;
@@ -81,6 +92,9 @@ impl Export {
                 output.push(".calls.json");
                 self.publish_to(tcx, &serde_json::to_vec(&report).map_err(|e|e.to_string())?,
                     ".rbc.calls.json", Path::new(&output))?;
+            }
+            if let Some(trace) = trace {
+                self.publish_to(tcx, &trace, ".rbc.allocations.jsonl", &allocation_trace_path(&self.output))?;
             }
             eprintln!("rust-interp-export: frontend_ms={:.3} lowering_ms={:.3} functions={} ops={} bytes={}",
                 checked.duration_since(self.started).as_secs_f64() * 1000.0,
@@ -105,7 +119,7 @@ impl Callbacks for Export {
             // execution graph changes, even if its Rust source is unchanged.
             // Library dependencies delegated to ordinary rustc do not record
             // these inputs, so their checked artifacts can be shared.
-            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS"] {
+            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE"] {
                 sess.env_depinfo.borrow_mut().insert((
                     rustc_span::Symbol::intern(key),
                     std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
@@ -169,11 +183,17 @@ impl Callbacks for Export {
     }
 }
 
+fn allocation_trace_path(output: &Path) -> PathBuf {
+    let mut path = output.as_os_str().to_owned();
+    path.push(".allocations.jsonl");
+    PathBuf::from(path)
+}
+
 fn main() {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace"]}));
         return;
     }
     let environment = wrapper_route::Environment::read();
@@ -222,10 +242,13 @@ fn main() {
     );
     // A failed source revision or configuration must not leave this standalone
     // output looking like the result of the failed request.
-    if let Err(e) = std::fs::remove_file(&output) {
-        if e.kind() != std::io::ErrorKind::NotFound {
-            eprintln!("cannot remove old artifact: {e}");
-            std::process::exit(2);
+    let old_trace = allocation_trace_path(&output);
+    for path in [&output, &old_trace] {
+        if let Err(e) = std::fs::remove_file(path) {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                eprintln!("cannot remove old export output: {e}");
+                std::process::exit(2);
+            }
         }
     }
     let retain_audit_bodies = match std::env::var_os("RUST_INTERP_RETAIN_AUDIT_BODIES") {
@@ -269,6 +292,20 @@ fn main() {
         std::process::exit(2);
     }
     let demand = std::env::var("RUST_INTERP_DEMAND_BODIES").is_ok_and(|s| s == "1");
+    let allocation_trace = match std::env::var_os("RUST_INTERP_ALLOCATION_TRACE") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_ALLOCATION_TRACE must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    if allocation_trace {
+        if demand || audit_selection.is_some() {
+            eprintln!("allocation tracing requires strict checking of one selected execution graph");
+            std::process::exit(2);
+        }
+    }
     if trap_unsupported_calls && demand {
         eprintln!("unavailable-call reachability requires ordinary strict frontend checking");
         std::process::exit(2);
@@ -342,6 +379,7 @@ fn main() {
         inline_leaves,
         trap_unsupported_calls,
         run_try_callbacks,
+        allocation_trace,
     };
     rustc_driver::run_compiler(&args, &mut callbacks);
 }

@@ -161,11 +161,13 @@ interning cause or permission for content-only deduplication. The
 [bounded trace design](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
 is pending; stable allocation/relocation identity is required before function reuse.
 
-The opt-in allocation trace is now drafted in the exporter and a tracked
+The opt-in allocation trace is implemented in the exporter and a tracked
 [fixture qualification driver](benchmarks/experiments/artifact-diff/check_allocation_trace.py).
 It captures initialized bytes, full instance kinds and relocation origins, with
 bounded output and an artifact-hash footer. Four new Rust boundary tests and
-original-fixture differential checks are written but **not yet executed**.
+original-fixture differential checks are written. The [debug workspace check](results/allocation-trace-debug-01/assessment.md)
+passes all 272 tests, one existing ignored. Release and fixture qualification
+remain pending.
 Current worker measurements use the unchanged installed tool78. Build and
 qualify only after the active run and its assessments release the benchmark lock.
 The launcher has not changed; large-project tracing and function reuse remain

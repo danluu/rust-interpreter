@@ -9,7 +9,9 @@ impl<'tcx> Exporter<'tcx> {
     ) -> Result<usize> {
         let principal = principal.map(|p| self.tcx.instantiate_bound_regions_with_erased(p));
         let allocation = self.tcx.vtable_allocation((concrete, principal));
-        self.alloc(allocation)
+        let origin = self.trace_event(|_| serde_json::json!({"kind": "vtable-origin",
+            "concrete": format!("{concrete:?}"), "principal": format!("{principal:?}")}))?;
+        self.with_trace_parent(origin, |e| e.alloc(allocation))
     }
 }
 
