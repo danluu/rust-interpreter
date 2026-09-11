@@ -14,7 +14,87 @@ EXPERIMENT = 'results/' + EXPERIMENT_RUN + '/gate-evaluation.json'
 HELD_OUT_REPORT = 'results/resumable-bulk-heldout-recovery-01/summary.json'
 
 
+def current_copy():
+    """Render completed current receipts; never count an in-progress case."""
+    original_path = 'results/resumable-copy-original-e2e-01/gate-evaluation.json'
+    matched_path = 'results/resumable-copy-e2e-01/gate-evaluation.json'
+    read = lambda name: json.loads((ROOT / name).read_text())
+    original, matched = read(original_path), read(matched_path)
+    key = '0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee'
+    if original['tool_key'] != key or matched['tool_key'] != key:
+        raise RuntimeError('current copy experiment tool differs')
+    release = read('results/resumable-copy-release-01/summary.json')
+    qualifications = [read(f'results/resumable-copy-{name}/summary.json')
+                      for name in ['native-02', 'tls-01', 'fre-01']]
+    if any(q['status'] != 'passed' or q['tool_key'] != key for q in qualifications):
+        raise RuntimeError('current copy qualification does not match the tool')
+    plan = read('benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS.json')
+    amendment = read('benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-01.json')
+    completed, reports = [], [original_path, matched_path,
+        'results/resumable-copy-release-01/summary.json',
+        *[f'results/resumable-copy-{name}/summary.json' for name in ['native-02', 'tls-01', 'fre-01']],
+        'results/resumable-copy-heldout-01-case-01-stop/summary.json']
+    for case in plan['cases']:
+        run = case['run_id']
+        if run == amendment['replacement']['original_run_id']:
+            run = amendment['replacement']['retry_run_id']
+        gate_path = f'results/{run}/gate-evaluation.json'
+        if not (ROOT / gate_path).exists():
+            continue
+        gate, verified = read(gate_path), read(f'results/{run}/final-verification.json')
+        if (gate['tool_key'] != key or gate['baseline_tool_key'] != original['baseline_tool_key'] or
+                gate.get('held_out_case') != case['label'] or len(gate['evaluated']) != 1 or
+                verified['counts'] != dict(primary_commands=63, check_commands=21, edited_pairs=15, artifacts=42)):
+            raise RuntimeError('current held-out receipt identities or counts differ')
+        for path, digest in verified['evidence'].items():
+            if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest:
+                raise RuntimeError('current held-out evidence changed: ' + path)
+        completed.append(gate['evaluated'][0])
+        reports += [gate_path, f'results/{run}/final-verification.json']
+    native, tls, fre = qualifications
+    lines = ['## Current custom-copy and native-call experiment', '',
+        f"Source `{original['source_commit'][:7]}`, tool `{key[:8]}` passes {release['workspace_passed']} workspace tests",
+        'in debug and release, one ignored diagnostic. Copies now stay inside checked',
+        'resumable native regions. The host uses LLVM; guest execution uses our own',
+        'interpreter and direct AArch64 emitter.', '',
+        '| Workload | Native | Original JIT baseline | Current JIT | Paired change |',
+        '| --- | ---: | ---: | ---: | ---: |',
+        *[f"| {r['workload']} | {r['medians']['native']:.3f} s | {r['medians']['baseline']:.3f} s | {r['medians']['candidate']:.3f} s | {(r['median_paired_ratio']-1)*100:+.2f}% |"
+          for r in original['evaluated']], '',
+        f"{sum(r['passed'] for r in original['evaluated'])} of {len(original['evaluated'])} original performance gates pass. These are complete source-edit/build/test",
+        'commands, with fifteen pairs per workload. Both compute workloads still',
+        'take longer than native Cargo. The b2 comparison includes exporter/wrapper',
+        'changes; it is not an isolated measurement of the latest copy change.',
+        '[Original-baseline assessment](results/resumable-copy-original-e2e-01/assessment.md).', '',
+        'The separate comparison with identical exporter/wrapper binaries isolates',
+        'the copy change:', '',
+        *[f"- {r['workload']}: paired wall {(r['median_paired_ratio']-1)*100:+.2f}%, child CPU {(r['median_paired_cpu_ratio']-1)*100:+.2f}%; gate {'passes' if r['passed'] else 'fails'}."
+          for r in matched['evaluated']], '',
+        '[Matched comparison](results/resumable-copy-e2e-01/assessment.md).', '',
+        f"Fresh qualification passes {native['commands']:,} mixed native-differential commands,",
+        f"{tls['commands']} TLS/destructor commands, and {fre['counts']['passed']} fre test bodies ({fre['counts']['ignored']} ignored).",
+        'The fre replay uses the explicit options in its report; it is not unfiltered',
+        'libtest. Real unwinding, threads and general OS/FFI remain unsupported.',
+        '[Fresh body replay](results/resumable-copy-fre-01/assessment.md).', '',
+        '### Current held-out verification', '',
+        f"{len(completed)} of seven required histories have completed partial gate verification.",
+        'The original zero-pair space-guard stop remains preserved; its replacement',
+        'uses an explicit amendment and the corrected admission estimate.', '',
+        '| Workflow | Paired wall change | Paired CPU change | Wall gate |',
+        '| --- | ---: | ---: | --- |',
+        *[f"| {r['workload']} | {(r['median_paired_ratio']-1)*100:+.2f}% | {(r['median_paired_cpu_ratio']-1)*100:+.2f}% | {'pass' if r['passed'] else 'fail'} |"
+          for r in completed], '',
+        'A partial set cannot qualify the candidate. Options remain disabled by',
+        'default; no whole-codebase workflow is qualified.',
+        '[Current work](STATE.md) · [Fixed plan and retry](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md).', '',
+        'The following sections preserve the preceding experiment and full-corpus baseline.', '',
+    ]
+    return lines, [dict(category='current-copy-evidence', report=path,
+        report_sha256=hashlib.sha256((ROOT / path).read_bytes()).hexdigest()) for path in reports]
+
+
 def render():
+    current_lines, current_entries = current_copy()
     corpus = json.loads((ROOT / CORPUS).read_text())
     previous = json.loads((ROOT / PREVIOUS).read_text())
     validation_counts = json.loads((ROOT / 'results/historical-validation-counts-01/summary.json').read_text())
@@ -60,7 +140,8 @@ def render():
         '# Measured status', '',
         'Generated by `python3 scripts/update_status.py` from the completed repeated',
         'native-control corpus. [Assessment](results/native-controls-corpus-01/assessment.md).', '',
-        '## Latest native-call and register experiment', '',
+        *current_lines,
+        '## Previous native-call and register experiment', '',
         f"Experimental `{experiment['tool_key'][:8]}`, Git `{experiment['source_commit'][:7]}`, passes {experimental_release['workspace_passed']} workspace",
         'tests in debug and release. Three repeated source-edit cycles completed',
         f"{experimental_checks['primary_commands'] + experimental_checks['check_commands']} commands with {experimental_checks['artifacts']} identical-within-pair artifacts.",
@@ -80,7 +161,7 @@ def render():
         'Defaults and original criteria remain unchanged.',
         '[Both runs and per-edit variation](results/resumable-bulk-replication-01/assessment.md).',
         f'[Result and limitations](results/{EXPERIMENT_RUN}/assessment.md).', '',
-        '## Held-out comparison', '',
+        '## Previous held-out comparison', '',
         'Six completed original cases plus one fresh Nushell retry verify 588 commands,',
         '105 edited pairs and 294 artifacts. The original disk-full run remains',
         'incomplete; its partial records are preserved outside these totals.', '',
@@ -165,7 +246,7 @@ def render():
         '[All current evidence](results/INDEX.md) · [Protocol](BENCHMARKING.md) ·',
         '[Next work](RUNTIME-NEXT.md) · [Review decisions](docs/SUGGESTIONS-REVIEW-20260910.md)', '',
     ]
-    entries = [dict(category='workflow', workflow=r['label'], report=r['report'],
+    entries = current_entries + [dict(category='workflow', workflow=r['label'], report=r['report'],
         report_sha256=r['report_sha256'], measured_tool_key=key,
         native_seconds=r['medians']['native'], custom_seconds=r['medians']['candidate']) for r in rows]
     for category, report in [

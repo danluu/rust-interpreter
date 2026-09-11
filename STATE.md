@@ -58,7 +58,7 @@ interpreter invocations, with no declines. [TLS/destructor qualification](result
 also passes 245 commands. [Fresh fre replay](results/resumable-copy-fre-01/assessment.md)
 passes 382 bodies, seven ignored, with 382 fresh native executions, all 382
 compared artifacts unchanged and no declines. These remain body replays, not
-unfiltered libtest. The seven held-out edit workflows remain before retention.
+unfiltered libtest. The complete seven-case held-out set is required before retention.
 No default change.
 
 The [fixed seven-case held-out plan](benchmarks/experiments/resumable-native-calls/HELDOUT-STORAGE-NEXT.md)
@@ -91,6 +91,17 @@ and private rg-aot in order, then use the amended aggregate evaluator. The
 verify eight full historical inventories, reject 25 invalid references and
 retain the 8 GiB floor. Ruff requires 16.16 GiB; Nushell requires 12.65 GiB.
 No subset authorizes retention.
+
+[Ruff case02](results/resumable-copy-heldout-01-case-02/assessment.md) now completes
+and verifies 84 commands, fifteen pairs and 42 artifacts. Paired wall −0.84%
+and CPU +0.58% pass the regression checks. The marginal candidate median is
+2.767s versus 2.730s baseline and 5.104s native; the opposite direction of the
+small marginal and paired wall differences is preserved. Admission passed at
+24.04 GiB against 16.16 GiB required, 0.100 seconds before startup. The earlier
+[lock-only rejection](results/resumable-copy-heldout-01-case-02-preflight-lock-01/assessment.md)
+started no benchmark and left the unrelated lock holder untouched. Both Ruff
+supervisors are terminal with exit zero. Admit and start case03 Nushell next.
+Five required cases remain.
 
 Storage maintenance has verified 205 archives. Recent batches include
 [eight recovered histories' caches](results/heldout-recovery-storage-01/assessment.md),

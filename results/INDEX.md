@@ -6,6 +6,17 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 
 | Category | Report |
 | --- | --- |
+| current-copy-evidence | [resumable-copy-original-e2e-01/gate-evaluation.json](resumable-copy-original-e2e-01/gate-evaluation.json) |
+| current-copy-evidence | [resumable-copy-e2e-01/gate-evaluation.json](resumable-copy-e2e-01/gate-evaluation.json) |
+| current-copy-evidence | [resumable-copy-release-01/summary.json](resumable-copy-release-01/summary.json) |
+| current-copy-evidence | [resumable-copy-native-02/summary.json](resumable-copy-native-02/summary.json) |
+| current-copy-evidence | [resumable-copy-tls-01/summary.json](resumable-copy-tls-01/summary.json) |
+| current-copy-evidence | [resumable-copy-fre-01/summary.json](resumable-copy-fre-01/summary.json) |
+| current-copy-evidence | [resumable-copy-heldout-01-case-01-stop/summary.json](resumable-copy-heldout-01-case-01-stop/summary.json) |
+| current-copy-evidence | [resumable-copy-heldout-01-case-01-retry-01/gate-evaluation.json](resumable-copy-heldout-01-case-01-retry-01/gate-evaluation.json) |
+| current-copy-evidence | [resumable-copy-heldout-01-case-01-retry-01/final-verification.json](resumable-copy-heldout-01-case-01-retry-01/final-verification.json) |
+| current-copy-evidence | [resumable-copy-heldout-01-case-02/gate-evaluation.json](resumable-copy-heldout-01-case-02/gate-evaluation.json) |
+| current-copy-evidence | [resumable-copy-heldout-01-case-02/final-verification.json](resumable-copy-heldout-01-case-02/final-verification.json) |
 | workflow | [pgrust](native-controls-corpus-01-pgrust/summary.json) |
 | workflow | [nushell](native-controls-corpus-01-nushell/summary.json) |
 | workflow | [rg-aot](native-controls-corpus-01-rg-aot/summary.json) |

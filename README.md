@@ -5,9 +5,10 @@ and runs it in a custom interpreter or direct AArch64 JIT. The objective is fast
 **edit → build → test** feedback on large Cargo projects.
 
 It is a working experiment for selected functions and test bodies. It cannot yet
-replace `cargo test` or run arbitrary Rust applications. The latest nine-workflow
-measurements show useful savings on frontend/link dominated test batches and a
-large execution gap on compute-heavy tests. Native controls still need tuning.
+replace `cargo test` or run arbitrary Rust applications. The completed corpus
+and current experiments show useful savings on frontend/link dominated test batches and a remaining
+execution gap on compute-heavy tests. Alternative native linkers/backends remain
+unqualified.
 [Measured status and per-workflow results](STATUS.md).
 
 | Area | Current state |
@@ -57,8 +58,9 @@ with one ignored diagnostic. Its experimental resumable execution passes 47,004
 fresh native-differential validation commands, 245 TLS/destructor commands and
 382 fre body replays (seven ignored). Complete edited commands improve 21.82%
 on folded trie and 33.09% on token phrase against the original JIT baseline;
-both still lose to native Cargo. Seven fresh held-out workflows remain before
-retention, so the new options stay disabled by default.
+both still lose to native Cargo. Fresh Nushell type-relations and Ruff histories
+pass their regression guards; five required cases remain before retention.
+The new options stay disabled by default.
 [Workspace validation](results/resumable-copy-release-01/assessment.md),
 [fresh replay](results/resumable-copy-fre-01/assessment.md),
 [performance decisions](results/resumable-copy-original-e2e-01/assessment.md),

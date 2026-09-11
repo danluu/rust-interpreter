@@ -4,36 +4,47 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Finish the held-out and interface-edit comparisons.**
-   Source `001065a`, tool `78e60cdd` passes 257 debug/release tests, 47,004 mixed
-   native-validation commands, 245 TLS commands and fresh fre replay of 382
-   passing bodies with seven ignored. Both complete primary E2E runs narrowly
-   miss the original token gate; keep both failures and stop repeated attempts
-   or batch-size tuning. Seven held-out cases now verify across the preserved
-   disk-full attempt and a successful Nushell retry: 588 commands, 105 pairs,
-   294 artifacts, no paired wall regression above 5%. Both generic API edits
-   pass one qualification cycle; now measure fifteen cycles per interface.
-   This is experimental
-   characterization, not retention or a changed success criterion.
-   [Results](results/resumable-bulk-replication-01/assessment.md),
-   [held-out recovery](benchmarks/experiments/resumable-native-calls/HELDOUT-RECOVERY.md),
-   [interface edits](benchmarks/experiments/interface-edits/PLAN.md).
-2. **Finish native configuration qualification.** Nine workflows now have three
-   real-edit cycles, child CPU, explicit root O0/incremental native settings,
-   18 native build jobs, default test concurrency and independent checks.
-   All 756 commands completed. Linker/backend/compiler-worker alternatives remain
-   unqualified. [Assessment](results/native-controls-corpus-01/assessment.md).
-3. **Resolve artifact-history differences.** Repeated source cycles changed
-   readonly data layout and embedded immediate values. Paired engines agree;
-   cross-history determinism is unresolved. Trace constant identities and
-   relocations before introducing a function-level cache or normalizing bytes.
-4. **Broaden useful execution.** Add real interface/test/dependency edits and an
-   unfiltered suite attempt, recording unsupported bodies explicitly. A shared
-   test graph and entry descriptors may improve selection reuse; eager export
-   of all bodies is not assumed to be cheaper.
-5. **Revisit durable reuse.** Cache identities need compiler/target/configuration,
-   layouts, stable instance IDs, semantic dependencies and relocations. Keep
-   guest state fresh across runs. Measure lookup, validation and loading costs.
+1. **Finish the current candidate's held-out cases.** Source `aa2f6ea`, tool
+   `0e94d6d8`, passes 276 debug/release tests, 47,004 mixed native-validation
+   commands, 245 TLS commands and 382 fre body replays with seven ignored.
+   Both original compute gates pass: folded paired wall −21.82%, token −33.09%.
+   A matched-frontend comparison attributes an additional 15.14% token gain
+   to native copies. Both workloads still take longer than native Cargo.
+   Fresh Nushell type-relations and Ruff histories pass their regression guards;
+   finish the remaining five cases in the committed order and evaluate the
+   complete amended set. Keep the original zero-pair stop and all earlier
+   failed token gates. No timing reruns to obtain a passing result.
+   [Current results](results/resumable-copy-original-e2e-01/assessment.md),
+   [held-out plan](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md).
+2. **Choose the next execution change from fresh profiles.** The previous
+   token profile put 88.19% of interpreted operations in copies; those copies
+   now execute natively. Reprofile the exact current artifacts before choosing
+   another ABI, initialization or memory-check change. Preserve exact budgets,
+   initialization, fault order and guest state. Earlier narrow frame-reuse
+   censuses are parked; their tiny measured opportunities do not justify a
+   new optimization without evidence.
+3. **Broaden useful execution.** Prioritize a recorded unfiltered suite attempt
+   and the real unsupported behavior it exposes. Existing fre evidence runs
+   bodies directly; it does not qualify libtest, unwinding, threads or OS/FFI.
+   Add test/dependency/macro edits with original assertions. Generic API edits
+   already have fifteen-cycle histories: pgrust −1.14% and Nushell +1.12% paired
+   wall for the preceding call experiment, neither a material benefit.
+   A shared test graph may improve selection reuse; eager export of every
+   body is not assumed to be cheaper.
+4. **Keep frontend work tied to measured costs.** Four-versus-eighteen-worker
+   cold results fail the predeclared CPU bound; the tiny wrapper misses its
+   separate cold gate. Neither is adopted as a standalone pipeline win.
+   Native linker/backend alternatives remain unqualified. Preserve the current
+   eighteen-job O0/incremental native control in comparisons, and label any
+   new control configuration separately.
+5. **Develop correct reuse before optimizing it.** The Nushell reduction and
+   built-MIR observer locate history-sensitive literal allocation IDs in rustc
+   incremental reuse. IDs are session-local, and equal bytes do not establish
+   allocation identity. Cache keys need compiler/target/configuration, layouts,
+   stable instance identities, semantic dependencies and relocations. With
+   roughly 71 ms of lowering inside a 5.3-second Nu command, function reuse is
+   parked as the immediate speed project. Keep guest state fresh and account
+   for cache lookup, validation and loading costs.
 
 Before each runtime experiment, record correctness gates, target workloads and a
 meaningful complete-command performance criterion. Retain all regressions and
