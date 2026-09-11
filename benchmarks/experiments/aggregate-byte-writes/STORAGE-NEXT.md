@@ -26,3 +26,12 @@ archives. Do not infer that a large or old cache is authorized: only the exact
 completed public selection above is in this batch. Preserve any preparation or
 application failure and audit it before a distinct retry. Recheck live available
 space against each held-out's complete-cache estimate before starting it.
+
+After fre qualification, the Nushell check observes 25.31 GiB free against the
+unchanged 25.99 GiB bound. No workflow history was created. A separate
+`aggregate-relocation-space-02` batch selects the four completed public Ruff
+caches from workflow `resumable-copy-heldout-01-case-02-ruff`, parent corpus
+`resumable-copy-heldout-01-case-02`. Use the same prepare/review/commit/apply/
+assess sequence with new archive identities. The first four-cache batch is
+complete; none of its retired targets is selected again. Preserve the failed
+space admission separately and recheck the original bound after this batch.
