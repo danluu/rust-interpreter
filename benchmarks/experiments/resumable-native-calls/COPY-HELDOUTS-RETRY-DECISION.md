@@ -31,6 +31,14 @@ any such extension needs its own bounded ownership checks and qualification.
 Private caches, quarantine directories and unrelated processes remain outside
 this work.
 
+The [fixed amendment](COPY-HELDOUTS-RETRY-01.json) now has a separate
+[qualified aggregator](../../../results/copy-heldout-retry-gates-01/assessment.md).
+It reuses the original gate arithmetic, reproduces both primary receipts, and
+rejects 29 invalid substitutions, incomplete sets or admissions. Its admission
+report must pass within sixty seconds before the retry corpus starts. The final
+aggregate will be `results/resumable-copy-heldout-recovery-01`, with the original
+interrupted history explicitly excluded and all seven complete cases required.
+
 No retry has started at this checkpoint. Retention still requires all seven
 complete held-out cases, the unchanged primary gates and the existing native,
 TLS and fre qualifications. Neither archive work nor the disk-guard stop is

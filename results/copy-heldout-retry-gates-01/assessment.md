@@ -1,0 +1,1 @@
+The single Nushell retry substitution preserves all seven cases and their arithmetic. A regression remains a regression, and both existing primary gate receipts reproduce exactly. 29 incomplete sets, changed controls/identities and invalid admissions are rejected. The exact 60-second admission boundary is checked. No new benchmark was run.

@@ -111,7 +111,13 @@ for twenty exact targets across seven completed public histories. All 274 record
 commands are terminal and source restoration verifies. Thirty-four invalid
 scopes/records/hashes are rejected; the archive core passes 44 rejections/seven
 coordinator cases and batch routing rejects 23 invalid cases. The pilot's older
-repeated A/B format remains distinct. No legacy cache has been retired yet.
+repeated A/B format remains distinct. The [twenty inventories](results/legacy-native-storage-01/inventory-review.json)
+are reviewed: 128,089 paths, 14.67 GB original payloads and 1,275 evidence hashes.
+No legacy cache has been retired yet. The [retry amendment](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-01.json)
+is now [qualified](results/copy-heldout-retry-gates-01/assessment.md): 29 invalid
+inputs are rejected, both primary receipts reproduce, all seven cases remain
+required, and the stopped history contributes zero pairs. The fresh admission
+must precede corpus startup by no more than sixty seconds.
 
 ## Closed worker-count experiment
 
