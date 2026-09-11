@@ -6,6 +6,28 @@ using real source-edit/build/test measurements. Every user suggestion has an
 is user-owned, unchanged and intentionally untracked. Local commits are authorized;
 no push was requested. Branch: `experiment/resumable-native-calls`.
 
+## Active direction
+
+The allocation-history investigation now has a [small incremental-on/off
+reproducer](results/allocation-history-reduction-02/assessment.md) and a
+[built-MIR observer](results/allocation-history-mir-dumps-02/assessment.md).
+Both pass 133 command checks; the observer preserves all eight uninstrumented
+artifacts. Only the API-dependent body rebuilds where its literal allocation
+splits. This explains the history sensitivity without licensing content-only
+deduplication or session-local cache keys. Commits be16330 and acb0565 preserve
+the two stages.
+
+Return to compute-heavy guest execution next. Function reuse remains a design
+problem, but Nu's ~71-ms lowering interval inside ~5.3-second edited commands
+does not justify it as the immediate speed project. Fresh exact-code profiles
+of tool78's existing bulk/resumable/persistent mode have completed. The
+[qualified analyzer](results/resumable-bulk-profile-tools-01/assessment.md)
+now recognizes the bulk loop without changing six historical profiles.
+[Token](results/resumable-bulk-token-sample-01/assessment.md) shows 15.59%
+native-boundary self samples and 9.55% clearing; [folded](results/resumable-bulk-folded-sample-01/assessment.md)
+shows 40.07% clearing and 0.20% native boundaries. Collect exact interpreted-op
+counts next to explain token's ~22 million native entries. No new speed claim.
+
 ## Closed worker-count experiment
 
 The [worker plan](benchmarks/experiments/compiler-pipeline/WORKER-COUNT-NEXT.md)
@@ -62,10 +84,10 @@ Warm primary latency shows no material benefit. Exact observations and source
 restoration are preserved, including [cold04](results/worker-count-nushell-cold-04/assessment.md).
 
 The worker experiment is closed. Its eleven inputs remained unchanged through
-the decision; Git e4bbffb preserves the tracked source versions. Release the
-launcher for the pending allocation-origin diagnostic, keeping guest code and
-runtime defaults unchanged. Qualify the new flag/sidecar receipts first, then
-capture the original/wrong/API/restored Nushell history.
+the decision; Git e4bbffb preserves the tracked source versions. The launcher
+was released for the now-qualified allocation-origin diagnostic.
+The original/wrong/API/restored Nushell history and small reduction are complete.
+Guest code and runtime defaults remain unchanged.
 
 The [latest 32-cache batch](results/worker-cold-storage-batch-05/assessment.md)
 completed and verified. The [four cold04 caches](results/allocation-history-storage-01/assessment.md)
@@ -200,14 +222,14 @@ guard remains eight GiB and is not a reservation against other host activity.
 show 800 custom timed units under four jobs and CPU/wall about 3.1 when cold,
 versus about 1.5 after edits. Native has 608 units under eighteen jobs. Overlap
 is not CPU utilization, a ready queue or a critical-path proof. This motivated
-the active isolated worker comparison.
+the now-closed isolated worker comparison.
 
 [Constant-history inspection](results/interface-nushell-literal-history-01/assessment.md)
 finds an extra `Expected OneOf` literal and changed guest offsets after edit/revert.
 The allocation HashMap is never iterated for layout. This is not proof of an
 interning cause or permission for content-only deduplication. The
 [bounded trace](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
-is qualified on fixtures; the large history remains pending. Stable allocation/
+is qualified on fixtures and the completed large history. Stable allocation/
 relocation identity is required before function reuse.
 
 The opt-in allocation trace is implemented in the exporter and a tracked
@@ -268,8 +290,9 @@ can join exact initialized allocation contents to all request ancestry and full
 function context. It preserves distinct mutable TLS identities and checks exact
 serialized output bounds. The [actual Nushell attribution](results/allocation-origin-nushell-history-01/assessment.md)
 finds the literal split already present in compiler allocation IDs after the API
-edit and revert. All four artifacts match historical bytes. A small incremental-on/off
-reduction is next; no content-only deduplication or cache adoption.
+edit and revert. All four artifacts match historical bytes. The small incremental-on/off
+reduction and its byte-preserving MIR observer reproduce selective rebuilding;
+no content-only deduplication or cache adoption.
 
 The [allocation transport helper](results/allocation-trace-transport-01/assessment.md)
 passes four real traces and 33 malformed-file checks with exact byte/event

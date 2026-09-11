@@ -180,3 +180,26 @@ each state without it. That would support the mixed decoded/recomputed MIR
 mechanism found in the pinned compiler source; individual query reuse still
 needs direct evidence before being asserted. Do not patch allocation equality
 or adopt function caching from this reduction alone.
+
+## Reduction and MIR observation completed
+
+The [uninstrumented reduction](../../../results/allocation-history-reduction-02/assessment.md)
+passes 133 native/custom command checks with exact source restoration. It
+reproduces the predicted 1/1/2/2 allocation counts with incremental reuse and
+1/1/1/1 without it. Original equality assertions and all three literal panic
+branches execute in native Rust, the interpreter and the custom JIT.
+
+The [narrowed built-MIR observer](../../../results/allocation-history-mir-dumps-02/assessment.md)
+passes another 133 checks and preserves all eight bytecode artifacts exactly.
+With incremental reuse, no selected bodies rebuild for the wrong API body;
+only `depends_on_api` rebuilds for the signature edit and restoration. Without
+incremental reuse, all three rebuild at every state. The pinned compiler emits
+these built-phase dumps from `mir_built` after `build_mir_inner_impl`.
+
+This directly supports the mixed cached/recomputed MIR explanation, alongside
+the different literal-construction and allocation-decoding paths in the pinned
+compiler. IDs are session-local. Equal bytes still do not establish allocation
+equivalence; no cache or allocation merge is adopted. Earlier driver failures
+and their restoration evidence remain recorded. Park function reuse as the
+immediate speed project: measured lowering is ~71 ms within the ~5.3-second Nu
+warm command. Return to current guest-runtime profiles for the next experiment.

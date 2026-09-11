@@ -14,6 +14,13 @@ from summarize_owned_sample import ROOT, require, sha, parse_tree, self_samples
 # Match complete sequences, including their local branch displacements.
 ZERO_RANGE = (0xcb0b0189, 0xd280020a, 0xeb0a013f, 0x54000063, 0xa8817d7f,
               0x17fffffb, 0xeb0c017f, 0x54000060, 0x3800157f, 0x17fffffd)
+# Assembler::zero_range_at_least's 64-byte loop, including the entry setup.
+# Require its complete exact tail too; classify that tail with ZERO_RANGE so
+# the categories remain disjoint and historical small-loop reports unchanged.
+ZERO_BULK_PREFIX = (0xcb0b0189, 0xd280080a, 0xa9007d7f, 0xa9017d7f,
+                    0xa9027d7f, 0xa9037d7f, 0x9101016b, 0xd1010129,
+                    0xeb0a013f, 0x54ffff22)
+ZERO_BULK = ZERO_BULK_PREFIX + ZERO_RANGE
 COPY_BACKWARD = (0x385ffd6a, 0x381ffd8a, 0xf1000529, 0x54ffffa1)
 COPY_FORWARD = (0x3840156a, 0x3800158a, 0xf1000529, 0x54ffffa1)
 
@@ -41,6 +48,9 @@ def classify_words(data, resumable=False):
         classes.append(kind)
     sequences = Counter()
     for i, w in enumerate(words):
+        if resumable and w == ZERO_BULK[0] and tuple(words[i:i + len(ZERO_BULK)]) == ZERO_BULK:
+            classes[i:i + len(ZERO_BULK_PREFIX)] = ['native_zero_bulk'] * len(ZERO_BULK_PREFIX)
+            sequences['native_zero_bulk'] += 1
         for pattern, kind in [(ZERO_RANGE, 'native_zero_range'),
                               (COPY_BACKWARD, 'native_abi_byte_copy'),
                               (COPY_FORWARD, 'native_abi_byte_copy')]:

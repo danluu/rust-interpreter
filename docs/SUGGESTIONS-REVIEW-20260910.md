@@ -127,8 +127,16 @@ review are not commitments or evidence of feasibility.
   [Nushell history now reproduces the split](../results/allocation-origin-nushell-history-01/assessment.md)
   in compiler allocation IDs before exporter layout. The exact literal in the
   test depending on the generic API receives a separate ID after edit/revert;
-  all four artifacts match historical bytes. A reduced incremental-on/off
-  comparison is next. Launcher qualification passes 17 new and 99 original checks.
+  all four artifacts match historical bytes. The [small reduction](../results/allocation-history-reduction-02/assessment.md)
+  reproduces allocation counts 1/1/2/2 with incremental reuse and 1/1/1/1
+  without it. Its [built-MIR observer](../results/allocation-history-mir-dumps-02/assessment.md)
+  directly shows only the API-dependent body rebuilding at the split; all eight
+  artifacts remain byte-identical to the uninstrumented reduction. Each diagnostic
+  passes 133 command checks. Session-local IDs remain unsuitable cache keys.
+  Function reuse is parked as immediate performance work given the measured
+  ~71-ms lowering interval within ~5.3-second Nu commands; fresh guest profiles
+  will guide the next runtime change. Launcher qualification passes 17 new and
+  99 original checks.
 
 - Items 4.5/2.1 now have independent, bounded custom worker counts, while native
   and check controls retain their own settings. Helper/harness qualifications
