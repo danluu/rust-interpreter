@@ -32,10 +32,13 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--candidate-tool-key', required=True)
     parser.add_argument('--baseline-tool-key', required=True)
+    parser.add_argument('--candidate-resumable-calls', action='store_true')
     parser.add_argument('--candidate-persistent-registers', action='store_true')
     parser.add_argument('--candidate-call-stubs', action='store_true')
     parser.add_argument('--profile-candidate', action='store_true')
     args = parser.parse_args()
+    if args.candidate_resumable_calls and args.candidate_call_stubs:
+        parser.error('resumable calls cannot be combined with Call stubs')
     if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..']:
         parser.error('run-id must be one directory name')
     work = ROOT / '.work' / args.run_id
@@ -76,7 +79,7 @@ def main():
                 command = [str(directory / 'rust-interp-vm'), '--engine', 'jit',
                     '--instruction-limit', '100000000000', '--allocation-limit', '150000']
                 if mode == 'candidate':
-                    command.append('--jit-native-calls')
+                    command.append('--jit-resumable-calls' if args.candidate_resumable_calls else '--jit-native-calls')
                     if args.candidate_persistent_registers:command.append('--jit-persistent-registers')
                     if args.candidate_call_stubs:command.append('--jit-native-call-stubs')
                     if args.profile_candidate:
@@ -101,7 +104,8 @@ def main():
                 write(work / 'commands.json', rows)
                 if child.returncode != 0 or stdout.strip() != '0':
                     raise RuntimeError(label + '/' + mode + ' failed: ' + stderr[-2000:])
-                if mode == 'candidate' and not (stats.get('jit_tree_entries', 0) + stats.get('jit_stub_calls', 0)):
+                entered = stats.get('jit_resumable_calls', 0) if args.candidate_resumable_calls else (stats.get('jit_tree_entries', 0) + stats.get('jit_stub_calls', 0))
+                if mode == 'candidate' and not entered:
                     raise RuntimeError('experimental path did not execute')
                 if mode == 'candidate' and args.candidate_persistent_registers and not stats.get('jit_register_functions', 0):
                     raise RuntimeError('no persistent registers were published')

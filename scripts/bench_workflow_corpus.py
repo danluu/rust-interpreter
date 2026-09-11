@@ -50,6 +50,7 @@ def main():
     parser.add_argument('--candidate-tool-key', required=True)
     parser.add_argument('--baseline-tool-key', required=True)
     parser.add_argument('--candidate-jit-native-call-stubs', action='store_true')
+    parser.add_argument('--candidate-jit-resumable-calls', action='store_true')
     parser.add_argument('--candidate-jit-persistent-registers', action='store_true')
     parser.add_argument('--candidate-jit-native-calls', action='store_true')
     parser.add_argument('--only', action='append', help='case label; repeat to select a subset')
@@ -64,6 +65,8 @@ def main():
     args = parser.parse_args()
     if args.candidate_jit_native_call_stubs and not args.candidate_jit_native_calls:
         parser.error('--candidate-jit-native-call-stubs requires --candidate-jit-native-calls')
+    if args.candidate_jit_resumable_calls and (args.candidate_jit_native_calls or args.candidate_jit_native_call_stubs):
+        parser.error('--candidate-jit-resumable-calls cannot be combined with native tree/stub calls')
     if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..'] or len(args.run_id) > 120:
         parser.error('run-id must be one short directory name')
     if not 3 <= args.cycles <= 30 or min(args.jobs, args.native_jobs) < 1 or max(args.jobs, args.native_jobs) > 256:
@@ -124,6 +127,7 @@ def main():
                 '--baseline-tool-key', args.baseline_tool_key,
                 '--comparison-engine', 'jit', '--expect-identical-bytecode', *case['flags'],
                 *['--native-rustflag=' + flag for flag in args.native_rustflag]]
+            if args.candidate_jit_resumable_calls:command.append('--candidate-jit-resumable-calls')
             if args.candidate_jit_persistent_registers:command.append('--candidate-jit-persistent-registers')
             if args.candidate_jit_native_calls:command.append('--candidate-jit-native-calls')
             if args.candidate_jit_native_call_stubs:command.append('--candidate-jit-native-call-stubs')

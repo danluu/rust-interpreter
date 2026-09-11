@@ -53,7 +53,8 @@ def verify(report, reference=None):
             settings = report.get('tool_builds', {}).get(mode, {})
             for field, flag in [('jit_native_calls', '--jit-native-calls'),
                                 ('jit_native_call_stubs', '--jit-native-call-stubs'),
-                                ('jit_persistent_registers', '--jit-persistent-registers')]:
+                                ('jit_persistent_registers', '--jit-persistent-registers'),
+                                ('jit_resumable_calls', '--jit-resumable-calls')]:
                 if field in settings:
                     for call in row['calls']:
                         require((flag in call['command']) == settings[field], 'recorded runtime option differs')

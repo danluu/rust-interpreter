@@ -42,7 +42,10 @@ def main():
     corpus = read(out / 'summary.json')
     options = corpus['plan']['options']
     require(options['baseline_tool_key'] == BASELINE, 'original baseline changed')
-    require(options['cycles'] == 3 and options['candidate_jit_native_calls'], 'unexpected primary options')
+    native = options.get('candidate_jit_native_calls', False)
+    resumable = options.get('candidate_jit_resumable_calls', False)
+    require(options['cycles'] == 3 and native != resumable, 'unexpected primary options')
+    require(not (resumable and options.get('candidate_jit_native_call_stubs', False)), 'incompatible native options')
     require({r['label'] for r in corpus['workflows']} == set(TARGETS), 'missing or unexpected primary workload')
     require(all(sha(ROOT / p) == h for p, h in corpus['plan']['frozen'].items()), 'frozen scripts changed')
     build = index(args.source_commit)
@@ -67,11 +70,13 @@ def main():
         report = read(path)
         verified = verify(report)
         require(verified == read(path.with_name('verification.json')), 'verification receipt mismatch')
-        require(report['candidate_jit_native_calls'] and report.get('candidate_jit_native_call_stubs', False) == options.get('candidate_jit_native_call_stubs', False), 'candidate native flags differ')
+        require(report['candidate_jit_native_calls'] == native and report.get('candidate_jit_native_call_stubs', False) == options.get('candidate_jit_native_call_stubs', False), 'candidate native flags differ')
+        require(report.get('candidate_jit_resumable_calls', False) == resumable, 'candidate resumable flag differs')
         require(report.get('candidate_jit_persistent_registers', False) == options.get('candidate_jit_persistent_registers', False), 'candidate persistent-register flag differs')
         for mode, settings in report['tool_builds'].items():
             expected = mode == 'candidate'
-            require(settings['jit_native_calls'] == expected and settings.get('jit_native_call_stubs', False) == (expected and options.get('candidate_jit_native_call_stubs', False)), 'measured tool mode differs')
+            require(settings['jit_native_calls'] == (expected and native) and settings.get('jit_native_call_stubs', False) == (expected and options.get('candidate_jit_native_call_stubs', False)), 'measured tool mode differs')
+            require(settings.get('jit_resumable_calls', False) == (expected and resumable), 'measured resumable mode differs')
             require(settings.get('jit_persistent_registers', False) == (expected and options.get('candidate_jit_persistent_registers', False)), 'measured register mode differs')
             for name, field in [('rust-interp-vm', 'vm_sha256'), ('rust-interp-mir-export', 'exporter_sha256')]:
                 require(settings[field] == binaries[settings['tool_key']][name], 'measured binary differs')
