@@ -30,9 +30,10 @@ function caches need stable identities and relocations, not name-only keys.
 The interpreter uses initialized 128-bit virtual registers, a guest frame stack,
 readonly data, mutable statics and a guest heap. A JIT object stages a function
 when it is first entered. It compiles supported bytecode regions and links
-successors within that function. Calls, returns and unsupported native operations
-currently return to the custom interpreter. The JIT is not an eager whole-program
-compiler and is not retained across separate guest executions.
+successors within that function. The default path returns Calls, Returns and
+unsupported native operations to the custom interpreter. Optional experimental
+paths also execute Calls and Returns natively. The JIT is not an eager
+whole-program compiler and is not retained across separate guest executions.
 
 Generated code receives current storage pointers at entry; it cannot keep those
 pointers across VM allocations or frame changes. Code is appended to a bounded
@@ -44,8 +45,25 @@ register storage, profiling counters and exclusive lifetimes.
 Native regions consume the same logical instruction budget as interpretation.
 When a region will not fit, the interpreter executes the remaining instructions
 individually to preserve fault ordering. Local constant/value forwarding and a
-small register cache are reset at conservative boundaries. A native call ABI and
-allocation across loop backedges are future work.
+small register cache are reset at conservative boundaries. The optional
+`--jit-persistent-registers` analysis carries full-width values across native
+block edges, with spills where VM continuation or aliasing requires them.
+
+`--jit-resumable-calls` executes native Calls/Returns over initialized guest
+frames. It uses one host ABI frame and immutable per-function/per-PC entry
+tables, avoiding recursive host-stack growth. Storage preparation and code
+publication happen outside generated execution. Calls preflight storage, depth,
+logical budgets and target readiness before committing progress; argument-copy
+order and required initialization remain explicit. Large ranges clear in exact
+64-byte batches followed by the existing tail.
+
+An unsupported operation or unready target returns the exact active guest frame
+and PC to the VM, which validates the continuation and consumes the returned
+operation once. Root and TLS completion remain in the VM. This mode excludes
+the earlier complete-tree/stub options and stays disabled by default. Its
+debug/release, native differential and TLS qualification does not remove the
+application compatibility limits below. [ABI and experiment](docs/NATIVE-CALL-EXPERIMENT.md),
+[resumable design](benchmarks/experiments/resumable-native-calls/PLAN.md).
 
 ## Semantics and compatibility limits
 

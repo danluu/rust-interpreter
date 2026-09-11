@@ -58,9 +58,11 @@ Two specifications pass input checks and 25 malformed/tampered case rejections;
 checks pass, with actual children drained before restoration. Historical bulk
 primary receipts still verify. The [first pgrust interface qualification](../../../results/interface-pgrust-qualification-01/assessment.md)
 now passes nine primary commands, three checks and six matching paired artifacts.
-Nushell interface qualification and repeated interface measurements are pending.
+The [Nushell qualification](../../../results/interface-nushell-qualification-01/assessment.md)
+also passes nine primary commands, three checks and six matching paired artifacts.
+Both preserve every original assertion and the wrong-edit controls. Fifteen-cycle
+interface comparisons are next; keep the two single qualification pairs separate.
 
-Run one pgrust interface cycle first to exercise the integrated source/receipt
-changes cheaply. Then retry the missing original Nushell held-out workflow under
-a fresh identity and qualify the Nushell interface. The failed attempt remains
-preserved; do not splice partial commands into the retry or waive prior gates.
+The pgrust qualification, fresh retry of the missing original Nushell held-out
+workflow, and Nushell interface qualification are complete. The failed attempt
+remains preserved; no partial commands were spliced into the retry or gates waived.

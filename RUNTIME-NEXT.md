@@ -4,17 +4,20 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Characterize broader compatibility of the resumable candidate.**
-   Source `001065a`, tool `78e60cdd` passes 257 debug/release tests and original
-   artifact checks. Two complete E2E runs improve folded 19.51%/19.15% and token
-   19.95%/19.97%, with CPU improving. Both narrowly fail the original token gate;
-   keep both failures and stop repeating or tuning batch sizes. Run the full
-   native differential validator, separate TLS suite, fre bodies and all seven
-   held-out large-project workflows. The tracked drivers now select and verify
-   the actual runtime mode; helper/CLI qualification passes. This is experimental
+1. **Finish the held-out and interface-edit comparisons.**
+   Source `001065a`, tool `78e60cdd` passes 257 debug/release tests, 47,004 mixed
+   native-validation commands, 245 TLS commands and fresh fre replay of 382
+   passing bodies with seven ignored. Both complete primary E2E runs narrowly
+   miss the original token gate; keep both failures and stop repeated attempts
+   or batch-size tuning. Seven held-out cases now verify across the preserved
+   disk-full attempt and a successful Nushell retry: 588 commands, 105 pairs,
+   294 artifacts, no paired wall regression above 5%. Both generic API edits
+   pass one qualification cycle; now measure fifteen cycles per interface.
+   This is experimental
    characterization, not retention or a changed success criterion.
    [Results](results/resumable-bulk-replication-01/assessment.md),
-   [next qualification](benchmarks/experiments/resumable-native-calls/BROADER-QUALIFICATION.md).
+   [held-out recovery](benchmarks/experiments/resumable-native-calls/HELDOUT-RECOVERY.md),
+   [interface edits](benchmarks/experiments/interface-edits/PLAN.md).
 2. **Finish native configuration qualification.** Nine workflows now have three
    real-edit cycles, child CPU, explicit root O0/incremental native settings,
    18 native build jobs, default test concurrency and independent checks.

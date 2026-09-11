@@ -11,6 +11,7 @@ REPEATED = 'results/paired-repeated-token-01/summary.json'
 COMPUTE = {'folded-literal-trie', 'token-phrase', 'forward-anchored-tls', 'pgrust-sha1-inline8'}
 EXPERIMENT_RUN = 'resumable-bulk-e2e-02'
 EXPERIMENT = 'results/' + EXPERIMENT_RUN + '/gate-evaluation.json'
+HELD_OUT_REPORT = 'results/resumable-bulk-heldout-recovery-01/summary.json'
 
 
 def render():
@@ -24,6 +25,15 @@ def render():
     experimental_native = json.loads((ROOT / 'results/resumable-bulk-native-01/summary.json').read_text())
     experimental_tls = json.loads((ROOT / 'results/resumable-bulk-tls-01/summary.json').read_text())
     experimental_fre = json.loads((ROOT / 'results/resumable-bulk-fre-01/summary.json').read_text())
+    held_out = json.loads((ROOT / HELD_OUT_REPORT).read_text())
+    if (held_out['candidate_tool_key'] != experiment['tool_key'] or
+            held_out['baseline_tool_key'] != experiment['baseline_tool_key'] or
+            held_out['counts'] != dict(primary_commands=441, check_commands=147, edited_pairs=105, artifacts=294)):
+        raise RuntimeError('held-out comparison identities or counts differ')
+    for row in held_out['workflows']:
+        if hashlib.sha256((ROOT / row['report']).read_bytes()).hexdigest() != row['report_sha256']:
+            raise RuntimeError('held-out report changed')
+    held_out_regressions = [r['workflow'] for r in held_out['workflows'] if r['median_paired_wall_ratio'] > 1.05]
     for qualification in [experimental_native, experimental_tls, experimental_fre]:
         if qualification['status'] != 'passed' or qualification['tool_key'] != experiment['tool_key']:
             raise RuntimeError('broader qualification does not match the experimental tool')
@@ -66,10 +76,23 @@ def render():
         'Both fixed-tool runs fail the token gate. The first improved folded 19.51%',
         'and token 19.95%; this replication improved 19.15% and 19.97%. All pairs',
         'and both decisions are preserved. Broader native differential and TLS',
-        'checks and fresh fre body replay now pass; held-out workflows follow.',
+        'checks and fresh fre body replay now pass, along with the held-out checks below.',
         'Defaults and original criteria remain unchanged.',
         '[Both runs and per-edit variation](results/resumable-bulk-replication-01/assessment.md).',
         f'[Result and limitations](results/{EXPERIMENT_RUN}/assessment.md).', '',
+        '## Held-out comparison', '',
+        'Six completed original cases plus one fresh Nushell retry verify 588 commands,',
+        '105 edited pairs and 294 artifacts. The original disk-full run remains',
+        'incomplete; its partial records are preserved outside these totals.', '',
+        '| Workflow | Paired wall change | Paired CPU change |',
+        '| --- | ---: | ---: |',
+        *[f"| {r['workflow']} | {(r['median_paired_wall_ratio']-1)*100:+.2f}% | {(r['median_paired_cpu_ratio']-1)*100:+.2f}% |"
+          for r in held_out['workflows']], '',
+        ('No case exceeds the predeclared 5% paired wall regression limit.' if not held_out_regressions else
+         'Cases above the 5% paired wall regression limit: ' + ', '.join(held_out_regressions) + '.'),
+        'This engineering limit is not a confidence interval. Both original token gates',
+        'remain failed. Native-call options remain experimental and disabled by default.',
+        '[Two histories and verification](results/resumable-bulk-heldout-recovery-01/assessment.md).', '',
         '## Full-corpus baseline', '',
         f"Full-corpus engine `{key[:8]}`, Git `{commit[:7]}`; paired baseline `{options['baseline_tool_key'][:8]}`.",
         'The current change fixes codegen-limit handling; these measurements do not',
@@ -146,6 +169,10 @@ def render():
         report_sha256=r['report_sha256'], measured_tool_key=key,
         native_seconds=r['medians']['native'], custom_seconds=r['medians']['candidate']) for r in rows]
     for category, report in [
+        ('held-out-recovery-comparison', HELD_OUT_REPORT),
+        ('preserved-incomplete-workflow', 'results/resumable-bulk-heldout-failure-01/summary.json'),
+        ('interface-qualification', 'results/interface-pgrust-qualification-01/summary.json'),
+        ('workflow-io-qualification', 'results/workflow-io-faults-02/summary.json'),
         ('held-out-verifier-qualification', 'results/resumable-heldout-verifier-01/summary.json'),
         ('experimental-fre-validation', 'results/resumable-bulk-fre-01/summary.json'),
         ('experimental-native-validation', 'results/resumable-bulk-native-01/summary.json'),

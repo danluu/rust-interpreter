@@ -45,42 +45,53 @@ folded improves 19.15% and token 19.97%, with CPU improving. Token's ratio
 Corresponding histories match across runs; cross-cycle layout differences remain
 unresolved. No more repeated attempts or batch-size tuning are planned.
 
-Broader native/TLS/fre compatibility checks pass. The seven-workflow held-out
-run is **incomplete after ENOSPC in its final Nushell type-relations case**.
-[Failure and recovery](results/resumable-bulk-heldout-failure-01/assessment.md)
-preserve stale status receipts, logs and partial timings. All matching run
-processes were gone; the owned source matched the exact expected edit and was
-restored to its pinned bytes. No cache cleanup or process signaling was needed.
+Broader native/TLS/fre compatibility checks pass. All seven held-out cases are
+now complete across two run histories. [The recovery assessment](results/resumable-bulk-heldout-recovery-01/assessment.md)
+verifies **588 commands, 105 edited pairs and 294 artifacts**, original controls,
+source restoration and both archived harness versions. No paired wall regression
+exceeds 5%: pgrust −1.88%, Nushell +0.60%, rg-aot −0.03%, fre TLS −1.58%,
+pgrust SHA-1 −4.38%, Ruff −0.56%, Nushell type relations −0.86%.
+The last case's paired CPU change is +1.79%; small changes are not significance
+claims. Original primary token gates remain failed; no default retention.
 
-Six completed workflows were reverified: pgrust paired wall −1.88%, Nushell +0.60%,
-rg-aot −0.03%, fre TLS −1.58%, pgrust SHA-1 −4.38%, Ruff −0.56%. None exceeds
-5%; there is no complete seven-case result. Preserve these 504 commands, 90 pairs
-and 252 artifacts separately from the incomplete last case's 12 primary records
-and three check records. Retry only the missing case with a new run/cache identity.
+The original seven-case run remains **incomplete after ENOSPC**. Its six complete
+cases are preserved, with its partial last-case 12 primary/three check records
+outside the new complete totals. [Failure and recovery](results/resumable-bulk-heldout-failure-01/assessment.md)
+record exact source restoration with no signals/cache cleanup. Retry01 was
+rejected for a mistyped key before compilation; retry02 completed successfully.
+The new assessment verifies original harness `edf0c2b` and retry harness `e4a9613`
+from Git rather than pretending the IO changes were present in the first run.
 
-The harness now stages source restoration before mutation, publishes source and
-JSON atomically, waits/drains children on receipt failures and checks free space
-before commands. [Ten failure-injection checks](results/workflow-io-faults-01/summary.json)
-pass using three real child processes. [One actual pgrust interface cycle](results/interface-pgrust-qualification-01/assessment.md)
-now passes all original tests, negative controls and independent source/artifact
-verification: nine primary commands, three checks and six paired artifacts.
-The missing original Nushell case is running as `resumable-bulk-heldout-retry-02`
-with fresh caches and unchanged tool/control options. Retry01 was rejected for
-a mistyped tool key before compilation; its failed command is preserved. Runtime/tool options and failed primary gates are unchanged.
+The harness stages source restoration before mutation, publishes source/JSON
+atomically, waits/drains children on receipt failures and checks disk before
+commands. [Ten fault checks](results/workflow-io-faults-02/summary.json) pass using
+three real children. [Pgrust's actual generic API qualification](results/interface-pgrust-qualification-01/assessment.md)
+passes all four original tests and wrong-edit/source/artifact controls: nine
+primary commands, three checks, six paired artifacts. This is one edited pair.
 
-The next workflow check is [generic interface edits](benchmarks/experiments/interface-edits/PLAN.md):
-pgrust's byte-hash API becomes generic over borrowed `AsRef<[u8]>`, and Nushell's
-list-type constructor accepts `Into<Type>`. All original test source is preserved.
-Two pinned case files, a bounded public case loader and input-check helper are
-committed in `38962af`. The input helper now passes two valid specifications and
-25 malformed/tampered cases. The first Rust interface qualification now passes. The harness
-and independent verifier now integrate frozen case snapshots and reconstruct
-all source states/selections/orders. Finish the missing held-out case, qualify
-Nushell, then fifteen cycles of each single interface edit. The
-[recovery assessment plan](benchmarks/experiments/resumable-native-calls/HELDOUT-RECOVERY.md)
-keeps the failed run and two harness histories distinct; its new driver is
-prepared but cannot run until the retry is terminal. Current corpus, interpreter,
-verifier and Rust sources are frozen while that benchmark runs.
+Both [generic interface qualifications](benchmarks/experiments/interface-edits/PLAN.md)
+now pass with original assertions, wrong edits, six paired artifacts each and
+source restoration. Pgrust generalizes borrowed hash inputs; Nushell generalizes
+its list-type constructor to `Into<Type>`. These single pairs remain separate
+from the repeated measurements.
+
+[Pgrust's fifteen-cycle comparison](results/interface-pgrust-repeated-01/assessment.md)
+is complete: **180 commands, 15 edited pairs, 90 paired artifacts**. Median wall
+is 0.663s native, 0.495s baseline, 0.491s candidate; paired changes −1.14% wall/
+−1.17% CPU. Original source-state artifacts match across all cycles. This is
+one API edit repeated fifteen times, not the original five body edits × three.
+Nushell's fifteen-cycle run is active as `interface-nushell-repeated-01`,
+supervisor23231 (controller identity in its status receipt). Wait for terminal,
+verify the snapshot/commands/artifacts, frozen inputs and source restoration,
+then report both interfaces together without pooling their different costs.
+Keep case, interpreter, verifier and Rust sources frozen while it runs.
+
+The completed Nushell held-out median is 8.242s native, 5.198s baseline and
+5.159s candidate. Candidate Cargo is 5.082s versus 0.01044s VM execution.
+Host build dependencies include nu-cmd-extra's theme generator importing
+nu-protocol; keep that real cost. These stage results favor investigating
+frontend/build reuse for this workload after the interface comparisons; they
+do not establish a safe invalidation shortcut or a whole-application win.
 
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.

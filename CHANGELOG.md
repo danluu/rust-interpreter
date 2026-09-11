@@ -1,5 +1,20 @@
 # Checked-in changes
 
+## 2026-09-11 held-out and interface qualification
+
+- The resumable/bulk candidate now independently passes native, TLS and fresh
+  fre body coverage. Seven held-out cases verify 588 commands/105 edited pairs/
+  294 artifacts across two histories, with no paired wall regression above 5%.
+  Both original token gates remain failed; options stay experimental.
+- Preserved an interrupted disk-full run and restored its exact benchmark edit.
+  Source restoration is staged before mutation; source/receipts publish
+  atomically and child processes are drained/waited on receipt failure. Ten
+  fault checks pass, including three real child processes.
+- Added validated public case files and independent reconstruction of source
+  states/selections/orders. Pgrust and Nushell generic API qualifications pass
+  original assertions and wrong-edit controls. Fifteen pgrust API-edit cycles
+  verify 180 commands and 90 paired artifacts; repeated Nushell work follows.
+
 - Native region Call experiment `26833c3` / `2f31c6a0`: 231 workspace tests pass
   in debug/release; repeated real edits improve token 19.3% paired and regress
   folded 1.4%. Both original gates fail. Preserve 168 commands/84 verified artifacts

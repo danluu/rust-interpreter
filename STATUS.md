@@ -22,10 +22,31 @@ passes; token narrowly misses its target (ratio 0.8003441753 versus 0.8).
 Both fixed-tool runs fail the token gate. The first improved folded 19.51%
 and token 19.95%; this replication improved 19.15% and 19.97%. All pairs
 and both decisions are preserved. Broader native differential and TLS
-checks and fresh fre body replay now pass; held-out workflows follow.
+checks and fresh fre body replay now pass, along with the held-out checks below.
 Defaults and original criteria remain unchanged.
 [Both runs and per-edit variation](results/resumable-bulk-replication-01/assessment.md).
 [Result and limitations](results/resumable-bulk-e2e-02/assessment.md).
+
+## Held-out comparison
+
+Six completed original cases plus one fresh Nushell retry verify 588 commands,
+105 edited pairs and 294 artifacts. The original disk-full run remains
+incomplete; its partial records are preserved outside these totals.
+
+| Workflow | Paired wall change | Paired CPU change |
+| --- | ---: | ---: |
+| pgrust | -1.88% | -1.87% |
+| nushell | +0.60% | +0.40% |
+| rg-aot | -0.03% | +0.11% |
+| forward-anchored-tls | -1.58% | -4.63% |
+| pgrust-sha1-inline8 | -4.38% | -4.46% |
+| ruff | -0.56% | +0.34% |
+| nushell-type-relations | -0.86% | +1.79% |
+
+No case exceeds the predeclared 5% paired wall regression limit.
+This engineering limit is not a confidence interval. Both original token gates
+remain failed. Native-call options remain experimental and disabled by default.
+[Two histories and verification](results/resumable-bulk-heldout-recovery-01/assessment.md).
 
 ## Full-corpus baseline
 

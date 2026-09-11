@@ -16,8 +16,8 @@ large execution gap on compute-heavy tests. Native controls still need tuning.
 | Guest backend | Our bytecode interpreter and direct AArch64 emitter |
 | Native emitter platform | Apple Silicon macOS |
 | Benchmark projects | pgrust, fre, Nushell, Ruff, private rg-aot |
-| Broadest recorded replay (`57a54edd`) | 382 fre bodies passed, 7 ignored, with explicit options; not libtest |
-| Main gaps | Native call overhead, native configuration qualification, reuse, real unwinding, threads/OS/FFI and complete test-harness semantics |
+| Broadest fresh replay (`78e60cdd`, experimental resumable calls) | 382 fre bodies passed, 7 ignored, with explicit options; not libtest |
+| Main gaps | Compute performance, native configuration qualification, reuse, real unwinding, threads/OS/FFI and complete test-harness semantics |
 
 ## Run a selected function or test
 
@@ -51,10 +51,14 @@ python3 -m unittest discover -s tests -p test_workflow_measurements.py
 python3 scripts/update_status.py
 ```
 
-Serialize task builds and benchmarks with `.work/benchmark.lock`. The current
-workspace check passes 188 bytecode unit/integration tests, 11 exporter tests
-and 3 historical cache tests. The bytecode library alone contributes 96 passes
-and one ignored diagnostic. [Validation record](results/review-codegen-limits-01/summary.json).
+Serialize task builds and benchmarks with `.work/benchmark.lock`. Current runtime
+source `001065a` passes 257 workspace tests in debug and release, with one ignored
+diagnostic. Its experimental resumable Calls/Returns also pass fresh native,
+TLS and fre body comparisons. Both complete performance runs still miss the
+original token target, so the new options remain disabled by default.
+[Workspace validation](results/resumable-bulk-release-01/assessment.md),
+[fresh replay](results/resumable-bulk-fre-01/assessment.md),
+[performance decisions](results/resumable-bulk-replication-01/assessment.md).
 
 The benchmark harness replays actual source edits, preserves original tests,
 requires a wrong edit to fail, and supports repeated cycles with child CPU

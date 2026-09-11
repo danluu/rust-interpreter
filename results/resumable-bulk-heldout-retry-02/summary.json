@@ -1,0 +1,82 @@
+{
+  "plan": {
+    "schema_version": 1,
+    "options": {
+      "run_id": "resumable-bulk-heldout-retry-02",
+      "candidate_tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+      "baseline_tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "candidate_jit_native_call_stubs": false,
+      "candidate_jit_resumable_calls": true,
+      "candidate_jit_persistent_registers": true,
+      "candidate_jit_native_calls": false,
+      "only": [
+        "nushell-type-relations"
+      ],
+      "cycles": 3,
+      "jobs": 4,
+      "native_jobs": 18,
+      "native_profile": "o0-incremental",
+      "native_test_threads": "default",
+      "native_rustflag": [],
+      "lock_wait_seconds": 600,
+      "minimum_free_gib": 30
+    },
+    "cases": [
+      {
+        "label": "nushell-type-relations",
+        "project": "nushell",
+        "workflow": "type-relations",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--std-mir",
+          "--instruction-limit",
+          "1000000000"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-corpus-nushell-type-relations-01/summary.json",
+        "reference_report_sha256": "730dd0c683902020b25286c3333056b87c384bf6fcda2047179a9263305455a4"
+      }
+    ],
+    "frozen": {
+      "scripts/bench_e2e_workflow.py": "9176903ea903f95d24c24fc8ad0e680faa2167ed69f9ea72906cdbf46d850034",
+      "scripts/interpreter.py": "7fe4928e7e57e6cca62a29a59dd0dbefceb05283940e2f5289379d3e3cd0f077",
+      "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+      "scripts/workflow_case_file.py": "60c73c83f5dff4eaea548a07f8419c41f47df3e613de0d34541af26603894712",
+      "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+      "scripts/workflow_measurements.py": "8f28b001e51c118f1e96a37d9232083a3927b5c020374dadfdbbb911a7796a3c",
+      "scripts/workflow_io.py": "29e006c3397fb762743783d13bfe3a2fca1d45091bfb2110380fe083108a4119",
+      "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+      "scripts/verify_repeated_workflow.py": "00d0e895e132d6ecf727694564e4605358bb7d7360783588abab559afa497062",
+      "scripts/bench_workflow_corpus.py": "9a0f8b77f20b1bd1025715397f1b6011487e0b5076dcfcdf823d1d64b1644f33",
+      "benchmarks/workflow-corpus.json": "53c845a5a862a3022816c23fea7f8e6d843da2e65b8c3afe48b17d2e4841916d"
+    },
+    "purpose": "Repeated complete-command control comparison; preserve original assertions, wrong edits, cache histories and all regressions. No fastest-native, significance or retention decision is automatic."
+  },
+  "workflows": [
+    {
+      "label": "nushell-type-relations",
+      "report": "results/resumable-bulk-heldout-retry-02-nushell-type-relations/summary.json",
+      "report_sha256": "fadb13b940eccc16b1339747ce6e26ca0e59cb7c24a46044a8aa3741320f0f37",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 8.241813916000012,
+        "baseline": 5.198404917000005,
+        "candidate": 5.159328749999986
+      },
+      "cpu_medians": {
+        "native": 20.884568,
+        "baseline": 7.162559000000073,
+        "candidate": 7.2833789999999965
+      },
+      "check_median_seconds": 4.379970458999992,
+      "cross_cycle_bytecode_identical": true
+    }
+  ],
+  "status": "All requested workflows completed; compare separate workload groups before selecting a native configuration or runtime direction"
+}
