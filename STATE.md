@@ -218,10 +218,11 @@ and [release check](results/allocation-trace-release-01/assessment.md) pass all
 272 tests, one existing ignored. [All 383 original-fixture commands](results/allocation-trace-fixtures-01/assessment.md)
 pass with byte-identical baseline/disabled/enabled artifacts. Tool `e965f566`
 changes only the exporter; VM and wrapper hashes match their previous versions.
-Current worker measurements use the unchanged installed tool78. The diagnostic is qualified; keep launcher inputs frozen until the worker cold
-study closes.
-The launcher has not changed; large-project tracing and function reuse remain
-pending. See the [draft details](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md).
+The completed worker measurements used unchanged installed tool78.
+The launcher now exposes explicit allocation tracing. Its [17-command qualification](results/allocation-trace-launcher-02/assessment.md)
+and [99-check original regression](results/allocation-trace-launcher-regression-01/assessment.md)
+pass, including historical-tool execution. Large-project tracing and function
+reuse remain pending. See the [draft details](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md).
 
 ## Existing engine and limits
 
@@ -264,10 +265,10 @@ The [qualified origin inspector](results/allocation-origin-queries-02/assessment
 can join exact initialized allocation contents to all request ancestry and full
 function context. It preserves distinct mutable TLS identities and checks exact
 serialized output bounds. The actual Nushell history diagnosis remains pending;
-worker-study inputs stay frozen until that study closes.
+the worker study has closed.
 
 The [allocation transport helper](results/allocation-trace-transport-01/assessment.md)
 passes four real traces and 33 malformed-file checks with exact byte/event
 boundaries. It checks the selected artifact hash before use; deeper origin
-semantics remain in the qualified inspector. Launcher integration is pending
-release of the worker study's frozen inputs. No performance claim follows.
+semantics remain in the qualified inspector. Launcher integration is qualified; the traced Nushell history is next.
+No performance claim follows.

@@ -143,3 +143,14 @@ source restoration. Query the literal's three original references and first extr
 materialization using the qualified origin inspector. No function-reuse patch
 should precede this attribution or ignore the measured ~71-ms lowering interval
 within the ~5.3-second warm command in this particular case.
+
+
+The worker study closed at its predeclared CPU failure bound; its measurements
+remain unchanged. Launcher integration now exposes the explicit flag, validates
+Cargo's selected trace under the invocation lock, and reports exporter/artifact
+identities even without timing statistics. [Qualification02](../../../results/allocation-trace-launcher-02/assessment.md)
+passes 17 commands and five traced observations. Qualification01 failed before
+fixture creation due to a driver return-shape assumption; that failure is retained.
+The [original 99-check regression](../../../results/allocation-trace-launcher-regression-01/assessment.md)
+also passes, plus separate historical-tool execution. The tracked
+`trace_nushell_history.py` driver is prepared but not yet run.

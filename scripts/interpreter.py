@@ -165,6 +165,7 @@ def main():
     selected.add_argument('--entry',action='append',help='function to run; repeat for a batch of unit test bodies')
     selected.add_argument('--audit-entries',type=Path,help='JSON list of test body names to check for lowering support, without executing them')
     parser.add_argument('--retain-audit-bodies',action='store_true',help='retain bounded, hashed programs from a lowering audit for separate execution diagnostics')
+    parser.add_argument('--allocation-trace',action='store_true',help='record bounded allocation origins and verify their binding to the selected bytecode before execution')
     parser.add_argument('--features')
     parser.add_argument('--no-default-features',action='store_true')
     parser.add_argument('--instruction-limit',type=int,help='maximum VM instructions (default: 100000000)')
@@ -193,6 +194,8 @@ def main():
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     auditing=args.audit_entries is not None
+    if args.allocation_trace and auditing:
+        parser.error('--allocation-trace cannot be combined with --audit-entries')
     if args.retain_audit_bodies and not auditing:
         parser.error('--retain-audit-bodies requires --audit-entries')
     if auditing:
@@ -220,6 +223,7 @@ def main():
     if args.inline_leaves:require_export_option(tools,key,'inline-leaves')
     if args.trap_unsupported_calls:require_export_option(tools,key,'trap-unsupported-calls')
     if args.run_try_callbacks:require_export_option(tools,key,'run-try-callbacks')
+    if args.allocation_trace:require_export_option(tools,key,'allocation-trace')
     timings['tools_seconds']=time.perf_counter()-stage
     if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
     std=None
@@ -253,6 +257,7 @@ def main():
     if args.inline_leaves:env['RUST_INTERP_INLINE_LEAVES']='1'
     if args.trap_unsupported_calls:env['RUST_INTERP_TRAP_UNSUPPORTED_CALLS']='1'
     if args.run_try_callbacks:env['RUST_INTERP_RUN_TRY_CALLBACKS']='1'
+    if args.allocation_trace:env['RUST_INTERP_ALLOCATION_TRACE']='1'
     if auditing:
         # Snapshot the selection under the invocation lock. Its content-addressed
         # path is tracked by rustc, avoiding argv/environment limits for suites.
@@ -318,6 +323,14 @@ def main():
         timings['launcher_seconds']=time.perf_counter()-started
         if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
         return 0
+    if args.allocation_trace:
+        from allocation_trace import selected_trace
+        stage=time.perf_counter()
+        trace=selected_trace(artifacts[0])
+        trace.update(tool_key=key,exporter_sha256=tool_manifest['rust-interp-mir-export'])
+        print('rust-interp-allocation-trace: '+json.dumps(trace),file=sys.stderr)
+        if stats:
+            timings.update(allocation_trace=trace,allocation_trace_verify_seconds=time.perf_counter()-stage)
     if args.trap_unsupported_calls:
         stage=time.perf_counter()
         call_path=Path(str(artifacts[0])+'.calls.json')

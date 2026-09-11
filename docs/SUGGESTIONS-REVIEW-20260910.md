@@ -134,8 +134,10 @@ review are not commitments or evidence of feasibility.
   finds no material gain (paired wall −0.19%, CPU −0.04%). The
   [Nushell primary](../results/worker-count-nushell-repeated-01/assessment.md)
   finds paired wall +0.59% and child CPU +7.33%, passing both warm guards without
-  a warm benefit. Its excluded pilot halves cold wall time but increases child
-  CPU by 31%; the six fresh cold histories and unchanged adoption gates are next.
+  a warm benefit. Four fresh cold histories reduce wall time about 45–51% but
+  increase child CPU by 24–52%. The [predeclared failure bound](../results/worker-count-cold-decision-through-04/assessment.md)
+  stops the two unstarted histories: even their best possible completion exceeds
+  the CPU guard. The six-history protocol remains explicitly incomplete.
   No worker default changes.
 
 - Item 9.2 now has bounded completed-cache archival, with exact workflow and
