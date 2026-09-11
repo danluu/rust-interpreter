@@ -32,6 +32,8 @@ def main():
         guest = dict(archive='guest', workflow='completed-workflow', mode='candidate', corpus='completed-corpus')
         recovered = dict(archive='recovered', workflow='completed-recovered-case', mode='candidate',
                          corpus='assessed-interrupted-corpus', proof_kind='recovered-workflow')
+        stopped = dict(archive='stopped', workflow='assessed-stopped-case', mode='native',
+                       corpus='assessed-stopped-corpus', proof_kind='stopped-workflow')
         rejected, routes = [], []
 
         def invoke(label, entries, action='prepare', altered=None, should_fail=False):
@@ -77,15 +79,17 @@ def main():
                 routes.append(dict(label=label, commands=calls))
             return calls
 
-        calls = invoke('mixed-prepare', [host, guest, recovered])
+        calls = invoke('mixed-prepare', [host, guest, recovered, stopped])
         require(calls[0][2:] == ['--prepare', 'host', '--workspace-check', 'completed-check'] and
                 calls[1][2:] == ['--prepare', 'guest', '--workflow', 'completed-workflow',
                                 '--mode', 'candidate', '--corpus', 'completed-corpus'] and
                 calls[2][2:] == ['--prepare', 'recovered', '--workflow', 'completed-recovered-case', '--mode',
-                                'candidate', '--corpus', 'assessed-interrupted-corpus', '--recovered-corpus'],
+                                'candidate', '--corpus', 'assessed-interrupted-corpus', '--recovered-corpus'] and
+                calls[3][2:] == ['--prepare', 'stopped', '--workflow', 'assessed-stopped-case', '--mode',
+                                'native', '--corpus', 'assessed-stopped-corpus', '--stopped-corpus'],
                 'selector arguments differ')
-        calls = invoke('mixed-apply', [host, guest, recovered], action='apply')
-        require([call[2:] for call in calls] == [['--apply', name] for name in ['host', 'guest', 'recovered']],
+        calls = invoke('mixed-apply', [host, guest, recovered, stopped], action='apply')
+        require([call[2:] for call in calls] == [['--apply', name] for name in ['host', 'guest', 'recovered', 'stopped']],
                 'apply arguments differ')
         for label, changed in [
             ('host-with-guest-mode', dict(host, mode='native')),
@@ -93,6 +97,8 @@ def main():
             ('unknown-provenance', dict(host, proof_kind='unknown')),
             ('workflow-with-host-mode', {k: v for k, v in host.items() if k != 'proof_kind'}),
             ('explicit-workflow-kind', dict(guest, proof_kind='workflow')),
+            ('stopped-with-host-mode', dict(stopped, mode='host')),
+            ('stopped-without-corpus', {k: v for k, v in stopped.items() if k != 'corpus'}),
             ('recovered-with-host-mode', dict(recovered, mode='host')),
             ('recovered-without-corpus', {k: v for k, v in recovered.items() if k != 'corpus'}),
         ]:
@@ -101,6 +107,8 @@ def main():
         invoke('duplicate-host-target', [host, dict(host, archive='second')], should_fail=True)
         invoke('duplicate-archive-id', [host, dict(guest, archive='host')], should_fail=True)
         invoke('same-target-different-proof-kind', [guest, dict(recovered, workflow=guest['workflow'])], should_fail=True)
+        invoke('changed-stopped-kind', [stopped], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)
+        invoke('duplicate-stopped-target', [stopped, dict(stopped, archive='second')], should_fail=True)
         invoke('changed-recovered-kind', [recovered], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)
         for label, altered in [('changed-kind', {'proof_kind': 'workflow'}),
                                ('changed-mode', {'mode': 'native'}),

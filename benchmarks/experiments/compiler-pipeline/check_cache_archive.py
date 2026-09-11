@@ -215,7 +215,7 @@ def main():
         require((changed / 'metadata.json').read_bytes() == b'changed', 'failed archive changed original')
 
         coordination = []
-        for scenario in ['success', 'recovered-success', 'write-failure', 'verification-failure', 'retirement-interruption']:
+        for scenario in ['success', 'recovered-success', 'stopped-success', 'write-failure', 'verification-failure', 'retirement-interruption']:
             root = raw / ('coordinator-' + scenario)
             target = root / '.work/runs/fixture/native'
             before = fixture(target, many=scenario == 'retirement-interruption')
@@ -226,18 +226,22 @@ def main():
             def proof(run_id, corpus, *, recovered=False):
                 require(recovered == (scenario == 'recovered-success'), 'recovery proof routing differs')
                 return target, {'evidence.json': sha(outside)}, {'fixture': True}
-            with replace(coordinator, 'ROOT', root), replace(coordinator, 'BASE', root / '.work/workflow-cache-archives'), \
+            def stopped_proof(selected_root, run_id, corpus, mode, digest):
+                require(scenario == 'stopped-success' and selected_root == root and mode == 'native' and
+                        run_id == 'fixture' and corpus == 'assessed-parent', 'stopped proof routing differs')
+                return target, {'evidence.json': sha(outside)}, {'completed_workflows': 0}
+            with replace(coordinator, 'stopped_cache', stopped_proof), replace(coordinator, 'ROOT', root), replace(coordinator, 'BASE', root / '.work/workflow-cache-archives'), \
                  replace(coordinator, 'workflow', proof), replace(coordinator, 'sources', lambda: {'fixture': 'fixed'}):
                 coordinator.owned_root()
-                recovered = scenario == 'recovered-success'
-                coordinator.prepare('archive', 'fixture', 'assessed-parent' if recovered else None,
-                                    'native', 'recovered-workflow' if recovered else 'workflow')
+                kind = {'recovered-success': 'recovered-workflow', 'stopped-success': 'stopped-workflow'}.get(scenario, 'workflow')
+                coordinator.prepare('archive', 'fixture', 'assessed-parent' if kind != 'workflow' else None,
+                                    'native', kind)
                 plan = json.loads((coordinator.BASE / 'archive/plan.json').read_text())
-                require(plan.get('proof_kind', 'workflow') == ('recovered-workflow' if recovered else 'workflow'),
+                require(plan.get('proof_kind', 'workflow') == kind,
                         'archive lost provenance kind')
                 prepared = plan['manifest']
                 require(archive.stable(prepared) == archive.stable(before), 'preparation changed fixture contents')
-                if scenario in ['success', 'recovered-success']:
+                if scenario in ['success', 'recovered-success', 'stopped-success']:
                     coordinator.apply('archive')
                     require(not list(target.iterdir()), 'successful retirement left files')
                 elif scenario == 'write-failure':
@@ -272,7 +276,7 @@ def main():
                     archive.verify_archive(archive_path, prepared)
                     archive.restore(archive_path, prepared, root / 'recovered')
                     archive.unchanged(root / 'recovered', before, restored=True)
-                if scenario not in ['success', 'recovered-success']:
+                if scenario not in ['success', 'recovered-success', 'stopped-success']:
                     rejects(scenario + ' automatic retry', lambda: coordinator.apply('archive'))
                     rejects(scenario + ' new identity retry', lambda: coordinator.prepare('retry', 'fixture', None))
                 require(sha(outside) == outside_sha, 'outside evidence changed')

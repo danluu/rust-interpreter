@@ -92,7 +92,12 @@ rejects that admission, passes exact-boundary and 32 invalid-input checks, and
 requires 25.99 GiB with the same historical growth/archive/evidence reserves.
 No retry has started. Preserve the fixed plan/evaluator as historical evidence;
 a fresh retry ID and explicit amendment are required before restarting case01.
-More completed task-owned cache space is needed; no unrelated work was changed.
+More task-owned cache space is needed; no unrelated work was changed.
+The [stopped-history cache proof](results/stopped-cache-evidence-02/assessment.md)
+now identifies all four exact targets and rejects fifty altered inputs. It retains
+zero completed workflows and zero measured edit pairs. The archive core passes
+44 rejection checks and six coordinator cases; batch routing rejects nineteen
+invalid cases. No real stopped cache has been retired yet.
 
 ## Closed worker-count experiment
 
