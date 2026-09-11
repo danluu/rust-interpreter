@@ -118,6 +118,14 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- The isolated [aggregate relocation implementation](../results/aggregate-relocation-e2e-01/assessment.md)
+  passes its complete primary gates after 39 compiler tests and 1,024 native
+  differential VM executions. Folded improves 12.77% wall/12.89% CPU; token
+  regresses 3.70%/3.33%, inside the fixed 5% guard. Added compiler analysis is
+  included and explains token's loss despite faster execution. All 168 commands,
+  30 source-edit pairs and 84 artifact hashes verify. The production compiler
+  remains unchanged pending broad correctness and all seven held-outs.
+
 - The [broader aggregate observer](../results/aggregate-byte-writes-weights-01/assessment.md)
   passes the fixed scope gate: 55.97% additional weighted local-byte scope folded,
   31.90% token. Fresh exports and assertions match original artifacts; 35 compiler

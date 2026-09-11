@@ -30,9 +30,13 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
    actual full-byte writes, partial writes/padding, alias exclusions and normal
    Call-return edges. The unchanged-code observer now finds 55.97% additional
    weighted byte scope folded and 31.90% token, passing the 25% folded gate.
-   Implement the separate [relocation experiment](benchmarks/experiments/aggregate-byte-writes/RELOCATION-NEXT.md)
-   and qualify actual layouts and original assertions before timed edit comparisons.
-   Byte scope predicts no speedup. Preserve exact budgets,
+   The separate [relocation experiment](results/aggregate-relocation-e2e-01/assessment.md)
+   now passes 39 compiler tests, 1,024 native differential VM executions and
+   both complete primary gates: folded wall −12.77%, CPU −12.89%; token wall
+   +3.70%, CPU +3.33%. Both original assertions and all 168 measured commands
+   verify. Compiler overhead outweighs the execution gain on token. Keep the
+   candidate experimental pending [broad correctness and all seven held-outs](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
+   Preserve exact budgets,
    initialization, fault order and guest state. Earlier narrow frame-reuse
    censuses are parked; their tiny measured opportunities do not justify a
    new optimization without evidence.

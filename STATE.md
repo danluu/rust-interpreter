@@ -16,7 +16,22 @@ No direct-frame bytes are unobserved or declined. Counts are historical executio
 of identical artifacts, not fresh timings. The first compile failure is preserved.
 Next implement the separately qualified [frame relocation](benchmarks/experiments/aggregate-byte-writes/RELOCATION-NEXT.md)
 using named MIR local origins, complete ABI/scratch relocation and atomic fallback.
-The production compiler and current runtime are unchanged; speed remains unmeasured.
+The production compiler and current runtime are unchanged. The isolated
+[relocating exporter](results/aggregate-relocation-build-01/summary.json) now
+passes 39 tests, [both original workloads](results/aggregate-relocation-smoke-01/summary.json)
+and [1,024 native differential VM executions](results/aggregate-relocation-fixtures-01/summary.json).
+Uncalled type/borrow errors remain rejected. A separate changed-exporter verifier
+reproduces six historical reports and rejects 19 invalid cases; the production
+verifier and historical receipts remain unchanged. Actual frame savings before
+inlining are 557,392 static bytes across 454 folded functions and 1,091,040 bytes
+across 2,440 token functions, with zero relocation declines. The completed
+[three-cycle source-edit comparison](results/aggregate-relocation-e2e-01/assessment.md)
+passes both fixed primary gates: folded wall −12.77%, CPU −12.89%; token wall
++3.70%, CPU +3.33%, within its 5% guard. All 168 commands, 30 edited pairs and
+84 artifacts verify. Folded medians are native 1.702s, control 1.939s, candidate
+1.696s; token medians are 1.965s, 4.290s and 4.462s. Added analysis is included:
+token's execution improvement does not offset its compiler overhead. The candidate
+is not retained yet. Proceed to [broad and held-out qualification](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
 
 Source `aa2f6ea` / tool `0e94d6d8` now completes the current runtime qualification.
 Our direct AArch64 JIT keeps checked dynamic/large copies inside resumable
