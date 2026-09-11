@@ -78,16 +78,17 @@ The reversed-order three-cycle pgrust qualification passes 36 commands and
 fifteen-cycle run also verifies 180 commands/90 artifacts, with reductions of
 4.24%/1.94%. Neither warm comparison exceeds the regression guard. Its single
 cold observation improves about 0.52% and is excluded from the cold gate.
-The first two balanced cold histories each verify twelve commands and six
+The first three balanced cold histories each verify twelve commands and six
 artifacts. Cold01 wall is 61.439s baseline and 61.539s candidate (ratio
 1.0016210970); CPU ratio is 1.0046207955. Cold02 wall is 62.435s baseline and
-61.617s candidate (ratio 0.9868934347); CPU ratio is 0.9717771801. Four fixed
-histories remain pending; no retention decision yet. The prior warm-run cold
+61.617s candidate (ratio 0.9868934347); CPU ratio is 0.9717771801. Cold03 wall
+is 66.222s baseline and 66.785s candidate (ratio 1.0085092329); CPU ratio is
+1.0226163989. Three fixed histories remain pending; no retention decision yet. The prior warm-run cold
 anchor remains excluded as predeclared.
 
 `assess_wrapper_cold.py --index N` verifies the exact scheduled command, frozen
 inputs, wrapper traces, original source restoration and stored workflow checks,
-then records the per-history assessment. Its index02 execution passes. The
+then records the per-history assessment. Its index02 and index03 executions pass. The
 `--all` path requires all six histories and both warm controls before publishing
 the original gates; it remains unexecuted until those histories exist. A passing
 primary gate permits the held-out checks and does not itself retain the wrapper.

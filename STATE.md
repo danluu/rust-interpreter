@@ -37,15 +37,16 @@ std-MIR. Installation/downloads/std-MIR setup are excluded from cold timing.
 | --- | --- | ---: | --- |
 | 01 | native,baseline,candidate | 1.0016210970 | verified |
 | 02 | candidate,baseline,native | 0.9868934347 | verified |
-| 03 | baseline,candidate,native | — | running |
+| 03 | baseline,candidate,native | 1.0085092329 | verified |
 | 04 | native,candidate,baseline | — | pending |
 | 05 | candidate,native,baseline | — | pending |
 | 06 | baseline,native,candidate | — | pending |
 
-Active run: `lightweight-wrapper-nushell-cold-03`, supervisor **14215**, controller
-**14232**, started September 11 at 08:13:25 local. Inspect terminal receipts;
-do not infer liveness from saved PIDs. After success, run the workflow verifier
-and `assess_wrapper_cold.py --index 3` through separate supervised commands.
+All first three histories verify twelve commands and six artifacts each.
+Active maintenance: `cold-storage-batch-03-prepare`, supervisor **20366**,
+started September 11 at 08:18:34 local. Review the eight inventories before
+separate application. Cold04 follows with order native,candidate,baseline,
+after enough space is available. Inspect receipts before inferring liveness.
 
 Retention requires at least 5% median cold wall improvement and no unresolved
 warm paired wall regression over 5%. Only then run held-out Ruff/private rg-aot/
@@ -61,7 +62,9 @@ of archives. Final receipts, reviewed inventories and all 38 distinct external
 source/evidence hashes verify. Twenty actual archives are now complete, including
 [batch01](results/cold-storage-batch-01/assessment.md). All payloads were decoded
 and hashed before original-file retirement. Executed snapshots and reports stay
-in place. About 23.7 GiB was free before cold03.
+in place. About 23.7 GiB was free before cold03 and 11.4 GiB afterward. Batch03 will
+archive its four caches and the four older wrapper qualification caches,
+after completed-workflow ownership and inventory review.
 
 The [archive implementation](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
 passes 44 rejection checks, four coordinator cases and two legacy restores.
