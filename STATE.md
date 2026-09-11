@@ -35,15 +35,15 @@ that tool. The broader 47,004 native differential commands, TLS checks and
 ## Next action
 
 Implement the [bounded native call-tree experiment](benchmarks/experiments/bounded-native-calls/PLAN.md).
-The `experiment/bounded-native-calls` branch now implements initialized backing
-storage with a separately bounded live prefix and conservative acyclic call-tree
-metadata. All 212 workspace tests pass (one ignored), including guest bounds,
-frame padding/reuse, cycles, repeated calls, and storage/instruction/depth caps.
-[Check evidence](results/bounded-native-tree-metadata-01/summary.json).
-The executing native Call/Return path is still pending; there is no new speedup
-measurement or installed release tool. Next implement the dedicated emitter and
-its differential tests using the [internal ABI](benchmarks/experiments/bounded-native-calls/INTERNAL-ABI.md),
-then connect the opt-in VM path and run real end-to-end comparisons against b2aa6efe.
+The `experiment/bounded-native-calls` branch now implements initialized storage,
+bounded metadata and a dedicated direct AArch64 Call/Return emitter. All 219
+workspace tests pass (one ignored), including complete-tree differential checks,
+overlapping/heap copies, original fault identities and a 64-frame ABI probe.
+[Check evidence](results/bounded-native-emitter-02/summary.json).
+The VM transition is still pending; there is no new speedup measurement or
+installed release tool. Next connect the explicit experimental option to VM
+Call, preserve guest limits/profile accounting, then run real end-to-end
+comparisons against b2aa6efe. [Internal ABI](benchmarks/experiments/bounded-native-calls/INTERNAL-ABI.md).
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -59,7 +59,7 @@ regression. Broader execution qualification is required for production retention
 ## Process and ownership
 
 All recent supervisors/controllers finished with return code zero, including
-`bounded-native-storage-01` (206 passes) and `bounded-native-tree-metadata-01` (212).
+`bounded-native-emitter-01` (217 passes) and `bounded-native-emitter-02` (219).
 Their terminal receipts remain under `.work/experiments`; no task process is
 currently running. Re-check actual identities before treating old receipts as live.
 Detailed pointers/pins are in `.work/continuation-state.json`.

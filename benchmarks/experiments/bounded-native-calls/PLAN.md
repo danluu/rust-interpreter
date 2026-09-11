@@ -1,8 +1,10 @@
 # Bounded native call-tree experiment
 
-Status: storage and conservative tree metadata are implemented on
-`experiment/bounded-native-calls`; native Call/Return emission and VM integration
-are pending. [212 passing workspace tests](../../../results/bounded-native-tree-metadata-01/summary.json).
+Status: initialized storage, conservative metadata and the complete direct
+AArch64 tree emitter are implemented on `experiment/bounded-native-calls`.
+[219 workspace tests pass](../../../results/bounded-native-emitter-02/summary.json),
+including direct native-entry differential checks and a 64-frame ABI probe.
+VM integration and real edit/build/test performance measurements remain pending.
 
 The current implementation caps speculative frame span at 256 KiB, register
 storage at 65,536 u128 slots and native nesting at 64 frames. These are

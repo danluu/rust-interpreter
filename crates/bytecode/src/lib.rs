@@ -1,6 +1,8 @@
 //! A development-oriented, standalone bytecode machine. No compiler, JIT
 //! library, or external interpreter participates in execution.
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
+extern crate self as rust_interp_bytecode;
 mod heap;
 mod linear_memory;
 mod jit;

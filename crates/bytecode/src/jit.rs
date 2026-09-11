@@ -12,6 +12,8 @@ use std::collections::{BTreeMap, BTreeSet};
 // Its metadata becomes live when the opt-in native transition is connected.
 #[allow(dead_code)]
 mod trees;
+#[allow(dead_code)]
+mod native_calls;
 
 #[cfg(test)]
 mod limit_tests;
@@ -60,11 +62,43 @@ mod platform {
         ldp x29, x30, [sp, #16]
         ldp x19, x20, [sp], #32
         ret
+        .p2align 2
+        .globl _rust_interp_tree_abi_probe
+    _rust_interp_tree_abi_probe:
+        stp x19, x20, [sp, #-64]!
+        stp x21, x22, [sp, #16]
+        stp x23, x29, [sp, #32]
+        str x30, [sp, #48]
+        mov x29, sp
+        mov x23, x2
+        mov x16, x0
+        mov x17, x1
+        mov x19, #0x1357
+        mov x20, #0x2468
+        mov x21, #0x3579
+        mov x22, #0x468a
+        ldp x0, x1, [x17]
+        ldp x2, x3, [x17, #16]
+        ldp x4, x5, [x17, #32]
+        ldp x6, x7, [x17, #48]
+        blr x16
+        stp x0, x19, [x23]
+        stp x20, x21, [x23, #16]
+        stp x22, x29, [x23, #32]
+        mov x9, sp
+        str x9, [x23, #48]
+        ldp x19, x20, [sp]
+        ldp x21, x22, [sp, #16]
+        ldp x23, x29, [sp, #32]
+        ldr x30, [sp, #48]
+        add sp, sp, #64
+        ret
     "#);
 
     #[cfg(test)]
     unsafe extern "C" {
         fn rust_interp_jit_abi_probe(entry: *mut c_void, arguments: *const usize, output: *mut usize);
+        fn rust_interp_tree_abi_probe(entry: *mut c_void, arguments: *const usize, output: *mut usize);
     }
 
     unsafe extern "C" {
@@ -87,6 +121,17 @@ mod platform {
         used: usize,
     }
     impl Code {
+        #[cfg(test)]
+        pub unsafe fn tree_abi_probe(&self, offset: usize, arguments: [usize;8]) -> [usize;7] {
+            assert!(offset < self.used);
+            let mut output = [0;7];
+            // Same exclusive storage contract as call(); the wrapper verifies
+            // all callee-saved registers used by native trees plus SP/LR.
+            unsafe {
+                rust_interp_tree_abi_probe(self.ptr.cast::<u8>().add(offset).cast(), arguments.as_ptr(), output.as_mut_ptr());
+            }
+            output
+        }
         #[cfg(test)]
         pub unsafe fn abi_probe(&self, offset: usize, arguments: [usize;8]) -> [usize;4] {
             assert!(offset < self.used);
@@ -201,7 +246,10 @@ pub(crate) struct Block {
 struct Assertion<'a> {
     message: &'a str,
     function: &'a str,
+    kind: FaultKind,
 }
+
+enum FaultKind { Assertion, Trap }
 
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
@@ -231,6 +279,7 @@ pub(crate) struct Jit<'a> {
     pub declined_functions: usize,
     pub compile_nanos: u128,
     assertions: Vec<Assertion<'a>>,
+    trees: Option<native_calls::State>,
 }
 impl<'a> Jit<'a> {
     pub fn new(program: &'a Program, profiled: bool, capacity: usize) -> Result<Self, String> {
@@ -242,7 +291,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![] })
+            assertions: vec![], trees: None })
     }
 
     /// Called at guest function entry, including TLS callbacks, never in the
@@ -387,7 +436,7 @@ impl<'a> Jit<'a> {
                     a.current_pc = start + index;
                     if let Op::Assert { value, expected, message } = op {
                         let code = assertion_code(self.assertions.len(), assertions.len())?;
-                        assertions.push(Assertion { message, function: &f.name });
+                        assertions.push(Assertion { message, function: &f.name, kind: FaultKind::Assertion });
                         a.assertion(*value, *expected, code);
                     } else if let Some(fill) = fills.get(&(start + index)) {
                         a.local_fill(*fill);
@@ -498,18 +547,7 @@ impl<'a> Jit<'a> {
             )
         };
         if result >= FAILURE_MIN {
-            let message = if result == Failure::Memory as u64 {
-                "JIT guest memory access failed"
-            } else if result == Failure::DivisionZero as u64 {
-                "integer division by zero"
-            } else if result == Failure::DivisionOverflow as u64 {
-                "signed division overflow"
-            } else {
-                let assertion = self.assertions.get((ASSERTION_FAILURE_BASE - result) as usize)
-                    .ok_or("JIT returned an invalid assertion identity")?;
-                return Err(format!("guest assertion: {} in {}", assertion.message, assertion.function));
-            };
-            Err(message.into())
+            Err(self.fault_message(result)?)
         } else {
             // Only emitted constants become PCs. Permit code_len itself so a
             // missing terminator retains the VM's budget-before-invalid-PC
@@ -519,6 +557,22 @@ impl<'a> Jit<'a> {
                 .filter(|count| *count != 0).ok_or("JIT made no instruction progress")?;
             Ok((result as usize, executed))
         }
+    }
+
+    fn fault_message(&self, result: u64) -> Result<String, String> {
+        let message = if result == Failure::Memory as u64 {
+                "JIT guest memory access failed"
+            } else if result == Failure::DivisionZero as u64 {
+                "integer division by zero"
+            } else if result == Failure::DivisionOverflow as u64 {
+                "signed division overflow"
+            } else {
+                let assertion = self.assertions.get((ASSERTION_FAILURE_BASE - result) as usize)
+                    .ok_or("JIT returned an invalid assertion identity")?;
+                let kind = match assertion.kind { FaultKind::Assertion => "assertion", FaultKind::Trap => "trap" };
+                return Ok(format!("guest {kind}: {} in {}", assertion.message, assertion.function));
+            };
+        Ok(message.into())
     }
 }
 

@@ -1,7 +1,9 @@
 # Emitter integration notes
 
-These are implementation decisions for the next step, not executable features.
-The runtime foundation is in `linear_memory.rs` and `jit/trees.rs`.
+The storage, metadata and dedicated emitter described here are implemented in
+`linear_memory.rs`, `jit/trees.rs` and `jit/native_calls.rs`. Direct-entry native
+checks pass; the VM integration section remains the next step. These checks do
+not establish a runtime or end-to-end performance gain.
 
 ## State already implemented
 
@@ -96,3 +98,16 @@ the same PCs differently, so sharing one `jit_block_ends` array would misattribu
 instructions. Fresh guest memory/TLS state and existing root/TLS completion remain
 owned by the VM. Preserve all benchmark options and measure complete commands
 against `b2aa6efe` with the predeclared gates.
+
+## Direct-entry qualification — September 11
+
+The full workspace passes 219 tests (one ignored). The seven native-tree suites
+reuse the established call-copy contracts and compare values, instruction counts
+and memory peaks with the interpreter. They exercise both profiling modes,
+whole-budget pre-entry declines, cold terminal faults, short branch regions,
+shared code publication/capacity decline, repeated/nested frame alignment,
+initial-zero registers, all ABI copy paths including 513-byte moves, overlapping
+return destinations and heap copies. Retained-byte snapshots and canaries check
+copy effects beyond the final live prefix. A native assembly probe verifies
+x19–x22 and SP/LR for success and fault propagation through up to 64 functions.
+[Recorded check](../../../results/bounded-native-emitter-02/summary.json).

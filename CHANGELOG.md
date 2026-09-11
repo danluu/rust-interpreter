@@ -49,3 +49,11 @@
 
 Historical experimental details remain in [results](results/INDEX.md) and
 [the pre-review documentation](docs/history/README-20260910-before-review.md).
+
+### Bounded native emitter experiment
+
+Implemented complete direct AArch64 call trees with shared immutable code,
+checked dependency readiness, ABI copies/zeroing, return truncation and named
+fault propagation. Direct-entry differential checks and a 64-frame callee-saved
+register/stack probe pass; 219 workspace tests pass in total. The normal VM path
+is not connected yet, and no new performance result is claimed.

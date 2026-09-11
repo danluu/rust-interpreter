@@ -24,7 +24,7 @@ pub(super) enum Decline {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) struct Plan {
+pub(crate) struct Plan {
     /// Includes the root body's Return and every static nested Call/callee.
     /// Excludes the outer caller's Call instruction.
     pub instructions: u64,
