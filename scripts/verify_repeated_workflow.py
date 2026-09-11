@@ -22,8 +22,30 @@ def read(path):
     return json.loads(path.read_text())
 
 
-def verify(report, reference=None):
+def verify(report, reference=None, *, compiler_flags=None):
+    """Verify runtime comparisons by default; explicitly bind compiler changes.
+
+    A compiler comparison must supply its expected per-mode flags separately
+    from the measured receipt. It uses identical tools/runtime options and
+    retains every artifact hash, but does not require the artifacts to match.
+    The ordinary CLI and all runtime callers keep the strict default.
+    """
     require(report['schema_version'] == 2, 'unsupported workflow schema')
+    if compiler_flags is not None:
+        require(isinstance(compiler_flags, dict) and set(compiler_flags) == {'baseline', 'candidate'},
+                'compiler comparison requires explicit flags for both modes')
+        require(all(isinstance(flags, list) and flags and
+                    all(isinstance(flag, str) and flag and not any(c.isspace() for c in flag)
+                        for flag in flags) for flags in compiler_flags.values()) and
+                compiler_flags['baseline'] != compiler_flags['candidate'], 'invalid compiler comparison flags')
+        require('comparison' in report and not report['comparison']['identical_bytecode_required'],
+                'compiler comparison cannot waive a required artifact match')
+        builds = report['tool_builds']
+        require(all(builds[mode]['guest_rustflags'] == compiler_flags[mode] for mode in compiler_flags),
+                'compiler flags differ from the independent expectation')
+        require({k: v for k, v in builds['baseline'].items() if k != 'guest_rustflags'} ==
+                {k: v for k, v in builds['candidate'].items() if k != 'guest_rustflags'},
+                'compiler comparison changed tools or runtime options')
     job_counts = (recorded_build_jobs(report)
                   if 'build_jobs' in report and 'native_control' in report else None)
     require('custom_build_jobs' not in report or job_counts is not None,
@@ -72,6 +94,10 @@ def verify(report, reference=None):
                 verify_command_jobs(call['command'], job_counts[mode])
         if mode != 'native':
             settings = report.get('tool_builds', {}).get(mode, {})
+            if compiler_flags is not None:
+                require(all(call.get('rustflags') == ' '.join(compiler_flags[mode]) and
+                            call['launch']['tool_key'] == settings['tool_key'] for call in row['calls']),
+                        'executed compiler flags or tool differ')
             for field, flag in [('jit_native_calls', '--jit-native-calls'),
                                 ('jit_native_call_stubs', '--jit-native-call-stubs'),
                                 ('jit_persistent_registers', '--jit-persistent-registers'),
@@ -88,12 +114,16 @@ def verify(report, reference=None):
             digest = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
             require(digest == artifact['sha256'], 'artifact hash mismatch')
             artifacts[cycle, state, mode] = digest
+    paired_identical = True
     for c in range(cycles):
         for s in states:
             selected = [r for r in rows if r['cycle'] == c and r['state'] == s]
             require(len({r['source_sha256'] for r in selected}) == 1, 'paired sources differ')
             require(all(r['tests'] == selected[0]['tests'] for r in selected), 'paired test selections differ')
-            require(artifacts[c, s, custom_modes[0]] == artifacts[c, s, custom_modes[1]], 'paired bytecode differs')
+            identical = artifacts[c, s, custom_modes[0]] == artifacts[c, s, custom_modes[1]]
+            paired_identical &= identical
+            if compiler_flags is None:
+                require(identical, 'paired bytecode differs')
     for s in states:
         require(len({r['source_sha256'] for r in rows if r['state'] == s}) == 1, 'repeated source state differs')
     if cycles == 3:
@@ -149,14 +179,18 @@ def verify(report, reference=None):
             if row['mode'] != 'native':
                 comparisons.append(artifacts[row['cycle'], row['state'], row['mode']] == prior['artifacts'][0]['sha256'])
         history = dict(identical=sum(comparisons), different=len(comparisons) - sum(comparisons))
-    return dict(schema_version=1, measurement_controls_verified=True,
+    result = dict(schema_version=1, measurement_controls_verified=True,
         commands=len(rows), cycles=cycles, edited_pairs=cycles * edits,
         check_commands=check_count, explicit_controls_verified=bool(check_count),
-        exact_artifact_hashes_verified=len(paths), paired_bytecode_identical=True,
+        exact_artifact_hashes_verified=len(paths), paired_bytecode_identical=paired_identical,
         cross_cycle_bytecode_identical=all(len(set(x['sha256_by_cycle'])) == 1 for x in cross_cycle),
         cross_cycle_artifacts=cross_cycle, reference_bytecode=history,
         cross_cycle_semantic_equivalence_proven=False,
         note='Control verification does not imply identical compilation across cache histories or a performance claim.')
+    if compiler_flags is not None:
+        result['compiler_comparison'] = dict(expected_guest_flags=compiler_flags,
+            identical_tools_and_runtime_options=True, bytecode_equivalence_proven=False)
+    return result
 
 
 def main():
