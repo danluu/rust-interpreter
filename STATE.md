@@ -59,73 +59,44 @@ also passes 245 commands. [Fresh fre replay](results/resumable-copy-fre-01/asses
 passes 382 bodies, seven ignored, with 382 fresh native executions, all 382
 compared artifacts unchanged and no declines. These remain body replays, not
 unfiltered libtest. The seven held-out edit workflows remain before retention.
-No default change. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
-are archived and verified. The [eight original-comparison caches](results/copy-qualification-storage-01/assessment.md)
-are also archived and verified. About 9.4 GiB was available at that checkpoint on the shared volume; the large
-held-out histories needed a bounded storage strategy.
-The [recovered-case archive extension](results/recovered-cache-evidence-02/assessment.md)
-passes eight target checks and forty rejections. Its archive core passes 44
-rejections/five coordinator cases, and mixed batch routing passes fifteen
-rejections. This permits separately reviewed archival of the completed old
-Nushell/Ruff cases while preserving their interrupted parent and recovery records.
-The [eight reviewed Nushell/Ruff caches](results/heldout-recovery-storage-01/assessment.md)
-now archive and verify successfully: 34,513 paths, 8.16 GB original data and
-2.61 GB archives, with 134 unchanged evidence hashes. About 14.6 GiB is available.
-The [new clone batch](results/copy-artifact-clones-01/assessment.md) preserves all
-336 snapshot paths across eight histories, replacing 244 identical files with
-independent clones; all original verifications reproduce. About 17.2 GiB is
-available. The [separate-case gate checks](results/separate-heldout-gates-01/assessment.md)
-reproduce both recent primary receipts, preserve both older near-miss decisions
-and reject 39 invalid configurations. The [fixed seven-case plan](benchmarks/experiments/resumable-native-calls/HELDOUT-STORAGE-NEXT.md)
-is committed as `91d5c48`. The [actual pgrust qualification](results/resumable-copy-heldout-qualification-01/assessment.md)
-and [final gate helper check](results/separate-heldout-gates-03/assessment.md) now
-pass: 84 commands, fifteen pairs and 42 artifacts, with all 39 rejection checks
-and prior gate decisions preserved. A lock rejection before testing is retained.
-Primary case01 (Nushell type-relations) [stopped at the disk guard](results/resumable-copy-heldout-01-case-01-stop/assessment.md).
-Five primary commands and one check completed; fourteen original tests pass in
-all modes and both custom wrong edits fail at the original assertion. Four
-snapshots verify. No successful-edit pair was measured. All task processes are
-terminal and source restoration matches the pin. Raw records remain unchanged.
-The old [space preflight](results/resumable-copy-heldout-01-case-01-preflight/summary.json)
-omitted the 8 GiB per-command floor. The [corrected calculation](results/workflow-space-floor-01/assessment.md)
-rejects that admission, passes exact-boundary and 32 invalid-input checks, and
-requires 25.99 GiB with the same historical growth/archive/evidence reserves.
-No retry has started. Preserve the fixed plan/evaluator as historical evidence;
-a fresh retry ID and explicit amendment are required before restarting case01.
-More task-owned cache space is needed; no unrelated work was changed.
-The [stopped-history cache proof](results/stopped-cache-evidence-02/assessment.md)
-now identifies all four exact targets and rejects fifty altered inputs. It retains
-zero completed workflows and zero measured edit pairs. The archive core passes
-44 rejection checks and six coordinator cases; batch routing rejects nineteen
-invalid cases. The [four stopped caches](results/copy-stopped-storage-01/assessment.md)
-now archive and verify: 41,026 paths, 10.62 GB original data, 3.44 GB archive
-payloads and 46 preserved evidence hashes. The archive registry now has 185
-entries. The [fresh retry admission](results/copy-heldout-retry-space-01/assessment.md)
-correctly rejects the available 15.57 GiB against the 25.99 GiB estimate.
-No fresh benchmark was started. The [retry decision](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md)
-records the required new history ID and unchanged controls; its aggregation
-amendment still needs implementation/qualification. More task-owned build-cache
-space is required before that launch. The [legacy native cache catalog](benchmarks/legacy-native-cache-catalog.json)
-now has [qualified ownership evidence](results/legacy-native-cache-evidence-03/assessment.md)
-for twenty exact targets across seven completed public histories. All 274 recorded
-commands are terminal and source restoration verifies. Thirty-four invalid
-scopes/records/hashes are rejected; the archive core passes 44 rejections/seven
-coordinator cases and batch routing rejects 23 invalid cases. The pilot's older
-repeated A/B format remains distinct. The [twenty inventories](results/legacy-native-storage-01/inventory-review.json)
-are reviewed: 128,089 paths, 14.67 GB original payloads and 1,275 evidence hashes.
-The [twenty archives](results/legacy-native-storage-01/assessment.md) now finish
-and verify with 1,275 unchanged evidence hashes; the registry has 205 entries.
-A later read observes 30.35 GiB available. This shared-volume change is not a
-physical-space claim derived from logical byte counts. The [retry amendment](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-01.json)
-is now [qualified](results/copy-heldout-retry-gates-01/assessment.md): 29 invalid
-inputs are rejected, both primary receipts reproduce, all seven cases remain
-required, and the stopped history contributes zero pairs. The fresh admission
-must precede corpus startup by no more than sixty seconds.
-The [standalone clone selector](results/standalone-clone-inputs-01/assessment.md)
-passes five valid/sixteen invalid selections and verifies 270 real snapshots.
-Its file-clone primitive is unchanged and no snapshots were modified by the
-qualification. With enough current headroom, proceed to admission and the fresh
-Nushell history; no additional clone application is needed for this launch.
+No default change.
+
+The [fixed seven-case held-out plan](benchmarks/experiments/resumable-native-calls/HELDOUT-STORAGE-NEXT.md)
+uses separate fresh histories so reviewed public caches can be archived between
+cases. Its [actual pgrust qualification](results/resumable-copy-heldout-qualification-01/assessment.md)
+passes 84 commands, fifteen pairs and 42 artifacts. The gate helper preserves
+both recent primary receipts and the earlier near-miss failures, and rejects
+39 invalid configurations. All seven cases remain required.
+
+The original Nushell type-relations history [stopped at the space guard](results/resumable-copy-heldout-01-case-01-stop/assessment.md)
+after five primary commands and one check, with zero successful-edit pairs.
+Its original assertions, wrong-edit failures, four snapshots and restored source
+verify. The admission estimate had omitted the 8 GiB running reserve. The
+[corrected calculation](results/workflow-space-floor-01/assessment.md) rejects
+that admission and requires 25.99 GiB. The [qualified retry amendment](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-01.json)
+changes only this case's run ID; it preserves the original failure, remaining
+case order, controls and gates. Its [qualification](results/copy-heldout-retry-gates-01/assessment.md)
+rejects 29 invalid inputs and reproduces both primary receipts.
+
+Fresh case01 retry `resumable-copy-heldout-01-case-01-retry-01` is running under
+supervisor 52502, corpus controller 52514 and workflow controller 52525, started
+September 11 at 14:26:25 local. Its [admission](results/resumable-copy-heldout-01-case-01-retry-01-preflight/summary.json)
+observed 30.34 GiB free and preceded corpus startup by 0.169 seconds. Runtime,
+benchmark and gate sources remain frozen. Finish its partial gate verification,
+then continue Ruff, Nushell, forward-anchored TLS, pgrust SHA-1, pgrust and private
+rg-aot in the recorded order. Use the amended aggregate evaluator after all
+seven complete. No subset authorizes retention.
+
+Storage maintenance has verified 205 archives. Recent batches include
+[eight recovered histories' caches](results/heldout-recovery-storage-01/assessment.md),
+[four stopped-history caches](results/copy-stopped-storage-01/assessment.md) and
+[twenty legacy native targets](results/legacy-native-storage-01/assessment.md).
+Every archive preserves original reports and executed artifacts; private caches
+remain excluded. [Eight additional artifact histories](results/copy-artifact-clones-01/assessment.md)
+retain all snapshot paths through independently writable clones. The
+[standalone selector](results/standalone-clone-inputs-01/assessment.md) is qualified
+but has not been used to modify snapshots. These are storage operations outside
+benchmark timers, with no compilation-speed claim.
 
 ## Closed worker-count experiment
 
