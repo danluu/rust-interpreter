@@ -109,3 +109,37 @@ regular bounded files, ordered events, strict schema, completion and artifact
 binding before a future launcher invocation can execute. The original launcher
 is still unchanged; add the explicit flag/capability/environment/receipt path
 only after the worker study closes.
+
+## Launcher integration after the frozen worker study
+
+Add an explicit `--allocation-trace` flag to `scripts/interpreter.py`. Reject
+audit combinations before any tool build or Cargo invocation; require the
+installed exporter's `allocation-trace` capability. Set the already implemented
+`RUST_INTERP_ALLOCATION_TRACE=1` only for that request. The exporter tracks this
+environment input for the selected Cargo unit, including transitions back to
+disabled. Do not change the workspace identity or any guest engine defaults.
+
+After Cargo selects its exact `.rmeta.rbc` sidecar, call `selected_trace` while
+the invocation lock is still held, before starting the VM. Report the trace's
+path, byte length, SHA256, event count and artifact binding in an explicit
+diagnostic receipt, including when ordinary timing statistics are disabled.
+Do not fall back to the standalone `program.rbc` diagnostic if the selected
+Cargo sidecar is missing or invalid. Leave the disabled path free of trace reads.
+
+Qualify this against a fresh owned Cargo fixture using the unchanged original
+constant fixture assertions and immutable tool `e965f566`. Exercise disabled →
+enabled → unchanged enabled → disabled → enabled in one cache namespace; compare
+artifacts and results at each step. Preserve an enabled sidecar, then damage its
+footer or remove only that selected sidecar while Cargo considers the source
+fresh: both must reject before VM execution. Restore the exact saved file after
+each probe. A stale standalone diagnostic must not rescue either rejection.
+Check unsupported historical tools and audit combinations before Cargo starts.
+Rerun the original launcher regression assertions with the immutable new exporter
+and historical tool routing. This is validation, not a no-op speed benchmark.
+
+Then run the fourteen-test Nushell original/wrong/API/original history, preserving
+each selected trace/artifact pair and checking original wrong-edit failures and
+source restoration. Query the literal's three original references and first extra
+materialization using the qualified origin inspector. No function-reuse patch
+should precede this attribution or ignore the measured ~71-ms lowering interval
+within the ~5.3-second warm command in this particular case.
