@@ -93,6 +93,20 @@ nu-protocol; keep that real cost. These stage results favor investigating
 frontend/build reuse for this workload after the interface comparisons; they
 do not establish a safe invalidation shortcut or a whole-application win.
 
+The next [compiler-pipeline diagnostic](benchmarks/experiments/compiler-pipeline/PLAN.md)
+reuses the existing `--cargo-timings` harness on one complete Nushell interface
+cycle after the repeated run. New `scripts/cargo_timing_data.py`,
+`scripts/analyze_cargo_timings.py` and `check_timing_parser.py` are prepared,
+**not yet executed**. First run the helper under the benchmark lock, then the
+instrumented cycle and its ordinary verifier, then analyze hashed snapshots.
+Keep compiler-unit overlap/duplicate descriptions distinct from CPU or critical
+path attribution. An older profile already captures the host/library/test chain.
+The [current read-only inventory](results/compiler-unit-fingerprints-01/assessment.md)
+finds three nu-protocol configurations in all four completed histories,
+including native and independent check. Features, profile hashes and flag
+handling differ; do not attribute the three-unit count solely to custom
+`--target`, remove dependencies, or assume name-only artifact sharing is valid.
+
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.
 Its [helper qualification](results/resumable-execution-driver-01/summary.json)
