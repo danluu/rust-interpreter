@@ -23,13 +23,22 @@ binaries exactly. The original failed new-test comparison, all measured sources,
 and all regressions remain preserved. Whole applications, actual unwinding,
 general OS/FFI and threads remain unsupported.
 
-Next: sample the exact retained VM on the original token workload, verify its
-live native-code arena, and identify the remaining dispatcher/frame/copy costs
-against its own disassembly. Use several diagnostic windows, keep original RNG
-and assertions, and treat sample shares as evidence for choosing a candidate,
-not as speedup predictions. Then test a bounded generic change with actual
-production edits before broader qualification. Avoid rerunning parked register
-compaction, paired spills or fixed-register residency without new evidence.
+Three diagnostic windows on the exact retained VM are complete. All original
+token assertions pass with zero JIT declines, and all generated PCs are inside
+the live arena of the same owned process. Of 7,715 samples, generated code has
+37.0%, dispatcher self 29.0%, and frame reservation plus argument/result copies
+26.8%. These partial windows keep original RNG and do not measure speedups.
+Host call sites are verified against the current binary's own disassembly.
+[CPU report](results/retained-token-cpu-sample-04/summary.md).
+
+Next: use typed bytecode and the recorded execution profiles to count how much
+callee frame zeroing is immediately overwritten by argument copies. Separate
+proven local sources from unknown/indirect calls, and account for overlapping
+argument slots. This is a feasibility census; no zeroing is removed. Any later
+candidate must preserve initialization, alignment, argument order, memory limits
+and fault behavior, then improve actual production-edit commands to advance.
+Avoid rerunning parked register compaction, paired spills or fixed-register
+residency without new evidence.
 
 Git now records the baseline and ongoing source/report changes. Build caches,
 private checkouts and raw private evidence remain local. All builds, tests,
