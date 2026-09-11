@@ -1,0 +1,5 @@
+The fresh complete native differential qualification passes all 47,004 mixed commands on source `aa2f6ea` / tool `0e94d6d8`, with resumable calls and persistent registers. Default and leaf-inlining modes each pass 23,502 commands: 11,119 JIT and 11,119 interpreter invocations, plus original native/export/build/rejection checks. These are command counts, not unique cases. All original assertion ASTs, frozen inputs and installed binary hashes verify.
+
+Successful JIT executions report no declined functions. Maximum generated code is 2,379,080 bytes in default mode and 2,407,420 bytes with leaf inlining. Both modes exercise native calls and returns. The corrected coordinator verifies the directly invoked VM/exporter hashes separately from the unchanged installed wrapper; the direct validator does not exercise that wrapper. The [earlier incomplete run](../resumable-copy-native-01/assessment.md) and its error remain preserved.
+
+This is correctness evidence, not a speed measurement or whole-project compatibility claim. TLS/destructor, fresh fre body replay and the seven held-out edit workflows remain separate requirements.

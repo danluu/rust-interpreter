@@ -52,8 +52,11 @@ The first [fresh native run](results/resumable-copy-native-01/assessment.md) pas
 its 23,502-command default mode, then its coordinator fails on an unused wrapper
 manifest entry. The [coordinator correction](results/resumable-copy-execution-driver-01/assessment.md)
 passes historical/staging checks, three positive provenance configurations and
-twelve rejection cases. A new full native run is next; TLS, fresh fre body replay
-and seven held-out workflows remain before retention.
+twelve rejection cases. The [fresh full native run](results/resumable-copy-native-02/assessment.md)
+now passes all 47,004 commands across both modes, including 22,238 JIT and 22,238
+interpreter invocations, with no declines. [TLS/destructor qualification](results/resumable-copy-tls-01/assessment.md)
+also passes 245 commands. Fresh fre body replay is running; it and the seven
+held-out workflows remain before retention.
 No default change. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
 are archived and verified. About 10.9 GiB remains after the original comparison;
 large fresh histories need another space review.

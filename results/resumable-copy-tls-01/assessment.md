@@ -1,0 +1,3 @@
+The exact candidate `aa2f6ea` / `0e94d6d8` passes all 245 TLS/destructor qualification commands across 24 configurations. The suite includes 85 JIT and 85 interpreter invocations, real native controls, three MIR settings, both leaf-inlining choices, exact destructor order, test resets and normal try callbacks. Original assertions and strict rejection checks remain unchanged.
+
+Successful JIT executions report 5,426 native calls and 9,413 native returns with resumable calls and persistent registers enabled. Real guest panics still terminate with the expected trap; actual unwinding is unsupported. This is separate correctness evidence, not an edit/build/test speed measurement.
