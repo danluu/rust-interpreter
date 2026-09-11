@@ -119,8 +119,14 @@ two-binary tools keep their existing path. Fifteen process commands/five manifes
 checks and all 99 original launcher checks pass, plus a historical-tool execution.
 The wrapper links only libSystem and reduces measured version-probe overhead
 from 10.53 to 1.75ms. The VM is byte-identical to 78e60cdd. Pgrust's API
-qualification verifies twelve commands/six artifacts; Nushell's is running.
-Repeated warm/cold comparisons remain pending; no retention claim follows yet.
+qualification verifies twelve commands/six artifacts. Nushell's qualification
+also passes, but its first cold and edited observations were slower.
+[Repeated pgrust API edits](results/lightweight-wrapper-pgrust-repeated-01/assessment.md)
+verify 180 commands, fifteen pairs and ninety artifacts: paired wall −4.57%,
+CPU −4.46%. This is a descriptive small-project result. The larger Nushell
+warm comparison and six predeclared balanced fresh-target cold runs remain
+pending; no retention claim follows yet. The scheduling option passes its
+archived-behavior checks and a three-cycle reversed-order pgrust qualification.
 
 The [typed Nushell history comparison](results/interface-nushell-artifact-diff-01/assessment.md)
 finds 415 immediate changes in 115 functions and 16 additional readonly bytes
@@ -208,13 +214,29 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-Only `lightweight-wrapper-nushell-qualification-01` is active: supervisor95690,
-controller95693, started September11 at05:55:53. Earlier runs above are terminal0.
-Freeze its Rust/case/interpreter/harness inputs until it finishes, then verify
-source restoration/frozen inputs/commands/artifacts. Baseline78 and candidatec341
-both use ordinary JIT with resumable/persistent calls OFF, matched leaf inlining,
-std-MIR, native18/O0/incremental/defaultthreads, custom4 and independent checking.
-Repeat warm/cold comparisons only after both one-cycle qualifications pass.
+The active run is `lightweight-wrapper-nushell-repeated-01`, supervisor59822,
+controller59829, started September11 at06:25:56. Earlier wrapper qualifications,
+reversed-order scheduling qualification and fifteen pgrust cycles are terminal0.
+Freeze Rust/case/interpreter/harness inputs until the new run completes, then
+verify source restoration, frozen inputs, commands and paired artifacts.
+Baseline78/candidatec341 use ordinary JIT, matched leaf inlining, std-MIR,
+native18/O0/incremental/default threads, custom4 and independent checking.
+
+Six exact completed public Nushell native targets have had only non-executable
+`.o` files reclaimed, through separately reviewed inventories. All other target
+files and all benchmark evidence verified unchanged. Their results are
+`interface-nushell-native-objects-01`, `heldout-nushell-native-objects-01`,
+`native-controls-nushell-types-native-objects-01`,
+`interface-nushell-qualification-native-objects-01`,
+`interface-nushell-units-native-objects-01` and
+`lightweight-wrapper-nushell-qualification-native-objects-01`.
+Hard-linked path totals exceed unique object inode sizes. Free space was about
+27.31 GiB before the new Nushell run; the per-command guard remains eight GiB.
+Ruff and the smaller native-controls Nushell inventories remain unapplied;
+their unique object sizes were only 0.263/0.092 GiB. Preserve executables,
+libraries, metadata, query caches, bytecode snapshots and all private caches.
+No cleanup or other benchmark may run while the new comparison holds the lock.
+
 The old held-out run's stale status is preserved ENOSPC evidence, not a live task.
 Its separate recovery assessment verifies all seven complete cases. Both token
 failures persist. The unbounded goal remains active; inspect receipts before acting.

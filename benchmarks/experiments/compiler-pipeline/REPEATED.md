@@ -62,4 +62,8 @@ before each new large cache history; the per-command guard remains eight GiB.
 
 Status: scheduler helper passes 48 synthetic configurations, thirteen historical
 reports, nine malformed inputs, two false receipts and three early CLI rejects.
-The reversed-order three-cycle pgrust qualification is next.
+The reversed-order three-cycle pgrust qualification passes 36 commands and
+18 paired artifacts. Pgrust's fifteen-cycle comparison passes 180 commands and
+90 artifacts, with median paired wall/CPU reductions of 4.57%/4.46%. Nushell's
+fifteen-cycle run is active (`lightweight-wrapper-nushell-repeated-01`);
+six balanced cold histories remain pending.

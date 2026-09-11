@@ -124,7 +124,9 @@ review are not commitments or evidence of feasibility.
   checks, 99 original launcher checks and historical-tool execution. The VM is
   unchanged. Version-probe overhead falls from 10.53 to 1.75 ms; this is not
   project build-time evidence. The pgrust API qualification passes with identical
-  artifacts; Nushell and repeated warm/cold measurements follow. New manifests
+  artifacts, as does Nushell. [Fifteen pgrust cycles](../results/lightweight-wrapper-pgrust-repeated-01/assessment.md)
+  reduce paired wall time 4.57% and CPU 4.46%; the first Nushell observation
+  was slower. Repeated Nushell warm/cold measurements follow. New manifests
   verify the third executable and preserve historical two-binary compatibility.
 - Item 1.5 now includes [actual Cargo unit attribution](../results/interface-nushell-units-01/assessment.md)
   for a generic API edit: all modes rebuild 19 units. Native nu-command takes
@@ -280,3 +282,10 @@ that a production Rust development engine is complete.
   Explicit-mode native, TLS and fre drivers are ready; helper checks preserve
   the full TLS case matrix. This does not waive the original gates or retain
   the experimental mode.
+
+- Item 9.2 now has bounded, separately prepared object-only reclamation with
+  exact completed-workflow/corpus provenance, lock and open-file checks, an
+  immutable per-file inventory and preservation verification. Six completed
+  public Nushell native targets were reclaimed. Hard-linked path totals are
+  explicitly distinguished from unique inode sizes and observed free space.
+  Private caches, bytecode snapshots, reports and all non-object files remain.
