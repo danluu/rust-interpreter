@@ -68,7 +68,11 @@ passes eight target checks and forty rejections. Its archive core passes 44
 rejections/five coordinator cases, and mixed batch routing passes fifteen
 rejections. This permits separately reviewed archival of the completed old
 Nushell/Ruff cases while preserving their interrupted parent and recovery records.
-No cache has yet been archived using this new provenance path.
+The [eight reviewed Nushell/Ruff caches](results/heldout-recovery-storage-01/assessment.md)
+now archive and verify successfully: 34,513 paths, 8.16 GB original data and
+2.61 GB archives, with 134 unchanged evidence hashes. About 14.6 GiB is available.
+Next preserve duplicate artifact snapshots using the existing clone helper and
+qualify explicit per-case gates before the seven separately completed histories.
 
 ## Closed worker-count experiment
 
@@ -135,7 +139,8 @@ The [latest 32-cache batch](results/worker-cold-storage-batch-05/assessment.md)
 completed and verified. The [four cold04 caches](results/allocation-history-storage-01/assessment.md)
 also verified. The [eight copy-comparison caches](results/copy-comparison-storage-01/assessment.md)
 and the [eight original-comparison caches](results/copy-qualification-storage-01/assessment.md)
-bring the total to 173 archives (152 workflow and 21 host). The new
+plus the [eight recovered Nushell/Ruff caches](results/heldout-recovery-storage-01/assessment.md)
+bring the total to 181 archives (160 workflow and 21 host). The new
 [artifact clone qualification](benchmarks/experiments/compiler-pipeline/ARTIFACT-CLONES.md)
 preserves independent write behavior and rejects 18 invalid/failure cases.
 The [pilot](results/artifact-clone-pilot-01/assessment.md) and

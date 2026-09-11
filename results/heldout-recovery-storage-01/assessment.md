@@ -1,0 +1,3 @@
+All eight separately reviewed Nushell/Ruff caches were archived and verified using the qualified recovered-workflow provenance path. The batch covers 34,513 paths, 8,163,411,253 unique original bytes, 2,614,023,753 archive bytes and 134 unchanged evidence hashes. Every payload was decoded and hashed before its original cache file was retired. Inventory commit `b2c7225` precedes application.
+
+Executed artifact snapshots, original assertions, reports, the interrupted parent status and its failure/recovery evidence remain unchanged. No private cache was selected. The completed total is now 181 archives (160 workflow and 21 host). About 14.6 GiB was available afterward on the shared volume. This maintenance is outside all benchmark timers.
