@@ -18,6 +18,7 @@ entire inventories, closed files, exact corpus ownership and external proofs.
 The [reviewed remainder](../warm-storage-batch-01-recovery-01/inventory-review.json)
 uses the same archive IDs and unchanged plans, with a new three-entry batch.
 Do not retry the original eight-entry batch or queue another lock waiter while
-any archive batch is active. Recovery has not yet executed.
+any archive batch is active. The [recovery completed](../warm-storage-batch-01-recovery-01/assessment.md);
+[combined evidence](recovery-summary.json) accounts for all eight reviewed targets.
 
 [Verified prefix](partial-summary.json), [original review](inventory-review.json).

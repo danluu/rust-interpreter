@@ -45,21 +45,14 @@ restoration. Median paired wall ratio is **0.9981098106** and child-CPU ratio
 **0.9996062101**: no material worker-count gain, with warm guards passing.
 
 Next: fifteen Nushell API-edit cycles with the same frozen worker settings.
-Eight exact completed cache targets are prepared and separately reviewed in
-[warm-storage-batch-01](results/warm-storage-batch-01/inventory-review.json):
-95,657 paths / 23,139,072,348 unique bytes. Four belong to the completed worker
-qualification; four to the explicitly verified resumable held-out corpus member.
-The batch coordinator now forwards and checks optional corpus identity;
-[four invalid or mismatched parent cases](results/archive-batch-corpus-checks-01/summary.json)
-are rejected before any child invocation, with all eight prepared statuses intact.
-The original application stopped before cache six because a receipt verifier
-acquired the lock between children. Its [five-target prefix](results/warm-storage-batch-01/assessment.md)
-verifies. All three remaining inventories and prepared status hashes are unchanged;
-[recovery review](results/warm-storage-batch-01-recovery-01/inventory-review.json)
-binds only those untouched targets. Do not retry the whole batch or queue another
-lock waiter during recovery.
-Require roughly 27 GiB free before the large warm
-run; the eight-GiB per-command guard remains unchanged.
+Eight reviewed completed targets are now [archived](results/warm-storage-batch-01-recovery-01/assessment.md):
+95,657 paths / 23,139,072,348 unique bytes in 7,776,020,009 archive bytes.
+The original batch stopped before its sixth child because a queued verifier
+acquired the lock. Its verified five-target prefix and separately audited
+three-target recovery preserve that failure. All targets and external proofs
+verify; forty-four archives are complete in total. Never queue another lock
+waiter while an archive batch is active. Require roughly 27 GiB before the
+Nushell fifteen-cycle run; the eight-GiB per-command guard remains unchanged.
 
 Worker retention requires at least 10% median cold wall reduction, no >5% warm
 wall regression and no >10% child-CPU increase for the checked primary groups.
