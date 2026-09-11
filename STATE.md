@@ -61,8 +61,8 @@ compared artifacts unchanged and no declines. These remain body replays, not
 unfiltered libtest. The seven held-out edit workflows remain before retention.
 No default change. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
 are archived and verified. The [eight original-comparison caches](results/copy-qualification-storage-01/assessment.md)
-are also archived and verified. About 9.4 GiB is currently available on the shared
-volume; the large held-out histories still need a bounded storage strategy.
+are also archived and verified. About 9.4 GiB was available at that checkpoint on the shared volume; the large
+held-out histories needed a bounded storage strategy.
 The [recovered-case archive extension](results/recovered-cache-evidence-02/assessment.md)
 passes eight target checks and forty rejections. Its archive core passes 44
 rejections/five coordinator cases, and mixed batch routing passes fifteen
@@ -97,7 +97,15 @@ The [stopped-history cache proof](results/stopped-cache-evidence-02/assessment.m
 now identifies all four exact targets and rejects fifty altered inputs. It retains
 zero completed workflows and zero measured edit pairs. The archive core passes
 44 rejection checks and six coordinator cases; batch routing rejects nineteen
-invalid cases. No real stopped cache has been retired yet.
+invalid cases. The [four stopped caches](results/copy-stopped-storage-01/assessment.md)
+now archive and verify: 41,026 paths, 10.62 GB original data, 3.44 GB archive
+payloads and 46 preserved evidence hashes. The archive registry now has 185
+entries. The [fresh retry admission](results/copy-heldout-retry-space-01/assessment.md)
+correctly rejects the available 15.57 GiB against the 25.99 GiB estimate.
+No fresh benchmark was started. The [retry decision](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md)
+records the required new history ID and unchanged controls; its aggregation
+amendment still needs implementation/qualification. More task-owned build-cache
+space is required before that launch.
 
 ## Closed worker-count experiment
 

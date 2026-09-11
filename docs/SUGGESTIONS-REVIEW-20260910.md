@@ -118,6 +118,15 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Items 2.3/9.2 now also have an explicit [between-command stop assessment](../results/resumable-copy-heldout-01-case-01-stop/assessment.md).
+  The first fresh held-out case stopped at the 8 GiB disk guard, with no
+  successful-edit pairs. Source restoration and all four executed snapshots
+  verify. A [preflight regression check](../results/workflow-space-floor-01/assessment.md)
+  fixes the omitted running-space reserve and rejects the original admission.
+  Separately qualified [stopped-cache archival](../results/copy-stopped-storage-01/assessment.md)
+  preserves the incomplete history and all its evidence while retiring four
+  exact caches. This is benchmark infrastructure work, with no speed claim.
+
 - The combined runtime direction now also passes the [original-baseline gates](../results/resumable-copy-original-e2e-01/assessment.md): folded paired wall −21.82%, token −33.09%, with lower CPU. All 168 commands and 84 artifacts verify. Both remain slower than native Cargo. Fresh [native differential](../results/resumable-copy-native-02/assessment.md) (47,004 commands), [TLS/destructor](../results/resumable-copy-tls-01/assessment.md) (245 commands) and [fre body replay](../results/resumable-copy-fre-01/assessment.md) (382 passes, seven ignored) now qualify this exact candidate. Seven held-out edit workflows remain pending. This is separate from the 15.14% token gain attributed to the latest copy change.
 
 - Items 1.1/3.1 now have a further measured boundary change (`aa2f6ea` /
