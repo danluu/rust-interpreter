@@ -131,8 +131,15 @@ archived-behavior checks and a three-cycle reversed-order pgrust qualification.
 The [typed Nushell history comparison](results/interface-nushell-artifact-diff-01/assessment.md)
 finds 415 immediate changes in 115 functions and 16 additional readonly bytes
 for the original/wrong-edit states; headers/op counts/statics/TLS are identical.
-The API-edit state is identical. This narrows the discrepancy without proving
-equivalence or establishing a root cause.
+The API-edit state is identical. A [read-only literal inspection](results/interface-nushell-literal-history-01/assessment.md)
+now finds a second `Expected OneOf` byte string after the edit/revert history,
+and a packed immediate changing from `(224, 14)` to `(368, 14)` in the affected
+test. The allocation HashMap is never iterated for layout. This narrows the
+next investigation to literal allocation requests/sharing without establishing
+an interning cause or permitting content-only deduplication. A
+[trace design](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
+is prepared for after the fixed-tool wrapper experiment; no exporter input has
+changed during its active run.
 
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.
