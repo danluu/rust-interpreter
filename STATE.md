@@ -55,11 +55,13 @@ passes historical/staging checks, three positive provenance configurations and
 twelve rejection cases. The [fresh full native run](results/resumable-copy-native-02/assessment.md)
 now passes all 47,004 commands across both modes, including 22,238 JIT and 22,238
 interpreter invocations, with no declines. [TLS/destructor qualification](results/resumable-copy-tls-01/assessment.md)
-also passes 245 commands. Fresh fre body replay is running; it and the seven
-held-out workflows remain before retention.
+also passes 245 commands. [Fresh fre replay](results/resumable-copy-fre-01/assessment.md)
+passes 382 bodies, seven ignored, with 382 fresh native executions, all 382
+compared artifacts unchanged and no declines. These remain body replays, not
+unfiltered libtest. The seven held-out edit workflows remain before retention.
 No default change. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
-are archived and verified. About 10.9 GiB remains after the original comparison;
-large fresh histories need another space review.
+are archived and verified. About 4.7 GiB remains after fresh coverage;
+archive reviewed completed caches before any large fresh history.
 
 ## Closed worker-count experiment
 

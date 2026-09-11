@@ -118,7 +118,7 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
-- The combined runtime direction now also passes the [original-baseline gates](../results/resumable-copy-original-e2e-01/assessment.md): folded paired wall −21.82%, token −33.09%, with lower CPU. All 168 commands and 84 artifacts verify. Both remain slower than native Cargo; fresh broader correctness and held-out checks are pending. This is separate from the 15.14% token gain attributed to the latest copy change.
+- The combined runtime direction now also passes the [original-baseline gates](../results/resumable-copy-original-e2e-01/assessment.md): folded paired wall −21.82%, token −33.09%, with lower CPU. All 168 commands and 84 artifacts verify. Both remain slower than native Cargo. Fresh [native differential](../results/resumable-copy-native-02/assessment.md) (47,004 commands), [TLS/destructor](../results/resumable-copy-tls-01/assessment.md) (245 commands) and [fre body replay](../results/resumable-copy-fre-01/assessment.md) (382 passes, seven ignored) now qualify this exact candidate. Seven held-out edit workflows remain pending. This is separate from the 15.14% token gain attributed to the latest copy change.
 
 - Items 1.1/3.1 now have a further measured boundary change (`aa2f6ea` /
   `0e94d6d8`). Fresh token counts place 88.19% of interpreted operations in
