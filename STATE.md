@@ -1,122 +1,118 @@
 # Continuation checkpoint — September 11, 2026
 
 The unbounded goal remains active: improve the custom Rust development engine
-using real source-edit/build/test measurements. Every suggestion in
-`suggestions.txt` has an explicit [decision](docs/SUGGESTIONS-REVIEW-20260910.md).
-The user's file remains unmodified and untracked. Local Git commits are authorized;
-no remote or push was requested.
+using real source-edit/build/test measurements. Every item in the user-owned,
+unmodified `suggestions.txt` has a [decision](docs/SUGGESTIONS-REVIEW-20260910.md).
+Local Git commits are authorized; no remote or push was requested.
 
-Current runtime source is `a2a0e04`, tool `b2aa6efe`: 188 bytecode, 11 exporter
-and 3 historical-cache tests passed. The completed new nine-workflow corpus uses
-that tool. The broader 47,004 native differential commands, TLS checks and
-382-body fre replay still belong to `57a54edd`; they were not rerun on this fix.
-[Exact build index](benchmarks/tool-builds.json).
+## Active work
 
-## Completed and checked in
+Branch `experiment/persistent-registers`, runtime commit `d664bce`, installed
+tool `e89de7f8`. Bounded full-CFG liveness (`b252588`) and up to three persistent
+u128 register pairs now span native branches and calls. VM continuations spill
+live values before returning, and native children preserve assigned host GPRs.
+Analysis limits decline to the existing emitter. The option stays experimental.
+[Plan and implementation](benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md).
+[Exact ABI](benchmarks/experiments/bounded-native-calls/INTERNAL-ABI.md).
 
-- `267ad90`: all nine stronger-native workflows completed, with 756 commands,
-  189 independent Cargo checks, 378 artifact checks and restored source pins.
-  [Assessment](results/native-controls-corpus-01/assessment.md). Native uses root
-  O0/incremental, 18 jobs and default test concurrency; custom builds use four
-  jobs. Package overrides remain. Linker/backend/worker alternatives are unqualified.
-- Token edited commands remain 6.664 s custom versus 2.002 s native; folded is
-  2.485 versus 1.638 s. All outliers and all three fre cross-history layout
-  differences remain recorded. No semantic equivalence or cause is established.
-- Native-call censuses `01` and `02` passed eight and nine diagnostic tests and
-  matched saved instruction/call totals. Current census sources are in `267ad90`;
-  the first version is reconstructible using its verified reverse patch.
-- The expanded census finds bounded acyclic call trees with explicit terminal
-  Trap support cover 80.72% of token direct calls / 59.02% of their frame bytes;
-  folded is 54.61% / 17.55%. These are scope counts, not speedup predictions.
-- Generated STATUS/index and all assessments are current. Corpus recovery
-  receipts now clear stale child identity/exit fields; this fix followed the
-  measured run. `97dbe1a` preserves the call ABI audit.
+- All 240 workspace tests pass in [debug](results/persistent-native-04/summary.json)
+  and [release](results/persistent-release-01/summary.json), one ignored. Existing
+  cache, local-memory and native-call helpers exercise both register modes.
+  New checks cover wide loops, VM fallback, far registers, budgets and x19–x28,
+  SP/LR through 64 native children, on returns and faults. The initial ABI test
+  omitted the valid PC 4 budget continuation; failed `persistent-native-02` is
+  preserved and corrected checks `03`/`04` pass.
+- [Ten CLI checks](results/persistent-cli-01/summary.json) pass, including rejected
+  option combinations. The receipt verifier rechecks both historical workflows
+  and rejects falsely claimed runtime flags. [Build index](benchmarks/tool-builds.json)
+  reconstructs the Git source key and verifies installed binaries.
+- [Both original artifacts](results/persistent-real-smoke-01/assessment.md) pass
+  with all assertions and existing limits. Persistent assignments publish in
+  100 folded / 228 token code instances; three token analyses decline at bounds.
+  Token uses guest random bytes; its independent instruction counts differ and
+  do not prove identical traces. This smoke check is not E2E performance evidence.
 
-## Runtime experiments
+The [completed E2E run](results/persistent-e2e-01/assessment.md) contains 168
+commands, 30 edited pairs and 84 identical paired artifacts. All flags, source
+pins and restoration are verified. Token improves 23.6% paired (CPU −23.6%);
+folded improves 4.2% (CPU −3.9%). Token passes its original 20% target, folded
+misses 10%; the combined gate fails. The options remain experimental.
+Marginal command medians: folded native 1.634 / b2 2.472 / candidate 2.373 s;
+token native 1.952 / b2 6.482 / candidate 4.959 s. Native remains faster on both.
 
-Implement the [bounded native call-tree experiment](benchmarks/experiments/bounded-native-calls/PLAN.md).
-Experimental source `09de2a9`, tool `c98d995b`, executes complete native trees
-behind `--engine jit --jit-native-calls`. The default engine remains separate.
-All 225 workspace tests pass in debug and release (one ignored); seven CLI
-checks and both saved real workload smoke checks pass. [Release/tool evidence](results/bounded-native-release-01/summary.json).
-[Smoke assessment](results/bounded-native-real-smoke-01/assessment.md). The Git
-build index verifies the new source key and installed binaries.
+Fresh three-window [folded](results/persistent-folded-sample-01/assessment.md)
+and [token](results/persistent-token-sample-01/assessment.md) captures pass original
+assertions and resolve all generated PCs. Folded has 24.9% VM frame reservation,
+9.0% generated zeroing and 3.6% direct register-array stores. Token has 4.2%,
+12.8% and 7.4%, respectively. These are perturbed shares, not savings estimates.
+The helper rechecks all 12 old/new windows with unchanged counts and hashes;
+its initial tuple-versus-JSON-array comparison failure remains documented.
 
-The first native-call E2E corpus is complete: 168 commands, 30 edited pairs,
-84 paired artifacts, restored sources. Token improves 14.4% paired (6.504 to
-5.565 s marginal medians); folded regresses 3.0% paired (2.559 to 2.603 s).
-Both original targets fail. [Assessment](results/bounded-native-e2e-01/assessment.md).
-Do not retain or enable this intermediate candidate by default. The seven held-out
-workflows and broader native/TLS/fre qualification were not run on it.
+Next implement the [isolated aggregate-reuse census](benchmarks/experiments/aggregate-reuse-census/PLAN.md).
+Start with additional non-ABI private arrays whose complete assignments overwrite
+all bytes, preserving partial writes, entry zeros, aliases and layout semantics.
+Compute a hypothetical plan only, compare against existing scalar coloring and
+weight by exact matching profiled calls. Require unchanged exported bytecode and
+original assertions before drawing an opportunity conclusion. Production layout
+stays unchanged until scope and initialization/escape proofs justify a new experiment.
 
-The `experiment/native-region-calls` branch links outer direct Call stubs with
-ordinary JIT regions behind `--jit-native-calls --jit-native-call-stubs`.
-Source `26833c3`, tool `2f31c6a0`, passes 231 workspace tests in debug/release,
-seven CLI checks and both real-artifact smoke checks. Its completed 168-command
-E2E corpus improves token 19.3% paired but regresses folded 1.4%; both original
-gates fail. [Assessment](results/native-region-e2e-01/assessment.md). All five
-pins and 84 paired artifacts were reverified. Keep the options experimental.
+Keep the original b2 gates. Seven held-out workflows and broader native/TLS/fre
+qualification remain required before retention; no unresolved >5% held-out
+regression is allowed. These broader suites have not been run on `e89de7f8`.
 
-Fresh three-window profiles of that exact candidate pass original assertions.
-Folded: 48.1% generated, 21.9% frame reservation, 12.0% native boundary and
-9.3% dispatcher self. Token: 61.7% generated, 11.2% native boundary and 10.4%
-dispatcher self. These are perturbed sample shares, not gain predictions.
-The diagnostic code dump is implemented in `059d818` / `7ad1ccdb` and passes
-233 workspace tests in debug/release. Exact same-process bytes and ranges resolve
-all generated samples: token has 14.0% direct register-array stores and 11.7%
-native zeroing; folded 6.0% stores and 8.2% native zeroing. VM frame reservation
-remains 23.1% in the folded diagnostic. These are sampled shares, not savings.
-[Next implementation](benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md):
-full-CFG liveness and up to three persistent u128 register pairs across native
-edges, with correct VM spill/reload and complete native ABI preservation. Keep
-frame lifetime/layout changes separate. Do not repeat parked argument-zero or
-unused-local work.
+## Evidence guiding this experiment
 
-Current branch is `experiment/persistent-registers`. Bounded liveness is committed
-in `b252588`; the emitter and runtime controls are implemented. The latest debug
-check, [persistent-native-04](results/persistent-native-04/summary.json), passes
-240 workspace tests (one ignored), including cache/local-memory/native-call
-differentials in both register modes. Full-width loop/VM-fallback tests and an
-assembly ABI probe cover x19–x28 and SP/LR through 64 native children and faults.
-The earlier `persistent-native-02` failure remains recorded: its test omitted
-the valid PC 4 budget continuation. The corrected test passes in `03` and `04`.
+The [ordinary native-Call result](results/native-region-e2e-01/assessment.md),
+`26833c3` / `2f31c6a0`, completed 168 commands, 30 edited pairs and 84 identical
+paired artifacts: token improves 19.3% paired, folded regresses 1.4%. Both gates
+fail. The earlier [bounded-tree result](results/bounded-native-e2e-01/assessment.md)
+improves token 14.4% and regresses folded 3.0%; it also fails both gates.
 
-The implementation is committed as `d664bce`, tool `e89de7f8`. Its
-[optimized check/install](results/persistent-release-01/summary.json) passes all
-240 tests; [ten CLI checks](results/persistent-cli-01/summary.json) also pass and
-reverify the two historical receipts, rejecting falsely claimed register flags.
-The source key and installed binary hashes are in the build index.
+Diagnostic `059d818` / `7ad1ccdb` passes 233 debug/release tests and emits exact
+same-process code/range dumps. Three-window profiles pass original assertions:
+[token](results/native-code-token-sample-02/assessment.md) has 14.0% direct
+register-array stores / 11.7% native zeroing; [folded](results/native-code-folded-sample-01/assessment.md)
+has 6.0% stores / 8.2% native zeroing and 23.1% VM frame reservation. These are
+partial perturbed samples, not predicted savings. All generated PCs resolve.
+The first token capture missed its initial arena; its incomplete evidence and
+the bounded-readiness fix/complete retry are preserved.
 
-Next: finish both original saved artifacts and run the three-cycle source-edit
-corpus against `b2aa6efe`, with native calls, call stubs and persistent registers
-explicitly enabled in the candidate. No persistent-register E2E result exists
-yet. Keep the original gates and all assertions unchanged.
+Frame layout/lifetime changes stay separate. Argument-only zero elision already
+had little scope (4.4% folded / 9.1% token), as did removing unused MIR local
+storage. Do not repeat those parked experiments. Aggregate lifetime reuse needs
+a new alias/initialization proof and changed-artifact controls.
 
-A whole-tree budget bound avoids partial budget exits only if every target and
-all storage are ready before entry. Otherwise decline before progress or use a
-real continuation. Preserve argument-copy errors before depth errors, return
-copy before truncation to the aligned callee base, aliases, exact budgets,
-initialization, guest limits and profile accounting. Untaken traps still need
-correct native failure handling. [ABI audit](docs/NATIVE-CALL-EXPERIMENT.md).
+## Qualified controls and coverage
 
-The predeclared experimental target is 20% lower paired token command latency
-and 10% lower folded latency, CPU improving too, with no unresolved >5% held-out
-regression. Broader execution qualification is required for production retention.
+Default comparison source `a2a0e04`, tool `b2aa6efe`, passed 202 workspace tests.
+Its [nine-workflow corpus](results/native-controls-corpus-01/assessment.md)
+completed 756 commands, including 189 independent Cargo checks, 135 edited pairs
+and 378 verified artifacts. Pins for pgrust, fre, Nushell, Ruff and private
+rg-aot were restored. Native uses root O0/incremental, 18 jobs and default test
+concurrency; custom uses four jobs. Package overrides remain; linker/backend/
+worker alternatives are unqualified. Cold commands exclude toolchain/dependency/
+std-MIR setup and OS-cache clearing. All samples remain in the records.
 
-## Process and ownership
+All three fre workflows have unresolved cross-history bytecode layout changes;
+corresponding engines receive identical bytecode. Do not claim cross-history
+semantic equivalence or an established cause. The broader 47,004 native commands
+(23,502 cases × two inlining modes), 245 TLS checks and 382 passing/7 ignored fre
+bodies belong to older `57a54edd`, not the current experiments. That fre replay
+uses allocation limit 150,000, unsupported-call traps and normal try callbacks;
+it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
-The original-artifact check `persistent-real-smoke-01` is running; release and
-CLI qualification are terminal and successful.
-The profile-report helper initially rejected a relative test-fixture path;
-the corrected helper passes synthetic partition/error checks and reproduces
-all three historical generated sample totals. The first exact-code token capture missed the JIT arena during startup; two
-windows succeeded and all three test runs passed. The bounded readiness-wait fix
-and complete token retry/folded captures are preserved.
-Detailed evidence and pinned identities are in `.work/continuation-state.json`.
+## Ownership and recovery
+
+All current task executions are terminal; no sampler, build or benchmark is
+active. The unbounded goal remains active and the next diagnostic is authorized.
+
+Detailed current state, exact tool hashes, all five source pins and terminal
+receipts are in `.work/continuation-state.json`. Toolchain is
+`nightly-2026-09-08`, rustc `cea272fa3`. Private adapter is
+`.work/private/workflow-rg-aot.json`; public reports contain aggregates only.
 
 No subagents or independent model calls. No AWS activation, unrelated process
 control, broad cache deletion, private cleanup or quarantine deletion. A separate
-user-owned cleanup task uses the benchmark lock; wait without controlling it.
-Serialize task builds/tests/benchmarks/cleanup under `.work/benchmark.lock` and
-freeze measured inputs. Preserve original assertions, wrong-edit controls,
-source restoration and historical evidence.
+user-owned cleanup task takes `.work/benchmark.lock`; wait without controlling it.
+Serialize task builds/tests/benchmarks/cleanup with that lock. Preserve artifacts,
+assertions, wrong-edit controls, source restoration and historical evidence.

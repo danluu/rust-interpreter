@@ -4,17 +4,19 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Profile the native Call implementation and change the remaining costly path.**
-   Ordinary Call stubs now link with generated regions. Source `26833c3` / tool
-   `2f31c6a0` passes 231 debug/release tests. Three real-edit cycles improve token
-   19.3% paired but regress folded 1.4%; both original gates fail. Keep the options
-   experimental. Fresh profiles and same-process generated-code attribution identify substantial
-   register-array stores and frame clearing. Next implement full-CFG liveness and
-   persistent full-width register pairs across native edges, with complete ABI
-   preservation. Keep frame lifetime/layout changes separate.
-   [Implementation plan](benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md). Keep the original
-   b2aa6efe gates, then require held-out and broader qualification before retention.
-   [Result](results/native-region-e2e-01/assessment.md),
+1. **Measure additional safe frame reuse before changing layout.**
+   Full-width register values now persist across native branches and calls.
+   `d664bce` / `e89de7f8` passes 240 debug/release tests. Three real-edit cycles
+   improve token 23.6% paired and folded 4.2%. Token passes its original gate;
+   folded misses 10%, so the options stay experimental. Fresh exact-code
+   profiles put folded VM frame reservation at 24.9% and generated zeroing at
+   9.0%; direct register-array stores are 3.6%. These shares are not savings.
+   Next inventory additional fully overwritten private aggregate ranges with
+   noninterfering lifetimes, preserving padding, aliases and entry zero values.
+   Keep existing scalar coloring, unused-local and argument-zeroing work separate.
+   [Bounded diagnostic plan](benchmarks/experiments/aggregate-reuse-census/PLAN.md).
+   Keep the original b2aa6efe gates, then require held-out and broader qualification.
+   [Result](results/persistent-e2e-01/assessment.md),
    [profiling protocol](benchmarks/experiments/bounded-native-calls/PROFILING.md).
 2. **Finish native configuration qualification.** Nine workflows now have three
    real-edit cycles, child CPU, explicit root O0/incremental native settings,

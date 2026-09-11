@@ -119,7 +119,11 @@ review are not commitments or evidence of feasibility.
   exact budgets and x19–x28/SP/LR through nested calls and faults. Ten CLI checks
   pass and the receipt verifier rejects falsely claimed runtime flags. The
   [experiment plan](../benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md)
-  retains the original b2 performance gates; real E2E measurement is still needed.
+  retains the original b2 performance gates. The completed
+  [168-command E2E result](../results/persistent-e2e-01/assessment.md) improves
+  token 23.6% paired and folded 4.2%; token passes its target, folded misses 10%.
+  Fresh profiles now guide an additional private-frame-reuse census. The new
+  runtime remains experimental and lacks held-out/broader qualification.
 
 - `93abea7`: repeated source-edit cycles, CPU accounting, portable verifier and
   typed artifact diagnostic. All 63 commands completed. [Assessment and preserved
@@ -169,8 +173,10 @@ debug/release. Its [three-cycle E2E result](../results/native-region-e2e-01/asse
 improves token 19.3% paired but regresses folded 1.4%, missing both original gates.
 The options remain experimental. Fresh profiles and same-process emitted-code
 attribution are complete. The diagnostic tool passes 233 debug/release tests.
-[Next](../benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md):
-register liveness and persistence across native edges, with frame lifetime work
-kept separate. Existing argument-zeroing and unused-local censuses remain parked.
+[Register liveness/persistence](../benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md)
+is now implemented and measured above. The
+[next diagnostic](../benchmarks/experiments/aggregate-reuse-census/PLAN.md)
+investigates additional fully initialized private frame ranges. Existing
+argument-zeroing and unused-local censuses remain parked.
 The remaining accepted design work above is prioritized follow-up, not a claim
 that a production Rust development engine is complete.

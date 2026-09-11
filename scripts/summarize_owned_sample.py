@@ -114,6 +114,14 @@ def main():
     require(sha(vm) == run['vm_sha256'], 'VM changed')
     require(sha(Path(plan['artifact'])) == run['artifact_sha256'], 'artifact changed')
     samples = [summarize(work / str(r['index'])) for r in run['records']]
+    options = {k: plan.get(k, False) for k in
+        ['jit_native_calls', 'jit_native_call_stubs', 'jit_persistent_registers']}
+    for record in run['records']:
+        # Options describe the captured processes, not the current launcher.
+        command = json.loads((work / str(record['index']) / 'record.json').read_text())['identity']['command']
+        for option, enabled in options.items():
+            require(('--' + option.replace('_', '-') in command) == enabled,
+                    'sampled runtime option differs from plan')
     counts, frames = Counter(), Counter()
     for sample in samples:
         counts.update(sample['disjoint_counts'])
@@ -123,7 +131,7 @@ def main():
         artifact_sha256=run['artifact_sha256'], total_samples=total,
         disjoint_counts=dict(counts), percentages={k: 100 * v / total for k, v in counts.items()},
         self_symbols=dict(frames.most_common()), samples=samples,
-        performance_measurement=False, options={k: plan.get(k, False) for k in ['jit_native_calls', 'jit_native_call_stubs']},
+        performance_measurement=False, options=options,
         limitations='Partial, perturbed execution windows with original guest RNG. Self counts partition captured thread samples; grouped host PCs remain unresolved. Verified live arena addresses identify generated code, not individual guest operations. Shares do not predict speedup.',
         evidence={str(p.relative_to(ROOT)): sha(p) for p in [work / 'plan.json', work / 'summary.json', Path(__file__)]})
     out = ROOT / 'results' / args.run_id

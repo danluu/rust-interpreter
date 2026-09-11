@@ -59,6 +59,10 @@ def attribute(folder, sample_summary):
     code = code_path.read_bytes()
     require(len(code) == dump['code_bytes'] == record['statistics']['jit_bytes'], 'dump length mismatch')
     require(not dump['profiled'], 'instruction-profile instrumentation enabled')
+    command = record['identity']['command']
+    for field, flag in [('native_call_stubs', '--jit-native-call-stubs'),
+                        ('persistent_registers', '--jit-persistent-registers')]:
+        require(dump.get(field, False) == (flag in command), 'dumped runtime option differs from command')
     ranges = dump['ranges']
     end = 0
     for row in ranges:

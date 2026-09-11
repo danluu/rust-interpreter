@@ -103,5 +103,11 @@ on returns and faults. The earlier ABI test failure is preserved in
 `persistent-native-02`: its expected continuation list omitted PC 4 at a budget
 boundary; correcting that expectation passes in `03` and `04`.
 
-Release execution and real source-edit measurements remain required. These
-checks do not establish a performance gain or large-project compatibility.
+Source `d664bce` / tool `e89de7f8` also passes the optimized workspace check,
+ten CLI checks and both original artifacts. The
+[three-cycle E2E result](../../../results/persistent-e2e-01/assessment.md)
+improves token 23.6% paired and folded 4.2% against `b2aa6efe`. Token passes its
+original 20% target; folded misses 10%, so the combined gate fails. Keep the
+option experimental. The seven held-out workflows and broader native/TLS/fre
+qualification are not run on this candidate. Fresh exact-code samples now guide
+the [additional private-range census](../aggregate-reuse-census/PLAN.md).

@@ -30,7 +30,10 @@ emitter. Assignment counters count published ordinary/tree code instances, not
 unique guest functions. Analysis and emission time remain inside compile time.
 The [debug qualification](../../../results/persistent-native-04/summary.json)
 passes 240 tests, including an expanded assembly probe for x19–x28 and SP/LR.
-Release and real E2E qualification are separate from this ABI description.
+The optimized check also passes all 240 tests. The
+[real E2E result](../../../results/persistent-e2e-01/assessment.md) improves token
+23.6% and folded 4.2% paired, but misses the folded target. The ABI checks do not
+establish broad compatibility or permit retention by themselves.
 
 The storage, metadata and dedicated emitter described here are implemented in
 `linear_memory.rs`, `jit/trees.rs` and `jit/native_calls.rs`. Direct-entry native
