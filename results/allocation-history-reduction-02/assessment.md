@@ -1,0 +1,5 @@
+The three-function reduction reproduces the Nushell allocation split. Incremental-on counts are 1, 1, 2, 2 across original/wrong/API/restored source; incremental-off counts are 1, 1, 1, 1. Only depends_on_api acquires a distinct compiler allocation after the signature edit and revert.
+
+All 133 commands pass their expected outcomes: one lockfile setup, four native compilations, 24 native executions, eight Cargo/custom-JIT invocations, and 96 saved-artifact executions split equally between the JIT and interpreter. Unchanged workload assertions reject the wrong body; inputs 42, 43 and 40 reach the three original panic sites. Source restoration and all eight trace/artifact bindings verify. The first attempt is preserved separately: its driver expected the wrong diagnostic prefix for a correctly reached panic.
+
+The comparison establishes an incremental-history dependency in the reduction. It does not directly identify which rustc query results were reused. Next, observe MIR dumps in the same two histories and require all eight bytecode artifacts to remain identical to this uninstrumented run. No allocation coalescing or performance claim follows.
