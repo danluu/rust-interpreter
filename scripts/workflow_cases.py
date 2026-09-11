@@ -889,3 +889,77 @@ WORKFLOW_VARIANTS[('fre', 'forward-anchored-tls')] = {'package': 'fre-kernels',
             '        }\n'
             '        (start..=end).for_each(|byte| self.insert(byte));\n'
             '    }')]}
+
+
+# Original exhaustive token tests with an explicit VM allocation budget.
+WORKFLOW_VARIANTS['fre', 'token-phrase-allocation'] = {'package': 'fre-kernels',
+ 'file': 'crates/fre-kernels/src/token_phrase.rs',
+ 'tests': ['token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex',
+           'token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap',
+           'token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics'],
+ 'selections': [[0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2], [0, 1, 2]],
+ 'workload': 'The original exhaustive token-phrase byte-semantics test plus directed restart and '
+             'route-boundary tests. The custom VM uses an explicit150000 live-allocation budget; native '
+             'Cargo has its normal allocator. Five production-body refactors leave every original test '
+             'unchanged.',
+ 'negative': ['corrupt-short-input-count',
+              '            return Ok(CountResult {\n                count: actual.count,',
+              '            return Ok(CountResult {\n                count: actual.count.wrapping_add(1),'],
+ 'edits': [['name-literal-finder-result',
+            '    fn literal(&self) -> &[u8] {\n        self.finder.needle()\n    }',
+            '    fn literal(&self) -> &[u8] {\n'
+            '        let literal = self.finder.needle();\n'
+            '        literal\n'
+            '    }'],
+           ['reuse-short-count-input-length',
+            '    pub fn count(&self, haystack: &[u8], limits: ReduceLimits) -> Result<CountResult, '
+            'ReduceError> {\n'
+            '        if haystack.len() < CANDIDATE_MIN_INPUT_BYTES {\n'
+            '            let upper = self.preflight_short_input(haystack.len(), Operation::Count, limits)?;',
+            '    pub fn count(&self, haystack: &[u8], limits: ReduceLimits) -> Result<CountResult, '
+            'ReduceError> {\n'
+            '        let input_bytes = haystack.len();\n'
+            '        if input_bytes < CANDIDATE_MIN_INPUT_BYTES {\n'
+            '            let upper = self.preflight_short_input(input_bytes, Operation::Count, limits)?;'],
+           ['reuse-short-span-input-length',
+            '    ) -> Result<SpanSumResult, ReduceError> {\n'
+            '        if haystack.len() < CANDIDATE_MIN_INPUT_BYTES {\n'
+            '            let upper = self.preflight_short_input(haystack.len(), Operation::SpanSum, '
+            'limits)?;',
+            '    ) -> Result<SpanSumResult, ReduceError> {\n'
+            '        let input_bytes = haystack.len();\n'
+            '        if input_bytes < CANDIDATE_MIN_INPUT_BYTES {\n'
+            '            let upper = self.preflight_short_input(input_bytes, Operation::SpanSum, limits)?;'],
+           ['orient-short-route-width-comparison',
+            '        let route = if input_bytes < minimum_match_bytes {\n'
+            '            Route::ImpossibleWidth\n'
+            '        } else {\n'
+            '            Route::BlockMasks\n'
+            '        };',
+            '        let route = if minimum_match_bytes > input_bytes {\n'
+            '            Route::ImpossibleWidth\n'
+            '        } else {\n'
+            '            Route::BlockMasks\n'
+            '        };'],
+           ['match-short-route-event-bound',
+            '            Route::BlockMasks\n'
+            '        };\n'
+            '        let match_events = if route == Route::ImpossibleWidth {\n'
+            '            0\n'
+            '        } else {\n'
+            '            input_bytes\n'
+            '                .checked_div(minimum_match_bytes)\n'
+            '                .ok_or(ReduceError::ArithmeticOverflow {\n'
+            '                    computation: "match-event bound divisor",\n'
+            '                })?\n'
+            '        };',
+            '            Route::BlockMasks\n'
+            '        };\n'
+            '        let match_events = match route {\n'
+            '            Route::ImpossibleWidth => 0,\n'
+            '            _ => input_bytes\n'
+            '                .checked_div(minimum_match_bytes)\n'
+            '                .ok_or(ReduceError::ArithmeticOverflow {\n'
+            '                    computation: "match-event bound divisor",\n'
+            '                })?,\n'
+            '        };']]}

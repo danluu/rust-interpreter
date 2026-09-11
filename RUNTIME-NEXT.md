@@ -55,9 +55,13 @@ Display-name collisions between compiler shims are preserved and excluded;
 none occurs among the weighted callees. Keep the existing frame layout.
 [MIR inventory](results/mir-frame-census-01/summary.md).
 
-Next, make the token workflow runnable entirely from tracked scripts and
-validate that migration with actual edits. Then improve repeated per-edit
-controls and native comparison coverage before another performance decision.
+The token workflow migration is complete and validated on 21 commands, including
+all original edits and wrong-edit controls. All 14 custom artifacts match the
+previous workflow; source pins are restored. The fresh command medians are
+2.003 s native and 6.668 s retained JIT. All benchmark logic is now in tracked
+scripts. [Migration evidence](results/portable-token-harness-migration-01/summary.md).
+Next improve repeated per-edit controls, CPU-time recording and native
+configuration coverage before another performance decision.
 A typed census of remaining fully native leaf calls will guide the next larger
 runtime experiment. The new user-owned suggestions.txt is review input; its
 claims require verification and it remains unchanged.

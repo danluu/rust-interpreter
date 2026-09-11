@@ -42,6 +42,7 @@ def main():
     parser.add_argument('--std-mir',action='store_true',help='use the reusable metadata-only standard library for custom engines')
     parser.add_argument('--build-tool-opt-level',type=int,choices=range(4),help='optimize host build tools equally for all engines')
     parser.add_argument('--instruction-limit',type=int,default=1000000000,help='explicit per-command guest instruction budget')
+    parser.add_argument('--allocation-limit',type=int,help='explicit live guest allocation budget (default: VM default of 100000)')
     parser.add_argument('--guest-mir-opt-level',type=int,choices=range(4),help='explicit MIR optimization for custom-engine Cargo commands; native retains its Cargo profile')
     parser.add_argument('--baseline-guest-mir-opt-level',type=int,choices=range(4),help='replace baseline guest MIR flags with this level and no inlining-threshold overrides; requires --baseline-tool-key')
     parser.add_argument('--guest-mir-inline-scale',type=int,choices=[1,2,4,8],help='scale the pinned MIR inlining cost limits; requires --guest-mir-opt-level=3')
@@ -73,6 +74,8 @@ def main():
         guest_flags += [f'-Z{name}={value}' for name,value in inline_thresholds.items()]
     baseline_guest_flags=list(guest_flags) if args.baseline_guest_mir_opt_level is None else [f'-Zmir-opt-level={args.baseline_guest_mir_opt_level}']
     if not 1<=args.instruction_limit<2**64:parser.error('instruction limit must fit a positive u64')
+    if args.allocation_limit is not None and not 0<=args.allocation_limit<=1000000:
+        parser.error('allocation limit must be in 0..1000000')
     if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..']:
         parser.error('--run-id must be a directory name')
     revision=json.loads((ROOT/'benchmarks/corpus.json').read_text())['projects'][args.project]['revision']
@@ -164,6 +167,7 @@ def main():
                   '--package',package,'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
                   '--cache-namespace',args.run_id+':'+mode]
             if args.baseline_tool_key is not None:base+=['--tool-key',config['tool_key']]
+            if args.allocation_limit is not None:base+=['--allocation-limit',str(args.allocation_limit)]
             if config['inline_leaves']:base+=['--inline-leaves']
             if args.trap_unsupported_calls:base+=['--trap-unsupported-calls']
             if args.run_try_callbacks:base+=['--run-try-callbacks']
@@ -209,6 +213,7 @@ def main():
                 assert launch.get('inline_leaves',False)==config['inline_leaves']
                 assert launch.get('trap_unsupported_calls',False)==args.trap_unsupported_calls
                 assert launch.get('run_try_callbacks',False)==args.run_try_callbacks
+                if args.allocation_limit is not None:assert launch['allocation_limit']==args.allocation_limit
                 artifact=Path(launch['artifact_path']).resolve()
                 assert artifact.is_relative_to(ROOT/'.work/interpreter-workspaces'/config['tool_key'])
                 assert 0<launch['artifact_bytes']<=64*1024*1024
@@ -300,7 +305,7 @@ def main():
                 workload=case['workload'],case_sha256=hashlib.sha256(json.dumps(case,sort_keys=True).encode()).hexdigest(),
                 test_source_unchanged=True,batch=args.batch,cargo_timings=args.cargo_timings,vary_selection=args.vary_selection,raw=str(work.relative_to(ROOT)),
                 build_tool_opt_level=args.build_tool_opt_level,
-                instruction_limit=args.instruction_limit,
+                instruction_limit=args.instruction_limit,allocation_limit=args.allocation_limit,
                 inline_leaves=args.inline_leaves,baseline_inline_leaves=args.baseline_inline_leaves,
                 trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks,
                 guest_mir_opt_level=args.guest_mir_opt_level,
@@ -330,6 +335,8 @@ def main():
     out=ROOT/'results'/args.run_id;out.mkdir()
     (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n')
     report=f'# Production edits and existing {args.project} tests\n\n{case["workload"]}.\n\n'
+    if args.allocation_limit is not None:
+        report+=f'Custom engines explicitly allow {args.allocation_limit:,} live guest allocations and retain the 64 MiB guest-byte budget. Native Cargo uses its normal allocator.\n\n'
     report+=f'{len(edits)} cumulative production-body refactors; test source is unchanged. Every mode first rejected a wrong production edit. Full subprocess time includes Cargo, launcher, compilation, and execution. Native runs the selected tests in one command. '
     report+=('Custom engines use one command.\n\n' if args.batch else 'Custom engines use a serial launcher command per test.\n\n')
     if args.cargo_timings:
