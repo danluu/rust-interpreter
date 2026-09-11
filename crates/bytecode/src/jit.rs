@@ -19,6 +19,7 @@ mod native_regions;
 mod resumable;
 mod code_dump;
 mod values;
+mod transfers;
 
 #[cfg(test)]
 mod limit_tests;
@@ -433,7 +434,8 @@ impl<'a> Jit<'a> {
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
-        let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc);
+        let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
+            || (resumable && transfers::supported(&f.code[pc]));
         let mut entries = vec![None; f.code.len()];
         let mut internal_entries = vec![None; f.code.len()];
         // The extra null entry handles a caller's one-past-code continuation.
@@ -518,6 +520,8 @@ impl<'a> Jit<'a> {
                         a.assertion(*value, *expected, code);
                     } else if let Some(fill) = fills.get(&(start + index)) {
                         a.local_fill(*fill);
+                    } else if resumable && transfers::supported(op) {
+                        a.copy_transfer(op)?;
                     } else {
                         a.lower(op);
                     }
@@ -1379,12 +1383,21 @@ impl Assembler<'_> {
     // address+count, which may overflow. Scratch x13/x14/x15/x17 leaves both
     // inputs, count, the x5/x6 value cache and the external ABI intact.
     fn dynamic_read_address(&mut self, address: u32, count: u32) {
+        self.dynamic_address(address, count, false);
+    }
+    // As above, with readonly-prefix protection for a complete write range.
+    // Both paths preserve x10/x11/x12 and the value cache except for `address`.
+    fn dynamic_address(&mut self, address: u32, count: u32, write: bool) {
         if self.heap {
             self.imm(14, crate::heap::TAG as u64);
             self.cmp(address, 14);
             self.three(0xcb000000, 13, address, 14);
             for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8)] {
                 self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (stack << 5) | dst);
+            }
+            if write {
+                // Reuse the original tag comparison before changing flags.
+                self.emit(0x9a800000 | (31 << 16) | (3 << 12) | (4 << 5) | 14);
             }
             self.cmp(address, 31);
             self.fail(0);
@@ -1393,6 +1406,10 @@ impl Assembler<'_> {
             self.three(0xcb000000, 15, 15, address);
             self.cmp(15, count);
             self.fail(3);
+            if write {
+                self.cmp(address, 14);
+                self.fail(3);
+            }
             self.three(0x8b000000, address, 17, address);
         } else {
             self.cmp(address, 31);
@@ -1402,6 +1419,10 @@ impl Assembler<'_> {
             self.three(0xcb000000, 15, 3, address);
             self.cmp(15, count);
             self.fail(3);
+            if write {
+                self.cmp(address, 4);
+                self.fail(3);
+            }
             self.three(0x8b000000, address, 2, address);
         }
     }

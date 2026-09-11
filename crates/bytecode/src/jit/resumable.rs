@@ -307,10 +307,11 @@ impl<'a> Jit<'a> {
 }
 
 #[derive(Clone, Copy)]
-enum Cond {
+pub(super) enum Cond {
     Eq = 0,
     Ne = 1,
     Hs = 2,
+    Lo = 3,
     Hi = 8,
     Ls = 9,
 }
@@ -332,7 +333,7 @@ impl Assembler<'_> {
         assert!(immediate < 4096);
         self.emit(0x91000000 | ((immediate as u32) << 10) | (src << 5) | dst);
     }
-    fn sub_imm(&mut self, dst: u32, src: u32, immediate: usize) {
+    pub(super) fn sub_imm(&mut self, dst: u32, src: u32, immediate: usize) {
         assert!(immediate < 4096);
         self.emit(0xd1000000 | ((immediate as u32) << 10) | (src << 5) | dst);
     }
