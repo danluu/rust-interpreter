@@ -73,8 +73,8 @@ unchecked lazy execution or fake synchronization/unwind behavior is introduced.
 Status: `compiler-timing-parser-01` passes four preserved captures, nineteen
 malformed inputs and synthetic overlap/feature/duplicate checks. Both repeated
 interface runs and the nine-snapshot instrumented comparison are complete and
-verified. The lightweight wrapper's warm comparisons are complete; three of six
-fixed cold histories are verified and the remaining three are required.
+verified. The lightweight wrapper's warm comparisons are complete; four of six
+fixed cold histories are verified and the remaining two are required.
 
 [Cold timeline inspection](../../../results/compiler-cold-concurrency-01/assessment.md)
 now finds 800 custom timed Cargo units under four jobs versus 608 native units

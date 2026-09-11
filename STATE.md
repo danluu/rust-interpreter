@@ -38,15 +38,15 @@ std-MIR. Installation/downloads/std-MIR setup are excluded from cold timing.
 | 01 | native,baseline,candidate | 1.0016210970 | verified |
 | 02 | candidate,baseline,native | 0.9868934347 | verified |
 | 03 | baseline,candidate,native | 1.0085092329 | verified |
-| 04 | native,candidate,baseline | — | running |
+| 04 | native,candidate,baseline | 0.9847329487 | verified |
 | 05 | candidate,native,baseline | — | pending |
 | 06 | baseline,native,candidate | — | pending |
 
-All first three histories verify twelve commands and six artifacts each.
-Active run: `lightweight-wrapper-nushell-cold-04`, supervisor **1665**,
-controller **1675**, started September 11 at 08:28:56 local. After
-success, run the workflow verifier and `assess_wrapper_cold.py --index 4` through
-separate supervised commands. Inspect receipts before inferring liveness.
+All first four histories verify twelve commands and six artifacts each.
+Batch04 preparations have completed; all eight inventories have been reviewed.
+Its plan SHA is `b09f17691346ca7b47f6ac40bd653dac6f4d825cea062f06294ea28777e41143`.
+Apply it separately, verify completed receipts and space, then start cold05 in
+candidate,native,baseline order. Inspect receipts before inferring liveness.
 
 Retention requires at least 5% median cold wall improvement and no unresolved
 warm paired wall regression over 5%. Only then run held-out Ruff/private rg-aot/
