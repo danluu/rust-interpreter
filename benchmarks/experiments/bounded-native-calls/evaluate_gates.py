@@ -4,6 +4,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+from fractions import Fraction
 from pathlib import Path
 from statistics import median
 import subprocess
@@ -19,6 +20,7 @@ TARGETS = {'folded-literal-trie': 0.9, 'token-phrase': 0.8}
 HELD_OUT = {'pgrust', 'nushell', 'rg-aot', 'forward-anchored-tls',
             'pgrust-sha1-inline8', 'ruff', 'nushell-type-relations'}
 BASELINE = 'b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc'
+COPY_BASELINE = 'e965f566ac6ba4f8e5f6f174af1258e305b5b0d2acde24017581616fe33f2a06'
 
 
 def read(path):
@@ -34,8 +36,10 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--source-commit', required=True)
     parser.add_argument('--held-out', action='store_true', help='verify the seven other workflows and flag paired wall regressions above 5 percent')
+    parser.add_argument('--copy-transitions', action='store_true', help='apply the predeclared copy-transition gate against matched resumable tool78')
     parser.add_argument('--check-existing', action='store_true', help='recompute and compare existing receipts without overwriting them')
     args = parser.parse_args()
+    require(not (args.copy_transitions and args.held_out), 'copy-transition and held-out gates are separate')
     require(Path(args.run_id).name == args.run_id and args.run_id not in ('.', '..'), 'invalid run ID')
     status = read(ROOT / '.work/corpus-runs' / args.run_id / 'status.json')
     supervisor = read(ROOT / '.work/experiments' / args.run_id / 'status.json')
@@ -46,7 +50,20 @@ def main():
     corpus = read(out / 'summary.json')
     options = corpus['plan']['options']
     targets = {name: 1.05 for name in HELD_OUT} if args.held_out else TARGETS
-    require(options['baseline_tool_key'] == BASELINE, 'original baseline changed')
+    baseline = COPY_BASELINE if args.copy_transitions else BASELINE
+    if args.copy_transitions:
+        targets = {'folded-literal-trie': 1.05, 'token-phrase': 0.9}
+        require(all(options.get(name, False) for name in ['baseline_jit_resumable_calls',
+            'baseline_jit_persistent_registers', 'candidate_jit_resumable_calls',
+            'candidate_jit_persistent_registers']), 'copy comparison requires matched runtime options')
+        require(options['jobs'] == 4 and options['native_jobs'] == 18 and
+                options.get('baseline_jobs') is None and options.get('candidate_jobs') is None and
+                options['native_profile'] == 'o0-incremental' and options['native_test_threads'] == 'default' and
+                not options['native_rustflag'], 'copy comparison controls changed')
+    else:
+        require(not options.get('baseline_jit_resumable_calls', False) and
+                not options.get('baseline_jit_persistent_registers', False), 'original baseline runtime changed')
+    require(options['baseline_tool_key'] == baseline, 'planned baseline changed')
     native = options.get('candidate_jit_native_calls', False)
     resumable = options.get('candidate_jit_resumable_calls', False)
     require(options['cycles'] == 3 and native != resumable, 'unexpected corpus options')
@@ -64,9 +81,15 @@ def main():
         changes = subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=source, text=True).strip()
         require(revision == config['revision'] and not changes, 'source pin/restoration failed: ' + name)
         pins[name] = dict(revision=revision, tracked_sources_restored=True)
-    for key in [BASELINE, build['tool_key']]:
+    for key in [baseline, build['tool_key']]:
         directory, _ = installed_tools(key)
         binaries[key] = read(directory / 'ready.json')
+    if args.copy_transitions:
+        require(binaries[baseline]['rust-interp-vm'] == '60b00d7de39977e6512e8335d449e5eac84c48ff95819dc2feae6ed8220a859c',
+                'copy baseline VM differs from profiled tool78')
+        require(all(binaries[baseline][name] == binaries[build['tool_key']][name]
+                    for name in ['rust-interp-mir-export', 'rust-interp-rustc-wrapper']),
+                'copy comparison frontend binaries differ')
     counts = dict(primary_commands=0, check_commands=0, edited_pairs=0, artifacts=0)
     evaluated, evidence = [], {}
     for row in corpus['workflows']:
@@ -81,8 +104,8 @@ def main():
         for mode, settings in report['tool_builds'].items():
             expected = mode == 'candidate'
             require(settings['jit_native_calls'] == (expected and native) and settings.get('jit_native_call_stubs', False) == (expected and options.get('candidate_jit_native_call_stubs', False)), 'measured tool mode differs')
-            require(settings.get('jit_resumable_calls', False) == (expected and resumable), 'measured resumable mode differs')
-            require(settings.get('jit_persistent_registers', False) == (expected and options.get('candidate_jit_persistent_registers', False)), 'measured register mode differs')
+            require(settings.get('jit_resumable_calls', False) == ((expected or args.copy_transitions) and resumable), 'measured resumable mode differs')
+            require(settings.get('jit_persistent_registers', False) == ((expected or args.copy_transitions) and options.get('candidate_jit_persistent_registers', False)), 'measured register mode differs')
             for name, field in [('rust-interp-vm', 'vm_sha256'), ('rust-interp-mir-export', 'exporter_sha256')]:
                 require(settings[field] == binaries[settings['tool_key']][name], 'measured binary differs')
         counts['primary_commands'] += verified['commands']
@@ -99,6 +122,13 @@ def main():
             median_paired_cpu_difference_seconds=median(p['cpu_difference_seconds'] for p in pairs),
             passed=ratio <= target and (args.held_out or cpu_ratio < 1),
             stages={m: {s: median(p['stage_seconds'][m][s] for p in pairs) for s in ['execution_seconds', 'cargo_seconds']} for m in ['baseline', 'candidate']}))
+        if args.copy_transitions:
+            wall_exact = median(Fraction(str(p['candidate_seconds'])) / Fraction(str(p['baseline_seconds'])) for p in pairs)
+            cpu_exact = median(Fraction(str(p['candidate_cpu_seconds'])) / Fraction(str(p['baseline_cpu_seconds'])) for p in pairs)
+            folded = row['label'] == 'folded-literal-trie'
+            evaluated[-1].update(exact_median_paired_ratio=str(wall_exact),
+                exact_median_paired_cpu_ratio=str(cpu_exact),
+                passed=wall_exact <= Fraction(str(target)) and (cpu_exact <= Fraction(21, 20) if folded else cpu_exact < 1))
         evidence[row['report']] = sha(path)
         evidence[str(path.with_name('verification.json').relative_to(ROOT))] = sha(path.with_name('verification.json'))
     cases = len(targets)
@@ -106,10 +136,15 @@ def main():
                           edited_pairs=15 * cases, artifacts=42 * cases), 'corpus command count changed')
     checks = dict(frozen_scripts_unchanged=True, candidate_option_verified=True, source_pins=pins,
         counts=counts, installed_binaries_verified=binaries, evidence=evidence)
-    gates = dict(source_commit=build['commit'], tool_key=build['tool_key'], baseline_tool_key=BASELINE,
+    gates = dict(source_commit=build['commit'], tool_key=build['tool_key'], baseline_tool_key=baseline,
         evaluated=evaluated, retained=False, primary_gates_passed=all(r['passed'] for r in evaluated),
         reason='Primary gates alone cannot authorize retention; held-out workflows and broader execution qualification remain required',
         held_out_workflows_run=False, broader_native_tls_fre_qualification_run=False)
+    if args.copy_transitions:
+        plan_path = ROOT / 'benchmarks/experiments/resumable-native-calls/COPY-TRANSITIONS-NEXT.md'
+        checks['evidence'][str(plan_path.relative_to(ROOT))] = sha(plan_path)
+        gates.update(copy_transition_gates_passed=all(r['passed'] for r in evaluated),
+            reason='Matched-runtime copy experiment only. Original b2 gates, held-out workflows and broader native/TLS/fre qualification still required; no retention follows.')
     if args.held_out:
         gates = dict(source_commit=build['commit'], tool_key=build['tool_key'], baseline_tool_key=BASELINE,
             evaluated=evaluated, retained=False, held_out_workflows_run=True,

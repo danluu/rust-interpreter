@@ -39,7 +39,7 @@ an immutable tool. Preserve failures and sources before fixes.
 
 Before measuring, keep these gates fixed: three repeats of the five original
 edit states (15 pairs/workflow), alternating order and original wrong-edit,
-artifact and source-restoration checks. Compare candidate and tool78 with
+artifact and source-restoration checks. Compare candidate and tool78's VM with
 resumable/persistent options matched. Require at least 10% token paired median
 wall improvement, lower child CPU, and no >5% folded wall/CPU regression. This
 gate tests a new gain, not the old near-miss against b2. If it fails, park this
@@ -50,6 +50,13 @@ If it passes, separately retain the original b2 comparison gates (20% token,
 regression, and broader native/TLS/fre correctness qualification. No default
 change until all applicable gates pass. Native compilation remains an explicit
 control; no LLVM/external guest fallback.
+
+Before any qualification/primary E2E measurements, fix the baseline tool identity
+to `e965f566` (source `9bd66cd`). It contains exactly tool78's VM `60b00d7d`,
+but also the same exporter `65c11a7d` and wrapper `ba366dd3` as the new candidate
+`aa2f6ea` / `0e94d6d8`. Using tool78 directly would also change the exporter,
+confounding the intended runtime comparison. Require both frontend binary hashes
+to match. This control correction changes no threshold, edit or runtime option.
 
 [Current token sample](../../../results/resumable-bulk-token-sample-01/assessment.md)
 · [Token counts](../../../results/resumable-bulk-token-transitions-01/summary.json)

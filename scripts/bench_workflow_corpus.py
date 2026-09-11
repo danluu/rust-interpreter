@@ -54,6 +54,8 @@ def main():
     parser.add_argument('--candidate-jit-resumable-calls', action='store_true')
     parser.add_argument('--candidate-jit-persistent-registers', action='store_true')
     parser.add_argument('--candidate-jit-native-calls', action='store_true')
+    parser.add_argument('--baseline-jit-resumable-calls', action='store_true')
+    parser.add_argument('--baseline-jit-persistent-registers', action='store_true')
     parser.add_argument('--only', action='append', help='case label; repeat to select a subset')
     parser.add_argument('--cycles', type=int, default=3)
     parser.add_argument('--jobs', type=int, action=UniqueJobCount, default=4)
@@ -141,6 +143,8 @@ def main():
             if args.candidate_jit_persistent_registers:command.append('--candidate-jit-persistent-registers')
             if args.candidate_jit_native_calls:command.append('--candidate-jit-native-calls')
             if args.candidate_jit_native_call_stubs:command.append('--candidate-jit-native-call-stubs')
+            if args.baseline_jit_resumable_calls:command.append('--baseline-jit-resumable-calls')
+            if args.baseline_jit_persistent_registers:command.append('--baseline-jit-persistent-registers')
             # The child acquires its own benchmark lock. If another task wins
             # the small release/start race, keep that failed attempt; do not
             # steal the lock or retry a possibly partially edited workflow.

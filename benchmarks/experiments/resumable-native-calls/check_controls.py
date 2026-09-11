@@ -52,6 +52,13 @@ def main():
 
     for script, flag in scripts.items():
         check([sys.executable, script, '--help'], 0, flag)
+    for script in ['scripts/bench_e2e_workflow.py', 'scripts/bench_workflow_corpus.py']:
+        for flag in ['--baseline-jit-resumable-calls', '--baseline-jit-persistent-registers']:
+            check([sys.executable, script, '--help'], 0, flag)
+    for flag in ['--baseline-jit-resumable-calls', '--baseline-jit-persistent-registers']:
+        for extra in [[], ['--baseline-tool-key', 'unused', '--comparison-engine', 'interpreter']]:
+            check([sys.executable, 'scripts/bench_e2e_workflow.py', flag, *extra], 2,
+                  flag + ' requires a paired JIT comparison')
     launcher = [sys.executable, 'scripts/interpreter.py', '--package', 'unused', '--entry', 'unused']
     check([*launcher, '--jit-resumable-calls'], 2, '--jit-resumable-calls requires --engine=jit')
     check([*launcher, '--engine', 'jit', '--jit-resumable-calls', '--jit-native-calls'], 2,
@@ -66,20 +73,23 @@ def main():
         check([str(vm), '--engine', 'jit', '--jit-resumable-calls', '--jit-native-calls',
                *extra, str(artifact)], 1, 'resumable calls cannot be combined with native tree/stub calls')
     historical = []
-    for run in ['native-region-e2e-01', 'persistent-e2e-01']:
+    for run in ['native-region-e2e-01', 'persistent-e2e-01', 'resumable-bulk-e2e-02']:
         for label in ['folded-literal-trie', 'token-phrase']:
             path = ROOT / 'results' / (run + '-' + label) / 'summary.json'
             report = json.loads(path.read_text())
             require(verify(report) == json.loads(path.with_name('verification.json').read_text()), 'historical receipt changed')
-            wrong = copy.deepcopy(report)
-            wrong['tool_builds']['candidate']['jit_resumable_calls'] = True
-            try:
-                verify(wrong)
-            except RuntimeError as error:
-                require(str(error) == 'recorded runtime option differs', 'unexpected rejection')
-            else:
-                raise RuntimeError('verifier accepted a false resumable-option claim')
-            historical.append(dict(report=str(path.relative_to(ROOT)), receipt_unchanged=True, false_flag_rejected=True))
+            for mode in ['baseline', 'candidate']:
+                for option in ['jit_resumable_calls', 'jit_persistent_registers']:
+                    wrong = copy.deepcopy(report)
+                    wrong['tool_builds'][mode][option] = not report['tool_builds'][mode].get(option, False)
+                    try:
+                        verify(wrong)
+                    except RuntimeError as error:
+                        require(str(error) == 'recorded runtime option differs', 'unexpected rejection')
+                    else:
+                        raise RuntimeError('verifier accepted a false runtime-option claim')
+            historical.append(dict(report=str(path.relative_to(ROOT)), receipt_unchanged=True,
+                                   false_flag_rejections=4))
     require(all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == digest for p, digest in frozen.items()), 'frozen input changed')
     out = ROOT / 'results' / args.run_id
     out.mkdir(exist_ok=False)

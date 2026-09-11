@@ -73,6 +73,8 @@ def main():
     parser.add_argument('--candidate-jit-native-call-stubs',action='store_true',help='also link candidate Calls into ordinary regions; requires --candidate-jit-native-calls')
     parser.add_argument('--candidate-jit-resumable-calls',action='store_true',help='enable resumable Calls in the paired JIT candidate')
     parser.add_argument('--candidate-jit-persistent-registers',action='store_true',help='enable persistent native registers in the paired JIT candidate')
+    parser.add_argument('--baseline-jit-resumable-calls',action='store_true',help='enable resumable Calls in the paired JIT baseline')
+    parser.add_argument('--baseline-jit-persistent-registers',action='store_true',help='enable persistent native registers in the paired JIT baseline')
     parser.add_argument('--candidate-jit-native-calls',action='store_true',help='enable experimental native call trees in the paired candidate only')
     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
@@ -87,6 +89,9 @@ def main():
     if args.candidate_jit_resumable_calls and (args.baseline_tool_key is None or args.comparison_engine=='interpreter'):parser.error('--candidate-jit-resumable-calls requires a paired JIT comparison')
     if args.candidate_jit_resumable_calls and (args.candidate_jit_native_calls or args.candidate_jit_native_call_stubs):parser.error('--candidate-jit-resumable-calls cannot be combined with native tree/stub calls')
     if args.candidate_jit_native_calls and (args.baseline_tool_key is None or args.comparison_engine=='interpreter'):parser.error('--candidate-jit-native-calls requires a paired JIT comparison')
+    for option in ['baseline_jit_resumable_calls','baseline_jit_persistent_registers']:
+        if getattr(args,option) and (args.baseline_tool_key is None or args.comparison_engine=='interpreter'):
+            parser.error('--'+option.replace('_','-')+' requires a paired JIT comparison')
     if not 1<=args.cycles<=30:parser.error('cycles must be in 1..30')
     if not 1<=args.minimum_free_gib<=1024:parser.error('minimum-free-gib must be in 1..1024')
     if not 1<=args.jobs<=256 or (args.native_jobs is not None and not 1<=args.native_jobs<=256):parser.error('jobs must be in 1..256')
@@ -149,8 +154,9 @@ def main():
         if (baseline_key==key and baseline_guest_flags==guest_flags and
             args.baseline_inline_leaves==args.inline_leaves and
             resolved_jobs['baseline']==resolved_jobs['candidate'] and
-            not args.candidate_jit_native_calls and not args.candidate_jit_persistent_registers and
-            not args.candidate_jit_resumable_calls):
+            not args.candidate_jit_native_calls and
+            args.candidate_jit_persistent_registers==args.baseline_jit_persistent_registers and
+            args.candidate_jit_resumable_calls==args.baseline_jit_resumable_calls):
             parser.error('baseline and candidate must differ in tool build, guest settings, or Cargo worker count')
         engine=args.comparison_engine or 'jit'
         modes=['native','baseline','candidate']
@@ -158,8 +164,8 @@ def main():
                     'candidate':dict(engine=engine,tool_key=key,directory=tools)}
     for mode,config in mode_tools.items():
         config['inline_leaves']=args.baseline_inline_leaves if mode=='baseline' else args.inline_leaves
-        config['jit_resumable_calls']=args.candidate_jit_resumable_calls and mode=='candidate'
-        config['jit_persistent_registers']=args.candidate_jit_persistent_registers and mode=='candidate'
+        config['jit_resumable_calls']=(args.baseline_jit_resumable_calls if mode=='baseline' else args.candidate_jit_resumable_calls and mode=='candidate')
+        config['jit_persistent_registers']=(args.baseline_jit_persistent_registers if mode=='baseline' else args.candidate_jit_persistent_registers and mode=='candidate')
         config['jit_native_call_stubs']=args.candidate_jit_native_call_stubs and mode=='candidate'
         config['jit_native_calls']=args.candidate_jit_native_calls and mode=='candidate'
         config['guest_flags']=baseline_guest_flags if mode=='baseline' else guest_flags
@@ -402,6 +408,7 @@ def main():
                     test_threads=args.native_test_threads,rustflags=args.native_rustflag),
                 instruction_limit=args.instruction_limit,allocation_limit=args.allocation_limit,
                 inline_leaves=args.inline_leaves,baseline_inline_leaves=args.baseline_inline_leaves,candidate_jit_persistent_registers=args.candidate_jit_persistent_registers,candidate_jit_resumable_calls=args.candidate_jit_resumable_calls,candidate_jit_native_calls=args.candidate_jit_native_calls,candidate_jit_native_call_stubs=args.candidate_jit_native_call_stubs,
+                baseline_jit_resumable_calls=args.baseline_jit_resumable_calls,baseline_jit_persistent_registers=args.baseline_jit_persistent_registers,
                 trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks,
                 guest_mir_opt_level=args.guest_mir_opt_level,
                 baseline_guest_mir_opt_level=args.baseline_guest_mir_opt_level,baseline_guest_rustflags=baseline_guest_flags,
@@ -502,6 +509,8 @@ def main():
     report+=f'\nCold means empty per-engine artifact caches; tool bootstrap, installed sysroot, downloads, and OS file-cache coldness are excluded. {len(edits)*args.cycles} edited samples per mode on a shared host do not establish a whole-suite or general performance result.\n'
     if args.candidate_jit_resumable_calls:report+='\nThe candidate enables native Calls/Returns with guest-frame continuations.\n'
     if args.candidate_jit_persistent_registers:report+='\nThe candidate enables persistent full-width native registers.\n'
+    if args.baseline_jit_resumable_calls:report+='\nThe baseline enables native Calls/Returns with guest-frame continuations.\n'
+    if args.baseline_jit_persistent_registers:report+='\nThe baseline enables persistent full-width native registers.\n'
     if args.candidate_jit_native_call_stubs:report+='\nCandidate native Calls are also linked with ordinary JIT regions.\n'
     if args.candidate_jit_native_calls:report+='\nThe candidate explicitly enables bounded native call trees; the baseline uses its ordinary JIT. Export/lowering options remain identical when artifact equality is required.\n'
     if std:report+=f'\nCustom engines use the shared metadata-only standard library. Its original installation took {std[3]["setup_seconds"]:.3f} s, including {std[3]["build_seconds"]:.3f} s of metadata compilation; that setup is excluded from the command times above. Native uses the installed standard library.\n'
