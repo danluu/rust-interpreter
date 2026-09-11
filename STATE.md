@@ -45,10 +45,10 @@ folded improves 19.15% and token 19.97%, with CPU improving. Token's ratio
 Corresponding histories match across runs; cross-cycle layout differences remain
 unresolved. No more repeated attempts or batch-size tuning are planned.
 
-Next characterize broader compatibility on this experimental candidate: full
-native differential validation, TLS/destructors, fre bodies and seven held-out
-large-project workflows. These are needed to choose the next substantive change;
-they do not waive the failed performance gate or authorize default retention.
+Broader native/TLS/fre compatibility checks now pass. Seven held-out real-edit
+workflows are running as `resumable-bulk-heldout-01` on the unchanged tool and
+original controls. Their results will guide the next substantive change; they
+do not waive the failed performance gate or authorize default retention.
 
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.
@@ -122,17 +122,21 @@ corresponding engines receive identical bytecode. Do not claim cross-history
 semantic equivalence or an established cause. The broader 47,004 mixed commands
 include 22,238 JIT and 22,238 interpreter invocations across two inlining modes;
 these are not unique test cases. [Recount](results/historical-validation-counts-01/assessment.md).
-The separate 245 TLS checks and 382 passing/7 ignored fre
-bodies belong to older `57a54edd`, not the current experiments. That fre replay
+The historical 245 TLS checks and 382 passing/7 ignored fre bodies used
+older `57a54edd`. Current `78e60cdd` now has separate fresh qualification above;
+older coverage was not transferred. Both fre replays
 uses allocation limit 150,000, unsupported-call traps and normal try callbacks;
 it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-Native, TLS, both body-driver checks and both fre supervisors are terminal0.
-The extended gate evaluator reproduces both existing primary receipts exactly,
-without overwriting them. Both token failures persist. Run the seven held-out workflows next.
-Inspect exact supervisor/child receipts before acting.
+Only `resumable-bulk-heldout-01` is active: supervisor 79695, controller 79698;
+it started with pgrust child 79700. All earlier runs are terminal0. Freeze all
+Rust/corpus/interpreter/verifier inputs until terminal. Then run
+`evaluate_gates.py --run-id resumable-bulk-heldout-01 --source-commit 001065a --held-out`.
+Expected totals are 588 commands, 105 edited pairs and 294 artifacts. The extended
+evaluator already reproduces both existing primary receipts exactly, without
+overwriting them. Both token failures persist. Inspect exact receipts before acting.
 The unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal
