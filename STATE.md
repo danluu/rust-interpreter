@@ -224,14 +224,18 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-The first balanced cold history is active as
-`lightweight-wrapper-nushell-cold-01`, supervisor 21379/controller 21382. Native
-runs first, then baseline and candidate. Inspect its receipt before further
-cleanup or benchmarking. Nushell15 and its verifier
+The first balanced cold history `lightweight-wrapper-nushell-cold-01` and its
+verifier are complete. Its native cache is now being archived as
+`lightweight-wrapper-nushell-cold-01-native-archive-01`; inspect the application
+receipt before further cleanup or benchmarking. Nushell15 and its verifier
 are terminal0; all source/frozen-input checks and ninety compiler-wrapper traces
 verify. All earlier wrapper qualifications and pgrust15 are also complete.
 The remaining measurements are the six fixed balanced Nushell cold histories;
-the first is running and the other five have not started. Preserve baseline78/candidatec341, ordinary JIT, matched leaf
+the first verifies twelve commands/six artifacts and the other five have not
+started. Cold wall is 61.439s baseline versus 61.539s candidate, ratio
+1.0016210970; CPU ratio is 1.0046207955. All ten frozen inputs, six wrapper
+traces and byte-for-byte source restoration verify. There is no cold gain in
+this sample and no retention decision. Preserve baseline78/candidatec341, ordinary JIT, matched leaf
 inlining, std-MIR, native18/O0/incremental/default threads, custom4 and independent
 checking. This run's cold observation improved only about0.52% and is outside
 the six-run gate. Both original runtime gate failures remain unchanged.
@@ -271,7 +275,11 @@ restoration of both previous archive layouts. New custom inventory02 verifies
 namespace. Its application completed while holding the invocation lock; all
 payloads and evidence verified, and one archived `nu-protocol` fingerprint was
 read through the bounded inspector with the original hash. About 21.25 GiB was
-free before cold01 started. Five actual archives are complete. Preserve query metadata
+free before cold01 started; about 9.65 GiB remained afterward. Five actual
+archives are complete. Cold01's reviewed native inventory has 22,485 paths and
+4.34 GiB unique payloads. Finish its archival, then preserve other exact
+completed check/custom targets to regain room for cold02. Its required initial
+order is candidate,baseline,native. Preserve query metadata
 in archives, private caches,
 installed tools and all historical evidence. Do not start cold runs before
 adequate space is available or change their gates.

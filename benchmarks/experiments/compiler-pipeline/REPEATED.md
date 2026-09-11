@@ -78,4 +78,8 @@ The reversed-order three-cycle pgrust qualification passes 36 commands and
 fifteen-cycle run also verifies 180 commands/90 artifacts, with reductions of
 4.24%/1.94%. Neither warm comparison exceeds the regression guard. Its single
 cold observation improves about 0.52% and is excluded from the cold gate.
-Six balanced cold histories remain pending; no retention decision yet.
+The first of six balanced cold histories now verifies twelve commands and six
+artifacts. Cold wall time is 61.439s baseline and 61.539s candidate (ratio
+1.0016210970); CPU ratio is 1.0046207955. This sample shows no cold benefit.
+Five fixed histories remain pending; no retention decision yet. The first
+history and the prior warm-run cold anchor remain separate as predeclared.
