@@ -62,16 +62,17 @@ The harness now stages source restoration before mutation, publishes source and
 JSON atomically, waits/drains children on receipt failures and checks free space
 before commands. [Ten failure-injection checks](results/workflow-io-faults-01/summary.json)
 pass using three real child processes. Actual integrated Rust qualification is
-next. Runtime/tool options and failed primary gates are unchanged.
+next: one pgrust interface cycle, then the missing Nushell workflow. Runtime/tool options and failed primary gates are unchanged.
 
 The next workflow check is [generic interface edits](benchmarks/experiments/interface-edits/PLAN.md):
 pgrust's byte-hash API becomes generic over borrowed `AsRef<[u8]>`, and Nushell's
 list-type constructor accepts `Into<Type>`. All original test source is preserved.
 Two pinned case files, a bounded public case loader and input-check helper are
 committed in `38962af`. The input helper now passes two valid specifications and
-15 malformed/path cases; no Rust interface edit has run yet. Integrate the
-case-file hook, qualify one cycle per case, then fifteen cycles of each single
-interface edit. Finish the missing held-out case first.
+25 malformed/tampered cases; no Rust interface edit has run yet. The harness
+and independent verifier now integrate frozen case snapshots and reconstruct
+all source states/selections/orders. Qualify one pgrust cycle, retry the missing
+held-out case, qualify Nushell, then fifteen cycles of each single interface edit.
 
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.

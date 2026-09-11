@@ -18,8 +18,9 @@ must remain byte-identical; the existing wrong-production-edit controls remain.
 These are public-interface edits within a selected package. They do not claim
 coverage of dependency-manifest, multi-file, macro or downstream-consumer edits.
 
-First extend the tracked workflow harness with a validated public case-file
-option after the current held-out corpus is terminal and evaluated. Keep old
+Extend the tracked workflow harness with a validated public case-file option.
+The prior held-out corpus is terminal but incomplete after ENOSPC; its six
+completed cases and partial last case are preserved separately. Keep old
 cases and commands unchanged. Validate path containment, source pin, field
 types, unique tests, replacement counts and selection indices. Freeze the case
 file and preserve its hash in each report. Refuse Python -O and unsafe path or
@@ -51,4 +52,13 @@ direction, including whether shared test export/preparation or deeper runtime
 work has material end-to-end scope. Full libtest/unwinding/OS/FFI/thread support
 and cross-crate invalidation remain separate unfinished requirements.
 
-Status: specifications prepared; harness integration and actual runs pending.
+Status: the harness and independent snapshot verifier now support `--case-file`.
+Two specifications pass input checks and 25 malformed/tampered case rejections;
+135 synthetic receipt rows validate the fifteen-cycle rotation. Ten IO-failure
+checks pass, with actual children drained before restoration. Historical bulk
+primary receipts still verify. No Rust interface qualification has run yet.
+
+Run one pgrust interface cycle first to exercise the integrated source/receipt
+changes cheaply. Then retry the missing original Nushell held-out workflow under
+a fresh identity and qualify the Nushell interface. The failed attempt remains
+preserved; do not splice partial commands into the retry or waive prior gates.

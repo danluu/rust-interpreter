@@ -22,6 +22,9 @@ def read(path):
 def verify(report, reference=None):
     require(report['schema_version'] == 2, 'unsupported workflow schema')
     rows = read(ROOT / report['raw'] / 'records.json')
+    if 'case_file' in report:
+        from workflow_case_file import verify_snapshot
+        verify_snapshot(ROOT, report, rows)
     transitions = read(ROOT / report['raw'] / 'source-transitions.json')
     cycles = report['cycles']
     edits = len(report['edits'])

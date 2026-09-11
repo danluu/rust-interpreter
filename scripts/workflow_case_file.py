@@ -3,6 +3,7 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import re
+import subprocess
 
 
 def require(ok, message):
@@ -73,3 +74,37 @@ def source_file(source, case):
     require(path.resolve(strict=True) == path and path.is_file() and path.is_relative_to(source),
             'source file escapes the snapshot or follows a symlink')
     return path
+
+
+def verify_snapshot(root, report, rows):
+    """Reconstruct the specified source states independently of captured hashes."""
+    from workflow_measurements import source_states
+    proof = report['case_file']
+    snapshot = Path(root) / report['raw'] / 'case.json'
+    require(proof['snapshot'] == str(snapshot.relative_to(root)), 'unexpected case snapshot path')
+    revision = json.loads((Path(root) / 'benchmarks/corpus.json').read_text())['projects'][report['project']]['revision']
+    require(report['revision'] == revision, 'report source pin differs')
+    case, actual = load(snapshot, report['project'], revision)
+    require(all(actual[k] == proof[k] for k in ['sha256', 'label', 'edit_class', 'schema_version']), 'case snapshot changed')
+    require(report['workflow'] == actual['label'] and report['tests'] == case['tests'] and
+            report['edits'] == [e[0] for e in case['edits']], 'case identity or selection differs')
+    require(hashlib.sha256(json.dumps(case, sort_keys=True).encode()).hexdigest() == report['case_sha256'],
+            'case content differs')
+    source = Path(root) / '.work/sources' / report['project']
+    original = subprocess.check_output(['git', 'show', revision + ':' + case['file']], cwd=source, text=True)
+    modes = ['native', 'baseline', 'candidate'] if 'comparison' in report else ['native', 'interpreter', 'jit']
+    states = list(source_states(original, case, report['cycles'], modes, 'comparison' in report))
+    expected = {(s['cycle'], s['state']): s for s in states}
+    require(len(rows) == len(states) * len(modes), 'case command count differs')
+    require([(r['cycle'], r['state'], r['mode']) for r in rows] ==
+            [(s['cycle'], s['state'], mode) for s in states for mode in s['modes']],
+            'captured case command sequence differs')
+    for row in rows:
+        state = expected[row['cycle'], row['state']]
+        require(row['source_sha256'] == hashlib.sha256(state['source']).hexdigest(), 'case source state differs')
+        tests = case['tests']
+        if report['vary_selection'] and row['state'] > 0:
+            tests = [tests[i] for i in case['selections'][row['state'] - 1]]
+        require(row['tests'] == tests, 'case test selection differs')
+    require(report['mode_orders'] == [{k: s[k] for k in ['cycle', 'state', 'phase', 'modes']} for s in states],
+            'case mode rotation differs')

@@ -12,7 +12,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
-from workflow_case_file import checked, load, source_file
+from workflow_case_file import checked, load, source_file, verify_snapshot
 from workflow_measurements import source_states
 
 
@@ -90,11 +90,49 @@ def main():
         else:
             raise RuntimeError('source symlink escape accepted')
         require(outside.read_text() == '// untouched\n', 'outside file changed')
+        snapshot = directory / 'case.json'
+        snapshot.write_bytes(paths[0].read_bytes())
+        data = json.loads(snapshot.read_text())
+        case, proof = load(snapshot, data['project'], data['revision'])
+        proof['snapshot'] = str(snapshot.relative_to(ROOT))
+        original = subprocess.check_output(['git', 'show', data['revision'] + ':' + case['file']],
+            cwd=ROOT / '.work/sources' / data['project'], text=True)
+        states = list(source_states(original, case, 15, ['native', 'baseline', 'candidate'], True))
+        report = dict(raw=str(directory.relative_to(ROOT)), case_file=proof, project=data['project'],
+            revision=data['revision'], workflow=data['label'], tests=case['tests'],
+            edits=[e[0] for e in case['edits']], case_sha256=hashlib.sha256(json.dumps(case, sort_keys=True).encode()).hexdigest(),
+            cycles=15, comparison={}, vary_selection=False,
+            mode_orders=[{k: s[k] for k in ['cycle', 'state', 'phase', 'modes']} for s in states])
+        rows = [dict(cycle=s['cycle'], state=s['state'], mode=mode, tests=case['tests'],
+                     source_sha256=hashlib.sha256(s['source']).hexdigest()) for s in states for mode in s['modes']]
+        verify_snapshot(ROOT, report, rows)
+        tampering = [
+            ('wrong snapshot provenance', lambda r, rows: r['case_file'].update(sha256='0' * 64)),
+            ('wrong snapshot path', lambda r, rows: r['case_file'].update(snapshot='other.json')),
+            ('wrong captured source', lambda r, rows: rows[4].update(source_sha256='0' * 64)),
+            ('wrong captured tests', lambda r, rows: rows[5].update(tests=[])),
+            ('wrong report tests', lambda r, rows: r.update(tests=[])),
+            ('wrong report workflow', lambda r, rows: r.update(workflow='different')),
+            ('wrong report case hash', lambda r, rows: r.update(case_sha256='0' * 64)),
+            ('wrong captured order', lambda r, rows: rows.reverse()),
+            ('wrong report order', lambda r, rows: r['mode_orders'].reverse()),
+            ('missing command', lambda r, rows: rows.pop()),
+        ]
+        for label, change in tampering:
+            candidate_report, candidate_rows = deepcopy(report), deepcopy(rows)
+            change(candidate_report, candidate_rows)
+            try:
+                verify_snapshot(ROOT, candidate_report, candidate_rows)
+            except ValueError as error:
+                rejected.append(dict(case=label, error=str(error)))
+            else:
+                raise RuntimeError('tampered source-state receipt accepted: ' + label)
     out = ROOT / 'results' / args.run_id
     out.mkdir(exist_ok=False)
     frozen = [Path(__file__), ROOT / 'scripts/workflow_case_file.py', ROOT / 'scripts/workflow_measurements.py', *paths]
     summary = dict(status='passed', cases=cases, rejected=rejected,
                    frozen={str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in frozen},
+                   synthetic_snapshot_rows_verified=135,
                    project_sources_mutated=False, compiled_or_executed=False, performance_measurement=False)
     (out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(dict(status='passed', cases=len(cases), malformed_cases_rejected=len(rejected))))

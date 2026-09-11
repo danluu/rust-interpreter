@@ -17,6 +17,7 @@ from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
 from workflow_measurements import child_usage, child_cpu_since, per_edit_spread, sample_path, source_states
 from workflow_controls import native_command, native_environment, exporter_seconds
 from workflow_io import SourceEdit, capture, require_space, write_json
+from workflow_case_file import load as load_case_file, source_file
 
 
 def guest_test_failure(stderr):
@@ -40,6 +41,7 @@ def main():
     parser.add_argument('--run-id',default='e2e-workflow-'+str(time.time_ns()))
     parser.add_argument('--project',choices=[*WORKFLOWS,'rg-aot'],default='fre')
     parser.add_argument('--workflow',default='default',help='additional named workload within a project')
+    parser.add_argument('--case-file',type=Path,help='bounded public workflow JSON inside this workspace; mutually exclusive with a named workflow')
     parser.add_argument('--batch',action='store_true',help='invoke all custom test entries in one command')
     parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
     parser.add_argument('--minimum-free-gib',type=int,default=8,help='refuse to start a command below this free-space threshold; not a disk reservation')
@@ -106,7 +108,16 @@ def main():
     if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..']:
         parser.error('--run-id must be a directory name')
     revision=json.loads((ROOT/'benchmarks/corpus.json').read_text())['projects'][args.project]['revision']
-    if args.workflow!='default':
+    case_proof=None
+    workflow_label=args.workflow
+    if args.case_file is not None:
+        if args.workflow!='default' or args.project=='rg-aot':
+            parser.error('--case-file requires a public project and the default workflow selector')
+        case_path=args.case_file.resolve(strict=True)
+        if not case_path.is_relative_to(ROOT):parser.error('--case-file must be inside this workspace')
+        case,case_proof=load_case_file(case_path,args.project,revision)
+        workflow_label=case_proof['label']
+    elif args.workflow!='default':
         if (args.project,args.workflow) not in WORKFLOW_VARIANTS:
             parser.error('unknown project/workflow combination')
         case=WORKFLOW_VARIANTS[args.project,args.workflow]
@@ -162,10 +173,20 @@ def main():
         raise RuntimeError('snapshot has tracked changes')
     work=ROOT/'.work/runs'/args.run_id
     work.mkdir(parents=True)
-    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py']
+    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py']
+    if case_proof is not None:
+        payload=case_path.read_bytes()
+        if hashlib.sha256(payload).hexdigest()!=case_proof['sha256']:raise RuntimeError('case file changed during preparation')
+        snapshot=work/'case.json'
+        with snapshot.open('xb') as output:output.write(payload)
+        case_proof['snapshot']=str(snapshot.relative_to(ROOT))
+        script_paths += [case_path,snapshot]
     frozen_scripts={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in script_paths}
-    file=source/case['file']
+    file=source_file(source,case)
+    subprocess.run(['git','ls-files','--error-unmatch','--',case['file']],cwd=source,check=True,stdout=subprocess.DEVNULL)
     original=file.read_bytes();current=original
+    # Detect missing/ambiguous replacements or test mutations before commands.
+    list(source_states(original.decode(),case,1,modes,args.baseline_tool_key is not None))
     env=os.environ.copy()
     for name in list(env):
         if name.startswith(('RUST_INTERP_','CARGO_PROFILE_')) or name in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','CARGO_INCREMENTAL','CARGO_TARGET_DIR','CARGO_BUILD_TARGET']:
@@ -356,7 +377,7 @@ def main():
             if args.check_floor:check_reference(sample)
     assert all(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest for path,digest in frozen_scripts.items()),'benchmark scripts changed during the run'
     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
-    result=dict(schema_version=2,project=args.project,workflow=args.workflow,revision=revision,cycles=args.cycles,
+    result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,
                 minimum_free_gib=args.minimum_free_gib,
                 tests=f'{len(tests)} existing private test bodies' if private else tests,
                 edits=[e[0] for e in edits],
@@ -383,6 +404,7 @@ def main():
                 vm_sha256=hashlib.sha256((tools/'rust-interp-vm').read_bytes()).hexdigest(),
                 exporter_sha256=hashlib.sha256((tools/'rust-interp-mir-export').read_bytes()).hexdigest(),
                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
+    if case_proof is not None:result['case_file']=case_proof
     result['exporter_seconds']={}
     for mode in modes:
         if mode=='native':continue

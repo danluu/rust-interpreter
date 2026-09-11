@@ -80,7 +80,7 @@ def main():
     work = ROOT / '.work/corpus-runs' / args.run_id
     work.mkdir(parents=True, exist_ok=False)
     paths = ['scripts/bench_e2e_workflow.py', 'scripts/interpreter.py',
-             'scripts/workflow_cases.py', 'scripts/workflow_controls.py',
+             'scripts/workflow_cases.py', 'scripts/workflow_case_file.py', 'scripts/workflow_controls.py',
              'scripts/workflow_measurements.py', 'scripts/workflow_io.py', 'scripts/std_mir.py',
              'scripts/verify_repeated_workflow.py', 'scripts/bench_workflow_corpus.py',
              'benchmarks/workflow-corpus.json']
