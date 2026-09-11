@@ -14,8 +14,8 @@ folded and 31.90% on token. Fresh exports preserve both original bytecode hashes
 and assertions; 35 compiler tests (nine observer) and two typed join tests pass.
 No direct-frame bytes are unobserved or declined. Counts are historical executions
 of identical artifacts, not fresh timings. The first compile failure is preserved.
-Next implement the separately qualified [frame relocation](benchmarks/experiments/aggregate-byte-writes/RELOCATION-NEXT.md)
-using named MIR local origins, complete ABI/scratch relocation and atomic fallback.
+The resulting [frame relocation](benchmarks/experiments/aggregate-byte-writes/RELOCATION-NEXT.md)
+uses named MIR local origins, complete ABI/scratch relocation and atomic fallback.
 The production compiler and current runtime are unchanged. The isolated
 [relocating exporter](results/aggregate-relocation-build-01/summary.json) now
 passes 39 tests, [both original workloads](results/aggregate-relocation-smoke-01/summary.json)
@@ -37,7 +37,12 @@ The per-case held-out verifier reproduces nine actual histories and rejects
 105 invalid synthetic cases while preserving both prior verifiers. Fresh fre
 body coverage now [passes all 382 bodies with seven ignored](results/aggregate-relocation-fre-01/assessment.md),
 382 fresh native controls, unchanged outcomes and zero JIT declines. All 382
-artifacts differ, as expected for the compiler change. All seven held-outs remain.
+artifacts differ, as expected for the compiler change. The first held-out,
+[Nushell type-relations](results/aggregate-relocation-heldout-01-nushell-type-relations/relocation-assessment.md),
+passes: paired wall +1.10%, CPU +1.14%; native/control/candidate medians are
+7.529s/4.051s/4.066s. All 84 commands, 15 edited pairs and 42 artifact hashes
+verify. Six fixed held-outs remain; the candidate stays isolated. The final
+report helper reproduces this actual history and rejects 15 invalid receipts.
 The [recorded pass timers](results/aggregate-relocation-pass-costs-01/assessment.md)
 show median capture/finalization costs of 41.9 ms folded and 189.5 ms token;
 token's paired execution gain is only 79.3 ms versus 237.4 ms more Cargo time.
@@ -48,6 +53,11 @@ preserving 13.46 GB of payloads in 4.36 GB of archives. Private and active cache
 were excluded. Held-out admission now qualifies all seven independently bound
 case controls, six ratio-gate examples and 54 rejected inputs, including the
 required running floor. Continue the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
+After fre, a [live space check](results/aggregate-relocation-nu-space-check-01/summary.json)
+rejected a start at 25.31 GiB free against the 25.99 GiB requirement. No benchmark
+history was created. A second [reviewed public Ruff archive batch](results/aggregate-relocation-space-02/assessment.md)
+preserved 5.45 GB of payloads in 1.78 GB of archives. The fresh Nushell admission
+passed with 28.75 GiB free. No unrelated process or private cache was changed.
 
 Source `aa2f6ea` / tool `0e94d6d8` now completes the current runtime qualification.
 Our direct AArch64 JIT keeps checked dynamic/large copies inside resumable

@@ -118,6 +118,14 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Aggregate relocation now passes broad native/TLS qualification and all 382
+  original fre test bodies, with seven ignored and fresh native controls.
+  The first [large-project held-out](../results/aggregate-relocation-heldout-01-nushell-type-relations/relocation-assessment.md)
+  stays within both fixed guards: Nushell type-relations wall +1.10%, CPU +1.14%.
+  Native/control/candidate medians are 7.529s/4.051s/4.066s. Six cases remain;
+  the compiler change is still isolated. A separate final report helper verifies
+  the actual history and rejects 15 invalid completion/ownership receipts.
+
 - The isolated [aggregate relocation implementation](../results/aggregate-relocation-e2e-01/assessment.md)
   passes its complete primary gates after 39 compiler tests and 1,024 native
   differential VM executions. Folded improves 12.77% wall/12.89% CPU; token
