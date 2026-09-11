@@ -23,6 +23,9 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | cli-qualification | [resumable-cli-01/summary.json](resumable-cli-01/summary.json) |
 | previous-runtime-experiment | [persistent-e2e-01/summary.json](persistent-e2e-01/summary.json) |
 | previous-runtime-experiment | [native-region-e2e-01/summary.json](native-region-e2e-01/summary.json) |
+| generated-code-attribution | [resumable-folded-sample-01/generated-attribution.json](resumable-folded-sample-01/generated-attribution.json) |
+| generated-code-attribution | [resumable-token-sample-01/generated-attribution.json](resumable-token-sample-01/generated-attribution.json) |
+| diagnostic-tool-qualification | [resumable-profile-tools-01/summary.json](resumable-profile-tools-01/summary.json) |
 | generated-code-attribution | [persistent-folded-sample-01/generated-attribution.json](persistent-folded-sample-01/generated-attribution.json) |
 | generated-code-attribution | [persistent-token-sample-01/generated-attribution.json](persistent-token-sample-01/generated-attribution.json) |
 | diagnostic-tool-qualification | [persistent-profile-tools-02/summary.json](persistent-profile-tools-02/summary.json) |

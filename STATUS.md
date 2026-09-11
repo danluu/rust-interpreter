@@ -19,8 +19,9 @@ Paired change is the median within-edit ratio; command columns are marginal
 medians. The targets remain −20% token and −10% folded against b2aa6efe.
 Calls and Returns now resume across native functions over explicit guest
 frames. Folded passes its target; token misses its target. The combined
-gate fails. Fresh exact-code profiles will guide the next change; seven
-held-out workflows and broader execution qualification remain required.
+gate fails. Fresh exact-code samples put 56.3% of folded and 17.4% of
+token in required clearing. A bounded bulk-clearing experiment is next;
+seven held-out workflows and broader qualification remain required.
 [Result and limitations](results/resumable-e2e-01/assessment.md).
 
 ## Full-corpus baseline

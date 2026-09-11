@@ -40,9 +40,21 @@ excludes the old tree/stub options and stays disabled by default.
 168 commands, 30 edited pairs and 84 identical paired artifacts. Folded improves
 10.6% paired (CPU −11.4%) and token 15.0% (CPU −14.7%) against `b2aa6efe`.
 Folded passes its original 10% target; token misses 20%, so the combined gate
-fails. Native remains faster on both. No default retention. Next qualify profile
-helpers and capture three exact-code windows of this tool on each original
-artifact, then use the measured call/transition costs to select the next change.
+fails. Native remains faster on both. No default retention. Fresh three-window
+exact-code profiles of this tool now resolve every generated PC. Required
+clearing accounts for 56.3% of folded and 17.4% of token thread samples; token
+also has 13.5% native-boundary self samples. These are partial perturbed windows,
+not speedup predictions. [Folded](results/resumable-folded-sample-01/assessment.md),
+[token](results/resumable-token-sample-01/assessment.md).
+
+The [bounded bulk-clearing experiment](benchmarks/experiments/resumable-native-calls/BULK-CLEAR-NEXT.md)
+is committed as `001065a`, tool `78e60cdd`, and passes all 257 debug/release
+workspace tests, one ignored. Twelve installed-tool CLI checks and both original
+artifacts pass; no function declines and code remains below 16 MiB.
+It clears exactly the same bytes in 64-byte batches when a sufficient minimum
+is known; short ranges use the previous helper. The original three-cycle
+`resumable-bulk-e2e-01` comparison is next. No performance result exists for it yet.
+
 Seven held-out workflows and broader native/TLS/fre qualification have not run
 on this tool; they remain required before retention.
 
@@ -109,8 +121,8 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-All current task executions are terminal; no sampler, build or benchmark is
-active. The unbounded goal remains active and the next diagnostic is authorized.
+All task executions are terminal0. The original bulk-clearing E2E comparison
+is ready to start; the unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal
 receipts are in `.work/continuation-state.json`. Toolchain is

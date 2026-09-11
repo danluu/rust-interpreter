@@ -1,0 +1,187 @@
+{
+  "status": "passed",
+  "tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+  "checks": [
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "scripts/interpreter.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: interpreter.py [-h] [--manifest-path MANIFEST_PATH] --package PACKAGE\n                      [--jobs JOBS]\n                      (--entry ENTRY | --audit-entries AUDIT_ENTRIES)\n                      [--retain-audit-bodies] [--features FEATURES]\n                      [--no-default-features]\n                      [--instruction-limit INSTRUCTION_LIMIT]\n                      [--allocation-limit ALLOCATION_LIMIT]\n                      [--engine {interpreter,jit}] [--jit-native-call-stubs]\n                      [--jit-resumable-calls] [--jit-persistent-registers]\n                      [--jit-native-calls] [--tool-key TOOL_KEY]\n                      [--cache-namespace CACHE_NAMESPACE] [--inline-leaves]\n                      [--trap-unsupported-calls] [--run-try-callbacks]\n                      [--std-mir] [--timings] [--test-body]\n                      ...\n\nCheck a Cargo library and run supported functions in the custom VM. Example:\ninterpreter.py --manifest-path PROJECT/Cargo.toml --package hashfn --entry\nmurmurhash32 -- 123 Repeat --entry with --test-body to run several zero-\nargument functions returning unit or Result<(), E> in one command. Ordinary\nfunction inputs and output are integer bit patterns. This prototype provides a\nguest allocator, but no general Rust main or OS runtime. Test batches stop at\nthe first failure.\n\npositional arguments:\n  arguments\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --manifest-path MANIFEST_PATH\n  --package PACKAGE\n  --jobs JOBS           Cargo build jobs (1..256)\n  --entry ENTRY         function to run; repeat for a batch of unit test\n                        bodies\n  --audit-entries AUDIT_ENTRIES\n                        JSON list of test body names to check for lowering\n                        support, without executing them\n  --retain-audit-bodies\n                        retain bounded, hashed programs from a lowering audit\n                        for separate execution diagnostics\n  --features FEATURES\n  --no-default-features\n  --instruction-limit INSTRUCTION_LIMIT\n                        maximum VM instructions (default: 100000000)\n  --allocation-limit ALLOCATION_LIMIT\n                        maximum live guest allocations, independent of byte\n                        memory (0..1000000; default: 100000)\n  --engine {interpreter,jit}\n  --jit-native-call-stubs\n                        experimental Calls linked with ordinary regions;\n                        requires --jit-native-calls\n  --jit-resumable-calls\n                        experimental native Calls over guest frames; requires\n                        JIT, excludes tree/stub calls\n  --jit-persistent-registers\n                        experimental full-width values retained across native\n                        block edges; requires --engine=jit\n  --jit-native-calls    experimental complete native call trees; requires\n                        --engine=jit\n  --tool-key TOOL_KEY   use an already installed immutable tool build, for\n                        reproducing or comparing runs\n  --cache-namespace CACHE_NAMESPACE\n                        use an independent artifact cache, for reproducible\n                        cold-build comparisons\n  --inline-leaves       experimental bounded bytecode leaf inlining at export;\n                        intended for JIT comparisons\n  --trap-unsupported-calls\n                        experimental: stop execution at unavailable direct\n                        foreign calls and catch_unwind intrinsics instead of\n                        rejecting their export\n  --run-try-callbacks   experimental: execute catch_unwind try callbacks;\n                        actual panic/unwinding still fails; requires --trap-\n                        unsupported-calls\n  --std-mir             use reusable standard-library metadata with complete\n                        MIR\n  --timings             write Cargo's compilation timing report for this\n                        command\n  --test-body           invoke a function from the library unit-test target\n                        directly; libtest attributes are not implemented\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "scripts/bench_e2e_workflow.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: bench_e2e_workflow.py [-h] [--run-id RUN_ID]\n                             [--project {fre,pgrust,nushell,ruff,rg-aot}]\n                             [--workflow WORKFLOW] [--batch] [--cycles CYCLES]\n                             [--jobs JOBS] [--native-jobs NATIVE_JOBS]\n                             [--native-profile {repository,o0-incremental}]\n                             [--native-test-threads NATIVE_TEST_THREADS]\n                             [--native-rustflag NATIVE_RUSTFLAG]\n                             [--check-floor] [--cargo-timings]\n                             [--vary-selection] [--std-mir]\n                             [--build-tool-opt-level {0,1,2,3}]\n                             [--instruction-limit INSTRUCTION_LIMIT]\n                             [--allocation-limit ALLOCATION_LIMIT]\n                             [--guest-mir-opt-level {0,1,2,3}]\n                             [--baseline-guest-mir-opt-level {0,1,2,3}]\n                             [--guest-mir-inline-scale {1,2,4,8}]\n                             [--inline-leaves] [--baseline-inline-leaves]\n                             [--trap-unsupported-calls] [--run-try-callbacks]\n                             [--baseline-tool-key BASELINE_TOOL_KEY]\n                             [--candidate-tool-key CANDIDATE_TOOL_KEY]\n                             [--candidate-jit-native-call-stubs]\n                             [--candidate-jit-resumable-calls]\n                             [--candidate-jit-persistent-registers]\n                             [--candidate-jit-native-calls]\n                             [--comparison-engine {interpreter,jit}]\n                             [--expect-identical-bytecode]\n\nEdit production code, then execute existing project tests.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --run-id RUN_ID\n  --project {fre,pgrust,nushell,ruff,rg-aot}\n  --workflow WORKFLOW   additional named workload within a project\n  --batch               invoke all custom test entries in one command\n  --cycles CYCLES       repeat the actual edit sequence after rebuilding an\n                        original-source anchor (1..30)\n  --jobs JOBS           Cargo jobs for custom engines and, by default, native\n                        (1..256)\n  --native-jobs NATIVE_JOBS\n                        override native/check Cargo jobs (1..256)\n  --native-profile {repository,o0-incremental}\n                        explicit native/check profile override; no fastest-\n                        native claim\n  --native-test-threads NATIVE_TEST_THREADS\n                        positive libtest thread count or default\n  --native-rustflag NATIVE_RUSTFLAG\n                        one explicit native/check rustc argument; repeat,\n                        using --native-rustflag=VALUE\n  --check-floor         independently time cargo check of the library-test\n                        target after each primary mode triplet\n  --cargo-timings       collect Cargo unit timing reports in every mode;\n                        report generation remains timed\n  --vary-selection      change the selected tests to match each production\n                        edit\n  --std-mir             use the reusable metadata-only standard library for\n                        custom engines\n  --build-tool-opt-level {0,1,2,3}\n                        optimize host build tools equally for all engines\n  --instruction-limit INSTRUCTION_LIMIT\n                        explicit per-command guest instruction budget\n  --allocation-limit ALLOCATION_LIMIT\n                        explicit live guest allocation budget (default: VM\n                        default of 100000)\n  --guest-mir-opt-level {0,1,2,3}\n                        explicit MIR optimization for custom-engine Cargo\n                        commands; native retains its Cargo profile\n  --baseline-guest-mir-opt-level {0,1,2,3}\n                        replace baseline guest MIR flags with this level and\n                        no inlining-threshold overrides; requires --baseline-\n                        tool-key\n  --guest-mir-inline-scale {1,2,4,8}\n                        scale the pinned MIR inlining cost limits; requires\n                        --guest-mir-opt-level=3\n  --inline-leaves       inline bytecode leaves for custom engines, or only the\n                        candidate in a paired comparison\n  --baseline-inline-leaves\n                        also inline leaves with the installed baseline, to\n                        isolate a runtime change\n  --trap-unsupported-calls\n                        explicit unavailable foreign/catch_unwind stops in\n                        every custom engine; strict frontend checking remains\n                        enabled\n  --run-try-callbacks   execute normal-return try callbacks; actual unwinding\n                        fails; requires --trap-unsupported-calls\n  --baseline-tool-key BASELINE_TOOL_KEY\n                        compare an installed baseline with the candidate build\n                        on every edit, alongside native\n  --candidate-tool-key CANDIDATE_TOOL_KEY\n                        use a retained candidate in a paired comparison;\n                        defaults to the current build\n  --candidate-jit-native-call-stubs\n                        also link candidate Calls into ordinary regions;\n                        requires --candidate-jit-native-calls\n  --candidate-jit-resumable-calls\n                        enable resumable Calls in the paired JIT candidate\n  --candidate-jit-persistent-registers\n                        enable persistent native registers in the paired JIT\n                        candidate\n  --candidate-jit-native-calls\n                        enable experimental native call trees in the paired\n                        candidate only\n  --comparison-engine {interpreter,jit}\n                        engine for both tool builds; defaults to jit when\n                        comparing\n  --expect-identical-bytecode\n                        require matching executed bytecode when isolating a\n                        runtime change\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "scripts/bench_workflow_corpus.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: bench_workflow_corpus.py [-h] --run-id RUN_ID --candidate-tool-key\n                                CANDIDATE_TOOL_KEY --baseline-tool-key\n                                BASELINE_TOOL_KEY\n                                [--candidate-jit-native-call-stubs]\n                                [--candidate-jit-resumable-calls]\n                                [--candidate-jit-persistent-registers]\n                                [--candidate-jit-native-calls] [--only ONLY]\n                                [--cycles CYCLES] [--jobs JOBS]\n                                [--native-jobs NATIVE_JOBS]\n                                [--native-profile {repository,o0-incremental}]\n                                [--native-test-threads NATIVE_TEST_THREADS]\n                                [--native-rustflag NATIVE_RUSTFLAG]\n                                [--lock-wait-seconds LOCK_WAIT_SECONDS]\n                                [--minimum-free-gib MINIMUM_FREE_GIB]\n\nRun the pinned workflow corpus serially with explicit native controls.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --run-id RUN_ID\n  --candidate-tool-key CANDIDATE_TOOL_KEY\n  --baseline-tool-key BASELINE_TOOL_KEY\n  --candidate-jit-native-call-stubs\n  --candidate-jit-resumable-calls\n  --candidate-jit-persistent-registers\n  --candidate-jit-native-calls\n  --only ONLY           case label; repeat to select a subset\n  --cycles CYCLES\n  --jobs JOBS\n  --native-jobs NATIVE_JOBS\n  --native-profile {repository,o0-incremental}\n  --native-test-threads NATIVE_TEST_THREADS\n  --native-rustflag NATIVE_RUSTFLAG\n  --lock-wait-seconds LOCK_WAIT_SECONDS\n  --minimum-free-gib MINIMUM_FREE_GIB\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "benchmarks/experiments/bounded-native-calls/run_saved.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: run_saved.py [-h] --run-id RUN_ID --candidate-tool-key\n                    CANDIDATE_TOOL_KEY --baseline-tool-key BASELINE_TOOL_KEY\n                    [--candidate-resumable-calls]\n                    [--candidate-persistent-registers]\n                    [--candidate-call-stubs] [--profile-candidate]\n\nSmoke-test the experimental native path on two frozen real test artifacts.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --run-id RUN_ID\n  --candidate-tool-key CANDIDATE_TOOL_KEY\n  --baseline-tool-key BASELINE_TOOL_KEY\n  --candidate-resumable-calls\n  --candidate-persistent-registers\n  --candidate-call-stubs\n  --profile-candidate\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "scripts/interpreter.py",
+        "--package",
+        "unused",
+        "--entry",
+        "unused",
+        "--jit-resumable-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: interpreter.py [-h] [--manifest-path MANIFEST_PATH] --package PACKAGE\n                      [--jobs JOBS]\n                      (--entry ENTRY | --audit-entries AUDIT_ENTRIES)\n                      [--retain-audit-bodies] [--features FEATURES]\n                      [--no-default-features]\n                      [--instruction-limit INSTRUCTION_LIMIT]\n                      [--allocation-limit ALLOCATION_LIMIT]\n                      [--engine {interpreter,jit}] [--jit-native-call-stubs]\n                      [--jit-resumable-calls] [--jit-persistent-registers]\n                      [--jit-native-calls] [--tool-key TOOL_KEY]\n                      [--cache-namespace CACHE_NAMESPACE] [--inline-leaves]\n                      [--trap-unsupported-calls] [--run-try-callbacks]\n                      [--std-mir] [--timings] [--test-body]\n                      ...\ninterpreter.py: error: --jit-resumable-calls requires --engine=jit\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "scripts/interpreter.py",
+        "--package",
+        "unused",
+        "--entry",
+        "unused",
+        "--engine",
+        "jit",
+        "--jit-resumable-calls",
+        "--jit-native-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: interpreter.py [-h] [--manifest-path MANIFEST_PATH] --package PACKAGE\n                      [--jobs JOBS]\n                      (--entry ENTRY | --audit-entries AUDIT_ENTRIES)\n                      [--retain-audit-bodies] [--features FEATURES]\n                      [--no-default-features]\n                      [--instruction-limit INSTRUCTION_LIMIT]\n                      [--allocation-limit ALLOCATION_LIMIT]\n                      [--engine {interpreter,jit}] [--jit-native-call-stubs]\n                      [--jit-resumable-calls] [--jit-persistent-registers]\n                      [--jit-native-calls] [--tool-key TOOL_KEY]\n                      [--cache-namespace CACHE_NAMESPACE] [--inline-leaves]\n                      [--trap-unsupported-calls] [--run-try-callbacks]\n                      [--std-mir] [--timings] [--test-body]\n                      ...\ninterpreter.py: error: --jit-resumable-calls cannot be combined with native tree/stub calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "scripts/bench_e2e_workflow.py",
+        "--candidate-jit-resumable-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: bench_e2e_workflow.py [-h] [--run-id RUN_ID]\n                             [--project {fre,pgrust,nushell,ruff,rg-aot}]\n                             [--workflow WORKFLOW] [--batch] [--cycles CYCLES]\n                             [--jobs JOBS] [--native-jobs NATIVE_JOBS]\n                             [--native-profile {repository,o0-incremental}]\n                             [--native-test-threads NATIVE_TEST_THREADS]\n                             [--native-rustflag NATIVE_RUSTFLAG]\n                             [--check-floor] [--cargo-timings]\n                             [--vary-selection] [--std-mir]\n                             [--build-tool-opt-level {0,1,2,3}]\n                             [--instruction-limit INSTRUCTION_LIMIT]\n                             [--allocation-limit ALLOCATION_LIMIT]\n                             [--guest-mir-opt-level {0,1,2,3}]\n                             [--baseline-guest-mir-opt-level {0,1,2,3}]\n                             [--guest-mir-inline-scale {1,2,4,8}]\n                             [--inline-leaves] [--baseline-inline-leaves]\n                             [--trap-unsupported-calls] [--run-try-callbacks]\n                             [--baseline-tool-key BASELINE_TOOL_KEY]\n                             [--candidate-tool-key CANDIDATE_TOOL_KEY]\n                             [--candidate-jit-native-call-stubs]\n                             [--candidate-jit-resumable-calls]\n                             [--candidate-jit-persistent-registers]\n                             [--candidate-jit-native-calls]\n                             [--comparison-engine {interpreter,jit}]\n                             [--expect-identical-bytecode]\nbench_e2e_workflow.py: error: --candidate-jit-resumable-calls requires a paired JIT comparison\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/dev/rust-interp/.work/interpreter-tools/78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d/rust-interp-vm",
+        "--jit-resumable-calls",
+        "/Users/danluu/dev/rust-interp/.work/runs/paired-scalar-packed-cache-folded-literal-trie-01/artifacts/candidate/0-0.rbc"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "rust-interp-vm: resumable calls require the JIT engine\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/dev/rust-interp/.work/interpreter-tools/78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d/rust-interp-vm",
+        "--engine",
+        "jit",
+        "--jit-resumable-calls",
+        "--instruction-limit",
+        "0",
+        "/Users/danluu/dev/rust-interp/.work/runs/paired-scalar-packed-cache-folded-literal-trie-01/artifacts/candidate/0-0.rbc"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "rust-interp-vm: interpreter instruction limit exceeded\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/dev/rust-interp/.work/interpreter-tools/78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d/rust-interp-vm",
+        "--engine",
+        "jit",
+        "--jit-resumable-calls",
+        "--jit-persistent-registers",
+        "--instruction-limit",
+        "0",
+        "/Users/danluu/dev/rust-interp/.work/runs/paired-scalar-packed-cache-folded-literal-trie-01/artifacts/candidate/0-0.rbc"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "rust-interp-vm: interpreter instruction limit exceeded\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/dev/rust-interp/.work/interpreter-tools/78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d/rust-interp-vm",
+        "--engine",
+        "jit",
+        "--jit-resumable-calls",
+        "--jit-native-calls",
+        "/Users/danluu/dev/rust-interp/.work/runs/paired-scalar-packed-cache-folded-literal-trie-01/artifacts/candidate/0-0.rbc"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "rust-interp-vm: resumable calls cannot be combined with native tree/stub calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/dev/rust-interp/.work/interpreter-tools/78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d/rust-interp-vm",
+        "--engine",
+        "jit",
+        "--jit-resumable-calls",
+        "--jit-native-calls",
+        "--jit-native-call-stubs",
+        "/Users/danluu/dev/rust-interp/.work/runs/paired-scalar-packed-cache-folded-literal-trie-01/artifacts/candidate/0-0.rbc"
+      ],
+      "returncode": 1,
+      "stdout": "",
+      "stderr": "rust-interp-vm: resumable calls cannot be combined with native tree/stub calls\n"
+    }
+  ],
+  "historical": [
+    {
+      "report": "results/native-region-e2e-01-folded-literal-trie/summary.json",
+      "receipt_unchanged": true,
+      "false_flag_rejected": true
+    },
+    {
+      "report": "results/native-region-e2e-01-token-phrase/summary.json",
+      "receipt_unchanged": true,
+      "false_flag_rejected": true
+    },
+    {
+      "report": "results/persistent-e2e-01-folded-literal-trie/summary.json",
+      "receipt_unchanged": true,
+      "false_flag_rejected": true
+    },
+    {
+      "report": "results/persistent-e2e-01-token-phrase/summary.json",
+      "receipt_unchanged": true,
+      "false_flag_rejected": true
+    }
+  ],
+  "frozen": {
+    "benchmarks/experiments/resumable-native-calls/check_controls.py": "b1381442eee0647ac8fc59557a0be78fedd8a8878ca00ecc2407dff63e43f727",
+    ".work/interpreter-tools/78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d/rust-interp-vm": "60b00d7de39977e6512e8335d449e5eac84c48ff95819dc2feae6ed8220a859c",
+    ".work/runs/paired-scalar-packed-cache-folded-literal-trie-01/artifacts/candidate/0-0.rbc": "0b266be5fc28def9af2f43a4f2de3b5c543484a79a73479c674cdb7aec19669e",
+    "scripts/interpreter.py": "7fe4928e7e57e6cca62a29a59dd0dbefceb05283940e2f5289379d3e3cd0f077",
+    "scripts/bench_e2e_workflow.py": "995b85fba76c991e237a9fbcfff0dc9fa1345e352e6acbb3812a08c1f023ce19",
+    "scripts/bench_workflow_corpus.py": "b0562b2f8c2a4bf9188646d294174eec9a05572e0e9bb4775efcf7504dfd9abb",
+    "benchmarks/experiments/bounded-native-calls/run_saved.py": "94ed710480dfec4c28e827a2498406bab813b85fed7b4ff1a8986e95a3c4a4df",
+    "scripts/verify_repeated_workflow.py": "cb05aefe7947696950ce3b2f2353aa4929abadd77f8040252d590a69cb935832",
+    "benchmarks/experiments/bounded-native-calls/evaluate_gates.py": "e359d3b91aaed6823d00b1d014852bd20b616f48b7b95f90813670509d1830b4"
+  },
+  "performance_measurement": false
+}
