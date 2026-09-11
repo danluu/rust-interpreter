@@ -48,8 +48,12 @@ The [original b2 comparison](results/resumable-copy-original-e2e-01/assessment.m
 also passes: folded paired wall −21.82% / CPU −21.95%; token wall −33.09% /
 CPU −33.29%. All 168 commands, 30 pairs and 84 artifacts verify. Candidate
 medians remain slower than native: 1.913s vs 1.653s folded, 4.418s vs 2.012s token.
-Fresh full native differential qualification is running for this exact tool;
-TLS, fresh fre body replay and seven held-out workflows remain before retention.
+The first [fresh native run](results/resumable-copy-native-01/assessment.md) passes
+its 23,502-command default mode, then its coordinator fails on an unused wrapper
+manifest entry. The [coordinator correction](results/resumable-copy-execution-driver-01/assessment.md)
+passes historical/staging checks, three positive provenance configurations and
+twelve rejection cases. A new full native run is next; TLS, fresh fre body replay
+and seven held-out workflows remain before retention.
 No default change. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
 are archived and verified. About 10.9 GiB remains after the original comparison;
 large fresh histories need another space review.

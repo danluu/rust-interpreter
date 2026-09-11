@@ -88,6 +88,33 @@ def verify_vm_options(path, tool, options, require_statistics=False):
     return dict(counts=counts, statistics=statistics)
 
 
+def verify_binary_provenance(rows, tool, binaries, inputs):
+    """Match recorded input hashes to binaries actually invoked by the validator.
+
+    The direct validator does not use the Cargo wrapper. The enclosing run
+    still checks every installed binary before and after each validation mode.
+    """
+    invoked = {}
+    known = {'rust-interp-vm', 'rust-interp-mir-export', 'rust-interp-rustc-wrapper'}
+    for row in rows:
+        executable = Path(row['command'][0])
+        if executable.parent != tool and executable.name not in known:
+            continue
+        require(executable.name in binaries and executable == tool / executable.name,
+                'validator invoked an unexpected tool binary')
+        invoked[executable.name] = invoked.get(executable.name, 0) + 1
+    require({'rust-interp-vm', 'rust-interp-mir-export'} <= set(invoked),
+            'validator did not invoke both required binaries')
+    captured = {Path(path).name: digest for path, digest in inputs.items()
+                if Path(path).parent == tool.relative_to(ROOT)}
+    require(set(captured) == set(invoked), 'recorded tool inputs differ from invoked binaries')
+    require(all(captured[name] == binaries[name] for name in invoked),
+            'validator binary provenance differs')
+    return dict(directly_invoked_binaries=captured, direct_invocation_counts=invoked,
+                other_installed_binaries={name: digest for name, digest in binaries.items()
+                                          if name not in invoked})
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
@@ -177,12 +204,12 @@ def main():
             counts = count_commands(commands, folder)
             require(counts['commands'] == detail['completed_commands'] == 23502, 'incomplete validator run')
             selected = verify_vm_options(commands, tool, options, require_statistics=True)
+            with commands.open() as rows:
+                provenance = verify_binary_provenance((json.loads(line) for line in rows),
+                    tool, binaries, detail['inputs_sha256'])
             require(sha(commands) == digest, 'validator archive changed')
-            for name, expected in binaries.items():
-                require(detail['inputs_sha256'][str((tool / name).relative_to(ROOT))] == expected,
-                        'validator binary provenance differs')
             runs[mode] = dict(detail=detail, classification=counts, vm_options_verified=selected,
-                              commands_sha256=digest)
+                              binary_provenance=provenance, commands_sha256=digest)
             write(work / 'completed.json', runs)
             verify()
             print('PASS', mode, counts['commands'], flush=True)

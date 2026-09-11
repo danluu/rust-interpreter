@@ -1,0 +1,3 @@
+The corrected provenance checker reproduces both historical native-validation modes and preserves all staged assertion ASTs in three runtime configurations. Three positive manifest configurations pass: legacy two-binary tools, current tools with an unused wrapper, and an actually invoked and recorded wrapper. Twelve false provenance cases are rejected, covering missing/wrong hashes, wrong executable paths, missing required executions and falsely recorded/unrecorded wrappers. The existing false-runtime-mode rejections also pass.
+
+This qualifies the coordinator correction only; fresh complete candidate validation remains required. Guest runtime and exporter binaries are unchanged.
