@@ -1,9 +1,11 @@
 # Isolate custom Cargo worker count
 
-This is a separate follow-up to the fixed wrapper experiment. Do not edit its
-frozen harness inputs or run this comparison until all six wrapper cold histories
-and the two warm controls have been assessed. A wrapper failure does not permit
-more wrapper trials. This experiment addresses suggestions 4.5 and 2.1.
+This follows the [verified wrapper futility decision](../../../results/lightweight-wrapper-cold-futility-01/assessment.md).
+Four completed cold histories make its original 5% gate unreachable for any
+possible final two results. Its six-history protocol is explicitly incomplete;
+the warm results remain reported and the wrapper stays experimental. The worker
+experiment starts after that assessment and completed archival, with no changes
+to the wrapper's measured inputs. This addresses suggestions 4.5 and 2.1.
 
 The [historical timelines](../../../results/compiler-cold-concurrency-01/assessment.md)
 show substantial overlapping custom cold work and CPU/wall about 3.1 under four
@@ -54,8 +56,11 @@ Then use six fresh-target Nushell one-cycle histories with initial mode orders:
 
 Only the original-source cold command of each history enters the cold gate.
 Cold excludes installation, downloads and prebuilt std-MIR setup; OS caches are
-not cleared. No unrelated work is controlled. All six histories are required;
-do not add trials or choose a different worker count after observing results.
+not cleared. No unrelated work is controlled. Collect all six histories unless
+a verified deterministic futility bound proves that every possible completion
+fails an existing numerical gate. Publish that bound, preserve observations and
+mark the protocol incomplete when stopping; never invent missing timings or
+accept early. Do not add trials or choose another worker count after results.
 Keep qualification and warm-run cold anchors outside this six-sample statistic.
 
 Before considering eighteen workers preferable on this host, require at least
@@ -85,6 +90,7 @@ Staged groundwork: `scripts/workflow_jobs.py` resolves independent mode counts,
 reads historical/new receipts and checks canonical executed job arguments. Its
 [standalone qualification](../../../results/worker-count-helper-01/assessment.md)
 passes six configurations, 48 rejections, sixteen parser cases and checks 756
-historical commands. It is not yet imported by the workflow harness or verifier;
-no measured wrapper input changed. Integrate and qualify the actual command path
-only after the six fixed wrapper histories and warm controls have been assessed.
+historical commands. The helper is now integrated into the workflow/corpus drivers and receipt
+verifier after the wrapper futility assessment. Helper02 also checks namespace
+JSON serialization. Actual integration checks and project qualification follow;
+no measured wrapper input changed during its completed histories.

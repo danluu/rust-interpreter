@@ -1,8 +1,4 @@
-"""Explicit Cargo worker counts for paired workflow comparisons.
-
-This module is staged for the next experiment. The fixed wrapper comparison
-continues to use its original harness until every scheduled history is complete.
-"""
+"""Explicit Cargo worker counts for paired workflow comparisons."""
 import argparse
 
 
@@ -16,7 +12,7 @@ class UniqueJobCount(argparse.Action):
     """Reject repeated job options instead of silently keeping the last value."""
 
     def __call__(self, parser, namespace, values, option_string=None):
-        supplied = getattr(namespace, '_specified_job_counts', set())
+        supplied = getattr(namespace, '_specified_job_counts', [])
         if self.dest in supplied:
             raise argparse.ArgumentError(self, 'job option specified more than once')
         try:
@@ -24,7 +20,9 @@ class UniqueJobCount(argparse.Action):
         except ValueError as error:
             raise argparse.ArgumentError(self, str(error)) from error
         setattr(namespace, self.dest, count)
-        setattr(namespace, '_specified_job_counts', supplied | {self.dest})
+        # Corpus plans serialize vars(namespace); preserve duplicate detection
+        # without leaving a non-JSON set in the argument receipt.
+        setattr(namespace, '_specified_job_counts', [*supplied, self.dest])
 
 
 def resolve_build_jobs(shared, *, native=None, baseline=None, candidate=None, paired=False):

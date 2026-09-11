@@ -8,6 +8,7 @@ from pathlib import Path
 import time
 
 from workflow_measurements import initial_modes, mode_order
+from workflow_jobs import recorded_build_jobs, verify_command_jobs
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -23,6 +24,10 @@ def read(path):
 
 def verify(report, reference=None):
     require(report['schema_version'] == 2, 'unsupported workflow schema')
+    job_counts = (recorded_build_jobs(report)
+                  if 'build_jobs' in report and 'native_control' in report else None)
+    require('custom_build_jobs' not in report or job_counts is not None,
+            'custom worker receipt lacks shared/native controls')
     rows = read(ROOT / report['raw'] / 'records.json')
     if 'case_file' in report:
         from workflow_case_file import verify_snapshot
@@ -62,6 +67,9 @@ def verify(report, reference=None):
         cpu = sum(c['cpu']['user_seconds'] + c['cpu']['system_seconds'] for c in row['calls'])
         require(abs(cpu - row['cpu_seconds']) < 1e-8, 'CPU total does not match child calls')
         require(all((c['returncode'] == 0) == (state != -1) for c in row['calls']), 'unexpected command result')
+        if job_counts is not None:
+            for call in row['calls']:
+                verify_command_jobs(call['command'], job_counts[mode])
         if mode != 'native':
             settings = report.get('tool_builds', {}).get(mode, {})
             for field, flag in [('jit_native_calls', '--jit-native-calls'),
@@ -118,14 +126,12 @@ def verify(report, reference=None):
             require(check['seconds'] > 0 and check['cpu_seconds'] > 0 and abs(check['cpu_seconds'] - check['cpu']['total_seconds']) < 1e-8, 'invalid check timing')
             command = check['command']
             require(command[2] == 'check' and '--profile' in command and command[command.index('--profile') + 1] == 'test' and '--' not in command, 'check did not select the non-executing test target')
-            require(command[command.index('--jobs') + 1] == str(control['jobs']), 'check jobs differ')
+            verify_command_jobs(command, control['jobs'])
             require('test result:' not in check['stdout'], 'check unexpectedly executed tests')
         for row in rows:
             for call in row['calls']:
                 require(call.get('encoded_rustflags') == (encoded if row['mode'] == 'native' else None), 'native flags missing or leaked to custom engines')
                 command = call['command']
-                jobs = control['jobs'] if row['mode'] == 'native' else report['build_jobs']
-                require(command[command.index('--jobs') + 1] == str(jobs), 'build jobs differ')
                 if row['mode'] == 'native':
                     actual = [a for a in command if a.startswith('--test-threads=')]
                     expected = [] if control['test_threads'] == 'default' else ['--test-threads=' + control['test_threads']]

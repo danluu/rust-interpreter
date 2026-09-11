@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify staged worker controls without changing the active workflow harness."""
+"""Qualify worker controls separately from actual workflow integration."""
 import argparse
 from contextlib import redirect_stderr
 from copy import deepcopy
@@ -58,6 +58,8 @@ def qualify():
     parsed = parser.parse_args(['--jobs=4', '--native-jobs', '18', '--candidate-jobs=18'])
     require((parsed.jobs, parsed.native_jobs, parsed.baseline_jobs, parsed.candidate_jobs) == (4, 18, None, 18),
             'job options parsed incorrectly')
+    require(json.loads(json.dumps(vars(parsed)))['candidate_jobs'] == 18,
+            'job parser namespace cannot be serialized in a corpus plan')
     require(parser.parse_args([]).jobs == 4, 'parser retains previous invocation state')
     cli_rejections = 0
     for flag in ['jobs', 'native-jobs', 'baseline-jobs', 'candidate-jobs']:
@@ -115,8 +117,9 @@ def qualify():
         histories.append(dict(run=name, commands=count, report_sha256=sha(path),
                               records_sha256=sha(records), check_records_sha256=sha(checks)))
     return dict(status='passed', resolver_configurations=len(configurations), rejections=rejected,
+                parser_namespace_json_serializable=True,
                 cli_rejections=cli_rejections, historical_command_checks=histories,
-                note='Staged helper only: no workflow/launcher/verifier integration or project execution yet.')
+                note='Standalone helper checks; actual workflow integration and project execution are qualified separately.')
 
 
 def main():

@@ -18,6 +18,7 @@ from workflow_measurements import child_usage, child_cpu_since, initial_modes, p
 from workflow_controls import native_command, native_environment, exporter_seconds
 from workflow_io import SourceEdit, capture, require_space, write_json
 from workflow_case_file import load as load_case_file, source_file
+from workflow_jobs import UniqueJobCount, resolve_build_jobs
 
 
 def guest_test_failure(stderr):
@@ -46,8 +47,10 @@ def main():
     parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
     parser.add_argument('--initial-mode-order',type=lambda value:value.split(','),help='comma-separated permutation of the three modes; rotates cold-run order without changing mode settings')
     parser.add_argument('--minimum-free-gib',type=int,default=8,help='refuse to start a command below this free-space threshold; not a disk reservation')
-    parser.add_argument('--jobs',type=int,default=4,help='Cargo jobs for custom engines and, by default, native (1..256)')
-    parser.add_argument('--native-jobs',type=int,help='override native/check Cargo jobs (1..256)')
+    parser.add_argument('--jobs',type=int,action=UniqueJobCount,default=4,help='default Cargo jobs for custom engines and native (1..256)')
+    parser.add_argument('--native-jobs',type=int,action=UniqueJobCount,help='override native/check Cargo jobs (1..256)')
+    parser.add_argument('--baseline-jobs',type=int,action=UniqueJobCount,help='override baseline Cargo jobs in a paired comparison (1..256)')
+    parser.add_argument('--candidate-jobs',type=int,action=UniqueJobCount,help='override candidate Cargo jobs in a paired comparison (1..256)')
     parser.add_argument('--native-profile',choices=['repository','o0-incremental'],default='repository',help='explicit native/check profile override; no fastest-native claim')
     parser.add_argument('--native-test-threads',default='1',help='positive libtest thread count or default')
     parser.add_argument('--native-rustflag',action='append',default=[],help='one explicit native/check rustc argument; repeat, using --native-rustflag=VALUE')
@@ -76,6 +79,8 @@ def main():
     args=parser.parse_args()
     try:
         scheduled_modes=initial_modes(['native','baseline','candidate'] if args.baseline_tool_key is not None else ['native','interpreter','jit'],args.initial_mode_order)
+        resolved_jobs=resolve_build_jobs(args.jobs,native=args.native_jobs,baseline=args.baseline_jobs,
+            candidate=args.candidate_jobs,paired=args.baseline_tool_key is not None)
     except ValueError as error:parser.error(str(error))
     if args.candidate_jit_native_call_stubs and not args.candidate_jit_native_calls:parser.error('--candidate-jit-native-call-stubs requires --candidate-jit-native-calls')
     if args.candidate_jit_persistent_registers and (args.baseline_tool_key is None or args.comparison_engine=='interpreter'):parser.error('--candidate-jit-persistent-registers requires a paired JIT comparison')
@@ -87,7 +92,7 @@ def main():
     if not 1<=args.jobs<=256 or (args.native_jobs is not None and not 1<=args.native_jobs<=256):parser.error('jobs must be in 1..256')
     if args.native_test_threads!='default' and (not args.native_test_threads.isdigit() or not 1<=int(args.native_test_threads)<=256):parser.error('native-test-threads must be default or in 1..256')
     if any(not flag or '\x1f' in flag or '\x00' in flag for flag in args.native_rustflag):parser.error('native rustflags must be nonempty arguments without NUL or unit separators')
-    native_jobs=args.native_jobs if args.native_jobs is not None else args.jobs
+    native_jobs=resolved_jobs['native']
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     if args.candidate_tool_key is not None and args.baseline_tool_key is None:
@@ -177,7 +182,7 @@ def main():
         raise RuntimeError('snapshot has tracked changes')
     work=ROOT/'.work/runs'/args.run_id
     work.mkdir(parents=True)
-    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py']
+    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
     if case_proof is not None:
         payload=case_path.read_bytes()
         if hashlib.sha256(payload).hexdigest()!=case_proof['sha256']:raise RuntimeError('case file changed during preparation')
@@ -238,7 +243,7 @@ def main():
         else:
             config=mode_tools[mode]
             base=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',manifest,
-                  '--package',package,'--jobs',str(args.jobs),'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
+                  '--package',package,'--jobs',str(resolved_jobs[mode]),'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
                   '--cache-namespace',args.run_id+':'+mode]
             if args.baseline_tool_key is not None:base+=['--tool-key',config['tool_key']]
             if args.allocation_limit is not None:base+=['--allocation-limit',str(args.allocation_limit)]
@@ -388,7 +393,8 @@ def main():
                 workload=case['workload'],case_sha256=hashlib.sha256(json.dumps(case,sort_keys=True).encode()).hexdigest(),
                 test_source_unchanged=True,batch=args.batch,cargo_timings=args.cargo_timings,vary_selection=args.vary_selection,raw=str(work.relative_to(ROOT)),
                 build_tool_opt_level=args.build_tool_opt_level,
-                build_jobs=args.jobs,native_control=dict(profile=args.native_profile,jobs=native_jobs,
+                build_jobs=args.jobs,custom_build_jobs={mode:resolved_jobs[mode] for mode in mode_tools},
+                native_control=dict(profile=args.native_profile,jobs=native_jobs,
                     test_threads=args.native_test_threads,rustflags=args.native_rustflag),
                 instruction_limit=args.instruction_limit,allocation_limit=args.allocation_limit,
                 inline_leaves=args.inline_leaves,baseline_inline_leaves=args.baseline_inline_leaves,candidate_jit_persistent_registers=args.candidate_jit_persistent_registers,candidate_jit_resumable_calls=args.candidate_jit_resumable_calls,candidate_jit_native_calls=args.candidate_jit_native_calls,candidate_jit_native_call_stubs=args.candidate_jit_native_call_stubs,
@@ -477,7 +483,8 @@ def main():
         report+='Test selection changes with each production edit. Each mode runs the same selection at each state; the exact selections are recorded in summary.json.\n\n'
     report+='| Mode | Median edited wall seconds | Median edited child CPU seconds | Cold wall seconds |\n|---|---:|---:|---:|\n'
     report+=''.join(f'| {m} | {v:.3f} | {result["median_cpu_seconds"][m]:.3f} | {result["cold_success_seconds"][m]:.3f} |\n' for m,v in med.items())
-    report+=f'\nNative control: `{args.native_profile}`, {native_jobs} build jobs, `{args.native_test_threads}` test threads, explicit rustc arguments `{args.native_rustflag}`. Custom commands use {args.jobs} build jobs. This labels the configuration; it does not establish the fastest native control.\n'
+    job_description=', '.join(f'{mode}={resolved_jobs[mode]}' for mode in mode_tools)
+    report+=f'\nNative control: `{args.native_profile}`, {native_jobs} build jobs, `{args.native_test_threads}` test threads, explicit rustc arguments `{args.native_rustflag}`. Custom build jobs: {job_description}. This labels the configuration; it does not establish the fastest native control.\n'
     if args.check_floor:
         report+=f'\nIndependent Cargo-check reference: {result["check_floor"]["median_seconds"]:.3f} s wall / {result["check_floor"]["median_cpu_seconds"]:.3f} s child CPU, median after edits. It executes no tests and runs after each primary triplet in a separate target directory. It is not a strict lower bound, and subtracting it does not isolate exporter cost.\n'
     report+='\nExporter timing scopes (medians, seconds; pass times are nested within lowering/export and must not be added to it):\n\n| Mode | Frontend | Lowering/export | Scalar frames | Promotion | Inlining | CFG |\n|---|---:|---:|---:|---:|---:|---:|\n'

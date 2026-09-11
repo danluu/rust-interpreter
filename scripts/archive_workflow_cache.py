@@ -19,7 +19,7 @@ BASE = ROOT / '.work/workflow-cache-archives'
 SOURCES = [Path(__file__).resolve(), ROOT / 'scripts/cache_archive.py',
     ROOT / 'scripts/reclaim_workflow_objects.py', ROOT / 'scripts/verify_repeated_workflow.py',
     ROOT / 'scripts/workflow_case_file.py', ROOT / 'scripts/workflow_measurements.py', ROOT / 'scripts/workflow_io.py',
-    ROOT / 'scripts/workflow_cache_evidence.py']
+    ROOT / 'scripts/workflow_cache_evidence.py', ROOT / 'scripts/workflow_jobs.py']
 
 
 def read(path):

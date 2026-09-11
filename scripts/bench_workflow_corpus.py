@@ -11,6 +11,7 @@ import sys
 import time
 
 from verify_repeated_workflow import verify
+from workflow_jobs import UniqueJobCount, resolve_build_jobs
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -55,14 +56,21 @@ def main():
     parser.add_argument('--candidate-jit-native-calls', action='store_true')
     parser.add_argument('--only', action='append', help='case label; repeat to select a subset')
     parser.add_argument('--cycles', type=int, default=3)
-    parser.add_argument('--jobs', type=int, default=4)
-    parser.add_argument('--native-jobs', type=int, default=18)
+    parser.add_argument('--jobs', type=int, action=UniqueJobCount, default=4)
+    parser.add_argument('--native-jobs', type=int, action=UniqueJobCount, default=18)
+    parser.add_argument('--baseline-jobs', type=int, action=UniqueJobCount)
+    parser.add_argument('--candidate-jobs', type=int, action=UniqueJobCount)
     parser.add_argument('--native-profile', choices=['repository', 'o0-incremental'], default='o0-incremental')
     parser.add_argument('--native-test-threads', default='default')
     parser.add_argument('--native-rustflag', action='append', default=[])
     parser.add_argument('--lock-wait-seconds', type=int, default=600)
     parser.add_argument('--minimum-free-gib', type=int, default=30)
     args = parser.parse_args()
+    try:
+        resolved_jobs = resolve_build_jobs(args.jobs, native=args.native_jobs,
+            baseline=args.baseline_jobs, candidate=args.candidate_jobs, paired=True)
+    except ValueError as error:
+        parser.error(str(error))
     if args.candidate_jit_native_call_stubs and not args.candidate_jit_native_calls:
         parser.error('--candidate-jit-native-call-stubs requires --candidate-jit-native-calls')
     if args.candidate_jit_resumable_calls and (args.candidate_jit_native_calls or args.candidate_jit_native_call_stubs):
@@ -81,7 +89,7 @@ def main():
     work.mkdir(parents=True, exist_ok=False)
     paths = ['scripts/bench_e2e_workflow.py', 'scripts/interpreter.py',
              'scripts/workflow_cases.py', 'scripts/workflow_case_file.py', 'scripts/workflow_controls.py',
-             'scripts/workflow_measurements.py', 'scripts/workflow_io.py', 'scripts/std_mir.py',
+             'scripts/workflow_measurements.py', 'scripts/workflow_io.py', 'scripts/std_mir.py', 'scripts/workflow_jobs.py',
              'scripts/verify_repeated_workflow.py', 'scripts/bench_workflow_corpus.py',
              'benchmarks/workflow-corpus.json']
     frozen = {p: sha(ROOT / p) for p in paths}
@@ -127,6 +135,8 @@ def main():
                 '--baseline-tool-key', args.baseline_tool_key,
                 '--comparison-engine', 'jit', '--expect-identical-bytecode', *case['flags'],
                 *['--native-rustflag=' + flag for flag in args.native_rustflag]]
+            if args.baseline_jobs is not None:command += ['--baseline-jobs', str(args.baseline_jobs)]
+            if args.candidate_jobs is not None:command += ['--candidate-jobs', str(args.candidate_jobs)]
             if args.candidate_jit_resumable_calls:command.append('--candidate-jit-resumable-calls')
             if args.candidate_jit_persistent_registers:command.append('--candidate-jit-persistent-registers')
             if args.candidate_jit_native_calls:command.append('--candidate-jit-native-calls')
@@ -155,6 +165,10 @@ def main():
                 path = ROOT / 'results' / run_id / 'summary.json'
                 report = read(path)
                 verification = verify(report)
+                if report['custom_build_jobs'] != {m: resolved_jobs[m] for m in ['baseline', 'candidate']}:
+                    raise RuntimeError('workflow custom worker counts differ from corpus configuration')
+                if report['native_control']['jobs'] != resolved_jobs['native']:
+                    raise RuntimeError('workflow native worker count differs from corpus configuration')
                 if report['case_sha256'] != read(ROOT / case['reference_report'])['case_sha256']:
                     raise RuntimeError('workflow case changed')
                 if report['check_floor'] is None or len(report['check_floor']['samples']) != args.cycles * (len(report['edits']) + 2):
