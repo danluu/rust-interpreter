@@ -58,8 +58,8 @@ with one ignored diagnostic. Its experimental resumable execution passes 47,004
 fresh native-differential validation commands, 245 TLS/destructor commands and
 382 fre body replays (seven ignored). Complete edited commands improve 21.82%
 on folded trie and 33.09% on token phrase against the original JIT baseline;
-both still lose to native Cargo. Fresh Nushell type-relations and Ruff histories
-pass their regression guards; five required cases remain before retention.
+both still lose to native Cargo. Fresh Nushell type-relations, Ruff and Nushell histories
+pass their regression guards; four required cases remain before retention.
 The new options stay disabled by default.
 [Workspace validation](results/resumable-copy-release-01/assessment.md),
 [fresh replay](results/resumable-copy-fre-01/assessment.md),

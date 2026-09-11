@@ -123,7 +123,9 @@ review are not commitments or evidence of feasibility.
   wall −1.20% and CPU −2.47% pass the unchanged regression guard. The original
   zero-pair stop is preserved. [Ruff](../results/resumable-copy-heldout-01-case-02/assessment.md)
   also verifies 84 commands and 42 artifacts: paired wall −0.84%, CPU +0.58%,
-  within its guards. Five required held-out cases remain; no retention.
+  within its guards. [Nushell](../results/resumable-copy-heldout-01-case-03/assessment.md)
+  also verifies 84 commands and 42 artifacts, with wall −6.63% and CPU −6.70%.
+  Four required held-out cases remain; no retention.
 
 - Items 2.3/9.2 now also have an explicit [between-command stop assessment](../results/resumable-copy-heldout-01-case-01-stop/assessment.md).
   The first fresh held-out case stopped at the 8 GiB disk guard, with no

@@ -1,0 +1,1 @@
+Four completed histories and sixteen exact caches were inspected read-only. Each total is below the conservative 4 GiB cache budget, and each check cache is below 512 MiB. With 20% growth, an 8 GiB running floor, 2 GiB archive reserve and 256 MiB evidence, each next admission requires 15.05 GiB. Only aggregates are published; no cache was modified.

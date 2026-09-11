@@ -100,8 +100,15 @@ small marginal and paired wall differences is preserved. Admission passed at
 24.04 GiB against 16.16 GiB required, 0.100 seconds before startup. The earlier
 [lock-only rejection](results/resumable-copy-heldout-01-case-02-preflight-lock-01/assessment.md)
 started no benchmark and left the unrelated lock holder untouched. Both Ruff
-supervisors are terminal with exit zero. Admit and start case03 Nushell next.
-Five required cases remain.
+supervisors are terminal with exit zero. [Nushell case03](results/resumable-copy-heldout-01-case-03/assessment.md)
+now also verifies 84 commands, fifteen pairs and 42 matching artifacts: paired
+wall −6.63%, CPU −6.70%. Its median edited command is 0.401s candidate versus
+0.431s baseline and 0.659s native. Admission passed at 18.76 GiB, 0.110 seconds
+before startup. Four required cases remain. Their [historical caches](results/copy-remaining-space-inventory-01/assessment.md)
+are all smaller than a conservative 4 GiB budget; each fresh admission requires
+15.05 GiB including growth, the running floor, archive and evidence reserves.
+A lock-only inspection stop and an overstrict object-file guard are preserved;
+no cache was changed. Launch case04 forward-anchored TLS next.
 
 Storage maintenance has verified 205 archives. Recent batches include
 [eight recovered histories' caches](results/heldout-recovery-storage-01/assessment.md),

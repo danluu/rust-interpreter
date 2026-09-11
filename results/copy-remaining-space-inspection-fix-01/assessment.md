@@ -1,0 +1,1 @@
+The read-only inventory incorrectly required object files in check-only and metadata-only custom caches. The original script and failure are preserved. No cache was archived or modified, and no benchmark started. The correction keeps the object-presence guard for the four selected native targets while requiring nonempty metadata caches in the other modes.

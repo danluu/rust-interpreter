@@ -10,8 +10,8 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
    Both original compute gates pass: folded paired wall −21.82%, token −33.09%.
    A matched-frontend comparison attributes an additional 15.14% token gain
    to native copies. Both workloads still take longer than native Cargo.
-   Fresh Nushell type-relations and Ruff histories pass their regression guards;
-   finish the remaining five cases in the committed order and evaluate the
+   Fresh Nushell type-relations, Ruff and Nushell histories pass their guards;
+   finish the remaining four cases in the committed order and evaluate the
    complete amended set. Keep the original zero-pair stop and all earlier
    failed token gates. No timing reruns to obtain a passing result.
    [Current results](results/resumable-copy-original-e2e-01/assessment.md),

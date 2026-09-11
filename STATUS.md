@@ -37,7 +37,7 @@ libtest. Real unwinding, threads and general OS/FFI remain unsupported.
 
 ### Current held-out verification
 
-2 of seven required histories have completed partial gate verification.
+3 of seven required histories have completed partial gate verification.
 The original zero-pair space-guard stop remains preserved; its replacement
 uses an explicit amendment and the corrected admission estimate.
 
@@ -45,6 +45,7 @@ uses an explicit amendment and the corrected admission estimate.
 | --- | ---: | ---: | --- |
 | nushell-type-relations | -1.20% | -2.47% | pass |
 | ruff | -0.84% | +0.58% | pass |
+| nushell | -6.63% | -6.70% | pass |
 
 A partial set cannot qualify the candidate. Options remain disabled by
 default; no whole-codebase workflow is qualified.

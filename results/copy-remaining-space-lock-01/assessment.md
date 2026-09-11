@@ -1,0 +1,1 @@
+The read-only remaining-cache inventory stopped at the occupied benchmark lock before reading caches. No benchmark or cache modification started. The original failure is preserved; inspect availability before a fresh supervisor launch.
