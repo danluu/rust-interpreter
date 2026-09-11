@@ -121,20 +121,19 @@ relaxation, wrapper retention or conditional held-out testing is claimed.
 
 ## Resource planning
 
-The [next reviewed batch](results/worker-cold-storage-combined-01/inventory-review.json)
-contains twelve completed public targets from the worker Nushell primary and
-older Nushell/Ruff corpus cases: 249,643 paths / 20,569,002,571 unique bytes.
-All 207 distinct source/evidence hashes and exact optional corpus identities
-verify. The first three applications create room for the larger native target.
-No archive application has started yet. Keep all archive-bound scripts unchanged
-and launch no other lock waiter until this entire application batch is terminal.
+The [completed twelve-target batch](results/worker-cold-storage-combined-01/assessment.md)
+preserves worker Nushell and older Nushell/Ruff corpus caches: 249,643 paths /
+19.16 GiB unique contents in 5.72 GiB of archives. All terminal receipts and
+207 distinct source/evidence hashes verify. There are now 56 completed archives;
+the host reported about 21 GiB free afterward. The old unapplied Ruff object-only
+inventory is obsolete because its exact target has now been archived.
 
 
 [Completed batch04](results/cold-storage-batch-04/assessment.md) preserves eight
 exact completed targets: 84,333 paths / 21.42 GiB unique contents in 7.21 GiB
 of archives. Final receipts, inventories and all 38 distinct external evidence/
 source hashes verify. That batch brought the archive count to thirty-six; the current total is
-forty-four after the separately reviewed warm-study storage work above. All payloads
+fifty-six after the separately reviewed warm/worker-study storage work above. All payloads
 were decoded and hashed before retirement. Executed snapshots and reports remain
 in place. Archival ran outside benchmark timing and controlled no other work.
 

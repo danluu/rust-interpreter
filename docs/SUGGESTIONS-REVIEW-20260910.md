@@ -123,17 +123,20 @@ review are not commitments or evidence of feasibility.
   cover legacy receipts, invalid counts, namespace serialization and actual
   same-tool comparisons. Real workflow and corpus qualifications pass. The
   [fifteen-cycle pgrust comparison](../results/worker-count-pgrust-repeated-01/assessment.md)
-  finds no material gain (paired wall −0.19%, CPU −0.04%). Nushell's excluded
-  pilot halves cold wall time but increases child CPU by 31%; its primary warm
-  comparison and unchanged adoption guards are next. No worker default changes.
+  finds no material gain (paired wall −0.19%, CPU −0.04%). The
+  [Nushell primary](../results/worker-count-nushell-repeated-01/assessment.md)
+  finds paired wall +0.59% and child CPU +7.33%, passing both warm guards without
+  a warm benefit. Its excluded pilot halves cold wall time but increases child
+  CPU by 31%; the six fresh cold histories and unchanged adoption gates are next.
+  No worker default changes.
 
 - Item 9.2 now has bounded completed-cache archival, with exact workflow and
   invocation ownership, decoded payload verification before retirement, and
   preserved query metadata and executed snapshots. [The format qualification](../results/cache-archive-qualification-06/assessment.md)
   passes 44 rejection checks, four coordinator cases and restoration of both
   earlier formats; [cache selection](../results/workflow-cache-evidence-01/assessment.md)
-  passes 31 rejections and nine historical targets. Thirty-six exact native/check/
-  custom archives completed, including the [fourth batch](../results/cold-storage-batch-04/assessment.md). This made room for the pending cold comparisons;
+  passes 31 rejections and nine historical targets. Fifty-six exact native/check/
+  custom archives completed, including the [twelve-target worker storage batch](../results/worker-cold-storage-combined-01/assessment.md). This made room for the pending cold comparisons;
   it is storage maintenance outside their timers, not a compilation speedup.
 
 - Item 4.1 now has a std-only exec wrapper and shared Cargo routing rules in

@@ -109,6 +109,9 @@ cannot establish; its timings are also qualification-only.
 The corpus qualification completed 84 commands and 42 artifacts with actual
 four/eighteen-job forwarding. The first fifteen-cycle primary, pgrust, now
 verifies 180 commands and ninety artifacts: paired wall ratio 0.9981098106 and
-CPU ratio 0.9996062101, with no material gain. The Nushell primary is active as
-`worker-count-nushell-repeated-01`. These updates record execution status and
+CPU ratio 0.9996062101, with no material gain. The Nushell primary also completed
+and verified 180 commands/ninety artifacts: paired wall ratio 1.0059031510 and
+CPU ratio 1.0732865843. Both warm guards pass, with no observed warm benefit.
+The six fresh cold histories remain required, subject to the original failure
+bound rule. These updates record execution status and
 do not change the predeclared samples, thresholds or stopping rule.
