@@ -166,10 +166,12 @@ The opt-in allocation trace is implemented in the exporter and a tracked
 It captures initialized bytes, full instance kinds and relocation origins, with
 bounded output and an artifact-hash footer. Four new Rust boundary tests and
 original-fixture differential checks are written. The [debug workspace check](results/allocation-trace-debug-01/assessment.md)
-passes all 272 tests, one existing ignored. Release and fixture qualification
-remain pending.
-Current worker measurements use the unchanged installed tool78. Build and
-qualify only after the active run and its assessments release the benchmark lock.
+and [release check](results/allocation-trace-release-01/assessment.md) pass all
+272 tests, one existing ignored. [All 383 original-fixture commands](results/allocation-trace-fixtures-01/assessment.md)
+pass with byte-identical baseline/disabled/enabled artifacts. Tool `e965f566`
+changes only the exporter; VM and wrapper hashes match their previous versions.
+Current worker measurements use the unchanged installed tool78. The diagnostic is qualified; keep launcher inputs frozen until the worker cold
+study closes.
 The launcher has not changed; large-project tracing and function reuse remain
 pending. See the [draft details](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md).
 

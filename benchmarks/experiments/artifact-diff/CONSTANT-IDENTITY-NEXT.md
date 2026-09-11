@@ -83,7 +83,11 @@ bytes, init-mask bounds and artifact binding, and checks three invalid modes.
 
 The [debug workspace check](../../../results/allocation-trace-debug-01/assessment.md)
 passes all 272 tests, one existing ignored, including the four new trace tests.
-Release installation and original-fixture differential qualification remain
-pending. Worker measurements use installed tool78 and are unaffected. No launcher
+The [release check](../../../results/allocation-trace-release-01/assessment.md)
+also passes 272 tests and installs `9bd66cd` / `e965f566`, with unchanged VM and
+wrapper hashes. The [original-fixture qualification](../../../results/allocation-trace-fixtures-01/assessment.md)
+passes all 383 commands, including byte-identical baseline/disabled/enabled
+exports, 52 native and 312 custom executions, and three configuration rejections. Worker measurements use installed tool78 and are unaffected. No launcher
 option, large Nushell trace, bytecode reuse or optimization is implemented by this
-diagnostic. Qualification must pass before the original/edit/revert history above.
+diagnostic. Keep the launcher frozen until the worker cold study closes, then
+run the original/edit/revert diagnostic history above.

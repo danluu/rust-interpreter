@@ -118,6 +118,14 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Items 1.4/4.3 now have a bounded opt-in allocation-origin trace as correctness
+  groundwork. Source `9bd66cd` / tool `e965f566` passes 272 debug/release tests
+  and [383 original-fixture commands](../results/allocation-trace-fixtures-01/assessment.md),
+  with byte-identical old/disabled/enabled artifacts. It records initialization
+  masks, full instance kinds, static/TLS identity and relocation edges. No
+  deduplication, function reuse or performance gain is claimed; the pinned
+  Nushell history remains to be diagnosed after the worker study releases inputs.
+
 - Items 4.5/2.1 now have independent, bounded custom worker counts, while native
   and check controls retain their own settings. Helper/harness qualifications
   cover legacy receipts, invalid counts, namespace serialization and actual
