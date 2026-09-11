@@ -68,7 +68,8 @@ runtime defaults unchanged. Qualify the new flag/sidecar receipts first, then
 capture the original/wrong/API/restored Nushell history.
 
 The [latest 32-cache batch](results/worker-cold-storage-batch-05/assessment.md)
-completed and verified, bringing the total to 153 archives. The new
+completed and verified. The [four cold04 caches](results/allocation-history-storage-01/assessment.md)
+also verified, bringing the total to 157 archives. The new
 [artifact clone qualification](benchmarks/experiments/compiler-pipeline/ARTIFACT-CLONES.md)
 preserves independent write behavior and rejects 18 invalid/failure cases.
 The [pilot](results/artifact-clone-pilot-01/assessment.md) and
@@ -221,8 +222,9 @@ changes only the exporter; VM and wrapper hashes match their previous versions.
 The completed worker measurements used unchanged installed tool78.
 The launcher now exposes explicit allocation tracing. Its [17-command qualification](results/allocation-trace-launcher-02/assessment.md)
 and [99-check original regression](results/allocation-trace-launcher-regression-01/assessment.md)
-pass, including historical-tool execution. Large-project tracing and function
-reuse remain pending. See the [draft details](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md).
+pass, including historical-tool execution. The [large-project history](results/allocation-trace-nushell-history-01/assessment.md)
+now passes eight native/custom commands and preserves four complete traces.
+Function reuse is not implemented. See the [draft details](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md).
 
 ## Existing engine and limits
 
@@ -264,11 +266,13 @@ Do not mark the unbounded goal complete at a checkpoint.
 The [qualified origin inspector](results/allocation-origin-queries-02/assessment.md)
 can join exact initialized allocation contents to all request ancestry and full
 function context. It preserves distinct mutable TLS identities and checks exact
-serialized output bounds. The actual Nushell history diagnosis remains pending;
-the worker study has closed.
+serialized output bounds. The [actual Nushell attribution](results/allocation-origin-nushell-history-01/assessment.md)
+finds the literal split already present in compiler allocation IDs after the API
+edit and revert. All four artifacts match historical bytes. A small incremental-on/off
+reduction is next; no content-only deduplication or cache adoption.
 
 The [allocation transport helper](results/allocation-trace-transport-01/assessment.md)
 passes four real traces and 33 malformed-file checks with exact byte/event
 boundaries. It checks the selected artifact hash before use; deeper origin
-semantics remain in the qualified inspector. Launcher integration is qualified; the traced Nushell history is next.
+semantics remain in the qualified inspector. Launcher integration and the traced Nushell history are qualified.
 No performance claim follows.

@@ -124,7 +124,11 @@ review are not commitments or evidence of feasibility.
   with byte-identical old/disabled/enabled artifacts. It records initialization
   masks, full instance kinds, static/TLS identity and relocation edges. No
   deduplication, function reuse or performance gain is claimed; the pinned
-  Nushell history remains to be diagnosed after the worker study releases inputs.
+  [Nushell history now reproduces the split](../results/allocation-origin-nushell-history-01/assessment.md)
+  in compiler allocation IDs before exporter layout. The exact literal in the
+  test depending on the generic API receives a separate ID after edit/revert;
+  all four artifacts match historical bytes. A reduced incremental-on/off
+  comparison is next. Launcher qualification passes 17 new and 99 original checks.
 
 - Items 4.5/2.1 now have independent, bounded custom worker counts, while native
   and check controls retain their own settings. Helper/harness qualifications

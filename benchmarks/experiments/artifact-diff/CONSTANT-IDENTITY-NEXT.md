@@ -154,3 +154,29 @@ fixture creation due to a driver return-shape assumption; that failure is retain
 The [original 99-check regression](../../../results/allocation-trace-launcher-regression-01/assessment.md)
 also passes, plus separate historical-tool execution. The tracked
 `trace_nushell_history.py` driver is prepared but not yet run.
+
+
+## Actual Nushell attribution and next reduction
+
+The [four-state history](../../../results/allocation-trace-nushell-history-01/assessment.md)
+passes all eight native/custom commands with original assertions and restoration.
+[All four origin queries](../../../results/allocation-origin-nushell-history-01/assessment.md)
+reproduce and match historical bytecode. The three panic strings share one
+compiler allocation in original/wrong states; the API edit splits the literal
+in `test_oneof_deduplicates`, retaining that split after source restoration.
+The split exists in the compiler IDs before exporter layout.
+
+Next reduce this to three functions referring to the same panic string, with
+only one function calling an API changed from a concrete argument to `impl Into`.
+Use dynamic scalar input so the panic branches survive MIR construction. Keep
+all workload assertions unchanged; include an intentionally wrong API body
+that reaches those assertions, then the API edit and exact restoration. Compare
+fresh, separate custom Cargo histories with `CARGO_INCREMENTAL=1` and `0`, retaining
+all trace/artifact pairs and native assertion controls. This is a causal diagnostic,
+not a performance benchmark. Record a negative result if the split does not recur.
+
+The prediction is one/one/two/two allocations with incremental reuse and one in
+each state without it. That would support the mixed decoded/recomputed MIR
+mechanism found in the pinned compiler source; individual query reuse still
+needs direct evidence before being asserted. Do not patch allocation equality
+or adopt function caching from this reduction alone.
