@@ -37,8 +37,11 @@ def main():
     parser.add_argument('--jit-persistent-registers', action='store_true')
     parser.add_argument('--jit-native-calls', action='store_true')
     parser.add_argument('--jit-native-call-stubs', action='store_true')
+    parser.add_argument('--jit-resumable-calls', action='store_true')
     parser.add_argument('--dump-code', action='store_true', help='save emitted code from each sampled process after execution')
     args = parser.parse_args()
+    if args.jit_resumable_calls and (args.jit_native_calls or args.jit_native_call_stubs):
+        parser.error('--jit-resumable-calls cannot be combined with native tree/stub calls')
     if args.jit_native_call_stubs and not args.jit_native_calls:
         parser.error('--jit-native-call-stubs requires --jit-native-calls')
     if sys.platform != 'darwin':
@@ -70,6 +73,7 @@ def main():
         source_files=frozen, repetitions=args.repetitions, sample_seconds=args.duration,
         instruction_limit=args.instruction_limit, allocation_limit=args.allocation_limit,
         jit_persistent_registers=args.jit_persistent_registers, jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
+        jit_resumable_calls=args.jit_resumable_calls,
         dump_code=args.dump_code,
         performance_measurement=False))
     env = os.environ.copy()
@@ -96,6 +100,8 @@ def main():
             command.append('--jit-native-calls')
         if args.jit_native_call_stubs:
             command.append('--jit-native-call-stubs')
+        if args.jit_resumable_calls:
+            command.append('--jit-resumable-calls')
         if args.dump_code:
             command += ['--jit-code-dump', str(run / 'jit-code')]
         command.append(str(artifact))
@@ -169,6 +175,9 @@ def main():
             raise RuntimeError('unexpected JIT decline or empty execution')
         if args.jit_native_call_stubs and stats.get('jit_stub_calls', 0) == 0:
             raise RuntimeError('native Call stubs did not execute')
+        if args.jit_resumable_calls and (stats.get('jit_resumable_calls', 0) == 0 or
+                                         stats.get('jit_resumable_returns', 0) == 0):
+            raise RuntimeError('resumable native Calls/Returns did not execute')
         record = dict(index=index, identity=identity, mapped=mapped, sample_returncode=sample_code,
                       performance_measurement=False, statistics=stats,
                       files={str(p.relative_to(run)): digest(p) for p in run.rglob('*') if p.is_file()})

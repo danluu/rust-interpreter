@@ -18,7 +18,7 @@ COPY_BACKWARD = (0x385ffd6a, 0x381ffd8a, 0xf1000529, 0x54ffffa1)
 COPY_FORWARD = (0x3840156a, 0x3800158a, 0xf1000529, 0x54ffffa1)
 
 
-def classify_words(data):
+def classify_words(data, resumable=False):
     require(len(data) % 4 == 0, 'unaligned AArch64 code bytes')
     words = [w[0] for w in struct.iter_unpack('<I', data)]
     classes = []
@@ -33,6 +33,9 @@ def classify_words(data):
             kind = 'direct_register_array_store'
         elif direct in (0xf9400260, 0xf9000260):
             kind = 'cursor_load_store'
+        elif resumable and direct in (0xf9400280, 0xf9000280, 0x39400280, 0x39000280):
+            # x20 holds the current guest Frame only in the resumable ABI.
+            kind = 'frame_descriptor_load_store'
         else:
             kind = 'other_generated'
         classes.append(kind)
@@ -45,6 +48,22 @@ def classify_words(data):
                 classes[i:i + len(pattern)] = [kind] * len(pattern)
                 sequences[kind] += 1
     return classes, dict(sequences)
+
+
+def dump_options(dump, command):
+    for field, flag in [('native_call_stubs', '--jit-native-call-stubs'),
+                        ('persistent_registers', '--jit-persistent-registers'),
+                        ('resumable_calls', '--jit-resumable-calls')]:
+        require(type(dump.get(field, False)) is bool, 'invalid dumped runtime option type')
+        require(dump.get(field, False) == (flag in command), 'dumped runtime option differs from command')
+    resumable = dump.get('resumable_calls', False)
+    require(not resumable or not any(f in command for f in ['--jit-native-calls', '--jit-native-call-stubs']),
+            'incompatible dumped runtime options')
+    allowed = ({'resumable_region', 'resumable_call', 'resumable_return'} if resumable else
+               {'ordinary_region'} | ({'call_stub'} if '--jit-native-call-stubs' in command else set()) |
+               ({'native_tree'} if '--jit-native-calls' in command else set()))
+    require(all(r['kind'] in allowed for r in dump['ranges']), 'dumped range kind differs from runtime options')
+    return resumable
 
 
 def attribute(folder, sample_summary):
@@ -60,9 +79,7 @@ def attribute(folder, sample_summary):
     require(len(code) == dump['code_bytes'] == record['statistics']['jit_bytes'], 'dump length mismatch')
     require(not dump['profiled'], 'instruction-profile instrumentation enabled')
     command = record['identity']['command']
-    for field, flag in [('native_call_stubs', '--jit-native-call-stubs'),
-                        ('persistent_registers', '--jit-persistent-registers')]:
-        require(dump.get(field, False) == (flag in command), 'dumped runtime option differs from command')
+    resumable = dump_options(dump, command)
     ranges = dump['ranges']
     end = 0
     for row in ranges:
@@ -71,9 +88,10 @@ def attribute(folder, sample_summary):
     require(end == len(code), 'range/code length mismatch')
     base = dump['arena_base']
     require(any(lo == base and base + len(code) <= hi for lo, hi in sample_summary['generated_address_ranges']), 'dump is not inside sampled process arena')
-    classes, sequences = classify_words(code)
+    classes, sequences = classify_words(code, resumable=resumable)
     offsets = [r['offset'] for r in ranges]
     by_kind, by_class, by_function = Counter(), Counter(), Counter()
+    by_kind_class = {}
     unresolved = []
     for root in parse_tree((folder / 'sample.txt').read_text()):
         for count, frame, _ in self_samples(root):
@@ -94,13 +112,17 @@ def attribute(folder, sample_summary):
             by_kind[kind] += count
             by_class[word_class] += count
             by_function[(kind, function)] += count
+            by_kind_class.setdefault(kind, Counter())[word_class] += count
     total = sum(by_kind.values())
     require(total + sum(r['count'] for r in unresolved) == sample_summary['disjoint_counts'].get('generated_code', 0) + sample_summary['disjoint_counts'].get('unresolved_unknown_binary', 0), 'generated counts do not reconcile')
-    return dict(index=record['index'], pid=dump['pid'], generated_samples=total,
+    result = dict(index=record['index'], pid=dump['pid'], generated_samples=total,
         by_entry_kind=dict(by_kind), by_instruction_class=dict(by_class),
         by_function=[dict(kind=k, function=f, samples=n) for (k, f), n in by_function.most_common()],
         exact_sequence_occurrences=sequences, unresolved=unresolved,
         code_sha256=sha(code_path), map_sha256=sha(dump_path))
+    if resumable:
+        result['by_entry_instruction_class'] = {k: dict(v) for k, v in by_kind_class.items()}
+    return result
 
 
 def main():

@@ -1,0 +1,98 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "run_id": "native-code-folded-sample-01",
+      "windows": 3,
+      "sample_counts_unchanged": true,
+      "attribution_unchanged": true
+    },
+    {
+      "run_id": "native-code-token-sample-02",
+      "windows": 3,
+      "sample_counts_unchanged": true,
+      "attribution_unchanged": true
+    },
+    {
+      "run_id": "persistent-folded-sample-01",
+      "windows": 3,
+      "sample_counts_unchanged": true,
+      "attribution_unchanged": true
+    },
+    {
+      "run_id": "persistent-token-sample-01",
+      "windows": 3,
+      "sample_counts_unchanged": true,
+      "attribution_unchanged": true
+    }
+  ],
+  "evidence": {
+    "results/native-code-folded-sample-01/summary.json": "8c702e3a3850a77d515cc853e38acd8b2be582d4db5fa2aea44776f63e7e4166",
+    "results/native-code-folded-sample-01/generated-attribution.json": "64bce0785c61066ed85df1709991e58268ab19dd0f091c7576f051ab3518b8d3",
+    "results/native-code-token-sample-02/summary.json": "4aed36c4fb880b6cd2cec95f13e94d7fd7669893f8d86acf322f818802dd3cbb",
+    "results/native-code-token-sample-02/generated-attribution.json": "4f97bd44866c85ab4f24d76afe7089d10766d74add8bfa9c1ef048eec1e68c21",
+    "results/persistent-folded-sample-01/summary.json": "3454b8cf63cf9aefeb2df3f92c1374680e35f404893e14c0f1c3ba9147066efd",
+    "results/persistent-folded-sample-01/generated-attribution.json": "b8c03274498482cb4aa2a06eaa0d45b28f12dfc1650a18f6d51a1ddbfd87351c",
+    "results/persistent-token-sample-01/summary.json": "cb070f8dafeaded5b3fe3a4c4522c88552dbea0d9a8f5a6784172754d00aa2f2",
+    "results/persistent-token-sample-01/generated-attribution.json": "fa8725296faade1b2cf9b7a2536f3cd09deb3d116d8a66b7ecfea77fec60c6c8"
+  },
+  "false_option_checks": 48,
+  "incompatible_range_checks": 4,
+  "cli_checks": [
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/sample_owned_vm.py",
+        "--help"
+      ],
+      "returncode": 0,
+      "stdout": "usage: sample_owned_vm.py [-h] --tool-key TOOL_KEY --artifact ARTIFACT\n                          --artifact-sha256 ARTIFACT_SHA256 --run-id RUN_ID\n                          [--repetitions REPETITIONS] [--duration DURATION]\n                          [--instruction-limit INSTRUCTION_LIMIT]\n                          [--allocation-limit ALLOCATION_LIMIT]\n                          [--jit-persistent-registers] [--jit-native-calls]\n                          [--jit-native-call-stubs] [--jit-resumable-calls]\n                          [--dump-code]\n\nSample fresh, explicitly owned macOS VM executions; never report latency.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --tool-key TOOL_KEY\n  --artifact ARTIFACT\n  --artifact-sha256 ARTIFACT_SHA256\n  --run-id RUN_ID\n  --repetitions REPETITIONS\n  --duration DURATION\n  --instruction-limit INSTRUCTION_LIMIT\n  --allocation-limit ALLOCATION_LIMIT\n  --jit-persistent-registers\n  --jit-native-calls\n  --jit-native-call-stubs\n  --jit-resumable-calls\n  --dump-code           save emitted code from each sampled process after\n                        execution\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/sample_owned_vm.py",
+        "--tool-key",
+        "unused",
+        "--artifact",
+        "unused",
+        "--artifact-sha256",
+        "unused",
+        "--run-id",
+        "unused",
+        "--jit-resumable-calls",
+        "--jit-native-calls"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: sample_owned_vm.py [-h] --tool-key TOOL_KEY --artifact ARTIFACT\n                          --artifact-sha256 ARTIFACT_SHA256 --run-id RUN_ID\n                          [--repetitions REPETITIONS] [--duration DURATION]\n                          [--instruction-limit INSTRUCTION_LIMIT]\n                          [--allocation-limit ALLOCATION_LIMIT]\n                          [--jit-persistent-registers] [--jit-native-calls]\n                          [--jit-native-call-stubs] [--jit-resumable-calls]\n                          [--dump-code]\nsample_owned_vm.py: error: --jit-resumable-calls cannot be combined with native tree/stub calls\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/sample_owned_vm.py",
+        "--tool-key",
+        "unused",
+        "--artifact",
+        "unused",
+        "--artifact-sha256",
+        "unused",
+        "--run-id",
+        "unused",
+        "--jit-resumable-calls",
+        "--jit-native-call-stubs"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "usage: sample_owned_vm.py [-h] --tool-key TOOL_KEY --artifact ARTIFACT\n                          --artifact-sha256 ARTIFACT_SHA256 --run-id RUN_ID\n                          [--repetitions REPETITIONS] [--duration DURATION]\n                          [--instruction-limit INSTRUCTION_LIMIT]\n                          [--allocation-limit ALLOCATION_LIMIT]\n                          [--jit-persistent-registers] [--jit-native-calls]\n                          [--jit-native-call-stubs] [--jit-resumable-calls]\n                          [--dump-code]\nsample_owned_vm.py: error: --jit-resumable-calls cannot be combined with native tree/stub calls\n"
+    }
+  ],
+  "frozen": {
+    "benchmarks/experiments/bounded-native-calls/check_profile_receipts.py": "8228f063ec2870308fe9a8cd1f10c09a93bc4478392afbf786070934e7202b1f",
+    "scripts/sample_owned_vm.py": "5483cff49829d053d9f9ebb5fb4ced0050c2d005ba936da8511bff57f628d5d4",
+    "scripts/summarize_owned_sample.py": "cfc3c6bb84501fc928036592c0271fa09662f8f8b897dd87a6fe28514b1d73dc",
+    "scripts/attribute_generated_sample.py": "80abec67e89fadd35c0b7bf679254163e8dcbbe7be99c173700d51cfc574bdd0"
+  },
+  "performance_measurement": false
+}

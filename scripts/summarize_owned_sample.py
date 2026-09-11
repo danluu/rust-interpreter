@@ -19,6 +19,20 @@ def require(condition, message):
         raise RuntimeError(message)
 
 
+def runtime_options(plan, commands):
+    options = {k: plan.get(k, False) for k in
+        ['jit_native_calls', 'jit_native_call_stubs', 'jit_persistent_registers', 'jit_resumable_calls']}
+    require(all(type(v) is bool for v in options.values()), 'invalid runtime option type')
+    require(not options['jit_native_call_stubs'] or options['jit_native_calls'], 'native stubs require native calls')
+    require(not options['jit_resumable_calls'] or
+            not (options['jit_native_calls'] or options['jit_native_call_stubs']), 'incompatible runtime options')
+    for command in commands:
+        for option, enabled in options.items():
+            require(('--' + option.replace('_', '-') in command) == enabled,
+                    'sampled runtime option differs from plan')
+    return options
+
+
 def parse_tree(sample):
     graph = sample.split('Call graph:', 1)[1].split('Total number in stack', 1)[0]
     roots, stack = [], []
@@ -80,7 +94,8 @@ def summarize(folder):
                     unknown.append(dict(count=count, frame=frame))
             elif 'rust_interp_bytecode' in frame and ('execute_impl' in frame or 'execute_observed' in frame):
                 category = 'dispatcher_self'
-            elif 'native_execution' in frame or 'run_regions' in frame or 'run_tree' in frame:
+            elif any(name in frame for name in
+                     ['native_execution', 'native_continuation', 'run_regions', 'run_tree', 'run_resumable']):
                 category = 'native_boundary_self'
             elif any('4heap' in f and 'rust_interp_bytecode' in f for f in (*ancestors, frame)):
                 category = 'heap_inclusive'
@@ -114,14 +129,9 @@ def main():
     require(sha(vm) == run['vm_sha256'], 'VM changed')
     require(sha(Path(plan['artifact'])) == run['artifact_sha256'], 'artifact changed')
     samples = [summarize(work / str(r['index'])) for r in run['records']]
-    options = {k: plan.get(k, False) for k in
-        ['jit_native_calls', 'jit_native_call_stubs', 'jit_persistent_registers']}
-    for record in run['records']:
-        # Options describe the captured processes, not the current launcher.
-        command = json.loads((work / str(record['index']) / 'record.json').read_text())['identity']['command']
-        for option, enabled in options.items():
-            require(('--' + option.replace('_', '-') in command) == enabled,
-                    'sampled runtime option differs from plan')
+    # Options describe the captured processes, not the current launcher.
+    options = runtime_options(plan, [json.loads((work / str(record['index']) / 'record.json').read_text())
+        ['identity']['command'] for record in run['records']])
     counts, frames = Counter(), Counter()
     for sample in samples:
         counts.update(sample['disjoint_counts'])
