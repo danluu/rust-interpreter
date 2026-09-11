@@ -81,7 +81,12 @@ is committed as `91d5c48`. The [actual pgrust qualification](results/resumable-c
 and [final gate helper check](results/separate-heldout-gates-03/assessment.md) now
 pass: 84 commands, fifteen pairs and 42 artifacts, with all 39 rejection checks
 and prior gate decisions preserved. A lock rejection before testing is retained.
-Primary case01 (Nushell type-relations) is next after its storage preflight.
+Primary case01 (Nushell type-relations) is now running under the unchanged
+plan. Its [space preflight](results/resumable-copy-heldout-01-case-01-preflight/summary.json)
+requires 17.99 GiB including 20% growth plus first-archive and evidence reserves;
+18.20 GiB was available at launch. Supervisor 64903 / corpus controller 64907 /
+workflow 64909 were confirmed live. Keep all plan, evaluator and corpus inputs
+frozen through the seven-case assessment.
 
 ## Closed worker-count experiment
 
