@@ -91,3 +91,13 @@ exports, 52 native and 312 custom executions, and three configuration rejections
 option, large Nushell trace, bytecode reuse or optimization is implemented by this
 diagnostic. Keep the launcher frozen until the worker cold study closes, then
 run the original/edit/revert diagnostic history above.
+
+
+The [origin inspector qualification](../../../results/allocation-origin-queries-02/assessment.md)
+now verifies exact initialized-byte queries, three references to one original
+static, and six equal-content allocations that retain separate identities,
+including two mutable TLS values. Ten rejection checks, exact serialized byte bounds and an actual CLI query
+pass. `inspect_allocation_origins.py --literal 'Expected OneOf'` can inspect the
+future Nushell trace after supplying its matching bytecode and a fresh run ID.
+It records all request ancestry and full function instance context, bounds the
+query report, and makes no allocation-equivalence or deduplication inference.

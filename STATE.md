@@ -118,21 +118,22 @@ relaxation, wrapper retention or conditional held-out testing is claimed.
 
 ## Resource planning
 
-[Twenty completed host checks](results/worker-cold-host-object-storage-01/assessment.md)
-released 1.54 GiB of object contents; 13,884 other files and 2,105 evidence hashes
-verify afterward. The remaining files contain 5.31 GiB of unique contents.
-The [next storage plan](benchmarks/experiments/compiler-pipeline/HOST-CACHE-STORAGE-NEXT.md)
-extends existing bounded archival only to completed debug checks without an
-installed-tool publication. The selector and archive regression checks pass, and the [actual pilot](results/host-cache-pilot-01/assessment.md)
-preserves one completed host cache with all 106 external hashes unchanged.
-Prepare and review the next exact batch before retirement. The
-completed cold01 caches are also eligible for separately reviewed archival once
-its assessment is committed. Cold02 has not started.
+The [completed twenty-four-target batch](results/worker-cold-storage-batch-02/assessment.md)
+preserves the first cold history's four Cargo targets and twenty completed debug
+host caches: 64,858 paths / 16.77 GiB unique contents in 5.70 GiB of archives.
+All 2,150 external evidence hashes verify. Completed archives now total 81
+(sixty workflow targets and 21 host targets). The host reported about 23 GiB
+free afterward. Cold02 is next, in candidate,baseline,native order.
+
+The [host selector](results/host-cache-selector-03/assessment.md) and archive
+regression checks pass, as does the [actual pilot](results/host-cache-pilot-01/assessment.md).
+Only completed default-debug checks without installed-tool publication qualify;
+all external qualification evidence remains outside retired targets.
 
 The [completed twelve-target batch](results/worker-cold-storage-combined-01/assessment.md)
 preserves worker Nushell and older Nushell/Ruff corpus caches: 249,643 paths /
 19.16 GiB unique contents in 5.72 GiB of archives. All terminal receipts and
-207 distinct source/evidence hashes verify. That brought completed archives to 56; the host pilot brings the total to 57.
+207 distinct source/evidence hashes verify. That batch brought completed archives to 56; the newer total is 81 above.
 the host reported about 21 GiB free afterward. The old unapplied Ruff object-only
 inventory is obsolete because its exact target has now been archived.
 
@@ -141,7 +142,7 @@ inventory is obsolete because its exact target has now been archived.
 exact completed targets: 84,333 paths / 21.42 GiB unique contents in 7.21 GiB
 of archives. Final receipts, inventories and all 38 distinct external evidence/
 source hashes verify. That batch brought the archive count to thirty-six; the current total is
-fifty-six after the separately reviewed warm/worker-study storage work above. All payloads
+eighty-one after the separately reviewed storage work above. All payloads
 were decoded and hashed before retirement. Executed snapshots and reports remain
 in place. Archival ran outside benchmark timing and controlled no other work.
 
@@ -220,3 +221,9 @@ control. Serialize builds/tests/benchmarks/cache maintenance with
 `.work/benchmark.lock`; an external user-owned cleanup may hold it, so wait.
 Never recursively search all `.work`. Preserve sources, receipts and artifacts.
 Do not mark the unbounded goal complete at a checkpoint.
+
+The [qualified origin inspector](results/allocation-origin-queries-02/assessment.md)
+can join exact initialized allocation contents to all request ancestry and full
+function context. It preserves distinct mutable TLS identities and checks exact
+serialized output bounds. The actual Nushell history diagnosis remains pending;
+worker-study inputs stay frozen until that study closes.
