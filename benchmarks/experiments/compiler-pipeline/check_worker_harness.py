@@ -97,6 +97,50 @@ def qualify(run_id):
                 note='Historical workflows were reverified, not rerun. New valid worker commands still require project qualification.')
 
 
+def same_tool_guards(run_id):
+    """Exercise the late comparison guard and stop at an exclusive run directory.
+
+    The real harness takes its own benchmark lock. Do not hold the parent lock
+    across these calls. Its existing mkdir without exist_ok stops an accepted
+    configuration before source edits or any project compiler command.
+    """
+    key = '78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d'
+    case_path = ROOT / 'benchmarks/experiments/interface-edits/pgrust-generic-input.json'
+    case = read(case_path)
+    source = ROOT / '.work/sources/pgrust' / case['case']['file']
+    observations = []
+    for jobs in [4, 18]:
+        name = run_id + '-same-tool-' + str(jobs)
+        sentinel = ROOT / '.work/runs' / name
+        marker = sentinel / 'prebuild-sentinel.json'
+        with (ROOT / '.work/benchmark.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            source_before = sha(source)
+            sentinel.mkdir(exist_ok=False)
+            write_json(marker, dict(owner=str(ROOT), purpose='Stop comparison guard probe before project execution'))
+            marker_before = sha(marker)
+        command = [sys.executable, str(ROOT / 'scripts/bench_e2e_workflow.py'), '--run-id', name,
+                   '--project', 'pgrust', '--case-file', str(case_path),
+                   '--baseline-tool-key', key, '--candidate-tool-key', key,
+                   '--baseline-jobs', '4', '--candidate-jobs', str(jobs)]
+        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+        with (ROOT / '.work/benchmark.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            require(sha(source) == source_before and list(sentinel.iterdir()) == [marker] and
+                    sha(marker) == marker_before, 'guard probe changed source or sentinel')
+        if jobs == 4:
+            require(result.returncode == 2 and 'must differ' in result.stderr,
+                    'identical settings no longer rejected')
+        else:
+            require(result.returncode == 1 and 'FileExistsError' in result.stderr and
+                    str(sentinel) in result.stderr, 'different workers did not reach prebuild sentinel')
+        require(not result.stdout, 'guard probe unexpectedly produced workflow output')
+        observations.append(dict(candidate_jobs=jobs, returncode=result.returncode,
+                                 source_unchanged=True, sentinel_sha256=marker_before,
+                                 identical_rejected=jobs == 4, reached_prebuild_sentinel=jobs == 18))
+    return observations
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
@@ -107,6 +151,10 @@ def main():
         out = ROOT / 'results' / args.run_id
         require(not out.exists(), 'qualification output exists')
         result = qualify(args.run_id)
+    result['same_tool_guard_probes'] = same_tool_guards(args.run_id)
+    with (ROOT / '.work/benchmark.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        require(not out.exists(), 'qualification output appeared during guard probes')
         sources = [Path(__file__), ROOT / 'scripts/workflow_jobs.py', ROOT / 'scripts/bench_e2e_workflow.py',
                    ROOT / 'scripts/verify_repeated_workflow.py', ROOT / 'scripts/bench_workflow_corpus.py',
                    ROOT / 'scripts/archive_workflow_cache.py']

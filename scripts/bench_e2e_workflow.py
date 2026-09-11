@@ -146,8 +146,12 @@ def main():
     mode_tools={mode:dict(engine=mode,tool_key=key,directory=tools) for mode in modes[1:]}
     if args.baseline_tool_key is not None:
         baseline,baseline_key=installed_tools(args.baseline_tool_key)
-        if baseline_key==key and baseline_guest_flags==guest_flags and args.baseline_inline_leaves==args.inline_leaves and not args.candidate_jit_native_calls and not args.candidate_jit_persistent_registers and not args.candidate_jit_resumable_calls:
-            parser.error('baseline and candidate must differ in tool build, guest MIR flags, or leaf-inlining choice')
+        if (baseline_key==key and baseline_guest_flags==guest_flags and
+            args.baseline_inline_leaves==args.inline_leaves and
+            resolved_jobs['baseline']==resolved_jobs['candidate'] and
+            not args.candidate_jit_native_calls and not args.candidate_jit_persistent_registers and
+            not args.candidate_jit_resumable_calls):
+            parser.error('baseline and candidate must differ in tool build, guest settings, or Cargo worker count')
         engine=args.comparison_engine or 'jit'
         modes=['native','baseline','candidate']
         mode_tools={'baseline':dict(engine=engine,tool_key=baseline_key,directory=baseline),
