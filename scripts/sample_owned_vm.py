@@ -34,7 +34,11 @@ def main():
     parser.add_argument('--duration', type=int, default=3)
     parser.add_argument('--instruction-limit', type=int, default=100_000_000_000)
     parser.add_argument('--allocation-limit', type=int, default=150_000)
+    parser.add_argument('--jit-native-calls', action='store_true')
+    parser.add_argument('--jit-native-call-stubs', action='store_true')
     args = parser.parse_args()
+    if args.jit_native_call_stubs and not args.jit_native_calls:
+        parser.error('--jit-native-call-stubs requires --jit-native-calls')
     if sys.platform != 'darwin':
         parser.error('this diagnostic requires macOS sample and vmmap')
     if Path(args.run_id).name != args.run_id or args.run_id in ('.', '..'):
@@ -63,6 +67,7 @@ def main():
         artifact=str(artifact), artifact_sha256=args.artifact_sha256,
         source_files=frozen, repetitions=args.repetitions, sample_seconds=args.duration,
         instruction_limit=args.instruction_limit, allocation_limit=args.allocation_limit,
+        jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
         performance_measurement=False))
     env = os.environ.copy()
     for name in list(env):
@@ -71,15 +76,22 @@ def main():
     env['RUST_INTERP_VM_STATS'] = '1'
 
     def verify():
-        assert digest(vm) == vm_hash and digest(artifact) == args.artifact_sha256
-        assert all(digest(ROOT / p) == h for p, h in frozen.items())
+        if digest(vm) != vm_hash or digest(artifact) != args.artifact_sha256:
+            raise RuntimeError('sampled binary or artifact changed')
+        if any(digest(ROOT / p) != h for p, h in frozen.items()):
+            raise RuntimeError('frozen diagnostic source changed')
 
     results = []
     for index in range(args.repetitions):
         verify()
         run = work / str(index); run.mkdir()
         command = [str(vm), '--engine', 'jit', '--instruction-limit', str(args.instruction_limit),
-                   '--allocation-limit', str(args.allocation_limit), str(artifact)]
+                   '--allocation-limit', str(args.allocation_limit)]
+        if args.jit_native_calls:
+            command.append('--jit-native-calls')
+        if args.jit_native_call_stubs:
+            command.append('--jit-native-call-stubs')
+        command.append(str(artifact))
         with (run / 'vm.stdout').open('x') as stdout, (run / 'vm.stderr').open('x') as stderr:
             child = subprocess.Popen(command, cwd=ROOT, env=env, stdout=stdout, stderr=stderr)
             identity = dict(pid=child.pid, parent_pid=os.getpid(), command=command, cwd=str(ROOT),
@@ -103,14 +115,17 @@ def main():
 
             mapped, sample_code = False, None
             try:
-                assert child.poll() is None
+                if child.poll() is not None:
+                    raise RuntimeError('owned VM exited before identity check')
                 code, ps = diagnostic('identity', ['ps', '-p', str(child.pid), '-o', 'pid=,ppid=,lstart=,tty=,command='])
                 columns = ps.split()
-                assert code == 0 and columns[:2] == [str(child.pid), str(os.getpid())] and str(vm) in ps
+                if code != 0 or columns[:2] != [str(child.pid), str(os.getpid())] or str(vm) not in ps:
+                    raise RuntimeError('owned VM identity check failed')
                 identity['process_identity'] = ps
                 write(run / 'active-vm.json', identity)
                 code, cwd = diagnostic('cwd', ['/usr/sbin/lsof', '-a', '-p', str(child.pid), '-d', 'cwd', '-Fn'])
-                assert code == 0 and 'n' + str(ROOT) in cwd.splitlines() and child.poll() is None
+                if code != 0 or 'n' + str(ROOT) not in cwd.splitlines() or child.poll() is not None:
+                    raise RuntimeError('owned VM working directory/liveness check failed')
                 for attempt in range(8):
                     if child.poll() is not None:
                         break
@@ -132,10 +147,14 @@ def main():
                 identity.update(status='finished', returncode=code, finished_at=time.time())
                 write(run / 'active-vm.json', identity)
         verify()
-        assert code == 0 and (run / 'vm.stdout').read_text().strip() == '0'
+        if code != 0 or (run / 'vm.stdout').read_text().strip() != '0':
+            raise RuntimeError('sampled original test execution failed')
         stats = {name: int(value) for name, value in re.findall(
             r'\b([a-z_]+)=(\d+)\b', (run / 'vm.stderr').read_text())}
-        assert stats['jit_declined_functions'] == 0 and stats['instructions'] > 0
+        if stats['jit_declined_functions'] != 0 or stats['instructions'] <= 0:
+            raise RuntimeError('unexpected JIT decline or empty execution')
+        if args.jit_native_call_stubs and stats.get('jit_stub_calls', 0) == 0:
+            raise RuntimeError('native Call stubs did not execute')
         record = dict(index=index, identity=identity, mapped=mapped, sample_returncode=sample_code,
                       performance_measurement=False, statistics=stats,
                       files={p.name: digest(p) for p in run.iterdir() if p.is_file()})
