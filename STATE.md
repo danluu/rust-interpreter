@@ -40,7 +40,13 @@ Baseline `e965f566` has tool78's exact VM and the candidate's exact exporter/
 wrapper, isolating the runtime change. New baseline runtime flags pass CLI and
 historical receipt checks; [actual pgrust qualification](results/resumable-copy-harness-01/assessment.md)
 passes 36 commands and 18 matching artifacts with original assertions and source
-restoration. Run the two-workflow primary comparison next with frozen controls.
+restoration. The [two-workflow primary](results/resumable-copy-e2e-01/assessment.md)
+now passes: token paired wall −15.14%, child CPU −15.28%; folded +1.06%/+0.54%
+passes both 5% guards. Verification covers 168 commands, 30 edited pairs and
+84 artifacts. Token median is 5.116s → 4.329s, still above native's 2.036s.
+No default change. Next run the original b2 comparison, then held-out and broad
+correctness qualification if its gates pass. About 11 GiB remains; review and
+archive completed public caches before creating more large fresh histories.
 
 ## Closed worker-count experiment
 

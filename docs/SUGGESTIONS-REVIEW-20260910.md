@@ -125,8 +125,11 @@ review are not commitments or evidence of feasibility.
   pass, one ignored, and [both original real artifacts](../results/resumable-copy-real-smoke-01/assessment.md)
   pass with no interpreted copies or JIT declines. The new E2E gate requires
   ≥10% additional token improvement over the preceding VM, with identical
-  frontend binaries and a folded regression guard. Timing/adoption is pending;
-  the original failed bulk gate remains unchanged.
+  frontend binaries and a folded regression guard. The [completed comparison](../results/resumable-copy-e2e-01/assessment.md)
+  passes: token paired wall −15.14% and CPU −15.28%, folded +1.06%/+0.54% within
+  its guards. All 168 commands and 84 artifacts verify. The candidate remains
+  slower than native on these compute workloads; original b2/held-out/broader
+  gates remain required. The original failed bulk result is unchanged.
 
 - Items 1.4/4.3 now have a bounded opt-in allocation-origin trace as correctness
   groundwork. Source `9bd66cd` / tool `e965f566` passes 272 debug/release tests
