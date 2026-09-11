@@ -1,0 +1,80 @@
+--- a/benchmarks/experiments/native-call-census/README.md
++++ b/benchmarks/experiments/native-call-census/README.md
+@@ -22,4 +22,2 @@
+-A separate direct-call closure measures a broader structural upper bound,
+-including recursive cycles. Explicitly prospective groups additionally require
+-native terminal-Trap handling; another bound excludes loops and recursive calls
+-and charges every static call site, including repeated calls to the same target.
++A separate direct-call
++closure measures a broader structural upper bound, including recursive cycles.
+--- a/benchmarks/experiments/native-call-census/main.rs
++++ b/benchmarks/experiments/native-call-census/main.rs
+@@ -123,27 +122,0 @@
+-// A prospective bound for fully prepared, acyclic direct-call trees. Each
+-// static Call already costs one in the body bound; add its callee's bound once
+-// per call site. Unresolved recursion and checked-add overflow remain excluded.
+-fn call_tree_bounds(functions: &[Function], local: &[bool]) -> Vec<Option<u64>> {
+-    let body: Vec<_> = functions.iter().zip(local)
+-        .map(|(f, &allowed)| if allowed { acyclic_bound(f) } else { None }).collect();
+-    let mut bounds = vec![None; functions.len()];
+-    loop {
+-        let mut changed = false;
+-        for (id, f) in functions.iter().enumerate() {
+-            if bounds[id].is_some() { continue; }
+-            let Some(mut total) = body[id] else { continue; };
+-            let mut complete = true;
+-            for op in &f.code {
+-                if let Op::Call { function, .. } = op {
+-                    match bounds[*function].and_then(|n| total.checked_add(n)) {
+-                        Some(n) => total = n,
+-                        None => { complete = false; break; }
+-                    }
+-                }
+-            }
+-            if complete { bounds[id] = Some(total); changed = true; }
+-        }
+-        if !changed { return bounds; }
+-    }
+-}
+-
+@@ -199,6 +171,0 @@
+-    // These groups explicitly require new terminal-trap and call/return
+-    // emission. They do not claim the current support predicate accepts Trap.
+-    let trap_leaf: Vec<_> = reasons.iter().map(|r| r.keys().all(|&k| k == "trap")).collect();
+-    let trap_local: Vec<_> = reasons.iter().map(|r| r.keys().all(|&k| matches!(k, "trap" | "direct_call"))).collect();
+-    let trap_closed = closure(&trap_local, &edges);
+-    let trap_bounds = call_tree_bounds(&program.functions, &trap_local);
+@@ -207,3 +174 @@
+-        "locally_supported_with_direct_calls", "transitively_supported_with_direct_calls",
+-        "prospective_leaf_with_terminal_traps", "prospective_acyclic_leaf_with_terminal_traps",
+-        "prospective_direct_call_closure_with_terminal_traps", "prospective_bounded_call_tree_with_terminal_traps"]
++        "locally_supported_with_direct_calls", "transitively_supported_with_direct_calls"]
+@@ -242,5 +207 @@
+-                        ("transitively_supported_with_direct_calls", closed[*callee]),
+-                        ("prospective_leaf_with_terminal_traps", trap_leaf[*callee]),
+-                        ("prospective_acyclic_leaf_with_terminal_traps", trap_leaf[*callee] && trap_bounds[*callee].is_some()),
+-                        ("prospective_direct_call_closure_with_terminal_traps", trap_closed[*callee]),
+-                        ("prospective_bounded_call_tree_with_terminal_traps", trap_bounds[*callee].is_some())] {
++                        ("transitively_supported_with_direct_calls", closed[*callee])] {
+@@ -274,3 +234,0 @@
+-            "prospective_leaf_with_terminal_traps": trap_leaf[id],
+-            "prospective_direct_call_closure_with_terminal_traps": trap_closed[id],
+-            "prospective_whole_call_tree_instruction_bound": trap_bounds[id],
+@@ -294,2 +251,0 @@
+-            "Prospective groups need explicit native terminal-Trap support; no executed or unexecuted trap is silently ignored.",
+-            "Whole call-tree bounds require every target's code/storage to be ready before entry; otherwise a partial continuation or pre-entry fallback is still required.",
+@@ -343,13 +299 @@
+-    #[test]
+-    fn call_tree_counts_repeated_calls_and_rejects_recursion_and_blockers() {
+-        let make = |code| Function { name: "same display name".into(), frame_size: 1, frame_align: 1,
+-            registers: 1, args: vec![], result: Slot { offset: 0, size: 0 }, code };
+-        let call = |function| Op::Call { function, args: vec![], destination: 0 };
+-        let functions = vec![make(vec![call(1), call(1), Op::Return]),
+-            make(vec![Op::Trap { message: "terminal".into() }]),
+-            make(vec![call(3), Op::Return]), make(vec![call(2), Op::Return]),
+-            make(vec![call(5), Op::Return]), make(vec![Op::Return])];
+-        assert_eq!(call_tree_bounds(&functions, &[true, true, true, true, true, false]),
+-            [Some(5), Some(1), None, None, None, None]);
+-    }
+-}
++}

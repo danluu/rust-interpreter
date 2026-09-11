@@ -6,20 +6,24 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 
 | Category | Report |
 | --- | --- |
-| workflow | [folded-literal-trie](paired-local-memory-forwarding-folded-literal-trie-01/summary.json) |
-| workflow | [token-phrase](paired-local-memory-forwarding-token-phrase-01/summary.json) |
-| workflow | [forward-anchored-tls](paired-local-memory-forwarding-forward-anchored-tls-01/summary.json) |
-| workflow | [pgrust-sha1-inline8](paired-local-memory-forwarding-pgrust-sha1-inline8-01/summary.json) |
-| workflow | [pgrust](paired-local-memory-forwarding-corpus-pgrust-01/summary.json) |
-| workflow | [nushell](paired-local-memory-forwarding-corpus-nushell-01/summary.json) |
-| workflow | [ruff](paired-local-memory-forwarding-corpus-ruff-01/summary.json) |
-| workflow | [nushell-type-relations](paired-local-memory-forwarding-corpus-nushell-type-relations-01/summary.json) |
-| workflow | [rg-aot](paired-local-memory-forwarding-corpus-rg-aot-01/summary.json) |
-| corpus | [local-memory-forwarding-01/summary.json](local-memory-forwarding-01/summary.json) |
+| workflow | [pgrust](native-controls-corpus-01-pgrust/summary.json) |
+| workflow | [nushell](native-controls-corpus-01-nushell/summary.json) |
+| workflow | [rg-aot](native-controls-corpus-01-rg-aot/summary.json) |
+| workflow | [folded-literal-trie](native-controls-corpus-01-folded-literal-trie/summary.json) |
+| workflow | [token-phrase](native-controls-corpus-01-token-phrase/summary.json) |
+| workflow | [forward-anchored-tls](native-controls-corpus-01-forward-anchored-tls/summary.json) |
+| workflow | [pgrust-sha1-inline8](native-controls-corpus-01-pgrust-sha1-inline8/summary.json) |
+| workflow | [ruff](native-controls-corpus-01-ruff/summary.json) |
+| workflow | [nushell-type-relations](native-controls-corpus-01-nushell-type-relations/summary.json) |
+| corpus | [native-controls-corpus-01/summary.json](native-controls-corpus-01/summary.json) |
+| previous-corpus | [local-memory-forwarding-01/summary.json](local-memory-forwarding-01/summary.json) |
 | repeated-workflow | [paired-repeated-token-01/summary.json](paired-repeated-token-01/summary.json) |
+| source-qualification | [review-codegen-limits-01/summary.json](review-codegen-limits-01/summary.json) |
 | diagnostic | [retained-token-cpu-sample-04/summary.json](retained-token-cpu-sample-04/summary.json) |
 | diagnostic | [frame-initialization-census-01/summary.json](frame-initialization-census-01/summary.json) |
 | diagnostic | [mir-frame-census-01/summary.json](mir-frame-census-01/summary.json) |
+| diagnostic | [native-call-census-01/summary.json](native-call-census-01/summary.json) |
+| diagnostic | [native-call-census-02/summary.json](native-call-census-02/summary.json) |
 | control-qualification | [paired-native-controls-pgrust-02/summary.json](paired-native-controls-pgrust-02/summary.json) |
 | control-qualification | [e2e-native-controls-reference-01/summary.json](e2e-native-controls-reference-01/summary.json) |
 

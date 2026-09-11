@@ -4,19 +4,21 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Strengthen controls.** Add separately recorded native profile, jobs and test
-   concurrency settings, plus a matched Cargo-check floor. Qualify the available
-   linker/backend choices before including them. Repeat each real edit, balance
-   mode positions, retain child CPU and host-load data, and rerun all nine
-   workflows. Separate frontend/link dominated rows from material execution.
-2. **Resolve artifact-history differences.** Repeated source cycles changed
+1. **Implement bounded native call trees.** The new typed census finds that
+   acyclic direct-call trees with explicit terminal-Trap support cover 80.72% of
+   token direct calls and 54.61% of folded direct calls. Whole-tree instruction bounds allow
+   pre-entry fallback when budget is insufficient. All code and initialized
+   storage must also be ready before entry. Preserve exact memory/error/copy
+   behavior; keep the generic interpreter path. [Experiment plan](benchmarks/experiments/bounded-native-calls/PLAN.md).
+2. **Finish native configuration qualification.** Nine workflows now have three
+   real-edit cycles, child CPU, explicit root O0/incremental native settings,
+   18 native build jobs, default test concurrency and independent checks.
+   All 756 commands completed. Linker/backend/compiler-worker alternatives remain
+   unqualified. [Assessment](results/native-controls-corpus-01/assessment.md).
+3. **Resolve artifact-history differences.** Repeated source cycles changed
    readonly data layout and embedded immediate values. Paired engines agree;
    cross-history determinism is unresolved. Trace constant identities and
    relocations before introducing a function-level cache or normalizing bytes.
-3. **Reduce call transitions.** Use typed call graphs and the latest token CPU
-   profile to select a bounded native call ABI experiment. Include register
-   storage, frame initialization, copying, recursion, exact budgets, traps and
-   TLS cleanup. A branch to a callee alone does not remove these costs.
 4. **Broaden useful execution.** Add real interface/test/dependency edits and an
    unfiltered suite attempt, recording unsupported bodies explicitly. A shared
    test graph and entry descriptors may improve selection reuse; eager export

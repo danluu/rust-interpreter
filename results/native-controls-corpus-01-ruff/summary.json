@@ -1,0 +1,3630 @@
+{
+  "schema_version": 2,
+  "project": "ruff",
+  "workflow": "default",
+  "revision": "d136bd8d002a648de5f344df602e492658306f1e",
+  "cycles": 3,
+  "tests": [
+    "registry::tests::documentation",
+    "registry::tests::rule_naming_convention",
+    "registry::tests::check_code_serialization",
+    "registry::tests::linter_parse_code",
+    "registry::tests::rule_size",
+    "registry::tests::linter_sorting"
+  ],
+  "edits": [
+    "match-optional-rule-code-explicitly",
+    "make-name-conversion-explicit",
+    "match-linter-prefix-result-explicitly",
+    "name-code-suffix-before-comparison",
+    "use-explicit-rule-search-loop"
+  ],
+  "workload": "All six existing registry tests, including rule-code roundtrips, naming patterns, and linter sorting",
+  "case_sha256": "74ce22dd5d862475efcf2d1f849514cda626aacd10cdcef63f3b1bffffc42bc8",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/native-controls-corpus-01-ruff",
+  "build_tool_opt_level": null,
+  "build_jobs": 4,
+  "native_control": {
+    "profile": "o0-incremental",
+    "jobs": 18,
+    "test_threads": "default",
+    "rustflags": []
+  },
+  "instruction_limit": 1000000000,
+  "allocation_limit": null,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+  "candidate_tool_key_requested": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 5.759716167000022,
+    "baseline": 3.145571749999988,
+    "candidate": 3.0074154580000254
+  },
+  "median_cpu_seconds": {
+    "native": 8.35651300000005,
+    "baseline": 3.048514999999938,
+    "candidate": 2.9682160000000266
+  },
+  "cpu_accounting": "RUSAGE_CHILDREN deltas around one waited-for child tree at a time; user plus system CPU; excludes harness CPU",
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 26.943436833,
+    "baseline": 30.233421,
+    "candidate": 28.687925791999994
+  },
+  "cycle_anchor_seconds": [
+    {
+      "cycle": 1,
+      "seconds": {
+        "baseline": 2.9070990419999987,
+        "candidate": 2.950366166000009,
+        "native": 5.673179417
+      }
+    },
+    {
+      "cycle": 2,
+      "seconds": {
+        "candidate": 3.0243968330000257,
+        "native": 6.0668183749999685,
+        "baseline": 3.1388254159999747
+      }
+    }
+  ],
+  "source_transitions": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "content_changed": false,
+      "previous_mode_sources": {
+        "native": null,
+        "baseline": null,
+        "candidate": null
+      }
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "baseline": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "candidate": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "baseline": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "candidate": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "candidate": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "candidate": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "candidate": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "candidate": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "candidate": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "baseline": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "candidate": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "baseline": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "candidate": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "candidate": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "candidate": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "candidate": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "candidate": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "candidate": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "baseline": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "candidate": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "baseline": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "candidate": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "candidate": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "candidate": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "candidate": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "candidate": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6"
+      }
+    }
+  ],
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "1bba6895c6646df1a3aee9a6c381321cb6d6afa600d9b16cdd9a2c1a0c385e6e",
+    "scripts/interpreter.py": "403432e49f79afbf01955188317833abe1c55bc529f3696e4183a33ca4c315e7",
+    "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+    "scripts/workflow_measurements.py": "8f28b001e51c118f1e96a37d9232083a3927b5c020374dadfdbbb911a7796a3c",
+    "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "98824128148f20854238d01e58b263d93da0c97b4788acd2e67a5e501fe0d369",
+      "exporter_sha256": "768787e482846e28aab48118e2801bde82616efc0e890e083bf367a3a0070019"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "inline_leaves": true,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "1f86f9f00ba1ed36e40eff2372e01088fcf976e96eb2a152b70c6dd4f009d4c8",
+      "exporter_sha256": "9930fa35d6094031e2a5f1315476a2d31852d4ed9e577921d417f4bd42a319c0"
+    }
+  },
+  "mode_orders": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    }
+  ],
+  "vm_sha256": "1f86f9f00ba1ed36e40eff2372e01088fcf976e96eb2a152b70c6dd4f009d4c8",
+  "exporter_sha256": "9930fa35d6094031e2a5f1315476a2d31852d4ed9e577921d417f4bd42a319c0",
+  "samples": [
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 26.943436833,
+      "cpu_seconds": 112.601664,
+      "previous_source_sha256": null,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        9.423828125,
+        7.9775390625,
+        8.42529296875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 30.233421,
+      "cpu_seconds": 77.760239,
+      "previous_source_sha256": null,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        11.44091796875,
+        8.72607421875,
+        8.6875
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-0/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 28.687925791999994,
+      "cpu_seconds": 74.188219,
+      "previous_source_sha256": null,
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        9.8857421875,
+        8.6201171875,
+        8.6494140625
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-0/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.0244499170000125,
+      "cpu_seconds": 2.9403480000000357,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        9.34423828125,
+        8.5908203125,
+        8.638671875
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-0/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.099504291999992,
+      "cpu_seconds": 2.971481999999959,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        8.99609375,
+        8.53076171875,
+        8.6171875
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-0/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 7.780450666999997,
+      "cpu_seconds": 9.733835000000013,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        8.99609375,
+        8.5380859375,
+        8.619140625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 7.385429709000007,
+      "cpu_seconds": 9.179460999999982,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        8.455078125,
+        8.4375,
+        8.58203125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.233157583999997,
+      "cpu_seconds": 3.243085000000015,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        8.25830078125,
+        8.39697265625,
+        8.56689453125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-0/1-0.rbc",
+          "sha256": "0cd283744bf2fd8067af2d7b42ab243b320ab8ae240f3cdc66aa0f2334ea0d90",
+          "bytes": 4295812
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.063283791999993,
+      "cpu_seconds": 3.284002000000015,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        8.1572265625,
+        8.37353515625,
+        8.5576171875
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-0/1-0.rbc",
+          "sha256": "0cd283744bf2fd8067af2d7b42ab243b320ab8ae240f3cdc66aa0f2334ea0d90",
+          "bytes": 4295812
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 7.094070250000016,
+      "cpu_seconds": 8.892502999999998,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        7.7451171875,
+        8.2783203125,
+        8.521484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.968897916000003,
+      "cpu_seconds": 2.998451999999965,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        7.44482421875,
+        8.20703125,
+        8.49462890625
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-0/2-0.rbc",
+          "sha256": "83a636cc1372d28b36df8939127da6d963c64fa78fe28654a86a7ed175093999",
+          "bytes": 4295489
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.5816358750000177,
+      "cpu_seconds": 2.894446000000009,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        7.2490234375,
+        8.1533203125,
+        8.47412109375
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-0/2-0.rbc",
+          "sha256": "83a636cc1372d28b36df8939127da6d963c64fa78fe28654a86a7ed175093999",
+          "bytes": 4295489
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.049379667000011,
+      "cpu_seconds": 2.9050339999999792,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        7.14892578125,
+        8.1171875,
+        8.45947265625
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-0/3-0.rbc",
+          "sha256": "c500df9929927df4ddbfb2efffc7ea98dbc9293562023d33072431578dc24a74",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.680277875000002,
+      "cpu_seconds": 5.159651999999994,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        7.13671875,
+        8.0986328125,
+        8.45068359375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.912456916999986,
+      "cpu_seconds": 2.8629560000000254,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        7.13671875,
+        8.0986328125,
+        8.45068359375
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-0/3-0.rbc",
+          "sha256": "c500df9929927df4ddbfb2efffc7ea98dbc9293562023d33072431578dc24a74",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.7835928750000107,
+      "cpu_seconds": 2.7469489999999936,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        6.88525390625,
+        8.0302734375,
+        8.42431640625
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-0/4-0.rbc",
+          "sha256": "7c68e5ddbd8148ae95272194ada26f40b02b0c32d895c2aaa59df34ace406882",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.153216584000006,
+      "cpu_seconds": 4.672054999999972,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        8.97607421875,
+        8.4443359375,
+        8.56787109375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.745967124999993,
+      "cpu_seconds": 2.721248999999993,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        8.5771484375,
+        8.3701171875,
+        8.541015625
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-0/4-0.rbc",
+          "sha256": "7c68e5ddbd8148ae95272194ada26f40b02b0c32d895c2aaa59df34ace406882",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.941938334000014,
+      "cpu_seconds": 2.9209709999999873,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        8.45068359375,
+        8.34716796875,
+        8.53173828125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-0/5-0.rbc",
+          "sha256": "477182dfe5c0269c259656f43097ba989b13f2251bbfc9801a1854b707fbfebc",
+          "bytes": 4282018
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.8716638330000137,
+      "cpu_seconds": 2.8389880000000005,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        8.25439453125,
+        8.30810546875,
+        8.5166015625
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-0/5-0.rbc",
+          "sha256": "477182dfe5c0269c259656f43097ba989b13f2251bbfc9801a1854b707fbfebc",
+          "bytes": 4282018
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 5.888047499999999,
+      "cpu_seconds": 8.551788999999978,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        8.07373046875,
+        8.26953125,
+        8.50146484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.9070990419999987,
+      "cpu_seconds": 2.87581100000002,
+      "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        7.9072265625,
+        8.2314453125,
+        8.486328125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-1/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.950366166000009,
+      "cpu_seconds": 2.924190999999986,
+      "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        7.9072265625,
+        8.2314453125,
+        8.486328125
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-1/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 5.673179417,
+      "cpu_seconds": 8.374546000000016,
+      "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        7.6201171875,
+        8.15771484375,
+        8.45703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.900293750000003,
+      "cpu_seconds": 2.8756239999999735,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        7.330078125,
+        8.08837890625,
+        8.4306640625
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-1/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 5.647821665999999,
+      "cpu_seconds": 8.348654000000032,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        7.62353515625,
+        8.13623046875,
+        8.4453125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.9037338750000004,
+      "cpu_seconds": 2.8693619999999527,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        7.62353515625,
+        8.13623046875,
+        8.4453125
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-1/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.968330750000007,
+      "cpu_seconds": 2.9255429999999834,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        7.45361328125,
+        8.08203125,
+        8.421875
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-1/1-0.rbc",
+          "sha256": "0cd283744bf2fd8067af2d7b42ab243b320ab8ae240f3cdc66aa0f2334ea0d90",
+          "bytes": 4295812
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.004605374999983,
+      "cpu_seconds": 2.9682160000000266,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        7.45361328125,
+        8.08203125,
+        8.421875
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-1/1-0.rbc",
+          "sha256": "0cd283744bf2fd8067af2d7b42ab243b320ab8ae240f3cdc66aa0f2334ea0d90",
+          "bytes": 4295812
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 5.759716167000022,
+      "cpu_seconds": 8.438904999999977,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        7.2568359375,
+        8.03076171875,
+        8.4013671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.903524792000013,
+      "cpu_seconds": 2.863298999999955,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        7.07568359375,
+        7.97998046875,
+        8.38134765625
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-1/2-0.rbc",
+          "sha256": "83a636cc1372d28b36df8939127da6d963c64fa78fe28654a86a7ed175093999",
+          "bytes": 4295489
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.9130853750000085,
+      "cpu_seconds": 2.882219000000049,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        7.1494140625,
+        7.97998046875,
+        8.37890625
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-1/2-0.rbc",
+          "sha256": "83a636cc1372d28b36df8939127da6d963c64fa78fe28654a86a7ed175093999",
+          "bytes": 4295489
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 5.4207422910000105,
+      "cpu_seconds": 7.880550999999997,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        6.89697265625,
+        7.91357421875,
+        8.35302734375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.655356458000028,
+      "cpu_seconds": 5.273197999999979,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        6.66455078125,
+        7.84814453125,
+        8.3271484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.089713207999978,
+      "cpu_seconds": 3.059472999999983,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        6.53125,
+        7.80078125,
+        8.3076171875
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-1/3-0.rbc",
+          "sha256": "c500df9929927df4ddbfb2efffc7ea98dbc9293562023d33072431578dc24a74",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.2501430419999906,
+      "cpu_seconds": 3.19523300000003,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        6.48828125,
+        7.7705078125,
+        8.2939453125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-1/3-0.rbc",
+          "sha256": "c500df9929927df4ddbfb2efffc7ea98dbc9293562023d33072431578dc24a74",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.559394250000025,
+      "cpu_seconds": 4.797613999999982,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        6.52880859375,
+        7.75732421875,
+        8.2861328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.178540541000018,
+      "cpu_seconds": 3.127744000000007,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        6.88671875,
+        7.81103515625,
+        8.3017578125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-1/4-0.rbc",
+          "sha256": "7c68e5ddbd8148ae95272194ada26f40b02b0c32d895c2aaa59df34ace406882",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.0074154580000254,
+      "cpu_seconds": 2.9419130000000138,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        6.88671875,
+        7.81103515625,
+        8.3017578125
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-1/4-0.rbc",
+          "sha256": "7c68e5ddbd8148ae95272194ada26f40b02b0c32d895c2aaa59df34ace406882",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.271486750000008,
+      "cpu_seconds": 3.1705649999999963,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        6.6826171875,
+        7.73486328125,
+        8.2685546875
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-1/5-0.rbc",
+          "sha256": "477182dfe5c0269c259656f43097ba989b13f2251bbfc9801a1854b707fbfebc",
+          "bytes": 4282018
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.1856022079999775,
+      "cpu_seconds": 8.92273800000001,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        6.7080078125,
+        7.72265625,
+        8.2607421875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.145571749999988,
+      "cpu_seconds": 3.0882219999999734,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        7.05126953125,
+        7.77685546875,
+        8.2763671875
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-1/5-0.rbc",
+          "sha256": "477182dfe5c0269c259656f43097ba989b13f2251bbfc9801a1854b707fbfebc",
+          "bytes": 4282018
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.0243968330000257,
+      "cpu_seconds": 2.936902000000032,
+      "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        6.966796875,
+        7.7470703125,
+        8.2626953125
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-2/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.0668183749999685,
+      "cpu_seconds": 8.945533999999967,
+      "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        7.20947265625,
+        7.7841796875,
+        8.2724609375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.1388254159999747,
+      "cpu_seconds": 3.0509400000000255,
+      "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "load": [
+        6.9521484375,
+        7.72119140625,
+        8.2470703125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-2/0-0.rbc",
+          "sha256": "5a6a4950109f2a0179692ccf63d5d0bae943fc51b17949979a3a1a0b4e1e39c3",
+          "bytes": 4296840
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.4671347919999675,
+      "cpu_seconds": 8.835799000000023,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        6.87548828125,
+        7.6923828125,
+        8.23388671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.0040370840000037,
+      "cpu_seconds": 2.9561079999999578,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        6.72509765625,
+        7.6474609375,
+        8.21484375
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-2/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-rule-codes",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.207437249999998,
+      "cpu_seconds": 3.102361000000016,
+      "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+      "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "load": [
+        6.6669921875,
+        7.61962890625,
+        8.20166015625
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-2/-1-0.rbc",
+          "sha256": "7751bd390c92d3f4b2655adb27a432742176b955131f23140a2f1056cc1a1cc4",
+          "bytes": 4292639
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.231697957999984,
+      "cpu_seconds": 3.160180000000011,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        6.61328125,
+        7.59228515625,
+        8.1884765625
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-2/1-0.rbc",
+          "sha256": "0cd283744bf2fd8067af2d7b42ab243b320ab8ae240f3cdc66aa0f2334ea0d90",
+          "bytes": 4295812
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.094330041999967,
+      "cpu_seconds": 8.781470000000027,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        6.64404296875,
+        7.58203125,
+        8.18115234375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "match-optional-rule-code-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.2167131250000125,
+      "cpu_seconds": 3.1163679999999516,
+      "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+      "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "load": [
+        6.43212890625,
+        7.5224609375,
+        8.15625
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-2/1-0.rbc",
+          "sha256": "0cd283744bf2fd8067af2d7b42ab243b320ab8ae240f3cdc66aa0f2334ea0d90",
+          "bytes": 4295812
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.0736290000000395,
+      "cpu_seconds": 3.048514999999938,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        6.6376953125,
+        7.546875,
+        8.1611328125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-2/2-0.rbc",
+          "sha256": "83a636cc1372d28b36df8939127da6d963c64fa78fe28654a86a7ed175093999",
+          "bytes": 4295489
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 5.825117124999963,
+      "cpu_seconds": 8.35651300000005,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        6.66650390625,
+        7.53759765625,
+        8.154296875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "make-name-conversion-explicit",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.0698518749999835,
+      "cpu_seconds": 3.0452209999999695,
+      "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+      "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "load": [
+        6.69287109375,
+        7.5283203125,
+        8.1474609375
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-2/2-0.rbc",
+          "sha256": "83a636cc1372d28b36df8939127da6d963c64fa78fe28654a86a7ed175093999",
+          "bytes": 4295489
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.2258115410000414,
+      "cpu_seconds": 3.1262090000000455,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        6.55712890625,
+        7.486328125,
+        8.12890625
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-2/3-0.rbc",
+          "sha256": "c500df9929927df4ddbfb2efffc7ea98dbc9293562023d33072431578dc24a74",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.292967250000004,
+      "cpu_seconds": 3.1887929999999898,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        6.59228515625,
+        7.47802734375,
+        8.1220703125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-2/3-0.rbc",
+          "sha256": "c500df9929927df4ddbfb2efffc7ea98dbc9293562023d33072431578dc24a74",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "match-linter-prefix-result-explicitly",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.811625082999967,
+      "cpu_seconds": 5.36492699999998,
+      "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+      "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "load": [
+        6.46435546875,
+        7.4365234375,
+        8.103515625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.1839398750000214,
+      "cpu_seconds": 3.084799000000004,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        6.5869140625,
+        7.44580078125,
+        8.1025390625
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-2/4-0.rbc",
+          "sha256": "7c68e5ddbd8148ae95272194ada26f40b02b0c32d895c2aaa59df34ace406882",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.9256516250000004,
+      "cpu_seconds": 2.8822290000000095,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        6.5869140625,
+        7.44580078125,
+        8.1025390625
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-2/4-0.rbc",
+          "sha256": "7c68e5ddbd8148ae95272194ada26f40b02b0c32d895c2aaa59df34ace406882",
+          "bytes": 4290729
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-code-suffix-before-comparison",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 4.344633124999973,
+      "cpu_seconds": 4.620167000000009,
+      "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+      "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "load": [
+        6.37939453125,
+        7.38818359375,
+        8.078125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 6.119388458000003,
+      "cpu_seconds": 8.774596999999972,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        6.3876953125,
+        7.35791015625,
+        8.0595703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 3.101499625000031,
+      "cpu_seconds": 2.9665380000000567,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        6.0361328125,
+        7.2685546875,
+        8.02392578125
+      ],
+      "engine": "jit",
+      "tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/baseline/cycle-2/5-0.rbc",
+          "sha256": "477182dfe5c0269c259656f43097ba989b13f2251bbfc9801a1854b707fbfebc",
+          "bytes": 4282018
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-explicit-rule-search-loop",
+      "tests": [
+        "registry::tests::documentation",
+        "registry::tests::rule_naming_convention",
+        "registry::tests::check_code_serialization",
+        "registry::tests::linter_parse_code",
+        "registry::tests::rule_size",
+        "registry::tests::linter_sorting"
+      ],
+      "seconds": 2.8755432079999537,
+      "cpu_seconds": 2.8451499999999754,
+      "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+      "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+      "load": [
+        6.0361328125,
+        7.2685546875,
+        8.02392578125
+      ],
+      "engine": "jit",
+      "tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "artifacts": [
+        {
+          "path": ".work/runs/native-controls-corpus-01-ruff/artifacts/candidate/cycle-2/5-0.rbc",
+          "sha256": "477182dfe5c0269c259656f43097ba989b13f2251bbfc9801a1854b707fbfebc",
+          "bytes": 4282018
+        }
+      ]
+    }
+  ],
+  "exporter_seconds": {
+    "baseline": {
+      "frontend": 2.3911,
+      "lowering": 0.116615,
+      "scalar-frames": 0.005282,
+      "scalar-promotion": 0.009731,
+      "inline": 0.004752,
+      "cfg": 0.006323
+    },
+    "candidate": {
+      "frontend": 2.3035010000000002,
+      "lowering": 0.111705,
+      "scalar-frames": 0.005147,
+      "scalar-promotion": 0.00949,
+      "inline": 0.0045,
+      "cfg": 0.006077
+    }
+  },
+  "check_floor": {
+    "interpretation": "Independent library-test Cargo-check control; executes no tests, including the wrong runtime edit; not a strict lower bound or subtractive attribution",
+    "timing_position": "after each primary mode triplet; separate target/cache history; no Cargo timing-report generation",
+    "median_seconds": 2.7200984169999742,
+    "median_cpu_seconds": 2.6536689999999936,
+    "samples": [
+      {
+        "cycle": 0,
+        "state": 0,
+        "phase": "cold",
+        "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "previous_source_sha256": null,
+        "seconds": 18.519557041999988,
+        "cpu_seconds": 73.73165799999997,
+        "cpu": {
+          "user_seconds": 63.68019499999997,
+          "system_seconds": 10.051462999999998,
+          "total_seconds": 73.73165799999997
+        },
+        "returncode": 0,
+        "load": [
+          9.54833984375,
+          8.6181640625,
+          8.6484375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "seconds": 3.7993637080000013,
+        "cpu_seconds": 2.9849940000000075,
+        "cpu": {
+          "user_seconds": 2.4509840000000054,
+          "system_seconds": 0.5340100000000021,
+          "total_seconds": 2.9849940000000075
+        },
+        "returncode": 0,
+        "load": [
+          8.755859375,
+          8.49560546875,
+          8.603515625
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "seconds": 3.713351167000013,
+        "cpu_seconds": 2.869351000000009,
+        "cpu": {
+          "user_seconds": 2.345548000000008,
+          "system_seconds": 0.5238030000000009,
+          "total_seconds": 2.869351000000009
+        },
+        "returncode": 0,
+        "load": [
+          7.984375,
+          8.333984375,
+          8.54248046875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "seconds": 3.1443482079999967,
+        "cpu_seconds": 2.581093000000024,
+        "cpu": {
+          "user_seconds": 2.1869950000000244,
+          "system_seconds": 0.3940979999999996,
+          "total_seconds": 2.581093000000024
+        },
+        "returncode": 0,
+        "load": [
+          7.2490234375,
+          8.1533203125,
+          8.47412109375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "seconds": 2.5673937499999795,
+        "cpu_seconds": 2.5327040000000025,
+        "cpu": {
+          "user_seconds": 2.211387000000002,
+          "system_seconds": 0.3213170000000005,
+          "total_seconds": 2.5327040000000025
+        },
+        "returncode": 0,
+        "load": [
+          6.88525390625,
+          8.0302734375,
+          8.42431640625
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "seconds": 2.47533845800001,
+        "cpu_seconds": 2.4338340000000542,
+        "cpu": {
+          "user_seconds": 2.1132500000000505,
+          "system_seconds": 0.32058400000000375,
+          "total_seconds": 2.4338340000000542
+        },
+        "returncode": 0,
+        "load": [
+          8.5771484375,
+          8.3701171875,
+          8.541015625
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "seconds": 2.734206999999998,
+        "cpu_seconds": 2.7141049999999822,
+        "cpu": {
+          "user_seconds": 2.3684539999999856,
+          "system_seconds": 0.3456509999999966,
+          "total_seconds": 2.7141049999999822
+        },
+        "returncode": 0,
+        "load": [
+          8.07373046875,
+          8.26953125,
+          8.50146484375
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 0,
+        "phase": "anchor",
+        "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "seconds": 2.6356668340000056,
+        "cpu_seconds": 2.6248600000000266,
+        "cpu": {
+          "user_seconds": 2.2999960000000215,
+          "system_seconds": 0.32486400000000515,
+          "total_seconds": 2.6248600000000266
+        },
+        "returncode": 0,
+        "load": [
+          7.6201171875,
+          8.15771484375,
+          8.45703125
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "seconds": 2.789753832999992,
+        "cpu_seconds": 2.7707080000000346,
+        "cpu": {
+          "user_seconds": 2.4147230000000377,
+          "system_seconds": 0.3559849999999969,
+          "total_seconds": 2.7707080000000346
+        },
+        "returncode": 0,
+        "load": [
+          7.4931640625,
+          8.1005859375,
+          8.4306640625
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "seconds": 2.6249605829999894,
+        "cpu_seconds": 2.596519000000015,
+        "cpu": {
+          "user_seconds": 2.2516620000000103,
+          "system_seconds": 0.34485700000000463,
+          "total_seconds": 2.596519000000015
+        },
+        "returncode": 0,
+        "load": [
+          7.07568359375,
+          7.97998046875,
+          8.38134765625
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "seconds": 2.5901642499999866,
+        "cpu_seconds": 2.581165999999996,
+        "cpu": {
+          "user_seconds": 2.245202000000006,
+          "system_seconds": 0.33596399999998994,
+          "total_seconds": 2.581165999999996
+        },
+        "returncode": 0,
+        "load": [
+          6.66455078125,
+          7.84814453125,
+          8.3271484375
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "seconds": 2.7820742499999938,
+        "cpu_seconds": 2.7558520000000186,
+        "cpu": {
+          "user_seconds": 2.3886850000000095,
+          "system_seconds": 0.3671670000000091,
+          "total_seconds": 2.7558520000000186
+        },
+        "returncode": 0,
+        "load": [
+          6.48828125,
+          7.7705078125,
+          8.2939453125
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "seconds": 2.6695746670000062,
+        "cpu_seconds": 2.6453999999999667,
+        "cpu": {
+          "user_seconds": 2.294721999999979,
+          "system_seconds": 0.35067799999998783,
+          "total_seconds": 2.6453999999999667
+        },
+        "returncode": 0,
+        "load": [
+          6.6552734375,
+          7.74755859375,
+          8.2763671875
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "seconds": 2.749723834000008,
+        "cpu_seconds": 2.703977000000009,
+        "cpu": {
+          "user_seconds": 2.351534000000015,
+          "system_seconds": 0.35244299999999384,
+          "total_seconds": 2.703977000000009
+        },
+        "returncode": 0,
+        "load": [
+          7.05126953125,
+          7.77685546875,
+          8.2763671875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 0,
+        "phase": "anchor",
+        "source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "previous_source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "seconds": 2.786339249999969,
+        "cpu_seconds": 2.754845000000003,
+        "cpu": {
+          "user_seconds": 2.393053000000009,
+          "system_seconds": 0.3617919999999941,
+          "total_seconds": 2.754845000000003
+        },
+        "returncode": 0,
+        "load": [
+          6.9521484375,
+          7.72119140625,
+          8.2470703125
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "previous_source_sha256": "6d16483958ce6a84b3027e570bad35b227324ae7b5cd8187731c78b44c4d8c38",
+        "seconds": 2.773990209000033,
+        "cpu_seconds": 2.7027790000000067,
+        "cpu": {
+          "user_seconds": 2.355117000000007,
+          "system_seconds": 0.3476619999999997,
+          "total_seconds": 2.7027790000000067
+        },
+        "returncode": 0,
+        "load": [
+          6.6669921875,
+          7.61962890625,
+          8.20166015625
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "previous_source_sha256": "9e20ecdd991565153a917f41f2a6a294fca1fe8fa352ea81492f6784775b98c4",
+        "seconds": 2.853323375000002,
+        "cpu_seconds": 2.7443460000000357,
+        "cpu": {
+          "user_seconds": 2.3905670000000327,
+          "system_seconds": 0.35377900000000295,
+          "total_seconds": 2.7443460000000357
+        },
+        "returncode": 0,
+        "load": [
+          6.43212890625,
+          7.5224609375,
+          8.15625
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "previous_source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "seconds": 2.686764667000034,
+        "cpu_seconds": 2.6536689999999936,
+        "cpu": {
+          "user_seconds": 2.3133569999999963,
+          "system_seconds": 0.3403119999999973,
+          "total_seconds": 2.6536689999999936
+        },
+        "returncode": 0,
+        "load": [
+          6.69287109375,
+          7.5283203125,
+          8.1474609375
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "previous_source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "seconds": 2.8589329579999685,
+        "cpu_seconds": 2.735078999999942,
+        "cpu": {
+          "user_seconds": 2.3878559999999425,
+          "system_seconds": 0.3472229999999996,
+          "total_seconds": 2.735078999999942
+        },
+        "returncode": 0,
+        "load": [
+          6.46435546875,
+          7.4365234375,
+          8.103515625
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "previous_source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "seconds": 2.7200984169999742,
+        "cpu_seconds": 2.6750650000000604,
+        "cpu": {
+          "user_seconds": 2.3326040000000603,
+          "system_seconds": 0.3424610000000001,
+          "total_seconds": 2.6750650000000604
+        },
+        "returncode": 0,
+        "load": [
+          6.5087890625,
+          7.39794921875,
+          8.07763671875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "previous_source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "seconds": 2.5247734160000164,
+        "cpu_seconds": 2.5114499999999964,
+        "cpu": {
+          "user_seconds": 2.209791999999993,
+          "system_seconds": 0.3016580000000033,
+          "total_seconds": 2.5114499999999964
+        },
+        "returncode": 0,
+        "load": [
+          5.79296875,
+          7.197265625,
+          7.994140625
+        ]
+      }
+    ]
+  },
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+    "candidate_tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "cycle": 0,
+        "state": 1,
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline_seconds": 4.233157583999997,
+        "candidate_seconds": 4.063283791999993,
+        "native_seconds": 7.385429709000007,
+        "native_cpu_seconds": 9.179460999999982,
+        "baseline_cpu_seconds": 3.243085000000015,
+        "candidate_cpu_seconds": 3.284002000000015,
+        "cpu_difference_seconds": 0.040917000000000314,
+        "difference_seconds": -0.1698737920000042,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 4.03875975,
+            "execution_seconds": 0.0914910830000002,
+            "artifact_hash_seconds": 0.0019894589999998047,
+            "launcher_seconds": 4.190201916
+          },
+          "candidate": {
+            "cargo_seconds": 3.872261125,
+            "execution_seconds": 0.093662417,
+            "artifact_hash_seconds": 0.0017930419999996339,
+            "launcher_seconds": 4.02756475
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline_seconds": 3.5816358750000177,
+        "candidate_seconds": 3.968897916000003,
+        "native_seconds": 7.094070250000016,
+        "native_cpu_seconds": 8.892502999999998,
+        "baseline_cpu_seconds": 2.894446000000009,
+        "candidate_cpu_seconds": 2.998451999999965,
+        "cpu_difference_seconds": 0.10400599999995563,
+        "difference_seconds": 0.3872620409999854,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 3.415093208,
+            "execution_seconds": 0.09285637500000021,
+            "artifact_hash_seconds": 0.0018405839999999785,
+            "launcher_seconds": 3.550606833
+          },
+          "candidate": {
+            "cargo_seconds": 3.796116167,
+            "execution_seconds": 0.0791883750000002,
+            "artifact_hash_seconds": 0.0018370839999999333,
+            "launcher_seconds": 3.93756275
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline_seconds": 3.049379667000011,
+        "candidate_seconds": 2.912456916999986,
+        "native_seconds": 4.680277875000002,
+        "native_cpu_seconds": 5.159651999999994,
+        "baseline_cpu_seconds": 2.9050339999999792,
+        "candidate_cpu_seconds": 2.8629560000000254,
+        "cpu_difference_seconds": -0.042077999999953875,
+        "difference_seconds": -0.13692275000002496,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.906779875,
+            "execution_seconds": 0.07704337500000014,
+            "artifact_hash_seconds": 0.0017838750000001014,
+            "launcher_seconds": 3.024458375
+          },
+          "candidate": {
+            "cargo_seconds": 2.771142792,
+            "execution_seconds": 0.0746992500000001,
+            "artifact_hash_seconds": 0.0018360840000002376,
+            "launcher_seconds": 2.8876275
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline_seconds": 2.745967124999993,
+        "candidate_seconds": 2.7835928750000107,
+        "native_seconds": 4.153216584000006,
+        "native_cpu_seconds": 4.672054999999972,
+        "baseline_cpu_seconds": 2.721248999999993,
+        "candidate_cpu_seconds": 2.7469489999999936,
+        "cpu_difference_seconds": 0.0257000000000005,
+        "difference_seconds": 0.03762575000001789,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.593081875,
+            "execution_seconds": 0.08394429199999998,
+            "artifact_hash_seconds": 0.0017602500000002408,
+            "launcher_seconds": 2.719526583
+          },
+          "candidate": {
+            "cargo_seconds": 2.634416709,
+            "execution_seconds": 0.08315804199999999,
+            "artifact_hash_seconds": 0.0018148749999999936,
+            "launcher_seconds": 2.758412
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline_seconds": 2.941938334000014,
+        "candidate_seconds": 2.8716638330000137,
+        "native_seconds": 5.888047499999999,
+        "native_cpu_seconds": 8.551788999999978,
+        "baseline_cpu_seconds": 2.9209709999999873,
+        "candidate_cpu_seconds": 2.8389880000000005,
+        "cpu_difference_seconds": -0.08198299999998682,
+        "difference_seconds": -0.0702745010000001,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.801856291,
+            "execution_seconds": 0.07289083300000021,
+            "artifact_hash_seconds": 0.0018673749999997824,
+            "launcher_seconds": 2.916450042
+          },
+          "candidate": {
+            "cargo_seconds": 2.7230358750000003,
+            "execution_seconds": 0.0833361250000002,
+            "artifact_hash_seconds": 0.0018105830000001433,
+            "launcher_seconds": 2.846527959
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 1,
+        "state": 1,
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline_seconds": 2.968330750000007,
+        "candidate_seconds": 3.004605374999983,
+        "native_seconds": 5.759716167000022,
+        "native_cpu_seconds": 8.438904999999977,
+        "baseline_cpu_seconds": 2.9255429999999834,
+        "candidate_cpu_seconds": 2.9682160000000266,
+        "cpu_difference_seconds": 0.04267300000004326,
+        "difference_seconds": 0.03627462499997591,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.8261899169999998,
+            "execution_seconds": 0.07646491599999994,
+            "artifact_hash_seconds": 0.0017498329999998674,
+            "launcher_seconds": 2.943471542
+          },
+          "candidate": {
+            "cargo_seconds": 2.8426757080000002,
+            "execution_seconds": 0.09072962500000026,
+            "artifact_hash_seconds": 0.0017932500000004126,
+            "launcher_seconds": 2.976644667
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 1,
+        "state": 2,
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline_seconds": 2.9130853750000085,
+        "candidate_seconds": 2.903524792000013,
+        "native_seconds": 5.4207422910000105,
+        "native_cpu_seconds": 7.880550999999997,
+        "baseline_cpu_seconds": 2.882219000000049,
+        "candidate_cpu_seconds": 2.863298999999955,
+        "cpu_difference_seconds": -0.01892000000009375,
+        "difference_seconds": -0.009560582999995404,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.763572167,
+            "execution_seconds": 0.07944095799999973,
+            "artifact_hash_seconds": 0.0018456669999999953,
+            "launcher_seconds": 2.886089709
+          },
+          "candidate": {
+            "cargo_seconds": 2.7612166250000003,
+            "execution_seconds": 0.0758859580000002,
+            "artifact_hash_seconds": 0.001795582999999823,
+            "launcher_seconds": 2.877839667
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 1,
+        "state": 3,
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline_seconds": 3.2501430419999906,
+        "candidate_seconds": 3.089713207999978,
+        "native_seconds": 4.655356458000028,
+        "native_cpu_seconds": 5.273197999999979,
+        "baseline_cpu_seconds": 3.19523300000003,
+        "candidate_cpu_seconds": 3.059472999999983,
+        "cpu_difference_seconds": -0.1357600000000474,
+        "difference_seconds": -0.16042983400001276,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 3.098337833,
+            "execution_seconds": 0.07952487499999972,
+            "artifact_hash_seconds": 0.0018620420000003968,
+            "launcher_seconds": 3.222933875
+          },
+          "candidate": {
+            "cargo_seconds": 2.939902167,
+            "execution_seconds": 0.07874249999999972,
+            "artifact_hash_seconds": 0.0018351250000003816,
+            "launcher_seconds": 3.062628208
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 1,
+        "state": 4,
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline_seconds": 3.178540541000018,
+        "candidate_seconds": 3.0074154580000254,
+        "native_seconds": 4.559394250000025,
+        "native_cpu_seconds": 4.797613999999982,
+        "baseline_cpu_seconds": 3.127744000000007,
+        "candidate_cpu_seconds": 2.9419130000000138,
+        "cpu_difference_seconds": -0.1858309999999932,
+        "difference_seconds": -0.17112508299999263,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 3.0194479999999997,
+            "execution_seconds": 0.08238208300000016,
+            "artifact_hash_seconds": 0.001805207999999947,
+            "launcher_seconds": 3.148632791
+          },
+          "candidate": {
+            "cargo_seconds": 2.8495695839999997,
+            "execution_seconds": 0.08552049999999989,
+            "artifact_hash_seconds": 0.0018095830000000035,
+            "launcher_seconds": 2.979305375
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 1,
+        "state": 5,
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline_seconds": 3.145571749999988,
+        "candidate_seconds": 3.271486750000008,
+        "native_seconds": 6.1856022079999775,
+        "native_cpu_seconds": 8.92273800000001,
+        "baseline_cpu_seconds": 3.0882219999999734,
+        "candidate_cpu_seconds": 3.1705649999999963,
+        "cpu_difference_seconds": 0.08234300000002293,
+        "difference_seconds": 0.12591500000002043,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.997894375,
+            "execution_seconds": 0.07768645800000007,
+            "artifact_hash_seconds": 0.0018252500000000005,
+            "launcher_seconds": 3.1194225
+          },
+          "candidate": {
+            "cargo_seconds": 3.117887708,
+            "execution_seconds": 0.08137395799999991,
+            "artifact_hash_seconds": 0.0019632919999996723,
+            "launcher_seconds": 3.2443333340000002
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 2,
+        "state": 1,
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "baseline_seconds": 3.2167131250000125,
+        "candidate_seconds": 3.231697957999984,
+        "native_seconds": 6.094330041999967,
+        "native_cpu_seconds": 8.781470000000027,
+        "baseline_cpu_seconds": 3.1163679999999516,
+        "candidate_cpu_seconds": 3.160180000000011,
+        "cpu_difference_seconds": 0.04381200000005947,
+        "difference_seconds": 0.014984832999971331,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 3.063493959,
+            "execution_seconds": 0.07920683299999975,
+            "artifact_hash_seconds": 0.0018458329999999634,
+            "launcher_seconds": 3.188899084
+          },
+          "candidate": {
+            "cargo_seconds": 3.081093042,
+            "execution_seconds": 0.07684016700000029,
+            "artifact_hash_seconds": 0.0019134160000002787,
+            "launcher_seconds": 3.2040945830000003
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 2,
+        "state": 2,
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "baseline_seconds": 3.0736290000000395,
+        "candidate_seconds": 3.0698518749999835,
+        "native_seconds": 5.825117124999963,
+        "native_cpu_seconds": 8.35651300000005,
+        "baseline_cpu_seconds": 3.048514999999938,
+        "candidate_cpu_seconds": 3.0452209999999695,
+        "cpu_difference_seconds": -0.0032939999999683778,
+        "difference_seconds": -0.003777125000056003,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.921366459,
+            "execution_seconds": 0.079936542,
+            "artifact_hash_seconds": 0.0019108750000000896,
+            "launcher_seconds": 3.046071459
+          },
+          "candidate": {
+            "cargo_seconds": 2.918658041,
+            "execution_seconds": 0.07833900000000016,
+            "artifact_hash_seconds": 0.0018930839999997673,
+            "launcher_seconds": 3.041253666
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 2,
+        "state": 3,
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "baseline_seconds": 3.292967250000004,
+        "candidate_seconds": 3.2258115410000414,
+        "native_seconds": 4.811625082999967,
+        "native_cpu_seconds": 5.36492699999998,
+        "baseline_cpu_seconds": 3.1887929999999898,
+        "candidate_cpu_seconds": 3.1262090000000455,
+        "cpu_difference_seconds": -0.06258399999994424,
+        "difference_seconds": -0.06715570899996237,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 3.129648667,
+            "execution_seconds": 0.0879032500000001,
+            "artifact_hash_seconds": 0.0021826660000003884,
+            "launcher_seconds": 3.264618125
+          },
+          "candidate": {
+            "cargo_seconds": 3.07452875,
+            "execution_seconds": 0.08015783399999998,
+            "artifact_hash_seconds": 0.001919582999999836,
+            "launcher_seconds": 3.198391667
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 2,
+        "state": 4,
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "baseline_seconds": 3.1839398750000214,
+        "candidate_seconds": 2.9256516250000004,
+        "native_seconds": 4.344633124999973,
+        "native_cpu_seconds": 4.620167000000009,
+        "baseline_cpu_seconds": 3.084799000000004,
+        "candidate_cpu_seconds": 2.8822290000000095,
+        "cpu_difference_seconds": -0.20256999999999437,
+        "difference_seconds": -0.258288250000021,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 3.024341958,
+            "execution_seconds": 0.07987900000000003,
+            "artifact_hash_seconds": 0.001850666999999806,
+            "launcher_seconds": 3.154457291
+          },
+          "candidate": {
+            "cargo_seconds": 2.771994958,
+            "execution_seconds": 0.07982962500000035,
+            "artifact_hash_seconds": 0.001861791000000057,
+            "launcher_seconds": 2.897484791
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 2,
+        "state": 5,
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "baseline_seconds": 3.101499625000031,
+        "candidate_seconds": 2.8755432079999537,
+        "native_seconds": 6.119388458000003,
+        "native_cpu_seconds": 8.774596999999972,
+        "baseline_cpu_seconds": 2.9665380000000567,
+        "candidate_cpu_seconds": 2.8451499999999754,
+        "cpu_difference_seconds": -0.12138800000008132,
+        "difference_seconds": -0.22595641700007718,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 2.9537787919999996,
+            "execution_seconds": 0.07415087499999995,
+            "artifact_hash_seconds": 0.0018109580000000847,
+            "launcher_seconds": 3.0730120419999998
+          },
+          "candidate": {
+            "cargo_seconds": 2.735419209,
+            "execution_seconds": 0.07273116700000015,
+            "artifact_hash_seconds": 0.0018606249999999491,
+            "launcher_seconds": 2.850224292
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 10,
+    "median_paired_difference_seconds": -0.06715570899996237,
+    "median_paired_cpu_difference_seconds": -0.01892000000009375,
+    "per_edit": [
+      {
+        "state": 1,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "3c3186d6cacd2a1ce7ae830436b2c3f401ad6e0d170e62ede95a8caa8fd19cd7",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.968330750000007,
+            "median": 3.2167131250000125,
+            "max": 4.233157583999997
+          },
+          "candidate_seconds": {
+            "min": 3.004605374999983,
+            "median": 3.231697957999984,
+            "max": 4.063283791999993
+          },
+          "native_seconds": {
+            "min": 5.759716167000022,
+            "median": 6.094330041999967,
+            "max": 7.385429709000007
+          },
+          "difference_seconds": {
+            "min": -0.1698737920000042,
+            "median": 0.014984832999971331,
+            "max": 0.03627462499997591
+          },
+          "cpu_difference_seconds": {
+            "min": 0.040917000000000314,
+            "median": 0.04267300000004326,
+            "max": 0.04381200000005947
+          }
+        }
+      },
+      {
+        "state": 2,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "0ec9b5865cca646883b700db44b936e07cd6cb04d6af407362ce66ee64e54ec8",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.9130853750000085,
+            "median": 3.0736290000000395,
+            "max": 3.5816358750000177
+          },
+          "candidate_seconds": {
+            "min": 2.903524792000013,
+            "median": 3.0698518749999835,
+            "max": 3.968897916000003
+          },
+          "native_seconds": {
+            "min": 5.4207422910000105,
+            "median": 5.825117124999963,
+            "max": 7.094070250000016
+          },
+          "difference_seconds": {
+            "min": -0.009560582999995404,
+            "median": -0.003777125000056003,
+            "max": 0.3872620409999854
+          },
+          "cpu_difference_seconds": {
+            "min": -0.01892000000009375,
+            "median": -0.0032939999999683778,
+            "max": 0.10400599999995563
+          }
+        }
+      },
+      {
+        "state": 3,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "f298da1c8d2f4830a1b279b4e79c7e3faff3500853c94f694fcf54ea2ca0b29c",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 3.049379667000011,
+            "median": 3.2501430419999906,
+            "max": 3.292967250000004
+          },
+          "candidate_seconds": {
+            "min": 2.912456916999986,
+            "median": 3.089713207999978,
+            "max": 3.2258115410000414
+          },
+          "native_seconds": {
+            "min": 4.655356458000028,
+            "median": 4.680277875000002,
+            "max": 4.811625082999967
+          },
+          "difference_seconds": {
+            "min": -0.16042983400001276,
+            "median": -0.13692275000002496,
+            "max": -0.06715570899996237
+          },
+          "cpu_difference_seconds": {
+            "min": -0.1357600000000474,
+            "median": -0.06258399999994424,
+            "max": -0.042077999999953875
+          }
+        }
+      },
+      {
+        "state": 4,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "05326deab176aa92c9276344fed3d565f2e5c3c1df2d01819ddd85109664c5f6",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.745967124999993,
+            "median": 3.178540541000018,
+            "max": 3.1839398750000214
+          },
+          "candidate_seconds": {
+            "min": 2.7835928750000107,
+            "median": 2.9256516250000004,
+            "max": 3.0074154580000254
+          },
+          "native_seconds": {
+            "min": 4.153216584000006,
+            "median": 4.344633124999973,
+            "max": 4.559394250000025
+          },
+          "difference_seconds": {
+            "min": -0.258288250000021,
+            "median": -0.17112508299999263,
+            "max": 0.03762575000001789
+          },
+          "cpu_difference_seconds": {
+            "min": -0.20256999999999437,
+            "median": -0.1858309999999932,
+            "max": 0.0257000000000005
+          }
+        }
+      },
+      {
+        "state": 5,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "73e0b811195faf451f346749807ecfe589483281fe32265f7e18d7aba92ca10c",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.941938334000014,
+            "median": 3.101499625000031,
+            "max": 3.145571749999988
+          },
+          "candidate_seconds": {
+            "min": 2.8716638330000137,
+            "median": 2.8755432079999537,
+            "max": 3.271486750000008
+          },
+          "native_seconds": {
+            "min": 5.888047499999999,
+            "median": 6.119388458000003,
+            "max": 6.1856022079999775
+          },
+          "difference_seconds": {
+            "min": -0.22595641700007718,
+            "median": -0.0702745010000001,
+            "max": 0.12591500000002043
+          },
+          "cpu_difference_seconds": {
+            "min": -0.12138800000008132,
+            "median": -0.08198299999998682,
+            "max": 0.08234300000002293
+          }
+        }
+      }
+    ]
+  }
+}

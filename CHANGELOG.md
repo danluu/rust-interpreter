@@ -2,6 +2,14 @@
 
 ## 2026-09-10 review follow-up
 
+- Completed the repeated stronger-native corpus: 756 commands, 189 independent
+  checks, 378 artifact checks and restored pins for all five projects. Token and
+  folded retain substantial compute gaps. Updated generated status/evidence.
+- Added typed native-call eligibility and whole-tree budget censuses (eight and
+  nine diagnostic tests), then selected a bounded native call-tree experiment
+  with explicit terminal traps. Runtime implementation is still pending.
+- Fixed corpus recovery receipts so each new case clears the previous child's
+  identity and exit fields; the measured run finished before this script change.
 - Native controls: configurable profile, build jobs, test concurrency and exact
   compiler arguments, with a separately timed Cargo-check reference and nested
   exporter-stage reporting. Two three-cycle pgrust qualifications completed

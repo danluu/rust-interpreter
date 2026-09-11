@@ -91,7 +91,14 @@ def main():
 
     try:
         for case in cases:
-            status['case'] = case['label']
+            # A receipt for the next case must not carry the preceding child's
+            # exit status or identity. Recovery readers may inspect it while
+            # this controller is waiting for the shared lock.
+            for field in ['child_pid', 'command', 'child_started_at',
+                          'child_returncode', 'child_finished_at']:
+                status.pop(field, None)
+            status.update(status='preparing workflow', case=case['label'], updated_at=time.time())
+            write(receipt, status)
             lock = acquire(time.monotonic() + args.lock_wait_seconds, status, receipt)
             try:
                 check_frozen()
@@ -119,11 +126,12 @@ def main():
                 child = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL,
                                          stdout=log, stderr=subprocess.STDOUT)
                 status.update(status='running', child_pid=child.pid, command=command,
-                              child_started_at=time.time())
+                              child_started_at=time.time(), updated_at=time.time())
                 write(receipt, status)
                 print('START', case['label'], child.pid, flush=True)
                 code = child.wait()
-            status.update(child_returncode=code, child_finished_at=time.time())
+            status.update(status='verifying workflow', child_returncode=code,
+                          child_finished_at=time.time(), updated_at=time.time())
             write(receipt, status)
             if code:
                 raise RuntimeError('workflow failed; retained log: ' + case['label'])
@@ -146,6 +154,7 @@ def main():
                     medians=report['median_seconds'], cpu_medians=report['median_cpu_seconds'],
                     check_median_seconds=report['check_floor']['median_seconds'],
                     cross_cycle_bytecode_identical=verification['cross_cycle_bytecode_identical']))
+                status.update(status='workflow verified', updated_at=time.time())
                 write(receipt, status)
             finally:
                 lock.close()
@@ -154,10 +163,10 @@ def main():
         output.mkdir()
         write(output / 'summary.json', dict(plan=plan, workflows=status['completed'],
             status='All requested workflows completed; compare separate workload groups before selecting a native configuration or runtime direction'))
-        status.update(status='finished', finished_at=time.time(), report=str(output.relative_to(ROOT)))
+        status.update(status='finished', finished_at=time.time(), updated_at=time.time(), report=str(output.relative_to(ROOT)))
         write(receipt, status)
     except Exception as error:
-        status.update(status='failed', error=str(error), finished_at=time.time())
+        status.update(status='failed', error=str(error), finished_at=time.time(), updated_at=time.time())
         write(receipt, status)
         raise
 

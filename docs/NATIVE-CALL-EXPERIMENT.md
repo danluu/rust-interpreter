@@ -20,6 +20,15 @@ If this subset excludes the expensive calls, do not build a small native-call
 path merely because it is convenient. Reconsider the calling convention and
 broader continuation design before another small performance experiment.
 
+Count acyclic leaf callees separately. For these, the number of body operations
+is a conservative virtual-instruction bound, including Return. A native call
+entered only with enough budget for Call plus the entire bound can avoid partial
+callee exits caused by budget exhaustion; insufficient budget takes the existing
+VM path. This does not bound elapsed time (`CompareBytes` can do substantial work
+inside one operation), or remove capacity, alias, memory, error-order and profile
+requirements. Short native regions and Return still need emission. Choose this
+bounded option only if its measured scope is substantial enough.
+
 ## Required execution contract
 
 - Preserve argument copy order, aliases, frame alignment/initialization, return

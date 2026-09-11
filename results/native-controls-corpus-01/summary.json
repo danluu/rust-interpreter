@@ -1,0 +1,401 @@
+{
+  "plan": {
+    "schema_version": 1,
+    "options": {
+      "run_id": "native-controls-corpus-01",
+      "candidate_tool_key": "b2aa6efe746cf00d40703af478c750c49c2d07eb11508c2b28d08122f17b15cc",
+      "baseline_tool_key": "57a54edd6b64db0e7a1a854dfb42ec0d519cde40366be977fe26d51bb1e16497",
+      "only": null,
+      "cycles": 3,
+      "jobs": 4,
+      "native_jobs": 18,
+      "native_profile": "o0-incremental",
+      "native_test_threads": "default",
+      "native_rustflag": [],
+      "lock_wait_seconds": 600,
+      "minimum_free_gib": 30
+    },
+    "cases": [
+      {
+        "label": "pgrust",
+        "project": "pgrust",
+        "workflow": "default",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--instruction-limit",
+          "1000000000"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-corpus-pgrust-01/summary.json",
+        "reference_report_sha256": "51ba7dd4e7f61f1c36ec55984ac4ce3381910769d6bc5e679766708550f75377"
+      },
+      {
+        "label": "nushell",
+        "project": "nushell",
+        "workflow": "default",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--std-mir",
+          "--instruction-limit",
+          "1000000000"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-corpus-nushell-01/summary.json",
+        "reference_report_sha256": "8953942ac285941cfadc9df03a55d811820a6fb2a30f74e727c2f3eb751b3e31"
+      },
+      {
+        "label": "rg-aot",
+        "project": "rg-aot",
+        "workflow": "default",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--instruction-limit",
+          "1000000000"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-corpus-rg-aot-01/summary.json",
+        "reference_report_sha256": "79b4138d75625463ad56109b8cc9d8b05e4b5db17835fa3fc2cd59a8b718d3d8"
+      },
+      {
+        "label": "folded-literal-trie",
+        "project": "fre",
+        "workflow": "folded-literal-trie",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--trap-unsupported-calls",
+          "--std-mir",
+          "--instruction-limit",
+          "100000000000",
+          "--guest-mir-opt-level",
+          "3",
+          "--guest-mir-inline-scale",
+          "8"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-folded-literal-trie-01/summary.json",
+        "reference_report_sha256": "6752f92775367dec9c4d67b93946ded47fb1eda397b7dacd991b3ad5a475ce6f"
+      },
+      {
+        "label": "token-phrase",
+        "project": "fre",
+        "workflow": "token-phrase-allocation",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--instruction-limit",
+          "100000000000",
+          "--allocation-limit",
+          "150000",
+          "--guest-mir-opt-level",
+          "3",
+          "--guest-mir-inline-scale",
+          "8",
+          "--build-tool-opt-level",
+          "0"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-token-phrase-01/summary.json",
+        "reference_report_sha256": "7b77faf88608b34a5adbe7503c179d98ab58abf5f3ee0d54bcd1db2132221daf"
+      },
+      {
+        "label": "forward-anchored-tls",
+        "project": "fre",
+        "workflow": "forward-anchored-tls",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--instruction-limit",
+          "100000000000",
+          "--guest-mir-opt-level",
+          "3",
+          "--guest-mir-inline-scale",
+          "8"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-forward-anchored-tls-01/summary.json",
+        "reference_report_sha256": "56b813844ac7ab85fa950b0f4f2285187fedcae11bff3ca8b119732eb629b056"
+      },
+      {
+        "label": "pgrust-sha1-inline8",
+        "project": "pgrust",
+        "workflow": "sha1-vectors",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--std-mir",
+          "--instruction-limit",
+          "10000000000",
+          "--guest-mir-opt-level",
+          "3",
+          "--guest-mir-inline-scale",
+          "8"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-pgrust-sha1-inline8-01/summary.json",
+        "reference_report_sha256": "ae5d0182c08ae7083a2173795e007557b88e2a869021df9c0e6d594485352031"
+      },
+      {
+        "label": "ruff",
+        "project": "ruff",
+        "workflow": "default",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--std-mir",
+          "--instruction-limit",
+          "1000000000"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-corpus-ruff-01/summary.json",
+        "reference_report_sha256": "fee952a210540348d162a5b197cc27742366b5087ae8214a6f079aa744183f7d"
+      },
+      {
+        "label": "nushell-type-relations",
+        "project": "nushell",
+        "workflow": "type-relations",
+        "flags": [
+          "--batch",
+          "--inline-leaves",
+          "--baseline-inline-leaves",
+          "--std-mir",
+          "--instruction-limit",
+          "1000000000"
+        ],
+        "reference_report": "results/paired-local-memory-forwarding-corpus-nushell-type-relations-01/summary.json",
+        "reference_report_sha256": "730dd0c683902020b25286c3333056b87c384bf6fcda2047179a9263305455a4"
+      }
+    ],
+    "frozen": {
+      "scripts/bench_e2e_workflow.py": "1bba6895c6646df1a3aee9a6c381321cb6d6afa600d9b16cdd9a2c1a0c385e6e",
+      "scripts/interpreter.py": "403432e49f79afbf01955188317833abe1c55bc529f3696e4183a33ca4c315e7",
+      "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+      "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+      "scripts/workflow_measurements.py": "8f28b001e51c118f1e96a37d9232083a3927b5c020374dadfdbbb911a7796a3c",
+      "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+      "scripts/verify_repeated_workflow.py": "08133ac9781fa495b6b7db3b68b3c87d078ee03f9f4da89509b4ccd50a464d52",
+      "scripts/bench_workflow_corpus.py": "643d2ff005ae8e3ab3464723b267e1ed6dbc54a766f8adb2b950ccaf047bb2f2",
+      "benchmarks/workflow-corpus.json": "53c845a5a862a3022816c23fea7f8e6d843da2e65b8c3afe48b17d2e4841916d"
+    },
+    "purpose": "Repeated complete-command control comparison; preserve original assertions, wrong edits, cache histories and all regressions. No fastest-native, significance or retention decision is automatic."
+  },
+  "workflows": [
+    {
+      "label": "pgrust",
+      "report": "results/native-controls-corpus-01-pgrust/summary.json",
+      "report_sha256": "fc41e84e9a279611e131e774e539d28b34fb70d364e98a250bc68be988285227",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 0.6829162080000017,
+        "baseline": 0.5057414159999993,
+        "candidate": 0.504404583000003
+      },
+      "cpu_medians": {
+        "native": 0.6210389999999997,
+        "baseline": 0.49638199999999966,
+        "candidate": 0.49425899999999956
+      },
+      "check_median_seconds": 0.3901369999999993,
+      "cross_cycle_bytecode_identical": true
+    },
+    {
+      "label": "nushell",
+      "report": "results/native-controls-corpus-01-nushell/summary.json",
+      "report_sha256": "b4e7c5586548a71a982bd4691a8f27c25b7183240fe0a1ba99fccb4b2e3bba0d",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 0.645949709000007,
+        "baseline": 0.4409234999999967,
+        "candidate": 0.4305177090000001
+      },
+      "cpu_medians": {
+        "native": 0.7266569999999959,
+        "baseline": 0.41847800000001456,
+        "candidate": 0.4155770000000132
+      },
+      "check_median_seconds": 0.2708387920000064,
+      "cross_cycle_bytecode_identical": true
+    },
+    {
+      "label": "rg-aot",
+      "report": "results/native-controls-corpus-01-rg-aot/summary.json",
+      "report_sha256": "d393b03d6c6952b27a70724ff66741f412097fd30736d26fe6f4283a8cf6bef3",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 0.5368192920000006,
+        "baseline": 0.1950887080000001,
+        "candidate": 0.1961991249999997
+      },
+      "cpu_medians": {
+        "native": 0.7877920000000067,
+        "baseline": 0.18555999999999706,
+        "candidate": 0.1867119999999982
+      },
+      "check_median_seconds": 0.09062354199999945,
+      "cross_cycle_bytecode_identical": true
+    },
+    {
+      "label": "folded-literal-trie",
+      "report": "results/native-controls-corpus-01-folded-literal-trie/summary.json",
+      "report_sha256": "0dccdbbe64eb72e19f1dc9c0672f8b72cdc954d1d8f1f300656af880de7a3bc5",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 1.638308875000007,
+        "baseline": 2.5003355409999983,
+        "candidate": 2.485387166999999
+      },
+      "cpu_medians": {
+        "native": 2.0787220000000044,
+        "baseline": 2.4777390000000032,
+        "candidate": 2.4626009999999923
+      },
+      "check_median_seconds": 0.6364768330000175,
+      "cross_cycle_bytecode_identical": false
+    },
+    {
+      "label": "token-phrase",
+      "report": "results/native-controls-corpus-01-token-phrase/summary.json",
+      "report_sha256": "6fe9bb938d77e75918e49632188287944b33863f605714e76258dfd15622a187",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 2.002405541999991,
+        "baseline": 6.558310583999997,
+        "candidate": 6.663727709
+      },
+      "cpu_medians": {
+        "native": 2.4902310000000085,
+        "baseline": 6.496379999999989,
+        "candidate": 6.541957999999995
+      },
+      "check_median_seconds": 0.6838902500000046,
+      "cross_cycle_bytecode_identical": false
+    },
+    {
+      "label": "forward-anchored-tls",
+      "report": "results/native-controls-corpus-01-forward-anchored-tls/summary.json",
+      "report_sha256": "546caa5d043c4dfe1d6762ba3bc964e16220d6d416dbbc703b3844b663a8b60b",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 1.544214624999995,
+        "baseline": 1.1648578749999956,
+        "candidate": 1.164780291999996
+      },
+      "cpu_medians": {
+        "native": 1.9936869999999978,
+        "baseline": 1.138869000000005,
+        "candidate": 1.1287999999999947
+      },
+      "check_median_seconds": 0.7275403339999968,
+      "cross_cycle_bytecode_identical": false
+    },
+    {
+      "label": "pgrust-sha1-inline8",
+      "report": "results/native-controls-corpus-01-pgrust-sha1-inline8/summary.json",
+      "report_sha256": "1218cf7db0076cfaed77bc331c637ddb7531e9cefb12599a253157b2e40c9e69",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 0.7561449170000003,
+        "baseline": 0.7552982919999991,
+        "candidate": 0.7561860839999994
+      },
+      "cpu_medians": {
+        "native": 0.7540110000000011,
+        "baseline": 0.7408319999999984,
+        "candidate": 0.738551000000002
+      },
+      "check_median_seconds": 0.39280804199999864,
+      "cross_cycle_bytecode_identical": true
+    },
+    {
+      "label": "ruff",
+      "report": "results/native-controls-corpus-01-ruff/summary.json",
+      "report_sha256": "87b76cf8533958a594f678bb93a2b53342c798b3f8e966a1081ee2f74fbb1ab1",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 5.759716167000022,
+        "baseline": 3.145571749999988,
+        "candidate": 3.0074154580000254
+      },
+      "cpu_medians": {
+        "native": 8.35651300000005,
+        "baseline": 3.048514999999938,
+        "candidate": 2.9682160000000266
+      },
+      "check_median_seconds": 2.7200984169999742,
+      "cross_cycle_bytecode_identical": true
+    },
+    {
+      "label": "nushell-type-relations",
+      "report": "results/native-controls-corpus-01-nushell-type-relations/summary.json",
+      "report_sha256": "6a7ad959dc4e0e6e1f6a213999292312695219495a396dfb8a53a2265e93ec88",
+      "native_control": {
+        "profile": "o0-incremental",
+        "jobs": 18,
+        "test_threads": "default",
+        "rustflags": []
+      },
+      "medians": {
+        "native": 8.30349529099999,
+        "baseline": 4.898974915999986,
+        "candidate": 4.703745916999992
+      },
+      "cpu_medians": {
+        "native": 22.396574999999928,
+        "baseline": 7.710318999999998,
+        "candidate": 7.611998000000028
+      },
+      "check_median_seconds": 4.068872125000013,
+      "cross_cycle_bytecode_identical": true
+    }
+  ],
+  "status": "All requested workflows completed; compare separate workload groups before selecting a native configuration or runtime direction"
+}

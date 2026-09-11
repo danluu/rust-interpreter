@@ -49,7 +49,7 @@ Heterogeneous pair counts are bookkeeping, not an adoption result.
 | 2.1 Strong native control | Accept. Add independently configurable native profiles/jobs and matched checking. Qualify available backends/linkers on this pinned macOS toolchain before assuming the proposed flags compose or help. Stock repository settings remain a separate useful control. |
 | 2.2 Workload groups | Accept. Remove the mixed N/45 headline from current documentation; retain historical raw counts. |
 | 2.3 Repeats and CPU | Implemented and checked with three cycles: fifteen edited pairs, rotated mode positions, per-child CPU, per-edit spread. Corresponding engines agree; the separate cross-history identity check failed and remains documented. Add stronger repetitions/A/A before fine-grained decisions. Shared-host load is recorded; do not disrupt other work or wait indefinitely for load <1. A historical A/A range is context, not a universal significance threshold. Bootstrap intervals require an explicit treatment of correlated cycles and distinct edits. |
-| 2.4 Tracked reproducer | Token case, launcher and allocation flag were already committed in `9358c2b`. The corpus/status report generator is still needed. |
+| 2.4 Tracked reproducer | Token case, launcher and allocation flag were already committed in `9358c2b`. The tracked corpus runner and status generator are now implemented and exercised. |
 | 2.5 Realistic workloads | Accept. Existing fre body replays give broad execution evidence but are not an unfiltered libtest command. Add interface/test/macro/dependency edits and report unsupported cases as failures of coverage, not missing samples. Reverts are now explicit cycle anchors. |
 | 2.6 Cold setup | Accept explicit labels. Existing measurements exclude toolchain/dependency-fetch/std-MIR setup and OS-cache clearing. Keep setup separate and visible; do not retroactively call target-cache-cold measurements installation-cold. |
 | 3.1 Native calls | Highest-priority runtime direction. Begin with typed eligibility and a bounded calling convention. Native branches alone do not remove required frame initialization, argument copies, budgets, traps or TLS cleanup. Profile percentages are not predicted savings. |
@@ -136,5 +136,17 @@ review are not commitments or evidence of feasibility.
   detached supervisor and verification for paired and interpreter/JIT runs.
   The benchmark rejects Python `-O` rather than silently dropping its assertions.
 
-The full-corpus native-control comparison is next. The remaining accepted design work above is prioritized follow-up,
+- The [full repeated corpus](../results/native-controls-corpus-01/assessment.md)
+  completed all 756 commands across nine workflows, including 189 independent
+  checks. Source pins/restoration and 378 custom artifacts were verified. The
+  three fre workflows retain unresolved cross-history layout differences.
+- Two typed native-call censuses passed eight and nine diagnostic tests and
+  matched the prior profile/call totals. The expanded scope supports selecting
+  a bounded call-tree experiment with explicit terminal traps and whole-tree
+  readiness/budget guards. This is an opportunity result, not an implemented
+  runtime gain. The corpus receipt now clears stale child-exit fields between
+  cases; that fix was made after the measured scripts were released.
+
+The [bounded native-call experiment](../benchmarks/experiments/bounded-native-calls/PLAN.md)
+is next. The remaining accepted design work above is prioritized follow-up,
 not a claim that a production Rust development engine is complete.
