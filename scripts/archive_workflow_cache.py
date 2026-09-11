@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Archive one completed public native Cargo target, then retire its verified paths."""
+"""Archive one completed public Cargo target, then retire its verified paths."""
 import argparse
 import fcntl
 import json
@@ -12,12 +12,14 @@ import cache_archive as archive
 from reclaim_workflow_objects import identifier, no_open_files, sha, workflow
 from verify_repeated_workflow import require
 from workflow_io import write_json
+from workflow_cache_evidence import cache_guard, workflow_cache
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / '.work/workflow-cache-archives'
 SOURCES = [Path(__file__).resolve(), ROOT / 'scripts/cache_archive.py',
     ROOT / 'scripts/reclaim_workflow_objects.py', ROOT / 'scripts/verify_repeated_workflow.py',
-    ROOT / 'scripts/workflow_case_file.py', ROOT / 'scripts/workflow_measurements.py', ROOT / 'scripts/workflow_io.py']
+    ROOT / 'scripts/workflow_case_file.py', ROOT / 'scripts/workflow_measurements.py', ROOT / 'scripts/workflow_io.py',
+    ROOT / 'scripts/workflow_cache_evidence.py']
 
 
 def read(path):
@@ -39,7 +41,8 @@ def sources():
 
 
 def check_evidence(plan):
-    target, proofs, verification = workflow(plan['workflow'], plan['corpus'])
+    target, proofs, verification = workflow_cache(ROOT, plan['workflow'], plan['corpus'],
+        plan.get('mode', 'native'), workflow, sha)
     require(str(target) == plan['target'] and proofs == plan['proofs'] and verification == plan['verification'],
             'completed workflow evidence changed')
     return target
@@ -53,16 +56,22 @@ def sync_directory(path):
         os.close(descriptor)
 
 
-def prepare(name, run_id, corpus):
+def prepare(name, run_id, corpus, mode='native'):
+    target, _, _ = workflow_cache(ROOT, identifier(run_id), corpus, mode, workflow, sha)
+    with cache_guard(target, mode):
+        prepare_locked(name, run_id, corpus, mode)
+
+
+def prepare_locked(name, run_id, corpus, mode):
     work = BASE / name
     require(not work.exists(), 'archive identity already exists')
-    target, proofs, verification = workflow(identifier(run_id), corpus)
+    target, proofs, verification = workflow_cache(ROOT, identifier(run_id), corpus, mode, workflow, sha)
     registry = read(BASE / 'targets.json')
     require(str(target) not in registry, 'this target already has an archive reservation; inspect it before any retry')
     opened = no_open_files(target)
     manifest = archive.snapshot(target)
     require(bool(manifest['groups']), 'target contains no files')
-    plan = dict(format=1, owner=str(ROOT), workflow=run_id, corpus=corpus, target=str(target),
+    plan = dict(format=1, owner=str(ROOT), workflow=run_id, corpus=corpus, mode=mode, target=str(target),
         prepared_at=time.time(), sources=sources(), proofs=proofs, verification=verification,
         open_file_check=opened, manifest=manifest)
     work.mkdir(mode=0o700)
@@ -112,6 +121,12 @@ def retire(target, manifest, progress):
 
 
 def apply(name):
+    _, plan, _ = load(name)
+    with cache_guard(Path(plan['target']), plan.get('mode', 'native')):
+        apply_locked(name)
+
+
+def apply_locked(name):
     work, plan, status = load(name)
     require(status['status'] == 'prepared' and sources() == plan['sources'],
             'archive is not an untouched preparation using these exact sources')
@@ -178,12 +193,15 @@ def main():
     action.add_argument('--inspect', help='read one archived file without restoring the whole cache')
     action.add_argument('--restore', help='restore into this archive identity\'s new owned restore directory')
     parser.add_argument('--workflow')
+    parser.add_argument('--mode', choices=['native', 'check', 'baseline', 'candidate'],
+                        help='completed cache mode; preparation only, defaults to native')
     parser.add_argument('--corpus')
     parser.add_argument('--member')
     parser.add_argument('--maximum-bytes', type=int, default=1024 * 1024)
     parser.add_argument('--restore-id')
     args = parser.parse_args()
     require(bool(args.prepare) == bool(args.workflow), 'supply --workflow only when preparing')
+    require(not args.mode or args.prepare, 'supply --mode only when preparing')
     require(not args.corpus or args.prepare, 'supply --corpus only when preparing')
     require(bool(args.inspect) == bool(args.member), 'supply --member only when inspecting')
     require(bool(args.restore) == bool(args.restore_id), 'supply --restore-id only when restoring')
@@ -192,7 +210,7 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         owned_root()
         if args.prepare:
-            prepare(name, args.workflow, args.corpus)
+            prepare(name, args.workflow, args.corpus, args.mode or 'native')
         elif args.apply:
             apply(name)
         else:

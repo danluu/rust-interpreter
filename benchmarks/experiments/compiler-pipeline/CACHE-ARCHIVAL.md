@@ -39,13 +39,15 @@ another process to obtain an idle target. Publish the exact archive identity,
 location, verified preservation and observed free-space change separately from
 benchmark timing.
 
-Initially qualify and archive one completed native target. Measure its actual
-compression and remaining space before choosing further targets. Any extension
-to independent-check or custom Cargo targets must first derive those exact
-targets from the corresponding recorded commands, tool identities and unique
-cache namespaces; prove that public-case ownership excludes private caches and
-that all executed artifacts remain outside the retired cache. Do not accept an
-arbitrary target path from the CLI.
+The first completed native target is archived. Extension to independent-check
+and custom Cargo targets uses `scripts/workflow_cache_evidence.py`: derive each
+target from all recorded commands, tool identities, the standard MIR key and
+the unique run/mode namespace. Reconstruct the `shared-entries-v1` workspace
+identity and require every executed artifact path to agree. All preserved
+snapshots must reside in the completed public workflow's separate artifact
+directory and match the original launch trace. Neither an arbitrary target
+path nor a private project is accepted. The custom launcher's invocation lock
+is held during preparation and application, in addition to the benchmark lock.
 
 Provide bounded inspection/restoration of archived files so future diagnostics
 can read metadata without requiring a full cache rebuild. A restore must refuse
@@ -79,6 +81,7 @@ Use a unique archive ID to prepare the exact completed workflow's native target:
 
 ```sh
 python3 scripts/archive_workflow_cache.py --prepare ARCHIVE_ID --workflow COMPLETED_RUN
+# A separately reviewed target can select --mode check, baseline or candidate.
 # Review the prepared inventory and ownership/closed-file evidence before applying.
 python3 scripts/archive_workflow_cache.py --apply ARCHIVE_ID
 python3 scripts/archive_workflow_cache.py --inspect ARCHIVE_ID --member RELATIVE_METADATA_PATH

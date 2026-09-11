@@ -251,9 +251,14 @@ observed Cargo root attributes. The first actual completed native archive,
 in a 1.09 GiB archive. Every payload and all 90 external bytecode snapshots
 verify. Available space rose by 1.19 GiB to about 10.92 GiB; logical byte savings
 are not physical reclamation on APFS. First fixture/preparation failures remain
-recorded. Extend exact provenance to completed check/custom targets next; their
-recorded commands, unique cache namespaces and executed snapshots must verify
-before allowing archival. Preserve query metadata in archives, private caches,
+recorded. The check/custom target extension passes 31 rejection checks and nine
+real target derivations; the archive suite again passes all 40 rejections and
+four coordinator scenarios. It reconstructs caches from recorded commands,
+unique namespaces, tool/std-MIR identities and executed snapshots, and holds
+the custom invocation lock. The first check-cache application is active:
+`interface-nushell-check-cache-archive-01`, with 7,592 paths/1.65 GiB of unique
+payloads and 99 evidence hashes reviewed. Preserve query metadata in archives,
+private caches,
 installed tools and all historical evidence. Do not start cold runs before
 adequate space is available or change their gates.
 The small Ruff/Nushell object inventories remain unapplied and are bound to the
