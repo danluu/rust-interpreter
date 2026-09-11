@@ -118,6 +118,8 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- The combined runtime direction now also passes the [original-baseline gates](../results/resumable-copy-original-e2e-01/assessment.md): folded paired wall −21.82%, token −33.09%, with lower CPU. All 168 commands and 84 artifacts verify. Both remain slower than native Cargo; fresh broader correctness and held-out checks are pending. This is separate from the 15.14% token gain attributed to the latest copy change.
+
 - Items 1.1/3.1 now have a further measured boundary change (`aa2f6ea` /
   `0e94d6d8`). Fresh token counts place 88.19% of interpreted operations in
   fixed/dynamic copies. These now execute in checked resumable native regions.

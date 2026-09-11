@@ -44,10 +44,15 @@ restoration. The [two-workflow primary](results/resumable-copy-e2e-01/assessment
 now passes: token paired wall −15.14%, child CPU −15.28%; folded +1.06%/+0.54%
 passes both 5% guards. Verification covers 168 commands, 30 edited pairs and
 84 artifacts. Token median is 5.116s → 4.329s, still above native's 2.036s.
-No default change. Next run the original b2 comparison, then held-out and broad
-correctness qualification if its gates pass. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
-are archived and verified; about 13.8 GiB was available afterward for the next
-two-workflow comparison. Large fresh histories will need another space review.
+The [original b2 comparison](results/resumable-copy-original-e2e-01/assessment.md)
+also passes: folded paired wall −21.82% / CPU −21.95%; token wall −33.09% /
+CPU −33.29%. All 168 commands, 30 pairs and 84 artifacts verify. Candidate
+medians remain slower than native: 1.913s vs 1.653s folded, 4.418s vs 2.012s token.
+Fresh full native differential qualification is running for this exact tool;
+TLS, fresh fre body replay and seven held-out workflows remain before retention.
+No default change. The [eight completed comparison caches](results/copy-comparison-storage-01/assessment.md)
+are archived and verified. About 10.9 GiB remains after the original comparison;
+large fresh histories need another space review.
 
 ## Closed worker-count experiment
 
