@@ -22,8 +22,8 @@ passes; token narrowly misses its target (ratio 0.8003441753 versus 0.8).
 Both fixed-tool runs fail the token gate. The first improved folded 19.51%
 and token 19.95%; this replication improved 19.15% and 19.97%. All pairs
 and both decisions are preserved. Broader native differential and TLS
-checks now pass; fre body replay and held-out
-workflows follow. Defaults and original criteria remain unchanged.
+checks and fresh fre body replay now pass; held-out workflows follow.
+Defaults and original criteria remain unchanged.
 [Both runs and per-edit variation](results/resumable-bulk-replication-01/assessment.md).
 [Result and limitations](results/resumable-bulk-e2e-02/assessment.md).
 
@@ -102,11 +102,14 @@ invocations across two modes, plus native controls/exports/rejections.
 Both modes executed resumable Calls/Returns; successful JIT runs had
 no declined functions. [Validation](results/resumable-bulk-native-01/assessment.md).
 Its separate 245-command [TLS/destructor suite](results/resumable-bulk-tls-01/assessment.md) also passes.
-This does not transfer the older fre replay to the experimental tool.
+Fresh experimental fre coverage recollected 389 original bodies:
+382 passed and 7 were ignored, with 382 fresh native executions.
+Of 382 compared artifact hashes, 0 changed; 0 outcomes changed.
+Maximum generated code was 15,173,088 bytes, with 0 successful executions declining functions.
+[Fresh body qualification](results/resumable-bulk-fre-01/assessment.md).
 
-That earlier fre replay selected 389 original bodies: 382 passed and 7 were ignored.
-This required `--allocation-limit 150000 --trap-unsupported-calls` and
-`--run-try-callbacks`, plus the recorded MIR/inlining settings. It invokes
+Both fre replays required `--allocation-limit 150000 --trap-unsupported-calls` and
+`--run-try-callbacks`, plus the recorded MIR/inlining settings. They invoke
 test bodies directly; it is not unfiltered libtest or whole-application
 coverage. Lowered audit entries are not counted as executed tests.
 

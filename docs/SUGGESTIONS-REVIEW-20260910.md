@@ -118,6 +118,15 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- The current resumable/bulk engine (`001065a` / `78e60cdd`) independently passes
+  [47,004 mixed validation commands](../results/resumable-bulk-native-01/assessment.md),
+  [245 TLS/destructor commands](../results/resumable-bulk-tls-01/assessment.md) and
+  [fresh fre replay](../results/resumable-bulk-fre-01/assessment.md): 382 body passes,
+  seven ignored and 382 fresh native executions. Explicit tool/mode selection,
+  original assertion checks and a reusable bounded coordinator replace archived
+  hardcoded drivers. Actual unwinding remains unsupported. Both primary token
+  performance gates still fail narrowly; broader correctness does not waive them.
+
 - The additional private-array reuse census (`f9bd49c`, isolated tool `71605527`)
   passes 15 exporter/observer tests and preserves both original exported artifacts
   and assertions on the exact `e89de7f8` VM. A typed join passes three tests and

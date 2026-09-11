@@ -15,6 +15,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | workflow | [pgrust-sha1-inline8](native-controls-corpus-01-pgrust-sha1-inline8/summary.json) |
 | workflow | [ruff](native-controls-corpus-01-ruff/summary.json) |
 | workflow | [nushell-type-relations](native-controls-corpus-01-nushell-type-relations/summary.json) |
+| held-out-verifier-qualification | [resumable-heldout-verifier-01/summary.json](resumable-heldout-verifier-01/summary.json) |
+| experimental-fre-validation | [resumable-bulk-fre-01/summary.json](resumable-bulk-fre-01/summary.json) |
 | experimental-native-validation | [resumable-bulk-native-01/summary.json](resumable-bulk-native-01/summary.json) |
 | experimental-tls-validation | [resumable-bulk-tls-01/summary.json](resumable-bulk-tls-01/summary.json) |
 | body-driver-qualification | [resumable-body-drivers-02/summary.json](resumable-body-drivers-02/summary.json) |

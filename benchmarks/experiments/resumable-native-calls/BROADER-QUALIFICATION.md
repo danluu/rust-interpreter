@@ -68,7 +68,10 @@ The fre invocation uses `--project fre --package fre-kernels --batch-size 16`,
 First use `--stop-after-batches 1`, inspect actual collection/replay evidence, then
 continue the same run with `--resume` and no stop bound. Each child and each
 coordinator verification phase takes the benchmark lock without holding it
-across a child that needs it. Actual new-tool fre coverage remains outstanding.
+across a child that needs it. The completed `resumable-bulk-fre-01` now passes
+382 bodies with seven ignored, 382 fresh native executions, unchanged compared
+artifact hashes/outcomes and no declined functions. Maximum code is 15,173,088
+bytes. This preserves the documented body-replay scope and options.
 
 Run all seven held-out real-edit workflows with the same original b2 baseline,
 three cycles, flags, source pins, wrong edits, identical paired artifacts,
@@ -76,6 +79,11 @@ independent check references and restoration rules. Their labels are pgrust,
 nushell, rg-aot, forward-anchored-tls, pgrust-sha1-inline8, ruff and
 nushell-type-relations. Preserve any unresolved regression above 5%. Use the
 benchmark lock; do not run validation concurrently with these measurements.
+The evaluator's `--held-out` mode verifies the exact seven cases, original b2,
+441 primary commands, 147 independent checks, 105 edited pairs and 294 artifacts.
+It records paired wall regressions above 5% and CPU regressions separately.
+`--check-existing` recomputes prior primary receipts without overwriting them;
+the two failed token decisions must remain exactly reproducible.
 Only after all required checks may retention be considered. Large-codebase
 adoption, broader edit classes and complete OS/thread/unwind support remain
 separate unfinished work.

@@ -7,7 +7,8 @@ artifacts pass. [Two fixed-tool E2E runs](../../../results/resumable-bulk-replic
 improve folded 19.51%/19.15% and token 19.95%/19.97%, with CPU improving.
 Both narrowly miss token's original 20% target; neither failure is waived.
 The option stays experimental. Full native differential and TLS qualifications
-now pass; fresh fre body replay is running, followed by seven held-out workflows.
+now pass, as does fresh fre body replay (382 passed, seven ignored). Seven
+held-out workflows follow.
 [Broader qualification](BROADER-QUALIFICATION.md). The initial rationale and
 requirements below remain the qualification contract.
 
@@ -131,5 +132,5 @@ Nine new tests cover backing reuse and checked native cursor publication; all
 model descriptor/cursor mutations; they do not execute resumable machine code.
 The later `5574d10` implementation connects emitted execution; see the status
 above and the [emitter contract](EMITTER-NEXT.md). Primary E2E gates have now
-been evaluated. Native/TLS validation passes; fre replay and held-out workflows
-remain outstanding.
+been evaluated. Native/TLS validation and fresh fre replay pass; held-out
+workflows remain outstanding.

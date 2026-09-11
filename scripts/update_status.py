@@ -23,7 +23,8 @@ def render():
     experimental_release = json.loads((ROOT / 'results/resumable-bulk-release-01/summary.json').read_text())
     experimental_native = json.loads((ROOT / 'results/resumable-bulk-native-01/summary.json').read_text())
     experimental_tls = json.loads((ROOT / 'results/resumable-bulk-tls-01/summary.json').read_text())
-    for qualification in [experimental_native, experimental_tls]:
+    experimental_fre = json.loads((ROOT / 'results/resumable-bulk-fre-01/summary.json').read_text())
+    for qualification in [experimental_native, experimental_tls, experimental_fre]:
         if qualification['status'] != 'passed' or qualification['tool_key'] != experiment['tool_key']:
             raise RuntimeError('broader qualification does not match the experimental tool')
     rows = corpus['workflows']
@@ -65,8 +66,8 @@ def render():
         'Both fixed-tool runs fail the token gate. The first improved folded 19.51%',
         'and token 19.95%; this replication improved 19.15% and 19.97%. All pairs',
         'and both decisions are preserved. Broader native differential and TLS',
-        'checks now pass; fre body replay and held-out',
-        'workflows follow. Defaults and original criteria remain unchanged.',
+        'checks and fresh fre body replay now pass; held-out workflows follow.',
+        'Defaults and original criteria remain unchanged.',
         '[Both runs and per-edit variation](results/resumable-bulk-replication-01/assessment.md).',
         f'[Result and limitations](results/{EXPERIMENT_RUN}/assessment.md).', '',
         '## Full-corpus baseline', '',
@@ -125,10 +126,13 @@ def render():
         'Both modes executed resumable Calls/Returns; successful JIT runs had',
         'no declined functions. [Validation](results/resumable-bulk-native-01/assessment.md).',
         f"Its separate {experimental_tls['commands']}-command [TLS/destructor suite](results/resumable-bulk-tls-01/assessment.md) also passes.",
-        'This does not transfer the older fre replay to the experimental tool.', '',
-        'That earlier fre replay selected 389 original bodies: 382 passed and 7 were ignored.',
-        'This required `--allocation-limit 150000 --trap-unsupported-calls` and',
-        '`--run-try-callbacks`, plus the recorded MIR/inlining settings. It invokes',
+        f"Fresh experimental fre coverage recollected {experimental_fre['selected']} original bodies:",
+        f"{experimental_fre['counts']['passed']} passed and {experimental_fre['counts']['ignored']} were ignored, with {experimental_fre['fresh_native_controls']} fresh native executions.",
+        f"Of {experimental_fre['compared_artifacts']} compared artifact hashes, {experimental_fre['changed_artifacts']} changed; {len(experimental_fre['outcome_changes'])} outcomes changed.",
+        f"Maximum generated code was {experimental_fre['maximum_generated_bytes']:,} bytes, with {experimental_fre['executions_with_declines']} successful executions declining functions.",
+        '[Fresh body qualification](results/resumable-bulk-fre-01/assessment.md).', '',
+        'Both fre replays required `--allocation-limit 150000 --trap-unsupported-calls` and',
+        '`--run-try-callbacks`, plus the recorded MIR/inlining settings. They invoke',
         'test bodies directly; it is not unfiltered libtest or whole-application',
         'coverage. Lowered audit entries are not counted as executed tests.', '',
         'No whole-codebase development workflow is qualified yet. Real unwinding,',
@@ -142,6 +146,8 @@ def render():
         report_sha256=r['report_sha256'], measured_tool_key=key,
         native_seconds=r['medians']['native'], custom_seconds=r['medians']['candidate']) for r in rows]
     for category, report in [
+        ('held-out-verifier-qualification', 'results/resumable-heldout-verifier-01/summary.json'),
+        ('experimental-fre-validation', 'results/resumable-bulk-fre-01/summary.json'),
         ('experimental-native-validation', 'results/resumable-bulk-native-01/summary.json'),
         ('experimental-tls-validation', 'results/resumable-bulk-tls-01/summary.json'),
         ('body-driver-qualification', 'results/resumable-body-drivers-02/summary.json'),

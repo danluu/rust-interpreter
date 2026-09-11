@@ -61,11 +61,13 @@ run declined functions. The separate `resumable-bulk-tls-01` passes 245 commands
 including original destructor order/reset and normal callbacks. Both are terminal0.
 The tracked fresh-body coordinator and explicit audit tool selection preserve
 old audit assertions; 18 CLI checks pass on the committed driver source.
-The first 16 fresh fre bodies pass with identical old artifact hashes, actual
-resumable transitions and zero declines. The remaining 24 batches are running
-as `resumable-bulk-fre-remaining-01`; its coordinator state is
-`.work/resumable-bulk-fre-01/status.json`. Freeze Rust/audit/replay/coordinator
-inputs until completion. Fresh body replay and held-out workflows remain outstanding.
+The [fresh fre replay](results/resumable-bulk-fre-01/assessment.md) is complete:
+382 original bodies pass and seven are ignored, with 382 fresh native executions.
+All 382 compared artifacts match the older replay; no outcomes changed.
+Successful bodies executed 959,714,888 native Calls and 976,181,341 Returns.
+Maximum code is 15,173,088 bytes with zero declined executions. Allocation limit
+150,000, unsupported-call trapping, normal callbacks and recorded MIR settings
+remain required. This is body replay, not full libtest. Held-out workflows remain.
 [Broader recipe](benchmarks/experiments/resumable-native-calls/BROADER-QUALIFICATION.md).
 
 Exact-code profiles of `035ef708` resolved every generated PC across three
@@ -127,11 +129,10 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-Only `resumable-bulk-fre-remaining-01` is active. Native, TLS, both body-driver
-checks and the first fre batch are terminal0. After fre completes, qualify the
-extended gate evaluator by checking both existing primary receipts without
-overwriting them, then run the seven held-out workflows. Inspect exact
-supervisor/child receipts before acting.
+Native, TLS, both body-driver checks and both fre supervisors are terminal0.
+The extended gate evaluator reproduces both existing primary receipts exactly,
+without overwriting them. Both token failures persist. Run the seven held-out workflows next.
+Inspect exact supervisor/child receipts before acting.
 The unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal
