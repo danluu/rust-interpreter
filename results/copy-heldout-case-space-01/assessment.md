@@ -1,0 +1,1 @@
+The Ruff and Nushell admission estimates verify eight bound full-cache inventories, reject 25 invalid references, and preserve the exact admission boundary and 8 GiB running reserve. No benchmark or cache modification was performed.

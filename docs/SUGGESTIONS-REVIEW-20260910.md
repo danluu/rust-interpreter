@@ -118,6 +118,11 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- The fresh [Nushell type-relations retry](../results/resumable-copy-heldout-01-case-01-retry-01/assessment.md)
+  passes all 84 commands, fifteen edited pairs and 42 artifact checks. Paired
+  wall −1.20% and CPU −2.47% pass the unchanged regression guard. The original
+  zero-pair stop is preserved. Six required held-out cases remain; no retention.
+
 - Items 2.3/9.2 now also have an explicit [between-command stop assessment](../results/resumable-copy-heldout-01-case-01-stop/assessment.md).
   The first fresh held-out case stopped at the 8 GiB disk guard, with no
   successful-edit pairs. Source restoration and all four executed snapshots

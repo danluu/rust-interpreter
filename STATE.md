@@ -78,14 +78,19 @@ changes only this case's run ID; it preserves the original failure, remaining
 case order, controls and gates. Its [qualification](results/copy-heldout-retry-gates-01/assessment.md)
 rejects 29 invalid inputs and reproduces both primary receipts.
 
-Fresh case01 retry `resumable-copy-heldout-01-case-01-retry-01` is running under
-supervisor 52502, corpus controller 52514 and workflow controller 52525, started
-September 11 at 14:26:25 local. Its [admission](results/resumable-copy-heldout-01-case-01-retry-01-preflight/summary.json)
-observed 30.34 GiB free and preceded corpus startup by 0.169 seconds. Runtime,
-benchmark and gate sources remain frozen. Finish its partial gate verification,
-then continue Ruff, Nushell, forward-anchored TLS, pgrust SHA-1, pgrust and private
-rg-aot in the recorded order. Use the amended aggregate evaluator after all
-seven complete. No subset authorizes retention.
+The [fresh Nushell type-relations retry](results/resumable-copy-heldout-01-case-01-retry-01/assessment.md)
+now completes and passes its partial gate: 84 commands, fifteen edited pairs,
+42 matching artifacts and restored sources. Paired wall is −1.20%, CPU −2.47%;
+median edited command is 4.849s candidate, 4.873s baseline and 7.913s native.
+This small difference is not a material speedup claim. The [admission](results/resumable-copy-heldout-01-case-01-retry-01-preflight/summary.json)
+observed 30.34 GiB free, 0.169 seconds before startup. Both benchmark and gate
+supervisors are terminal with exit zero. Runtime, benchmark and gate sources
+remain frozen. Continue Ruff, Nushell, forward-anchored TLS, pgrust SHA-1, pgrust
+and private rg-aot in order, then use the amended aggregate evaluator. The
+[next public-case space checks](results/copy-heldout-case-space-01/assessment.md)
+verify eight full historical inventories, reject 25 invalid references and
+retain the 8 GiB floor. Ruff requires 16.16 GiB; Nushell requires 12.65 GiB.
+No subset authorizes retention.
 
 Storage maintenance has verified 205 archives. Recent batches include
 [eight recovered histories' caches](results/heldout-recovery-storage-01/assessment.md),
