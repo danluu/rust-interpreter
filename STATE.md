@@ -53,7 +53,7 @@ workspace tests, one ignored. Twelve installed-tool CLI checks and both original
 artifacts pass; no function declines and code remains below 16 MiB.
 It clears exactly the same bytes in 64-byte batches when a sufficient minimum
 is known; short ranges use the previous helper. The original three-cycle
-`resumable-bulk-e2e-01` comparison is next. No performance result exists for it yet.
+`resumable-bulk-e2e-01` comparison is running. No performance result exists for it yet.
 
 Seven held-out workflows and broader native/TLS/fre qualification have not run
 on this tool; they remain required before retention.
@@ -113,16 +113,18 @@ std-MIR setup and OS-cache clearing. All samples remain in the records.
 
 All three fre workflows have unresolved cross-history bytecode layout changes;
 corresponding engines receive identical bytecode. Do not claim cross-history
-semantic equivalence or an established cause. The broader 47,004 native commands
-(23,502 cases × two inlining modes), 245 TLS checks and 382 passing/7 ignored fre
+semantic equivalence or an established cause. The broader 47,004 mixed commands
+include 22,238 JIT and 22,238 interpreter invocations across two inlining modes;
+these are not unique test cases. [Recount](results/historical-validation-counts-01/assessment.md).
+The separate 245 TLS checks and 382 passing/7 ignored fre
 bodies belong to older `57a54edd`, not the current experiments. That fre replay
 uses allocation limit 150,000, unsupported-call traps and normal try callbacks;
 it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-All task executions are terminal0. The original bulk-clearing E2E comparison
-is ready to start; the unbounded goal remains active.
+Only `resumable-bulk-e2e-01` is active; observe its exact supervisor/corpus
+receipts and keep workflow scripts frozen. The unbounded goal remains active.
 
 Detailed current state, exact tool hashes, all five source pins and terminal
 receipts are in `.work/continuation-state.json`. Toolchain is

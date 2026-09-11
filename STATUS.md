@@ -88,8 +88,11 @@ identity check is preserved. [Assessment](results/paired-repeated-token-01/asses
 
 That full-corpus source passed 188 bytecode unit/integration, 11 exporter and
 3 historical-cache tests. [Test receipt](results/review-codegen-limits-01/summary.json).
-The earlier `57a54edd` qualification ran 23,502 native differential
-cases with inlining off and the same 23,502 with it on; 245 TLS checks passed.
+The earlier `57a54edd` qualification completed 47,004 mixed commands:
+22,238 JIT and 22,238 interpreter invocations, plus native builds/runs,
+exports and rejection checks across two inlining modes. These are command
+counts, not unique test cases. [Recount](results/historical-validation-counts-01/assessment.md).
+A separate 245-command TLS qualification also passed.
 Those broader suites have not been rerun on the codegen-limit fix or
 the new experimental native-call engine.
 

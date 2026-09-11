@@ -15,6 +15,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | workflow | [pgrust-sha1-inline8](native-controls-corpus-01-pgrust-sha1-inline8/summary.json) |
 | workflow | [ruff](native-controls-corpus-01-ruff/summary.json) |
 | workflow | [nushell-type-relations](native-controls-corpus-01-nushell-type-relations/summary.json) |
+| historical-count-correction | [historical-validation-counts-01/summary.json](historical-validation-counts-01/summary.json) |
 | runtime-experiment | [resumable-e2e-01/summary.json](resumable-e2e-01/summary.json) |
 | runtime-gates | [resumable-e2e-01/gate-evaluation.json](resumable-e2e-01/gate-evaluation.json) |
 | runtime-verification | [resumable-e2e-01/final-verification.json](resumable-e2e-01/final-verification.json) |

@@ -16,6 +16,7 @@ EXPERIMENT = 'results/' + EXPERIMENT_RUN + '/gate-evaluation.json'
 def render():
     corpus = json.loads((ROOT / CORPUS).read_text())
     previous = json.loads((ROOT / PREVIOUS).read_text())
+    validation_counts = json.loads((ROOT / 'results/historical-validation-counts-01/summary.json').read_text())
     repeated = json.loads((ROOT / REPEATED).read_text())
     experiment = json.loads((ROOT / EXPERIMENT).read_text())
     experimental_checks = json.loads((ROOT / 'results' / EXPERIMENT_RUN / 'final-verification.json').read_text())['counts']
@@ -105,8 +106,11 @@ def render():
         '## Coverage and limits', '',
         'That full-corpus source passed 188 bytecode unit/integration, 11 exporter and',
         '3 historical-cache tests. [Test receipt](results/review-codegen-limits-01/summary.json).',
-        f"The earlier `{previous['retained_tool_key'][:8]}` qualification ran 23,502 native differential",
-        'cases with inlining off and the same 23,502 with it on; 245 TLS checks passed.',
+        f"The earlier `{previous['retained_tool_key'][:8]}` qualification completed {validation_counts['commands']:,} mixed commands:",
+        f"{validation_counts['counts']['vm-jit']:,} JIT and {validation_counts['counts']['vm-interpreter']:,} interpreter invocations, plus native builds/runs,",
+        'exports and rejection checks across two inlining modes. These are command',
+        'counts, not unique test cases. [Recount](results/historical-validation-counts-01/assessment.md).',
+        'A separate 245-command TLS qualification also passed.', 
         'Those broader suites have not been rerun on the codegen-limit fix or',
         'the new experimental native-call engine.', '',
         'That earlier fre replay selected 389 original bodies: 382 passed and 7 were ignored.',
@@ -125,6 +129,7 @@ def render():
         report_sha256=r['report_sha256'], measured_tool_key=key,
         native_seconds=r['medians']['native'], custom_seconds=r['medians']['candidate']) for r in rows]
     for category, report in [
+        ('historical-count-correction', 'results/historical-validation-counts-01/summary.json'),
         ('runtime-experiment', 'results/' + EXPERIMENT_RUN + '/summary.json'),
         ('runtime-gates', EXPERIMENT),
         ('runtime-verification', 'results/' + EXPERIMENT_RUN + '/final-verification.json'),

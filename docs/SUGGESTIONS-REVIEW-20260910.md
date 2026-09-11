@@ -86,7 +86,7 @@ Heterogeneous pair counts are bookkeeping, not an adoption result.
 | 6.5 Null prefix | Audit/document current minimum-storage behavior before changing it. Bytes 1–15 are not all guard memory under the present bytecode contract. |
 | 6.6 Allocation accounting | Distinguish guest working-memory/live-allocation limits from host RSS and map metadata. Audit bad-layout versus out-of-memory outcomes against Rust allocator contracts; do not report the guest budget as a host-memory cap. |
 | 6.7 MIR catch-alls | Accept targeted pinned-toolchain coverage audit. Unsupported operations must remain explicit; supporting volatile or unwind behavior requires semantics, not another name match. |
-| 7.1 Random differential tests | Accept deterministic seeded valid-program generation with persisted failures. Existing native differential commands cover 23,502 cases in two modes, but are not general randomized CFG generation. |
+| 7.1 Random differential tests | Accept deterministic seeded valid-program generation with persisted failures. The archived suite has 47,004 mixed commands, including 22,238 JIT invocations across two modes; these are not unique cases or general randomized CFG generation. |
 | 7.2 Limit/platform tests | Accept boundary/decline tests now; retain portable interpreter testing. Performance gates belong in reproducible benchmarks, not timing-sensitive unit tests. |
 | 7.3 Test counts | Accept a reproducible command and aggregate clarification: library-only counts differ from all bytecode unit/integration tests. Historical snapshots keep their historical counts. |
 | 7.4 Test builders | Accept a small shared builder for new generated/boundary suites. Do not obscure the concrete operations a regression exercises. |
@@ -103,6 +103,12 @@ Heterogeneous pair counts are bookkeeping, not an adoption result.
 | 9.5 ICE/quarantine deletion | Decline quarantine deletion: it is outside this task's ownership. Ignored historical crash logs are not a performance blocker; preserve evidence unless exact ownership and cleanup need are established. |
 | 9.6 Historical backend removal | Keep archived native controls reproducible. Consider default-members and historical documentation instead of deleting still-referenced tools. Removing experimental checking/capture modes needs a caller/fixture audit, separately from runtime work. |
 | 9.7 Decision rules | Accept. Predeclare required behavior, target workloads, meaningful end-to-end gain and held-out checks. Report regressions and uncertainty; do not choose success criteria after seeing the pairs. |
+
+The [historical command recount](../results/historical-validation-counts-01/assessment.md)
+corrects the former “23,502 cases per mode” wording: each mode has 23,502 mixed
+commands including 11,119 JIT and 11,119 interpreter invocations. Native builds,
+batched native oracles, exports and intentional rejection checks are distinct.
+Current status uses these categories; original reports remain preserved.
 
 **10 — Proposed schedule.** Accept controls first and larger call/ABI work next.
 Documentation and correctness fixes can proceed between serialized measurements.
