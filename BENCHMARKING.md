@@ -25,6 +25,20 @@ Explicit guest MIR flags apply to custom modes; native keeps its test profile.
 Five shared-host pairs are not confidence intervals. Separate medians of stages
 need not sum to a median total, or equal a median paired difference.
 
+Use `--cycles 3` or more for repeated edits. Each cycle rebuilds original source,
+checks the wrong edit, and replays all five real edits. Only the first original
+command is cold; later original commands are labeled anchors. Each mode must
+have a different source hash from its preceding compilation. Three cycles rotate
+every edit through all three mode positions. Reports include child user/system
+CPU time, paired differences and per-edit min/median/max; these are descriptive
+measurements, not confidence intervals. Cache history evolves across cycles.
+
+The [first repeated token run](results/paired-repeated-token-01/assessment.md)
+demonstrates why both source and artifact hashes matter: corresponding engines
+produced identical bytecode, but returning to the same source after the first
+cycle changed constant/data layout. Do not assume identical source implies an
+identical artifact across different compiler-cache histories.
+
 `--cargo-timings` enables Cargo's compilation-unit reports in every mode. Report
 generation stays inside the command timer. The harness copies each report after
 timing and records its hash under the raw run's `cargo-timings/` directory. These

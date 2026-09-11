@@ -3,7 +3,6 @@
 import argparse
 import fcntl
 import hashlib
-import itertools
 import json
 import os
 from pathlib import Path
@@ -15,6 +14,7 @@ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require
 
 
 from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
+from workflow_measurements import child_usage, child_cpu_since, per_edit_spread, sample_path, source_states
 
 
 def guest_test_failure(stderr):
@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--project',choices=[*WORKFLOWS,'rg-aot'],default='fre')
     parser.add_argument('--workflow',default='default',help='additional named workload within a project')
     parser.add_argument('--batch',action='store_true',help='invoke all custom test entries in one command')
+    parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
     parser.add_argument('--cargo-timings',action='store_true',help='collect Cargo unit timing reports in every mode; report generation remains timed')
     parser.add_argument('--vary-selection',action='store_true',help='change the selected tests to match each production edit')
     parser.add_argument('--std-mir',action='store_true',help='use the reusable metadata-only standard library for custom engines')
@@ -55,6 +56,7 @@ def main():
     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
     args=parser.parse_args()
+    if not 1<=args.cycles<=30:parser.error('cycles must be in 1..30')
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     if args.candidate_tool_key is not None and args.baseline_tool_key is None:
@@ -117,10 +119,6 @@ def main():
                  vm_sha256=hashlib.sha256((config['directory']/'rust-interp-vm').read_bytes()).hexdigest(),
                  exporter_sha256=hashlib.sha256((config['directory']/'rust-interp-mir-export').read_bytes()).hexdigest())
                  for mode,config in mode_tools.items()}
-    comparison_orders=list(itertools.permutations(modes))
-    # Cover all six orders while alternating which custom build runs first.
-    # A five-edit workflow uses the first five; retain the exact order below.
-    comparison_orders=[comparison_orders[i] for i in [0,1,2,4,3,5]]
     std=None
     if args.std_mir:
         from std_mir import checked_std_mir
@@ -135,13 +133,10 @@ def main():
         raise RuntimeError('snapshot has tracked changes')
     work=ROOT/'.work/runs'/args.run_id
     work.mkdir(parents=True)
-    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/std_mir.py']
+    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/std_mir.py']
     frozen_scripts={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in script_paths}
     file=source/case['file']
     original=file.read_bytes();current=original
-    test_marker='\n#[cfg(test)]\nmod tests {'
-    assert original.decode().count(test_marker)==1
-    original_tests=original.decode().split(test_marker)[1]
     env=os.environ.copy()
     for name in list(env):
         if name.startswith(('RUST_INTERP_','CARGO_PROFILE_')) or name in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','CARGO_INCREMENTAL','CARGO_TARGET_DIR','CARGO_BUILD_TARGET']:
@@ -150,8 +145,13 @@ def main():
     if args.build_tool_opt_level is not None:
         for profile in ['DEV','TEST']:
             env[f'CARGO_PROFILE_{profile}_BUILD_OVERRIDE_OPT_LEVEL']=str(args.build_tool_opt_level)
-    records=[];orders=[]
-    def invoke(mode,state,label,success):
+    records=[];orders=[];transitions=[];built_sources={mode:None for mode in modes}
+    def invoke(mode,sample):
+        state=sample['state'];cycle=sample['cycle'];phase=sample['phase'];label=sample['label'];success=state!=-1
+        source_digest=hashlib.sha256(current).hexdigest()
+        previous_source=built_sources[mode]
+        if phase!='cold':
+            assert previous_source is not None and previous_source!=source_digest,'sample did not change this mode’s previous source'
         assert all(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest for path,digest in frozen_scripts.items()),'benchmark scripts changed during the run'
         manifest=str(source/'Cargo.toml')
         selected=tests
@@ -180,19 +180,22 @@ def main():
             child_env['RUSTFLAGS']=' '.join(config['guest_flags'])
         for command in commands:
             child_start=time.perf_counter()
+            usage_before=child_usage()
             p=subprocess.Popen(command,cwd=source,env=child_env,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             active=dict(pid=p.pid,parent_pid=os.getpid(),command=command,cwd=str(source),
-                        mode=mode,state=state,label=label,rustflags=child_env.get('RUSTFLAGS'),started_at=time.time(),status='running')
+                        mode=mode,cycle=cycle,state=state,phase=phase,label=label,rustflags=child_env.get('RUSTFLAGS'),started_at=time.time(),status='running')
             (work/'active-command.json').write_text(json.dumps(active,indent=2)+'\n')
             stdout,stderr=p.communicate()
+            cpu=child_cpu_since(usage_before)
             active.update(status='finished',returncode=p.returncode)
             (work/'active-command.json').write_text(json.dumps(active,indent=2)+'\n')
             calls.append(dict(pid=p.pid,command=command,rustflags=child_env.get('RUSTFLAGS'),seconds=time.perf_counter()-child_start,
-                              returncode=p.returncode,stdout=stdout,stderr=stderr))
+                              cpu=cpu,returncode=p.returncode,stdout=stdout,stderr=stderr))
             if p.returncode:break
         elapsed=time.perf_counter()-start
         snapshots=[]
-        record=dict(mode=mode,state=state,label=label,tests=selected,seconds=elapsed,
+        record=dict(mode=mode,cycle=cycle,state=state,phase=phase,label=label,tests=selected,seconds=elapsed,
+                    cpu_seconds=sum(c['cpu']['total_seconds'] for c in calls),previous_source_sha256=previous_source,
                     source_sha256=hashlib.sha256(file.read_bytes()).hexdigest(),
                     calls=calls,load=os.getloadavg())
         if args.baseline_tool_key is not None or args.trap_unsupported_calls:
@@ -219,7 +222,7 @@ def main():
                 assert 0<launch['artifact_bytes']<=64*1024*1024
                 payload=artifact.read_bytes()
                 assert len(payload)==launch['artifact_bytes'] and hashlib.sha256(payload).hexdigest()==launch['artifact_sha256']
-                snapshot=work/'artifacts'/mode/f'{state}-{index}.rbc';snapshot.parent.mkdir(parents=True,exist_ok=True)
+                snapshot=work/'artifacts'/mode/sample_path(sample,index,args.cycles,'rbc');snapshot.parent.mkdir(parents=True,exist_ok=True)
                 with snapshot.open('xb') as destination:destination.write(payload)
                 snapshots.append(dict(path=str(snapshot.relative_to(ROOT)),sha256=launch['artifact_sha256'],bytes=len(payload)))
         if args.cargo_timings:
@@ -240,7 +243,7 @@ def main():
                 assert report.parent==timing_root and report.name.startswith('cargo-timing')
                 assert report.is_file() and report.stat().st_size<=64*1024*1024
                 payload=report.read_bytes()
-                snapshot=work/'cargo-timings'/mode/f'{state}-{index}.html';snapshot.parent.mkdir(parents=True,exist_ok=True)
+                snapshot=work/'cargo-timings'/mode/sample_path(sample,index,args.cycles,'html');snapshot.parent.mkdir(parents=True,exist_ok=True)
                 with snapshot.open('xb') as destination:destination.write(payload)
                 reports.append(dict(path=str(snapshot.relative_to(ROOT)),sha256=hashlib.sha256(payload).hexdigest(),bytes=len(payload)))
         (work/'records.json').write_text(json.dumps(records,indent=2)+'\n')
@@ -261,37 +264,35 @@ def main():
             else:
                 assert guest_test_failure(calls[-1]['stderr']),text
         assert any(('Compiling ' if mode=='native' else 'Checking ')+package in c['stderr'] for c in calls),'edited crate did not compile'
-        print(mode,state,label,round(record['seconds'],3),flush=True)
+        assert record['source_sha256']==source_digest,'source changed during the command'
+        built_sources[mode]=source_digest
+        print(mode,cycle,state,label,round(record['seconds'],3),flush=True)
     try:
         # Different modes each have their own caches. A cold successful original
         # build is followed by a wrong production edit, then cumulative body
         # refactors. Test code is byte-for-byte unchanged throughout.
-        for state in [0,-1,*range(1,len(edits)+1)]:
-            candidate=original.decode()
-            label='cold-original'
-            if state==-1:
-                label,old,new=case['negative']
-                assert candidate.count(old)==1
-                candidate=candidate.replace(old,new)
-            elif state>0:
-                for label,old,new in edits[:state]:
-                    assert candidate.count(old)==1,(label,candidate.count(old))
-                    candidate=candidate.replace(old,new)
-            assert candidate.split(test_marker)[1]==original_tests,'test source changed'
-            order=(modes if state%2==0 else list(reversed(modes)))
-            if args.baseline_tool_key is not None and state>0:order=comparison_orders[(state-1)%len(comparison_orders)]
-            orders.append(dict(state=state,modes=list(order)))
-            for mode in order:
+        for sample in source_states(original.decode(),case,args.cycles,modes,args.baseline_tool_key is not None):
+            cycle=sample['cycle'];state=sample['state']
+            if file.read_bytes()!=current:raise RuntimeError('source changed outside this benchmark')
+            previous=hashlib.sha256(current).hexdigest()
+            current=sample['source']
+            current_digest=hashlib.sha256(current).hexdigest()
+            if sample['phase']!='cold':assert previous!=current_digest,'repeated unchanged source state'
+            file.write_bytes(current)
+            orders.append({k:sample[k] for k in ['cycle','state','phase','modes']})
+            transitions.append(dict(cycle=cycle,state=state,phase=sample['phase'],previous_source_sha256=previous,
+                source_sha256=current_digest,content_changed=previous!=current_digest,previous_mode_sources=dict(built_sources)))
+            (work/'source-transitions.json').write_text(json.dumps(transitions,indent=2)+'\n')
+            for mode in sample['modes']:
                 if file.read_bytes()!=current:raise RuntimeError('source changed outside this benchmark')
-                current=candidate.encode();file.write_bytes(current)
-                invoke(mode,state,label,state!=-1)
+                invoke(mode,sample)
             if args.baseline_tool_key is not None:
-                paired=[next(r for r in records if r['mode']==mode and r['state']==state) for mode in ['baseline','candidate']]
+                paired=[next(r for r in records if r['mode']==mode and r['cycle']==cycle and r['state']==state) for mode in ['baseline','candidate']]
                 assert paired[0]['source_sha256']==paired[1]['source_sha256']
                 same=[a['sha256'] for a in paired[0]['artifacts']]==[a['sha256'] for a in paired[1]['artifacts']]
                 if args.expect_identical_bytecode:assert same,'baseline and candidate exported different bytecode; cannot isolate the runtime change'
             elif args.trap_unsupported_calls:
-                custom=[next(r for r in records if r['mode']==mode and r['state']==state) for mode in ['interpreter','jit']]
+                custom=[next(r for r in records if r['mode']==mode and r['cycle']==cycle and r['state']==state) for mode in ['interpreter','jit']]
                 assert custom[0]['source_sha256']==custom[1]['source_sha256']
                 assert [a['sha256'] for a in custom[0]['artifacts']]==[a['sha256'] for a in custom[1]['artifacts']],'custom engines exported different artifacts'
     finally:
@@ -299,7 +300,7 @@ def main():
         file.write_bytes(original)
     assert all(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest for path,digest in frozen_scripts.items()),'benchmark scripts changed during the run'
     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
-    result=dict(project=args.project,workflow=args.workflow,revision=revision,
+    result=dict(schema_version=2,project=args.project,workflow=args.workflow,revision=revision,cycles=args.cycles,
                 tests=f'{len(tests)} existing private test bodies' if private else tests,
                 edits=[e[0] for e in edits],
                 workload=case['workload'],case_sha256=hashlib.sha256(json.dumps(case,sort_keys=True).encode()).hexdigest(),
@@ -313,31 +314,43 @@ def main():
                 guest_mir_inline_scale=args.guest_mir_inline_scale,
                 guest_mir_inline_thresholds=inline_thresholds,guest_rustflags=guest_flags,
                 tool_key=key,candidate_tool_key_requested=args.candidate_tool_key,wrong_production_edit_rejected=True,median_seconds=med,
+                median_cpu_seconds={m:statistics.median(r['cpu_seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes},
+                cpu_accounting='RUSAGE_CHILDREN deltas around one waited-for child tree at a time; user plus system CPU; excludes harness CPU',
                 std_mir=None if std is None else dict(key=std[2],setup_seconds=std[3]['setup_seconds'],build_seconds=std[3]['build_seconds'],metadata_bytes=std[3]['metadata_bytes']),
-                cold_success_seconds={r['mode']:r['seconds'] for r in records if r['state']==0},
+                cold_success_seconds={r['mode']:r['seconds'] for r in records if r['phase']=='cold'},
+                cycle_anchor_seconds=[dict(cycle=cycle,seconds={r['mode']:r['seconds'] for r in records if r['cycle']==cycle and r['phase']=='anchor'}) for cycle in range(1,args.cycles)],
+                source_transitions=transitions,
                 scripts_sha256=frozen_scripts,tool_builds=tool_builds,mode_orders=orders,
                 vm_sha256=hashlib.sha256((tools/'rust-interp-vm').read_bytes()).hexdigest(),
                 exporter_sha256=hashlib.sha256((tools/'rust-interp-mir-export').read_bytes()).hexdigest(),
                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
     if args.baseline_tool_key is not None:
         pairs=[]
-        for state in range(1,len(edits)+1):
-            before=next(r for r in records if r['mode']=='baseline' and r['state']==state)
-            after=next(r for r in records if r['mode']=='candidate' and r['state']==state)
-            stages={name:{stage:sum(call['launch'][stage] for call in row['calls']) for stage in ['cargo_seconds','execution_seconds','artifact_hash_seconds','launcher_seconds']} for name,row in [('baseline',before),('candidate',after)]}
-            pairs.append(dict(state=state,source_sha256=before['source_sha256'],baseline_seconds=before['seconds'],candidate_seconds=after['seconds'],
-                              difference_seconds=after['seconds']-before['seconds'],stage_seconds=stages,
-                              identical_bytecode=[a['sha256'] for a in before['artifacts']]==[a['sha256'] for a in after['artifacts']]))
+        for cycle in range(args.cycles):
+            for state in range(1,len(edits)+1):
+                before=next(r for r in records if r['mode']=='baseline' and r['cycle']==cycle and r['state']==state)
+                after=next(r for r in records if r['mode']=='candidate' and r['cycle']==cycle and r['state']==state)
+                native=next(r for r in records if r['mode']=='native' and r['cycle']==cycle and r['state']==state)
+                assert before['source_sha256']==after['source_sha256']==native['source_sha256']
+                stages={name:{stage:sum(call['launch'][stage] for call in row['calls']) for stage in ['cargo_seconds','execution_seconds','artifact_hash_seconds','launcher_seconds']} for name,row in [('baseline',before),('candidate',after)]}
+                pairs.append(dict(cycle=cycle,state=state,source_sha256=before['source_sha256'],baseline_seconds=before['seconds'],candidate_seconds=after['seconds'],
+                                  native_seconds=native['seconds'],native_cpu_seconds=native['cpu_seconds'],
+                                  baseline_cpu_seconds=before['cpu_seconds'],candidate_cpu_seconds=after['cpu_seconds'],
+                                  cpu_difference_seconds=after['cpu_seconds']-before['cpu_seconds'],
+                                  difference_seconds=after['seconds']-before['seconds'],stage_seconds=stages,
+                                  identical_bytecode=[a['sha256'] for a in before['artifacts']]==[a['sha256'] for a in after['artifacts']]))
         result['comparison']=dict(engine=args.comparison_engine or 'jit',baseline_tool_key=args.baseline_tool_key,candidate_tool_key=key,
                                   identical_bytecode_required=args.expect_identical_bytecode,pairs=pairs,
                                   candidate_pair_wins=sum(p['difference_seconds']<0 for p in pairs),
-                                  median_paired_difference_seconds=statistics.median(p['difference_seconds'] for p in pairs))
+                                  median_paired_difference_seconds=statistics.median(p['difference_seconds'] for p in pairs),
+                                  median_paired_cpu_difference_seconds=statistics.median(p['cpu_difference_seconds'] for p in pairs),
+                                  per_edit=per_edit_spread(pairs))
     out=ROOT/'results'/args.run_id;out.mkdir()
     (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n')
     report=f'# Production edits and existing {args.project} tests\n\n{case["workload"]}.\n\n'
     if args.allocation_limit is not None:
         report+=f'Custom engines explicitly allow {args.allocation_limit:,} live guest allocations and retain the 64 MiB guest-byte budget. Native Cargo uses its normal allocator.\n\n'
-    report+=f'{len(edits)} cumulative production-body refactors; test source is unchanged. Every mode first rejected a wrong production edit. Full subprocess time includes Cargo, launcher, compilation, and execution. Native runs the selected tests in one command. '
+    report+=f'{len(edits)} cumulative production-body refactors across {args.cycles} cycle(s); test source is unchanged. Each cycle builds the original source, rejects a wrong production edit in every mode, then applies the refactors. Only the first original build is cold; subsequent anchors are recorded separately. Every edited sample changes the source that its mode last built. Full subprocess time includes Cargo, launcher, compilation, and execution. Native runs the selected tests in one command. '
     report+=('Custom engines use one command.\n\n' if args.batch else 'Custom engines use a serial launcher command per test.\n\n')
     if args.cargo_timings:
         report+='Every mode enables Cargo unit timing reports. Report generation is included in the command time; snapshot copying follows the timer. Snapshot paths and hashes are recorded with each sample.\n\n'
@@ -345,8 +358,13 @@ def main():
         comparison=result['comparison']
         report+=f"Baseline and candidate use `{comparison['engine']}` with separate Cargo caches. The installed builds are pinned by their recorded keys and binary hashes; source edits and selected tests match within every pair. Each executed artifact is retained. Snapshot copying occurs after the command timer; artifact hashing inside the launcher is timed and recorded.\n\n"
         equality_note = ('Bytecode equality is required and verified.' if args.expect_identical_bytecode else
-                         f"Bytecode is identical in {sum(pair['identical_bytecode'] for pair in comparison['pairs'])}/{len(edits)} pairs; both artifacts are retained for every pair.")
-        report+=f"The candidate wins {comparison['candidate_pair_wins']}/{len(edits)} complete-command pairs. The median paired candidate-minus-baseline difference is {comparison['median_paired_difference_seconds']:+.3f} s. {equality_note} Per-edit Cargo and execution stages are retained in JSON.\n\n"
+                         f"Bytecode is identical in {sum(pair['identical_bytecode'] for pair in comparison['pairs'])}/{len(comparison['pairs'])} pairs; both artifacts are retained for every pair.")
+        report+=f"The candidate wins {comparison['candidate_pair_wins']}/{len(comparison['pairs'])} complete-command pairs. The median paired candidate-minus-baseline difference is {comparison['median_paired_difference_seconds']:+.3f} s wall and {comparison['median_paired_cpu_difference_seconds']:+.3f} s child CPU. {equality_note} Per-edit Cargo and execution stages are retained in JSON.\n\n"
+        report+='| Edit | Repeats | Paired wall change min / median / max, s | Paired CPU change min / median / max, s |\n|---|---:|---:|---:|\n'
+        for row in comparison['per_edit']:
+            values=[' / '.join(f"{row['spread'][field][stat]:+.3f}" for stat in ['min','median','max']) for field in ['difference_seconds','cpu_difference_seconds']]
+            report+=f"| {row['state']} | {row['samples']} | {' | '.join(values)} |\n"
+        report+='\nThis is descriptive spread within each actual edit, not a confidence interval. Cycles share caches and host conditions.\n\n'
     if args.trap_unsupported_calls:
         report+='Unavailable foreign calls and catch_unwind intrinsics are explicit terminal stops. Successful tests avoided those boundaries; their call-site metadata and exact executed bytecode are retained with the command records. Ordinary type and borrow checking remained enabled.\n\n'
     if args.build_tool_opt_level is not None:
@@ -358,9 +376,14 @@ def main():
         report+=f'Custom-engine Cargo commands explicitly set `RUSTFLAGS={flags}`. Native retains its Cargo development/test profile. Frontend and overflow checks remain enabled. Without an explicit Cargo target these flags can also affect host build tools; exact flags are retained in the command records.\n\n'
     if args.vary_selection:
         report+='Test selection changes with each production edit. Each mode runs the same selection at each state; the exact selections are recorded in summary.json.\n\n'
-    report+='| Mode | Median edited workflow seconds | Cold workflow seconds |\n|---|---:|---:|\n'
-    report+=''.join(f'| {m} | {v:.3f} | {result["cold_success_seconds"][m]:.3f} |\n' for m,v in med.items())
-    report+='\nCold means empty per-engine artifact caches; tool bootstrap, installed sysroot, downloads, and OS file-cache coldness are excluded. Five samples on a shared host are not a confidence interval or a whole-suite result.\n'
+    report+='| Mode | Median edited wall seconds | Median edited child CPU seconds | Cold wall seconds |\n|---|---:|---:|---:|\n'
+    report+=''.join(f'| {m} | {v:.3f} | {result["median_cpu_seconds"][m]:.3f} | {result["cold_success_seconds"][m]:.3f} |\n' for m,v in med.items())
+    if result['cycle_anchor_seconds']:
+        report+='\n| Anchor cycle (zero-based) | '+' | '.join(modes)+' |\n|---|'+':---:|'*len(modes)+'\n'
+        for row in result['cycle_anchor_seconds']:
+            report+=f"| {row['cycle']} | "+' | '.join(f"{row['seconds'][mode]:.3f}" for mode in modes)+' |\n'
+    report+='\nCPU time sums user and system time for each waited-for child tree, including its completed descendants and excluding the harness itself. Commands run serially within the harness, so unrelated processes do not enter that accounting.\n'
+    report+=f'\nCold means empty per-engine artifact caches; tool bootstrap, installed sysroot, downloads, and OS file-cache coldness are excluded. {len(edits)*args.cycles} edited samples per mode on a shared host do not establish a whole-suite or general performance result.\n'
     if std:report+=f'\nCustom engines use the shared metadata-only standard library. Its original installation took {std[3]["setup_seconds"]:.3f} s, including {std[3]["build_seconds"]:.3f} s of metadata compilation; that setup is excluded from the command times above. Native uses the installed standard library.\n'
     (out/'summary.md').write_text(report)
     print(out/'summary.md')

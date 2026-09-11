@@ -16,7 +16,7 @@ For a comparison against an already installed immutable baseline:
 
 ```sh
 python3 scripts/bench_e2e_workflow.py \
-  --run-id token-phrase-new \
+  --run-id token-phrase-new --cycles 3 \
   --project fre --workflow token-phrase-allocation \
   --batch --std-mir --inline-leaves --baseline-inline-leaves \
   --trap-unsupported-calls --run-try-callbacks \
@@ -40,6 +40,9 @@ isolated interpreter workspaces. Existing output directories are never reused.
 
 The current native control uses the repository's test profile, four Cargo jobs
 and one test thread. It is a specified control, not the best possible native
-configuration. Five different cumulative edits are a small descriptive sample;
-their win count is not a statistical or general performance guarantee. Keep
+configuration. Three cycles produce fifteen edited pairs, with each edit in
+every mode position. Each cycle rebuilds original source and repeats the wrong
+edit control. Only the initial original commands are cold. Per-edit timing and
+CPU spreads remain descriptive; their win count is not a statistical or general
+performance guarantee. Keep
 compute and frontend-dominated workflows separate when interpreting results.
