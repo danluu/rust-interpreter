@@ -52,14 +52,16 @@ no warm-build gain. Original/wrong-edit artifacts repeat the known cross-cycle
 layout difference; corresponding modes match and the API-edit artifact is stable.
 Reported lowering is about 71 ms within roughly 5.3-second edited commands.
 
-Both warm primaries and the first two fixed cold histories are complete.
+Both warm primaries and the first three fixed cold histories are complete.
 [Cold01](results/worker-count-nushell-cold-01/assessment.md) gives wall
 64.029→35.571s and CPU 189.053→287.938s; [cold02](results/worker-count-nushell-cold-02/assessment.md)
-gives wall 63.796→31.333s and CPU 186.549→232.158s. Both verify twelve
-commands, six artifacts, exact restored sources and eleven frozen inputs.
-The [two-history assessment](results/worker-count-cold-decision-through-02/assessment.md)
-requires continuing: four histories remain and neither failure bound is decisive.
-Next order: baseline,candidate,native. Keep the 10% cold wall improvement and
+gives wall 63.796→31.333s and CPU 186.549→232.158s;
+[cold03](results/worker-count-nushell-cold-03/assessment.md) gives wall
+67.678→35.016s and CPU 204.702→266.197s. All verify twelve commands,
+six artifacts, exact restored sources and eleven frozen inputs.
+The [three-history assessment](results/worker-count-cold-decision-through-03/assessment.md)
+requires continuing: three histories remain and neither failure bound is decisive.
+Next order: native,candidate,baseline. Keep the 10% cold wall improvement and
 10% CPU guard. Qualification/primary anchors remain excluded; no adoption.
 Prepare space outside measurements before the next large history.
 
@@ -132,8 +134,8 @@ without process intervention. The cause is unknown. Do not weaken the guards.
 The [32-target fre batch](results/worker-cold-storage-batch-04/assessment.md)
 is now complete and verified: 56,584 paths, 407 external evidence hashes,
 all original payloads preserved. Completed archives now total **121**
-(100 workflow, 21 host). About 23.7 GiB was free afterward. Admit cold03
-with the existing space guard and all eleven worker inputs still frozen.
+(100 workflow, 21 host). About 23.7 GiB was free afterward. Cold03 subsequently completed; prepare
+space for cold04 with all eleven worker inputs still frozen.
 
 
 The [completed twenty-four-target batch](results/worker-cold-storage-batch-02/assessment.md)
