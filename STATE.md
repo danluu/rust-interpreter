@@ -50,6 +50,20 @@ workflows are running as `resumable-bulk-heldout-01` on the unchanged tool and
 original controls. Their results will guide the next substantive change; they
 do not waive the failed performance gate or authorize default retention.
 
+Six held-out workflows have completed: pgrust paired wall −1.88%, Nushell +0.60%,
+rg-aot −0.03%, fre TLS −1.58%, pgrust SHA-1 −4.38%, Ruff −0.56%. None exceeds
+the 5% regression threshold. These are provisional per-case summaries; the full
+corpus is not yet terminal. Nushell type relations is the remaining active case.
+
+The next workflow check is [generic interface edits](benchmarks/experiments/interface-edits/PLAN.md):
+pgrust's byte-hash API becomes generic over borrowed `AsRef<[u8]>`, and Nushell's
+list-type constructor accepts `Into<Type>`. All original test source is preserved.
+Two pinned case files, a bounded public case loader and input-check helper are
+committed in `38962af`, but have **not** been run or integrated. After the held-out
+corpus is terminal and evaluated, qualify the helper, add the case-file hook to
+the tracked harness, run one qualification cycle per case, then fifteen cycles
+of each single interface edit. Do not modify frozen harness inputs before then.
+
 The [broader driver](scripts/qualify_native_execution.py) now stages the existing
 full validator with immutable tool/mode selection and unchanged assertion ASTs.
 Its [helper qualification](results/resumable-execution-driver-01/summary.json)
