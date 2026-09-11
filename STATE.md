@@ -8,124 +8,65 @@ no push was requested. Branch: `experiment/resumable-native-calls`.
 
 ## Active direction
 
-The allocation-history investigation now has a [small incremental-on/off
-reproducer](results/allocation-history-reduction-02/assessment.md) and a
-[built-MIR observer](results/allocation-history-mir-dumps-02/assessment.md).
-Both pass 133 command checks; the observer preserves all eight uninstrumented
-artifacts. Only the API-dependent body rebuilds where its literal allocation
-splits. This explains the history sensitivity without licensing content-only
-deduplication or session-local cache keys. Commits be16330 and acb0565 preserve
-the two stages.
+Source `aa2f6ea` / tool `0e94d6d8` now completes the current runtime qualification.
+Our direct AArch64 JIT keeps checked dynamic/large copies inside resumable
+native regions and retains values across native branches/calls. The
+[matched-frontend comparison](results/resumable-copy-e2e-01/assessment.md) isolates
+native copies: token paired wall −15.14%, CPU −15.28%, with folded within both
+5% guards. The [original b2 comparison](results/resumable-copy-original-e2e-01/assessment.md)
+passes both original targets: folded wall −21.82%, token −33.09%, with lower CPU.
+Candidate medians still exceed native on these compute workloads: 1.913s versus
+1.653s folded and 4.418s versus 2.012s token. The b2 comparison includes the
+candidate's exporter/wrapper changes; the matched comparison isolates copies.
 
-Return to compute-heavy guest execution next. Function reuse remains a design
-problem, but Nu's ~71-ms lowering interval inside ~5.3-second edited commands
-does not justify it as the immediate speed project. Fresh exact-code profiles
-of tool78's existing bulk/resumable/persistent mode have completed. The
-[qualified analyzer](results/resumable-bulk-profile-tools-01/assessment.md)
-now recognizes the bulk loop without changing six historical profiles.
-[Token](results/resumable-bulk-token-sample-01/assessment.md) shows 15.59%
-native-boundary self samples and 9.55% clearing; [folded](results/resumable-bulk-folded-sample-01/assessment.md)
-shows 40.07% clearing and 0.20% native boundaries. The [exact operation counts](results/resumable-bulk-token-transitions-01/assessment.md)
-attribute 88.19% of token's interpreted operations to fixed/dynamic copies.
+The [complete seven-case held-out verification](results/resumable-copy-heldout-recovery-01/assessment.md)
+passes 588 commands, 105 edited pairs and 294 artifacts. No case has wall or CPU
+regression above 5%. Paired wall changes: Nushell type-relations −1.20%, Ruff
+−0.84%, Nushell −6.63%, fre forward/TLS −6.04%, pgrust SHA-1 −13.70%, pgrust
+−5.56%, private rg-aot −9.22%. Corresponding artifacts match and all tracked
+sources are restored. The fre workflow retains cross-cycle layout differences.
+This completes the fixed selected-workflow checks; options remain explicit.
 
-Source `aa2f6ea` / tool `0e94d6d8` keeps these checked transfers inside resumable
-regions. [Debug](results/resumable-copy-debug-02/assessment.md) and
-[release](results/resumable-copy-release-01/assessment.md) pass 276 tests, one
-ignored. [Original artifact smokes](results/resumable-copy-real-smoke-01/assessment.md)
-pass with zero interpreted copies and no JIT declines; token native entries
-fall to ~2.65 million. These instrumented counts are not speed measurements.
-The [plan](benchmarks/experiments/resumable-native-calls/COPY-TRANSITIONS-NEXT.md)
-requires a new ≥10% token E2E gain and lower CPU, with ≤5% folded regression.
-Baseline `e965f566` has tool78's exact VM and the candidate's exact exporter/
-wrapper, isolating the runtime change. New baseline runtime flags pass CLI and
-historical receipt checks; [actual pgrust qualification](results/resumable-copy-harness-01/assessment.md)
-passes 36 commands and 18 matching artifacts with original assertions and source
-restoration. The [two-workflow primary](results/resumable-copy-e2e-01/assessment.md)
-now passes: token paired wall −15.14%, child CPU −15.28%; folded +1.06%/+0.54%
-passes both 5% guards. Verification covers 168 commands, 30 edited pairs and
-84 artifacts. Token median is 5.116s → 4.329s, still above native's 2.036s.
-The [original b2 comparison](results/resumable-copy-original-e2e-01/assessment.md)
-also passes: folded paired wall −21.82% / CPU −21.95%; token wall −33.09% /
-CPU −33.29%. All 168 commands, 30 pairs and 84 artifacts verify. Candidate
-medians remain slower than native: 1.913s vs 1.653s folded, 4.418s vs 2.012s token.
-The first [fresh native run](results/resumable-copy-native-01/assessment.md) passes
-its 23,502-command default mode, then its coordinator fails on an unused wrapper
-manifest entry. The [coordinator correction](results/resumable-copy-execution-driver-01/assessment.md)
-passes historical/staging checks, three positive provenance configurations and
-twelve rejection cases. The [fresh full native run](results/resumable-copy-native-02/assessment.md)
-now passes all 47,004 commands across both modes, including 22,238 JIT and 22,238
-interpreter invocations, with no declines. [TLS/destructor qualification](results/resumable-copy-tls-01/assessment.md)
-also passes 245 commands. [Fresh fre replay](results/resumable-copy-fre-01/assessment.md)
-passes 382 bodies, seven ignored, with 382 fresh native executions, all 382
-compared artifacts unchanged and no declines. These remain body replays, not
-unfiltered libtest. The complete seven-case held-out set is required before retention.
-No default change.
+[Debug/release](results/resumable-copy-release-01/assessment.md) pass 276 tests,
+one ignored. [Fresh native validation](results/resumable-copy-native-02/assessment.md)
+passes 47,004 mixed commands, including 22,238 JIT and 22,238 interpreter
+invocations. [TLS/destructor qualification](results/resumable-copy-tls-01/assessment.md)
+passes 245 commands. [Fresh fre replay](results/resumable-copy-fre-01/assessment.md)
+passes 382 original bodies with seven ignored, 382 fresh native controls and
+unchanged corresponding artifacts. Real unwinding, threads, general OS/FFI and
+complete libtest behavior remain missing; body replay is not full-suite support.
 
-The [fixed seven-case held-out plan](benchmarks/experiments/resumable-native-calls/HELDOUT-STORAGE-NEXT.md)
-uses separate fresh histories so reviewed public caches can be archived between
-cases. Its [actual pgrust qualification](results/resumable-copy-heldout-qualification-01/assessment.md)
-passes 84 commands, fifteen pairs and 42 artifacts. The gate helper preserves
-both recent primary receipts and the earlier near-miss failures, and rejects
-39 invalid configurations. All seven cases remain required.
+The original [Nushell stop](results/resumable-copy-heldout-01-case-01-stop/assessment.md)
+remains excluded with zero edited pairs. Its preflight omitted the 8 GiB running
+floor; the corrected, qualified admission and [explicit retry amendment](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-01.json)
+preserve all original controls. A later [aggregate schema rejection](results/copy-heldout-aggregate-schema-stop-01/assessment.md)
+exposed the extra `_specified_job_counts` parser field. The [narrow adapter](results/copy-heldout-receipt-adapter-01/assessment.md)
+verifies all seven actual receipts, reproduces both primaries and rejects 27
+invalid inputs. Original evaluators and measured receipts are unchanged. Final
+aggregation uses `assess_copy_heldout_receipts.py` and the bound adapter plan.
+All measurement and aggregation processes are terminal; no source change or
+benchmark rerun was used to resolve this receipt mismatch.
 
-The original Nushell type-relations history [stopped at the space guard](results/resumable-copy-heldout-01-case-01-stop/assessment.md)
-after five primary commands and one check, with zero successful-edit pairs.
-Its original assertions, wrong-edit failures, four snapshots and restored source
-verify. The admission estimate had omitted the 8 GiB running reserve. The
-[corrected calculation](results/workflow-space-floor-01/assessment.md) rejects
-that admission and requires 25.99 GiB. The [qualified retry amendment](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-01.json)
-changes only this case's run ID; it preserves the original failure, remaining
-case order, controls and gates. Its [qualification](results/copy-heldout-retry-gates-01/assessment.md)
-rejects 29 invalid inputs and reproduces both primary receipts.
+Next execute the [post-copy profile protocol](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
+with the immutable current tool and the recorded original candidate artifacts.
+Token native entries fell from ~22.4 million to ~2.65 million; the old profile
+mix no longer identifies the next bottleneck. Choose one substantial cost from
+fresh exact-code attribution before changing the runtime. Earlier narrow frame
+reuse proposals remain parked. An unfiltered suite attempt remains the separate
+compatibility direction. No new profiles have started at this checkpoint.
 
-The [fresh Nushell type-relations retry](results/resumable-copy-heldout-01-case-01-retry-01/assessment.md)
-now completes and passes its partial gate: 84 commands, fifteen edited pairs,
-42 matching artifacts and restored sources. Paired wall is −1.20%, CPU −2.47%;
-median edited command is 4.849s candidate, 4.873s baseline and 7.913s native.
-This small difference is not a material speedup claim. The [admission](results/resumable-copy-heldout-01-case-01-retry-01-preflight/summary.json)
-observed 30.34 GiB free, 0.169 seconds before startup. Both benchmark and gate
-supervisors are terminal with exit zero. Runtime, benchmark and gate sources
-remain frozen. Continue Ruff, Nushell, forward-anchored TLS, pgrust SHA-1, pgrust
-and private rg-aot in order, then use the amended aggregate evaluator. The
-[next public-case space checks](results/copy-heldout-case-space-01/assessment.md)
-verify eight full historical inventories, reject 25 invalid references and
-retain the 8 GiB floor. Ruff requires 16.16 GiB; Nushell requires 12.65 GiB.
-No subset authorizes retention.
+Function-level reuse remains correctness/design work: the [Nushell reduction](results/allocation-history-reduction-02/assessment.md)
+and [built-MIR observer](results/allocation-history-mir-dumps-02/assessment.md)
+locate history-sensitive literal allocations in rustc incremental reuse. Equal
+bytes do not establish allocation identity, and session-local IDs are unsuitable
+cache keys. Roughly 71 ms of lowering inside a 5.3-second command does not justify
+function reuse as the immediate speed project.
 
-[Ruff case02](results/resumable-copy-heldout-01-case-02/assessment.md) now completes
-and verifies 84 commands, fifteen pairs and 42 artifacts. Paired wall −0.84%
-and CPU +0.58% pass the regression checks. The marginal candidate median is
-2.767s versus 2.730s baseline and 5.104s native; the opposite direction of the
-small marginal and paired wall differences is preserved. Admission passed at
-24.04 GiB against 16.16 GiB required, 0.100 seconds before startup. The earlier
-[lock-only rejection](results/resumable-copy-heldout-01-case-02-preflight-lock-01/assessment.md)
-started no benchmark and left the unrelated lock holder untouched. Both Ruff
-supervisors are terminal with exit zero. [Nushell case03](results/resumable-copy-heldout-01-case-03/assessment.md)
-now also verifies 84 commands, fifteen pairs and 42 matching artifacts: paired
-wall −6.63%, CPU −6.70%. Its median edited command is 0.401s candidate versus
-0.431s baseline and 0.659s native. Admission passed at 18.76 GiB, 0.110 seconds
-before startup. Four required cases remain. Their [historical caches](results/copy-remaining-space-inventory-01/assessment.md)
-are all smaller than a conservative 4 GiB budget; each fresh admission requires
-15.05 GiB including growth, the running floor, archive and evidence reserves.
-A lock-only inspection stop and an overstrict object-file guard are preserved;
-no cache was changed. [Case04 forward-anchored TLS](results/resumable-copy-heldout-01-case-04/assessment.md)
-now verifies 84 commands, fifteen pairs and 42 corresponding artifacts: paired
-wall −6.04%, CPU −6.00%, passing both guards. Cross-cycle identity remains false.
-Case05 pgrust SHA-1 is active, started 14:56:42 local under supervisor 27585.
-After it completes, verify its gate, then run case06 pgrust and case07 rg-aot.
-The [post-copy profile plan](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
-is recorded for after all held-out measurements; no profile has started.
-
-Storage maintenance has verified 205 archives. Recent batches include
-[eight recovered histories' caches](results/heldout-recovery-storage-01/assessment.md),
-[four stopped-history caches](results/copy-stopped-storage-01/assessment.md) and
-[twenty legacy native targets](results/legacy-native-storage-01/assessment.md).
-Every archive preserves original reports and executed artifacts; private caches
-remain excluded. [Eight additional artifact histories](results/copy-artifact-clones-01/assessment.md)
-retain all snapshot paths through independently writable clones. The
-[standalone selector](results/standalone-clone-inputs-01/assessment.md) is qualified
-but has not been used to modify snapshots. These are storage operations outside
-benchmark timers, with no compilation-speed claim.
+Storage maintenance remains at 205 verified archives; this continuation changed
+no cache files and did not signal any process. Bounded [remaining-case inventories](results/copy-remaining-space-inventory-01/assessment.md)
+inspect public/private cache sizes and publish only aggregates. Lock-only stops
+and the corrected object-presence guard are retained. No private cache was
+archived. The original suggestions file remains unchanged and untracked.
 
 ## Closed worker-count experiment
 

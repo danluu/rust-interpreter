@@ -46,3 +46,15 @@ In parallel with planning, keep the separate compatibility direction explicit:
 an unfiltered suite attempt should identify real missing behavior. Current
 body replay does not qualify libtest, unwinding, threads or general OS/FFI.
 Success-returning shims and skipped cleanup are not compatibility fixes.
+
+The selected candidate artifacts verify against their executed cycle-zero
+snapshots before profiling:
+
+| Workflow | Source history | Artifact SHA-256 |
+| --- | --- | --- |
+| token-phrase | resumable-copy-original-e2e-01-token-phrase | c263d8924ec053275d9e807c4b5dce5d1a4c7082c9019e75b5c0532242008334 |
+| folded-literal-trie | resumable-copy-original-e2e-01-folded-literal-trie | 0b266be5fc28def9af2f43a4f2de3b5c543484a79a73479c674cdb7aec19669e |
+
+Their paths are `.work/runs/<history>/artifacts/candidate/cycle-0/0-0.rbc`.
+They also match the earlier tool78 profile's bytecode hashes; the new diagnostic
+changes the VM, not these selected guest artifacts.

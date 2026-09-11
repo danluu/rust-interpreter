@@ -51,6 +51,17 @@ def current_copy():
                 raise RuntimeError('current held-out evidence changed: ' + path)
         completed.append(gate['evaluated'][0])
         reports += [gate_path, f'results/{run}/final-verification.json']
+    aggregate_path = 'results/resumable-copy-heldout-recovery-01/summary.json'
+    aggregate = read(aggregate_path) if (ROOT / aggregate_path).exists() else None
+    if aggregate:
+        if (aggregate['tool_key'] != key or aggregate['counts'] !=
+                dict(primary_commands=441, check_commands=147, edited_pairs=105, artifacts=294) or
+                [row['evaluation'] for row in aggregate['workflows']] != completed):
+            raise RuntimeError('current complete held-out aggregate differs from its components')
+        for path, digest in aggregate['evidence'].items():
+            if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != digest:
+                raise RuntimeError('current aggregate evidence changed: ' + path)
+        reports.append(aggregate_path)
     native, tls, fre = qualifications
     lines = ['## Current custom-copy and native-call experiment', '',
         f"Source `{original['source_commit'][:7]}`, tool `{key[:8]}` passes {release['workspace_passed']} workspace tests",
@@ -77,15 +88,23 @@ def current_copy():
         'libtest. Real unwinding, threads and general OS/FFI remain unsupported.',
         '[Fresh body replay](results/resumable-copy-fre-01/assessment.md).', '',
         '### Current held-out verification', '',
-        f"{len(completed)} of seven required histories have completed partial gate verification.",
+        ('All seven histories verify together: 588 commands, 105 edited pairs and 294 artifacts.'
+         if aggregate else f"{len(completed)} of seven required histories have completed partial gate verification."),
         'The original zero-pair space-guard stop remains preserved; its replacement',
         'uses an explicit amendment and the corrected admission estimate.', '',
-        '| Workflow | Paired wall change | Paired CPU change | Wall gate |',
-        '| --- | ---: | ---: | --- |',
-        *[f"| {r['workload']} | {(r['median_paired_ratio']-1)*100:+.2f}% | {(r['median_paired_cpu_ratio']-1)*100:+.2f}% | {'pass' if r['passed'] else 'fail'} |"
+        '| Workflow | Native | Current JIT | Paired wall vs b2 | Paired CPU vs b2 | Wall gate |',
+        '| --- | ---: | ---: | ---: | ---: | --- |',
+        *[f"| {r['workload']} | {r['medians']['native']:.3f} s | {r['medians']['candidate']:.3f} s | {(r['median_paired_ratio']-1)*100:+.2f}% | {(r['median_paired_cpu_ratio']-1)*100:+.2f}% | {'pass' if r['passed'] else 'fail'} |"
           for r in completed], '',
-        'A partial set cannot qualify the candidate. Options remain disabled by',
-        'default; no whole-codebase workflow is qualified.',
+        *(['No held-out wall or CPU regression exceeds 5%.'
+            if not aggregate['wall_regressions_above_5_percent'] and not aggregate['cpu_regressions_above_5_percent']
+            else 'Regressions remain recorded in the complete aggregate.',
+           'The narrow receipt-schema correction accepts the exact recorded job-flag',
+           'metadata. Original receipts, failed attempts and gate arithmetic are preserved.',
+           '[Full verification](results/resumable-copy-heldout-recovery-01/assessment.md).', '']
+          if aggregate else ['A partial set cannot qualify the candidate.']),
+        'Options remain explicit and disabled by default; whole-codebase compatibility',
+        'and native parity on the two compute workloads remain open.',
         '[Current work](STATE.md) · [Fixed plan and retry](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md).', '',
         'The following sections preserve the preceding experiment and full-corpus baseline.', '',
     ]

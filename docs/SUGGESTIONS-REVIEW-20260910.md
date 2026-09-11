@@ -118,6 +118,15 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- The current candidate now passes the [complete held-out set](../results/resumable-copy-heldout-recovery-01/assessment.md):
+  588 commands, 105 edited pairs, 294 artifacts, no wall or CPU regression
+  above 5%. The original zero-pair stop and a strict receipt-schema mismatch
+  remain preserved. A [qualified adapter](../results/copy-heldout-receipt-adapter-01/assessment.md)
+  recognizes the exact explicit-job metadata, rejects 27 invalid inputs and
+  reproduces every case plus both primaries. No timing rerun or threshold
+  change. The next runtime choice follows fresh profiles; full libtest,
+  unwinding, threads and OS/FFI remain open.
+
 - The fresh [Nushell type-relations retry](../results/resumable-copy-heldout-01-case-01-retry-01/assessment.md)
   passes all 84 commands, fifteen edited pairs and 42 artifact checks. Paired
   wall −1.20% and CPU −2.47% pass the unchanged regression guard. The original

@@ -37,18 +37,27 @@ libtest. Real unwinding, threads and general OS/FFI remain unsupported.
 
 ### Current held-out verification
 
-3 of seven required histories have completed partial gate verification.
+All seven histories verify together: 588 commands, 105 edited pairs and 294 artifacts.
 The original zero-pair space-guard stop remains preserved; its replacement
 uses an explicit amendment and the corrected admission estimate.
 
-| Workflow | Paired wall change | Paired CPU change | Wall gate |
-| --- | ---: | ---: | --- |
-| nushell-type-relations | -1.20% | -2.47% | pass |
-| ruff | -0.84% | +0.58% | pass |
-| nushell | -6.63% | -6.70% | pass |
+| Workflow | Native | Current JIT | Paired wall vs b2 | Paired CPU vs b2 | Wall gate |
+| --- | ---: | ---: | ---: | ---: | --- |
+| nushell-type-relations | 7.913 s | 4.849 s | -1.20% | -2.47% | pass |
+| ruff | 5.104 s | 2.767 s | -0.84% | +0.58% | pass |
+| nushell | 0.659 s | 0.401 s | -6.63% | -6.70% | pass |
+| forward-anchored-tls | 1.457 s | 0.998 s | -6.04% | -6.00% | pass |
+| pgrust-sha1-inline8 | 0.755 s | 0.645 s | -13.70% | -13.84% | pass |
+| pgrust | 0.660 s | 0.474 s | -5.56% | -5.70% | pass |
+| rg-aot | 0.538 s | 0.175 s | -9.22% | -10.71% | pass |
 
-A partial set cannot qualify the candidate. Options remain disabled by
-default; no whole-codebase workflow is qualified.
+No held-out wall or CPU regression exceeds 5%.
+The narrow receipt-schema correction accepts the exact recorded job-flag
+metadata. Original receipts, failed attempts and gate arithmetic are preserved.
+[Full verification](results/resumable-copy-heldout-recovery-01/assessment.md).
+
+Options remain explicit and disabled by default; whole-codebase compatibility
+and native parity on the two compute workloads remain open.
 [Current work](STATE.md) · [Fixed plan and retry](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md).
 
 The following sections preserve the preceding experiment and full-corpus baseline.

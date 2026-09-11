@@ -4,21 +4,22 @@ The retained custom JIT still loses substantially to the specified native contro
 on the exhaustive token workflow. Repeated actual edits confirm this gap.
 [Current evidence](STATUS.md), [review decisions](docs/SUGGESTIONS-REVIEW-20260910.md).
 
-1. **Finish the current candidate's held-out cases.** Source `aa2f6ea`, tool
+1. **Build on the completed current qualification.** Source `aa2f6ea`, tool
    `0e94d6d8`, passes 276 debug/release tests, 47,004 mixed native-validation
    commands, 245 TLS commands and 382 fre body replays with seven ignored.
    Both original compute gates pass: folded paired wall −21.82%, token −33.09%.
-   A matched-frontend comparison attributes an additional 15.14% token gain
-   to native copies. Both workloads still take longer than native Cargo.
-   Fresh Nushell type-relations, Ruff and Nushell histories pass their guards;
-   finish the remaining four cases in the committed order and evaluate the
-   complete amended set. Keep the original zero-pair stop and all earlier
-   failed token gates. No timing reruns to obtain a passing result.
+   A matched-frontend comparison isolates an additional 15.14% token gain from
+   native copies. All seven held-out cases verify 588 commands, 105 pairs and
+   294 artifacts, with no wall/CPU regression above 5%. The original zero-pair
+   stop and aggregate schema failure remain preserved; neither caused a timing
+   rerun. Both compute workloads still take longer than native Cargo, and
+   whole-project compatibility remains unfinished. Keep options explicit.
    [Current results](results/resumable-copy-original-e2e-01/assessment.md),
-   [held-out plan](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-DECISION.md).
+   [held-out verification](results/resumable-copy-heldout-recovery-01/assessment.md).
 2. **Choose the next execution change from fresh profiles.** The previous
    token profile put 88.19% of interpreted operations in copies; those copies
-   now execute natively. Reprofile the exact current artifacts before choosing
+   now execute natively. Follow the [recorded profile protocol](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
+   on the exact current artifacts before choosing
    another ABI, initialization or memory-check change. Preserve exact budgets,
    initialization, fault order and guest state. Earlier narrow frame-reuse
    censuses are parked; their tiny measured opportunities do not justify a
