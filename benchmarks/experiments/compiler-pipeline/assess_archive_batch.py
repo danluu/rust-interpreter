@@ -80,6 +80,7 @@ def assess(name, completed_prefix=None):
         require(all(reviewed[k] == v for k, v in entry.items()) and reviewed['closed'] and
                 prepared['owner'] == str(ROOT) and prepared['workflow'] == entry['workflow'] and
                 prepared.get('mode', 'native') == entry['mode'] and
+                prepared.get('proof_kind', 'workflow') == entry.get('proof_kind', 'workflow') and
                 prepared['corpus'] == entry.get('corpus') and
                 prepared['target'] == reviewed['target'] == result['target'] and
                 reservations[prepared['target']] == archive, 'reviewed cache ownership differs')
@@ -97,6 +98,7 @@ def assess(name, completed_prefix=None):
                 (work / 'cache.zip').stat().st_size == result['archive_bytes'] and
                 not any(Path(prepared['target']).iterdir()), 'archive size or retired target differs')
         require(result['workflow'] == entry['workflow'] and
+                result.get('proof_kind', 'workflow') == prepared.get('proof_kind', 'workflow') and
                 all(result[k] == prepared[k] for k in ['verification', 'proofs', 'sources']),
                 'verification or external evidence maps differ')
         for path, digest in {**prepared['proofs'], **prepared['sources']}.items():

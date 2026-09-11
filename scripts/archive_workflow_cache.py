@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Archive one completed public Cargo target, then retire its verified paths."""
 import argparse
+from contextlib import nullcontext
 import fcntl
 import json
 import os
@@ -13,13 +14,15 @@ from reclaim_workflow_objects import identifier, no_open_files, sha, workflow
 from verify_repeated_workflow import require
 from workflow_io import write_json
 from workflow_cache_evidence import cache_guard, workflow_cache
+from host_cache_evidence import debug_workspace_cache
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / '.work/workflow-cache-archives'
 SOURCES = [Path(__file__).resolve(), ROOT / 'scripts/cache_archive.py',
     ROOT / 'scripts/reclaim_workflow_objects.py', ROOT / 'scripts/verify_repeated_workflow.py',
     ROOT / 'scripts/workflow_case_file.py', ROOT / 'scripts/workflow_measurements.py', ROOT / 'scripts/workflow_io.py',
-    ROOT / 'scripts/workflow_cache_evidence.py', ROOT / 'scripts/workflow_jobs.py']
+    ROOT / 'scripts/workflow_cache_evidence.py', ROOT / 'scripts/workflow_jobs.py',
+    ROOT / 'scripts/workspace_check_evidence.py', ROOT / 'scripts/host_cache_evidence.py']
 
 
 def read(path):
@@ -40,9 +43,28 @@ def sources():
     return {str(p.relative_to(ROOT)): sha(p) for p in SOURCES}
 
 
+def selected_cache(run_id, corpus, mode, kind='workflow'):
+    require(kind in ['workflow', 'workspace-check'], 'unknown cache provenance kind')
+    identifier(run_id)
+    if kind == 'workspace-check':
+        require(corpus is None and mode == 'host', 'host cache cannot have a corpus or guest mode')
+        return debug_workspace_cache(ROOT, run_id, sha)
+    require(mode in ['native', 'check', 'baseline', 'candidate'], 'unknown workflow cache mode')
+    return workflow_cache(ROOT, run_id, corpus, mode, workflow, sha)
+
+
+def selection_guard(target, mode, kind):
+    require(kind in ['workflow', 'workspace-check'], 'unknown cache provenance kind')
+    if kind == 'workspace-check':
+        require(mode == 'host', 'host cache mode differs')
+        # check_workspace.py uses the same enclosing benchmark lock.
+        return nullcontext()
+    return cache_guard(target, mode)
+
+
 def check_evidence(plan):
-    target, proofs, verification = workflow_cache(ROOT, plan['workflow'], plan['corpus'],
-        plan.get('mode', 'native'), workflow, sha)
+    target, proofs, verification = selected_cache(plan['workflow'], plan['corpus'],
+        plan.get('mode', 'native'), plan.get('proof_kind', 'workflow'))
     require(str(target) == plan['target'] and proofs == plan['proofs'] and verification == plan['verification'],
             'completed workflow evidence changed')
     return target
@@ -56,16 +78,16 @@ def sync_directory(path):
         os.close(descriptor)
 
 
-def prepare(name, run_id, corpus, mode='native'):
-    target, _, _ = workflow_cache(ROOT, identifier(run_id), corpus, mode, workflow, sha)
-    with cache_guard(target, mode):
-        prepare_locked(name, run_id, corpus, mode)
+def prepare(name, run_id, corpus, mode='native', kind='workflow'):
+    target, _, _ = selected_cache(run_id, corpus, mode, kind)
+    with selection_guard(target, mode, kind):
+        prepare_locked(name, run_id, corpus, mode, kind)
 
 
-def prepare_locked(name, run_id, corpus, mode):
+def prepare_locked(name, run_id, corpus, mode, kind='workflow'):
     work = BASE / name
     require(not work.exists(), 'archive identity already exists')
-    target, proofs, verification = workflow_cache(ROOT, identifier(run_id), corpus, mode, workflow, sha)
+    target, proofs, verification = selected_cache(run_id, corpus, mode, kind)
     registry = read(BASE / 'targets.json')
     require(str(target) not in registry, 'this target already has an archive reservation; inspect it before any retry')
     opened = no_open_files(target)
@@ -74,6 +96,8 @@ def prepare_locked(name, run_id, corpus, mode):
     plan = dict(format=1, owner=str(ROOT), workflow=run_id, corpus=corpus, mode=mode, target=str(target),
         prepared_at=time.time(), sources=sources(), proofs=proofs, verification=verification,
         open_file_check=opened, manifest=manifest)
+    if kind != 'workflow':
+        plan['proof_kind'] = kind
     work.mkdir(mode=0o700)
     write_json(work / 'plan.json', plan)
     write_json(work / 'status.json', dict(status='prepared', plan_sha256=sha(work / 'plan.json')))
@@ -91,6 +115,11 @@ def load(name):
     require(plan['format'] == 1 and plan['owner'] == str(ROOT) and
             sha(work / 'plan.json') == status['plan_sha256'] and
             read(BASE / 'targets.json').get(plan['target']) == name, 'archive ownership, reservation or plan changed')
+    kind, mode = plan.get('proof_kind', 'workflow'), plan.get('mode', 'native')
+    require(kind in ['workflow', 'workspace-check'] and
+            ((kind == 'workspace-check' and mode == 'host' and plan['corpus'] is None) or
+             (kind == 'workflow' and mode in ['native', 'check', 'baseline', 'candidate'])),
+            'archive provenance kind or mode differs')
     archive.validate(plan['manifest'])
     return work, plan, status
 
@@ -122,7 +151,7 @@ def retire(target, manifest, progress):
 
 def apply(name):
     _, plan, _ = load(name)
-    with cache_guard(Path(plan['target']), plan.get('mode', 'native')):
+    with selection_guard(Path(plan['target']), plan.get('mode', 'native'), plan.get('proof_kind', 'workflow')):
         apply_locked(name)
 
 
@@ -173,6 +202,7 @@ def apply_locked(name):
         output = ROOT / 'results' / name
         output.mkdir(exist_ok=False)
         write_json(output / 'summary.json', dict(**status, target=str(target), workflow=plan['workflow'],
+            proof_kind=plan.get('proof_kind', 'workflow'),
             archive=str(completed.relative_to(ROOT)), plan=str((work / 'plan.json').relative_to(ROOT)),
             files=status['retired_files'], directories=len(manifest['directories']),
             unique_payloads=len(manifest['groups']), unique_original_bytes=unique_bytes,
@@ -192,7 +222,9 @@ def main():
     action.add_argument('--apply')
     action.add_argument('--inspect', help='read one archived file without restoring the whole cache')
     action.add_argument('--restore', help='restore into this archive identity\'s new owned restore directory')
-    parser.add_argument('--workflow')
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--workflow')
+    source.add_argument('--workspace-check', help='completed unpublished debug workspace check; preparation only')
     parser.add_argument('--mode', choices=['native', 'check', 'baseline', 'candidate'],
                         help='completed cache mode; preparation only, defaults to native')
     parser.add_argument('--corpus')
@@ -200,9 +232,12 @@ def main():
     parser.add_argument('--maximum-bytes', type=int, default=1024 * 1024)
     parser.add_argument('--restore-id')
     args = parser.parse_args()
-    require(bool(args.prepare) == bool(args.workflow), 'supply --workflow only when preparing')
+    require(bool(args.prepare) == bool(args.workflow or args.workspace_check),
+            'supply exactly one completed source only when preparing')
     require(not args.mode or args.prepare, 'supply --mode only when preparing')
     require(not args.corpus or args.prepare, 'supply --corpus only when preparing')
+    require(not args.workspace_check or (args.mode is None and args.corpus is None),
+            'host cache preparation cannot have --mode or --corpus')
     require(bool(args.inspect) == bool(args.member), 'supply --member only when inspecting')
     require(bool(args.restore) == bool(args.restore_id), 'supply --restore-id only when restoring')
     name = identifier(args.prepare or args.apply or args.inspect or args.restore)
@@ -210,7 +245,10 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         owned_root()
         if args.prepare:
-            prepare(name, args.workflow, args.corpus, args.mode or 'native')
+            if args.workspace_check:
+                prepare(name, args.workspace_check, None, 'host', 'workspace-check')
+            else:
+                prepare(name, args.workflow, args.corpus, args.mode or 'native')
         elif args.apply:
             apply(name)
         else:

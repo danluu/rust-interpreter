@@ -31,21 +31,29 @@ def main():
     entries = plan['entries']
     require(isinstance(entries, list) and 1 <= len(entries) <= 32, 'invalid batch size')
     fields = {'archive', 'workflow', 'mode'}
-    require(all(isinstance(e, dict) and set(e) in [fields, fields | {'corpus'}] for e in entries),
+    require(all(isinstance(e, dict) and set(e) in [fields, fields | {'corpus'}, fields | {'proof_kind'}] for e in entries),
             'invalid batch entry')
     require(len({e['archive'] for e in entries}) == len(entries) and
-            len({(e['workflow'], e['mode']) for e in entries}) == len(entries), 'duplicate batch target')
+            len({(e.get('proof_kind', 'workflow'), e['workflow'], e['mode']) for e in entries}) == len(entries),
+            'duplicate batch target')
     commands = []
     for entry in entries:
         identifier(entry['archive'])
         identifier(entry['workflow'])
         corpus = identifier(entry['corpus']) if 'corpus' in entry else None
-        require(entry['mode'] in ['native', 'check', 'baseline', 'candidate'], 'unknown cache mode')
+        kind = entry.get('proof_kind', 'workflow')
+        require((kind == 'workspace-check' and entry['mode'] == 'host' and corpus is None) or
+                (kind == 'workflow' and 'proof_kind' not in entry and
+                 entry['mode'] in ['native', 'check', 'baseline', 'candidate']),
+                'unknown or inconsistent cache provenance/mode')
         work = ROOT / '.work/workflow-cache-archives' / entry['archive']
         command = [sys.executable, str(ROOT / 'scripts/archive_workflow_cache.py')]
         if args.action == 'prepare':
             require(not work.exists(), 'batch preparation identity already exists')
-            command += ['--prepare', entry['archive'], '--workflow', entry['workflow'], '--mode', entry['mode']]
+            if kind == 'workspace-check':
+                command += ['--prepare', entry['archive'], '--workspace-check', entry['workflow']]
+            else:
+                command += ['--prepare', entry['archive'], '--workflow', entry['workflow'], '--mode', entry['mode']]
             if corpus is not None:
                 command += ['--corpus', corpus]
         else:
@@ -54,6 +62,7 @@ def main():
             require(status['status'] == 'prepared' and prepared['workflow'] == entry['workflow'] and
                     prepared.get('mode', 'native') == entry['mode'] and prepared['corpus'] == corpus,
                     'batch does not match untouched inventories; audit any partial application')
+            require(prepared.get('proof_kind', 'workflow') == kind, 'batch provenance kind differs from inventory')
             command += ['--apply', entry['archive']]
         commands.append(command)
     for entry, command in zip(entries, commands):

@@ -1,0 +1,100 @@
+{
+  "status": "passed",
+  "rejected": [
+    {
+      "label": "host-with-guest-mode",
+      "error": "unknown or inconsistent cache provenance/mode"
+    },
+    {
+      "label": "host-with-corpus",
+      "error": "invalid batch entry"
+    },
+    {
+      "label": "unknown-provenance",
+      "error": "unknown or inconsistent cache provenance/mode"
+    },
+    {
+      "label": "workflow-with-host-mode",
+      "error": "unknown or inconsistent cache provenance/mode"
+    },
+    {
+      "label": "explicit-workflow-kind",
+      "error": "invalid batch entry"
+    },
+    {
+      "label": "duplicate-host-target",
+      "error": "duplicate batch target"
+    },
+    {
+      "label": "duplicate-archive-id",
+      "error": "duplicate batch target"
+    },
+    {
+      "label": "changed-kind",
+      "error": "batch provenance kind differs from inventory"
+    },
+    {
+      "label": "changed-mode",
+      "error": "batch does not match untouched inventories; audit any partial application"
+    },
+    {
+      "label": "changed-corpus",
+      "error": "batch does not match untouched inventories; audit any partial application"
+    },
+    {
+      "label": "changed-run",
+      "error": "batch does not match untouched inventories; audit any partial application"
+    }
+  ],
+  "simulated_routes": [
+    {
+      "label": "mixed-prepare",
+      "commands": [
+        [
+          "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+          "/Users/danluu/dev/rust-interp/.work/runs/host-cache-batch-checks-01/mixed-prepare/scripts/archive_workflow_cache.py",
+          "--prepare",
+          "host",
+          "--workspace-check",
+          "completed-check"
+        ],
+        [
+          "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+          "/Users/danluu/dev/rust-interp/.work/runs/host-cache-batch-checks-01/mixed-prepare/scripts/archive_workflow_cache.py",
+          "--prepare",
+          "guest",
+          "--workflow",
+          "completed-workflow",
+          "--mode",
+          "candidate",
+          "--corpus",
+          "completed-corpus"
+        ]
+      ]
+    },
+    {
+      "label": "mixed-apply",
+      "commands": [
+        [
+          "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+          "/Users/danluu/dev/rust-interp/.work/runs/host-cache-batch-checks-01/mixed-apply/scripts/archive_workflow_cache.py",
+          "--apply",
+          "host"
+        ],
+        [
+          "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+          "/Users/danluu/dev/rust-interp/.work/runs/host-cache-batch-checks-01/mixed-apply/scripts/archive_workflow_cache.py",
+          "--apply",
+          "guest"
+        ]
+      ]
+    }
+  ],
+  "real_archive_children": 0,
+  "real_compiler_cache_modified": false,
+  "note": "Only coordinator routing is simulated here. A separately reviewed real host pilot must still pass preparation, application and final receipt assessment.",
+  "sources": {
+    "benchmarks/experiments/compiler-pipeline/check_host_archive_batch.py": "219d888ce8ea750cbdd03fabff1c0165206488d33021b03618cc6a7ccdb1869b",
+    "benchmarks/experiments/compiler-pipeline/archive_batch.py": "a6fd13adeb3622de3849301b43cb0d7f54d16bc65cbba5a10991856f41350524"
+  }
+}

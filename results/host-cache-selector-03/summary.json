@@ -1,0 +1,426 @@
+{
+  "status": "passed",
+  "rejected": [
+    {
+      "label": "unfinished check",
+      "error": "workspace check did not finish successfully"
+    },
+    {
+      "label": "failed check",
+      "error": "workspace check did not finish successfully"
+    },
+    {
+      "label": "changed owner",
+      "error": "workspace-check owner differs"
+    },
+    {
+      "label": "failed report",
+      "error": "workspace check did not finish successfully"
+    },
+    {
+      "label": "not frozen",
+      "error": "workspace check did not finish successfully"
+    },
+    {
+      "label": "performance measurement",
+      "error": "expected host qualification, not a performance measurement"
+    },
+    {
+      "label": "wrong source archive",
+      "error": "workspace-check target or archive differs"
+    },
+    {
+      "label": "wrong target",
+      "error": "workspace-check target or archive differs"
+    },
+    {
+      "label": "published tool report",
+      "error": "published host tools are excluded from whole-cache retirement"
+    },
+    {
+      "label": "empty publication record",
+      "error": "published host tools are excluded from whole-cache retirement"
+    },
+    {
+      "label": "release profile",
+      "error": "expected a completed default-debug workspace test"
+    },
+    {
+      "label": "custom profile",
+      "error": "expected a completed default-debug workspace test"
+    },
+    {
+      "label": "joined custom profile",
+      "error": "expected a completed default-debug workspace test"
+    },
+    {
+      "label": "published verification",
+      "error": "published host tools are excluded from whole-cache retirement"
+    },
+    {
+      "label": "target of another check",
+      "error": "host cache target differs"
+    },
+    {
+      "label": "evidence inside retired target",
+      "error": "host qualification evidence would be retired or is noncanonical"
+    },
+    {
+      "label": "no external evidence",
+      "error": "host cache has no external evidence"
+    },
+    {
+      "label": "absolute evidence path",
+      "error": "host qualification evidence would be retired or is noncanonical"
+    },
+    {
+      "label": "real installed release build",
+      "error": "expected a completed default-debug workspace test"
+    },
+    {
+      "label": "unknown provenance",
+      "error": "unknown cache provenance kind"
+    },
+    {
+      "label": "host with guest mode",
+      "error": "host cache cannot have a corpus or guest mode"
+    },
+    {
+      "label": "host with corpus",
+      "error": "host cache cannot have a corpus or guest mode"
+    },
+    {
+      "label": "workflow with host mode",
+      "error": "unknown workflow cache mode"
+    },
+    {
+      "label": "changed host evidence before application",
+      "error": "completed workflow evidence changed"
+    },
+    {
+      "label": "repeat host application",
+      "error": "archive is not an untouched preparation using these exact sources"
+    },
+    {
+      "label": "new identity for retired host target",
+      "error": "this target already has an archive reservation; inspect it before any retry"
+    }
+  ],
+  "cli_rejections": [
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py",
+        "--prepare",
+        "unused-host-qualification"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 281, in <module>\n    main()\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 235, in main\n    require(bool(args.prepare) == bool(args.workflow or args.workspace_check),\n  File \"/Users/danluu/dev/rust-interp/scripts/verify_repeated_workflow.py\", line 18, in require\n    raise RuntimeError(message)\nRuntimeError: supply exactly one completed source only when preparing\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py",
+        "--prepare",
+        "unused-host-qualification",
+        "--workflow",
+        "allocation-trace-debug-01",
+        "--workspace-check",
+        "allocation-trace-debug-01"
+      ],
+      "returncode": 2,
+      "stderr": "usage: archive_workflow_cache.py [-h]\n                                 (--prepare PREPARE | --apply APPLY | --inspect INSPECT | --restore RESTORE)\n                                 [--workflow WORKFLOW | --workspace-check WORKSPACE_CHECK]\n                                 [--mode {native,check,baseline,candidate}]\n                                 [--corpus CORPUS] [--member MEMBER]\n                                 [--maximum-bytes MAXIMUM_BYTES]\n                                 [--restore-id RESTORE_ID]\narchive_workflow_cache.py: error: argument --workspace-check: not allowed with argument --workflow\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py",
+        "--prepare",
+        "unused-host-qualification",
+        "--workspace-check",
+        "allocation-trace-debug-01",
+        "--mode",
+        "native"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 281, in <module>\n    main()\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 239, in main\n    require(not args.workspace_check or (args.mode is None and args.corpus is None),\n  File \"/Users/danluu/dev/rust-interp/scripts/verify_repeated_workflow.py\", line 18, in require\n    raise RuntimeError(message)\nRuntimeError: host cache preparation cannot have --mode or --corpus\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py",
+        "--prepare",
+        "unused-host-qualification",
+        "--workspace-check",
+        "allocation-trace-debug-01",
+        "--corpus",
+        "unused"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 281, in <module>\n    main()\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 239, in main\n    require(not args.workspace_check or (args.mode is None and args.corpus is None),\n  File \"/Users/danluu/dev/rust-interp/scripts/verify_repeated_workflow.py\", line 18, in require\n    raise RuntimeError(message)\nRuntimeError: host cache preparation cannot have --mode or --corpus\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py",
+        "--apply",
+        "unused-host-qualification",
+        "--workspace-check",
+        "allocation-trace-debug-01"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 281, in <module>\n    main()\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 235, in main\n    require(bool(args.prepare) == bool(args.workflow or args.workspace_check),\n  File \"/Users/danluu/dev/rust-interp/scripts/verify_repeated_workflow.py\", line 18, in require\n    raise RuntimeError(message)\nRuntimeError: supply exactly one completed source only when preparing\n"
+    },
+    {
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py",
+        "--apply",
+        "unused-host-qualification",
+        "--mode",
+        "native"
+      ],
+      "returncode": 1,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 281, in <module>\n    main()\n  File \"/Users/danluu/dev/rust-interp/scripts/archive_workflow_cache.py\", line 237, in main\n    require(not args.mode or args.prepare, 'supply --mode only when preparing')\n  File \"/Users/danluu/dev/rust-interp/scripts/verify_repeated_workflow.py\", line 18, in require\n    raise RuntimeError(message)\nRuntimeError: supply --mode only when preparing\n"
+    }
+  ],
+  "real_host_checks": [
+    {
+      "run": "allocation-trace-debug-01",
+      "target": "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/allocation-trace-debug-01",
+      "evidence_hashes": 118,
+      "verification": {
+        "kind": "completed host workspace check",
+        "tests_passed": 272,
+        "tests_ignored": 1,
+        "archived_inputs": 111,
+        "installed_tool": null,
+        "source_commit": "f5659303d7e09491bffe07bf8c5cb2344b0fa773",
+        "performance_measurement": false
+      }
+    },
+    {
+      "run": "resumable-bulk-debug-01",
+      "target": "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/resumable-bulk-debug-01",
+      "evidence_hashes": 113,
+      "verification": {
+        "kind": "completed host workspace check",
+        "tests_passed": 257,
+        "tests_ignored": 1,
+        "archived_inputs": 106,
+        "installed_tool": null,
+        "source_commit": "42a2d6ba8eb73a083f3dcbc4d6ad9ce69e662975",
+        "performance_measurement": false
+      }
+    },
+    {
+      "run": "bounded-native-vm-03",
+      "target": "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/bounded-native-vm-03",
+      "evidence_hashes": 101,
+      "verification": {
+        "kind": "completed host workspace check",
+        "tests_passed": 225,
+        "tests_ignored": 1,
+        "archived_inputs": 94,
+        "installed_tool": null,
+        "source_commit": "888208ef5a4b82991d251872d1bb6361de118598",
+        "performance_measurement": false
+      }
+    }
+  ],
+  "real_workflow_modes": [
+    {
+      "mode": "native",
+      "target": "/Users/danluu/dev/rust-interp/.work/runs/worker-count-nushell-cold-01/native",
+      "evidence_hashes": 9,
+      "verification": {
+        "schema_version": 1,
+        "measurement_controls_verified": true,
+        "commands": 9,
+        "cycles": 1,
+        "edited_pairs": 1,
+        "check_commands": 3,
+        "explicit_controls_verified": true,
+        "exact_artifact_hashes_verified": 6,
+        "paired_bytecode_identical": true,
+        "cross_cycle_bytecode_identical": true,
+        "cross_cycle_artifacts": [
+          {
+            "state": 0,
+            "sha256_by_cycle": [
+              "f94507b63ef7e575dbdfa2ec0c9800dcef238bd89bb5aa724274547ea2950b8e"
+            ]
+          },
+          {
+            "state": -1,
+            "sha256_by_cycle": [
+              "63bedb586ab8f547d535376c6f674324fb4df7623f986db863a3d8bbd8ed3d13"
+            ]
+          },
+          {
+            "state": 1,
+            "sha256_by_cycle": [
+              "7ad553fdf05736ad55b0c5a9478a81ae97fb4f29d9033a9d6de9fc754fcc61da"
+            ]
+          }
+        ],
+        "reference_bytecode": null,
+        "cross_cycle_semantic_equivalence_proven": false,
+        "note": "Control verification does not imply identical compilation across cache histories or a performance claim."
+      }
+    },
+    {
+      "mode": "check",
+      "target": "/Users/danluu/dev/rust-interp/.work/runs/worker-count-nushell-cold-01/check",
+      "evidence_hashes": 15,
+      "verification": {
+        "schema_version": 1,
+        "measurement_controls_verified": true,
+        "commands": 9,
+        "cycles": 1,
+        "edited_pairs": 1,
+        "check_commands": 3,
+        "explicit_controls_verified": true,
+        "exact_artifact_hashes_verified": 6,
+        "paired_bytecode_identical": true,
+        "cross_cycle_bytecode_identical": true,
+        "cross_cycle_artifacts": [
+          {
+            "state": 0,
+            "sha256_by_cycle": [
+              "f94507b63ef7e575dbdfa2ec0c9800dcef238bd89bb5aa724274547ea2950b8e"
+            ]
+          },
+          {
+            "state": -1,
+            "sha256_by_cycle": [
+              "63bedb586ab8f547d535376c6f674324fb4df7623f986db863a3d8bbd8ed3d13"
+            ]
+          },
+          {
+            "state": 1,
+            "sha256_by_cycle": [
+              "7ad553fdf05736ad55b0c5a9478a81ae97fb4f29d9033a9d6de9fc754fcc61da"
+            ]
+          }
+        ],
+        "reference_bytecode": null,
+        "cross_cycle_semantic_equivalence_proven": false,
+        "note": "Control verification does not imply identical compilation across cache histories or a performance claim.",
+        "cache_selection": {
+          "mode": "check"
+        }
+      }
+    },
+    {
+      "mode": "baseline",
+      "target": "/Users/danluu/dev/rust-interp/.work/interpreter-workspaces/78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d/c79a7ea89dec5d364f98d55c/target",
+      "evidence_hashes": 15,
+      "verification": {
+        "schema_version": 1,
+        "measurement_controls_verified": true,
+        "commands": 9,
+        "cycles": 1,
+        "edited_pairs": 1,
+        "check_commands": 3,
+        "explicit_controls_verified": true,
+        "exact_artifact_hashes_verified": 6,
+        "paired_bytecode_identical": true,
+        "cross_cycle_bytecode_identical": true,
+        "cross_cycle_artifacts": [
+          {
+            "state": 0,
+            "sha256_by_cycle": [
+              "f94507b63ef7e575dbdfa2ec0c9800dcef238bd89bb5aa724274547ea2950b8e"
+            ]
+          },
+          {
+            "state": -1,
+            "sha256_by_cycle": [
+              "63bedb586ab8f547d535376c6f674324fb4df7623f986db863a3d8bbd8ed3d13"
+            ]
+          },
+          {
+            "state": 1,
+            "sha256_by_cycle": [
+              "7ad553fdf05736ad55b0c5a9478a81ae97fb4f29d9033a9d6de9fc754fcc61da"
+            ]
+          }
+        ],
+        "reference_bytecode": null,
+        "cross_cycle_semantic_equivalence_proven": false,
+        "note": "Control verification does not imply identical compilation across cache histories or a performance claim.",
+        "cache_selection": {
+          "mode": "baseline",
+          "tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+          "namespace": "worker-count-nushell-cold-01:baseline",
+          "workspace_identity": "c79a7ea89dec5d364f98d55c"
+        }
+      }
+    },
+    {
+      "mode": "candidate",
+      "target": "/Users/danluu/dev/rust-interp/.work/interpreter-workspaces/78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d/74f9691f75c10256335d6c3b/target",
+      "evidence_hashes": 15,
+      "verification": {
+        "schema_version": 1,
+        "measurement_controls_verified": true,
+        "commands": 9,
+        "cycles": 1,
+        "edited_pairs": 1,
+        "check_commands": 3,
+        "explicit_controls_verified": true,
+        "exact_artifact_hashes_verified": 6,
+        "paired_bytecode_identical": true,
+        "cross_cycle_bytecode_identical": true,
+        "cross_cycle_artifacts": [
+          {
+            "state": 0,
+            "sha256_by_cycle": [
+              "f94507b63ef7e575dbdfa2ec0c9800dcef238bd89bb5aa724274547ea2950b8e"
+            ]
+          },
+          {
+            "state": -1,
+            "sha256_by_cycle": [
+              "63bedb586ab8f547d535376c6f674324fb4df7623f986db863a3d8bbd8ed3d13"
+            ]
+          },
+          {
+            "state": 1,
+            "sha256_by_cycle": [
+              "7ad553fdf05736ad55b0c5a9478a81ae97fb4f29d9033a9d6de9fc754fcc61da"
+            ]
+          }
+        ],
+        "reference_bytecode": null,
+        "cross_cycle_semantic_equivalence_proven": false,
+        "note": "Control verification does not imply identical compilation across cache histories or a performance claim.",
+        "cache_selection": {
+          "mode": "candidate",
+          "tool_key": "78e60cdd76195c55583651bac6a7f7d349314dd1ea582b6a86335adbee48049d",
+          "namespace": "worker-count-nushell-cold-01:candidate",
+          "workspace_identity": "74f9691f75c10256335d6c3b"
+        }
+      }
+    }
+  ],
+  "host_fixture_archived_restored": true,
+  "external_host_evidence_preserved": true,
+  "real_compiler_cache_modified": false,
+  "sources": {
+    "benchmarks/experiments/compiler-pipeline/check_host_cache_archive.py": "0dc05cd3ba186d7d32fd9e7ac4412e60e89288af327a729b29e0f80fc10cc13a",
+    "scripts/archive_workflow_cache.py": "8d706a644adb34032fb42c841dd1b0f1bdbf117910ea06b57bcaee58f133dd63",
+    "scripts/cache_archive.py": "965000e498cbdd3583aed27ceec500701ad900fe9a18ddd6742b95622975da95",
+    "scripts/reclaim_workflow_objects.py": "05860af8090c91d525df56dd61f5baf7fe1adb8e7487d765358958f81cce1b63",
+    "scripts/verify_repeated_workflow.py": "83ae5abf8757f573649a56a20af8e7d3c2f70d23d9dd080eaac0fcfd39b71e4b",
+    "scripts/workflow_case_file.py": "4a138ac3b497b9871b3d0781b0272f68da886ef118a26b8795cb7c59141588d7",
+    "scripts/workflow_measurements.py": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132",
+    "scripts/workflow_io.py": "29e006c3397fb762743783d13bfe3a2fca1d45091bfb2110380fe083108a4119",
+    "scripts/workflow_cache_evidence.py": "485541011b31fc1c677c3ae5f0a788c0d7038f4a3815fdd4e3020f52a98f7481",
+    "scripts/workflow_jobs.py": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5",
+    "scripts/workspace_check_evidence.py": "11b55ad733b254c3c836ee98e2bf41d1ad8bab3cbb9d1752ddb73dc63477931c",
+    "scripts/host_cache_evidence.py": "a60cc1d11f8a183bb0ddf877e3ac36e8b9e9756b7602388ee36b6e48371f7b76"
+  },
+  "raw": ".work/runs/host-cache-selector-03"
+}
