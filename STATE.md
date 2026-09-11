@@ -1,65 +1,67 @@
 # Continuation checkpoint — September 10, 2026
 
-The goal remains active: improve the custom Rust development engine using real
-source-edit/build/test measurements. The user asked for every suggestion in
-`suggestions.txt` to be considered and appropriate fixes applied. The complete
-[review decisions](docs/SUGGESTIONS-REVIEW-20260910.md) and implemented follow-ups
-are checked in. The user's `suggestions.txt` remains unmodified and untracked.
+The unbounded goal remains active: improve the custom Rust development engine
+using real source-edit/build/test measurements. Every suggestion in
+`suggestions.txt` has an explicit [decision](docs/SUGGESTIONS-REVIEW-20260910.md).
+The user's file remains unmodified and untracked. Local Git commits are authorized;
+no remote or push was requested.
 
-Current source includes the JIT limit/safety fix (`a2a0e04`, tool `b2aa6efe`).
-It passes 188 bytecode, 11 exporter and 3 historical cache tests. The last full
-performance-qualified engine is `57a54edd`; its historical results remain
-separate from newer source changes. [Exact Git/build index](benchmarks/tool-builds.json).
+Current runtime source is `a2a0e04`, tool `b2aa6efe`: 188 bytecode, 11 exporter
+and 3 historical-cache tests passed. The completed new nine-workflow corpus uses
+that tool. The broader 47,004 native differential commands, TLS checks and
+382-body fre replay still belong to `57a54edd`; they were not rerun on this fix.
+[Exact build index](benchmarks/tool-builds.json).
 
-The repeated token run completed 63 commands. Within-pair artifacts match, but
-the same source produced different data/immediate layout after the first edit
-cycle. The stronger cross-history check failed and is preserved, not normalized
-away. Two native-control qualifications completed another 168 commands, including
-42 independent checks; nine measurement/control helper tests pass.
+## Completed and checked in
 
-The durable full-corpus experiment is **`native-controls-corpus-01`**, launched
-from committed harness `e3d748f`. Authoritative live state:
+- `267ad90`: all nine stronger-native workflows completed, with 756 commands,
+  189 independent Cargo checks, 378 artifact checks and restored source pins.
+  [Assessment](results/native-controls-corpus-01/assessment.md). Native uses root
+  O0/incremental, 18 jobs and default test concurrency; custom builds use four
+  jobs. Package overrides remain. Linker/backend/worker alternatives are unqualified.
+- Token edited commands remain 6.664 s custom versus 2.002 s native; folded is
+  2.485 versus 1.638 s. All outliers and all three fre cross-history layout
+  differences remain recorded. No semantic equivalence or cause is established.
+- Native-call censuses `01` and `02` passed eight and nine diagnostic tests and
+  matched saved instruction/call totals. Current census sources are in `267ad90`;
+  the first version is reconstructible using its verified reverse patch.
+- The expanded census finds bounded acyclic call trees with explicit terminal
+  Trap support cover 80.72% of token direct calls / 59.02% of their frame bytes;
+  folded is 54.61% / 17.55%. These are scope counts, not speedup predictions.
+- Generated STATUS/index and all assessments are current. Corpus recovery
+  receipts now clear stale child identity/exit fields; this fix followed the
+  measured run. `97dbe1a` preserves the call ABI audit.
 
-- `.work/experiments/native-controls-corpus-01/status.json` — supervisor receipt.
-- `.work/corpus-runs/native-controls-corpus-01/status.json` — case progress.
-- `.work/corpus-runs/native-controls-corpus-01/plan.json` — exact options and frozen scripts.
-- `.work/continuation-state.json` — detailed current checkpoint and source pins.
+## Next action
 
-At launch the supervisor/controller were PIDs **34318/34324**. They initially
-waited for the benchmark lock before pgrust. Re-check receipts and actual process
-identities before treating a run as live. A separate user-owned disk-cleanup task
-has been using the same lock; do not interrupt or modify it. The coordinator
-waits up to ten minutes per lock acquisition and preserves failures.
+Implement the [bounded native call-tree experiment](benchmarks/experiments/bounded-native-calls/PLAN.md).
+Runtime implementation has **not** started. Stop adding scope censuses unless a
+specific implementation constraint requires one. Start with storage/readiness,
+conservative tree metadata and the emitter's Call/Return/terminal-Trap contract,
+keeping the current engine available for differential and end-to-end comparison.
 
-At the latest check, eight workflows are verified and `nushell-type-relations`
-is running (child PID **20579**, inspect actual identity before relying on it).
-The completed token row is 6.664 s custom versus 2.002 s native; folded-trie is
-2.485 versus 1.638 s. These are edited-command medians. The token cycle-0/state-2
-outlier is retained; higher wall and CPU time have no demonstrated cause.
+A whole-tree budget bound avoids partial budget exits only if every target and
+all storage are ready before entry. Otherwise decline before progress or use a
+real continuation. Preserve argument-copy errors before depth errors, return
+copy before truncation to the aligned callee base, aliases, exact budgets,
+initialization, guest limits and profile accounting. Untaken traps still need
+correct native failure handling. [ABI audit](docs/NATIVE-CALL-EXPERIMENT.md).
 
-Prepared follow-up: `benchmarks/experiments/native-call-census/` compiles the
-actual emitter support predicate against saved typed bytecode/profiles. Its
-sources are written but **not yet built or tested**. Run only after the corpus
-finishes, under the benchmark lock. [ABI design](docs/NATIVE-CALL-EXPERIMENT.md)
-records exact error order, retained alignment padding, and a broader guest-stack
-alternative. `scripts/update_status.py` has been updated for the new aggregate;
-do not run it until that aggregate and its assessment exist. The corpus runner
-still needs stale child-exit receipt fields cleared between cases, after its
-frozen run completes.
+The predeclared experimental target is 20% lower paired token command latency
+and 10% lower folded latency, CPU improving too, with no unresolved >5% held-out
+regression. Broader execution qualification is required for production retention.
 
-The corpus uses three actual-edit cycles per workflow, O0/incremental native
-compilation with 18 jobs/default test concurrency, four custom build jobs, and a
-separate Cargo-check reference. This is a specified native candidate, not a claim
-to have found the fastest configuration. Report frontend/link and compute rows
-separately. Preserve every negative edit, source restoration and artifact check.
+## Process and ownership
 
-After the corpus, investigate constant/relocation identity across cache histories
-and a larger native-call transition. Use typed eligibility and preserve call
-frames, argument/results, exact budgets, traps and TLS cleanup. The latest CPU
-and frame diagnostics are linked in [the evidence index](results/INDEX.md).
+All three recent supervisors/controllers finished with return code zero:
+`native-controls-corpus-01`, `native-call-census-01`, `native-call-census-02`.
+Their terminal receipts remain under `.work/experiments`; no task process is
+currently running. Re-check actual identities before treating old receipts as live.
+Detailed pointers/pins are in `.work/continuation-state.json`.
 
-No subagents, external model calls, AWS activation, unrelated process control,
-broad cache deletion, private cleanup or quarantine deletion. Keep measured
-scripts frozen and serialize this task's builds/tests/benchmarks/cleanup under
-`.work/benchmark.lock`. Local commits are authorized; no remote was requested.
-Old checkpoints and results remain historical evidence rather than live state.
+No subagents or independent model calls. No AWS activation, unrelated process
+control, broad cache deletion, private cleanup or quarantine deletion. A separate
+user-owned cleanup task uses the benchmark lock; wait without controlling it.
+Serialize task builds/tests/benchmarks/cleanup under `.work/benchmark.lock` and
+freeze measured inputs. Preserve original assertions, wrong-edit controls,
+source restoration and historical evidence.

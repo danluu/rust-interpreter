@@ -16,8 +16,8 @@ large execution gap on compute-heavy tests. Native controls still need tuning.
 | Guest backend | Our bytecode interpreter and direct AArch64 emitter |
 | Native emitter platform | Apple Silicon macOS |
 | Benchmark projects | pgrust, fre, Nushell, Ruff, private rg-aot |
-| Broadest body replay | 382 fre bodies passed, 7 ignored, with explicit options; not libtest |
-| Main gaps | Native call overhead, strong repeated controls, reuse, real unwinding, threads/OS/FFI and complete test-harness semantics |
+| Broadest recorded replay (`57a54edd`) | 382 fre bodies passed, 7 ignored, with explicit options; not libtest |
+| Main gaps | Native call overhead, native configuration qualification, reuse, real unwinding, threads/OS/FFI and complete test-harness semantics |
 
 ## Run a selected function or test
 
@@ -58,8 +58,9 @@ and one ignored diagnostic. [Validation record](results/review-codegen-limits-01
 
 The benchmark harness replays actual source edits, preserves original tests,
 requires a wrong edit to fail, and supports repeated cycles with child CPU
-accounting. Its first three-cycle token run exposed a compiler-cache-history
-artifact difference, which is retained alongside the timing results.
+accounting. The stronger-native corpus completed 756 commands across nine
+workflows, including 189 independent checks. Repeated fre source states exposed
+compiler-cache-history artifact differences, retained alongside the timings.
 [Protocol](BENCHMARKING.md), [token reproducer](benchmarks/TOKEN-PHRASE.md),
 [repeated-run assessment](results/paired-repeated-token-01/assessment.md).
 
