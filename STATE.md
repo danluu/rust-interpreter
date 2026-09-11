@@ -125,14 +125,15 @@ The [latest eight-target selection](results/worker-cold-storage-batch-03/assessm
 completed seven archives before a shared-volume space drop rejected the final
 child at preflight. Its original files were untouched. The [separate recovery](results/worker-cold-storage-batch-03-recovery-01/assessment.md)
 archives that final target and verifies its evidence; the original failed batch
-stays incomplete. Completed archives now total **89** (68 workflow, 21 host).
+stays incomplete. That recovery brought completed archives to **89** (68 workflow, 21 host).
 Available space briefly fell to about 636 MiB, then recovered to about 19 GiB
 without process intervention. The cause is unknown. Do not weaken the guards.
 
-The next prepared plan, `.work/cache-batches/worker-cold-storage-batch-04.json`,
-selects 32 exact completed public fre targets from bounded/native-region/
-persistent/resumable comparisons. Inventory preparation is active; review
-before application, with no other lock waiter. Cold03 remains unstarted.
+The [32-target fre batch](results/worker-cold-storage-batch-04/assessment.md)
+is now complete and verified: 56,584 paths, 407 external evidence hashes,
+all original payloads preserved. Completed archives now total **121**
+(100 workflow, 21 host). About 23.7 GiB was free afterward. Admit cold03
+with the existing space guard and all eleven worker inputs still frozen.
 
 
 The [completed twenty-four-target batch](results/worker-cold-storage-batch-02/assessment.md)
