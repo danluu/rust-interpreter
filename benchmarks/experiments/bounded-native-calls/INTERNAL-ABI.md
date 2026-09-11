@@ -1,5 +1,37 @@
 # Emitter integration notes
 
+## Persistent-register extension (`d664bce`, experimental)
+
+With `--jit-persistent-registers`, a function may assign up to three complete
+u128 guest values to x23/x24, x25/x26 and x27/x28. The full-CFG liveness analysis
+includes short/interpreted regions, so every VM continuation preserves all of
+its possible register inputs. Register arrays remain inaccessible to guests.
+Memory forwarding facts still end at each region/call boundary.
+
+An ordinary external entry reserves `16 + 16*N` host bytes, saves x19/LR at
+offset 0 and its N assigned pairs from offset 16, then reloads current guest
+values from the initialized register array. Internal successors skip that
+prologue. A VM continuation spills assigned live values through x0 before
+putting the continuation PC in x0, restores the host pairs and x19/LR, and
+returns. Budget declines use the same spill rule. Fault exits restore the host
+ABI and cannot resume guest code, so they need no guest-register spill.
+
+The standalone native-tree wrapper remains 16 bytes. Its internal entry
+reserves `64 + 16*N`, retaining x20/x21 at 0, x22/LR at 16, caller x0/x1 at 32,
+profile at 48 and budget scratch at 56. Assigned pairs start at 64. Each native
+callee saves/restores only the pairs it changes; unused pairs remain untouched.
+The ordinary Call stub keeps its existing 64-byte internal frame and the outer
+ordinary frame. It uses the caller's assignment and relies on each child to
+preserve those physical values, including on faults. Both frames unwind on a
+stub fault. All frames remain 16-byte aligned; x18 and x29 remain untouched.
+
+The original default remains available and analysis limits decline to its
+emitter. Assignment counters count published ordinary/tree code instances, not
+unique guest functions. Analysis and emission time remain inside compile time.
+The [debug qualification](../../../results/persistent-native-04/summary.json)
+passes 240 tests, including an expanded assembly probe for x19–x28 and SP/LR.
+Release and real E2E qualification are separate from this ABI description.
+
 The storage, metadata and dedicated emitter described here are implemented in
 `linear_memory.rs`, `jit/trees.rs` and `jit/native_calls.rs`. Direct-entry native
 checks and opt-in VM integration pass. These checks do

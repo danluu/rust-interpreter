@@ -81,11 +81,16 @@ assembly ABI probe cover x19–x28 and SP/LR through 64 native children and faul
 The earlier `persistent-native-02` failure remains recorded: its test omitted
 the valid PC 4 budget continuation. The corrected test passes in `03` and `04`.
 
-Next: commit this implementation, run the recorded optimized build/install and
-CLI checks, then both original saved artifacts and the three-cycle source-edit
+The implementation is committed as `d664bce`, tool `e89de7f8`. Its
+[optimized check/install](results/persistent-release-01/summary.json) passes all
+240 tests; [ten CLI checks](results/persistent-cli-01/summary.json) also pass and
+reverify the two historical receipts, rejecting falsely claimed register flags.
+The source key and installed binary hashes are in the build index.
+
+Next: finish both original saved artifacts and run the three-cycle source-edit
 corpus against `b2aa6efe`, with native calls, call stubs and persistent registers
-explicitly enabled in the candidate. No persistent-register performance result
-exists yet. Keep the original gates and all assertions unchanged.
+explicitly enabled in the candidate. No persistent-register E2E result exists
+yet. Keep the original gates and all assertions unchanged.
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -100,12 +105,13 @@ regression. Broader execution qualification is required for production retention
 
 ## Process and ownership
 
-All currently launched runs are terminal; the latest debug check succeeded.
+The original-artifact check `persistent-real-smoke-01` is running; release and
+CLI qualification are terminal and successful.
 The profile-report helper initially rejected a relative test-fixture path;
 the corrected helper passes synthetic partition/error checks and reproduces
 all three historical generated sample totals. The first exact-code token capture missed the JIT arena during startup; two
 windows succeeded and all three test runs passed. The bounded readiness-wait fix
-and complete token retry/folded captures are preserved. No task process is active.
+and complete token retry/folded captures are preserved.
 Detailed evidence and pinned identities are in `.work/continuation-state.json`.
 
 No subagents or independent model calls. No AWS activation, unrelated process

@@ -112,6 +112,15 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Items 3.2 and 5.4 now have a bounded full-CFG liveness analysis and shared
+  read-before-write visitor (`b252588`), plus persistent full-u128 register pairs
+  across native branches/calls (`d664bce` / `e89de7f8`). Debug and release pass
+  240 workspace tests, including VM continuations, alias/cache interactions,
+  exact budgets and x19–x28/SP/LR through nested calls and faults. Ten CLI checks
+  pass and the receipt verifier rejects falsely claimed runtime flags. The
+  [experiment plan](../benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md)
+  retains the original b2 performance gates; real E2E measurement is still needed.
+
 - `93abea7`: repeated source-edit cycles, CPU accounting, portable verifier and
   typed artifact diagnostic. All 63 commands completed. [Assessment and preserved
   identity failure](../results/paired-repeated-token-01/assessment.md).
