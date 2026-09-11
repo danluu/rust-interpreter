@@ -104,3 +104,11 @@ Before primary timing, exercise the corpus coordinator's positive path with one
 small pgrust body-edit case, three cycles/five edits and the same four/eighteen
 counts. This tests JSON receipts and actual forwarding that invalid-CLI probes
 cannot establish; its timings are also qualification-only.
+
+
+The corpus qualification completed 84 commands and 42 artifacts with actual
+four/eighteen-job forwarding. The first fifteen-cycle primary, pgrust, now
+verifies 180 commands and ninety artifacts: paired wall ratio 0.9981098106 and
+CPU ratio 0.9996062101, with no material gain. The Nushell primary is active as
+`worker-count-nushell-repeated-01`. These updates record execution status and
+do not change the predeclared samples, thresholds or stopping rule.

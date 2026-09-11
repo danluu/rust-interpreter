@@ -44,7 +44,16 @@ verifies 180 commands, ninety artifacts, eleven frozen inputs and source
 restoration. Median paired wall ratio is **0.9981098106** and child-CPU ratio
 **0.9996062101**: no material worker-count gain, with warm guards passing.
 
-Next: fifteen Nushell API-edit cycles with the same frozen worker settings.
+Active: **worker-count-nushell-repeated-01**, supervisor **75194** / controller
+**75197**, started at 09:23:32 local with 27.896 GiB free. It runs fifteen
+Nushell API-edit cycles using the same frozen worker settings. Verify its final
+receipts and all ninety artifacts, then run the qualified
+[worker assessor](benchmarks/experiments/compiler-pipeline/assess_worker_warm.py).
+Pgrust qualification of that assessor checks existing receipts only; it adds no
+new timing samples. Preserve all warm CPU/wall guards and report each sample.
+A completed warm guard failure would make combined adoption impossible regardless
+of the six cold results; publish that proof and mark the protocol incomplete
+under the predeclared stopping rule. No extra worker counts or trials.
 Eight reviewed completed targets are now [archived](results/warm-storage-batch-01-recovery-01/assessment.md):
 95,657 paths / 23,139,072,348 unique bytes in 7,776,020,009 archive bytes.
 The original batch stopped before its sixth child because a queued verifier
@@ -111,7 +120,8 @@ relaxation, wrapper retention or conditional held-out testing is claimed.
 [Completed batch04](results/cold-storage-batch-04/assessment.md) preserves eight
 exact completed targets: 84,333 paths / 21.42 GiB unique contents in 7.21 GiB
 of archives. Final receipts, inventories and all 38 distinct external evidence/
-source hashes verify. Thirty-six actual archives are now complete. All payloads
+source hashes verify. That batch brought the archive count to thirty-six; the current total is
+forty-four after the separately reviewed warm-study storage work above. All payloads
 were decoded and hashed before retirement. Executed snapshots and reports remain
 in place. Archival ran outside benchmark timing and controlled no other work.
 
