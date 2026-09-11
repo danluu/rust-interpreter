@@ -158,6 +158,10 @@ The [ordinary-region Call integration](../benchmarks/experiments/bounded-native-
 is implemented in `26833c3` / `2f31c6a0`, with 231 workspace tests passing in
 debug/release. Its [three-cycle E2E result](../results/native-region-e2e-01/assessment.md)
 improves token 19.3% paired but regresses folded 1.4%, missing both original gates.
-The options remain experimental. Fresh runtime profiles guide the next change.
+The options remain experimental. Fresh profiles and same-process emitted-code
+attribution are complete. The diagnostic tool passes 233 debug/release tests.
+[Next](../benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md):
+register liveness and persistence across native edges, with frame lifetime work
+kept separate. Existing argument-zeroing and unused-local censuses remain parked.
 The remaining accepted design work above is prioritized follow-up, not a claim
 that a production Rust development engine is complete.

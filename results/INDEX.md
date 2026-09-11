@@ -20,6 +20,12 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | runtime-verification | [native-region-e2e-01/final-verification.json](native-region-e2e-01/final-verification.json) |
 | release-qualification | [native-region-release-01/summary.json](native-region-release-01/summary.json) |
 | execution-smoke | [native-region-real-smoke-01/summary.json](native-region-real-smoke-01/summary.json) |
+| diagnostic-release | [native-code-dump-release-01/summary.json](native-code-dump-release-01/summary.json) |
+| diagnostic | [native-region-token-sample-01/summary.json](native-region-token-sample-01/summary.json) |
+| diagnostic | [native-region-folded-sample-01/summary.json](native-region-folded-sample-01/summary.json) |
+| generated-code-attribution | [native-code-token-sample-02/generated-attribution.json](native-code-token-sample-02/generated-attribution.json) |
+| generated-code-attribution | [native-code-folded-sample-01/generated-attribution.json](native-code-folded-sample-01/generated-attribution.json) |
+| preserved-incomplete-capture | [native-code-token-sample-01/capture-status.json](native-code-token-sample-01/capture-status.json) |
 | corpus | [native-controls-corpus-01/summary.json](native-controls-corpus-01/summary.json) |
 | previous-corpus | [local-memory-forwarding-01/summary.json](local-memory-forwarding-01/summary.json) |
 | repeated-workflow | [paired-repeated-token-01/summary.json](paired-repeated-token-01/summary.json) |

@@ -17,7 +17,8 @@ performance gates failed; the option remains disabled by default.
 
 Paired change is the median within-edit ratio; command columns are marginal
 medians. The targets remain −20% token and −10% folded against b2aa6efe.
-Call stubs now link with ordinary regions; next profile the remaining generated and host costs.
+Call stubs now link with ordinary regions. Exact-code profiles guide the next
+liveness and persistent-register experiment; frame lifetime work stays separate.
 [Result and limitations](results/native-region-e2e-01/assessment.md).
 
 ## Full-corpus baseline

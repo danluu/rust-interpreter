@@ -61,9 +61,16 @@ Fresh three-window profiles of that exact candidate pass original assertions.
 Folded: 48.1% generated, 21.9% frame reservation, 12.0% native boundary and
 9.3% dispatcher self. Token: 61.7% generated, 11.2% native boundary and 10.4%
 dispatcher self. These are perturbed sample shares, not gain predictions.
-The next concrete task is a diagnostic code dump tied to the sampled process:
-published bytes plus ordinary/stub/tree entry ranges, to identify which generated
-paths are costly before choosing the next call/continuation/register change.
+The diagnostic code dump is implemented in `059d818` / `7ad1ccdb` and passes
+233 workspace tests in debug/release. Exact same-process bytes and ranges resolve
+all generated samples: token has 14.0% direct register-array stores and 11.7%
+native zeroing; folded 6.0% stores and 8.2% native zeroing. VM frame reservation
+remains 23.1% in the folded diagnostic. These are sampled shares, not savings.
+[Next implementation](benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md):
+full-CFG liveness and up to three persistent u128 register pairs across native
+edges, with correct VM spill/reload and complete native ABI preservation. Keep
+frame lifetime/layout changes separate. Do not repeat parked argument-zero or
+unused-local work. Current branch is `experiment/native-code-profile`.
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -81,7 +88,9 @@ regression. Broader execution qualification is required for production retention
 All E2E, release and three-window sampling runs are terminal with return code
 zero. The profile-report helper initially rejected a relative test-fixture path;
 the corrected helper passes synthetic partition/error checks and reproduces
-all three historical generated sample totals. No task process is active.
+all three historical generated sample totals. The first exact-code token capture missed the JIT arena during startup; two
+windows succeeded and all three test runs passed. The bounded readiness-wait fix
+and complete token retry/folded captures are preserved. No task process is active.
 Detailed evidence and pinned identities are in `.work/continuation-state.json`.
 
 No subagents or independent model calls. No AWS activation, unrelated process

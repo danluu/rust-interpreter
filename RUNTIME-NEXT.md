@@ -8,9 +8,11 @@ on the exhaustive token workflow. Repeated actual edits confirm this gap.
    Ordinary Call stubs now link with generated regions. Source `26833c3` / tool
    `2f31c6a0` passes 231 debug/release tests. Three real-edit cycles improve token
    19.3% paired but regress folded 1.4%; both original gates fail. Keep the options
-   experimental. Fresh profiles of this exact candidate identify remaining host
-   transitions versus generated setup/copies/register traffic. Inspect generated
-   code before selecting the next ABI/register architecture. Keep the original
+   experimental. Fresh profiles and same-process generated-code attribution identify substantial
+   register-array stores and frame clearing. Next implement full-CFG liveness and
+   persistent full-width register pairs across native edges, with complete ABI
+   preservation. Keep frame lifetime/layout changes separate.
+   [Implementation plan](benchmarks/experiments/bounded-native-calls/VALUE-LIFETIMES-NEXT.md). Keep the original
    b2aa6efe gates, then require held-out and broader qualification before retention.
    [Result](results/native-region-e2e-01/assessment.md),
    [profiling protocol](benchmarks/experiments/bounded-native-calls/PROFILING.md).
