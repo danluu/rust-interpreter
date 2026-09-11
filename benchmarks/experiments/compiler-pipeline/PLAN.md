@@ -74,7 +74,9 @@ Status: `compiler-timing-parser-01` passes four preserved captures, nineteen
 malformed inputs and synthetic overlap/feature/duplicate checks. Both repeated
 interface runs and the nine-snapshot instrumented comparison are complete and
 verified. The lightweight wrapper's warm comparisons are complete; four of six
-fixed cold histories are verified and the remaining two are required.
+fixed cold histories are verified. The [futility bound](../../../results/lightweight-wrapper-cold-futility-01/assessment.md)
+proves its 5% cold gate unreachable; the two unstarted histories are stopped and
+the original six-history protocol is marked incomplete. No wrapper retention.
 
 [Cold timeline inspection](../../../results/compiler-cold-concurrency-01/assessment.md)
 now finds 800 custom timed Cargo units under four jobs versus 608 native units

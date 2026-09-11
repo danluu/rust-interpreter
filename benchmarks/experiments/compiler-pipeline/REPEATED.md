@@ -1,5 +1,14 @@
 # Repeated end-to-end comparison of compiler routing
 
+> **September 11 amendment:** Stop histories 05 and 06 for verified deterministic
+> futility. The [exact bound](../../../results/lightweight-wrapper-cold-futility-01/assessment.md)
+> proves that no results of the two unstarted histories could make the original
+> 5% cold gate pass. The six-history protocol below remains **incomplete**; no
+> six-sample estimate or retention is claimed. This stopping rule was not
+> predeclared. All four completed histories and both warm comparisons verify.
+> The original protocol is preserved below and in Git. Proceed to the separate
+> worker-count experiment instead of collecting decision-irrelevant samples.
+
 Both one-cycle qualifications pass. Pgrust's edited command was slightly faster
 with c341; Nushell's cold and edited commands were slower. Keep both observations
 separate from the repeated experiment. The original cold improvement threshold

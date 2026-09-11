@@ -39,33 +39,30 @@ std-MIR. Installation/downloads/std-MIR setup are excluded from cold timing.
 | 02 | candidate,baseline,native | 0.9868934347 | verified |
 | 03 | baseline,candidate,native | 1.0085092329 | verified |
 | 04 | native,candidate,baseline | 0.9847329487 | verified |
-| 05 | candidate,native,baseline | — | pending |
-| 06 | baseline,native,candidate | — | pending |
+| 05 | candidate,native,baseline | — | unexecuted: futility |
+| 06 | baseline,native,candidate | — | unexecuted: futility |
 
-All first four histories verify twelve commands and six artifacts each.
-Batch04 preparations have completed; all eight inventories have been reviewed.
-Its plan SHA is `b09f17691346ca7b47f6ac40bd653dac6f4d825cea062f06294ea28777e41143`.
-Apply it separately, verify completed receipts and space, then start cold05 in
-candidate,native,baseline order. Inspect receipts before inferring liveness.
+All four histories verify twelve commands and six artifacts each. The
+[futility assessment](results/lightweight-wrapper-cold-futility-01/assessment.md)
+rechecks those histories and both warm comparisons. Any possible final two
+ratios leave the six-sample median at least **0.9858131917**: at most **1.4187%**
+improvement, below the original 5% requirement. Histories 05/06 never started.
+The stopping rule was not predeclared; the amendment is explicit and the original
+six-history protocol remains **incomplete**. No six-sample estimate, threshold
+relaxation, wrapper retention or conditional held-out testing is claimed.
 
-Retention requires at least 5% median cold wall improvement and no unresolved
-warm paired wall regression over 5%. Only then run held-out Ruff/private rg-aot/
-original fre checks. Preserve all six samples; no extra trials, threshold changes
-or wrapper retuning after a failure. `assess_wrapper_cold.py --all` remains
-unexecuted until all six histories exist. No retention decision yet.
+The separate four-versus-eighteen worker experiment is now the next direction.
+Integration is in progress; exact current qualification receipts are recorded
+in `.work/continuation-state.json`. No guest runtime or installed tool changes.
 
 ## Resource planning
 
-[Completed batch03](results/cold-storage-batch-03/assessment.md) preserves eight
-exact completed targets: 84,317 paths / 21.42 GiB unique contents in 7.21 GiB
-of archives. Final receipts, reviewed inventories and all 38 distinct external
-source/evidence hashes verify. Twenty-eight actual archives are now complete,
-including [batch01](results/cold-storage-batch-01/assessment.md) and
-[batch02](results/cold-storage-batch-02/assessment.md). All payloads were decoded
-and hashed before retirement. Executed snapshots and reports remain in place.
-About 25.8 GiB was free before cold04. More completed-cache archival will be
-needed between large histories. The completed `interface-nushell-units-01`
-targets are potential candidates after cold04, subject to fresh exact inventories.
+[Completed batch04](results/cold-storage-batch-04/assessment.md) preserves eight
+exact completed targets: 84,333 paths / 21.42 GiB unique contents in 7.21 GiB
+of archives. Final receipts, inventories and all 38 distinct external evidence/
+source hashes verify. Thirty-six actual archives are now complete. All payloads
+were decoded and hashed before retirement. Executed snapshots and reports remain
+in place. Archival ran outside benchmark timing and controlled no other work.
 
 The [archive implementation](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
 passes 44 rejection checks, four coordinator cases and two legacy restores.
@@ -76,7 +73,7 @@ keep query metadata, private caches, installed tools and historical evidence.
 Allow at least roughly 21 GiB before each large fresh history; the per-command
 guard remains eight GiB and is not a reservation against other host activity.
 
-## Direction after the fixed comparison
+## Next experiment
 
 [Historical Cargo timelines](results/compiler-cold-concurrency-01/assessment.md)
 show 800 custom timed units under four jobs and CPU/wall about 3.1 during cold
@@ -85,12 +82,11 @@ Overlap does not establish CPU utilization, a ready queue or a critical path.
 The [worker-count plan](benchmarks/experiments/compiler-pipeline/WORKER-COUNT-NEXT.md)
 is a separate next experiment: identical tool78 in both arms, four versus eighteen
 jobs, qualification followed by fixed cold/warm samples and original controls.
-Do not change the active wrapper's four-job controls. The staged
-[worker helper](results/worker-count-helper-01/assessment.md) passes six
-configurations, 48 rejection checks, sixteen parser rejections and worker-count
-checks on 756 historical commands. Those commands were inspected, not rerun.
-Harness/launcher/verifier integration and project qualification remain pending;
-integrate only after the current six cold histories have been assessed.
+The wrapper histories are closed after the verified futility decision. The
+worker helper's first qualification is preserved; an additional JSON namespace
+serialization check now passes. Actual harness integration and project
+qualification follow with identical tool78 in both arms and separate namespaces.
+
 
 [Constant-history inspection](results/interface-nushell-literal-history-01/assessment.md)
 finds an extra `Expected OneOf` literal and changed guest offsets after edit/revert.

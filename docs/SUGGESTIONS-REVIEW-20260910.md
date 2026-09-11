@@ -123,8 +123,8 @@ review are not commitments or evidence of feasibility.
   preserved query metadata and executed snapshots. [The format qualification](../results/cache-archive-qualification-06/assessment.md)
   passes 44 rejection checks, four coordinator cases and restoration of both
   earlier formats; [cache selection](../results/workflow-cache-evidence-01/assessment.md)
-  passes 31 rejections and nine historical targets. Twenty-eight exact native/check/
-  custom archives completed, including the [third batch](../results/cold-storage-batch-03/assessment.md). This made room for the pending cold comparisons;
+  passes 31 rejections and nine historical targets. Thirty-six exact native/check/
+  custom archives completed, including the [fourth batch](../results/cold-storage-batch-04/assessment.md). This made room for the pending cold comparisons;
   it is storage maintenance outside their timers, not a compilation speedup.
 
 - Item 4.1 now has a std-only exec wrapper and shared Cargo routing rules in
@@ -137,7 +137,10 @@ review are not commitments or evidence of feasibility.
   reduce paired wall time 4.57% and CPU 4.46%; the first Nushell observation
   was slower. [Repeated Nushell edits](../results/lightweight-wrapper-nushell-repeated-01/assessment.md)
   now reduce paired wall time 4.24% and CPU 1.94%, with all ninety artifacts
-  matching. Six balanced cold histories remain required. New manifests
+  matching. Four cold histories now prove the original 5% gate unreachable for
+  any final two results. The [futility decision](../results/lightweight-wrapper-cold-futility-01/assessment.md)
+  stops the two unstarted histories and openly marks the six-history protocol
+  incomplete; no wrapper retention. New manifests
   verify the third executable and preserve historical two-binary compatibility.
 - Item 1.5 now includes [actual Cargo unit attribution](../results/interface-nushell-units-01/assessment.md)
   for a generic API edit: all modes rebuild 19 units. Native nu-command takes
