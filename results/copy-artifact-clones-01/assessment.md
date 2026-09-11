@@ -1,0 +1,3 @@
+All eight reviewed public histories retain their 336 executed artifact paths, exact bytes, ownership, permissions, modification times and independent write behavior. The qualified APFS helper replaced 244 identical duplicates with independent clones, covering 2,861,621,286 logical duplicate bytes. Inode, ctime and birth time change as declared. Review commit `c45612d` precedes application.
+
+All eight original workflow verifications reproduce afterward. Raw inventories and replacement journals remain under `.work/clones/copy-artifact-clones-01`. About 17.2 GiB was available on the shared volume afterward; logical duplicate bytes are not a physical-space measurement. No benchmark timer includes this maintenance.
