@@ -2,6 +2,11 @@
 
 ## 2026-09-10 review follow-up
 
+- Native controls: configurable profile, build jobs, test concurrency and exact
+  compiler arguments, with a separately timed Cargo-check reference and nested
+  exporter-stage reporting. Two three-cycle pgrust qualifications completed
+  168 commands; nine helper tests pass. Added a serial corpus runner and durable
+  supervisor, plus a Git-backed index for three exact tool builds.
 - `a2a0e04`: known JIT branch/assertion limits decline before code publication;
   internal relocation errors remain errors. Explicit unsafe entry/thread contract.
   Five new tests; workspace check: 188 bytecode, 11 exporter and 3 cache tests pass.

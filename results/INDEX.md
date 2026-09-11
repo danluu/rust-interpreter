@@ -20,5 +20,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | diagnostic | [retained-token-cpu-sample-04/summary.json](retained-token-cpu-sample-04/summary.json) |
 | diagnostic | [frame-initialization-census-01/summary.json](frame-initialization-census-01/summary.json) |
 | diagnostic | [mir-frame-census-01/summary.json](mir-frame-census-01/summary.json) |
+| control-qualification | [paired-native-controls-pgrust-02/summary.json](paired-native-controls-pgrust-02/summary.json) |
+| control-qualification | [e2e-native-controls-reference-01/summary.json](e2e-native-controls-reference-01/summary.json) |
 
 [Measured status](../STATUS.md) · [Earlier native-cache results](../RESULTS.md)

@@ -67,6 +67,8 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) for mechanisms and limits,
 [RUNTIME-NEXT.md](RUNTIME-NEXT.md) for the next experiments,
 [CHANGELOG.md](CHANGELOG.md) for checked-in changes, and
 [results/INDEX.md](results/INDEX.md) for current evidence.
+The [build index](benchmarks/tool-builds.json) maps source commits to exact tool
+keys and verified binary hashes; regenerate it with `python3 scripts/tool_source_index.py`.
 
 Every suggestion from the external review has an explicit
 [decision](docs/SUGGESTIONS-REVIEW-20260910.md). The original

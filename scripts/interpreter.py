@@ -158,6 +158,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--manifest-path',type=Path,default=Path('Cargo.toml'))
     parser.add_argument('--package',required=True)
+    parser.add_argument('--jobs',type=int,default=4,help='Cargo build jobs (1..256)')
     selected=parser.add_mutually_exclusive_group(required=True)
     selected.add_argument('--entry',action='append',help='function to run; repeat for a batch of unit test bodies')
     selected.add_argument('--audit-entries',type=Path,help='JSON list of test body names to check for lowering support, without executing them')
@@ -177,6 +178,7 @@ def main():
     parser.add_argument('--test-body',action='store_true',help='invoke a function from the library unit-test target directly; libtest attributes are not implemented')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    if not 1<=args.jobs<=256:parser.error('--jobs must be in 1..256')
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     auditing=args.audit_entries is not None
@@ -253,7 +255,7 @@ def main():
         env['RUST_INTERP_STD_SYSROOT']=str(std[0])
         env['RUST_INTERP_STD_TARGET']=std[1]
     if stats:env['RUST_INTERP_VM_STATS']='1'
-    command=['cargo','+'+TOOLCHAIN,'check','--manifest-path',str(manifest),'--package',args.package,'--lib','--locked','--offline','--jobs','4','--message-format=json-render-diagnostics']
+    command=['cargo','+'+TOOLCHAIN,'check','--manifest-path',str(manifest),'--package',args.package,'--lib','--locked','--offline','--jobs',str(args.jobs),'--message-format=json-render-diagnostics']
     if args.features:command+=['--features',args.features]
     if args.no_default_features:command+=['--no-default-features']
     # On the pinned Cargo, this selects Check { test: true } for exactly

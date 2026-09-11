@@ -73,6 +73,8 @@ def render():
         ('diagnostic', 'results/retained-token-cpu-sample-04/summary.json'),
         ('diagnostic', 'results/frame-initialization-census-01/summary.json'),
         ('diagnostic', 'results/mir-frame-census-01/summary.json'),
+        ('control-qualification', 'results/paired-native-controls-pgrust-02/summary.json'),
+        ('control-qualification', 'results/e2e-native-controls-reference-01/summary.json'),
     ]:
         entries.append(dict(category=category, report=report,
             report_sha256=hashlib.sha256((ROOT / report).read_bytes()).hexdigest()))

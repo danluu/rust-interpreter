@@ -15,6 +15,7 @@ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require
 
 from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
 from workflow_measurements import child_usage, child_cpu_since, per_edit_spread, sample_path, source_states
+from workflow_controls import native_command, native_environment, exporter_seconds
 
 
 def guest_test_failure(stderr):
@@ -32,12 +33,20 @@ def guest_test_failure(stderr):
 
 
 def main():
+    if not __debug__:
+        raise RuntimeError('benchmark validation uses assertions; run Python without -O')
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id',default='e2e-workflow-'+str(time.time_ns()))
     parser.add_argument('--project',choices=[*WORKFLOWS,'rg-aot'],default='fre')
     parser.add_argument('--workflow',default='default',help='additional named workload within a project')
     parser.add_argument('--batch',action='store_true',help='invoke all custom test entries in one command')
     parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
+    parser.add_argument('--jobs',type=int,default=4,help='Cargo jobs for custom engines and, by default, native (1..256)')
+    parser.add_argument('--native-jobs',type=int,help='override native/check Cargo jobs (1..256)')
+    parser.add_argument('--native-profile',choices=['repository','o0-incremental'],default='repository',help='explicit native/check profile override; no fastest-native claim')
+    parser.add_argument('--native-test-threads',default='1',help='positive libtest thread count or default')
+    parser.add_argument('--native-rustflag',action='append',default=[],help='one explicit native/check rustc argument; repeat, using --native-rustflag=VALUE')
+    parser.add_argument('--check-floor',action='store_true',help='independently time cargo check of the library-test target after each primary mode triplet')
     parser.add_argument('--cargo-timings',action='store_true',help='collect Cargo unit timing reports in every mode; report generation remains timed')
     parser.add_argument('--vary-selection',action='store_true',help='change the selected tests to match each production edit')
     parser.add_argument('--std-mir',action='store_true',help='use the reusable metadata-only standard library for custom engines')
@@ -57,6 +66,10 @@ def main():
     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
     args=parser.parse_args()
     if not 1<=args.cycles<=30:parser.error('cycles must be in 1..30')
+    if not 1<=args.jobs<=256 or (args.native_jobs is not None and not 1<=args.native_jobs<=256):parser.error('jobs must be in 1..256')
+    if args.native_test_threads!='default' and (not args.native_test_threads.isdigit() or not 1<=int(args.native_test_threads)<=256):parser.error('native-test-threads must be default or in 1..256')
+    if any(not flag or '\x1f' in flag or '\x00' in flag for flag in args.native_rustflag):parser.error('native rustflags must be nonempty arguments without NUL or unit separators')
+    native_jobs=args.native_jobs if args.native_jobs is not None else args.jobs
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     if args.candidate_tool_key is not None and args.baseline_tool_key is None:
@@ -133,7 +146,7 @@ def main():
         raise RuntimeError('snapshot has tracked changes')
     work=ROOT/'.work/runs'/args.run_id
     work.mkdir(parents=True)
-    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/std_mir.py']
+    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/std_mir.py']
     frozen_scripts={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in script_paths}
     file=source/case['file']
     original=file.read_bytes();current=original
@@ -146,6 +159,30 @@ def main():
         for profile in ['DEV','TEST']:
             env[f'CARGO_PROFILE_{profile}_BUILD_OVERRIDE_OPT_LEVEL']=str(args.build_tool_opt_level)
     records=[];orders=[];transitions=[];built_sources={mode:None for mode in modes}
+    check_records=[]
+    def check_reference(sample):
+        digest=hashlib.sha256(current).hexdigest()
+        if file.read_bytes()!=current:raise RuntimeError('source changed before Cargo-check control')
+        previous=check_records[-1]['source_sha256'] if check_records else None
+        if sample['phase']!='cold' and previous==digest:raise RuntimeError('unchanged Cargo-check source')
+        command=native_command(TOOLCHAIN,source/'Cargo.toml',package,work/'check',native_jobs,
+            args.native_test_threads,[],check=True)
+        child_env=native_environment(env,args.native_profile,args.native_rustflag)
+        before=child_usage();start=time.perf_counter()
+        child=subprocess.Popen(command,cwd=source,env=child_env,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        receipt=dict(pid=child.pid,parent_pid=os.getpid(),cwd=str(source),command=command,mode='check-floor',
+            cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],started_at=time.time(),status='running')
+        (work/'active-command.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        stdout,stderr=child.communicate();elapsed=time.perf_counter()-start;cpu=child_cpu_since(before)
+        receipt.update(status='finished',returncode=child.returncode,finished_at=time.time())
+        (work/'active-command.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        row=dict(cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],source_sha256=digest,
+            previous_source_sha256=previous,seconds=elapsed,cpu_seconds=cpu['total_seconds'],cpu=cpu,
+            command=command,returncode=child.returncode,stdout=stdout,stderr=stderr,load=os.getloadavg())
+        check_records.append(row);(work/'check-records.json').write_text(json.dumps(check_records,indent=2)+'\n')
+        if child.returncode or 'Checking '+package not in stderr:raise RuntimeError('Cargo-check control did not successfully check the edited target: '+stderr)
+        if file.read_bytes()!=current:raise RuntimeError('source changed during Cargo-check control')
+        print('check-floor',sample['cycle'],sample['state'],round(elapsed,3),flush=True)
     def invoke(mode,sample):
         state=sample['state'];cycle=sample['cycle'];phase=sample['phase'];label=sample['label'];success=state!=-1
         source_digest=hashlib.sha256(current).hexdigest()
@@ -158,13 +195,12 @@ def main():
         if args.vary_selection and state>0:
             selected=[tests[i] for i in case['selections'][state-1]]
         if mode=='native':
-            commands=[['cargo','+'+TOOLCHAIN,'test','--manifest-path',manifest,
-                       '--package',package,'--lib','--locked','--offline','--jobs','4',
-                       '--target-dir',str(work/'native'),*(['--timings'] if args.cargo_timings else []),'--','--exact','--test-threads=1',*selected]]
+            commands=[native_command(TOOLCHAIN,manifest,package,work/'native',native_jobs,
+                args.native_test_threads,selected,timings=args.cargo_timings)]
         else:
             config=mode_tools[mode]
             base=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',manifest,
-                  '--package',package,'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
+                  '--package',package,'--jobs',str(args.jobs),'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
                   '--cache-namespace',args.run_id+':'+mode]
             if args.baseline_tool_key is not None:base+=['--tool-key',config['tool_key']]
             if args.allocation_limit is not None:base+=['--allocation-limit',str(args.allocation_limit)]
@@ -176,6 +212,7 @@ def main():
             commands=[[*base,*[arg for test in selected for arg in ['--entry',test]]]] if args.batch else [[*base,'--entry',test] for test in selected]
         start=time.perf_counter();calls=[]
         child_env=env.copy()
+        if mode=='native':child_env=native_environment(env,args.native_profile,args.native_rustflag)
         if mode!='native' and config['guest_flags']:
             child_env['RUSTFLAGS']=' '.join(config['guest_flags'])
         for command in commands:
@@ -183,13 +220,15 @@ def main():
             usage_before=child_usage()
             p=subprocess.Popen(command,cwd=source,env=child_env,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             active=dict(pid=p.pid,parent_pid=os.getpid(),command=command,cwd=str(source),
-                        mode=mode,cycle=cycle,state=state,phase=phase,label=label,rustflags=child_env.get('RUSTFLAGS'),started_at=time.time(),status='running')
+                        mode=mode,cycle=cycle,state=state,phase=phase,label=label,rustflags=child_env.get('RUSTFLAGS'),encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS'),started_at=time.time(),status='running')
             (work/'active-command.json').write_text(json.dumps(active,indent=2)+'\n')
             stdout,stderr=p.communicate()
             cpu=child_cpu_since(usage_before)
             active.update(status='finished',returncode=p.returncode)
             (work/'active-command.json').write_text(json.dumps(active,indent=2)+'\n')
             calls.append(dict(pid=p.pid,command=command,rustflags=child_env.get('RUSTFLAGS'),seconds=time.perf_counter()-child_start,
+                              encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS'),
+                              exporter_seconds=exporter_seconds(stderr) if mode!='native' else {},
                               cpu=cpu,returncode=p.returncode,stdout=stdout,stderr=stderr))
             if p.returncode:break
         elapsed=time.perf_counter()-start
@@ -295,6 +334,7 @@ def main():
                 custom=[next(r for r in records if r['mode']==mode and r['cycle']==cycle and r['state']==state) for mode in ['interpreter','jit']]
                 assert custom[0]['source_sha256']==custom[1]['source_sha256']
                 assert [a['sha256'] for a in custom[0]['artifacts']]==[a['sha256'] for a in custom[1]['artifacts']],'custom engines exported different artifacts'
+            if args.check_floor:check_reference(sample)
     finally:
         if file.read_bytes()!=current:raise RuntimeError('source changed outside this benchmark; refusing to overwrite it')
         file.write_bytes(original)
@@ -306,6 +346,8 @@ def main():
                 workload=case['workload'],case_sha256=hashlib.sha256(json.dumps(case,sort_keys=True).encode()).hexdigest(),
                 test_source_unchanged=True,batch=args.batch,cargo_timings=args.cargo_timings,vary_selection=args.vary_selection,raw=str(work.relative_to(ROOT)),
                 build_tool_opt_level=args.build_tool_opt_level,
+                build_jobs=args.jobs,native_control=dict(profile=args.native_profile,jobs=native_jobs,
+                    test_threads=args.native_test_threads,rustflags=args.native_rustflag),
                 instruction_limit=args.instruction_limit,allocation_limit=args.allocation_limit,
                 inline_leaves=args.inline_leaves,baseline_inline_leaves=args.baseline_inline_leaves,
                 trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks,
@@ -324,6 +366,20 @@ def main():
                 vm_sha256=hashlib.sha256((tools/'rust-interp-vm').read_bytes()).hexdigest(),
                 exporter_sha256=hashlib.sha256((tools/'rust-interp-mir-export').read_bytes()).hexdigest(),
                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
+    result['exporter_seconds']={}
+    for mode in modes:
+        if mode=='native':continue
+        rows=[row for row in records if row['mode']==mode and row['state']>0]
+        result['exporter_seconds'][mode]={}
+        for phase in ['frontend','lowering','scalar-frames','scalar-promotion','inline','cfg']:
+            complete=all(phase in c['exporter_seconds'] for row in rows for c in row['calls'])
+            result['exporter_seconds'][mode][phase]=statistics.median(sum(c['exporter_seconds'][phase] for c in row['calls']) for row in rows) if complete else None
+    result['check_floor']=None if not args.check_floor else dict(
+        interpretation='Independent library-test Cargo-check control; executes no tests, including the wrong runtime edit; not a strict lower bound or subtractive attribution',
+        timing_position='after each primary mode triplet; separate target/cache history; no Cargo timing-report generation',
+        median_seconds=statistics.median(r['seconds'] for r in check_records if r['state']>0),
+        median_cpu_seconds=statistics.median(r['cpu_seconds'] for r in check_records if r['state']>0),
+        samples=[{k:v for k,v in r.items() if k not in ['stdout','stderr','command']} for r in check_records])
     if args.baseline_tool_key is not None:
         pairs=[]
         for cycle in range(args.cycles):
@@ -378,6 +434,12 @@ def main():
         report+='Test selection changes with each production edit. Each mode runs the same selection at each state; the exact selections are recorded in summary.json.\n\n'
     report+='| Mode | Median edited wall seconds | Median edited child CPU seconds | Cold wall seconds |\n|---|---:|---:|---:|\n'
     report+=''.join(f'| {m} | {v:.3f} | {result["median_cpu_seconds"][m]:.3f} | {result["cold_success_seconds"][m]:.3f} |\n' for m,v in med.items())
+    report+=f'\nNative control: `{args.native_profile}`, {native_jobs} build jobs, `{args.native_test_threads}` test threads, explicit rustc arguments `{args.native_rustflag}`. Custom commands use {args.jobs} build jobs. This labels the configuration; it does not establish the fastest native control.\n'
+    if args.check_floor:
+        report+=f'\nIndependent Cargo-check reference: {result["check_floor"]["median_seconds"]:.3f} s wall / {result["check_floor"]["median_cpu_seconds"]:.3f} s child CPU, median after edits. It executes no tests and runs after each primary triplet in a separate target directory. It is not a strict lower bound, and subtracting it does not isolate exporter cost.\n'
+    report+='\nExporter timing scopes (medians, seconds; pass times are nested within lowering/export and must not be added to it):\n\n| Mode | Frontend | Lowering/export | Scalar frames | Promotion | Inlining | CFG |\n|---|---:|---:|---:|---:|---:|---:|\n'
+    for mode,stages in result['exporter_seconds'].items():
+        report+='| '+mode+' | '+' | '.join('unreported' if stages[p] is None else f'{stages[p]:.3f}' for p in ['frontend','lowering','scalar-frames','scalar-promotion','inline','cfg'])+' |\n'
     if result['cycle_anchor_seconds']:
         report+='\n| Anchor cycle (zero-based) | '+' | '.join(modes)+' |\n|---|'+':---:|'*len(modes)+'\n'
         for row in result['cycle_anchor_seconds']:

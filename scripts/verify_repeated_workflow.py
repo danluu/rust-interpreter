@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Verify repeated public edit measurements without assuming cross-cycle byte identity."""
+"""Verify repeated edit measurements; output only counts and hashes, including for private cases."""
 import argparse
 import fcntl
 import hashlib
 import json
 from pathlib import Path
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,14 +20,14 @@ def read(path):
 
 
 def verify(report, reference=None):
-    require(report['project'] != 'rg-aot', 'private runs need the private aggregate adapter')
     require(report['schema_version'] == 2, 'unsupported workflow schema')
     rows = read(ROOT / report['raw'] / 'records.json')
     transitions = read(ROOT / report['raw'] / 'source-transitions.json')
     cycles = report['cycles']
     edits = len(report['edits'])
     states = [0, -1, *range(1, edits + 1)]
-    modes = ['native', 'baseline', 'candidate']
+    custom_modes = ['baseline', 'candidate'] if 'comparison' in report else ['interpreter', 'jit']
+    modes = ['native', *custom_modes]
     expected = {(c, s, m) for c in range(cycles) for s in states for m in modes}
     actual = [(r['cycle'], r['state'], r['mode']) for r in rows]
     require(len(set(actual)) == len(actual) and set(actual) == expected, 'missing or duplicate samples')
@@ -62,7 +63,7 @@ def verify(report, reference=None):
             selected = [r for r in rows if r['cycle'] == c and r['state'] == s]
             require(len({r['source_sha256'] for r in selected}) == 1, 'paired sources differ')
             require(all(r['tests'] == selected[0]['tests'] for r in selected), 'paired test selections differ')
-            require(artifacts[c, s, 'baseline'] == artifacts[c, s, 'candidate'], 'paired bytecode differs')
+            require(artifacts[c, s, custom_modes[0]] == artifacts[c, s, custom_modes[1]], 'paired bytecode differs')
     for s in states:
         require(len({r['source_sha256'] for r in rows if r['state'] == s}) == 1, 'repeated source state differs')
     if cycles == 3:
@@ -70,10 +71,43 @@ def verify(report, reference=None):
             orders = [o['modes'] for o in report['mode_orders'] if o['state'] == s]
             for m in modes:
                 require(sorted(o.index(m) for o in orders) == [0, 1, 2], 'unbalanced mode positions')
-    require(len(report['comparison']['pairs']) == cycles * edits, 'missing edited pairs')
+    if 'comparison' in report:
+        require(len(report['comparison']['pairs']) == cycles * edits, 'missing edited pairs')
     require(len(report['cycle_anchor_seconds']) == cycles - 1, 'incorrect anchor count')
     require(report['cold_success_seconds'] == {r['mode']: r['seconds'] for r in rows if r['phase'] == 'cold'}, 'cold results contain warm anchors')
-    cross_cycle = [{"state": s, "sha256_by_cycle": [artifacts[c, s, 'candidate'] for c in range(cycles)]} for s in states]
+    cross_cycle = [{"state": s, "sha256_by_cycle": [artifacts[c, s, custom_modes[1]] for c in range(cycles)]} for s in states]
+    check_count = 0
+    if report.get('check_floor') is not None:
+        checks = read(ROOT / report['raw'] / 'check-records.json')
+        keys = [(c['cycle'], c['state']) for c in checks]
+        require(len(set(keys)) == len(keys) and set(keys) == {(c, s) for c in range(cycles) for s in states}, 'missing/duplicate check controls')
+        check_count = len(checks)
+        control = report['native_control']
+        encoded = '\x1f'.join(control['rustflags']) or None
+        previous = None
+        for check in checks:
+            group = [r for r in rows if r['cycle'] == check['cycle'] and r['state'] == check['state']]
+            require(check['returncode'] == 0 and all(r['source_sha256'] == check['source_sha256'] for r in group), 'check/source mismatch')
+            require(check['previous_source_sha256'] == previous, 'check source history mismatch')
+            if check['phase'] != 'cold':
+                require(previous != check['source_sha256'], 'unchanged check control')
+            previous = check['source_sha256']
+            require(check['phase'] == group[0]['phase'], 'check phase mismatch')
+            require(check['seconds'] > 0 and check['cpu_seconds'] > 0 and abs(check['cpu_seconds'] - check['cpu']['total_seconds']) < 1e-8, 'invalid check timing')
+            command = check['command']
+            require(command[2] == 'check' and '--profile' in command and command[command.index('--profile') + 1] == 'test' and '--' not in command, 'check did not select the non-executing test target')
+            require(command[command.index('--jobs') + 1] == str(control['jobs']), 'check jobs differ')
+            require('test result:' not in check['stdout'], 'check unexpectedly executed tests')
+        for row in rows:
+            for call in row['calls']:
+                require(call.get('encoded_rustflags') == (encoded if row['mode'] == 'native' else None), 'native flags missing or leaked to custom engines')
+                command = call['command']
+                jobs = control['jobs'] if row['mode'] == 'native' else report['build_jobs']
+                require(command[command.index('--jobs') + 1] == str(jobs), 'build jobs differ')
+                if row['mode'] == 'native':
+                    actual = [a for a in command if a.startswith('--test-threads=')]
+                    expected = [] if control['test_threads'] == 'default' else ['--test-threads=' + control['test_threads']]
+                    require(actual == expected, 'test concurrency differs')
     history = None
     if reference:
         old = read(ROOT / reference['raw'] / 'records.json')
@@ -89,6 +123,7 @@ def verify(report, reference=None):
         history = dict(identical=sum(comparisons), different=len(comparisons) - sum(comparisons))
     return dict(schema_version=1, measurement_controls_verified=True,
         commands=len(rows), cycles=cycles, edited_pairs=cycles * edits,
+        check_commands=check_count, explicit_controls_verified=bool(check_count),
         exact_artifact_hashes_verified=len(paths), paired_bytecode_identical=True,
         cross_cycle_bytecode_identical=all(len(set(x['sha256_by_cycle'])) == 1 for x in cross_cycle),
         cross_cycle_artifacts=cross_cycle, reference_bytecode=history,
@@ -100,9 +135,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('report', type=Path)
     parser.add_argument('--reference', type=Path)
+    parser.add_argument('--wait-for-lock', type=int, default=0, help='wait up to this many seconds for other task work to finish')
     args = parser.parse_args()
+    if not 0 <= args.wait_for_lock <= 3600:
+        parser.error('wait-for-lock must be 0..3600')
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        deadline = time.monotonic() + args.wait_for_lock
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(.5)
         result = verify(read(args.report), read(args.reference) if args.reference else None)
         with args.report.with_name('verification.json').open('x') as output:
             json.dump(result, output, indent=2)

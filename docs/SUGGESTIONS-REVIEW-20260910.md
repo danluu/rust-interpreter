@@ -121,7 +121,20 @@ review are not commitments or evidence of feasibility.
 - Added the toolchain pin, concise README, generated status/results index,
   mechanism-only architecture, changelog and historical snapshots. Fixed the
   stale no-Git continuation rule without deleting old evidence or quarantine.
+- Added a [Git-backed build index](../benchmarks/tool-builds.json): commits
+  `32f5e2f`, `6b2c61f` and `a2a0e04` reconstruct source keys `6bf10fda`,
+  `57a54edd` and `b2aa6efe`, with installed binary hashes verified. The legacy
+  source-key algorithm omits compiler identity; the index records the compiler
+  and target separately rather than claiming a stronger cache key.
 
-Native-control tuning and the Cargo-check control are the next measurement
-changes. The remaining accepted design work above is prioritized follow-up,
+- Implemented explicit native profile/jobs/test concurrency/compiler flags and
+  an independent library-test Cargo-check reference. Two pgrust qualifications
+  completed 168 commands in total, including 42 check commands. Native flags
+  were also confirmed in Cargo's selected test-target fingerprints. Exporter
+  pass timing scopes are separate and nested times are not added together.
+- Added a tracked nine-workflow configuration, serial corpus runner, reusable
+  detached supervisor and verification for paired and interpreter/JIT runs.
+  The benchmark rejects Python `-O` rather than silently dropping its assertions.
+
+The full-corpus native-control comparison is next. The remaining accepted design work above is prioritized follow-up,
 not a claim that a production Rust development engine is complete.
