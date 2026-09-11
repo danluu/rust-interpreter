@@ -80,11 +80,13 @@ is complete: **180 commands, 15 edited pairs, 90 paired artifacts**. Median wall
 is 0.663s native, 0.495s baseline, 0.491s candidate; paired changes −1.14% wall/
 −1.17% CPU. Original source-state artifacts match across all cycles. This is
 one API edit repeated fifteen times, not the original five body edits × three.
-Nushell's fifteen-cycle run is active as `interface-nushell-repeated-01`,
-supervisor23231 (controller identity in its status receipt). Wait for terminal,
-verify the snapshot/commands/artifacts, frozen inputs and source restoration,
-then report both interfaces together without pooling their different costs.
-Keep case, interpreter, verifier and Rust sources frozen while it runs.
+[Nushell's fifteen-cycle comparison](results/interface-nushell-repeated-01/assessment.md)
+also verifies 180 commands/15 pairs/90 artifacts and restored source. Medians
+are 12.689s native, 5.504s baseline, 5.500s candidate; paired changes +1.12%
+wall/+0.41% CPU. Original/wrong-edit bytecode changes after cycle zero, while
+the API-edit artifact is stable. Paired engines always match. Preserve this
+new unresolved cache-history discrepancy; do not claim global determinism.
+Together the interface runs verify 360 commands/30 pairs/180 artifacts.
 
 The completed Nushell held-out median is 8.242s native, 5.198s baseline and
 5.159s candidate. Candidate Cargo is 5.082s versus 0.01044s VM execution.
@@ -95,10 +97,11 @@ do not establish a safe invalidation shortcut or a whole-application win.
 
 The next [compiler-pipeline diagnostic](benchmarks/experiments/compiler-pipeline/PLAN.md)
 reuses the existing `--cargo-timings` harness on one complete Nushell interface
-cycle after the repeated run. New `scripts/cargo_timing_data.py`,
-`scripts/analyze_cargo_timings.py` and `check_timing_parser.py` are prepared,
-**not yet executed**. First run the helper under the benchmark lock, then the
-instrumented cycle and its ordinary verifier, then analyze hashed snapshots.
+cycle after the repeated run. `cargo_timing_data.py` now matches four preserved
+Cargo captures, rejects nineteen malformed inputs and passes overlap/feature/
+duplicate-unit checks in `compiler-timing-parser-01`. The instrumented cycle
+`interface-nushell-units-01` is running; analyzer execution is pending. After
+terminal0, run its ordinary verifier, then analyze hashed snapshots.
 Keep compiler-unit overlap/duplicate descriptions distinct from CPU or critical
 path attribution. An older profile already captures the host/library/test chain.
 The [current read-only inventory](results/compiler-unit-fingerprints-01/assessment.md)
@@ -187,14 +190,15 @@ it is not an unfiltered libtest run. See [STATUS](STATUS.md).
 
 ## Ownership and recovery
 
-Only `resumable-bulk-heldout-01` is active: supervisor 79695, controller 79698;
-it started with pgrust child 79700. All earlier runs are terminal0. Freeze all
-Rust/corpus/interpreter/verifier inputs until terminal. Then run
-`evaluate_gates.py --run-id resumable-bulk-heldout-01 --source-commit 001065a --held-out`.
-Expected totals are 588 commands, 105 edited pairs and 294 artifacts. The extended
-evaluator already reproduces both existing primary receipts exactly, without
-overwriting them. Both token failures persist. Inspect exact receipts before acting.
-The unbounded goal remains active.
+Only `interface-nushell-units-01` is active: supervisor 35367, controller 35377,
+started September 11 at 05:39:54. Freeze its Rust/case/interpreter/verifier inputs
+until terminal. Expected totals: nine primary commands, three independent
+checks, six paired bytecode artifacts and nine Cargo HTML snapshots. After
+terminal0, verify the ordinary report without a reference, then run
+`analyze_cargo_timings.py` with a fresh output ID. The old held-out run's stale
+status is preserved evidence of ENOSPC, not a live task. Its separate recovery
+assessment already verifies all seven complete cases. Both token failures persist.
+The unbounded goal remains active; inspect exact receipts before acting.
 
 Detailed current state, exact tool hashes, all five source pins and terminal
 receipts are in `.work/continuation-state.json`. Toolchain is

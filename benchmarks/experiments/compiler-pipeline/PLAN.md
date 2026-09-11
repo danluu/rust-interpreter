@@ -70,6 +70,8 @@ No runtime change or retention decision follows from this diagnostic alone.
 Both original token gates remain failed. No LLVM/external guest backend,
 unchecked lazy execution or fake synchronization/unwind behavior is introduced.
 
-Status: parser, analyzer and qualification helper prepared; not executed yet.
-The current Nushell fifteen-cycle run holds the shared benchmark lock. Preserve
-its frozen case/harness/verifier/Rust inputs and wait before diagnostic commands.
+Status: `compiler-timing-parser-01` passes four preserved captures, nineteen
+malformed inputs and synthetic overlap/feature/duplicate checks. Both repeated
+interface runs are complete. `interface-nushell-units-01` is the active one-cycle
+instrumented comparison; ordinary verification and analysis are pending.
+Preserve its frozen case/harness/verifier/Rust inputs until it finishes.

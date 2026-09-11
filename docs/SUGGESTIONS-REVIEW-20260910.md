@@ -127,7 +127,12 @@ review are not commitments or evidence of feasibility.
   also passes its fourteen original tests and controls. These single pairs are
   separate from the repeated runs. [Fifteen pgrust cycles](../results/interface-pgrust-repeated-01/assessment.md)
   now verify 180 commands/90 artifacts; the experimental paired wall change is
-  −1.14%, a small descriptive difference. Fifteen Nushell cycles are running.
+  −1.14%, a small descriptive difference. [Fifteen Nushell cycles](../results/interface-nushell-repeated-01/assessment.md)
+  also verify 180 commands/90 artifacts, with +1.12% paired wall change.
+  Its original/wrong-edit artifacts change after cycle zero; corresponding
+  engines always match and the generic-edit artifact is stable. This additional
+  cache-history discrepancy remains unresolved. Neither interface result
+  demonstrates a material gain from the experimental call path.
 - A real disk-full failure exposed unsafe benchmark recovery. The original
   [partial held-out run](../results/resumable-bulk-heldout-failure-01/assessment.md)
   is preserved and its source restored. Atomic source/receipt publication,

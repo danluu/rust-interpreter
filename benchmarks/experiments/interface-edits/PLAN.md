@@ -60,8 +60,15 @@ primary receipts still verify. The [first pgrust interface qualification](../../
 now passes nine primary commands, three checks and six matching paired artifacts.
 The [Nushell qualification](../../../results/interface-nushell-qualification-01/assessment.md)
 also passes nine primary commands, three checks and six matching paired artifacts.
-Both preserve every original assertion and the wrong-edit controls. Fifteen-cycle
-interface comparisons are next; keep the two single qualification pairs separate.
+Both preserve every original assertion and the wrong-edit controls. The
+[pgrust](../../../results/interface-pgrust-repeated-01/assessment.md) and
+[Nushell](../../../results/interface-nushell-repeated-01/assessment.md) fifteen-cycle
+comparisons are complete: 360 commands/30 pairs/180 artifacts. Keep the two
+single qualification pairs separate. Paired artifacts always match; Nushell's
+original/wrong-edit artifacts change after cycle zero and remain unresolved.
+The small paired changes (−1.14% pgrust, +1.12% Nushell) do not establish a
+material benefit from native calls. Nushell's Cargo stage dominates its guest
+execution time; the next instrumented cycle attributes those compiler units.
 
 The pgrust qualification, fresh retry of the missing original Nushell held-out
 workflow, and Nushell interface qualification are complete. The failed attempt
