@@ -110,6 +110,12 @@ impl Frames {
         self.initialized.len()
     }
 
+    /// Inspect a prepared descriptor without publishing its active prefix.
+    /// Native execution must have returned before taking this safe borrow.
+    pub fn prepared_frame(&self, index: usize) -> Option<&Frame> {
+        self.initialized.get(index)
+    }
+
     /// Access to initialized backing, including inactive descriptors.
     ///
     /// Dereferencing the result requires exclusive ownership for a synchronous

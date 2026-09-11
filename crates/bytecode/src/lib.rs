@@ -7,6 +7,8 @@ mod heap;
 mod linear_memory;
 mod frames;
 mod native_execution;
+#[allow(dead_code)] // Boundary qualification precedes resumable native emission.
+mod native_continuation;
 mod jit;
 mod float;
 mod profile;
