@@ -34,6 +34,7 @@ def main():
     parser.add_argument('--duration', type=int, default=3)
     parser.add_argument('--instruction-limit', type=int, default=100_000_000_000)
     parser.add_argument('--allocation-limit', type=int, default=150_000)
+    parser.add_argument('--jit-persistent-registers', action='store_true')
     parser.add_argument('--jit-native-calls', action='store_true')
     parser.add_argument('--jit-native-call-stubs', action='store_true')
     parser.add_argument('--dump-code', action='store_true', help='save emitted code from each sampled process after execution')
@@ -68,7 +69,7 @@ def main():
         artifact=str(artifact), artifact_sha256=args.artifact_sha256,
         source_files=frozen, repetitions=args.repetitions, sample_seconds=args.duration,
         instruction_limit=args.instruction_limit, allocation_limit=args.allocation_limit,
-        jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
+        jit_persistent_registers=args.jit_persistent_registers, jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
         dump_code=args.dump_code,
         performance_measurement=False))
     env = os.environ.copy()
@@ -89,6 +90,8 @@ def main():
         run = work / str(index); run.mkdir()
         command = [str(vm), '--engine', 'jit', '--instruction-limit', str(args.instruction_limit),
                    '--allocation-limit', str(args.allocation_limit)]
+        if args.jit_persistent_registers:
+            command.append('--jit-persistent-registers')
         if args.jit_native_calls:
             command.append('--jit-native-calls')
         if args.jit_native_call_stubs:

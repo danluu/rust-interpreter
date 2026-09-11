@@ -68,9 +68,11 @@ def main():
         verified = verify(report)
         require(verified == read(path.with_name('verification.json')), 'verification receipt mismatch')
         require(report['candidate_jit_native_calls'] and report.get('candidate_jit_native_call_stubs', False) == options.get('candidate_jit_native_call_stubs', False), 'candidate native flags differ')
+        require(report.get('candidate_jit_persistent_registers', False) == options.get('candidate_jit_persistent_registers', False), 'candidate persistent-register flag differs')
         for mode, settings in report['tool_builds'].items():
             expected = mode == 'candidate'
             require(settings['jit_native_calls'] == expected and settings.get('jit_native_call_stubs', False) == (expected and options.get('candidate_jit_native_call_stubs', False)), 'measured tool mode differs')
+            require(settings.get('jit_persistent_registers', False) == (expected and options.get('candidate_jit_persistent_registers', False)), 'measured register mode differs')
             for name, field in [('rust-interp-vm', 'vm_sha256'), ('rust-interp-mir-export', 'exporter_sha256')]:
                 require(settings[field] == binaries[settings['tool_key']][name], 'measured binary differs')
         counts['primary_commands'] += verified['commands']

@@ -50,6 +50,7 @@ def main():
     parser.add_argument('--candidate-tool-key', required=True)
     parser.add_argument('--baseline-tool-key', required=True)
     parser.add_argument('--candidate-jit-native-call-stubs', action='store_true')
+    parser.add_argument('--candidate-jit-persistent-registers', action='store_true')
     parser.add_argument('--candidate-jit-native-calls', action='store_true')
     parser.add_argument('--only', action='append', help='case label; repeat to select a subset')
     parser.add_argument('--cycles', type=int, default=3)
@@ -123,6 +124,7 @@ def main():
                 '--baseline-tool-key', args.baseline_tool_key,
                 '--comparison-engine', 'jit', '--expect-identical-bytecode', *case['flags'],
                 *['--native-rustflag=' + flag for flag in args.native_rustflag]]
+            if args.candidate_jit_persistent_registers:command.append('--candidate-jit-persistent-registers')
             if args.candidate_jit_native_calls:command.append('--candidate-jit-native-calls')
             if args.candidate_jit_native_call_stubs:command.append('--candidate-jit-native-call-stubs')
             # The child acquires its own benchmark lock. If another task wins

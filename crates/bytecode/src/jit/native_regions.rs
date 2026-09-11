@@ -51,14 +51,12 @@ impl<'a> Jit<'a> {
 
     pub(super) fn emit_call_stub<'b>(&self, caller: &Function, pc: usize, callee_id: usize,
         args: &[Reg], destination: Reg, plan: trees::Plan, target: usize, global_start: usize,
-        reads: &'b [Option<(usize, usize)>],
+        reads: &'b [Option<(usize, usize)>], values: Option<&'b values::Allocation>,
     ) -> Result<(Assembler<'b>, usize, usize), EmitError> {
-        let mut a = Assembler { heap: self.uses_heap, reads, frame_size: caller.frame_size,
+        let mut a = Assembler { heap: self.uses_heap, reads, values, frame_size: caller.frame_size,
             region_start: pc, region_end: pc + 1, current_pc: pc, tree_caller_is_region: true,
             ..Assembler::default() };
-        a.emit(0xa9bf7bf3); // ordinary external-entry frame: x19/LR, 16 bytes
-        a.mov(19, 7);
-        if self.uses_heap { a.mov(7, 5); a.mov(8, 6); }
+        a.external_entry();
         let internal = a.words.len();
         a.emit(0xf9402269); // ldr x9,[x19,#64]: whole-caller storage readiness
         a.cmp(9, 31);
@@ -71,9 +69,7 @@ impl<'a> Jit<'a> {
         a.emit(0x54000003); // b.lo decline
         a.emit(0xd1000529); // sub x9,x9,#1: caller's Call only
         a.emit(0xf9000269);
-        a.emit(0xa9bc57f4); // internal call-setup frame: 64 bytes
-        a.emit(0xa9017bf6);
-        a.emit(0xa90207e0);
+        a.tree_push_frame(); // stub does not clobber its caller's assigned pairs
         a.emit(0xf9001fe9); // str x9,[sp,#56]: budget before descendants
         if self.profiled {
             a.emit(0xf940066a); // caller's ordinary block counters
@@ -98,7 +94,7 @@ impl<'a> Jit<'a> {
         a.emit(0x91000529);
         a.emit(0xf9002669);
         a.tree_restore_host_frame();
-        a.successor(pc + 1); // ordinary internal successor, 16-byte frame alive
+        a.successor(pc + 1); // ordinary entry frame and assigned pairs stay live
         let failures = std::mem::take(&mut a.failures);
         for kind in [Failure::Memory, Failure::DivisionZero, Failure::DivisionOverflow] {
             if !failures.iter().any(|(_, k)| *k == kind) { continue; }

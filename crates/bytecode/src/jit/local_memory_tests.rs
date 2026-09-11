@@ -22,9 +22,10 @@ fn check(p: &Program, args: &[u128], value: Option<u128>, max: u64) {
     let result=execute_with_engine(p,args,Limits {instructions:max,..Limits::default()},Engine::Interpreter);
     if let Some(value)=value { assert_eq!(result.unwrap().value,value); } else { assert!(result.is_err()); }
     let budgets:Vec<u64>=if max<160 {(0..=max).collect()} else {vec![0,1,2,3,1022,1023,1024,1025,1026,max-2,max-1,max]};
-    for budget in budgets { for capacity in [0,MAX_CODE_BYTES] {
+    for budget in budgets { for capacity in [0,MAX_CODE_BYTES] { for persistent in [false,true] {
         let limits=|| Limits {instructions:budget,jit_code_bytes:capacity,..Limits::default()};
         let reference=execute_profiled(p,args,limits(),Engine::Interpreter);
+        let limits=|| Limits {jit_persistent_registers:persistent,..limits()};
         let normal=execute_with_engine(p,args,limits(),Engine::Jit);
         let observed=execute_profiled(p,args,limits(),Engine::Jit);
         match reference {
@@ -56,7 +57,7 @@ fn check(p: &Program, args: &[u128], value: Option<u128>, max: u64) {
                 }
             }
         }
-    }}
+    }}}
 }
 fn low(value:u128,size:usize)->u128 {if size==16 {value} else {value & ((1u128<<(size*8))-1)}}
 

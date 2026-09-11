@@ -50,6 +50,14 @@ def verify(report, reference=None):
         require(abs(cpu - row['cpu_seconds']) < 1e-8, 'CPU total does not match child calls')
         require(all((c['returncode'] == 0) == (state != -1) for c in row['calls']), 'unexpected command result')
         if mode != 'native':
+            settings = report.get('tool_builds', {}).get(mode, {})
+            for field, flag in [('jit_native_calls', '--jit-native-calls'),
+                                ('jit_native_call_stubs', '--jit-native-call-stubs'),
+                                ('jit_persistent_registers', '--jit-persistent-registers')]:
+                if field in settings:
+                    for call in row['calls']:
+                        require((flag in call['command']) == settings[field], 'recorded runtime option differs')
+                        require(call['launch'].get(field, False) == settings[field], 'launched runtime option differs')
             require(len(row['artifacts']) == 1, 'expected one batched artifact')
             artifact = row['artifacts'][0]
             path = artifact['path']

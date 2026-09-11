@@ -69,33 +69,47 @@ mod platform {
         .p2align 2
         .globl _rust_interp_tree_abi_probe
     _rust_interp_tree_abi_probe:
-        stp x19, x20, [sp, #-64]!
+        stp x19, x20, [sp, #-112]!
         stp x21, x22, [sp, #16]
-        stp x23, x29, [sp, #32]
-        str x30, [sp, #48]
+        stp x23, x24, [sp, #32]
+        stp x25, x26, [sp, #48]
+        stp x27, x28, [sp, #64]
+        stp x29, x30, [sp, #80]
+        str x2, [sp, #96]
         mov x29, sp
-        mov x23, x2
         mov x16, x0
         mov x17, x1
         mov x19, #0x1357
         mov x20, #0x2468
         mov x21, #0x3579
         mov x22, #0x468a
+        mov x23, #0x579b
+        mov x24, #0x68ac
+        mov x25, #0x79bd
+        mov x26, #0x8ace
+        mov x27, #0x9bdf
+        mov x28, #0xace0
         ldp x0, x1, [x17]
         ldp x2, x3, [x17, #16]
         ldp x4, x5, [x17, #32]
         ldp x6, x7, [x17, #48]
         blr x16
-        stp x0, x19, [x23]
-        stp x20, x21, [x23, #16]
-        stp x22, x29, [x23, #32]
+        ldr x10, [sp, #96]
+        stp x0, x19, [x10]
+        stp x20, x21, [x10, #16]
+        stp x22, x29, [x10, #32]
         mov x9, sp
-        str x9, [x23, #48]
+        str x9, [x10, #48]
+        stp x23, x24, [x10, #56]
+        stp x25, x26, [x10, #72]
+        stp x27, x28, [x10, #88]
         ldp x19, x20, [sp]
         ldp x21, x22, [sp, #16]
-        ldp x23, x29, [sp, #32]
-        ldr x30, [sp, #48]
-        add sp, sp, #64
+        ldp x23, x24, [sp, #32]
+        ldp x25, x26, [sp, #48]
+        ldp x27, x28, [sp, #64]
+        ldp x29, x30, [sp, #80]
+        add sp, sp, #112
         ret
     "#);
 
@@ -132,11 +146,11 @@ mod platform {
             (self.ptr as usize, unsafe { std::slice::from_raw_parts(self.ptr.cast(), self.used) })
         }
         #[cfg(test)]
-        pub unsafe fn tree_abi_probe(&self, offset: usize, arguments: [usize;8]) -> [usize;7] {
+        pub unsafe fn tree_abi_probe(&self, offset: usize, arguments: [usize;8]) -> [usize;13] {
             assert!(offset < self.used);
-            let mut output = [0;7];
+            let mut output = [0;13];
             // Same exclusive storage contract as call(); the wrapper verifies
-            // all callee-saved registers used by native trees plus SP/LR.
+            // x19–x28 plus SP/LR, including persistent register pairs.
             unsafe {
                 rust_interp_tree_abi_probe(self.ptr.cast::<u8>().add(offset).cast(), arguments.as_ptr(), output.as_mut_ptr());
             }
@@ -271,6 +285,8 @@ struct CompiledFunction<'a> {
     entries: Vec<Option<Block>>,
     operations: usize,
     assertions: Vec<Assertion<'a>>,
+    register_pairs: usize,
+    liveness_declined: bool,
 }
 
 pub(crate) struct Jit<'a> {
@@ -294,6 +310,10 @@ pub(crate) struct Jit<'a> {
     native_call_stubs: bool,
     pub region_plans: Vec<native_regions::RegionPlan>,
     pub call_stubs: usize,
+    persistent_registers: bool,
+    pub register_functions: usize,
+    pub register_pairs: usize,
+    pub liveness_declines: usize,
 }
 impl<'a> Jit<'a> {
     pub fn new(program: &'a Program, profiled: bool, capacity: usize) -> Result<Self, String> {
@@ -302,6 +322,11 @@ impl<'a> Jit<'a> {
 
     pub(crate) fn new_with_call_stubs(program: &'a Program, profiled: bool, capacity: usize,
         native_call_stubs: bool) -> Result<Self, String> {
+        Self::new_with_options(program, profiled, capacity, native_call_stubs, false)
+    }
+
+    pub(crate) fn new_with_options(program: &'a Program, profiled: bool, capacity: usize,
+        native_call_stubs: bool, persistent_registers: bool) -> Result<Self, String> {
         if capacity > MAX_CODE_BYTES { return Err("JIT code budget exceeds supported range".into()); }
         let uses_heap = !program.statics.is_empty() || program.functions.iter().flat_map(|f| &f.code).any(|op| {
             matches!(op, Op::Allocate { .. } | Op::Deallocate { .. } | Op::Reallocate { .. }
@@ -312,6 +337,7 @@ impl<'a> Jit<'a> {
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
             assertions: vec![], trees: None, native_call_stubs, call_stubs: 0,
+            persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
 
@@ -362,8 +388,11 @@ impl<'a> Jit<'a> {
             for entry in staged.entries.iter_mut().flatten() { entry.offset += offset; }
             self.bytes += staged.words.len() * 4;
             self.compiled_functions += 1;
+            self.register_functions += usize::from(staged.register_pairs != 0);
+            self.register_pairs += staged.register_pairs;
         }
         self.operations += staged.operations;
+        self.liveness_declines += usize::from(staged.liveness_declined);
         self.call_stubs += staged.entries.iter().enumerate().filter(|(pc, entry)|
             entry.is_some() && matches!(self.program.functions[id].code[*pc], Op::Call { .. })).count();
         self.assertions.extend(staged.assertions);
@@ -379,6 +408,7 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let reads = read_registers(f);
+        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc);
         let mut entries = vec![None; f.code.len()];
@@ -424,18 +454,12 @@ impl<'a> Jit<'a> {
                     frame_size: f.frame_size,
                     region_start: start,
                     region_end: pc,
+                    values: values.as_ref(),
                     ..Assembler::default()
                 };
                 // External entries preserve the C ABI. Native successors
                 // enter after this prologue and keep the same live storage.
-                a.emit(0xa9bf7bf3); // stp x19, x30, [sp, #-16]!
-                a.mov(19, 7); // eighth argument: host cursor
-                if self.uses_heap {
-                    // x5/x6 are scratch registers in large copies. Keep
-                    // heap storage in the otherwise unused x7/x8 pair.
-                    a.mov(7, 5);
-                    a.mov(8, 6);
-                }
+                a.external_entry();
                 internal_entries[start] = Some(words.len() + a.words.len());
                 // Every native cycle consumes virtual instructions. When
                 // the next block does not fit, let the VM execute its tail
@@ -522,7 +546,7 @@ impl<'a> Jit<'a> {
                         if let Some((plan, target)) = self.ready_tree(*function) {
                             let offset = words.len() * 4;
                             let (a, internal, fallback) = self.emit_call_stub(f, pc, *function, args, *destination,
-                                plan, target, self.bytes / 4 + words.len(), &reads)?;
+                                plan, target, self.bytes / 4 + words.len(), &reads, values.as_ref())?;
                             if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
                             internal_entries[pc] = Some(words.len() + internal);
                             // The stub already supplies a safe VM successor;
@@ -543,6 +567,8 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, operations, assertions,
+            register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
+            liveness_declined: self.persistent_registers && values.is_none(),
             #[cfg(test)] local_forwarding }))
     }
     /// Execute a region and any linked successors in the same guest function.
@@ -808,10 +834,12 @@ enum Fact {
     Imm(u128),
     Local(usize),
     Cached { lo: u32, high_zero: bool },
+    Physical { lo: u32 },
 }
 
 #[derive(Default)]
 struct Assembler<'a> {
+    values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
     local_values: Vec<local_memory::Value>,
     #[cfg(test)]
@@ -847,10 +875,11 @@ impl Assembler<'_> {
         self.emit(if expected { 0x54000000 } else { 0x54000001 }); // b.eq / b.ne failure
     }
     fn return_to_vm(&mut self) {
-        self.emit(0xa8c17bf3); // ldp x19, x30, [sp], #16
+        self.restore_external_values();
         self.emit(0xd65f03c0);
     }
     fn return_pc(&mut self, pc: usize) {
+        self.spill_values_at(pc);
         self.imm(0, pc as u64);
         self.return_to_vm();
     }
@@ -1087,6 +1116,11 @@ impl Assembler<'_> {
             self.materialize(rd, fact, high);
             return;
         }
+        if let Some(lo) = self.assigned_pair(reg) {
+            self.facts.insert(reg, Fact::Physical { lo });
+            self.mov(rd, lo + u32::from(high));
+            return;
+        }
         let (base, offset) = self.reg_address(reg, high);
         self.emit(0xf9400000 | (offset << 10) | (base << 5) | rd);
     }
@@ -1095,6 +1129,12 @@ impl Assembler<'_> {
         self.facts.remove(&reg);
         self.forget_cached(reg);
         if self.reads[reg as usize].is_none() { return; }
+        if let Some(physical) = self.assigned_pair(reg) {
+            self.mov(physical, lo);
+            self.mov(physical + 1, hi);
+            self.facts.insert(reg, Fact::Physical { lo: physical });
+            return;
+        }
         if lo == 31 && hi == 31 {
             self.remember(reg, Fact::Imm(0));
             return;
@@ -1138,9 +1178,17 @@ impl Assembler<'_> {
         // entry. The same conservative bounds protect constant facts.
         let outside = first < self.region_start || last >= self.region_end || self.live_in.contains(&reg);
         let later = last > self.current_pc || (before_operands && last == self.current_pc);
-        if outside || later { self.spill(reg, lo, if high_zero { 31 } else { 6 }); }
+        let needed = self.values.map_or(outside || later, |v|
+            if before_operands { v.live.at(self.current_pc, reg) } else { v.live.after(self.current_pc, reg) });
+        if needed { self.spill(reg, lo, if high_zero { 31 } else { 6 }); }
     }
     fn spill(&mut self, reg: Reg, lo: u32, hi: u32) {
+        if let Some(physical) = self.assigned_pair(reg) {
+            self.mov(physical, lo);
+            self.mov(physical + 1, hi);
+        } else { self.raw_spill(reg, lo, hi); }
+    }
+    fn raw_spill(&mut self, reg: Reg, lo: u32, hi: u32) {
         for (high, rs) in [(false, lo), (true, hi)] {
             let (base, offset) = self.reg_address(reg, high);
             self.emit(0xf9000000 | (offset << 10) | (base << 5) | rs);
@@ -1156,6 +1204,7 @@ impl Assembler<'_> {
     }
     fn materialize(&mut self, rd: u32, fact: Fact, high: bool) {
         match fact {
+            Fact::Physical { lo } => self.mov(rd, lo + u32::from(high)),
             Fact::Cached { lo, high_zero } => {
                 self.cache_recent = (lo - 5) as usize;
                 self.mov(rd, if high { if high_zero { 31 } else { 6 } } else { lo });
@@ -1179,6 +1228,10 @@ impl Assembler<'_> {
         // definition in this region: a backedge may re-enter this same region
         // and read its previous execution's final value.
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
+            if matches!(fact, Fact::Physical { .. }) { return None; }
+            if let Some(values) = self.values {
+                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
+            }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))
                 .map(|_| (reg, fact))

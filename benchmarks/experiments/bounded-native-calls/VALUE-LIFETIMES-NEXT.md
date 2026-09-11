@@ -39,8 +39,9 @@ while preserving the existing custom emitter and checked bytecode semantics.
    their own assignment, and restore the parent on every return/fault. Extend the
    current 64-byte internal frame with explicit saved-register slots; preserve
    the existing argument/result/profile slots. Ordinary wrappers need their own
-   saved pairs and an original register-array pointer for exit spills because
-   x0 becomes the return status. Keep both host frames correct on stub faults.
+   saved pairs. Spill through the original register-array pointer in x0 before
+   replacing it with the return status; this avoids another saved-pointer slot.
+   Keep both host frames correct on stub faults.
 6. Route get/put/constant materialization and edge flushing through the assignment.
    Respect complete operand snapshots and result/overflow write order. Neither
    the old two-slot cache nor local-memory forwarding may retain a conflicting
@@ -81,3 +82,26 @@ addition to the register candidate.
 [Token attribution](../../../results/native-code-token-sample-02/generated-attribution.json) ·
 [Folded attribution](../../../results/native-code-folded-sample-01/generated-attribution.json) ·
 [Argument-zeroing census](../../../results/frame-initialization-census-01/summary.md)
+
+## First implementation qualification
+
+The typed visitor and bounded full-CFG analysis are committed in `b252588`.
+The experimental emitter assigns up to three register pairs, adds 16 bytes of
+saved host stack per pair, and preserves the existing 64-byte native-call slots.
+Call stubs use the caller's assignment; each callee saves the pairs it changes.
+VM continuations spill only assigned values live at that PC before changing x0.
+Analysis costs count toward JIT compilation; bounds decline to the old emitter.
+Published assignment/decline counters and the explicit
+`--jit-persistent-registers` option make the candidate observable.
+
+The [expanded debug check](../../../results/persistent-native-04/summary.json)
+passes all 240 workspace tests (one ignored), including both register modes in
+the existing cache, local-memory and native-call differential helpers. New
+checks exercise full-width loops, VM fallback, far registers, every budget tail,
+code-capacity declines, and all callee-saved GPRs through up to 64 native children
+on returns and faults. The earlier ABI test failure is preserved in
+`persistent-native-02`: its expected continuation list omitted PC 4 at a budget
+boundary; correcting that expectation passes in `03` and `04`.
+
+Release execution and real source-edit measurements remain required. These
+checks do not establish a performance gain or large-project compatibility.

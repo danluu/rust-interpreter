@@ -56,6 +56,7 @@ fn mixed_native_frames_restore_the_abi_for_declines_returns_and_every_fault_posi
                             let block = jit.blocks[0][pc].unwrap();
                             let output = unsafe { jit.code.as_ref().unwrap().tree_abi_probe(block.offset, arguments) };
                             assert_eq!(&output[1..5], &[0x1357, 0x2468, 0x3579, 0x468a]);
+                            assert_eq!(&output[7..], &[0x579b, 0x68ac, 0x79bd, 0x8ace, 0x9bdf, 0xace0]);
                             assert_eq!(output[5], output[6]);
                             assert_eq!(output[6] % 16, 0);
                             assert!(cursor.base.remaining <= budget);

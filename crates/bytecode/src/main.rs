@@ -8,12 +8,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut engine = Engine::Interpreter;
     let mut profile_path = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
             "--jit-native-calls" => limits.jit_native_calls = true,
             "--jit-native-call-stubs" => limits.jit_native_call_stubs = true,
+            "--jit-persistent-registers" => limits.jit_persistent_registers = true,
             "--jit-code-dump" => {
                 if limits.jit_code_dump.is_some() { return Err("duplicate native code dump path".into()); }
                 limits.jit_code_dump = Some(args.next().ok_or("missing native code dump path")?.into());
@@ -100,6 +101,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             result.jit_tree_bytes, result.jit_tree_operations, result.jit_tree_compiled_functions,
             result.jit_tree_declined_functions, result.jit_tree_compile_nanos);
         eprintln!("jit_call_stubs={} jit_stub_calls={}", result.jit_call_stubs, result.jit_stub_calls);
+        eprintln!("jit_register_functions={} jit_register_pairs={} jit_liveness_declines={}",
+            result.jit_register_functions, result.jit_register_pairs, result.jit_liveness_declines);
     }
     Ok(())
 }

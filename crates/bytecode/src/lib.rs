@@ -374,6 +374,8 @@ pub struct Limits {
     pub jit_native_calls: bool,
     /// Also link outer direct Calls with ordinary regions. Requires native calls.
     pub jit_native_call_stubs: bool,
+    /// Experimental full-width register pairs retained across native edges.
+    pub jit_persistent_registers: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -388,6 +390,7 @@ impl Default for Limits {
             jit_code_bytes: jit::MAX_CODE_BYTES,
             jit_native_calls: false,
             jit_native_call_stubs: false,
+            jit_persistent_registers: false,
             jit_code_dump: None,
         }
     }
@@ -416,6 +419,10 @@ pub struct Execution {
     pub jit_tree_compile_nanos: u128,
     pub jit_call_stubs: usize,
     pub jit_stub_calls: u64,
+    /// Published ordinary/tree functions with persistent native assignments.
+    pub jit_register_functions: usize,
+    pub jit_register_pairs: usize,
+    pub jit_liveness_declines: usize,
 }
 
 struct Frame {
@@ -619,6 +626,9 @@ fn execute_observed<const PROFILE: bool>(
     if engine == Engine::Interpreter && limits.jit_code_dump.is_some() {
         return Err("native code dumps require the JIT engine".into());
     }
+    if engine == Engine::Interpreter && limits.jit_persistent_registers {
+        return Err("persistent registers require the JIT engine".into());
+    }
     match engine {
         Engine::Interpreter if limits.jit_native_calls => Err("native calls require the JIT engine".into()),
         Engine::Interpreter => execute_impl::<PROFILE, false, false, false>(program, arguments, limits, profile),
@@ -640,8 +650,13 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     }
     let started = std::time::Instant::now();
     let mut jit = if USE_JIT {
-        Some(if CALL_STUBS { jit::Jit::new_with_call_stubs(program, PROFILE, limits.jit_code_bytes, true)? }
-            else { jit::Jit::new(program, PROFILE, limits.jit_code_bytes)? })
+        Some(if limits.jit_persistent_registers {
+            jit::Jit::new_with_options(program, PROFILE, limits.jit_code_bytes, CALL_STUBS, true)?
+        } else if CALL_STUBS {
+            jit::Jit::new_with_call_stubs(program, PROFILE, limits.jit_code_bytes, true)?
+        } else {
+            jit::Jit::new(program, PROFILE, limits.jit_code_bytes)?
+        })
     } else { None };
     if let Some(jit) = &mut jit { jit.compile_nanos = started.elapsed().as_nanos(); }
     let mut jit_instructions = 0;
@@ -1141,7 +1156,10 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         jit_tree_compiled_functions: tree_stats.2, jit_tree_declined_functions: tree_stats.3,
         jit_tree_compile_nanos: tree_stats.4,
         jit_call_stubs: jit.as_ref().map_or(0, |j| j.call_stubs),
-        jit_stub_calls: native.as_ref().map_or(0, |n| n.stub_calls) })
+        jit_stub_calls: native.as_ref().map_or(0, |n| n.stub_calls),
+        jit_register_functions: jit.as_ref().map_or(0, |j| j.register_functions),
+        jit_register_pairs: jit.as_ref().map_or(0, |j| j.register_pairs),
+        jit_liveness_declines: jit.as_ref().map_or(0, |j| j.liveness_declines) })
 }
 
 #[inline(always)]

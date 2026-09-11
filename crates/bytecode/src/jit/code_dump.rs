@@ -24,6 +24,7 @@ struct Dump<'a> {
     code_bytes: usize,
     profiled: bool,
     native_call_stubs: bool,
+    persistent_registers: bool,
     ranges: Vec<Range<'a>>,
     note: &'static str,
 }
@@ -67,7 +68,8 @@ impl Jit<'_> {
         }
         let dump = Dump { schema_version: 1, pid: std::process::id(),
             architecture: "aarch64", byte_order: "little", arena_base, code_bytes: bytes.len(),
-            profiled: self.profiled, native_call_stubs: self.native_call_stubs, ranges,
+            profiled: self.profiled, native_call_stubs: self.native_call_stubs,
+            persistent_registers: self.persistent_registers, ranges,
             note: "Published code from this process after successful execution. Entry ranges include wrappers, failure tails and fallbacks. Native-tree ranges cover whole functions, not individual bytecode operations. Diagnostic I/O is not benchmark evidence." };
         let write = || -> Result<(), Box<dyn std::error::Error>> {
             std::fs::create_dir(path)?;

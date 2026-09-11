@@ -9,8 +9,8 @@ fn limits(instructions: u64, memory: usize, frames: usize, native: bool) -> Limi
 }
 fn same(p: &Program, instructions: u64, memory: usize, frames: usize) {
     let reference = execute_with_engine(p, &[], limits(instructions, memory, frames, false), Engine::Interpreter);
-    for stubs in [false, true] { for profiled in [false, true] {
-        let config = || Limits { jit_native_call_stubs: stubs, ..limits(instructions, memory, frames, true) };
+    for persistent in [false, true] { for stubs in [false, true] { for profiled in [false, true] {
+        let config = || Limits { jit_persistent_registers: persistent, jit_native_call_stubs: stubs, ..limits(instructions, memory, frames, true) };
         let got = if profiled {
             execute_profiled(p, &[], config(), Engine::Jit).map(|(r, profile)| {
                 let mut charged = 0;
@@ -43,7 +43,7 @@ fn same(p: &Program, instructions: u64, memory: usize, frames: usize) {
             }
             (want, got) => panic!("instructions={instructions} memory={memory} frames={frames}: {want:?} / {got:?}"),
         }
-    } }
+    } } }
 }
 fn function(frame_size: usize, frame_align: usize, code: Vec<Op>) -> Function {
     Function { name: "native transition".into(), frame_size, frame_align, registers: 4,

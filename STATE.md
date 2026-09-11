@@ -32,7 +32,7 @@ that tool. The broader 47,004 native differential commands, TLS checks and
   receipts now clear stale child identity/exit fields; this fix followed the
   measured run. `97dbe1a` preserves the call ABI audit.
 
-## Next action
+## Runtime experiments
 
 Implement the [bounded native call-tree experiment](benchmarks/experiments/bounded-native-calls/PLAN.md).
 Experimental source `09de2a9`, tool `c98d995b`, executes complete native trees
@@ -70,7 +70,22 @@ remains 23.1% in the folded diagnostic. These are sampled shares, not savings.
 full-CFG liveness and up to three persistent u128 register pairs across native
 edges, with correct VM spill/reload and complete native ABI preservation. Keep
 frame lifetime/layout changes separate. Do not repeat parked argument-zero or
-unused-local work. Current branch is `experiment/native-code-profile`.
+unused-local work.
+
+Current branch is `experiment/persistent-registers`. Bounded liveness is committed
+in `b252588`; the emitter and runtime controls are implemented. The latest debug
+check, [persistent-native-04](results/persistent-native-04/summary.json), passes
+240 workspace tests (one ignored), including cache/local-memory/native-call
+differentials in both register modes. Full-width loop/VM-fallback tests and an
+assembly ABI probe cover x19–x28 and SP/LR through 64 native children and faults.
+The earlier `persistent-native-02` failure remains recorded: its test omitted
+the valid PC 4 budget continuation. The corrected test passes in `03` and `04`.
+
+Next: commit this implementation, run the recorded optimized build/install and
+CLI checks, then both original saved artifacts and the three-cycle source-edit
+corpus against `b2aa6efe`, with native calls, call stubs and persistent registers
+explicitly enabled in the candidate. No persistent-register performance result
+exists yet. Keep the original gates and all assertions unchanged.
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -85,8 +100,8 @@ regression. Broader execution qualification is required for production retention
 
 ## Process and ownership
 
-All E2E, release and three-window sampling runs are terminal with return code
-zero. The profile-report helper initially rejected a relative test-fixture path;
+All currently launched runs are terminal; the latest debug check succeeded.
+The profile-report helper initially rejected a relative test-fixture path;
 the corrected helper passes synthetic partition/error checks and reproduces
 all three historical generated sample totals. The first exact-code token capture missed the JIT arena during startup; two
 windows succeeded and all three test runs passed. The bounded readiness-wait fix

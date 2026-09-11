@@ -254,7 +254,8 @@ fn native_stack_and_callee_saved_registers_survive_maximum_depth_and_faults() {
                 let output = unsafe { jit.code.as_ref().unwrap().tree_abi_probe(entry.wrapper, arguments) };
                 assert_eq!(output[0] as u64, if fault { ASSERTION_FAILURE_BASE } else { 0 });
                 assert_eq!(&output[1..5], &[0x1357, 0x2468, 0x3579, 0x468a]);
-                assert_eq!(output[5], output[6]);
+                assert_eq!(&output[7..], &[0x579b, 0x68ac, 0x79bd, 0x8ace, 0x9bdf, 0xace0]);
+                            assert_eq!(output[5], output[6]);
                 assert_eq!(output[6] % 16, 0);
                 assert_eq!(cursor.calls, depth as u64 - 1);
                 assert_eq!(cursor.memory_len, if fault { 16 + 16 * depth } else { 16 });

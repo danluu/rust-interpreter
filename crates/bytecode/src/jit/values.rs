@@ -137,3 +137,71 @@ fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
 #[cfg(test)]
 #[path = "values_tests.rs"]
 mod tests;
+
+impl Assembler<'_> {
+    pub(super) fn assigned_pair(&self, reg: Reg) -> Option<u32> {
+        self.values.and_then(|v| v.pair(reg))
+    }
+    pub(super) fn assigned_count(&self) -> usize { self.values.map_or(0, |v| v.registers.len()) }
+
+    pub(super) fn stack_pair(&mut self, load: bool, first: u32, second: u32, offset: usize) {
+        debug_assert!(offset % 8 == 0 && offset / 8 < 64);
+        self.emit((if load { 0xa9400000 } else { 0xa9000000 }) |
+            ((offset as u32 / 8) << 15) | (second << 10) | (31 << 5) | first);
+    }
+    pub(super) fn push_pair(&mut self, first: u32, second: u32, bytes: usize) {
+        debug_assert!(bytes % 16 == 0 && bytes < 512);
+        let immediate = (-(bytes as i32 / 8) as u32) & 0x7f;
+        self.emit(0xa9800000 | (immediate << 15) | (second << 10) | (31 << 5) | first);
+    }
+    pub(super) fn pop_pair(&mut self, first: u32, second: u32, bytes: usize) {
+        debug_assert!(bytes % 16 == 0 && bytes < 512);
+        self.emit(0xa8c00000 | ((bytes as u32 / 8) << 15) | (second << 10) | (31 << 5) | first);
+    }
+    pub(super) fn save_value_pairs(&mut self, load: bool, start: usize) {
+        for pair in 0..self.assigned_count() {
+            let lo = 23 + pair as u32 * 2;
+            self.stack_pair(load, lo, lo + 1, start + pair * 16);
+        }
+    }
+    pub(super) fn load_values(&mut self) {
+        let Some(values) = self.values else { return; };
+        for (index, &reg) in values.registers.iter().enumerate() {
+            for high in [false, true] {
+                let (base, offset) = self.reg_address(reg, high);
+                let physical = 23 + index as u32 * 2 + u32::from(high);
+                self.emit(0xf9400000 | (offset << 10) | (base << 5) | physical);
+            }
+        }
+    }
+    pub(super) fn external_entry(&mut self) {
+        self.push_pair(19, 30, 16 + self.assigned_count() * 16);
+        self.save_value_pairs(false, 16);
+        self.mov(19, 7);
+        if self.heap { self.mov(7, 5); self.mov(8, 6); }
+        self.load_values();
+    }
+    pub(super) fn restore_external_values(&mut self) {
+        self.save_value_pairs(true, 16);
+        self.pop_pair(19, 30, 16 + self.assigned_count() * 16);
+    }
+    pub(super) fn spill_values_at(&mut self, pc: usize) {
+        // Continuations arrive with x0 still pointing to the current caller's
+        // register array. Spill before return_pc replaces x0 with the status.
+        // Fault exits only restore the host ABI: they cannot resume guest code.
+        let Some(values) = self.values else { return; };
+        for (index, &reg) in values.registers.iter().enumerate() {
+            if values.live.at(pc, reg) {
+                let lo = 23 + index as u32 * 2;
+                self.raw_spill(reg, lo, lo + 1);
+            }
+        }
+    }
+    pub(super) fn tree_push_frame(&mut self) {
+        let pairs = if self.tree_caller_is_region { 0 } else { self.assigned_count() };
+        self.push_pair(20, 21, 64 + pairs * 16);
+        self.stack_pair(false, 22, 30, 16);
+        self.stack_pair(false, 0, 1, 32);
+        if !self.tree_caller_is_region { self.save_value_pairs(false, 64); }
+    }
+}

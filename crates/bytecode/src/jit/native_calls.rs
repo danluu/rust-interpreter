@@ -49,6 +49,8 @@ struct Staged<'a> {
     internal: usize,
     ends: Vec<Option<usize>>,
     assertions: Vec<Assertion<'a>>,
+    register_pairs: usize,
+    liveness_declined: bool,
 }
 #[derive(Debug)]
 pub(crate) struct TreeRun {
@@ -120,6 +122,9 @@ impl<'a> Jit<'a> {
             let offset = self.code.as_mut().unwrap().append(&staged.words)?;
             let bytes = staged.words.len() * 4;
             self.bytes += bytes;
+            self.register_functions += usize::from(staged.register_pairs != 0);
+            self.register_pairs += staged.register_pairs;
+            self.liveness_declines += usize::from(staged.liveness_declined);
             self.assertions.extend(staged.assertions);
             let tree = self.trees.as_mut().unwrap();
             tree.entries[id] = Some(Entry { wrapper: offset, internal: offset + staged.internal * 4, ends: staged.ends });
@@ -150,6 +155,7 @@ impl<'a> Jit<'a> {
     fn emit_tree(&self, id: usize, word_budget: usize) -> Result<Option<Staged<'a>>, EmitError> {
         let f = &self.program.functions[id];
         let reads = read_registers(f);
+        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
         let mut wrapper = Assembler::default();
         wrapper.emit(0xa9bf7bf3); // stp x19,lr,[sp,#-16]!
@@ -161,9 +167,11 @@ impl<'a> Jit<'a> {
         wrapper.return_to_vm();
         let internal = wrapper.words.len();
         wrapper.words[wrapper_call] |= branch_displacement(wrapper_call, internal, 26, CodegenLimit::Jump)?;
-        wrapper.emit(0xa9bc57f4); // stp x20,x21,[sp,#-64]!
-        wrapper.emit(0xa9017bf6); // stp x22,lr,[sp,#16]
-        wrapper.emit(0xa90207e0); // stp x0,x1,[sp,#32]
+        // The outer wrapper stays 16 bytes; only the internal function owns
+        // saved persistent pairs and establishes its own register assignment.
+        wrapper.values = values.as_ref();
+        wrapper.tree_push_frame();
+        wrapper.load_values();
         if self.profiled {
             wrapper.emit(0xf9400669); // ldr x9,[x19,#8]
             wrapper.emit(0xf9001be9); // str x9,[sp,#48]
@@ -194,7 +202,7 @@ impl<'a> Jit<'a> {
             while pc < f.code.len() && pc - start < 1024 && !starts[pc] { pc += 1; }
             entries[start] = Some(words.len());
             ends[start] = Some(pc);
-            let mut a = Assembler { heap: self.uses_heap, reads: &reads, frame_size: f.frame_size,
+            let mut a = Assembler { heap: self.uses_heap, reads: &reads, values: values.as_ref(), frame_size: f.frame_size,
                 region_start: start, region_end: pc, ..Assembler::default() };
             // The checked whole-tree bound guarantees enough budget for every
             // path, including nested bodies. There is no partial-budget exit.
@@ -265,7 +273,9 @@ impl<'a> Jit<'a> {
                 .ok_or(EmitError::InvalidRelocation("native tree has an incomplete successor"))?;
             patch_jump(&mut words, at, target)?;
         }
-        Ok(Some(Staged { words, internal, ends, assertions }))
+        Ok(Some(Staged { words, internal, ends, assertions,
+            register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
+            liveness_declined: self.persistent_registers && values.is_none() }))
     }
 
     /// Execute a prepared complete tree, or decline before any guest progress.
@@ -313,8 +323,10 @@ fn terminal(op: &Op) -> bool {
 
 impl Assembler<'_> {
     pub(super) fn tree_restore_host_frame(&mut self) {
+        if !self.tree_caller_is_region { self.save_value_pairs(true, 64); }
         self.emit(0xa9417bf6); // ldp x22,lr,[sp,#16]
-        self.emit(0xa8c457f4); // ldp x20,x21,[sp],#64
+        let pairs = if self.tree_caller_is_region { 0 } else { self.assigned_count() };
+        self.pop_pair(20, 21, 64 + pairs * 16);
     }
 
     pub(super) fn tree_epilogue(&mut self) {
