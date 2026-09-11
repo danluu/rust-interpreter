@@ -44,16 +44,20 @@ verifies 180 commands, ninety artifacts, eleven frozen inputs and source
 restoration. Median paired wall ratio is **0.9981098106** and child-CPU ratio
 **0.9996062101**: no material worker-count gain, with warm guards passing.
 
-Active: **worker-count-nushell-repeated-01**, supervisor **75194** / controller
-**75197**, started at 09:23:32 local with 27.896 GiB free. It runs fifteen
-Nushell API-edit cycles using the same frozen worker settings. Verify its final
-receipts and all ninety artifacts, then run the qualified
-[worker assessor](benchmarks/experiments/compiler-pipeline/assess_worker_warm.py).
-Pgrust qualification of that assessor checks existing receipts only; it adds no
-new timing samples. Preserve all warm CPU/wall guards and report each sample.
-A completed warm guard failure would make combined adoption impossible regardless
-of the six cold results; publish that proof and mark the protocol incomplete
-under the predeclared stopping rule. No extra worker counts or trials.
+The [fifteen-cycle Nushell primary comparison](results/worker-count-nushell-repeated-01/assessment.md)
+completed and verifies 180 commands/ninety artifacts, eleven frozen inputs,
+exact tools/options and source restoration. Median paired wall ratio
+**1.0059031510** and CPU ratio **1.0732865843** pass both warm guards but show
+no warm-build gain. Original/wrong-edit artifacts repeat the known cross-cycle
+layout difference; corresponding modes match and the API-edit artifact is stable.
+Reported lowering is about 71 ms within roughly 5.3-second edited commands.
+
+Both warm primaries are complete. Next: the six fixed fresh-target Nushell cold
+histories, retaining the 10% cold wall improvement and 10% CPU guard. Only those
+new cold samples enter the cold statistic. Qualification/primary anchor timings
+remain excluded. Prepare space from exact completed public targets before each
+large history; do not run another lock waiter inside an archive batch.
+
 Eight reviewed completed targets are now [archived](results/warm-storage-batch-01-recovery-01/assessment.md):
 95,657 paths / 23,139,072,348 unique bytes in 7,776,020,009 archive bytes.
 The original batch stopped before its sixth child because a queued verifier
@@ -148,6 +152,16 @@ The allocation HashMap is never iterated for layout. This is not proof of an
 interning cause or permission for content-only deduplication. The
 [bounded trace design](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
 is pending; stable allocation/relocation identity is required before function reuse.
+
+The opt-in allocation trace is now drafted in the exporter and a tracked
+[fixture qualification driver](benchmarks/experiments/artifact-diff/check_allocation_trace.py).
+It captures initialized bytes, full instance kinds and relocation origins, with
+bounded output and an artifact-hash footer. Four new Rust boundary tests and
+original-fixture differential checks are written but **not yet executed**.
+Current worker measurements use the unchanged installed tool78. Build and
+qualify only after the active run and its assessments release the benchmark lock.
+The launcher has not changed; large-project tracing and function reuse remain
+pending. See the [draft details](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md).
 
 ## Existing engine and limits
 
