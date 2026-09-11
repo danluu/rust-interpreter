@@ -40,6 +40,14 @@ and fault behavior, then improve actual production-edit commands to advance.
 Avoid rerunning parked register compaction, paired spills or fixed-register
 residency without new evidence.
 
+That census is complete: argument copies overwrite only 4.4% of proven local
+frame bytes on folded and 9.1% on token, with 1.75 and 1.94 remaining zero ranges
+per call. Park argument-only zero elision. The saved profiles contain roughly
+42 GB and 32 GB of repeated frame clearing; inspect unused MIR allocations before
+attempting a more complex runtime initialization policy. Scalar slot coloring
+and bytecode inline-bank reuse already exist and must not be counted twice.
+[Typed census](results/frame-initialization-census-01/summary.md).
+
 Git now records the baseline and ongoing source/report changes. Build caches,
 private checkouts and raw private evidence remain local. All builds, tests,
 benchmarks and cleanup remain serialized. Only processes created for this task
