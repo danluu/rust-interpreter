@@ -97,3 +97,18 @@ the archive identity and refuses to overwrite existing files. Failed or partial
 retirement reserves its original target and cannot be blindly retried under
 another ID. Sources, reports and executed bytecode snapshots remain outside
 the retired native target. No arbitrary target path is accepted by this CLI.
+
+
+Completed default-debug workspace checks without installed-tool publication can
+now use `--workspace-check COMPLETED_CHECK` instead of `--workflow`. A host
+preparation rejects `--mode` and `--corpus`, derives the exact diagnostic-build
+target from verified terminal check evidence, and requires every evidence file
+outside that target. The plan records `proof_kind: workspace-check` and `mode:
+host`. Inspection/restoration and the bounded archive format are unchanged.
+See the [qualified selector and actual pilot](HOST-CACHE-STORAGE-NEXT.md).
+
+`review_archive_batch.py --batch BATCH_ID` checks a successfully completed
+preparation batch, then records exact inventories, supported attributes, source
+hashes and closed-file checks for review. It never applies an archive. Review
+the resulting target list before a separate application, and wait for the entire
+application batch to finish before launching any other lock waiter.

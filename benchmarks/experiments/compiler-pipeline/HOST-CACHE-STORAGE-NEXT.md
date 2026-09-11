@@ -46,3 +46,14 @@ history. The approximately 21-GiB planning target is informed by previous
 11.305-GiB one-cycle caches; the eight-GiB per-command guard remains unchanged.
 Do not control unrelated processes, retire private targets, or claim storage
 maintenance as a compilation improvement.
+
+
+Implementation `71b05ca` passes [selector qualification](../../../results/host-cache-selector-03/assessment.md)
+(26 selection rejections, six CLI checks, three real host checks and four legacy
+workflow modes), [archive regression checks](../../../results/cache-archive-qualification-08/assessment.md)
+(44 rejections, four coordinator cases, two earlier-format restores), and eleven
+batch-routing rejections. The [actual pilot](../../../results/host-cache-pilot-01/assessment.md)
+now completes: 671 paths / 235.8 MB unique preserved in 85.7 MB of ZIP data, with
+all 106 external hashes unchanged. Prepare a separately reviewed bounded batch
+next. Failed qualification-driver runs01/02 remain recorded; no real target was
+changed by those failed checks.

@@ -123,15 +123,16 @@ released 1.54 GiB of object contents; 13,884 other files and 2,105 evidence hash
 verify afterward. The remaining files contain 5.31 GiB of unique contents.
 The [next storage plan](benchmarks/experiments/compiler-pipeline/HOST-CACHE-STORAGE-NEXT.md)
 extends existing bounded archival only to completed debug checks without an
-installed-tool publication. It is **not implemented yet**. Qualify that selector,
-review exact targets and preserve their evidence before any retirement. The
+installed-tool publication. The selector and archive regression checks pass, and the [actual pilot](results/host-cache-pilot-01/assessment.md)
+preserves one completed host cache with all 106 external hashes unchanged.
+Prepare and review the next exact batch before retirement. The
 completed cold01 caches are also eligible for separately reviewed archival once
 its assessment is committed. Cold02 has not started.
 
 The [completed twelve-target batch](results/worker-cold-storage-combined-01/assessment.md)
 preserves worker Nushell and older Nushell/Ruff corpus caches: 249,643 paths /
 19.16 GiB unique contents in 5.72 GiB of archives. All terminal receipts and
-207 distinct source/evidence hashes verify. There are now 56 completed archives;
+207 distinct source/evidence hashes verify. That brought completed archives to 56; the host pilot brings the total to 57.
 the host reported about 21 GiB free afterward. The old unapplied Ruff object-only
 inventory is obsolete because its exact target has now been archived.
 
