@@ -1,0 +1,1 @@
+All seven actual corpus receipts and both primary comparisons reverify unchanged. The adapter accepts only the exact parser-provenance list and rejects 27 missing/changed fields, changed controls/sources and incomplete scope. The original regression arithmetic is preserved. No benchmark was rerun or receipt rewritten.
