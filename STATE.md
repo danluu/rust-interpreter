@@ -78,9 +78,10 @@ guard remains eight GiB and is not a reservation against other host activity.
 show 800 custom timed units under four jobs and CPU/wall about 3.1 during cold
 commands, versus about 1.5 after edits. Native has 608 units under eighteen jobs.
 Overlap does not establish CPU utilization, a ready queue or a critical path.
-An isolated custom worker-count comparison is a useful next candidate. Freeze
-one tool in both arms, qualify mode-specific job recording and predeclare cold/
-warm samples before running. Do not change the active wrapper's four-job controls.
+The [worker-count plan](benchmarks/experiments/compiler-pipeline/WORKER-COUNT-NEXT.md)
+is a separate next experiment: identical tool78 in both arms, four versus eighteen
+jobs, qualification followed by fixed cold/warm samples and original controls.
+Do not change the active wrapper's four-job controls.
 
 [Constant-history inspection](results/interface-nushell-literal-history-01/assessment.md)
 finds an extra `Expected OneOf` literal and changed guest offsets after edit/revert.
