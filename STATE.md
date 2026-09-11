@@ -1,319 +1,127 @@
-# Continuation checkpoint — September 11, 2026
+# Current state — September 11, 2026
 
 The unbounded goal remains active: improve the custom Rust development engine
-using real source-edit/build/test measurements. Every item in the user-owned,
-unmodified `suggestions.txt` has a [decision](docs/SUGGESTIONS-REVIEW-20260910.md).
-Local Git commits are authorized; no remote or push was requested.
+using real source-edit/build/test measurements. Every user suggestion has an
+[item-by-item decision](docs/SUGGESTIONS-REVIEW-20260910.md). `suggestions.txt`
+is user-owned, unchanged and intentionally untracked. Local commits are authorized;
+no push was requested. Branch: `experiment/resumable-native-calls`.
 
-## Active work
+## Active experiment
 
-Branch `experiment/resumable-native-calls`. Runtime `5574d10`, integration
-`e1bec3e`, bulk initialization `001065a`, installed tool `78e60cdd`. The custom
-AArch64 emitter executes resumable Calls/Returns over initialized guest frames,
-with exact descendant VM continuation, one host ABI frame and no recursive
-host-stack growth. Known large frame/register ranges now clear in exact 64-byte
-batches. Every required byte, argument-copy order and budget check is preserved.
-The option remains `--jit-resumable-calls` with optional persistent registers;
-it excludes tree/stub mode and stays disabled by default.
+The [lightweight compiler wrapper](benchmarks/experiments/compiler-pipeline/LIGHTWEIGHT-WRAPPER.md)
+execs ordinary rustc for unselected units and loads the heavy exporter only for
+selected units. Source `b54dc6e`, tool `c341296c`; baseline tool `78e60cdd`.
+Both use the same VM and ordinary JIT, matched leaf inlining and strict checking.
+Resumable calls, persistent registers and native call trees/stubs are off.
 
-- All **257 workspace tests pass in debug and release**, one ignored. The new
-  emitted-code test checks dirty ranges, conservative minimums, all alignments
-  modulo 64, boundaries through 4096 bytes and an empty one-past-end. Existing
-  recursion (through 1024), descendant fallbacks, full host ABI, budget/storage/
-  capacity, warm alias copies and TLS/profile tests pass.
-  [Qualification](results/resumable-bulk-release-01/assessment.md).
-- [Twelve CLI checks](results/resumable-bulk-cli-01/summary.json), four historical
-  workflow verifications and [both original artifacts](results/resumable-bulk-real-smoke-01/assessment.md)
-  pass. Folded has identical 4,138,403,285 instructions and 25,913,904 native
-  Calls. Token retains original randomness. Code sizes are 5,867,588 and
-  14,722,684 bytes, with zero declined functions. The exporter is byte-identical
-  to the preceding resumable tool. [Build index](benchmarks/tool-builds.json).
+Qualification passes 268 debug/release tests (one ignored), fifteen process
+probes, five manifest checks, 99 launcher checks and historical-tool execution.
+The two fifteen-cycle API-edit comparisons verify 360 commands and 180 artifacts:
 
-[The completed bulk E2E run](results/resumable-bulk-e2e-01/assessment.md) verified
-168 commands, 30 edited pairs and 84 identical paired artifacts. Folded improves
-**19.51% paired** and token **19.95%** against original b2; CPU improves 20.60%/
-20.54%. Folded passes. Token's ratio is **0.8004639304**, just above its original
-0.8 maximum, so the combined numerical gate fails. Do not round it into a pass.
-Native remains faster on both. The first resumable tool (`035ef708`) improved
-folded 10.6% and token 15.0%; cross-run differences are not isolated component gains.
+| Workflow | Median paired wall change | CPU change |
+| --- | ---: | ---: |
+| [pgrust](results/lightweight-wrapper-pgrust-repeated-01/assessment.md) | −4.57% | −4.46% |
+| [Nushell](results/lightweight-wrapper-nushell-repeated-01/assessment.md) | −4.24% | −1.94% |
 
-[The single replication](results/resumable-bulk-e2e-02/assessment.md) is complete:
-folded improves 19.15% and token 19.97%, with CPU improving. Token's ratio
-0.8003441753 again narrowly misses 0.8; both combined numerical gates fail.
-[The two-run report](results/resumable-bulk-replication-01/assessment.md) preserves
-336 commands, 60 edited pairs, 168 artifacts and per-edit wall/CPU variation.
-Corresponding histories match across runs; cross-cycle layout differences remain
-unresolved. No more repeated attempts or batch-size tuning are planned.
+All corresponding artifacts match. Nushell original/wrong-edit artifacts differ
+across cache histories; its API-edit artifact is stable. This known discrepancy
+is unresolved and does not establish semantic equivalence across histories.
 
-Broader native/TLS/fre compatibility checks pass. All seven held-out cases are
-now complete across two run histories. [The recovery assessment](results/resumable-bulk-heldout-recovery-01/assessment.md)
-verifies **588 commands, 105 edited pairs and 294 artifacts**, original controls,
-source restoration and both archived harness versions. No paired wall regression
-exceeds 5%: pgrust −1.88%, Nushell +0.60%, rg-aot −0.03%, fre TLS −1.58%,
-pgrust SHA-1 −4.38%, Ruff −0.56%, Nushell type relations −0.86%.
-The last case's paired CPU change is +1.79%; small changes are not significance
-claims. Original primary token gates remain failed; no default retention.
+The [fixed cold experiment](benchmarks/experiments/compiler-pipeline/REPEATED.md)
+requires all six fresh-target histories. Original tests, wrong edits, independent
+checks and source restoration remain required. Native uses eighteen jobs,
+O0/incremental and default test concurrency; custom uses four jobs and prebuilt
+std-MIR. Installation/downloads/std-MIR setup are excluded from cold timing.
 
-The original seven-case run remains **incomplete after ENOSPC**. Its six complete
-cases are preserved, with its partial last-case 12 primary/three check records
-outside the new complete totals. [Failure and recovery](results/resumable-bulk-heldout-failure-01/assessment.md)
-record exact source restoration with no signals/cache cleanup. Retry01 was
-rejected for a mistyped key before compilation; retry02 completed successfully.
-The new assessment verifies original harness `edf0c2b` and retry harness `e4a9613`
-from Git rather than pretending the IO changes were present in the first run.
+| History | Initial order | Candidate/baseline cold wall ratio | State |
+| --- | --- | ---: | --- |
+| 01 | native,baseline,candidate | 1.0016210970 | verified |
+| 02 | candidate,baseline,native | 0.9868934347 | verified |
+| 03 | baseline,candidate,native | — | running |
+| 04 | native,candidate,baseline | — | pending |
+| 05 | candidate,native,baseline | — | pending |
+| 06 | baseline,native,candidate | — | pending |
 
-The harness stages source restoration before mutation, publishes source/JSON
-atomically, waits/drains children on receipt failures and checks disk before
-commands. [Ten fault checks](results/workflow-io-faults-02/summary.json) pass using
-three real children. [Pgrust's actual generic API qualification](results/interface-pgrust-qualification-01/assessment.md)
-passes all four original tests and wrong-edit/source/artifact controls: nine
-primary commands, three checks, six paired artifacts. This is one edited pair.
+Active run: `lightweight-wrapper-nushell-cold-03`, supervisor **14215**, controller
+**14232**, started September 11 at 08:13:25 local. Inspect terminal receipts;
+do not infer liveness from saved PIDs. After success, run the workflow verifier
+and `assess_wrapper_cold.py --index 3` through separate supervised commands.
 
-Both [generic interface qualifications](benchmarks/experiments/interface-edits/PLAN.md)
-now pass with original assertions, wrong edits, six paired artifacts each and
-source restoration. Pgrust generalizes borrowed hash inputs; Nushell generalizes
-its list-type constructor to `Into<Type>`. These single pairs remain separate
-from the repeated measurements.
+Retention requires at least 5% median cold wall improvement and no unresolved
+warm paired wall regression over 5%. Only then run held-out Ruff/private rg-aot/
+original fre checks. Preserve all six samples; no extra trials, threshold changes
+or wrapper retuning after a failure. `assess_wrapper_cold.py --all` remains
+unexecuted until all six histories exist. No retention decision yet.
 
-[Pgrust's fifteen-cycle comparison](results/interface-pgrust-repeated-01/assessment.md)
-is complete: **180 commands, 15 edited pairs, 90 paired artifacts**. Median wall
-is 0.663s native, 0.495s baseline, 0.491s candidate; paired changes −1.14% wall/
-−1.17% CPU. Original source-state artifacts match across all cycles. This is
-one API edit repeated fifteen times, not the original five body edits × three.
-[Nushell's fifteen-cycle comparison](results/interface-nushell-repeated-01/assessment.md)
-also verifies 180 commands/15 pairs/90 artifacts and restored source. Medians
-are 12.689s native, 5.504s baseline, 5.500s candidate; paired changes +1.12%
-wall/+0.41% CPU. Original/wrong-edit bytecode changes after cycle zero, while
-the API-edit artifact is stable. Paired engines always match. Preserve this
-new unresolved cache-history discrepancy; do not claim global determinism.
-Together the interface runs verify 360 commands/30 pairs/180 artifacts.
+## Resource planning
 
-The completed Nushell held-out median is 8.242s native, 5.198s baseline and
-5.159s candidate. Candidate Cargo is 5.082s versus 0.01044s VM execution.
-Host build dependencies include nu-cmd-extra's theme generator importing
-nu-protocol; keep that real cost. These stage results favor investigating
-frontend/build reuse for this workload after the interface comparisons; they
-do not establish a safe invalidation shortcut or a whole-application win.
+[Completed batch02](results/cold-storage-batch-02/assessment.md) preserves eight
+exact completed targets: 84,317 paths / 21.42 GiB unique contents in 7.21 GiB
+of archives. Final receipts, reviewed inventories and all 38 distinct external
+source/evidence hashes verify. Twenty actual archives are now complete, including
+[batch01](results/cold-storage-batch-01/assessment.md). All payloads were decoded
+and hashed before original-file retirement. Executed snapshots and reports stay
+in place. About 23.7 GiB was free before cold03.
 
-The [compiler-pipeline diagnostic](results/interface-nushell-units-01/assessment.md)
-is complete: nine primary commands, three independent checks, six paired
-artifacts and nine hashed Cargo snapshots. Parser qualification matches four
-preserved captures and rejects nineteen malformed inputs. All three edited
-commands rebuilt 19 units. Native nu-command took 6.57s versus 1.12/1.24s checks.
-The separate 90-command routing diagnostic found about 9.7ms added per ordinary
-rustc probe through the heavy exporter; this is not a build-time speedup claim.
-Keep compiler-unit overlap/duplicate descriptions distinct from CPU or critical
-path attribution. An older profile already captures the host/library/test chain.
-The [current read-only inventory](results/compiler-unit-fingerprints-01/assessment.md)
-finds three nu-protocol configurations in all four completed histories,
-including native and independent check. Features, profile hashes and flag
-handling differ; do not attribute the three-unit count solely to custom
-`--target`, remove dependencies, or assume name-only artifact sharing is valid.
+The [archive implementation](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
+passes 44 rejection checks, four coordinator cases and two legacy restores.
+Mode derivation passes 31 rejections and nine real targets. It preserves recorded
+bytes/metadata/internal hardlinks, not future Cargo reuse behavior. Only exact
+reviewed task-owned completed targets may be retired. Archive outside benchmarks;
+keep query metadata, private caches, installed tools and historical evidence.
+Allow at least roughly 21 GiB before each large fresh history; the per-command
+guard remains eight GiB and is not a reservation against other host activity.
 
-The [lightweight wrapper](benchmarks/experiments/compiler-pipeline/LIGHTWEIGHT-WRAPPER.md)
-is implemented in `b54dc6e` / `c341296c` and passes 268 debug/release workspace
-tests, one ignored. New std-only
-`rust-interp-rustc-wrapper` execs ordinary rustc or the adjacent exporter using a
-shared routing module. New manifests verify all three binaries; historical
-two-binary tools keep their existing path. Fifteen process commands/five manifest
-checks and all 99 original launcher checks pass, plus a historical-tool execution.
-The wrapper links only libSystem and reduces measured version-probe overhead
-from 10.53 to 1.75ms. The VM is byte-identical to 78e60cdd. Pgrust's API
-qualification verifies twelve commands/six artifacts. Nushell's qualification
-also passes, but its first cold and edited observations were slower.
-[Repeated pgrust API edits](results/lightweight-wrapper-pgrust-repeated-01/assessment.md)
-verify 180 commands, fifteen pairs and ninety artifacts: paired wall −4.57%,
-CPU −4.46%. [Nushell's fifteen cycles](results/lightweight-wrapper-nushell-repeated-01/assessment.md)
-also verify 180 commands/ninety artifacts, with paired wall −4.24% and CPU
-−1.94%. Original/wrong-edit artifacts show the same previously recorded
-cache-history difference; every corresponding pair matches. Neither warm
-comparison exceeds the regression guard. Six predeclared balanced fresh-target
-cold runs remain pending; no retention claim follows yet. The scheduling option passes its
-archived-behavior checks and a three-cycle reversed-order pgrust qualification.
+## Direction after the fixed comparison
 
-The [typed Nushell history comparison](results/interface-nushell-artifact-diff-01/assessment.md)
-finds 415 immediate changes in 115 functions and 16 additional readonly bytes
-for the original/wrong-edit states; headers/op counts/statics/TLS are identical.
-The API-edit state is identical. A [read-only literal inspection](results/interface-nushell-literal-history-01/assessment.md)
-now finds a second `Expected OneOf` byte string after the edit/revert history,
-and a packed immediate changing from `(224, 14)` to `(368, 14)` in the affected
-test. The allocation HashMap is never iterated for layout. This narrows the
-next investigation to literal allocation requests/sharing without establishing
-an interning cause or permitting content-only deduplication. A
-[trace design](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
-is prepared for after the fixed-tool wrapper experiment; no exporter input has
-changed during its active run.
+[Historical Cargo timelines](results/compiler-cold-concurrency-01/assessment.md)
+show 800 custom timed units under four jobs and CPU/wall about 3.1 during cold
+commands, versus about 1.5 after edits. Native has 608 units under eighteen jobs.
+Overlap does not establish CPU utilization, a ready queue or a critical path.
+An isolated custom worker-count comparison is a useful next candidate. Freeze
+one tool in both arms, qualify mode-specific job recording and predeclare cold/
+warm samples before running. Do not change the active wrapper's four-job controls.
 
-The [broader driver](scripts/qualify_native_execution.py) now stages the existing
-full validator with immutable tool/mode selection and unchanged assertion ASTs.
-Its [helper qualification](results/resumable-execution-driver-01/summary.json)
-passes three staging configurations and both archived mode checks; false
-resumable claims are rejected. Full new-tool execution now passes all 47,004
-mixed commands in `resumable-bulk-native-01`, including 22,238 JIT invocations
-with the exact options and real native Call/Return counters. No successful JIT
-run declined functions. The separate `resumable-bulk-tls-01` passes 245 commands,
-including original destructor order/reset and normal callbacks. Both are terminal0.
-The tracked fresh-body coordinator and explicit audit tool selection preserve
-old audit assertions; 18 CLI checks pass on the committed driver source.
-The [fresh fre replay](results/resumable-bulk-fre-01/assessment.md) is complete:
-382 original bodies pass and seven are ignored, with 382 fresh native executions.
-All 382 compared artifacts match the older replay; no outcomes changed.
-Successful bodies executed 959,714,888 native Calls and 976,181,341 Returns.
-Maximum code is 15,173,088 bytes with zero declined executions. Allocation limit
-150,000, unsupported-call trapping, normal callbacks and recorded MIR settings
-remain required. This is body replay, not full libtest. Held-out workflows remain.
-[Broader recipe](benchmarks/experiments/resumable-native-calls/BROADER-QUALIFICATION.md).
+[Constant-history inspection](results/interface-nushell-literal-history-01/assessment.md)
+finds an extra `Expected OneOf` literal and changed guest offsets after edit/revert.
+The allocation HashMap is never iterated for layout. This is not proof of an
+interning cause or permission for content-only deduplication. The
+[bounded trace design](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
+is pending; stable allocation/relocation identity is required before function reuse.
 
-Exact-code profiles of `035ef708` resolved every generated PC across three
-windows each. Required zeroing accounted for 56.3% folded /17.4% token samples,
-and token native-boundary self 13.5%. These partial perturbed windows motivated
-bulk clearing; they are not speedup forecasts or current-tool profiles.
-[Folded](results/resumable-folded-sample-01/assessment.md),
-[token](results/resumable-token-sample-01/assessment.md).
+## Existing engine and limits
 
-The qualified [private-array census](results/aggregate-reuse-weights-01/assessment.md)
-found only 0.0000073% additional folded frame-byte scope and 0.1233% token.
-That layout change remains parked, alongside argument-only zero elision and
-unused-MIR-local removal. Broader aggregate reuse still needs padding/alias/
-lifetime proofs; do not restart batch-size/opcode tuning by default.
+The broadly compared control remains `a2a0e04` / `b2aa6efe`. Its nine-workflow
+[corpus](results/native-controls-corpus-01/assessment.md) verifies 756 commands,
+189 independent checks, 135 edited pairs and 378 artifacts. Native controls are
+explicit; a fastest-available AOT claim still needs backend/linker qualification.
 
-## Evidence guiding this experiment
+The custom resumable Call/Return + persistent-register + bulk-clear experiment
+is `001065a` / `78e60cdd`. [Both primary runs](results/resumable-bulk-replication-01/assessment.md)
+miss the token threshold: ratios 0.8004639304 and 0.8003441753 exceed 0.8.
+Folded passes; the combined gates fail. Keep these options off by default;
+no rounding, more primary replication or tiny emitter tuning to cross the gate.
+Its broader checks pass 47,004 mixed commands, 245 TLS commands and 382 original
+fre bodies (seven ignored). The [seven held-out cases](results/resumable-bulk-heldout-recovery-01/assessment.md)
+verify 588 commands, 105 pairs and 294 artifacts with no >5% paired wall
+regression. These do not waive primary failures or establish full libtest support.
 
-The [ordinary native-Call result](results/native-region-e2e-01/assessment.md),
-`26833c3` / `2f31c6a0`, completed 168 commands, 30 edited pairs and 84 identical
-paired artifacts: token improves 19.3% paired, folded regresses 1.4%. Both gates
-fail. The earlier [bounded-tree result](results/bounded-native-e2e-01/assessment.md)
-improves token 14.4% and regresses folded 3.0%; it also fails both gates.
+Strict type/borrow checking, exact budgets, original assertions and explicit
+unsupported outcomes remain required. Real unwinding, threads, broad FFI and
+unfiltered full suites remain incomplete. No fake synchronization or longjmp
+cleanup, LLVM/external guest backend, or silent native fallback. Native controls
+and native host tools are separate from the custom guest execution path.
 
-Diagnostic `059d818` / `7ad1ccdb` passes 233 debug/release tests and emits exact
-same-process code/range dumps. Three-window profiles pass original assertions:
-[token](results/native-code-token-sample-02/assessment.md) has 14.0% direct
-register-array stores / 11.7% native zeroing; [folded](results/native-code-folded-sample-01/assessment.md)
-has 6.0% stores / 8.2% native zeroing and 23.1% VM frame reservation. These are
-partial perturbed samples, not predicted savings. All generated PCs resolve.
-The first token capture missed its initial arena; its incomplete evidence and
-the bounded-readiness fix/complete retry are preserved.
+## Continuation rules
 
-Frame layout/lifetime changes stay separate. Argument-only zero elision already
-had little scope (4.4% folded / 9.1% token), as did removing unused MIR local
-storage. Do not repeat those parked experiments. Aggregate lifetime reuse needs
-a new alias/initialization proof and changed-artifact controls. Private primitive
-arrays now join those parked directions; broader aggregate reuse is unproven.
+Exact hashes, source pins, reports and active receipts are in
+`.work/continuation-state.json`. Toolchain: `nightly-2026-09-08`, rustc `cea272fa3`.
+Private adapter: `.work/private/workflow-rg-aot.json`; publish aggregates only.
+The [previous full checkpoint](docs/history/STATE-20260911-before-cold03.md)
+preserves detailed chronology and older failures.
 
-## Qualified controls and coverage
-
-Default comparison source `a2a0e04`, tool `b2aa6efe`, passed 202 workspace tests.
-Its [nine-workflow corpus](results/native-controls-corpus-01/assessment.md)
-completed 756 commands, including 189 independent Cargo checks, 135 edited pairs
-and 378 verified artifacts. Pins for pgrust, fre, Nushell, Ruff and private
-rg-aot were restored. Native uses root O0/incremental, 18 jobs and default test
-concurrency; custom uses four jobs. Package overrides remain; linker/backend/
-worker alternatives are unqualified. Cold commands exclude toolchain/dependency/
-std-MIR setup and OS-cache clearing. All samples remain in the records.
-
-All three fre workflows have unresolved cross-history bytecode layout changes;
-corresponding engines receive identical bytecode. Do not claim cross-history
-semantic equivalence or an established cause. The broader 47,004 mixed commands
-include 22,238 JIT and 22,238 interpreter invocations across two inlining modes;
-these are not unique test cases. [Recount](results/historical-validation-counts-01/assessment.md).
-The historical 245 TLS checks and 382 passing/7 ignored fre bodies used
-older `57a54edd`. Current `78e60cdd` now has separate fresh qualification above;
-older coverage was not transferred. Both fre replays
-uses allocation limit 150,000, unsupported-call traps and normal try callbacks;
-it is not an unfiltered libtest run. See [STATUS](STATUS.md).
-
-## Ownership and recovery
-
-The first two balanced cold histories and their verifiers are complete.
-`cold-storage-batch-02-apply` is active under supervisor 24168, archiving eight
-reviewed targets from cold02 and the older Nushell interface qualification.
-Batch01 completed six targets and verified 221 distinct evidence hashes.
-Inspect batch02's receipt before further cleanup or benchmarking. Nushell15 and its verifier
-are terminal0; all source/frozen-input checks and ninety compiler-wrapper traces
-verify. All earlier wrapper qualifications and pgrust15 are also complete.
-The remaining measurements are the six fixed balanced Nushell cold histories;
-the first two each verify twelve commands/six artifacts and the other four have
-not started. Cold01 wall is 61.439s baseline versus 61.539s candidate, ratio
-1.0016210970; CPU ratio is 1.0046207955. All ten frozen inputs, six wrapper
-traces and byte-for-byte source restoration verify. There is no cold gain in
-this sample. Cold02 wall is 62.435s baseline versus 61.617s candidate, ratio
-0.9868934347; CPU ratio is 0.9717771801. It also verifies all ten frozen inputs,
-six wrapper traces and exact source restoration. The checked-in per-history
-assessor passes index02; its aggregate path awaits all six histories and is not
-yet executed. There is no retention decision. Preserve baseline78/candidatec341, ordinary JIT, matched leaf
-inlining, std-MIR, native18/O0/incremental/default threads, custom4 and independent
-checking. This run's cold observation improved only about0.52% and is outside
-the six-run gate. Both original runtime gate failures remain unchanged.
-
-The object-only tool has reclaimed six exact completed public Nushell native
-targets and one completed host workspace-check target. Every other target file
-and all evidence verified unchanged. The host extension passes31 rejection
-checks, two real workflow checks, three host qualifications and retained-hardlink
-checks. Its first actual application, `lightweight-wrapper-host-debug-objects-01`,
-removed5004 object paths and retained750 files, including all executables,
-libraries and archived source/log evidence. Unique object inodes were0.351GiB;
-free space was about10.02GiB afterward. This is insufficient for a new large
-cold history plus the eight-GiB guard.
-
-[Reversible cache archival](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
-is implemented and passes 44 rejection checks plus four coordinator scenarios,
-including restoration after an interrupted retirement and preservation of two
-observed Cargo root attributes. The first actual completed native archive,
-`interface-nushell-native-cache-archive-02`, preserves 5,012 paths/4,988 payloads
-in a 1.09 GiB archive. Every payload and all 90 external bytecode snapshots
-verify. Available space rose by 1.19 GiB to about 10.92 GiB; logical byte savings
-are not physical reclamation on APFS. First fixture/preparation failures remain
-recorded. The check/custom target extension passes 31 rejection checks and nine
-real target derivations; the archive suite again passes all 40 rejections and
-four coordinator scenarios. It reconstructs caches from recorded commands,
-unique namespaces, tool/std-MIR identities and executed snapshots, and holds
-the custom invocation lock. Both `interface-nushell-check-cache-archive-01` and
-`lightweight-wrapper-nushell-check-cache-archive-01` are complete: 7,592 paths
-each, all payloads and 99 evidence hashes verified. The full native archive
-preserves 140,547 paths/10.02 GiB unique contents in 2.75 GiB. Its application
-finished with status 0; observed free space reached about 19.5 GiB. A custom
-preparation refused additional Cargo markers on `target/aarch64-apple-darwin`
-before changing any files. Its [bounded follow-up](benchmarks/experiments/compiler-pipeline/NESTED-CACHE-MARKERS.md)
-now passes all 44 archive checks with distinct root/nested fixture values and
-restoration of both previous archive layouts. New custom inventory02 verifies
-23,639 paths/8,523 payloads (2.70 GiB), 99 evidence hashes and the exact unique
-namespace. Its application completed while holding the invocation lock; all
-payloads and evidence verified, and one archived `nu-protocol` fingerprint was
-read through the bounded inspector with the original hash. About 21.25 GiB was
-free before cold01 started; about 9.65 GiB remained afterward. Five actual
-archives are complete. Cold01's reviewed native inventory has 22,485 paths and
-4.34 GiB unique payloads and is now archived in about 1.39 GiB. The six-target
-batch preserves 99,327 paths/15.06 GiB unique contents and has completed.
-About 22.67 GiB was free before cold02 began; about 9.49 GiB remained before
-batch02. Batch02 inventories 84,317 paths/21.42 GiB unique contents and has a
-fixed reviewed plan hash. Finish it and verify available space before cold03,
-whose required order is baseline,candidate,native. Preserve query metadata
-in archives, private caches,
-installed tools and all historical evidence. Do not start cold runs before
-adequate space is available or change their gates.
-
-[Read-only cold timeline inspection](results/compiler-cold-concurrency-01/assessment.md)
-reproduces all nine old instrumented captures. Cold custom builds have 800 timed
-Cargo units under four jobs and CPU/wall about 3.1; native has 608 under eighteen
-jobs and about 7.1. Custom edited CPU/wall is about 1.5. Overlap is broad in cold
-commands and narrow after edits; it is not CPU utilization or ready-queue proof.
-This motivates considering worker counts in a separate future experiment, with
-identical binaries and fresh cold/warm measurements. Current wrapper controls
-and gates remain fixed. Constant/relocation identity remains required for reuse.
-The small Ruff/Nushell object inventories remain unapplied and are bound to the
-older cleanup driver; using either now would require a fresh reviewed inventory.
-
-The old held-out run's stale status is preserved ENOSPC evidence, not a live task.
-Its separate recovery assessment verifies all seven complete cases. Both token
-failures persist. The unbounded goal remains active; inspect receipts before acting.
-
-Detailed current state, exact tool hashes, all five source pins and terminal
-receipts are in `.work/continuation-state.json`. Toolchain is
-`nightly-2026-09-08`, rustc `cea272fa3`. Private adapter is
-`.work/private/workflow-rg-aot.json`; public reports contain aggregates only.
-
-No subagents or independent model calls. No AWS activation, unrelated process
-control, broad cache deletion, private cleanup or quarantine deletion. A separate
-user-owned cleanup task takes `.work/benchmark.lock`; wait without controlling it.
-Serialize task builds/tests/benchmarks/cleanup with that lock. Preserve artifacts,
-assertions, wrong-edit controls, source restoration and historical evidence.
+No subagents or independent model calls. No AWS activation or unrelated process
+control. Serialize builds/tests/benchmarks/cache maintenance with
+`.work/benchmark.lock`; an external user-owned cleanup may hold it, so wait.
+Never recursively search all `.work`. Preserve sources, receipts and artifacts.
+Do not mark the unbounded goal complete at a checkpoint.
