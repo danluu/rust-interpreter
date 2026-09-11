@@ -1,0 +1,3 @@
+The real pgrust original/wrong/API-edit history passes all three cycles: 27 primary commands, nine independent check commands and 18 matching saved artifacts. Both modes actually launch with resumable Calls and persistent registers; exact VM/exporter identities and all frozen script hashes verify. Original assertions reject the wrong production edit, test source stays unchanged and the owned source is restored. This run qualifies the new baseline-option path; its timings are excluded from primary performance decisions.
+
+[Recorded command results](summary.json) · [Independent verification](verification.json)

@@ -25,8 +25,22 @@ of tool78's existing bulk/resumable/persistent mode have completed. The
 now recognizes the bulk loop without changing six historical profiles.
 [Token](results/resumable-bulk-token-sample-01/assessment.md) shows 15.59%
 native-boundary self samples and 9.55% clearing; [folded](results/resumable-bulk-folded-sample-01/assessment.md)
-shows 40.07% clearing and 0.20% native boundaries. Collect exact interpreted-op
-counts next to explain token's ~22 million native entries. No new speed claim.
+shows 40.07% clearing and 0.20% native boundaries. The [exact operation counts](results/resumable-bulk-token-transitions-01/assessment.md)
+attribute 88.19% of token's interpreted operations to fixed/dynamic copies.
+
+Source `aa2f6ea` / tool `0e94d6d8` keeps these checked transfers inside resumable
+regions. [Debug](results/resumable-copy-debug-02/assessment.md) and
+[release](results/resumable-copy-release-01/assessment.md) pass 276 tests, one
+ignored. [Original artifact smokes](results/resumable-copy-real-smoke-01/assessment.md)
+pass with zero interpreted copies and no JIT declines; token native entries
+fall to ~2.65 million. These instrumented counts are not speed measurements.
+The [plan](benchmarks/experiments/resumable-native-calls/COPY-TRANSITIONS-NEXT.md)
+requires a new ≥10% token E2E gain and lower CPU, with ≤5% folded regression.
+Baseline `e965f566` has tool78's exact VM and the candidate's exact exporter/
+wrapper, isolating the runtime change. New baseline runtime flags pass CLI and
+historical receipt checks; [actual pgrust qualification](results/resumable-copy-harness-01/assessment.md)
+passes 36 commands and 18 matching artifacts with original assertions and source
+restoration. Run the two-workflow primary comparison next with frozen controls.
 
 ## Closed worker-count experiment
 

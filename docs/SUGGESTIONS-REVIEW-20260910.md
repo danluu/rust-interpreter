@@ -118,6 +118,16 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Items 1.1/3.1 now have a further measured boundary change (`aa2f6ea` /
+  `0e94d6d8`). Fresh token counts place 88.19% of interpreted operations in
+  fixed/dynamic copies. These now execute in checked resumable native regions.
+  [All 276 debug/release tests](../results/resumable-copy-release-01/assessment.md)
+  pass, one ignored, and [both original real artifacts](../results/resumable-copy-real-smoke-01/assessment.md)
+  pass with no interpreted copies or JIT declines. The new E2E gate requires
+  ≥10% additional token improvement over the preceding VM, with identical
+  frontend binaries and a folded regression guard. Timing/adoption is pending;
+  the original failed bulk gate remains unchanged.
+
 - Items 1.4/4.3 now have a bounded opt-in allocation-origin trace as correctness
   groundwork. Source `9bd66cd` / tool `e965f566` passes 272 debug/release tests
   and [383 original-fixture commands](../results/allocation-trace-fixtures-01/assessment.md),
