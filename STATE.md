@@ -1,4 +1,4 @@
-# Continuation checkpoint — September 10, 2026
+# Continuation checkpoint — September 11, 2026
 
 The unbounded goal remains active: improve the custom Rust development engine
 using real source-edit/build/test measurements. Every suggestion in
@@ -35,10 +35,15 @@ that tool. The broader 47,004 native differential commands, TLS checks and
 ## Next action
 
 Implement the [bounded native call-tree experiment](benchmarks/experiments/bounded-native-calls/PLAN.md).
-Runtime implementation has **not** started. Stop adding scope censuses unless a
-specific implementation constraint requires one. Start with storage/readiness,
-conservative tree metadata and the emitter's Call/Return/terminal-Trap contract,
-keeping the current engine available for differential and end-to-end comparison.
+The `experiment/bounded-native-calls` branch now implements initialized backing
+storage with a separately bounded live prefix and conservative acyclic call-tree
+metadata. All 212 workspace tests pass (one ignored), including guest bounds,
+frame padding/reuse, cycles, repeated calls, and storage/instruction/depth caps.
+[Check evidence](results/bounded-native-tree-metadata-01/summary.json).
+The executing native Call/Return path is still pending; there is no new speedup
+measurement or installed release tool. Next implement the dedicated emitter and
+its differential tests using the [internal ABI](benchmarks/experiments/bounded-native-calls/INTERNAL-ABI.md),
+then connect the opt-in VM path and run real end-to-end comparisons against b2aa6efe.
 
 A whole-tree budget bound avoids partial budget exits only if every target and
 all storage are ready before entry. Otherwise decline before progress or use a
@@ -53,8 +58,8 @@ regression. Broader execution qualification is required for production retention
 
 ## Process and ownership
 
-All three recent supervisors/controllers finished with return code zero:
-`native-controls-corpus-01`, `native-call-census-01`, `native-call-census-02`.
+All recent supervisors/controllers finished with return code zero, including
+`bounded-native-storage-01` (206 passes) and `bounded-native-tree-metadata-01` (212).
 Their terminal receipts remain under `.work/experiments`; no task process is
 currently running. Re-check actual identities before treating old receipts as live.
 Detailed pointers/pins are in `.work/continuation-state.json`.

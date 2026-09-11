@@ -2,6 +2,7 @@
 //! library, or external interpreter participates in execution.
 use serde::{Deserialize, Serialize};
 mod heap;
+mod linear_memory;
 mod jit;
 mod float;
 mod profile;
@@ -404,7 +405,7 @@ struct Frame {
 }
 
 struct Memory {
-    bytes: Vec<u8>,
+    bytes: linear_memory::LinearMemory,
     heap: heap::Heap,
     limit: usize,
     readonly_end: usize,
@@ -629,7 +630,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool>(
         return Err("initial guest data exceeds memory limit".into());
     }
     let mut memory = Memory {
-        bytes: program.data.clone(),
+        bytes: program.data.clone().into(),
         heap: heap::Heap::with_statics(&program.statics, limits.allocations),
         limit: limits.memory,
         readonly_end: program.data.len(),

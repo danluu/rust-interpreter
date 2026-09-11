@@ -1,0 +1,98 @@
+# Emitter integration notes
+
+These are implementation decisions for the next step, not executable features.
+The runtime foundation is in `linear_memory.rs` and `jit/trees.rs`.
+
+## State already implemented
+
+`LinearMemory` owns initialized backing bytes plus a private active length.
+Deref exposes only the active slice, so existing memory access, allocator budget
+and TLS paths keep their live-prefix behavior. `resize` reinitializes the newly
+active range, including retained bytes after truncation. `prepare` grows only
+backing storage and may decline; `commit_native_len` checks the returned extent.
+Five tests cover bounds, zeroing, alignment padding, failed preparation and live
+budget accounting. The full workspace passes 212 tests.
+
+`trees::analyze` uses the actual emitter support predicate/local-fill proof and
+explicitly allows proposed Call/Return/terminal Trap operations. CFG cycles,
+recursive dependencies, unsupported operations and bound overflow decline.
+Each static call site contributes its child's full instruction bound. A queue
+processes dependencies without recursive host traversal or repeated graph scans.
+
+The memory span includes the function's own frame plus `(maximum direct-child
+alignment - 1)` and the maximum child span. All alignments are powers of two;
+successive child returns can round the parent's active end no further than its
+largest child's alignment. Registers use own slots plus maximum child slots;
+depth includes the root callee. Requirements align the current memory end and
+check additions to active register/frame counts. Five tests include real VM
+instruction/peak-memory comparisons across sibling/nested alignment combinations.
+
+## Dedicated tree emission
+
+Reuse `Assembler::lower`, `checked_address`, branch lowering and local-fill
+proofs. Compile every supported region, including short regions and Return.
+Keep the 1,024-operation region split to bound local fault relocations. Calls,
+returns and traps terminate regions; their successors begin with fresh facts.
+Spill live scalar facts and evict cached registers before call setup. A callee
+can change caller memory, so no memory forwarding fact crosses a call.
+
+Each tree function has a C-ABI wrapper and an internal entry. Both share the
+existing bounded MAP_JIT arena with regular regions. Prepare dependencies before
+publishing a parent; a declined dependency makes the complete tree unavailable.
+All branches target trusted published metadata. Preserve atomic staging and
+typed codegen-limit declines. No code publication or storage growth occurs while
+a tree executes.
+
+Suggested internal register contract: keep the ordinary emitter's x0 register
+slice, x1 frame base, x2 linear-memory pointer, x3 active linear length, x4 readonly
+end, x7/x8 heap pointer/length and x19 cursor. A wrapper adapts the public eight
+arguments. Pass a child's guest return destination in x15; internal entry saves
+callee-saved registers/LR and moves it into x20. Reserve x21/x22 for call-setup
+base/register pointers. Never use the platform-reserved x18.
+
+A 64-byte internal host frame can save x20/x21, x22/LR, the function's x0/x1 and
+its profile pointer. Restore x0/x1/profile after an inner call. Keep x3 equal to
+the child's aligned base after return, rather than restoring its pre-call value.
+The 64-level metadata cap bounds this host nesting; guest recursion stays in the
+ordinary VM. Verify x19–x22 and SP/LR with an assembly ABI probe.
+
+Extend the host-only cursor with final active memory length, peak linear length,
+root return destination, a table of tree-profile counter pointers and native-call
+counts. Preserve the existing remaining-budget/profile-pointer prefix. Use
+`repr(C)` and assert offsets. The native path must receive initialized backing
+extents large enough for its complete tree, not Vec capacity alone.
+
+Before entry, require all code/storage and the whole-tree budget. Then debit
+actual region/Call/Return counts without partial budget exits. On each native
+Call, zero the newly active memory range, expose that length, copy arguments in
+order, initialize registers according to the existing proof, and enter the child.
+On Return, copy its result before truncating to its aligned base. General argument
+and return copies need overlap-safe handling; do not assume caller-local sources
+or destinations. `checked_address` already accepts a machine register containing
+a guest address. Use existing scalar/vector snapshot copies for small sizes and
+a custom directional loop for larger ABI copies.
+
+Terminal traps need named native fault identities, distinct from assertions.
+Propagate a callee's fault through native epilogues without executing result
+copies or further guest operations. Keep codegen/internal errors distinct from
+guest faults. An unexpected successful partial return is an internal error.
+
+## Integration order
+
+First implement and differentially test standalone complete tree entries. Then
+connect the explicit experimental option to the existing VM Call path: ordinary
+root-call argument/depth errors retain their order, and unready/budget/storage
+declines use the current interpreter/JIT path. Preparing an already-reserved root
+callee requires `base + frame_span` and `register_base + register_slots`; do not
+add its own frame/register storage twice.
+
+The VM Call integration still has a host transition for each outer tree root.
+Measure root entries separately from generated nested Calls. Follow with native
+Call stubs in regular JIT regions if those root transitions prevent the planned
+gain; do not count all census-eligible calls as eliminated VM calls.
+
+Profiling needs separate tree block counts/endpoints. Ordinary regions may group
+the same PCs differently, so sharing one `jit_block_ends` array would misattribute
+instructions. Fresh guest memory/TLS state and existing root/TLS completion remain
+owned by the VM. Preserve all benchmark options and measure complete commands
+against `b2aa6efe` with the predeclared gates.

@@ -101,7 +101,7 @@ mod tests {
     use super::*;
 
     fn memory(limit: usize) -> Memory {
-        Memory { bytes: vec![0; 64], heap: heap::Heap::with_statics(&[0; 32], crate::DEFAULT_ALLOCATION_LIMIT),
+        Memory { bytes: vec![0; 64].into(), heap: heap::Heap::with_statics(&[0; 32], crate::DEFAULT_ALLOCATION_LIMIT),
             readonly_end: 16, limit, peak: 96, auxiliary_bytes: 0 }
     }
 
@@ -206,7 +206,7 @@ mod tests {
 mod allocation_budget_boundary_tests {
     use super::*;
     fn memory(allocations:usize)->Memory {
-        Memory {bytes:vec![0;64],heap:heap::Heap::with_statics(&[0x39;32],allocations),
+        Memory {bytes:vec![0;64].into(),heap:heap::Heap::with_statics(&[0x39;32],allocations),
             readonly_end:16,limit:4096,peak:96,auxiliary_bytes:0}
     }
     #[test]

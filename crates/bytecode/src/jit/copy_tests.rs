@@ -64,7 +64,7 @@ fn native_medium_copies_match_every_length_alignment_arena_and_overlap_direction
                                 let dst=dest+if dst_heap {crate::heap::TAG} else {0};
                                 let mut expected=memory();expected.copy(src,dst,size).unwrap();
                                 let mut actual=memory();probe(&jit,&mut actual,src,dst,profiled).unwrap();
-                                assert_eq!(actual.bytes,expected.bytes,"stack size={size} src={src} dst={dst}");
+                                assert_eq!(&*actual.bytes,&*expected.bytes,"stack size={size} src={src} dst={dst}");
                                 assert_eq!(actual.heap.bytes,expected.heap.bytes,"heap size={size} src={src} dst={dst}");
                             }
                         }
@@ -74,7 +74,7 @@ fn native_medium_copies_match_every_length_alignment_arena_and_overlap_direction
                 for (src,dst) in [(1,1024-size),(64,1024-size)] {
                     let mut expected=memory();expected.copy(src,dst,size).unwrap();
                     let mut actual=memory();probe(&jit,&mut actual,src,dst,profiled).unwrap();
-                    assert_eq!(actual.bytes,expected.bytes);assert_eq!(actual.heap.bytes,expected.heap.bytes);
+                    assert_eq!(&*actual.bytes,&*expected.bytes);assert_eq!(actual.heap.bytes,expected.heap.bytes);
                 }
             }
         }
@@ -87,9 +87,9 @@ fn native_medium_copy_accepts_the_same_address_register() {
         let p=program(size,true,true);let mut jit = Jit::new(&p, false, MAX_CODE_BYTES).unwrap();
                 jit.ensure_function(0).unwrap();
         for src in [64,257,1024-size,crate::heap::TAG+1,crate::heap::TAG+257] {
-            let mut m=memory();let stack=m.bytes.clone();let heap=m.heap.bytes.clone();
+            let mut m=memory();let stack=m.bytes.to_vec();let heap=m.heap.bytes.clone();
             probe(&jit,&mut m,src,0,false).unwrap();
-            assert_eq!(m.bytes,stack);assert_eq!(m.heap.bytes,heap);
+            assert_eq!(&*m.bytes,stack.as_slice());assert_eq!(m.heap.bytes,heap);
         }
     }
 }
@@ -104,16 +104,16 @@ fn native_medium_copy_validates_both_complete_ranges_before_any_write() {
             if heap {bad.extend([crate::heap::TAG,crate::heap::TAG+1024-size+1,crate::heap::TAG+1024]);}
             for invalid in bad {
                 for (src,dst) in [(invalid,256),(256,invalid)] {
-                    let mut m=memory();let stack=m.bytes.clone();let heap=m.heap.bytes.clone();
+                    let mut m=memory();let stack=m.bytes.to_vec();let heap=m.heap.bytes.clone();
                     assert!(m.copy(src,dst,size).is_err());
                     assert_eq!(probe(&jit,&mut m,src,dst,false).unwrap_err(),"JIT guest memory access failed");
-                    assert_eq!(m.bytes,stack);assert_eq!(m.heap.bytes,heap);
+                    assert_eq!(&*m.bytes,stack.as_slice());assert_eq!(m.heap.bytes,heap);
                 }
             }
             for dst in [1,32,63] {
-                let mut m=memory();let stack=m.bytes.clone();let heap=m.heap.bytes.clone();
+                let mut m=memory();let stack=m.bytes.to_vec();let heap=m.heap.bytes.clone();
                 assert_eq!(probe(&jit,&mut m,256,dst,false).unwrap_err(),"JIT guest memory access failed");
-                assert_eq!(m.bytes,stack);assert_eq!(m.heap.bytes,heap);
+                assert_eq!(&*m.bytes,stack.as_slice());assert_eq!(m.heap.bytes,heap);
             }
         }
     }

@@ -1,6 +1,13 @@
 # Bounded native call-tree experiment
 
-Status: selected experiment; runtime implementation has not started.
+Status: storage and conservative tree metadata are implemented on
+`experiment/bounded-native-calls`; native Call/Return emission and VM integration
+are pending. [212 passing workspace tests](../../../results/bounded-native-tree-metadata-01/summary.json).
+
+The current implementation caps speculative frame span at 256 KiB, register
+storage at 65,536 u128 slots and native nesting at 64 frames. These are
+optimization declines, separate from guest limits; actual retained scope must be
+measured when the native path runs. [Emitter integration notes](INTERNAL-ABI.md).
 
 The [stronger native controls](../../../results/native-controls-corpus-01/assessment.md)
 leave token at 6.664 s custom versus 2.002 s native and folded at 2.485 versus

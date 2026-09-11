@@ -1,5 +1,17 @@
 # Checked-in changes
 
+## 2026-09-11 bounded-call experiment
+
+- Added active-prefix linear memory with initialized spare storage. Guest bounds,
+  budgets, reuse zeroing and alignment padding remain explicit. The initial
+  storage check passed 206 workspace tests.
+- Added conservative instruction/depth/register/frame bounds for native call
+  trees, using the actual emitter support rules. The expanded check passed 212
+  workspace tests. Native Call/Return emission is still pending; no new runtime
+  performance result is claimed.
+- Added a reusable test driver that records source snapshots, commands, child
+  identity, terminal status and logs under the benchmark lock.
+
 ## 2026-09-10 review follow-up
 
 - Completed the repeated stronger-native corpus: 756 commands, 189 independent

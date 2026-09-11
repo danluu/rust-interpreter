@@ -68,7 +68,7 @@ mod tests {
     use crate::heap;
 
     fn memory() -> Memory {
-        let mut m = Memory { bytes: vec![0; 384], heap: heap::Heap::default(),
+        let mut m = Memory { bytes: vec![0; 384].into(), heap: heap::Heap::default(),
                              limit: 4096, readonly_end: 144, peak: 768, auxiliary_bytes: 0 };
         m.heap.bytes.resize(384, 0);
         let key = b"hw.optional.arm.FEAT_AES\0";
@@ -103,9 +103,9 @@ mod tests {
                 14 => m.store(200, 8, 8).unwrap(),
                 _ => unreachable!(),
             }
-            let before = (m.bytes.clone(), m.heap.bytes.clone());
+            let before = (m.bytes.to_vec(), m.heap.bytes.clone());
             assert!(m.cpu_feature_query(name, out, len, new, new_len).is_err(), "{mode}");
-            assert_eq!((m.bytes, m.heap.bytes), before, "{mode}");
+            assert_eq!((m.bytes.to_vec(), m.heap.bytes), before, "{mode}");
         }
     }
 
@@ -128,7 +128,7 @@ mod tests {
                         let name = 16 + if name_heap { heap::TAG } else { 0 };
                         let out = 216 + if output_heap { heap::TAG } else { 0 };
                         let len = 200 + if length_heap { heap::TAG } else { 0 };
-                        let target = if name_heap { &mut m.heap.bytes } else { &mut m.bytes };
+                        let target = if name_heap { &mut m.heap.bytes[..] } else { &mut m.bytes[..] };
                         target[16..16+key.to_bytes_with_nul().len()].copy_from_slice(key.to_bytes_with_nul());
                         m.store(out, 4, 0x12345678).unwrap(); m.store(len, 8, 4).unwrap();
                         assert_eq!(m.cpu_feature_query(name, out, len, 0, 0).unwrap(), status as u32 as u128);

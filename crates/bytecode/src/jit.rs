@@ -8,6 +8,11 @@
 use crate::{Binary, Function, Op, Program, Reg, Unary};
 use std::collections::{BTreeMap, BTreeSet};
 
+// The bounded-call experiment is staged independently of ordinary regions.
+// Its metadata becomes live when the opt-in native transition is connected.
+#[allow(dead_code)]
+mod trees;
+
 #[cfg(test)]
 mod limit_tests;
 

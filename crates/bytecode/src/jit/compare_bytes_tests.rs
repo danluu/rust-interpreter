@@ -17,7 +17,7 @@ fn program(heap: bool, dst: Reg, inputs: [Reg;3]) -> Program {
 }
 fn memory() -> Memory {
     let mut heap=crate::heap::Heap::default();heap.bytes=vec![0x55;2048];
-    Memory {bytes:vec![0x55;2048],heap,limit:8192,readonly_end:128,peak:4096,auxiliary_bytes:0}
+    Memory {bytes:vec![0x55;2048].into(),heap,limit:8192,readonly_end:128,peak:4096,auxiliary_bytes:0}
 }
 fn ordering(m: &Memory, left: usize, right: usize, size: usize) -> Result<u128,String> {
     let a=m.read(left,size)?;let b=m.read(right,size)?;
@@ -51,15 +51,15 @@ fn native_byte_comparison_matches_ordering_across_lengths_alignments_arenas_and_
                         let mut m=memory();
                         if let Some(pos)=position {
                             let offset=left%crate::heap::TAG+pos;
-                            let bytes=if left_heap {&mut m.heap.bytes} else {&mut m.bytes};bytes[offset]=byte;
+                            let bytes=if left_heap {&mut m.heap.bytes[..]} else {&mut m.bytes[..]};bytes[offset]=byte;
                             // Opposite later difference catches little-endian integer ordering.
                             if pos+1<length {bytes[offset+1]=255-byte;}
                         }
                         let expected=ordering(&m,left,right,length).unwrap();
-                        let original=(m.bytes.clone(),m.heap.bytes.clone());
+                        let original=(m.bytes.to_vec(),m.heap.bytes.clone());
                         assert_eq!(probe(&jit,&mut m,[left as u128,right as u128,length as u128],dst,profiled).unwrap(),expected,
                             "len={length},align={align},position={position:?},dst={dst}");
-                        assert_eq!((m.bytes,m.heap.bytes),original);
+                        assert_eq!((m.bytes.to_vec(),m.heap.bytes),original);
                     }}
                 }
             }
@@ -77,10 +77,10 @@ fn native_byte_comparison_checks_full_ranges_and_accepts_empty_dangling_ranges()
                 let mut m=memory();m.bytes[256]=0;m.bytes[257]=255;
                 // With no guest heap in the program, tagged addresses must fault.
                 let expected=if !heap && (left>=crate::heap::TAG||right>=crate::heap::TAG) {Err("no heap".into())} else {ordering(&m,left,right,length)};
-                let original=(m.bytes.clone(),m.heap.bytes.clone());
+                let original=(m.bytes.to_vec(),m.heap.bytes.clone());
                 let result=probe(&jit,&mut m,[left as u128,right as u128,length as u128],3,profiled);
                 if let Ok(value)=expected {assert_eq!(result.unwrap(),value);} else {assert_eq!(result.unwrap_err(),"JIT guest memory access failed");}
-                assert_eq!((m.bytes,m.heap.bytes),original);
+                assert_eq!((m.bytes.to_vec(),m.heap.bytes),original);
             }}
         }
         for left in [0,1,usize::MAX,crate::heap::TAG] {for right in [0,17,usize::MAX,crate::heap::TAG] {

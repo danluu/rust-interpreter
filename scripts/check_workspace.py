@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+"""Run a recorded Rust test check with frozen sources and the benchmark lock."""
+import argparse
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def write(path, value):
+    temporary = path.with_suffix('.tmp')
+    temporary.write_text(json.dumps(value, indent=2) + '\n')
+    temporary.replace(path)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-id', required=True)
+    parser.add_argument('--package', action='append')
+    parser.add_argument('--release', action='store_true')
+    parser.add_argument('--wait-for-lock', type=int, default=600)
+    args = parser.parse_args()
+    if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..']:
+        parser.error('run-id must be a directory name')
+    if not 0 <= args.wait_for_lock <= 3600:
+        parser.error('wait-for-lock must be 0..3600')
+    work = ROOT / '.work' / args.run_id
+    work.mkdir(exist_ok=False)
+    target = ROOT / '.work/diagnostic-builds' / args.run_id
+    if target.exists():
+        raise RuntimeError('test target already exists')
+    receipt = work / 'status.json'
+    status = dict(owner=str(ROOT), status='waiting for benchmark lock',
+                  pid=os.getpid(), parent_pid=os.getppid(), cwd=str(ROOT), started_at=time.time())
+    write(receipt, status)
+    lock = (ROOT / '.work/benchmark.lock').open('a')
+    deadline = time.monotonic() + args.wait_for_lock
+    while True:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            break
+        except BlockingIOError:
+            if time.monotonic() >= deadline:
+                status.update(status='failed', error='benchmark lock wait expired', finished_at=time.time())
+                write(receipt, status)
+                raise
+            time.sleep(1)
+    paths = [ROOT / p for p in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/check_workspace.py']]
+    paths += [p for p in (ROOT / 'crates').rglob('*') if p.is_file() and
+              (p.suffix == '.rs' or p.name == 'Cargo.toml')]
+    frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
+    archive = work / 'source'
+    for path in paths:
+        destination = archive / path.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(path.read_bytes())
+    command = ['cargo', '+nightly-2026-09-08', 'test', '--locked', '--offline', '--jobs', '2',
+               '--target-dir', str(target)]
+    command += [arg for package in args.package for arg in ['--package', package]] if args.package else ['--workspace']
+    if args.release:
+        command.append('--release')
+    write(work / 'plan.json', dict(owner=str(ROOT), command=command, frozen=frozen,
+        source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        source_archive=str(archive.relative_to(ROOT)), target=str(target.relative_to(ROOT)), performance_measurement=False))
+    env = os.environ.copy()
+    for name in list(env):
+        if name.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_')) or name in [
+            'RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
+            'RUSTC_WORKSPACE_WRAPPER', 'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET']:
+            env.pop(name)
+    env['CARGO_TERM_COLOR'] = 'never'
+    log = work / 'test.log'
+    try:
+        with log.open('x') as output:
+            child = subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL,
+                                     stdout=output, stderr=subprocess.STDOUT)
+            status.update(status='running', child_pid=child.pid, command=command, child_started_at=time.time())
+            write(receipt, status)
+            print('START', child.pid, flush=True)
+            code = child.wait()
+        unchanged = all(sha(ROOT / p) == digest for p, digest in frozen.items())
+        tests = []
+        label = None
+        for line in log.read_text().splitlines():
+            if line.strip().startswith(('Running ', 'Doc-tests ')):
+                label = line.strip()
+            match = re.search(r'test result: .*? (\d+) passed; (\d+) failed; (\d+) ignored;', line)
+            if match:
+                tests.append(dict(target=label, passed=int(match[1]), failed=int(match[2]), ignored=int(match[3])))
+        passed = sum(t['passed'] for t in tests)
+        success = code == 0 and unchanged and passed > 0 and not any(t['failed'] for t in tests)
+        summary = dict(status='passed' if success else 'failed', command=command, returncode=code,
+            frozen_sources_unchanged=unchanged, source_manifest_sha256=sha(work / 'plan.json'),
+            workspace_passed=passed, workspace_ignored=sum(t['ignored'] for t in tests), tests=tests,
+            raw_log=str(log.relative_to(ROOT)), raw_log_sha256=sha(log),
+            source_archive=str(archive.relative_to(ROOT)), frozen=frozen, performance_measurement=False)
+        output = ROOT / 'results' / args.run_id
+        output.mkdir(exist_ok=False)
+        write(output / 'summary.json', summary)
+        status.update(status='finished' if success else 'failed', returncode=code,
+                      finished_at=time.time(), report=str(output.relative_to(ROOT)))
+        write(receipt, status)
+        print(json.dumps(dict(success=success, passed=passed, returncode=code, unchanged=unchanged)), flush=True)
+        if not success:
+            raise SystemExit(1)
+    except Exception as error:
+        status.update(status='failed', error=repr(error), finished_at=time.time())
+        write(receipt, status)
+        raise
+
+
+if __name__ == '__main__':
+    main()
