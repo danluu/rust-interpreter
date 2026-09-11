@@ -52,11 +52,14 @@ no warm-build gain. Original/wrong-edit artifacts repeat the known cross-cycle
 layout difference; corresponding modes match and the API-edit artifact is stable.
 Reported lowering is about 71 ms within roughly 5.3-second edited commands.
 
-Both warm primaries are complete. The [first fixed cold history](results/worker-count-nushell-cold-01/assessment.md)
-also verifies twelve commands/six artifacts: cold wall 64.029→35.571s (−44.45%),
-child CPU 189.053→287.938s (+52.31%). The [prefix assessment](results/worker-count-cold-decision-through-01/assessment.md)
-requires continuing the remaining fixed histories; no bound proves failure yet.
-Next order: candidate,baseline,native. Keep the 10% cold wall improvement and
+Both warm primaries and the first two fixed cold histories are complete.
+[Cold01](results/worker-count-nushell-cold-01/assessment.md) gives wall
+64.029→35.571s and CPU 189.053→287.938s; [cold02](results/worker-count-nushell-cold-02/assessment.md)
+gives wall 63.796→31.333s and CPU 186.549→232.158s. Both verify twelve
+commands, six artifacts, exact restored sources and eleven frozen inputs.
+The [two-history assessment](results/worker-count-cold-decision-through-02/assessment.md)
+requires continuing: four histories remain and neither failure bound is decisive.
+Next order: baseline,candidate,native. Keep the 10% cold wall improvement and
 10% CPU guard. Qualification/primary anchors remain excluded; no adoption.
 Prepare space outside measurements before the next large history.
 
@@ -123,7 +126,7 @@ preserves the first cold history's four Cargo targets and twenty completed debug
 host caches: 64,858 paths / 16.77 GiB unique contents in 5.70 GiB of archives.
 All 2,150 external evidence hashes verify. Completed archives now total 81
 (sixty workflow targets and 21 host targets). The host reported about 23 GiB
-free afterward. Cold02 is next, in candidate,baseline,native order.
+free afterward. Cold02 is complete; prepare space for cold03 next.
 
 The [host selector](results/host-cache-selector-03/assessment.md) and archive
 regression checks pass, as does the [actual pilot](results/host-cache-pilot-01/assessment.md).
