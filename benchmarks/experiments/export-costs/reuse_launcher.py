@@ -10,6 +10,7 @@ import interpreter
 original_run = interpreter.subprocess.run
 dependency_census = os.environ.get('RUST_INTERP_FUNCTION_DEPENDENCIES') == '1'
 binding_replay = os.environ.get('RUST_INTERP_BINDING_REPLAY') == '1'
+persistent_cache = os.environ.get('RUST_INTERP_FUNCTION_CACHE') == 'verify'
 
 
 def observed_run(command, *args, **kwargs):
@@ -23,6 +24,8 @@ def observed_run(command, *args, **kwargs):
             env['RUST_INTERP_FUNCTION_DEPENDENCIES'] = '1'
         if binding_replay:
             env['RUST_INTERP_BINDING_REPLAY'] = '1'
+        if persistent_cache:
+            env['RUST_INTERP_FUNCTION_CACHE'] = 'verify'
         kwargs['env'] = env
     return original_run(command, *args, **kwargs)
 

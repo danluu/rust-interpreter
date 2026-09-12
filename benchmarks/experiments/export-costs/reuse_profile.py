@@ -19,7 +19,7 @@ from workflow_cases import WORKFLOW_VARIANTS
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from workflow_measurements import source_states
 from bench_e2e_workflow import guest_test_failure
-from reuse_check import observation, reconstruction
+from reuse_check import observation, reconstruction, persistent_cache
 
 REFERENCES = dict(token='fixed-frame-clear-library-token-02', folded='fixed-frame-clear-library-folded-01')
 
@@ -84,6 +84,8 @@ def main():
                         help='prior unannotated census with identical function outputs; required for typed template costs')
     parser.add_argument('--dependency-qualification', type=Path,
                         help='successful semantic-edit dependency fixture; enables full-recomputation dependency observation')
+    parser.add_argument('--cache-qualification', type=Path,
+                        help='successful persistent fault controls; enables prior-session verification')
     args = parser.parse_args()
     assert re.fullmatch('export-reuse-' + args.case + r'-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -106,6 +108,12 @@ def main():
             if binding_replay:
                 assert dep_check['binding_replay'] and len(dep_check['reconstruction']) == 9
         assert not binding_replay or dependencies
+        cache_verification = args.cache_qualification is not None
+        if cache_verification:
+            cache_check = json.loads(args.cache_qualification.read_text())
+            assert binding_replay and dep_check['persistent_cache']
+            assert cache_check['tool_key'] == build['tool_key'] and cache_check['status'] == 'passed'
+            assert cache_check['commands'] == 98 and cache_check['failed_publication_after_staging_published_no_session']
         tool, key = installed_tools(build['tool_key'])
         reference_path = ROOT / 'results' / REFERENCES[args.case] / 'summary.json'
         reference = json.loads(reference_path.read_text())
@@ -135,11 +143,15 @@ def main():
         inventory = json.loads((ROOT / 'results/parked-budget-e2e-token-phrase-candidate-archive-01/plan.json').read_text())
         cache_bytes = sum(g['bytes'] for g in inventory['manifest']['groups'])
         max_artifact = max((ROOT / r['artifacts'][0]['path']).stat().st_size for r in references.values())
-        required = 8 * 1024**3 + (cache_bytes + max_artifact) * 12 // 10 + 128 * 1024**2
+        # Two finalized generations plus the working generation, each bounded
+        # by the exporter's 128 MiB cache limit. Snapshots remain hard-linked.
+        function_cache_bytes = 3 * 128 * 1024**2 if cache_verification else 0
+        required = 8 * 1024**3 + (cache_bytes + max_artifact + function_cache_bytes) * 12 // 10 + 128 * 1024**2
         free = shutil.disk_usage(ROOT).free
         write(work / 'admission.json', dict(required_free_bytes=required, observed_free_bytes=free,
               prior_custom_cache_bytes=cache_bytes, saved_artifacts=8, max_artifact_bytes=max_artifact,
-              maximum_new_snapshot_copies=1, matching_snapshots_share_frozen_reference=True))
+              maximum_new_snapshot_copies=1, matching_snapshots_share_frozen_reference=True,
+              persistent_function_cache_budget_bytes=function_cache_bytes))
         assert free >= required, 'insufficient diagnostic storage; source is unchanged'
         command = list(references[0]['calls'][0]['command'])
         command[1] = str(HERE / 'reuse_launcher.py')
@@ -170,6 +182,8 @@ def main():
             paths.extend([args.dependency_qualification.resolve(), HERE / 'DEPENDENCIES.md'])
         if binding_replay:
             paths.append(HERE / 'BINDING-REPLAY.md')
+        if cache_verification:
+            paths.extend([args.cache_qualification.resolve(), HERE / 'PERSISTENT-REUSE.md'])
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'plan.json', dict(frozen=frozen, source_commit=build['source_commit'], tool_key=key,
               source_revision=marker['revision'], command=command, performance_measurement=False,
@@ -186,8 +200,11 @@ def main():
             env['RUST_INTERP_FUNCTION_DEPENDENCIES'] = '1'
         if binding_replay:
             env['RUST_INTERP_BINDING_REPLAY'] = '1'
+        if cache_verification:
+            env['RUST_INTERP_FUNCTION_CACHE'] = 'verify'
         records, censuses, transitions = [], [], []
         replay_reports = []
+        cache_reports = []
         def execute(state):
             require_space(ROOT, 8)
             child, stdout, stderr = capture(command, cwd=ROOT, env=env,
@@ -219,6 +236,15 @@ def main():
             report, scopes = observation(stderr, saved)
             if binding_replay:
                 replay_reports.append(dict(state=state, **reconstruction(stderr, report)))
+            if cache_verification:
+                cached = persistent_cache(stderr, report)
+                assert (cached['loaded_entries'] == cached['previous_payload_uses'] == 0) if state == 0 else cached['previous_payload_uses'] > 0
+                profile_dir = next(p for p in artifact.parents if p.name == 'debug')
+                finalized = {str(p.relative_to(ROOT)): sha(p) for p in profile_dir.glob('incremental/*/s-*/rust-interp-functions-v1.bin')
+                             if not p.parent.name.endswith('-working')}
+                assert finalized, 'successful Cargo check did not finalize its staged payload'
+                write(work / (label + '-finalized-cache-files.json'), finalized)
+                cache_reports.append(dict(state=state, **cached))
             assert report['schema_version'] == (3 if dependencies else 2 if typed else 1)
             if dependencies:
                 assert len({f['dependency']['node'] for f in report['functions']}) == len(report['functions'])
@@ -277,6 +303,9 @@ def main():
         if binding_replay:
             result.update(binding_replay=True, reconstruction=replay_reports,
                 replay_scope='Each current function/frame payload is encoded, decoded and bound from current MIR into a second graph. Both complete original lowering and graph verification execute; no persistent cache or performance claim.')
+        if cache_verification:
+            result.update(persistent_cache=True, prior_payload_verification=cache_reports,
+                replay_scope='Green prior-session payloads reconstruct the second graph from current MIR. All original lowering and exact graph verification execute; no skipped lowering or performance claim.')
         write(out / 'summary.json', result)
 
 
