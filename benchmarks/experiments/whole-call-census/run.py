@@ -125,7 +125,7 @@ def main():
                 require(data['native_returns'] == row['statistics']['jit_resumable_returns'], 'native Return accounting differs')
                 if row['label']=='token-phrase': require(data['random_events'] > 0, 'original entropy path missing')
                 cases.append(dict(label=row['label'],report=str(destination.relative_to(ROOT)),report_sha256=sha(destination),
-                    **{k:v for k,v in data.items() if k != 'sites'},executed_call_sites=len(data['sites']), opportunities=output['opportunities']))
+                    **{k:v for k,v in data.items() if k != 'sites'},executed_call_sites=len(data['sites']), opportunities=output['opportunities'], placements=output['placements']))
             write(out/'summary.json',dict(status='passed',tool_key=tool['tool_key'],source_commit=tool['commit'],
                 tests_passed=17,new_guest_executions=0,performance_measurement=False,cases=cases,frozen=frozen,commands=commands,
                 limitation='Dynamic counts from unchanged artifacts are opportunities, not speedup estimates. Leaf eligibility excludes caller growth and placement guards; it does not simulate inlining. No transformed guest executes.'))

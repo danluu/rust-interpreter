@@ -4,6 +4,8 @@ use rust_interp_bytecode::{Binary, Function, Op, Program, Reg, Slot, diagnostic_
 #[path = "../../../crates/bytecode/src/registers.rs"]
 mod registers;
 mod opportunities;
+mod placement;
+use rust_interp_bytecode::remove_fallthrough_jumps;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -201,6 +203,37 @@ fn census(program: &Program, profile: &Profile) -> Result<Report, String> {
     Ok(report)
 }
 
+fn placements(program: &Program, sites: &[CallSite]) -> Result<Vec<serde_json::Value>, String> {
+    let mut results = vec![];
+    for (label, policy) in [
+        ("unchanged", placement::Policy::default()),
+        ("compare_and_prefix_old_guard", placement::Policy {compare:true,prefix:true,runtime_guard:false}),
+        ("compare_and_prefix_runtime_guard", placement::Policy {compare:true,prefix:true,runtime_guard:true}),
+    ] {
+        let (q, report) = placement::transform(program, placement::Options::default(), policy)?;
+        if label == "unchanged" {
+            let (expected, _) = rust_interp_bytecode::inline_leaves(program, Default::default())?;
+            if bincode::serialize(&q).map_err(|e|e.to_string())? != bincode::serialize(&expected).map_err(|e|e.to_string())? {
+                return Err("diagnostic baseline placement differs from integrated pass".into());
+            }
+        }
+        let mut calls=0u128; let mut extra_clearing_calls=0u128;
+        for caller in report["changed_callers"].as_array().ok_or("missing callers")? {
+            let id=caller["function"].as_u64().ok_or("bad caller ID")? as usize;
+            let pcs=caller["selected_pcs"].as_array().ok_or("missing PCs")?;
+            calls += sites.iter().filter(|s|s.function==id && pcs.iter().any(|p|p.as_u64()==Some(s.pc as u64)))
+                .map(|s|s.native as u128+s.interpreted as u128).sum::<u128>();
+            if caller["runtime_zeroes_before"]==false && caller["runtime_zeroes_after"]==true {
+                extra_clearing_calls += sites.iter().filter(|s|s.callee==Some(id))
+                    .map(|s|s.native as u128+s.interpreted as u128).sum::<u128>();
+            }
+        }
+        results.push(serde_json::json!({"policy":label,"selected_dynamic_calls":calls,
+            "incoming_calls_to_newly_cleared_functions":extra_clearing_calls,"report":report}));
+    }
+    Ok(results)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     if args.len() != 3 { return Err("usage: whole-call-census PROGRAM PROFILE EXPECTED_INSTRUCTIONS".into()); }
@@ -212,8 +245,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let report = census(&program, &profile)?;
     if report.instructions != args[2].parse::<u128>()? { return Err("profile logical instruction total differs".into()); }
     let opportunities = opportunities::inspect(&program, &report.sites)?;
+    let placements = placements(&program, &report.sites)?;
     serde_json::to_writer_pretty(std::io::stdout().lock(),
-        &serde_json::json!({"census":report, "opportunities":opportunities}))?;
+        &serde_json::json!({"census":report, "opportunities":opportunities, "placements":placements}))?;
     Ok(())
 }
 
