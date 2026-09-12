@@ -89,13 +89,21 @@ follows certified aggregate relocation before checking final function IDs/hashes
 
 Token's MIR-eligible scalars account for 88.54M direct argument copies and 47.67M
 result returns. An entry-load/return-store change keeps those boundary copies.
-Next is a [scalar value ABI prototype](benchmarks/experiments/scalar-boundary-census/NEXT.md),
-starting with bounded static admission using the actual scalar transform's full
-address-use proof. MIR eligibility is not final bytecode promotion eligibility.
-Counts do not forecast latency. Existing native Calls already cross guest frames
-without returning to the Rust VM. The wire/runtime contract, strict qualifications
-and fresh complete-command gates must be frozen before implementation timing.
-No scalar ABI implementation or performance comparison has run yet.
+The [final address admission](results/scalar-boundary-admission-01/assessment.md)
+passes eleven tests using the actual scalar transform. It admits 453 folded and
+1,542 token slots, covering 85.80M token argument copies and 47.66M scalar returns;
+neither work bound is exhausted. Counts do not forecast latency.
+
+The [scalar artifact contract](results/scalar-abi-artifact-build-01/assessment.md)
+is implemented in an isolated tree and passes 297 debug/release workspace tests,
+one ignored. Both original version-5 artifacts roundtrip byte-for-byte. Version 6
+uses a companion ABI table; existing execution APIs reject scalar bodies. No
+runtime tool was published and no scalar guest has run. Next is the custom
+[interpreter implementation](benchmarks/experiments/scalar-value-abi/INTERPRETER-NEXT.md),
+then native resumable support, caller value operands and compiler promotion.
+The [contract and fresh complete-command gates](benchmarks/experiments/scalar-value-abi/CONTRACT.md)
+remain required. Existing native Calls already cross guest frames without
+returning to the Rust VM. No scalar performance comparison has run yet.
 
 ## Evidence storage and ownership
 

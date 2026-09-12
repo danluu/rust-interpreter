@@ -19,6 +19,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | integrated-compiler-evidence | [scalar-boundary-build-02/summary.json](scalar-boundary-build-02/summary.json) |
 | integrated-compiler-evidence | [scalar-boundary-export-smoke-02/summary.json](scalar-boundary-export-smoke-02/summary.json) |
 | integrated-compiler-evidence | [scalar-boundary-census-01/summary.json](scalar-boundary-census-01/summary.json) |
+| integrated-compiler-evidence | [scalar-boundary-admission-01/summary.json](scalar-boundary-admission-01/summary.json) |
+| integrated-compiler-evidence | [scalar-abi-artifact-build-01/summary.json](scalar-abi-artifact-build-01/summary.json) |
 | current-copy-evidence | [resumable-copy-original-e2e-01/gate-evaluation.json](resumable-copy-original-e2e-01/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-e2e-01/gate-evaluation.json](resumable-copy-e2e-01/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-release-01/summary.json](resumable-copy-release-01/summary.json) |

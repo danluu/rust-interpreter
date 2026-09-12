@@ -56,10 +56,18 @@ The typed scalar observer passes 45 exporter checks and preserves both
 original artifacts and assertions. Five join tests and both exact profile
 reconciliations pass: 3,335 folded and 14,852 token boundary rows.
 Token has 88.54M MIR-eligible scalar argument copies and 47.67M returns.
-These counts motivate a value-passing ABI investigation, starting with
-final-bytecode address-use admission. They do not predict a speedup.
+Final-bytecode admission passes eleven tests and admits 453 folded/1,542
+token slots. They cover 85.80M token argument copies and 47.66M returns.
+These counts do not predict a speedup.
 [Census result](results/scalar-boundary-census-01/assessment.md);
-[next work](benchmarks/experiments/scalar-boundary-census/NEXT.md).
+[address admission](results/scalar-boundary-admission-01/assessment.md).
+
+The isolated versioned artifact contract passes 297 debug/release tests,
+one ignored, and exact legacy roundtrips. No scalar guest or performance
+comparison has run. Next is custom interpreter execution, then native
+resumable support, caller value operands and compiler promotion.
+[Artifact qualification](results/scalar-abi-artifact-build-01/assessment.md);
+[implementation contract](benchmarks/experiments/scalar-value-abi/CONTRACT.md).
 
 Full libtest, unwinding, threads and general OS/FFI
 remain open; runtime options remain explicit.
