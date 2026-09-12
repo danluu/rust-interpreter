@@ -250,7 +250,10 @@ def main():
         timings['std_mir_seconds']=time.perf_counter()-stage
     selection=args.entry[0] if len(args.entry)==1 else json.dumps(args.entry,separators=(',',':'))
     identity_input='shared-entries-v1\0'+str(manifest)+'\0'+args.package+'\0'+str(args.test_body)
-    if args.test_target is not None:identity_input+='\0integration-test:'+args.test_target
+    # Cargo already separates selected test units by target identity. Share
+    # their compatible dependency metadata while the invocation lock and exact
+    # compiler-artifact target match protect each selected sidecar.
+    if args.test_target is not None:identity_input+='\0integration-targets-v1'
     if std:identity_input+='\0std-mir:'+std[2]
     if args.cache_namespace:identity_input+='\0'+args.cache_namespace
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
