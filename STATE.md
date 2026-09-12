@@ -94,23 +94,33 @@ artifacts. Paired wall ratio is 1.001141, CPU 1.001477; the prescribed wall
 variation envelope is 2.4477%. Cross-cycle allocation/layout differences remain
 visible, while corresponding baseline/candidate artifacts are identical.
 
-The token A/A control `budget-register-aa-01-token-phrase` is active
-(supervisor 53854). Both sides use exact qualified tool `9637b0ac` with separate
-Cargo histories. Keep the frozen driver/harness/helper files unchanged and
+The [token A/A control](results/budget-register-aa-01-token-phrase/budget-assessment.md)
+also completes: paired wall ratio 0.999931, CPU 0.994515; its fixed wall envelope
+is 3.9943%. All 84 commands and 42 artifacts verify.
+
+The [candidate folded comparison](results/budget-register-e2e-01-folded-literal-trie/budget-assessment.md)
+passes its regression guard: wall ratio 0.988390, CPU 0.981421. The 1.16% wall
+difference lies within folded's A/A envelope; it is not an established speedup.
+Native/control/candidate medians are 1.745s / 1.786s / 1.776s.
+
+The candidate token comparison `budget-register-e2e-01-token-phrase` is active
+(supervisor 77782). Keep its frozen driver/harness/helper files unchanged and
 wait for the workflow, controller and supervisor to finish before another user
-of the benchmark lock. This measures control variability, not candidate speed.
+of the benchmark lock. Candidate token's fixed gate remains at least 10% wall
+improvement, lower CPU and a gain exceeding its 3.9943% A/A envelope.
 
 Next actions:
-1. Finish and verify the active token A/A control; retain every valid pair.
-2. Run `budget_workflows.py` in its [fixed order](benchmarks/experiments/aggregate-byte-writes/BUDGET-WORKFLOWS.md):
-   A/A folded, A/A token, candidate folded, candidate token. Use the supervisor
-   and the script's fixed run IDs. No valid A/A retries or changed thresholds.
-3. Token must improve full edit/build/test wall time at least 10%, reduce CPU
-   and exceed its A/A envelope; folded stays within 5% wall/CPU regression.
-4. Require all seven separate held-out guards before adoption. If primary gates
-   fail, park this ABI without tuning variants; source integration is separate.
+1. Finish and verify the active token comparison; preserve all pairs and failures.
+2. Run `report_budget_primary.py` through supervisor with ID
+   `budget-register-primary-01`. It recomputes all four cases, checks receipt
+   order and source/component identity, and reports complete-command stage medians.
+3. If primary gates fail, park this ABI without tuning variants and select a
+   larger direction using the completed evidence. If they pass, all seven
+   separate held-out guards remain required before adoption.
+4. Source integration of qualified components is a separate reproducible step.
 
-The unbounded goal remains active. No budget-register performance result exists.
+The unbounded goal remains active. Broad correctness is complete; the combined
+candidate performance decision is still pending.
 
 Five committed archive batches preserve completed public Cargo caches.
 The newest preserves a debug-check target: 781,927,676 unique bytes in
