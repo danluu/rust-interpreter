@@ -142,16 +142,20 @@ integrated compiler `9637b0ac`; whole-call tool `46b8332d` is isolated.
 Generation 01's first A/A attempt stopped at disk admission, before any benchmark
 child or source edit. Its failed receipt remains. [Generation 02](benchmarks/experiments/whole-call-inline/WORKFLOWS.md)
 retains the same tools, real edits, controls and space/performance gates. The
-control driver needs its generation-02 qualification before any timed command.
+generation-02 control qualification passes all key routes, guard rejections and
+unchanged downstream verification checks.
 Fixed gate: token wall <=0.90, CPU <1 and gain outside fresh A/A variation;
 folded wall/CPU <=1.05. Native/TLS/fre and seven held-outs precede adoption.
 
-Completed host-build caches are being preserved to fund those timings. The new
+Three completed host-build caches are preserved and independently verified to fund those timings. The new
 narrow [published-build selector](benchmarks/experiments/published-build-cache/README.md)
 qualifies three exact successful builds and rejects 33 invalid identities or
 metadata. It preserves source, binaries and receipts; frozen guest-cache selectors
 are unchanged. Exact inventory review and commit precede each retirement. The
-small completed pgrust archive batch is verified. No benchmark pairs have run.
+small completed pgrust archive batch is verified. Sixteen parked runtime workflow
+caches are also preserved and verified. Across 19 archives, 6.75 GB became
+2.28 GB with 47,626 files preserved and 693 external evidence hashes checked.
+All archive processes are terminal. The fixed A/A workflows are next.
 
 The unbounded goal remains active. Continue implementation and real edited-command
 comparisons after this diagnostic. Integration and the failed budget experiment
