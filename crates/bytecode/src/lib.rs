@@ -19,6 +19,10 @@ mod inline;
 #[cfg(test)]
 mod inline_tests;
 mod registers;
+mod register_init;
+mod inline_graph;
+#[cfg(test)]
+mod whole_call_inline_tests;
 mod calls;
 mod cpu;
 mod c_allocator;

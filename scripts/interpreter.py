@@ -245,6 +245,7 @@ def _main(resources):
     parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
+    parser.add_argument('--function-cache',choices=['off','reuse'],default='off',help='experimental reuse of compiler-validated function payloads; strict checking still runs (default: off)')
     parser.add_argument('--workspace-cache-root',type=Path,help='existing cache parent; create a separate namespace for this checkout (default: .work/interpreter-workspaces)')
     parser.add_argument('--inline-leaves',action='store_true',help='experimental bounded bytecode leaf inlining at export; intended for JIT comparisons')
     parser.add_argument('--trap-unsupported-calls',action='store_true',help='experimental: stop execution at unavailable direct foreign calls and catch_unwind intrinsics instead of rejecting their export')
@@ -270,6 +271,8 @@ def _main(resources):
     auditing=args.audit_entries is not None
     listing=args.list_tests
     filtered=args.test_filter is not None
+    if args.function_cache=='reuse' and (auditing or listing or args.allocation_trace):
+        parser.error('--function-cache=reuse requires execution without discovery, audit or allocation tracing')
     if args.test_exact and not filtered:parser.error('--test-exact requires --test-filter')
     if filtered:
         if (not args.test_body or args.isolated_batch is None or args.arguments or
@@ -328,6 +331,7 @@ def _main(resources):
     manifest=args.manifest_path.resolve()
     stage=time.perf_counter()
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
+    if args.function_cache=='reuse':require_export_option(tools,key,'function-cache-reuse')
     if listing:require_export_option(tools,key,'list-tests')
     if filtered:require_export_option(tools,key,'filtered-tests')
     if args.inline_leaves:require_export_option(tools,key,'inline-leaves')
@@ -336,6 +340,7 @@ def _main(resources):
     if args.allocation_trace:require_export_option(tools,key,'allocation-trace')
     timings['tools_seconds']=time.perf_counter()-stage
     if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
+    if stats:timings['function_cache']=args.function_cache
     std=None
     if args.std_mir:
         from std_mir import checked_std_mir
@@ -418,7 +423,10 @@ def _main(resources):
     # earlier tool/std-MIR preparation or later sidecar verification.
     if stats:cargo_cpu_started=cpu_usage(resource.RUSAGE_CHILDREN)
     stage=time.perf_counter()
-    result=subprocess.run(command,cwd=manifest.parent,env=env,stdout=subprocess.PIPE,text=True)
+    cargo_env=env
+    if args.function_cache=='reuse':
+        cargo_env=dict(env,RUST_INTERP_FUNCTION_CACHE='reuse')
+    result=subprocess.run(command,cwd=manifest.parent,env=cargo_env,stdout=subprocess.PIPE,text=True)
     timings['cargo_seconds']=time.perf_counter()-stage
     if stats:timings['cargo_cpu']=cpu_since(resource.RUSAGE_CHILDREN,cargo_cpu_started)
     if result.returncode:return result.returncode

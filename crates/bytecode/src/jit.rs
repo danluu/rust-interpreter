@@ -17,6 +17,7 @@ mod trees;
 mod native_calls;
 mod native_regions;
 mod resumable;
+mod call_slots;
 mod code_dump;
 mod values;
 mod transfers;
@@ -315,6 +316,8 @@ pub(crate) struct Jit<'a> {
     pub call_stubs: usize,
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
+    #[cfg(test)]
+    disable_call_slot_hints: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -341,6 +344,8 @@ impl<'a> Jit<'a> {
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
             assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
+            #[cfg(test)]
+            disable_call_slot_hints: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -434,6 +439,9 @@ impl<'a> Jit<'a> {
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
+        let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
+        #[cfg(test)]
+        let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
             || (resumable && transfers::supported(&f.code[pc]));
         let mut entries = vec![None; f.code.len()];
@@ -493,13 +501,14 @@ impl<'a> Jit<'a> {
                 // Every native cycle consumes virtual instructions. When
                 // the next block does not fit, let the VM execute its tail
                 // one instruction at a time, preserving fault ordering.
-                a.emit(0xf9400269); // ldr x9, [x19]
+                let budget = if resumable { resumable::BUDGET_REGISTER } else { 9 };
+                if !resumable { a.emit(0xf9400269); } // ordinary Cursor.remaining
                 a.imm(10, (pc - start) as u64);
-                a.cmp(9, 10);
+                a.cmp(budget, 10);
                 let budget_exit = a.words.len();
                 a.emit(0x54000003); // b.lo budget_exit
-                a.three(0xcb000000, 9, 9, 10);
-                a.emit(0xf9000269); // str x9, [x19]
+                a.three(0xcb000000, budget, budget, 10);
+                if !resumable { a.emit(0xf9000269); }
                 if self.profiled {
                     // The VM supplies this function's stable counter array.
                     // The emitted offset is a validated PC, never guest data.
@@ -574,7 +583,7 @@ impl<'a> Jit<'a> {
             if pc == start {
                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref())?;
+                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
                     resumes[pc] = Some(words.len() + resume);
                     internal_entries[pc] = Some(words.len() + internal);
@@ -917,7 +926,10 @@ impl Assembler<'_> {
         self.emit(if expected { 0x54000000 } else { 0x54000001 }); // b.eq / b.ne failure
     }
     fn return_to_vm(&mut self) {
-        if self.resumable { self.resumable_save_memory(); }
+        if self.resumable {
+            self.resumable_save_memory();
+            self.resumable_save_budget();
+        }
         self.restore_external_values();
         self.emit(0xd65f03c0);
     }

@@ -95,10 +95,17 @@ fn medium_leaf_preserves_cold_failure_and_exact_budgets() {
             Op::Return,
             Op::Trap { message: "medium aggregate cold branch".into() },
         ];
-        // Cross-block register reads still fail the unchanged conservative
-        // eligibility proof. MIR lowering restates these addresses per block.
+        // The shared CFG proof now admits this cross-block form. Exercise it
+        // before retaining the original restated-address variant below.
         assert!(crate::registers::needs_initial_zeroes_for_inlining(&p.functions[1]));
-        assert_eq!(inline::transform(&p, options()).unwrap().1["selected_sites"], 0);
+        assert!(!crate::registers::needs_initial_zeroes(&p.functions[1]));
+        let (cross_block, report) = inline::transform(&p, options()).unwrap();
+        assert_eq!(report["selected_sites"], 1);
+        for engine in [Engine::Interpreter, Engine::Jit] {
+            let result = execute_with_engine(&cross_block, &[], Limits::default(), engine);
+            if cold { assert!(result.unwrap_err().contains("medium aggregate cold branch")); }
+            else { assert_eq!(result.unwrap().value, 0); }
+        }
         let offset = p.functions[1].args[0].offset;
         p.functions[1].code.splice(4..4, [
             Op::Local { dst: 0, offset: 0 },

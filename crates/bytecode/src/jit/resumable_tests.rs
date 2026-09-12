@@ -4,6 +4,118 @@ use crate::{
 };
 
 #[test]
+fn fixed_zeroing_matches_every_dirty_extent_and_unaligned_start() {
+    let mut code = platform::Code::reserve(32768).unwrap();
+    let mut entries = vec![];
+    for size in 0..=256 {
+        let mut a = Assembler::default();
+        a.mov(11, 2);
+        a.zero_fixed(size);
+        a.mov(0, 31);
+        a.emit(0xd65f03c0);
+        entries.push((size, code.append(&a.words).unwrap()));
+    }
+    let mut registers = [0u128; 1];
+    for (size, entry) in entries {
+        for alignment in 0..64 {
+            let start = 64 + alignment;
+            let mut actual = vec![0xa5; start + size + 64];
+            let mut expected = actual.clone();
+            expected[start..start + size].fill(0);
+            // SAFETY: this emitter-owned leaf receives initialized, stable
+            // backing for exactly the proven range. Other pointers are unused.
+            let result = unsafe { code.call(entry, registers.as_mut_ptr(), 0,
+                actual.as_mut_ptr().add(start), size, 0, std::ptr::null_mut(), 0, std::ptr::null_mut()) };
+            assert_eq!(result, 0);
+            assert_eq!(actual, expected, "size {size}, alignment {alignment}");
+        }
+    }
+}
+
+#[test]
+fn fixed_clear_layout_accounts_for_padding_and_declines_dynamic_alignment() {
+    let mut caller = function(vec![Op::Return]);
+    let mut callee = caller.clone();
+    for caller_align in [1, 2, 4, 8, 16, 32, 64, 128, 256, 4096] {
+        for callee_align in [1, 2, 4, 8, 16, 32, 64, 128, 256, 4096] {
+            for caller_size in [0, 1, 7, 8, 15, 16, 17, 33, 153, 256, 257, 8192] {
+                for callee_size in [0, 1, 7, 8, 15, 16, 17, 72, 153, 208, 255, 256, 257] {
+                    caller.frame_align = caller_align; caller.frame_size = caller_size;
+                    callee.frame_align = callee_align; callee.frame_size = callee_size;
+                    let fixed = fixed_frame_clear_size(&caller, &callee);
+                    if caller_align < callee_align { assert_eq!(fixed, None); continue; }
+                    // Independent layout oracle: seek the next aligned byte.
+                    for base in [0, caller_align, caller_align * 7] {
+                        let end = base + caller_size.max(1);
+                        let next = (end..).find(|n| n % callee_align == 0).unwrap();
+                        let expected = next - end + callee_size.max(1);
+                        assert_eq!(fixed, (expected <= 256).then_some(expected));
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn reused_guest_frames_clear_padding_and_preserve_limits() {
+    for (caller_size, caller_align, callee_align) in [(33usize, 16usize, 16usize), (17, 16, 64), (0, 16, 16)] {
+        for size in [0, 1, 7, 8, 15, 16, 17, 72, 153, 208, 255, 256, 257] {
+            let mut caller = function(vec![Op::Local { dst: 0, offset: 0 }]);
+            caller.frame_size = caller_size;
+            caller.frame_align = caller_align;
+            caller.result.size = 0;
+            // Repeated calls ensure the saved backing is dirty and both
+            // callees are ready for direct native transitions on the repeat.
+            for id in [1, 2, 1, 2] {
+                caller.code.push(Op::Call { function: id, args: vec![], destination: 0 });
+            }
+            caller.code.push(Op::Return);
+            let mut dirty = function(vec![Op::Imm { dst: 1, value: u128::MAX }]);
+            dirty.frame_size = 512; dirty.frame_align = 1; dirty.result.size = 0;
+            for offset in (0..512).step_by(16) {
+                dirty.code.push(Op::Local { dst: 0, offset });
+                dirty.code.push(Op::Store { address: 0, src: 1, size: 16 });
+            }
+            dirty.code.push(Op::Return);
+            let mut inspect = function(vec![]);
+            inspect.frame_size = size; inspect.frame_align = callee_align; inspect.result.size = 0;
+            let old_end = 16 + caller_size.max(1);
+            let base = (old_end + callee_align - 1) & !(callee_align - 1);
+            // Guest integer pointers can observe the interframe padding as
+            // well as the callee. All these bytes are live during this call.
+            for address in old_end..base + size.max(1) {
+                inspect.code.push(Op::Imm { dst: 0, value: address as u128 });
+                inspect.code.push(Op::Load { dst: 1, address: 0, size: 1 });
+                inspect.code.push(Op::Assert { value: 1, expected: false, message: "dirty frame or padding".into() });
+            }
+            inspect.code.push(Op::Return);
+            let p = program(vec![caller, dirty, inspect]);
+            let reference = execute_with_engine(&p, &[], Limits::default(), Engine::Interpreter).unwrap();
+            for persistent in [false, true] {
+                let limits = || Limits { jit_resumable_calls: true, jit_persistent_registers: persistent, ..Limits::default() };
+                let actual = execute_with_engine(&p, &[], limits(), Engine::Jit).unwrap();
+                assert_eq!((actual.value, actual.instructions, actual.peak_memory),
+                    (reference.value, reference.instructions, reference.peak_memory));
+                assert!(actual.jit_resumable_calls >= 2);
+                for instructions in [0, 1, reference.instructions - 1, reference.instructions, reference.instructions + 1] {
+                    equal_result(execute_with_engine(&p, &[], Limits { instructions, ..limits() }, Engine::Jit),
+                        &execute_with_engine(&p, &[], Limits { instructions, ..Limits::default() }, Engine::Interpreter));
+                }
+                for memory in [reference.peak_memory - 1, reference.peak_memory, reference.peak_memory + 1] {
+                    equal_result(execute_with_engine(&p, &[], Limits { memory, ..limits() }, Engine::Jit),
+                        &execute_with_engine(&p, &[], Limits { memory, ..Limits::default() }, Engine::Interpreter));
+                }
+                for frames in [1, 2, 3] {
+                    equal_result(execute_with_engine(&p, &[], Limits { frames, ..limits() }, Engine::Jit),
+                        &execute_with_engine(&p, &[], Limits { frames, ..Limits::default() }, Engine::Interpreter));
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn bulk_zeroing_matches_exact_dirty_ranges_and_preserves_spare_bytes() {
     let mut code = platform::Code::reserve(4096).unwrap();
     let mut entries = vec![];
@@ -701,3 +813,9 @@ fn incompatible_runtime_options_are_rejected_before_execution() {
         );
     }
 }
+
+#[path="slot_arguments_tests.rs"]
+mod slot_arguments;
+
+#[path="budget_register_tests.rs"]
+mod budget_register;

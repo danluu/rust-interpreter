@@ -9,13 +9,17 @@ from workflow_io import capture,require_space,write_json as write
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--build',type=Path,required=True);parser.add_argument('--run-id',required=True)
-    parser.add_argument('--parallel-suite-candidate',action='store_true',help='qualify the 365-test parallel runner against the same serial reference inputs')
-    args=parser.parse_args();assert re.fullmatch(r'(parallel-suites|selected-native)-qualification-\d{2}',args.run_id)
+    kinds=parser.add_mutually_exclusive_group()
+    kinds.add_argument('--parallel-suite-candidate',action='store_true',help='qualify the 365-test parallel runner against the same serial reference inputs')
+    kinds.add_argument('--composed-candidate',action='store_true',help='qualify the 391-test composed runtime against the same serial reference inputs')
+    args=parser.parse_args();assert re.fullmatch(r'(composed-development|parallel-suites|selected-native)-qualification-\d{2}',args.run_id)
     assert args.run_id.startswith('parallel-suites')==args.parallel_suite_candidate
+    assert args.run_id.startswith('composed-development')==args.composed_candidate
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,3.5)
         build_path=args.build.resolve(strict=True);build=json.loads(build_path.read_text())
-        assert build['status']=='passed' and build['tests']['test-debug']==build['tests']['test-release']==dict(passed=365 if args.parallel_suite_candidate else 360,ignored=1)
+        expected_tests=391 if args.composed_candidate else 365 if args.parallel_suite_candidate else 360
+        assert build['status']=='passed' and build['tests']['test-debug']==build['tests']['test-release']==dict(passed=expected_tests,ignored=1)
         tools,key=installed_tools(build['tool_key']);vm=tools/'rust-interp-vm';assert sha(vm)==build['binaries']['rust-interp-vm']
         reference_path=ROOT/'results/suite-profiling-real-01/summary.json';reference=json.loads(reference_path.read_text());assert reference['status']=='passed' and reference['exact_logical_counts_and_entropy']
         old=ROOT/'.work/suite-profiling-real-01';old_records=json.loads((old/'records.json').read_text());assert sha(old/'records.json')==reference['records_sha256']
@@ -24,6 +28,7 @@ def main():
         inputs=[];paths=[Path(__file__),Path(__file__).with_name('PLAN.md'),build_path,reference_path,old/'records.json',vm,entropy_path,library,
             ROOT/'scripts/workflow_io.py',ROOT/'scripts/interpreter.py',ROOT/'scripts/workspace_cache.py',ROOT/'scripts/compare_saved_runtime.py']
         if args.parallel_suite_candidate:paths.append(ROOT/'benchmarks/experiments/parallel-suites/PLAN.md')
+        if args.composed_candidate:paths.append(ROOT/'benchmarks/experiments/composed-development/PLAN.md')
         for case in reference['profiles']:
             artifact=ROOT/case['artifact'];catalog=ROOT/case['catalog'];tape=old/(str(case['index'])+'.tape');profile=old/(str(case['index'])+'-profile.json')
             assert sha(artifact)==case['artifact_sha256'] and sha(catalog)==case['catalog_sha256'] and sha(profile)==case['profile_sha256']

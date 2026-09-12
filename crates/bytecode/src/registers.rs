@@ -22,6 +22,7 @@ pub(crate) fn needs_initial_zeroes(function: &Function) -> bool {
         if matches!(op, Op::Jump {..} | Op::Switch {..} | Op::Return | Op::Trap {..}) { break; }
     }
     block_needs_initial_zeroes(function, &entry)
+        && !crate::register_init::proves_initialized(function)
 }
 
 // Keep the exporter's established inlining heuristic independent of the

@@ -49,7 +49,7 @@ fn diagnostics_and_options_are_bounded() {
 }
 
 #[test]
-fn expansion_cannot_introduce_whole_caller_register_clearing() {
+fn expansion_with_proven_cross_block_values_avoids_whole_caller_clearing() {
     let f = leaf(
         "branch",
         16,
@@ -77,10 +77,15 @@ fn expansion_cannot_introduce_whole_caller_register_clearing() {
             size: 8,
         },
     );
-    assert!(!crate::registers::needs_initial_zeroes_for_inlining(&p.functions[0]));
+    p.functions[0].result.size = 8;
+    assert!(!crate::registers::needs_initial_zeroes(&p.functions[0]));
     let (q, report) = inline::transform(&p, options()).unwrap();
-    assert_eq!(report["selected_sites"], 0);
-    assert_eq!(format!("{p:?}"), format!("{q:?}"));
+    assert_eq!(report["selected_sites"], 1);
+    assert!(!crate::registers::needs_initial_zeroes(&q.functions[0]));
+    for engine in [Engine::Interpreter, Engine::Jit] {
+        assert_eq!(execute_with_engine(&p, &[], Limits::default(), engine).unwrap().value, 43);
+        assert_eq!(execute_with_engine(&q, &[], Limits::default(), engine).unwrap().value, 43);
+    }
 }
 fn root(leaf: Function, argument_sizes: &[usize], result_offset: usize) -> Program {
     let args: Vec<_> = argument_sizes
