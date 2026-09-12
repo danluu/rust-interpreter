@@ -49,8 +49,8 @@ def main():
                 else 'A/A variation exceeds the declared noise bounds; keep the observed effect descriptive.')
     lines = [
         '# Nushell native debuginfo calibration', '',
-        f"All88 commands preserve their expected outcomes on fourteen original tests, including wrong edits and compiled restoration. Across fifteen edited pairs, line-tables/repository wall ratio is{result['paired_wall_ratio']:.5f} and CPU ratio is{result['paired_cpu_ratio']:.5f}.", '',
-        f"The observed A/A envelopes are{result['aa_envelope']['wall']:.2%} wall and{result['aa_envelope']['cpu']:.2%} CPU. {decision} This native control has no8% optimization gate.", '',
+        f"All 88 commands preserve their expected outcomes on fourteen original tests, including wrong edits and compiled restoration. Across fifteen edited pairs, line-tables/repository wall ratio is {result['paired_wall_ratio']:.5f} and CPU ratio is {result['paired_cpu_ratio']:.5f}.", '',
+        f"The observed A/A envelopes are {result['aa_envelope']['wall']:.2%} wall and {result['aa_envelope']['cpu']:.2%} CPU. {decision} This native control has no 8% optimization gate.", '',
         '| Mode | Edited command median (s) | Child CPU median (s) | Reported suite median (s) | Build and residual median (s) |',
         '| --- | ---: | ---: | ---: | ---: |']
     for mode,values in stages.items():
