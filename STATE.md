@@ -43,11 +43,15 @@ folded. [Token](results/export-reuse-token-02/assessment.md),
 [folded](results/export-reuse-folded-02/assessment.md). Every binding reconstructs
 the original bytes; no executable output is rewritten or reused.
 
-Next measure compiler dependency reuse while still lowering every function.
-A cache must resolve current-session bindings and account for type layout, call
-ABI, instance identity, compiler/target/options and allocation alias relations.
-The template hash is not a semantic cache key and the repeated cost is not a
-measured end-to-end saving.
+Compiler dependency observation now passes 229 small semantic-edit commands,
+179 complex-fixture commands and eight states each on token and folded. Every
+function was fully lowered; no green node changed its typed template. Green
+functions cover median 444ms/81ms of earlier work, with 22ms/16ms spent checking
+green status (excluding key construction). [Token](results/export-reuse-token-03/assessment.md),
+[folded](results/export-reuse-folded-04/assessment.md). Next implement binding
+recipes and actual reuse. The payload must retain frame-packing observations,
+replay graph interactions in order and preserve current allocation aliases.
+This is not yet a measured end-to-end saving.
 The two-stream entropy diagnostic establishes exact token execution across both
 VMs and engines with identical inputs; it makes no performance claim.
 

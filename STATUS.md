@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Measure compiler dependency reuse for typed function templates while continuing to lower and verify every function. Templates repeat 454ms of token work and 90ms of folded work under prior unannotated weights; binding resolution and cache costs remain unmeasured. Fixed frame clearing stays parked.
+**Next:** Implement current-session binding recipes and actual function reuse. Fully recomputed green templates match through token/folded edits; earlier work covered is 444ms/81ms, with 22ms/16ms green checks before binding and cache costs. Fixed frame clearing stays parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

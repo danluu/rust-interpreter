@@ -4,24 +4,24 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Establish dependencies for typed function reuse.** The qualified pointer
-   observer reconstructs every original function and excludes numeric TypeId
-   provenance. Real token/folded templates repeat 454ms/90ms of earlier function
-   work, weighted without pointer-recording overhead. All artifacts match.
-   Prototype compiler dependency tracking while still executing every lowering
-   step; compare any claimed reusable template against actual output. Shared
-   exporter memo tables and binding identities are additional dependencies.
-   Then implement current-session binding resolution and measure cache overhead
-   before choosing a full end-to-end candidate. Template equality is not proof
-   of a cache hit. [Token result](results/export-reuse-token-02/assessment.md).
+1. **Implement function reuse with current-session bindings.** Compiler query
+   dependency observation passes the small semantic-edit fixture and real
+   token/folded histories with no changed green templates. Every function was
+   still lowered. Supported green work covers 444ms/81ms under prior weights;
+   green checks cost 22ms/16ms before key construction and binding/cache costs.
+   Store owned instructions and frame-packing observations. Replay graph
+   requests in their original order, resolving constants and function targets
+   from current MIR; preserve aliasing, TLS, caller locations and diagnostics.
+   Qualify replay against full lowering before skipping it, then measure actual
+   edited end-to-end commands. [Token result](results/export-reuse-token-03/assessment.md).
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%
    wall gate. All correctness controls pass, but the runtime stays off main.
    Eight original library gates passed; the ninth and remaining composition
    performance comparisons are canceled. Do not retry this candidate to cross
    the threshold. [Decision](results/fixed-frame-clear-combined-01/assessment.md).
-   Finish qualification of the generally useful optional entropy replay tool;
-   this tooling check does not reopen the parked runtime candidate.
+   Optional entropy replay qualification is complete; its two-stream A/A
+   control does not reopen the parked runtime candidate.
 3. **Keep native controls and suite semantics explicit.** Fre native calibration
    missed its fixed 8% screen (line tables saved 7.86%); do not repeat it. Compare
    a large frontend-dominated target separately. Pgrust/Ruff already use line
