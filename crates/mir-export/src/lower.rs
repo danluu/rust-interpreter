@@ -171,6 +171,13 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     if binding_replay && (demand || allocation_trace || function_costs.is_none()) {
         return Err("binding replay requires strict checking, function costs and disabled allocation tracing".into());
     }
+    let cache_enabled = crate::function_cache::enabled()?;
+    if cache_enabled && (!binding_replay || !function_dependencies) {
+        return Err("function cache verification requires binding replay and dependency observation".into());
+    }
+    let mut function_cache = if cache_enabled {
+        Some(crate::function_cache::Cache::open(tcx, trap_unsupported_calls, run_try_callbacks)?)
+    } else { None };
     if allocation_trace && demand {
         return Err("allocation tracing requires ordinary strict frontend checking".into());
     }
@@ -300,7 +307,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             "definition": tcx.def_path_str(instance.def_id()),
             "instance_kind": format!("{:?}", instance.def),
             "generic_arguments": format!("{:?}", instance.args)}))?;
-        let (lowered, dependency) = crate::function_dependencies::observe(tcx, instance, function_dependencies, || {
+        let (lowered, dependency) = crate::function_dependencies::observe(tcx, instance, function_dependencies,
+            function_cache.as_ref().map(|cache| &cache.namespace), || {
             let started = function_costs.as_ref().map(|_| std::time::Instant::now());
             let lower = Lower::new(&mut exporter, instance).map_err(|e| format!("{name}: {e}"))?;
             let prepared = started.map(|_| std::time::Instant::now());
@@ -319,18 +327,38 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             }
             let tape = tape.ok_or("missing binding tape")?;
             let observation = exporter.byte_writes.last().ok_or("missing frame observation")?;
+            let node = dependency.as_ref().and_then(|value| value["node"].as_str()).map(str::to_owned);
+            let previous = if let Some(cache) = &mut function_cache {
+                Some(cache.take_previous(node.as_deref().ok_or("cache has no dependency key")?,
+                    dependency.as_ref().and_then(|value| value["previous_green"].as_bool()).ok_or("cache has no dependency status")?))
+            } else { None }.flatten();
             let reconstructed = tcx.dep_graph.with_ignore(|| {
-                if let Some(reason) = &tape.decline {
+                if let Some(bytes) = previous {
+                    let began = std::time::Instant::now();
+                    let decoded = reuse::Template::decode(&bytes)?;
+                    function_cache.as_mut().unwrap().previous_decoding_seconds += began.elapsed().as_secs_f64();
+                    replayed_functions += 1;
+                    binding_events += decoded.tape.events.len();
+                    for event in &decoded.tape.events { *binding_kinds.entry(event.kind()).or_default() += 1; }
+                    binding_payload_bytes += bytes.len();
+                    let function = reuse::replay(replay, instance, index, &decoded.function, &decoded.observation, &decoded.tape)?;
+                    function_cache.as_mut().unwrap().retain(node.clone().unwrap(), bytes)?;
+                    Ok(function)
+                } else if let Some(reason) = &tape.decline {
                     *replay_declines.entry(reason.clone()).or_default() += 1;
                     Lower::new(replay, instance)?.lower().map(|(f, _, _)| f)
                 } else {
                     replayed_functions += 1;
                     binding_events += tape.events.len();
                     for event in &tape.events { *binding_kinds.entry(event.kind()).or_default() += 1; }
+                    let began = std::time::Instant::now();
                     let bytes = reuse::Template { function: f.clone(), observation: observation.clone(), tape }.encode()?;
+                    if let Some(cache) = &mut function_cache { cache.current_encoding_seconds += began.elapsed().as_secs_f64(); }
                     binding_payload_bytes += bytes.len();
                     let decoded = reuse::Template::decode(&bytes)?;
-                    reuse::replay(replay, instance, index, &decoded.function, &decoded.observation, &decoded.tape)
+                    let function = reuse::replay(replay, instance, index, &decoded.function, &decoded.observation, &decoded.tape)?;
+                    if let Some(cache) = &mut function_cache { cache.retain(node.clone().unwrap(), bytes)?; }
+                    Ok(function)
                 }
             }).map_err(|e| format!("binding replay {name}: {e}"))?;
             if bincode::serialize(&f).map_err(|e| e.to_string())? != bincode::serialize(&reconstructed).map_err(|e| e.to_string())?
@@ -357,8 +385,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             "payload_bytes":binding_payload_bytes,
             "event_kinds":binding_kinds,
             "all_functions_fully_lowered":true,"graph_matches":true,
-            "scope":"same-session recipe reconstruction; no persistent cache or performance claim"}));
+            "scope":if cache_enabled { "prior-session payload verification; all original lowering executes" }
+                else { "same-session recipe reconstruction; no persistent cache or performance claim" }}));
     }
+    if let Some(cache) = function_cache { cache.stage()?; }
     timings.checkpoint("reachable_mir_and_local_passes");
     // Preserve identities without expanding callbacks that cannot match any
     // indirect call's argument/return layout. Unknown shim shapes are always

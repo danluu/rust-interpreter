@@ -1,6 +1,7 @@
 #![feature(rustc_private)]
 extern crate rustc_abi;
 extern crate rustc_ast;
+extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_hir;
 extern crate rustc_incremental;
@@ -17,6 +18,7 @@ mod export_timings;
 mod function_costs;
 mod typed_relocations;
 mod function_dependencies;
+mod function_cache;
 
 use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface;
@@ -143,7 +145,7 @@ impl Callbacks for Export {
             // execution graph changes, even if its Rust source is unchanged.
             // Library dependencies delegated to ordinary rustc do not record
             // these inputs, so their checked artifacts can be shared.
-            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES", "RUST_INTERP_BINDING_REPLAY"] {
+            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES", "RUST_INTERP_BINDING_REPLAY", "RUST_INTERP_FUNCTION_CACHE"] {
                 sess.env_depinfo.borrow_mut().insert((
                     rustc_span::Symbol::intern(key),
                     std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
@@ -338,6 +340,14 @@ fn main() {
     });
     if binding_replay && (!function_costs || audit_selection.is_some() || demand) {
         eprintln!("binding replay requires function costs and strict execution-graph checking");
+        std::process::exit(2);
+    }
+    let function_cache = function_cache::enabled().unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    if function_cache && (!binding_replay || !function_dependencies) {
+        eprintln!("function cache verification requires binding replay and dependency observation");
         std::process::exit(2);
     }
     let allocation_trace = match std::env::var_os("RUST_INTERP_ALLOCATION_TRACE") {
