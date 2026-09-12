@@ -1935,3 +1935,10 @@ pub fn register_width_census(program: &Program) -> Result<serde_json::Value, Str
 pub fn register_width_profile_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
     values::width_census(program, Some(profile))
 }
+
+mod constant_arguments;
+
+/// Offline argument-byte coverage; never changes or executes the program.
+pub fn constant_call_argument_census(program: &Program, profile: Option<&[u8]>) -> Result<serde_json::Value, String> {
+    constant_arguments::census(program, profile)
+}
