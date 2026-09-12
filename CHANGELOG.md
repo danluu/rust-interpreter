@@ -1,5 +1,11 @@
 # Checked-in changes
 
+## 2026-09-12 general interpreter arithmetic and scalar memory
+
+- Scalar loads/stores use fixed-width operations for ordinary integer widths; integer operations compute signed operands and comparisons only when needed, and mask shift counts instead of taking a wide remainder.
+- Saved-artifact interpreter execution improves about 12.7% on pgrust/Ruff and 14.6–20.5% on four additional Fre cases. All 308 final comparison commands preserve outputs, instruction counts and peak guest memory; JIT stays within the regression guards. Complete edit/build/test latency was not measured.
+- All 297 workspace tests pass in debug and release (one ignored), alongside 18 Python tests. [Measurements, fixed gates and earlier failed screens](results/general-interpreter-20260912/assessment.md).
+
 ## 2026-09-12 integration targets and Cargo freshness
 
 - The normal launcher now accepts explicit integration targets and shares compatible dependency caches while selecting exact Cargo artifacts. All 52 original fre integration assertions pass.

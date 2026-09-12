@@ -79,6 +79,12 @@ with 18 jobs on both sides. This short batch needs broader repeated comparison.
 [Protocol](BENCHMARKING.md), [token reproducer](benchmarks/TOKEN-PHRASE.md),
 [repeated-run assessment](results/paired-repeated-token-01/assessment.md).
 
+General arithmetic and scalar-memory changes improve saved-artifact interpreter
+execution about 12.7% on pgrust/Ruff and 14.6–20.5% on four additional Fre cases.
+All 297 workspace tests pass in debug and release (one ignored), with JIT within
+the regression guards. These runtime measurements exclude export/build costs.
+[Runtime comparison](results/general-interpreter-20260912/assessment.md).
+
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for mechanisms and limits,
 [RUNTIME-NEXT.md](RUNTIME-NEXT.md) for the next experiments,
 [CHANGELOG.md](CHANGELOG.md) for checked-in changes, and

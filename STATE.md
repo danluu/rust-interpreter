@@ -8,6 +8,16 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+General interpreter arithmetic and scalar-memory improvements are now qualified
+in source: about 12.7% faster saved-artifact execution on pgrust/Ruff and
+14.6–20.5% on four additional Fre cases. All 297 workspace tests pass in debug
+and release (one ignored); 308 final comparison commands preserve outputs,
+instruction counts and peak memory, with JIT inside its regression guards.
+The [runtime assessment](results/general-interpreter-20260912/assessment.md)
+retains the fixed gates and two earlier failed screens. It measures runtime
+including VM startup; complete edit/build/test latency was not measured.
+The immutable tool and full-workflow anchor below remain historical references.
+
 The retained build is `5b2330c/9637b0ac`; [STATUS.md](STATUS.md) contains its
 compute, held-out, cold and Cargo-check measurements. The compiler/runtime and installed tool remain unchanged by the failed scalar experiment. The launcher now supports explicit integration targets.
 
