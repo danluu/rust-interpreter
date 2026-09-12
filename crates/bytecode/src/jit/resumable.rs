@@ -11,6 +11,17 @@ const SPARE_MEMORY: usize = 1024 * 1024;
 const SPARE_REGISTERS: usize = 16 * 1024;
 const SPARE_FRAMES: usize = 64;
 
+/// The caller base is aligned to its validated power-of-two alignment. When
+/// that is a multiple of the callee alignment, padding after its fixed extent
+/// is constant even when the caller base itself is known only at runtime.
+fn fixed_frame_clear_size(caller: &Function, callee: &Function) -> Option<usize> {
+    if caller.frame_align < callee.frame_align { return None; }
+    let old_size = caller.frame_size.max(1);
+    let next_base = old_size.checked_add(callee.frame_align - 1)? & !(callee.frame_align - 1);
+    let size = (next_base - old_size).checked_add(callee.frame_size.max(1))?;
+    (size <= 256).then_some(size)
+}
+
 pub(super) struct Entries {
     owned: Vec<Vec<usize>>,
     pointers: Vec<*const usize>,
@@ -443,6 +454,24 @@ impl Assembler<'_> {
         self.zero_range()
     }
 
+    /// Clear an exact prechecked range beginning at x11. The caller proves
+    /// the length, including alignment padding. No access extends past it.
+    fn zero_fixed(&mut self, size: usize) {
+        assert!(size <= 256);
+        let pairs = size / 16 * 16;
+        for offset in (0..pairs).step_by(16) {
+            self.emit(0xa9000000 | ((offset as u32 / 8) << 15) | (31 << 10) | (11 << 5) | 31);
+        }
+        let mut offset = pairs;
+        for (width, opcode) in [(8, 0xf9000000), (4, 0xb9000000), (2, 0x79000000), (1, 0x39000000)] {
+            if size - offset >= width {
+                self.emit(opcode | ((offset as u32 / width as u32) << 10) | (11 << 5) | 31);
+                offset += width;
+            }
+        }
+        debug_assert_eq!(offset, size);
+    }
+
     fn resumable_call(
         &mut self,
         caller: &Function,
@@ -495,8 +524,12 @@ impl Assembler<'_> {
         self.imm(9, callee.frame_size.max(1) as u64);
         self.three(0x8b000000, 3, 21, 9);
         self.three(0x8b000000, 12, 2, 3);
-        // The dynamic alignment padding only increases this proven minimum.
-        self.zero_range_at_least(callee.frame_size.max(1))?;
+        if let Some(size) = fixed_frame_clear_size(caller, callee) {
+            self.zero_fixed(size);
+        } else {
+            // Dynamic alignment padding only increases this proven minimum.
+            self.zero_range_at_least(callee.frame_size.max(1))?;
+        }
         self.load64(9, 19, state::PEAK_LINEAR);
         self.cmp(3, 9);
         self.emit(0x9a892069); // csel x9,x3,x9,hs
