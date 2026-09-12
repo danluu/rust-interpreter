@@ -108,7 +108,7 @@ def assess(report, case, phase):
 
 def qualifications():
     paths = []
-    for suffix in ['native-01','smoke-01','tls-01','fre-01']:
+    for suffix in ['native-01','smoke-02','tls-01','fre-01']:
         path = ROOT/'results'/('budget-register-'+suffix)/'summary.json'
         report = read(path)
         require(report['status'] == 'passed' and report['tool_key'] == CANDIDATE, 'candidate qualification incomplete: '+suffix)

@@ -120,7 +120,7 @@ def main():
                 total = observed['baseline', False]['instructions']
                 for budget in [0, 1, total-1]:
                     failures = [run(label, mode, budget)[:3] for mode in tools]
-                    require(all(code != 0 and not out.strip() and err.strip() == 'rust-interp-vm: interpreter instruction limit exceeded'
+                    require(all(code != 0 and not out.strip() and err.strip() == 'rust-interp-vm: instruction limit exceeded'
                                 for code,out,err in failures), 'short budget did not produce the exact limit fault')
                 cases.append(dict(label=label, artifact=str(artifacts[label].relative_to(ROOT)),
                     artifact_sha256=sha(artifacts[label]), counters=observed['baseline', False],
