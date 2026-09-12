@@ -1,5 +1,9 @@
 # Complete-command constant-folding screen
 
+Paused after the null-read regression: compose02 is disqualified. Qualify a
+replacement tool and update these bindings before starting another screen.
+Screen01 stopped at disk admission and contains no measured command.
+
 Freeze this recipe before timing. Compare `constant-fold-compose-02` with
 `suite-profiling-build-02` (c013f239); VM and wrapper bytes are identical.
 The candidate changes only the checked exporter, applying the bounded folder
@@ -35,9 +39,11 @@ folded and pgrust five-edit guards with established limits, requiring both ratio
 <=1.05. Broader projects follow only after these gates; this screen alone is not
 an adoption result.
 
-Hold the global lock with a 45-second wait. Admit fre at 9.5 GiB free, pgrust at
-8.3 GiB, and require 8 GiB before each child. The 7 GiB allowance used by tiny
-host/standalone correctness fixtures does not apply to these real projects.
+Hold the global lock with a 45-second wait. Before the first token timing,
+STORAGE.md sizes its admission from the preceding complete twelve-test screen:
+6.5 GiB admission, 4 GiB before each child, and a recorded free-space series.
+Folded keeps 9.5 GiB admission; pgrust keeps 8.3 GiB; both keep the 8 GiB child
+floor. Host/standalone correctness thresholds are separate from this sizing.
 Restore source on every ordinary exit and preserve raw evidence. Resource or
 harness stops remain incomplete screens, never performance passes.
 

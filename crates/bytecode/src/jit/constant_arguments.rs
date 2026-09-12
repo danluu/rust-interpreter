@@ -47,6 +47,8 @@ impl<'a> Facts<'a> {
                 // Be stricter than the VM's host-usize truncation. Only the
                 // immutable data range supplies facts, never heap/static bytes.
                 let start = usize::try_from(value).ok()?;
+                // Null padding is not readable guest data (Memory::range).
+                if start == 0 { return None; }
                 let end = start.checked_add(size)?;
                 out[..size].copy_from_slice(self.data.get(start..end)?);
             }

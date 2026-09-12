@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** The constant folder remains off main on experiment/constant-call-arguments-20260912. It qualifies366Rust tests/profile, six saved-artifact diagnostics and eighteen standalone native/custom fixture commands. Real edited-source token screen is frozen (10% wall improvement/no CPU regression), awaiting9.5GiB fresh-cache disk admission; current free about7.2GiB. No performance claim. Lifetime allocation remains parked.
+**Next:** The constant folder remains off main. All34 saved real tests pass, but boundary review found a null-read miscompile in the old candidate; both transfer rules are fixed and18constant-analysis tests pass per profile. New compiler qualification is required before the actual-edit screen. Runtime-only token gain2.63% saves about0.17s against prior0.32s folding cost; no full-workflow gain is claimed. Token01 stopped before any build at disk admission. Lifetime allocation stays parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
