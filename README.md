@@ -56,6 +56,13 @@ semantics are not implemented by this mode.
 Use `--engine interpreter` for the reference engine. Some standard-library paths
 require `--std-mir`, which prepares a reusable metadata sysroot.
 
+For an individual saved test profile, invoke the VM with `--profile NEW.json
+--profile-test EXACT_NAME --suite-catalog PROGRAM.rbc.entries.json PROGRAM.rbc`
+and the desired engine/limits. Selection validates the original artifact and
+catalog, preserves the bytecode file, and starts fresh guest/JIT state. Stderr
+records the selection digests. This diagnostic does not model shared prepared
+code across a suite; guest failures do not produce a complete profile.
+
 `--trap-unsupported-calls` permits export past specific unavailable calls; reaching
 one still stops execution. `--run-try-callbacks` supports normal returns only,
 not panic unwinding. Fre's broad replay requires `--allocation-limit 150000` and

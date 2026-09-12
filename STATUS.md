@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Both register-capacity directions are parked. Larger local cache: 339 Rust tests/profile and exact real suites pass, but fixed runtime screen improves only 0.11% wall/0.08% CPU versus its 10% gate. Next add catalog-bound per-test profiling and inspect the expanded suite for structural region/transition costs.
+**Next:** Catalog-selected profiling qualifies 340 Rust tests/profile and 14 real VM commands covering 7 current tests, with exact entropy/counts. Next investigate private thin raw-pointer value promotion under the existing scalar-local proof, preserving checking, address exposure exclusions and legacy promotion capacity. Both register-capacity candidates stay parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

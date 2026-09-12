@@ -4,15 +4,17 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Profile the dominant tests in the expanded real suites.** Width packing
-   covered negligible additional dynamic traffic. A larger region-local cache
-   then passed 339 Rust tests/profile and 34 real assertions plus wrong edits,
-   but improved the fixed token runtime screen by only 0.11% wall and 0.08% CPU.
-   Both register-capacity directions are parked; no retiming or promotion.
-   Add exact catalog-bound per-test profiling without rewriting bytecode files,
-   then inspect current dominant tests for structural region/transition costs.
-   [Cache decision](results/jit-region-cache-screen-01/assessment.md),
-   [width decision](results/jit-register-width-weighted-01/assessment.md).
+1. **Investigate private pointer-value promotion.** Catalog-selected profiles
+   pass 340 Rust tests/profile and fourteen real VM commands for seven current
+   tests, with exact entropy and logical counts against the retained VM. The
+   two dominant token tests have different hot paths; precondition checking and
+   generic code expose substantial local memory operations. The existing scalar
+   promoter excludes pointers. Review whether private thin raw-pointer values
+   can use its existing proof while retaining address-exposure and call-ABI
+   exclusions. Keep all checking enabled and preserve legacy promotion capacity.
+   [Profiles](results/suite-profiling-real-01/assessment.md),
+   [plan](benchmarks/experiments/private-pointer-promotion/PLAN.md).
+   Both register-capacity candidates remain parked without retiming.
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%

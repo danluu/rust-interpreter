@@ -8,6 +8,14 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+Catalog-bound single-test profiling passes 340 Rust tests/profile and fourteen
+real VM commands. Seven current token/folded/pgrust test profiles exactly match
+fresh retained-VM controls under replayed entropy. Their saved bytecode stays
+unchanged. The expanded token test emphasizes regex determinization; the original
+exhaustive test emphasizes bounds and copy preconditions. Next investigate private
+thin raw-pointer value promotion using the existing scalar-local proof, keeping
+all checks and call-ABI exclusions. [Profiles](results/suite-profiling-real-01/assessment.md).
+
 The larger region-local cache is parked off main after 339 Rust tests/profile
 and exact real-suite correctness passed but its six-pair token runtime screen
 improved only 0.11% wall and 0.08% CPU, missing the fixed 10% gate. No retiming or
