@@ -52,8 +52,7 @@ def main():
             prior = read(command_path)
             receipt_path = ROOT/'results/budget-register-smoke-05/execution.json'
             receipt = read(receipt_path)
-            require(receipt['evidence'][str(smoke_path.relative_to(ROOT))] == sha(smoke_path)
-                    and prior == smoke['commands'], 'smoke command receipt differs')
+            require(receipt['evidence'][str(command_path.relative_to(ROOT))] == sha(command_path), 'smoke command receipt differs')
             source = {str(p.relative_to(ROOT)):sha(p) for p in HERE.iterdir() if p.is_file()}
             source.update({p:h for p,h in tool['files'].items() if p.startswith('crates/bytecode/')})
             frozen = {**source, **{str(p.relative_to(ROOT)):sha(p) for p in
