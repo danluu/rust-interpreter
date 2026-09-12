@@ -1918,8 +1918,14 @@ mod local_memory_tests;
 
 
 mod register_widths;
+mod register_width_profile;
 
 /// Inspect a possible narrower register assignment without running guest code.
 pub fn register_width_census(program: &Program) -> Result<serde_json::Value, String> {
-    values::width_census(program)
+    values::width_census(program, None)
+}
+
+/// Offline counts from a separately recorded, bytecode-verified execution profile.
+pub fn register_width_profile_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
+    values::width_census(program, Some(profile))
 }

@@ -222,16 +222,29 @@ impl Assembler<'_> {
 
 
 /// Static feasibility only; neither assignment nor generated code is changed.
-pub(super) fn width_census(program: &Program) -> Result<serde_json::Value, String> {
+pub(super) fn width_census(program: &Program, profile_bytes: Option<&[u8]>) -> Result<serde_json::Value, String> {
     crate::validate(program)?;
+    let profile = profile_bytes.map(|bytes| super::register_width_profile::parse(program, bytes)).transpose()?;
     let mut rows = Vec::new();
     for (id, f) in program.functions.iter().enumerate() {
-        let Some((_, ranked)) = ranked(f, MAX_WORK) else {
-            rows.push(serde_json::json!({"function":id,"name":f.name,"declined":"liveness bounds"}));
+        let counts = profile.as_ref().map(|p| p.functions[id].native_counts(f)).transpose()?;
+        let mut row = serde_json::json!({"function":id,"name":f.name});
+        if let (Some(profile), Some(counts)) = (&profile, &counts) {
+            let mut reads = 0u128;
+            for (op, &count) in f.code.iter().zip(counts) {
+                crate::registers::visit_registers(op, |_| reads += u128::from(count), |_| {});
+            }
+            let narrow_count = |v:u128| u64::try_from(v).map_err(|_| "weighted census count overflow".to_string());
+            row["native_operation_executions"] = narrow_count(counts.iter().map(|&v|u128::from(v)).sum())?.into();
+            row["native_read_operands"] = narrow_count(reads)?.into();
+            row["interpreted_operation_executions"] = narrow_count(profile.functions[id].interpreted.iter().map(|&v|u128::from(v)).sum())?.into();
+        }
+        let Some((live, ranked)) = ranked(f, MAX_WORK) else {
+            row["declined"] = "liveness bounds".into(); rows.push(row);
             continue;
         };
         let Some(narrow) = super::register_widths::prove(f) else {
-            rows.push(serde_json::json!({"function":id,"name":f.name,"declined":"width proof bounds"}));
+            row["declined"] = "width proof bounds".into(); rows.push(row);
             continue;
         };
         let baseline: Vec<_> = ranked.iter().take(3).map(|&(_, r)| r).collect();
@@ -252,13 +265,37 @@ pub(super) fn width_census(program: &Program) -> Result<serde_json::Value, Strin
         }
         let assignments = |registers: &[Reg]| registers.iter().map(|&r| serde_json::json!({
             "register":r,"upper_half_zero":narrow[r as usize]})).collect::<Vec<_>>();
-        rows.push(serde_json::json!({"function":id,"name":f.name,"registers":f.registers,
+        if let (Some(profile), Some(counts)) = (&profile, &counts) {
+            let mut baseline_reads = 0u128;
+            let mut packed_reads = 0u128;
+            let mut baseline_live = 0u128;
+            let mut packed_live = 0u128;
+            for (pc, (op, &count)) in f.code.iter().zip(counts).enumerate() {
+                crate::registers::visit_registers(op, |r| {
+                    if baseline.contains(&r) { baseline_reads += u128::from(count); }
+                    if packed.contains(&r) { packed_reads += u128::from(count); }
+                }, |_| {});
+                let hits = u128::from(profile.functions[id].jit_blocks[pc]);
+                baseline_live += hits * baseline.iter().filter(|&&r| live.at(pc, r)).count() as u128;
+                packed_live += hits * packed.iter().filter(|&&r| live.at(pc, r)).count() as u128;
+            }
+            for (key,value) in [("baseline_native_read_operands",baseline_reads),
+                                ("packed_native_read_operands",packed_reads),
+                                ("baseline_live_native_block_entries",baseline_live),
+                                ("packed_live_native_block_entries",packed_live)] {
+                row[key] = u64::try_from(value).map_err(|_| "weighted census count overflow")?.into();
+            }
+        }
+        let static_fields = serde_json::json!({"registers":f.registers,
             "proven_narrow":narrow.iter().filter(|&&v| v).count(),"eligible":ranked.len(),
             "baseline":assignments(&baseline),"packed":assignments(&packed),
             "packed_native_registers":6-available,
-            "baseline_static_reads":baseline_reads,"packed_static_reads":packed_reads}));
+            "baseline_static_reads":baseline_reads,"packed_static_reads":packed_reads});
+        row.as_object_mut().unwrap().extend(static_fields.as_object().unwrap().clone());
+        rows.push(row);
     }
-    Ok(serde_json::json!({"kind":"register-width-census","schema_version":1,
-        "scope":"static definitions and current liveness ranking; no guest execution or generated-code change",
+    Ok(serde_json::json!({"kind":"register-width-census","schema_version":2,
+        "scope":"static definitions and current liveness ranking; optional verified native operand counts; no guest execution or generated-code change",
+        "limitations":"Operand counts do not model the existing intra-block cache. Live block-entry counts include internal native edges, not just actual spills. Neither is a speedup estimate.",
         "functions":rows}))
 }

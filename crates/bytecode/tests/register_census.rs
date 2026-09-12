@@ -26,6 +26,22 @@ fn census_is_offline_validates_input_and_preserves_existing_reports() {
     assert_eq!(parsed["functions"][0]["proven_narrow"],1);
     assert!(!run(&report).status.success());
     assert_eq!(std::fs::read(&report).unwrap(),original);
+    let profile = files.0.join("profile.json");
+    let f = &program.functions[0];
+    std::fs::write(&profile, serde_json::to_vec(&serde_json::json!({"functions":[{
+        "name":f.name,"frame_size":f.frame_size,"registers":f.registers,
+        "operations":f.code.iter().map(|op|format!("{op:?}")).collect::<Vec<_>>(),
+        "interpreted":[0,0],"jit_blocks":[7,0],"jit_block_ends":[2,0],
+        "jit_tree_blocks":[0,0],"jit_tree_block_ends":[0,0]
+    }]})).unwrap()).unwrap();
+    let weighted = files.0.join("weighted.json");
+    let result = Command::new(env!("CARGO_BIN_EXE_rust-interp-register-census"))
+        .arg(&artifact).arg(&weighted).arg(&profile).output().unwrap();
+    assert!(result.status.success(),"{}",String::from_utf8_lossy(&result.stderr));
+    let parsed: serde_json::Value = serde_json::from_slice(&std::fs::read(weighted).unwrap()).unwrap();
+    assert_eq!(parsed["functions"][0]["native_operation_executions"],14);
+    assert_eq!(parsed["functions"][0]["native_read_operands"],0);
+    assert_eq!(parsed["profile_sha256"].as_str().unwrap().len(),64);
     program.functions[0].code[0] = Op::Imm {dst:99,value:42};
     std::fs::write(&artifact,bincode::serialize(&program).unwrap()).unwrap();
     let invalid = files.0.join("invalid.json");
