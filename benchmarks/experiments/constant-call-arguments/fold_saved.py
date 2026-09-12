@@ -7,16 +7,16 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 
 def main():
-    run='constant-fold-saved-02'
+    run='constant-fold-saved-03'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45);require_space(ROOT,7)
-        composition_path=ROOT/'results/constant-fold-compose-02/summary.json';composition=json.loads(composition_path.read_text())
-        assert composition['status']=='composed' and composition['build']=='results/constant-fold-build-08/summary.json'
+        acquire_lock(lock,45);require_space(ROOT,4)
+        composition_path=ROOT/'results/constant-fold-compose-03/summary.json';composition=json.loads(composition_path.read_text())
+        assert composition['status']=='composed' and composition['build']=='results/constant-fold-build-10/summary.json'
         binary=ROOT/composition['verifier'];assert sha(binary)==composition['verifier_sha256']
         reference_path=ROOT/'results/suite-profiling-real-01/summary.json';reference=json.loads(reference_path.read_text())
         assert reference['status']=='passed' and reference['exact_logical_counts_and_entropy']
         work=ROOT/'.work'/run;work.mkdir(exist_ok=False)
-        frozen_paths=[Path(__file__),Path(__file__).with_name('PROTOTYPE.md'),composition_path,binary,reference_path,
+        frozen_paths=[Path(__file__),Path(__file__).with_name('PROTOTYPE.md'),Path(__file__).with_name('NULL-QUALIFICATION.md'),composition_path,binary,reference_path,
             ROOT/'scripts/compare_saved_runtime.py',ROOT/'scripts/workflow_io.py']
         inputs=[]
         for item in reference['profiles']:
@@ -24,14 +24,14 @@ def main():
             artifact=ROOT/item['artifact'];assert sha(artifact)==item['artifact_sha256'];frozen_paths.append(artifact)
             inputs.append(dict(case=item['case'],index=item['index'],artifact=str(artifact.relative_to(ROOT)),artifact_sha256=sha(artifact)))
         frozen={str(p.relative_to(ROOT)):sha(p) for p in frozen_paths}
-        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,inputs=inputs,minimum_free_gib=7,performance_measurement=False,
+        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,inputs=inputs,minimum_free_gib=4,performance_measurement=False,
             scope='Host-only offline transformation and whole-artifact verification. No guest execution/build or lowered real-project benchmark admission.'))
         records=[];reports=[]
         for item in inputs:
             output=work/(str(item['index'])+'.rbc');report=work/(str(item['index'])+'.json');check=work/(str(item['index'])+'-checked.json')
             for label,command in [('fold',[str(binary),'--fold',str(ROOT/item['artifact']),str(output),str(report)]),
                                   ('verify',[str(binary),'--verify-fold',str(ROOT/item['artifact']),str(output),str(check)])]:
-                require_space(ROOT,7)
+                require_space(ROOT,4)
                 child,stdout,stderr=capture(command,cwd=ROOT,env=os.environ.copy(),receipt_path=work/'active.json',receipt=dict(index=item['index'],label=label))
                 records.append(dict(index=item['index'],label=label,command=command,pid=child.pid,returncode=child.returncode,stdout=stdout,stderr=stderr));write(work/'records.json',records)
                 assert child.returncode==0,stderr
