@@ -1,5 +1,11 @@
 # Checked-in changes
 
+## 2026-09-12 checked scalar memory inlining
+
+- Inline the complete scalar load/store path, including range validation. Method bodies, bounds checks and generic-width fallbacks are unchanged.
+- Saved-artifact interpreter runtime improves 6.7% on pgrust and 2.1–5.0% on four Fre cases relative to the frame-loop VM `f33b40d`. All public cases pass regression guards in both engines; this does not establish a general JIT speedup, full edit/build/test improvement or unknown-holdout result.
+- All 297 workspace tests pass in debug and release (one ignored), and all 588 comparison commands preserve results, instructions and peak guest memory. [Qualification and measurements](results/complete-scalar-inline-20260912/assessment.md).
+
 ## 2026-09-12 interpreter frame dispatch
 
 - Keep the current function and checked register slice across ordinary instructions and branches; reacquire them after frame transitions and each JIT fallback.
