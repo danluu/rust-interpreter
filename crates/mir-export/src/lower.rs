@@ -162,7 +162,11 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
               inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool,
               allocation_trace: bool) -> Result<Exported> {
     let mut timings = crate::export_timings::Timings::new("lower");
-    let function_dependencies = crate::function_dependencies::enabled()?;
+    use crate::function_cache::Mode;
+    let cache_mode = crate::function_cache::mode()?;
+    let cache_enabled = cache_mode != Mode::Off;
+    let actual_reuse = cache_mode == Mode::Reuse;
+    let function_dependencies = crate::function_dependencies::enabled()? || actual_reuse;
     if function_dependencies && !tcx.dep_graph.is_fully_enabled() {
         return Err("function dependency observation requires an incremental dependency graph".into());
     }
@@ -171,12 +175,14 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     if binding_replay && (demand || allocation_trace || function_costs.is_none()) {
         return Err("binding replay requires strict checking, function costs and disabled allocation tracing".into());
     }
-    let cache_enabled = crate::function_cache::enabled()?;
-    if cache_enabled && (!binding_replay || !function_dependencies) {
+    if cache_mode == Mode::Verify && (!binding_replay || !function_dependencies) {
         return Err("function cache verification requires binding replay and dependency observation".into());
     }
+    if actual_reuse && (demand || allocation_trace || function_costs.is_some() || binding_replay) {
+        return Err("function cache reuse requires strict checking and disabled allocation/function-cost/binding observers".into());
+    }
     let mut function_cache = if cache_enabled {
-        Some(crate::function_cache::Cache::open(tcx, trap_unsupported_calls, run_try_callbacks)?)
+        Some(crate::function_cache::Cache::open(tcx, trap_unsupported_calls, run_try_callbacks, cache_mode)?)
     } else { None };
     if allocation_trace && demand {
         return Err("allocation tracing requires ordinary strict frontend checking".into());
@@ -257,7 +263,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         relocation_targets: function_costs.as_ref().map(|_| HashMap::new()),
         tls_addresses: HashMap::new(),
         runtime_errno: None,
-        binding_replay,
+        binding_replay: binding_replay || actual_reuse,
         thread_locals: vec![],
         data: vec![0; 16],
         statics: vec![],
@@ -307,19 +313,59 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             "definition": tcx.def_path_str(instance.def_id()),
             "instance_kind": format!("{:?}", instance.def),
             "generic_arguments": format!("{:?}", instance.args)}))?;
+        let namespace = function_cache.as_ref().map(|cache| cache.namespace);
         let (lowered, dependency) = crate::function_dependencies::observe(tcx, instance, function_dependencies,
-            function_cache.as_ref().map(|cache| &cache.namespace), || {
+            namespace.as_ref(), |dep| {
+            let mut lowering_executed = true;
+            let result = (|| {
+            if actual_reuse {
+                let cache = function_cache.as_mut().unwrap();
+                let (node, green) = dep.ok_or("reuse requires a dependency node")?;
+                if let Some(bytes) = cache.take_previous(node, green) {
+                    let began = std::time::Instant::now();
+                    let template = reuse::Template::decode(&bytes)?;
+                    cache.previous_decoding_seconds += began.elapsed().as_secs_f64();
+                    let began = std::time::Instant::now();
+                    let function = reuse::replay(&mut exporter, instance, index, template)
+                        .map_err(|error| format!("reuse {name}: {error}"))?;
+                    cache.previous_binding_seconds += began.elapsed().as_secs_f64();
+                    cache.retain(node.to_owned(), bytes)?;
+                    cache.skipped_functions += 1;
+                    lowering_executed = false;
+                    return Ok((function, vec![], None, Default::default(), Default::default(), 0, 0));
+                }
+            }
             let started = function_costs.as_ref().map(|_| std::time::Instant::now());
             let lower = Lower::new(&mut exporter, instance).map_err(|e| format!("{name}: {e}"))?;
             let prepared = started.map(|_| std::time::Instant::now());
             let mir_locals = lower.body.local_decls.len();
             let mir_blocks = lower.body.basic_blocks.len();
-            let (f, bindings, tape) = lower.lower().map_err(|e| format!("{name}: {e}"))?;
+            let (f, bindings, mut tape) = lower.lower().map_err(|e| format!("{name}: {e}"))?;
             let elapsed = prepared.map(|p| p.elapsed()).unwrap_or_default();
             let prepare = started.zip(prepared).map(|(s, p)| p.duration_since(s)).unwrap_or_default();
+            if let Some(cache) = &mut function_cache {
+                cache.lowered_functions += 1;
+                if actual_reuse {
+                    let tape = tape.take().ok_or("missing reuse binding tape")?;
+                    if tape.decline.is_some() {
+                        cache.declined_functions += 1;
+                    } else {
+                        let began = std::time::Instant::now();
+                        let observation = exporter.byte_writes.last().ok_or("missing reuse frame observation")?.clone();
+                        let bytes = reuse::Template { function: f.clone(), observation, tape }.encode()?;
+                        cache.current_encoding_seconds += began.elapsed().as_secs_f64();
+                        cache.retain(dep.unwrap().0.to_owned(), bytes)?;
+                    }
+                }
+            }
             Ok::<_, String>((f, bindings, tape, prepare, elapsed, mir_locals, mir_blocks))
+            })();
+            (result, lowering_executed)
         });
         let (f, bindings, tape, prepare, elapsed, mir_locals, mir_blocks) = lowered?;
+        if let Some(cache) = &mut function_cache {
+            cache.green_check_seconds += dependency.as_ref().and_then(|v| v["green_check_seconds"].as_f64()).unwrap_or_default();
+        }
         if let Some(replay) = &mut replay_exporter {
             let started = std::time::Instant::now();
             if replay.pending.pop_front() != Some(index) || replay.instances[index] != instance {
@@ -341,11 +387,14 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
                     binding_events += decoded.tape.events.len();
                     for event in &decoded.tape.events { *binding_kinds.entry(event.kind()).or_default() += 1; }
                     binding_payload_bytes += bytes.len();
-                    let function = reuse::replay(replay, instance, index, &decoded.function, &decoded.observation, &decoded.tape)?;
+                    let began = std::time::Instant::now();
+                    let function = reuse::replay(replay, instance, index, decoded)?;
+                    function_cache.as_mut().unwrap().previous_binding_seconds += began.elapsed().as_secs_f64();
                     function_cache.as_mut().unwrap().retain(node.clone().unwrap(), bytes)?;
                     Ok(function)
                 } else if let Some(reason) = &tape.decline {
                     *replay_declines.entry(reason.clone()).or_default() += 1;
+                    if let Some(cache) = &mut function_cache { cache.declined_functions += 1; }
                     Lower::new(replay, instance)?.lower().map(|(f, _, _)| f)
                 } else {
                     replayed_functions += 1;
@@ -356,7 +405,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
                     if let Some(cache) = &mut function_cache { cache.current_encoding_seconds += began.elapsed().as_secs_f64(); }
                     binding_payload_bytes += bytes.len();
                     let decoded = reuse::Template::decode(&bytes)?;
-                    let function = reuse::replay(replay, instance, index, &decoded.function, &decoded.observation, &decoded.tape)?;
+                    let function = reuse::replay(replay, instance, index, decoded)?;
                     if let Some(cache) = &mut function_cache { cache.retain(node.clone().unwrap(), bytes)?; }
                     Ok(function)
                 }

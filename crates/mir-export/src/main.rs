@@ -326,11 +326,16 @@ fn main() {
         eprintln!("function costs require strict checking of one selected execution graph");
         std::process::exit(2);
     }
+    let function_cache = function_cache::mode().unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    let actual_reuse = function_cache == function_cache::Mode::Reuse;
     let function_dependencies = function_dependencies::enabled().unwrap_or_else(|error| {
         eprintln!("{error}");
         std::process::exit(2);
     });
-    if function_dependencies && !function_costs {
+    if function_dependencies && !function_costs && !actual_reuse {
         eprintln!("function dependency observation requires function costs and strict checking");
         std::process::exit(2);
     }
@@ -342,12 +347,12 @@ fn main() {
         eprintln!("binding replay requires function costs and strict execution-graph checking");
         std::process::exit(2);
     }
-    let function_cache = function_cache::enabled().unwrap_or_else(|error| {
-        eprintln!("{error}");
-        std::process::exit(2);
-    });
-    if function_cache && (!binding_replay || !function_dependencies) {
+    if function_cache == function_cache::Mode::Verify && (!binding_replay || !function_dependencies) {
         eprintln!("function cache verification requires binding replay and dependency observation");
+        std::process::exit(2);
+    }
+    if actual_reuse && (demand || audit_selection.is_some() || function_costs || binding_replay) {
+        eprintln!("function cache reuse requires strict checking and disabled function-cost/binding observers");
         std::process::exit(2);
     }
     let allocation_trace = match std::env::var_os("RUST_INTERP_ALLOCATION_TRACE") {

@@ -14,12 +14,15 @@ const MAX_FILE: u64 = 128 * 1024 * 1024;
 const MAX_PAYLOAD: usize = 64 * 1024 * 1024;
 type Result<T> = std::result::Result<T, String>;
 
-pub(crate) fn enabled() -> Result<bool> {
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Mode { Off, Verify, Reuse }
+pub(crate) fn mode() -> Result<Mode> {
     match std::env::var_os("RUST_INTERP_FUNCTION_CACHE") {
-        None => Ok(false),
-        Some(value) if value == "0" => Ok(false),
-        Some(value) if value == "verify" => Ok(true),
-        _ => Err("RUST_INTERP_FUNCTION_CACHE currently accepts only 0 or verify".into()),
+        None => Ok(Mode::Off),
+        Some(value) if value == "0" => Ok(Mode::Off),
+        Some(value) if value == "verify" => Ok(Mode::Verify),
+        Some(value) if value == "reuse" => Ok(Mode::Reuse),
+        _ => Err("RUST_INTERP_FUNCTION_CACHE accepts only 0, verify or reuse".into()),
     }
 }
 
@@ -87,11 +90,15 @@ fn replace_owned(path: &Path, bytes: &[u8]) -> Result<()> {
 }
 
 pub(crate) struct Cache {
+    mode: Mode,
     path: PathBuf,
     pub namespace: [u8; 32],
     previous: HashMap<String, Vec<u8>>,
     next: BTreeMap<String, Vec<u8>>,
     load_seconds: f64,
+    namespace_seconds: f64,
+    file_read_seconds: f64,
+    file_decoding_seconds: f64,
     load_note: String,
     loaded_entries: usize,
     pub previous_hits: usize,
@@ -99,9 +106,14 @@ pub(crate) struct Cache {
     pub green_missing: usize,
     pub current_encoding_seconds: f64,
     pub previous_decoding_seconds: f64,
+    pub previous_binding_seconds: f64,
+    pub green_check_seconds: f64,
+    pub lowered_functions: usize,
+    pub skipped_functions: usize,
+    pub declined_functions: usize,
 }
 impl Cache {
-    pub fn open(tcx: TyCtxt<'_>, trap: bool, callbacks: bool) -> Result<Self> {
+    pub fn open(tcx: TyCtxt<'_>, trap: bool, callbacks: bool, mode: Mode) -> Result<Self> {
         let session = tcx.incr_comp_session.ok_or("function cache requires an incremental session")?;
         if !tcx.dep_graph.is_fully_enabled() { return Err("function cache requires dependency tracking".into()); }
         let path = rustc_incremental::in_incr_comp_dir_sess(session, "rust-interp-functions-v1.bin");
@@ -113,14 +125,23 @@ impl Cache {
         let mut hash = Sha256::new();
         hash.update(exporter); hash.update(policy.as_bytes());
         let namespace: [u8; 32] = hash.finalize().into();
-        let (previous, load_note) = match read_bounded(&path).and_then(|bytes| decode(&bytes, &namespace)) {
+        let namespace_seconds = started.elapsed().as_secs_f64();
+        let read_started = Instant::now();
+        let input = read_bounded(&path);
+        let file_read_seconds = read_started.elapsed().as_secs_f64();
+        let decode_started = Instant::now();
+        let (previous, load_note) = match input.and_then(|bytes| decode(&bytes, &namespace)) {
             Ok(entries) => (entries, "loaded".into()),
             Err(reason) => (HashMap::new(), reason),
         };
+        let file_decoding_seconds = decode_started.elapsed().as_secs_f64();
         let loaded_entries = previous.len();
-        Ok(Self { path, namespace, previous, next: BTreeMap::new(), loaded_entries, load_note,
+        Ok(Self { mode, path, namespace, previous, next: BTreeMap::new(), loaded_entries, load_note,
+            namespace_seconds, file_read_seconds, file_decoding_seconds,
             load_seconds: started.elapsed().as_secs_f64(), previous_hits: 0, red_functions: 0,
-            green_missing: 0, current_encoding_seconds: 0.0, previous_decoding_seconds: 0.0 })
+            green_missing: 0, current_encoding_seconds: 0.0, previous_decoding_seconds: 0.0,
+            previous_binding_seconds: 0.0, green_check_seconds: 0.0, lowered_functions: 0,
+            skipped_functions: 0, declined_functions: 0 })
     }
     pub fn take_previous(&mut self, node: &str, green: bool) -> Option<Vec<u8>> {
         let payload = self.previous.remove(node);
@@ -140,14 +161,20 @@ impl Cache {
         let start = Instant::now();
         replace_owned(&self.path, &bytes)?;
         let write_seconds = start.elapsed().as_secs_f64();
-        eprintln!("rust-interp-function-cache: {}", serde_json::json!({"schema_version":1,"mode":"verify",
+        eprintln!("rust-interp-function-cache: {}", serde_json::json!({"schema_version":1,
+            "mode":if self.mode == Mode::Reuse { "reuse" } else { "verify" },
             "namespace":self.namespace.iter().map(|b| format!("{b:02x}")).collect::<String>(),
             "loaded_entries":self.loaded_entries,"load_note":self.load_note,"load_seconds":self.load_seconds,
+            "namespace_seconds":self.namespace_seconds,"file_read_seconds":self.file_read_seconds,
+            "file_decoding_seconds":self.file_decoding_seconds,
             "previous_payload_uses":self.previous_hits,"red_functions":self.red_functions,"green_missing":self.green_missing,
             "staged_entries":self.next.len(),"staged_bytes":bytes.len(),"file_encoding_seconds":encoding_seconds,
             "file_write_seconds":write_seconds,"current_template_encoding_seconds":self.current_encoding_seconds,
             "previous_template_decoding_seconds":self.previous_decoding_seconds,
-            "all_original_lowering_executed":true,"staged_in_incremental_session":true,
+            "previous_binding_seconds":self.previous_binding_seconds,"green_check_seconds":self.green_check_seconds,
+            "lowered_functions":self.lowered_functions,"skipped_functions":self.skipped_functions,
+            "declined_functions":self.declined_functions,
+            "all_original_lowering_executed":self.skipped_functions == 0,"staged_in_incremental_session":true,
             "publication":"compiler finalization is still required"}));
         Ok(())
     }

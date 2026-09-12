@@ -1,4 +1,4 @@
-//! Observe compiler query dependencies; always recompute and verify the output.
+//! Track compiler query dependencies around either full lowering or a green hit.
 use rustc_middle::mono::MonoItem;
 use rustc_middle::ty::{Instance, TyCtxt};
 use serde_json::{Value, json};
@@ -25,9 +25,10 @@ pub(crate) fn enabled() -> Result<bool, String> {
 }
 
 pub(crate) fn observe<'tcx, R>(tcx: TyCtxt<'tcx>, instance: Instance<'tcx>,
-                              enabled: bool, namespace: Option<&[u8; 32]>, operation: impl FnOnce() -> R) -> (R, Option<Value>) {
+                              enabled: bool, namespace: Option<&[u8; 32]>,
+                              operation: impl FnOnce(Option<(&str, bool)>) -> (R, bool)) -> (R, Option<Value>) {
     if !enabled {
-        return (operation(), None);
+        return (operation(None).0, None);
     }
     let mut node = MonoItem::Fn(instance).codegen_dep_node(tcx);
     if let Some(namespace) = namespace {
@@ -38,7 +39,9 @@ pub(crate) fn observe<'tcx, R>(tcx: TyCtxt<'tcx>, instance: Instance<'tcx>,
     let started = Instant::now();
     let previous_green = tcx.dep_graph.try_mark_green(tcx, &node).is_some();
     let green_check_seconds = started.elapsed().as_secs_f64();
-    let result = if previous_green {
+    let key = node.key_fingerprint.to_string();
+    let operation = || operation(Some((&key, previous_green)));
+    let (result, lowering_executed) = if previous_green {
         // Marking green has already created the current node and retained its
         // edges. Re-execution verifies the output without duplicating the node.
         tcx.dep_graph.with_ignore(operation)
@@ -47,10 +50,10 @@ pub(crate) fn observe<'tcx, R>(tcx: TyCtxt<'tcx>, instance: Instance<'tcx>,
         tcx.dep_graph.read_index(index);
         result
     };
-    (result, Some(json!({"node": format!("{}", node.key_fingerprint),
+    (result, Some(json!({"node": key,
         "kind": format!("{:?}", node.kind), "previous_green": previous_green,
         "namespace_qualified": namespace.is_some(),
-        "green_check_seconds": green_check_seconds, "lowering_executed": true})))
+        "green_check_seconds": green_check_seconds, "lowering_executed": lowering_executed})))
 }
 
 #[cfg(test)]

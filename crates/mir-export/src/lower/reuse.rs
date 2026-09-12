@@ -267,11 +267,11 @@ impl<'tcx> Current<'tcx> {
 /// Reconstruct owned output and graph effects in the original request order.
 /// Every direct function index is a typed Op::Call field, never guessed from bits.
 pub(super) fn replay<'tcx>(exporter: &mut Exporter<'tcx>, instance: Instance<'tcx>, index: usize,
-    original: &Function, observation: &scalar_frame::byte_writes::Observation, tape: &Tape) -> Result<Function> {
+    template: Template) -> Result<Function> {
+    let Template { mut function, observation: mut observed, tape } = template;
     if tape.decline.is_some() { return Err("declined binding tape".into()); }
     let mut current = Current { tcx: exporter.tcx, instance,
         body: exporter.tcx.instance_mir(instance.def), constants: None };
-    let mut function = original.clone();
     let mut immediates = HashMap::new();
     for (pc, op) in function.code.iter().enumerate() {
         if let Op::Imm { dst, .. } = op {
@@ -304,7 +304,6 @@ pub(super) fn replay<'tcx>(exporter: &mut Exporter<'tcx>, instance: Instance<'tc
             *function = *calls.get(function).ok_or("missing direct call binding")?;
         }
     }
-    let mut observed = observation.clone();
     observed.rebind(index, &calls)?;
     exporter.byte_writes.push(observed);
     Ok(function)
