@@ -30,6 +30,8 @@ def main():
             build=read(build_path);proof=read(build_work/'provenance.json')
             require(read(build_work/'status.json')['status']=='finished' and build['status']=='passed' and
                     build['tests']['debug']['passed']==build['tests']['release']['passed']==300 and build['experimental_whole_call_inline'],'candidate build not qualified')
+            require(build['control_tool_key']==CONTROL and sha(build_work/'provenance.json')==build['provenance_sha256'],
+                    'candidate build provenance differs')
             directory,_=installed_tools(build['tool_key']);parent,_=installed_tools(CONTROL)
             for name in ['rust-interp-rustc-wrapper']:
                 require(sha(directory/name)==sha(parent/name)==build['binaries'][name],'unchanged wrapper differs')
