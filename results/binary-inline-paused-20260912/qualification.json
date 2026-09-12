@@ -1,0 +1,100 @@
+{
+  "decision": "parked without performance qualification after user redirected work to build latency",
+  "source_parent": "ad31f94557f2907f71f88ad411c3e9b37f1b598a",
+  "source_snapshot": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-source",
+  "source_files": {
+    "crates/bytecode/src/lib.rs": "d7876926de864e2ebcbe7e9f4e5a774e5b0c4706539167688944da60b43b39f9",
+    "crates/bytecode/src/registers.rs": "a678bea4afc3b3e93802934907d31e9125c5640ba06cfc0bee88c18cc22c04af",
+    "scripts/compare_saved_runtime.py": "bdc56aea276c2981fc42fcb39b1b7aa0bfc6a394506f44e44e44e1895b64b8a7",
+    "Cargo.lock": "b84a62188392eff7c4659e3f7825e5d97014ccebe4f859dbcd4770369ab1be16",
+    "rust-toolchain.toml": "0087d3a23067241ad1eb1f3dfa731d5daf8b8ea6b16ca3cf68a78fe43dc8c132"
+  },
+  "tests": {
+    "binary-inline-release-tests": {
+      "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-release-tests.json",
+      "receipt_sha256": "97dfd3673e18119039e6f24b6743e2679731ea6f47af48b36798314d3f1cec5c",
+      "log": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-release-tests.log",
+      "log_sha256": "b5cb01dddf43850166493774be0891e3589326f0f2c259c326bfae26cdf67ef5",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        ".work/perf-general-20260912/target",
+        "-p",
+        "rust-interp-bytecode",
+        "--lib",
+        "--tests"
+      ],
+      "returncode": 0,
+      "counts": {
+        "passed": 255,
+        "failed": 0,
+        "ignored": 1
+      }
+    },
+    "binary-inline-debug-tests": {
+      "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-debug-tests.json",
+      "receipt_sha256": "d51a984cc18ea82540fce67cb7d1c62ed46050f7caa42ae3585ef6b38c251bde",
+      "log": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-debug-tests.log",
+      "log_sha256": "8c973d5d22709ef9452375fc718af0429add0829e05b9c8b61b504ad0040eb75",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--workspace",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--config",
+        "profile.dev.debug=0",
+        "--config",
+        "profile.test.debug=0",
+        "--target-dir",
+        ".work/perf-general-20260912/target"
+      ],
+      "returncode": 0,
+      "counts": {
+        "passed": 297,
+        "failed": 0,
+        "ignored": 1
+      }
+    },
+    "binary-inline-dependent-release-tests": {
+      "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-dependent-release-tests.json",
+      "receipt_sha256": "e96ca61cfdc9ad7aa2a032dd4c3a7deb580a31f99a167086ae8d348866b9900c",
+      "log": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-dependent-release-tests.log",
+      "log_sha256": "d4ff1db688a3ef70b7e09e48b01873dd2040135c599c5429fa0b67a4147fa0d2",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        ".work/perf-general-20260912/target",
+        "-p",
+        "rust-interp-mir-export",
+        "-p",
+        "rust-interp-function-cache",
+        "-p",
+        "rustc-dispatch"
+      ],
+      "returncode": 0,
+      "counts": {
+        "passed": 42,
+        "failed": 0,
+        "ignored": 0
+      }
+    }
+  }
+}
