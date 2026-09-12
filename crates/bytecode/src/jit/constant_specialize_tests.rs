@@ -148,3 +148,19 @@ fn a_backedge_to_entry_discards_argument_facts_changed_by_the_loop() {
         Op::Store{address:10,src:11,size:8},Op::Return]);
     p.functions[1].code=code;check(&p,&[0,255],true);
 }
+
+#[test]
+fn unreachable_branch_reads_do_not_reject_an_otherwise_proven_clone() {
+    let mut p=program(&[7;8]);
+    let mut code=vec![Op::Imm{dst:12,value:0},Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8},
+        Op::Switch{value:1,cases:vec![(7,4)],otherwise:0}];
+    padding(&mut code);
+    code.extend([Op::Local{dst:2,offset:8},Op::Load{dst:3,address:2,size:8},Op::Local{dst:0,offset:32},
+        Op::Store{address:0,src:3,size:8},Op::Return]);
+    let dead=code.len();if let Op::Switch{otherwise,..}=&mut code[3] {*otherwise=dead;}
+    code.extend([Op::Assert{value:12,expected:false,message:"entry value".into()},Op::Trap{message:"unselected branch".into()}]);
+    p.functions[1].code=code;
+    assert!(!crate::registers::needs_initial_zeroes(&p.functions[1]));
+    let q=check(&p,&[0,1,u64::MAX as u128],true);
+    for f in &q.functions[p.functions.len()..] {assert!(!crate::registers::needs_initial_zeroes(f));}
+}
