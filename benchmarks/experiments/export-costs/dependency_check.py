@@ -36,7 +36,9 @@ def main():
         binding_replay = args.binding_replay_qualification is not None
         assert not args.persistent_cache or binding_replay
         assert not args.function_reuse or args.persistent_cache
-        assert build['status'] == 'passed' and set(build['tests'].values()) == ({50} if args.persistent_cache else {47} if binding_replay else {44})
+        test_counts = set(build['tests'].values())
+        assert build['status'] == 'passed' and len(test_counts) == 1
+        assert min(test_counts) >= (50 if args.persistent_cache else 47 if binding_replay else 44)
         if binding_replay:
             qualified = json.loads(args.binding_replay_qualification.read_text())
             assert qualified['status'] == 'passed' and qualified['commands'] == (337 if qualified.get('function_reuse') else 231)

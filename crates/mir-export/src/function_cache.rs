@@ -27,20 +27,43 @@ pub(crate) fn mode() -> Result<Mode> {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Entry { node: String, payload: Vec<u8> }
+struct Entry { node: String, #[serde(with = "payload_bytes")] payload: Vec<u8> }
+#[derive(Serialize)]
+struct BorrowedEntry<'a> { node: &'a str, #[serde(serialize_with = "payload_bytes::serialize")] payload: &'a [u8] }
+
+// Bincode's fixed-width byte sequence and byte-buffer representations are
+// identical. Ask for bulk bytes explicitly instead of visiting every u8.
+mod payload_bytes {
+    use serde::{Deserializer, Serializer, de::Visitor};
+    pub fn serialize<S: Serializer>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_bytes(bytes)
+    }
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Error> {
+        struct Bytes;
+        impl<'de> Visitor<'de> for Bytes {
+            type Value = Vec<u8>;
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.write_str("owned function bytes") }
+            fn visit_byte_buf<E: serde::de::Error>(self, bytes: Vec<u8>) -> Result<Self::Value, E> { Ok(bytes) }
+            fn visit_bytes<E: serde::de::Error>(self, bytes: &[u8]) -> Result<Self::Value, E> { Ok(bytes.to_vec()) }
+        }
+        deserializer.deserialize_byte_buf(Bytes)
+    }
+}
 
 fn valid_node(node: &str) -> bool {
     let Some((a, b)) = node.split_once('-') else { return false; };
     [a, b].iter().all(|part| !part.is_empty() && part.len() <= 16
         && part.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)))
 }
-fn decode(bytes: &[u8], namespace: &[u8; 32]) -> Result<HashMap<String, Vec<u8>>> {
+fn decode_measured(bytes: &[u8], namespace: &[u8; 32]) -> Result<(HashMap<String, Vec<u8>>, f64)> {
     if bytes.len() < HEADER || bytes.len() as u64 > MAX_FILE || &bytes[..8] != MAGIC {
         return Err("cache file bounds or magic".into());
     }
     if &bytes[8..40] != namespace { return Err("cache namespace changed".into()); }
     let body = &bytes[HEADER..];
+    let hash_start = Instant::now();
     if Sha256::digest(body).as_slice() != &bytes[40..HEADER] { return Err("cache integrity check".into()); }
+    let hash_seconds = hash_start.elapsed().as_secs_f64();
     let entries: Vec<Entry> = bincode::DefaultOptions::new().with_fixint_encoding()
         .with_limit(MAX_FILE).reject_trailing_bytes().deserialize(body).map_err(|e| e.to_string())?;
     if entries.len() > 10_000 { return Err("cache entry count".into()); }
@@ -51,23 +74,31 @@ fn decode(bytes: &[u8], namespace: &[u8; 32]) -> Result<HashMap<String, Vec<u8>>
             return Err("invalid or duplicate cache entry".into());
         }
     }
-    Ok(result)
+    Ok((result, hash_seconds))
 }
-fn encode(entries: &BTreeMap<String, Vec<u8>>, namespace: &[u8; 32]) -> Result<Vec<u8>> {
+fn encode_measured(entries: &BTreeMap<String, Vec<u8>>, namespace: &[u8; 32]) -> Result<(Vec<u8>, f64)> {
     if entries.len() > 10_000 || entries.iter().any(|(key, value)| !valid_node(key) || value.len() > MAX_PAYLOAD) {
         return Err("cache output bounds".into());
     }
-    // A sequence of borrowed pairs has the same representation as Entry.
-    // Avoid cloning every function blob merely to serialize the index.
-    let values: Vec<_> = entries.iter().collect();
+    let values: Vec<_> = entries.iter().map(|(node, payload)| BorrowedEntry { node, payload }).collect();
     let body = bincode::DefaultOptions::new().with_fixint_encoding().with_limit(MAX_FILE - HEADER as u64)
         .serialize(&values).map_err(|e| e.to_string())?;
     let mut bytes = Vec::with_capacity(HEADER + body.len());
     bytes.extend_from_slice(MAGIC);
     bytes.extend_from_slice(namespace);
+    let hash_start = Instant::now();
     bytes.extend_from_slice(&Sha256::digest(&body));
+    let hash_seconds = hash_start.elapsed().as_secs_f64();
     bytes.extend_from_slice(&body);
-    Ok(bytes)
+    Ok((bytes, hash_seconds))
+}
+#[cfg(test)]
+fn encode(entries: &BTreeMap<String, Vec<u8>>, namespace: &[u8; 32]) -> Result<Vec<u8>> {
+    encode_measured(entries, namespace).map(|(bytes, _)| bytes)
+}
+#[cfg(test)]
+fn decode(bytes: &[u8], namespace: &[u8; 32]) -> Result<HashMap<String, Vec<u8>>> {
+    decode_measured(bytes, namespace).map(|(entries, _)| entries)
 }
 fn read_bounded(path: &Path) -> Result<Vec<u8>> {
     let metadata = std::fs::symlink_metadata(path).map_err(|e| e.to_string())?;
@@ -99,6 +130,7 @@ pub(crate) struct Cache {
     namespace_seconds: f64,
     file_read_seconds: f64,
     file_decoding_seconds: f64,
+    file_decode_hash_seconds: f64,
     load_note: String,
     loaded_entries: usize,
     pub previous_hits: usize,
@@ -130,14 +162,14 @@ impl Cache {
         let input = read_bounded(&path);
         let file_read_seconds = read_started.elapsed().as_secs_f64();
         let decode_started = Instant::now();
-        let (previous, load_note) = match input.and_then(|bytes| decode(&bytes, &namespace)) {
-            Ok(entries) => (entries, "loaded".into()),
-            Err(reason) => (HashMap::new(), reason),
+        let (previous, file_decode_hash_seconds, load_note) = match input.and_then(|bytes| decode_measured(&bytes, &namespace)) {
+            Ok((entries, hash_seconds)) => (entries, hash_seconds, "loaded".into()),
+            Err(reason) => (HashMap::new(), 0.0, reason),
         };
         let file_decoding_seconds = decode_started.elapsed().as_secs_f64();
         let loaded_entries = previous.len();
         Ok(Self { mode, path, namespace, previous, next: BTreeMap::new(), loaded_entries, load_note,
-            namespace_seconds, file_read_seconds, file_decoding_seconds,
+            namespace_seconds, file_read_seconds, file_decoding_seconds, file_decode_hash_seconds,
             load_seconds: started.elapsed().as_secs_f64(), previous_hits: 0, red_functions: 0,
             green_missing: 0, current_encoding_seconds: 0.0, previous_decoding_seconds: 0.0,
             previous_binding_seconds: 0.0, green_check_seconds: 0.0, lowered_functions: 0,
@@ -156,7 +188,7 @@ impl Cache {
     }
     pub fn stage(self) -> Result<()> {
         let start = Instant::now();
-        let bytes = encode(&self.next, &self.namespace)?;
+        let (bytes, file_encode_hash_seconds) = encode_measured(&self.next, &self.namespace)?;
         let encoding_seconds = start.elapsed().as_secs_f64();
         let start = Instant::now();
         replace_owned(&self.path, &bytes)?;
@@ -167,6 +199,8 @@ impl Cache {
             "loaded_entries":self.loaded_entries,"load_note":self.load_note,"load_seconds":self.load_seconds,
             "namespace_seconds":self.namespace_seconds,"file_read_seconds":self.file_read_seconds,
             "file_decoding_seconds":self.file_decoding_seconds,
+            "file_decode_hash_seconds":self.file_decode_hash_seconds,"file_encode_hash_seconds":file_encode_hash_seconds,
+            "timing_scope":"load includes namespace/read/decode; file hash intervals are nested in file decode/encode",
             "previous_payload_uses":self.previous_hits,"red_functions":self.red_functions,"green_missing":self.green_missing,
             "staged_entries":self.next.len(),"staged_bytes":bytes.len(),"file_encoding_seconds":encoding_seconds,
             "file_write_seconds":write_seconds,"current_template_encoding_seconds":self.current_encoding_seconds,
@@ -183,6 +217,15 @@ impl Cache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn bulk_payloads_preserve_the_legacy_fixed_width_wire_bytes() {
+        let entries = BTreeMap::from([("ab-cd".into(), (0..131_072).map(|n| n as u8).collect())]);
+        let legacy = bincode::DefaultOptions::new().with_fixint_encoding()
+            .serialize(&entries.iter().collect::<Vec<_>>()).unwrap();
+        let bytes = encode(&entries, &[7; 32]).unwrap();
+        assert_eq!(&bytes[HEADER..], legacy);
+        assert_eq!(decode(&bytes, &[7; 32]).unwrap(), entries.into_iter().collect());
+    }
     #[test]
     fn cache_bytes_bind_namespace_and_reject_corruption_truncation_and_trailing_input() {
         let values = BTreeMap::from([("1-2".into(), vec![4, 5, 6]), ("aa-bb".into(), vec![9])]);

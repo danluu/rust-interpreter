@@ -32,7 +32,7 @@ def main():
         require_space(ROOT, 8)
         build = json.loads(args.build.read_text())
         qualified = json.loads(args.qualification.read_text())
-        assert build['status'] == 'passed' and set(build['tests'].values()) == {50}
+        assert build['status'] == 'passed' and len(set(build['tests'].values())) == 1 and min(build['tests'].values()) >= 50
         assert qualified['commands'] == (293 if qualified.get('function_reuse') else 229) and qualified['persistent_cache']
         assert not args.function_reuse or qualified['function_reuse']
         assert qualified['candidate_dependency_boundary_supported'] and qualified['all_lowering_executed']

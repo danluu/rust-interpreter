@@ -39,7 +39,7 @@ def main():
         build_path, qualification_path, cache_path = [p.resolve() for p in [args.build, args.qualification, args.cache_qualification]]
         build, qualification, cache_qualification = [json.loads(p.read_text()) for p in [build_path, qualification_path, cache_path]]
         assert build['status'] == cache_qualification['status'] == 'passed'
-        assert set(build['tests'].values()) == {50}
+        assert len(set(build['tests'].values())) == 1 and min(build['tests'].values()) >= 50
         assert qualification['function_reuse'] and qualification['commands'] == 293
         assert qualification['candidate_dependency_boundary_supported'] and qualification['all_artifact_hashes_identical']
         assert cache_qualification['function_reuse'] and cache_qualification['commands'] == 98

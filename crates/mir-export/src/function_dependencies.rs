@@ -43,7 +43,7 @@ pub(crate) fn observe<'tcx, R>(tcx: TyCtxt<'tcx>, instance: Instance<'tcx>,
     let operation = || operation(Some((&key, previous_green)));
     let (result, lowering_executed) = if previous_green {
         // Marking green has already created the current node and retained its
-        // edges. Re-execution verifies the output without duplicating the node.
+        // edges. Verification or binding must not duplicate the current node.
         tcx.dep_graph.with_ignore(operation)
     } else {
         let (result, index) = tcx.dep_graph.with_task(node, tcx, operation, None);
