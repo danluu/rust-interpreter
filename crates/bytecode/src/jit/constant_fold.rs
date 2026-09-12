@@ -124,6 +124,7 @@ fn dead_definitions(f:&mut Function)->Option<usize> {
     for (pc,op) in f.code.iter().enumerate() {mapping[pc]=code.len();if remove[pc] {count+=1;} else {code.push(op.clone());}}
     map_branches(&mut code,&mapping);f.code=code;Some(count)
 }
+pub(super) fn cleanup_definitions(f:&mut Function)->Option<usize> {dead_definitions(f)}
 fn function(p:&Program,f:&Function,meter:&mut Meter)->Option<(Function,Report)> {
     let (result,report)=function_from_entry(p,f,&State::default(),meter)?;
     if !crate::registers::needs_initial_zeroes(f) && crate::registers::needs_initial_zeroes(&result) {return None;}

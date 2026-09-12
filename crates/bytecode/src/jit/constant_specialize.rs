@@ -18,6 +18,7 @@ struct Report {
     original_functions:usize,original_operations:usize,new_operations:usize,
     scanned_sites:usize,declined_functions:usize,signature_work:usize,signatures:usize,
     fold_work:usize,rewritten_calls:usize,added_operations:usize,
+    dead_frame_fact_work:usize,dead_frame_liveness_work:usize,
     clones:Vec<serde_json::Value>,attempts:Vec<serde_json::Value>,omitted_attempts:usize,decline:Option<&'static str>,
 }
 impl Report {
@@ -72,6 +73,7 @@ pub(super) fn specialize(mut program:Program)->Result<(Program,serde_json::Value
     let mut order:Vec<_>=groups.into_iter().collect();
     order.sort_unstable_by_key(|&(callee,ref members)|(std::cmp::Reverse(members.len()),program.functions[callee].code.len(),callee));
     let mut redirects=vec![None;sites.len()];let mut generated=Vec::new();let mut global=MAX_FOLD_WORK;
+    let mut frame_facts=8_000_000;let mut frame_liveness=8_000_000;
     let growth_limit=MAX_ADDED_OPERATIONS.min(original_operations/20);
     // No original body is rewritten until all clones are built. A generated
     // body therefore retains its original direct and indirect call targets.
@@ -103,9 +105,10 @@ pub(super) fn specialize(mut program:Program)->Result<(Program,serde_json::Value
             if members.len()<2 {continue;}
             attempted+=1;
             let original=&program.functions[callee];
-            let Some((body,fold))=super::constant_fold::seeded_function(&program,original,&known,&mut global) else {
+            let Some((mut body,fold))=super::constant_fold::seeded_function(&program,original,&known,&mut global) else {
                 report.attempt(callee,&known,members.len(),"fold proof or work limit",original.code.len(),None);continue;
             };
+            let frame_writes=super::dead_frame_writes::optimize(&program,&mut body,&known,&mut frame_facts,&mut frame_liveness);
             let removed=original.code.len().saturating_sub(body.code.len());
             if removed<8 || removed*4<original.code.len() {
                 report.attempt(callee,&known,members.len(),"insufficient body reduction",original.code.len(),Some(body.code.len()));continue;
@@ -118,12 +121,13 @@ pub(super) fn specialize(mut program:Program)->Result<(Program,serde_json::Value
             for &site in &members {redirects[site]=Some(clone);}
             report.clones.push(serde_json::json!({"original":callee,"clone":clone,"direct_sites":members.len(),
                 "known_arguments":known.iter().map(|&(index,bytes,value)|serde_json::json!({"index":index,"bytes":bytes,"value":format!("0x{value:x}")})).collect::<Vec<_>>(),
-                "old_operations":original.code.len(),"new_operations":body.code.len(),"fold":fold}));
+                "old_operations":original.code.len(),"new_operations":body.code.len(),"fold":fold,"dead_frame_writes":frame_writes}));
             report.added_operations+=body.code.len();report.rewritten_calls+=members.len();
             generated.push(body);accepted+=1;
         }
     }
     report.fold_work=MAX_FOLD_WORK-global;
+    report.dead_frame_fact_work=8_000_000-frame_facts;report.dead_frame_liveness_work=8_000_000-frame_liveness;
     program.functions.extend(generated);
     for (site,redirect) in sites.iter().zip(redirects) {
         let Some(target)=redirect else {continue;};

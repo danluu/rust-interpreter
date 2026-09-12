@@ -129,7 +129,8 @@ fn shape_and_code_growth_declines_preserve_program_bytes() {
     let (q,r)=specialize(p.clone()).unwrap();assert!(r["clones"].as_array().unwrap().is_empty());
     assert_eq!(bincode::serialize(&p).unwrap(),bincode::serialize(&q).unwrap());
     let mut p=program(&[7,7]);
-    for _ in 0..32 {p.functions[1].code.insert(4,Op::Store{address:0,src:1,size:8});}
+    // Unknown destinations must retain both their writes and potential faults.
+    for _ in 0..32 {p.functions[1].code.insert(4,Op::Store{address:3,src:1,size:8});}
     let (q,r)=specialize(p.clone()).unwrap();assert!(r["clones"].as_array().unwrap().is_empty());
     assert!(r["attempts"].as_array().unwrap().iter().any(|a|a["reason"]=="code growth limit"));
     assert_eq!(bincode::serialize(&p).unwrap(),bincode::serialize(&q).unwrap());

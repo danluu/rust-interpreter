@@ -1946,6 +1946,7 @@ pub fn constant_call_argument_census(program: &Program, profile: Option<&[u8]>) 
 mod constant_fold_facts;
 mod constant_fold;
 mod constant_specialize;
+mod dead_frame_writes;
 
 /// Experimental compiler transform. Guest execution never applies it implicitly.
 pub fn fold_constants(program: Program) -> Result<(Program, serde_json::Value), String> {

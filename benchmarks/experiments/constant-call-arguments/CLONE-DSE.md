@@ -42,3 +42,10 @@ qualification. Keep the10%real token edit screen and5%guards unchanged.
 
 Host qualification floor: 4 GiB. Reuse the populated host target with two workers.
 No new real-project Cargo cache or cache retirement belongs to this prototype.
+
+Implementation limits:8million forward-fact units and8million backward units
+per program, each retaining a2million per-function cap. CFGs admit at most4096
+edges and2048cases on one Switch. Eight new differential tests bring the full
+workspace expectation to386passed per profile, with one ignored. The old growth
+decline test now uses unknown destinations so its writes cannot be discarded by
+the new proof. Reports distinguish proposed removal counts from applied changes.
