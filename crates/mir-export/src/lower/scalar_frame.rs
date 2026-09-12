@@ -68,7 +68,10 @@ impl Dense {
     }
 }
 
-fn plan(shapes: &[(usize, usize)], mut eligible: Vec<bool>, mut events: Vec<Vec<Event>>, successors: &[Vec<usize>]) -> Option<(Vec<Slot>, usize)> {
+fn plan(shapes: &[(usize, usize)], eligible: Vec<bool>, events: Vec<Vec<Event>>, successors: &[Vec<usize>]) -> Option<(Vec<Slot>, usize)> {
+    plan_with_eligibility(shapes, eligible, events, successors, None)
+}
+fn plan_with_eligibility(shapes: &[(usize, usize)], mut eligible: Vec<bool>, mut events: Vec<Vec<Event>>, successors: &[Vec<usize>], eligibility: Option<&mut Vec<bool>>) -> Option<(Vec<Slot>, usize)> {
     let n = shapes.len();
     if n == 0 || n > MAX_LOCALS || events.is_empty() || events.iter().map(Vec::len).sum::<usize>() > MAX_EVENTS { return None; }
     for es in &mut events {
@@ -144,6 +147,7 @@ fn plan(shapes: &[(usize, usize)], mut eligible: Vec<bool>, mut events: Vec<Vec<
         if slots[i].size != shapes[i].0 || slots[i].offset % shapes[i].1 != 0 { return None; }
         if eligible[i] && edges[i].iter().any(|j| group_of[i] == group_of[j]) { return None; }
     }
+    if let Some(out) = eligibility { *out = eligible; }
     Some((slots, end))
 }
 
@@ -206,3 +210,6 @@ mod tests {
         assert_ne!(slots[1].offset, slots[2].offset);
     }
 }
+
+#[path="byte_writes.rs"]
+pub(super) mod byte_writes;

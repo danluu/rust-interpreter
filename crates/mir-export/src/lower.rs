@@ -246,6 +246,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         trace: allocation_trace.then(crate::allocation_trace::Trace::new),
         trace_parent: None,
         trace_function: None,
+        byte_writes: vec![],
     };
     exporter.trace_event(|_| serde_json::json!({"kind": "allocation-trace", "schema_version": 1,
         "target": tcx.sess.opts.target_triple.to_string(), "strict_frontend": !demand,
@@ -356,7 +357,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         rust_interp_bytecode::remove_fallthrough_jumps(&mut function.code)?;
     }
     tcx.dcx().abort_if_errors();
-    let program = Program {
+    let mut program = Program {
         version: VERSION
             | if demand {
                 rust_interp_bytecode::PARTIAL_VALIDATION
@@ -370,6 +371,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         statics: exporter.statics,
         thread_locals: exporter.thread_locals,
     };
+    scalar_frame::byte_writes::report(exporter.byte_writes, &mut program);
     scalar_frame::report();
     scalar_promote::report();
     let (mut program, calls) = rust_interp_bytecode::optimize_calls(
@@ -425,6 +427,7 @@ struct Exporter<'tcx> {
     trace: Option<crate::allocation_trace::Trace>,
     trace_parent: Option<usize>,
     trace_function: Option<usize>,
+    byte_writes: Vec<scalar_frame::byte_writes::Observation>,
 }
 impl<'tcx> Exporter<'tcx> {
     fn register(&mut self, instance: Instance<'tcx>) -> usize {
@@ -648,6 +651,10 @@ struct Lower<'a, 'tcx> {
     blocks: Vec<usize>,
     fixups: Vec<usize>,
     caller_location: Option<Slot>,
+    byte_local_extent: usize,
+    byte_origins: BTreeMap<Reg,usize>,
+    byte_origins_complete: bool,
+    byte_spans: Vec<Vec<Option<(usize, usize)>>>,
 }
 #[derive(Clone, Copy)]
 struct Location<'tcx> {
@@ -724,6 +731,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             this.frame_size += layout.size.bytes_usize();
         }
         scalar_frame::pack(&mut this)?;
+        this.byte_local_extent = this.frame_size;
         if instance.def.requires_caller_location(this.tcx()) {
             this.frame_size = (this.frame_size + 7) & !7;
             this.caller_location = Some(Slot { offset: this.frame_size, size: 8 });
@@ -744,6 +752,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             blocks: vec![0; body.basic_blocks.len()],
             fixups: vec![],
             caller_location: None,
+            byte_local_extent: 0,
+            byte_origins: BTreeMap::new(),
+            byte_origins_complete: true,
+            byte_spans: if body.local_decls.len() <= 4096 && body.basic_blocks.iter().map(|b| b.statements.len()+1).sum::<usize>() <= 32768 {
+                body.basic_blocks.iter().map(|b| vec![None; b.statements.len()+1]).collect()
+            } else { vec![] },
         }
     }
     fn tcx(&self) -> TyCtxt<'tcx> {
@@ -778,6 +792,13 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
     fn imm(&mut self, value: u128) -> Reg {
         let dst = self.reg();
         self.code.push(Op::Imm { dst, value });
+        dst
+    }
+    fn named_local(&mut self, local: mir::Local) -> Reg {
+        let dst=self.local(self.locals[local.as_usize()].offset);
+        if self.byte_origins.len()<100_000 {
+            self.byte_origins.insert(dst,local.as_usize());
+        } else { self.byte_origins_complete=false; }
         dst
     }
     fn local(&mut self, offset: usize) -> Reg {
@@ -843,9 +864,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         self.mono(op.ty(&self.body.local_decls, self.tcx()))
     }
     fn place(&mut self, place: Place<'tcx>) -> Result<Location<'tcx>> {
-        let slot = self.locals[place.local.as_usize()];
         let mut loc = Location {
-            address: self.local(slot.offset),
+            address: self.named_local(place.local),
             ty: self.mono(self.body.local_decls[place.local].ty),
             variant: None,
             metadata: None,
@@ -894,7 +914,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     }
                 }
                 ProjectionElem::Index(index) => {
-                    let a = self.local(self.locals[index.as_usize()].offset);
+                    let a = self.named_local(index);
                     let i = self.load(a, 8)?;
                     let elem = loc.ty.builtin_index().ok_or("index of non-array")?;
                     let size = self.imm(self.layout(elem)?.size.bytes() as u128);
@@ -2006,7 +2026,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     }
                 }
             }
-            for statement in &block.statements {
+            for (statement_index, statement) in block.statements.iter().enumerate() {
+                let emitted_start = self.code.len();
                 match &statement.kind {
                     StatementKind::Intrinsic(intrinsic) => match &**intrinsic {
                         mir::NonDivergingIntrinsic::Assume(operand) => {
@@ -2054,7 +2075,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     | StatementKind::Coverage(..) => {}
                     other => return Err(format!("unsupported statement {other:?}")),
                 }
+                scalar_frame::byte_writes::remember(&mut self, bb.as_usize(), statement_index, emitted_start);
             }
+            let emitted_start = self.code.len();
             match &block.terminator().kind {
                 TerminatorKind::Goto { target } => self.jump(*target),
                 TerminatorKind::SwitchInt { discr, targets } => {
@@ -2228,6 +2251,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 }
                 other => return Err(format!("unsupported terminator {other:?}")),
             }
+            scalar_frame::byte_writes::remember(&mut self, bb.as_usize(), block.statements.len(), emitted_start);
         }
         for &index in &self.fixups {
             match &mut self.code[index] {
@@ -2268,6 +2292,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             }
         }
         if let Some(caller) = self.caller_location { arguments.push(caller); }
+        let observed = scalar_frame::byte_writes::capture(&mut self);
+        self.exporter.byte_writes.push(observed);
         scalar_promote::apply(&mut self)?;
         Ok(Function {
             name: format!(

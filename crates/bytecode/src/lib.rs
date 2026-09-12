@@ -1481,3 +1481,6 @@ pub fn validate(program: &Program) -> Result<(), String> {
     }
     Ok(())
 }
+
+/// Diagnostic snapshot only; share the retained exhaustive operand visitor.
+pub fn diagnostic_visit_registers(op: &Op, read: impl FnMut(Reg), write: impl FnMut(Reg)) { registers::visit_registers(op, read, write); }
