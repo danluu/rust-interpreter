@@ -14,6 +14,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | integrated-compiler-evidence | [whole-call-build-02/summary.json](whole-call-build-02/summary.json) |
 | integrated-compiler-evidence | [whole-call-fixtures-01/summary.json](whole-call-fixtures-01/summary.json) |
 | integrated-compiler-evidence | [whole-call-export-smoke-02/summary.json](whole-call-export-smoke-02/summary.json) |
+| integrated-compiler-evidence | [whole-call-primary-02/summary.json](whole-call-primary-02/summary.json) |
+| integrated-compiler-evidence | [whole-call-costs-01/summary.json](whole-call-costs-01/summary.json) |
 | current-copy-evidence | [resumable-copy-original-e2e-01/gate-evaluation.json](resumable-copy-original-e2e-01/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-e2e-01/gate-evaluation.json](resumable-copy-e2e-01/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-release-01/summary.json](resumable-copy-release-01/summary.json) |

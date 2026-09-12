@@ -137,12 +137,15 @@ review are not commitments or evidence of feasibility.
   envelope. All four complete histories remain; no tuning retries or integration.
   The subsequent [whole-call census](../results/whole-call-census-05/assessment.md)
   uses bounded placement and an independent 38,416-graph initialization oracle.
-  It motivated a shared runtime/compiler proof and bounded nonrecursive call
-  expansion. The [isolated candidate](../benchmarks/experiments/whole-call-inline/PLAN.md)
-  passes 300 debug/release tests, 1,024 differential executions, strict uncalled
-  type/borrow rejections and both original fresh exports. Its first timing run
-  stopped at disk admission before any benchmark child; no gain is claimed.
-  Fixed fresh A/A and real edited-command comparisons are next.
+  The isolated compiler/runtime candidate passes 300 debug/release tests, 1,024
+  differential executions, strict uncalled type/borrow rejections and both real
+  fresh exports. Its [fixed primary decision](../results/whole-call-primary-02/assessment.md)
+  parks it: token wall improves 5.23%, beyond 3.83% A/A variation but below the
+  required 10%; folded's 0.56% is inside A/A. All four histories remain, with no
+  threshold changes or integration. [Stage observations](../results/whole-call-costs-01/assessment.md)
+  show token execution −291.9 ms and Cargo +62.7 ms. Next is a
+  [typed scalar boundary census](../benchmarks/experiments/whole-call-inline/NEXT.md),
+  before choosing entry/return promotion or a value-passing ABI.
 
 - The qualified aggregate compiler is now integrated as `5b2330c` / `9637b0ac`.
   [Normal root builds](../results/aggregate-integration-root-01/assessment.md)

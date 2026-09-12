@@ -39,15 +39,24 @@ The guarded Call-argument experiment is also parked: token wall improved
 It passed 297 debug/release tests and original-artifact smoke checks.
 [Fixed decision](results/call-slot-primary-01/assessment.md).
 
-The isolated whole-call candidate now passes 300 debug/release tests,
+The isolated whole-call candidate passes 300 debug/release tests,
 1,024 differential executions, strict uncalled type/borrow rejections and
 both original real export smokes. It expands bounded nonrecursive calls
-using a shared definite-initialization proof. No timing pairs have run;
-the first attempt stopped at disk admission before any benchmark child.
-[Candidate plan](benchmarks/experiments/whole-call-inline/PLAN.md).
+using a shared definite-initialization proof. Its completed comparison
+improves token wall time by 5.23% and CPU by 4.98%, beyond its 3.83% A/A
+envelope but below the fixed 10% target. Folded improves 0.56%, inside A/A.
+It is parked without integration or threshold changes.
+[Fixed primary decision](results/whole-call-primary-02/assessment.md).
 
-Next: fixed fresh A/A and real edited-command comparisons after preserving
-completed build caches. Full libtest, unwinding, threads and general OS/FFI
+Token saves 291.9 ms paired execution and adds 62.7 ms Cargo time.
+Stage medians are descriptive and need not sum to command medians.
+[Recorded costs](results/whole-call-costs-01/assessment.md).
+
+Next: measure typed scalar argument/result materialization before choosing
+entry/return promotion or a new value-passing ABI.
+[Census plan](benchmarks/experiments/whole-call-inline/NEXT.md).
+
+Full libtest, unwinding, threads and general OS/FFI
 remain open; runtime options remain explicit.
 
 The following sections preserve the preceding runtime comparisons.

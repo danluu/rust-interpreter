@@ -11,8 +11,8 @@ def render():
         'aggregate-integration-root-01', 'aggregate-relocation-e2e-01',
         'aggregate-relocation-heldout-recovery-01', 'budget-register-primary-01',
         'call-slot-primary-01', 'whole-call-build-02', 'whole-call-fixtures-01',
-        'whole-call-export-smoke-02')]
-    integration, primary, held, budget, slots, whole, fixtures, smoke = [json.loads((ROOT / p).read_text()) for p in paths]
+        'whole-call-export-smoke-02', 'whole-call-primary-02', 'whole-call-costs-01')]
+    integration, primary, held, budget, slots, whole, fixtures, smoke, whole_primary, whole_costs = [json.loads((ROOT / p).read_text()) for p in paths]
     key = integration['tool_key']
     if not (all(d['status'] == 'passed' for d in (integration, primary, budget))
             and held['status'] == 'all seven histories verified'
@@ -25,7 +25,9 @@ def render():
             and slots['status'] == 'passed' and not slots['primary_gates_passed']
             and all(d['status'] == 'passed' and d['tool_key'] == whole['tool_key'] for d in (whole, fixtures, smoke))
             and whole['tests']['debug']['passed'] == whole['tests']['release']['passed'] == 300
-            and fixtures['vm_executions'] == 1024 and fixtures['strict_rejections'] == 2):
+            and fixtures['vm_executions'] == 1024 and fixtures['strict_rejections'] == 2
+            and whole_primary['status'] == whole_costs['status'] == 'passed'
+            and not whole_primary['primary_gates_passed']):
         raise RuntimeError('integrated compiler evidence differs from the recorded decision')
     index = json.loads((ROOT / 'benchmarks/tool-builds.json').read_text())
     build = next(b for b in index['builds'] if b['commit'] == integration['source_commit'])
@@ -62,14 +64,21 @@ def render():
         '1.27%, below the fixed 10% target and inside its 2.04% identical-tool envelope.',
         'It passed 297 debug/release tests and original-artifact smoke checks.',
         '[Fixed decision](results/call-slot-primary-01/assessment.md).', '',
-        'The isolated whole-call candidate now passes 300 debug/release tests,',
+        'The isolated whole-call candidate passes 300 debug/release tests,',
         '1,024 differential executions, strict uncalled type/borrow rejections and',
         'both original real export smokes. It expands bounded nonrecursive calls',
-        'using a shared definite-initialization proof. No timing pairs have run;',
-        'the first attempt stopped at disk admission before any benchmark child.',
-        '[Candidate plan](benchmarks/experiments/whole-call-inline/PLAN.md).', '',
-        'Next: fixed fresh A/A and real edited-command comparisons after preserving',
-        'completed build caches. Full libtest, unwinding, threads and general OS/FFI',
+        'using a shared definite-initialization proof. Its completed comparison',
+        'improves token wall time by 5.23% and CPU by 4.98%, beyond its 3.83% A/A',
+        'envelope but below the fixed 10% target. Folded improves 0.56%, inside A/A.',
+        'It is parked without integration or threshold changes.',
+        '[Fixed primary decision](results/whole-call-primary-02/assessment.md).', '',
+        'Token saves 291.9 ms paired execution and adds 62.7 ms Cargo time.',
+        'Stage medians are descriptive and need not sum to command medians.',
+        '[Recorded costs](results/whole-call-costs-01/assessment.md).', '',
+        'Next: measure typed scalar argument/result materialization before choosing',
+        'entry/return promotion or a new value-passing ABI.',
+        '[Census plan](benchmarks/experiments/whole-call-inline/NEXT.md).', '',
+        'Full libtest, unwinding, threads and general OS/FFI',
         'remain open; runtime options remain explicit.', '',
         'The following sections preserve the preceding runtime comparisons.', '']
     return lines, [dict(category='integrated-compiler-evidence', report=p,
