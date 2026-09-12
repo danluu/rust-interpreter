@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Three predeclared real es8 edit histories; retain every cycle and outcome."""
+import argparse
 import json
 import os
 from pathlib import Path
 import statistics
+import re
 import subprocess
 import sys
 import time
@@ -14,7 +16,10 @@ from qualify_test_bodies import read, require, sha, write
 
 
 def main():
-    run = 'fixed-frame-clear-confirm-01'
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-id', required=True)
+    run = parser.parse_args().run_id
+    require(re.fullmatch(r'fixed-frame-clear-confirm-\d{2}', run), 'invalid confirmation run ID')
     work = ROOT / '.work' / run
     work.mkdir(exist_ok=False)
     pilot_path = ROOT / 'results/fre-integration-fixed-clear-edit-02/summary.json'
@@ -34,7 +39,7 @@ def main():
     try:
         for index in range(3):
             require(all(sha(ROOT / p) == h for p, h in frozen.items()), 'confirmation recipe changed')
-            child_run = 'fre-integration-fixed-confirm-' + str(index + 1).zfill(2)
+            child_run = 'fre-integration-' + run + '-cycle-' + str(index + 1).zfill(2)
             command = [sys.executable, str(recipe), '--case', 'es8', '--run-id', child_run,
                        '--comparison-tools', str(tools), '--initial-mode-offset', str(index), '--lock-wait-seconds', '45']
             with (work / (str(index) + '.log')).open('x') as log:
