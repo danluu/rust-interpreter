@@ -36,7 +36,13 @@ impl State {
                 if start.checked_add(size)?>f.frame_size {return None;}
                 for (i,b) in bytes[..size].iter_mut().enumerate() {*b=*self.bytes.get(&(start+i))?;}
             }
-            Fact::Scalar(v)=>{let start=usize::try_from(v).ok()?;bytes[..size].copy_from_slice(p.data.get(start..start.checked_add(size)?)?);}
+            Fact::Scalar(v)=>{
+                let start=usize::try_from(v).ok()?;
+                // Data contains null padding, but Memory::range rejects every
+                // nonempty read at zero. Folding must preserve that fault.
+                if start==0 {return None;}
+                bytes[..size].copy_from_slice(p.data.get(start..start.checked_add(size)?)?);
+            }
         }
         Some(u128::from_le_bytes(bytes))
     }
