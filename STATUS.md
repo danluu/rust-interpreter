@@ -68,7 +68,10 @@ one ignored, and exact legacy roundtrips. The custom interpreter now passes
 native Rust controls. No scalar performance comparison has run.
 The custom native ABI passes 310 debug/release tests and 64 serialized
 CLI commands, including actual generated execution in all four JIT modes.
-Caller value operands and compiler promotion remain next.
+Caller values now pass 319 debug/release tests, including all 80 scalar
+width/storage combinations and actual hot native transitions.
+Typed compiler promotion and versioned artifact publication remain next.
+[Caller-value qualification](results/scalar-value-calls-build-02/assessment.md);
 The experimental runtime is unpublished.
 [Native ABI](results/scalar-abi-native-build-03/assessment.md);
 [native CLI](results/scalar-abi-native-cli-01/assessment.md);

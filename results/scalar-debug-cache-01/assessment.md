@@ -1,0 +1,3 @@
+Five completed scalar experiments' debug Cargo directories are preserved in verified archives: 3,466,200,798 original bytes in 1,053,672,007 archive bytes, covering 25,100 files. Every payload was decoded and hashed before retirement and again in the separate verification batch; 851 external evidence hashes pass. Source, release tools, benchmark artifacts and receipts remain at their original paths.
+
+The first preparation attempt exited immediately on a busy nonblocking benchmark lock; it changed no caches. The successful preparation, application and verification batches all have terminal process receipts. No process was signaled. These archives provide headroom for the next isolated builds without lowering admission floors. [Archive and process evidence](summary.json).

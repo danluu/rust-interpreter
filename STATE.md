@@ -105,13 +105,20 @@ pass 23 commands with native Rust controls. The [custom native ABI](results/scal
 now passes 310 debug/release tests (one ignored), with actual hot native calls,
 per-PC profiles and every budget boundary. [Native CLI qualification](results/scalar-abi-native-cli-01/assessment.md)
 passes 64 commands and requires generated execution in all four JIT modes.
-No runtime was published. Next are [caller value operands](benchmarks/experiments/scalar-value-calls/CONTRACT.md)
-and compiler promotion.
+[Caller value operands](results/scalar-value-calls-build-02/assessment.md) now pass
+319 debug/release tests (one ignored): all 80 width/storage combinations, hot
+native transitions, recursion, mixed calls and TLS. No runtime was published.
+Next is [typed compiler promotion and artifact publication](benchmarks/experiments/scalar-value-compiler/NEXT.md).
 The [contract and fresh complete-command gates](benchmarks/experiments/scalar-value-abi/CONTRACT.md)
 remain required. Existing native Calls already cross guest frames without
 returning to the Rust VM. No scalar performance comparison has run yet.
 
 ## Evidence storage and ownership
+
+[Scalar debug preservation](results/scalar-debug-cache-01/assessment.md) retains
+five completed targets: 3.47 GB in 1.05 GB of verified archives, 25,100 files and
+851 external hashes checked. Source, release tools and benchmark artifacts stay
+in place. The initial busy-lock attempt exited without touching any cache.
 
 [Completed cache preservation](results/parked-runtime-cache-01/assessment.md)
 verifies 19 archives: 6.75 GB of original caches in 2.28 GB of archives, 47,626
