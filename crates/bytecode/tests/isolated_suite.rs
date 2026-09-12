@@ -145,6 +145,94 @@ fn catalog(program: &Program) -> rust_interp_bytecode::EntryCatalog {
         }).collect()).unwrap()
 }
 
+fn profile_command(artifact: &Path, catalog: &Path, output: &Path, engine: &str, name: &str) -> Command {
+    let mut command=Command::new(env!("CARGO_BIN_EXE_rust-interp-vm"));
+    command.args(["--engine",engine,"--jit-resumable-calls","--jit-persistent-registers",
+        "--profile-test",name,"--suite-catalog"]).arg(catalog).arg("--profile").arg(output).arg(artifact);
+    command
+}
+
+#[test]
+fn catalog_profile_runs_only_the_exact_test_and_preserves_original_artifact() {
+    let files=Files::new();let mut program=fixture(true);
+    program.functions[program.entry].code=vec![Op::Trap{message:"batch root must not run".into()}];
+    let artifact=files.program(&program);let before=std::fs::read(&artifact).unwrap();
+    let cat=files.0.join("catalog.json");let cat_bytes=serde_json::to_vec(&catalog(&program)).unwrap();
+    std::fs::write(&cat,&cat_bytes).unwrap();
+    let mut all_counts=vec![];
+    for engine in ["interpreter","jit"] {
+        let output=files.0.join(format!("{engine}.json"));
+        let run=profile_command(&artifact,&cat,&output,engine,"second").output().unwrap();
+        assert!(run.status.success(),"{}",String::from_utf8_lossy(&run.stderr));assert_eq!(run.stdout,b"0\n");
+        let selection:Vec<_>=String::from_utf8(run.stderr).unwrap().lines()
+            .filter_map(|line|line.strip_prefix("rust-interp-profile-selection: ").map(|s|serde_json::from_str::<Value>(s).unwrap())).collect();
+        assert_eq!(selection.len(),1);let selected=&selection[0];
+        assert_eq!(selected["name"],"second");assert_eq!(selected["function"],1);assert_eq!(selected["original_entry"],3);
+        assert_eq!(selected["artifact_sha256"],format!("{:x}",Sha256::digest(&before)));
+        assert_eq!(selected["catalog_sha256"],format!("{:x}",Sha256::digest(&cat_bytes)));
+        let profile:Value=serde_json::from_slice(&std::fs::read(output).unwrap()).unwrap();
+        let logical:Vec<Vec<u64>>=profile["functions"].as_array().unwrap().iter().map(|f| {
+            let mut counts:Vec<u64>=f["interpreted"].as_array().unwrap().iter().map(|n|n.as_u64().unwrap()).collect();
+            for (pc,hits) in f["jit_blocks"].as_array().unwrap().iter().enumerate() {
+                let hits=hits.as_u64().unwrap();
+                if hits!=0 {for n in &mut counts[pc..f["jit_block_ends"][pc].as_u64().unwrap() as usize] {*n+=hits;}}
+            }
+            counts
+        }).collect();
+        assert_eq!(logical.len(),4);assert!(logical[0].iter().all(|&n|n==0));assert!(logical[3].iter().all(|&n|n==0));
+        assert!(logical[1].iter().any(|&n|n!=0));assert!(logical[2].iter().any(|&n|n!=0));
+        all_counts.push(logical);assert_eq!(std::fs::read(&artifact).unwrap(),before);
+    }
+    assert_eq!(all_counts[0],all_counts[1]);
+}
+
+#[test]
+fn catalog_profile_rejects_unknown_stale_invalid_and_conflicting_selections_before_output() {
+    let files=Files::new();let program=fixture(true);let artifact=files.program(&program);
+    let original=serde_json::to_value(catalog(&program)).unwrap();let cat=files.0.join("catalog.json");
+    for index in 0..6 {
+        let mut contents=original.clone();
+        match index {
+            0=>{}, // unknown name
+            1=>contents["artifact_sha256"]="0".repeat(64).into(),
+            2=>contents["entries"][1]["function"]=0.into(),
+            3=>contents["entries"][1]["body_name"]="wrong".into(),
+            4=>contents["program_entry"]=0.into(),
+            _=>{}, // valid name but entry arguments forbidden
+        }
+        std::fs::write(&cat,serde_json::to_vec(&contents).unwrap()).unwrap();
+        let output=files.0.join(format!("rejected-{index}.json"));
+        let mut cmd=profile_command(&artifact,&cat,&output,"jit",if index==0 {"absent"} else {"second"});
+        if index==5 {cmd.arg("1");}
+        assert!(!cmd.output().unwrap().status.success());assert!(!output.exists());
+    }
+    std::fs::write(&cat,serde_json::to_vec(&original).unwrap()).unwrap();
+    let output=files.0.join("conflict.json");
+    for extra in [vec!["--profile-test","second"],vec!["--profile-test","second","--profile-test","second"],
+        vec!["--profile-test","second","--profile",output.to_str().unwrap(),"--isolated-batch","prepared","--suite-report",output.to_str().unwrap()]] {
+        let run=Command::new(env!("CARGO_BIN_EXE_rust-interp-vm"))
+            .args(extra).arg("--suite-catalog").arg(&cat).arg(&artifact).output().unwrap();
+        assert!(!run.status.success());assert!(!output.exists());
+    }
+    let run=Command::new(env!("CARGO_BIN_EXE_rust-interp-vm"))
+        .args(["--profile-test","second","--profile"]).arg(&output).arg(&artifact).output().unwrap();
+    assert!(!run.status.success());assert!(!output.exists());
+}
+
+#[test]
+fn catalog_profile_preserves_existing_output_and_reports_selected_failure() {
+    let files=Files::new();let program=fixture(true);let artifact=files.program(&program);
+    let cat=files.0.join("catalog.json");std::fs::write(&cat,serde_json::to_vec(&catalog(&program)).unwrap()).unwrap();
+    let output=files.0.join("existing.json");std::fs::write(&output,b"preserve me").unwrap();
+    assert!(!profile_command(&artifact,&cat,&output,"jit","second").output().unwrap().status.success());
+    assert_eq!(std::fs::read(&output).unwrap(),b"preserve me");
+    let output=files.0.join("failed.json");
+    let run=profile_command(&artifact,&cat,&output,"jit","first").output().unwrap();
+    assert!(!run.status.success());assert!(String::from_utf8_lossy(&run.stderr).contains("selected failure"));
+    // execute_profiled returns no complete profile after a guest failure.
+    assert_eq!(std::fs::metadata(output).unwrap().len(),0);
+}
+
 #[test]
 fn explicit_catalog_survives_actual_batch_call_optimization_and_isolates_failures() {
     for failure in [false, true] {

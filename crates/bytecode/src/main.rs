@@ -1,6 +1,7 @@
 use bincode::Options;
 use rust_interp_bytecode::{Engine, Limits, Program, execute_profiled, execute_with_engine};
 use std::io::Write;
+use sha2::{Digest, Sha256};
 mod suite;
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
@@ -8,11 +9,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut limits = Limits::default();
     let mut engine = Engine::Interpreter;
     let mut profile_path = None;
+    let mut profile_test = None;
     let mut isolated_batch = None;
     let mut suite_report = None;
     let mut suite_catalog = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
@@ -43,6 +45,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--profile" => {
                 if profile_path.is_some() { return Err("duplicate profile path".into()); }
                 profile_path = Some(args.next().ok_or("missing profile path")?);
+            }
+            "--profile-test" => {
+                if profile_test.is_some() { return Err("duplicate profile test".into()); }
+                profile_test = Some(args.next().ok_or("missing exact profile test name")?);
             }
             "--allocation-limit" => {
                 limits.allocations = args.next().ok_or("missing allocation limit")?.parse()?;
@@ -78,7 +84,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if version & !rust_interp_bytecode::PARTIAL_VALIDATION != rust_interp_bytecode::VERSION {
         return Err("bytecode version mismatch; re-export with the matching engine".into());
     }
-    let program: Program = bincode::DefaultOptions::new()
+    let mut program: Program = bincode::DefaultOptions::new()
         .with_fixint_encoding()
         .with_limit(64 * 1024 * 1024)
         .reject_trailing_bytes()
@@ -94,8 +100,37 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if isolated_batch.is_some() != suite_report.is_some() {
         return Err("isolated batch mode and suite report must be supplied together".into());
     }
-    if suite_catalog.is_some() && isolated_batch.is_none() {
-        return Err("--suite-catalog requires an isolated batch".into());
+    if profile_test.is_some() && (profile_path.is_none() || suite_catalog.is_none()
+        || isolated_batch.is_some() || !args.is_empty()) {
+        return Err("--profile-test requires --profile and --suite-catalog without an isolated batch or entry arguments".into());
+    }
+    if suite_catalog.is_some() && isolated_batch.is_none() && profile_test.is_none() {
+        return Err("--suite-catalog requires an isolated batch or --profile-test".into());
+    }
+    let catalog_bytes = if let Some(path) = suite_catalog {
+        if std::fs::metadata(&path)?.len() > 8 * 1024 * 1024 {
+            return Err("entry catalog exceeds 8 MiB".into());
+        }
+        Some(std::fs::read(path)?)
+    } else { None };
+    let catalog = catalog_bytes.as_ref().map(|bytes|
+        serde_json::from_slice::<rust_interp_bytecode::EntryCatalog>(bytes)).transpose()?;
+    if let Some(name) = profile_test {
+        let catalog = catalog.as_ref().unwrap();
+        let entries = catalog.validated_entries(&program, &bytes)?;
+        let selected = entries.iter().find(|(entry, _)| *entry == name)
+            .ok_or("profile test name is absent from the exact entry catalog")?.1;
+        rust_interp_bytecode::validate(&program)?;
+        // Record the selection against the original artifact before changing
+        // only the in-memory entry. The bytecode file and all functions stay
+        // intact. Each command starts fresh guest state and a fresh JIT owner.
+        eprintln!("rust-interp-profile-selection: {}", serde_json::json!({
+            "schema_version":1,"name":name,"function":selected,"original_entry":program.entry,
+            "artifact_sha256":format!("{:x}",Sha256::digest(&bytes)),
+            "catalog_sha256":format!("{:x}",Sha256::digest(catalog_bytes.as_ref().unwrap())),
+            "scope":"one catalog test with fresh guest state and JIT; diagnostic execution"
+        }));
+        program.entry = selected;
     }
     if let Some(mode) = isolated_batch {
         if engine != Engine::Jit || !limits.jit_resumable_calls || limits.jit_native_calls
@@ -103,12 +138,6 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         {
             return Err("isolated batches require resumable JIT execution without tree/stub, profile, code dump or entry arguments".into());
         }
-        let catalog = if let Some(path) = suite_catalog {
-            if std::fs::metadata(&path)?.len() > 8 * 1024 * 1024 {
-                return Err("entry catalog exceeds 8 MiB".into());
-            }
-            Some(serde_json::from_slice::<rust_interp_bytecode::EntryCatalog>(&std::fs::read(path)?)?)
-        } else { None };
         suite::run(&program, mode, &limits, suite_report.as_deref().unwrap(), catalog.as_ref(), &bytes)?;
         println!("0");
         return Ok(());
