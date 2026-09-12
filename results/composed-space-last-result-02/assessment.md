@@ -1,0 +1,3 @@
+Two terminal public Nushell attempts retained their original compiler-failure classifications and raw evidence. The first stopped at an unsupported intrinsic; the second stopped at unsupported TLS. Exact namespace-bound compiler caches had no active users or open files. Removing 8,604 regenerable compiler files recovered 3,942,690,816 bytes of actual free space. All 10,144 protected paths, including source, reports, executable files and bytecode, were retained.
+
+Free space had already increased to 36,860,493,824 bytes before this cleanup because of external activity. Only the subsequent increase to 40,803,184,640 bytes is attributable to this operation. No more cleanup is scheduled. This is storage maintenance, not a performance result.
