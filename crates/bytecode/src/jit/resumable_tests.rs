@@ -33,6 +33,56 @@ fn fixed_zeroing_matches_every_dirty_extent_and_unaligned_start() {
 }
 
 #[test]
+fn call_frame_clear_matches_actual_padding_and_preserves_live_call_registers() {
+    let mut code = platform::Code::reserve(128 * 1024).unwrap();
+    let mut caller = function(vec![Op::Return]);
+    caller.frame_align = 1;
+    let mut entries = vec![];
+    for size in [0usize, 1, 2, 7, 8, 15, 16, 17, 31, 32, 63, 64, 127, 128, 129, 255, 256, 257, 513] {
+        let mut callee = caller.clone();
+        callee.frame_align = 4096;
+        callee.frame_size = size;
+        let mut a = Assembler::default();
+        a.resumable_save_host(false);
+        a.mov(21, 1); // test's exact prefix length, relative to the host slice
+        a.mov(11, 2);
+        a.three(0x8b000000, 12, 2, 3);
+        a.imm(16, 0x1357);
+        a.imm(17, 0x2468);
+        a.imm(22, 0x3579);
+        a.clear_call_frame(&caller, &callee).unwrap();
+        for (register, offset) in [(16, 0), (17, 8), (22, 16)] {
+            a.store64(register, 0, offset);
+        }
+        a.mov(0, 31);
+        a.resumable_save_host(true);
+        a.emit(0xd65f03c0);
+        entries.push((size.max(1), code.append(&a.words).unwrap()));
+    }
+    for (size, entry) in entries {
+        for padding in (0..=64).chain([127, 255, 4095]) {
+            for offset in 0..16 {
+                let start = 64 + offset;
+                let len = padding + size;
+                let mut actual = vec![0xa5; start + len + 64];
+                let mut expected = actual.clone();
+                expected[start..start + len].fill(0);
+                let mut registers = [0u128; 2];
+                // SAFETY: this owned leaf clears exactly the supplied live
+                // slice; all backing remains initialized and stable. Prefix
+                // and suffix canaries are compared without reading outside it.
+                let result = unsafe { code.call(entry, registers.as_mut_ptr(), padding,
+                    actual.as_mut_ptr().add(start), len, 0,
+                    std::ptr::null_mut(), 0, std::ptr::null_mut()) };
+                assert_eq!(result, 0);
+                assert_eq!(actual, expected, "size {size}, padding {padding}, start {start}");
+                assert_eq!(registers, [(0x2468u128 << 64) | 0x1357, 0x3579]);
+            }
+        }
+    }
+}
+
+#[test]
 fn fixed_clear_layout_requires_an_already_aligned_extent() {
     let mut caller = function(vec![Op::Return]);
     let mut callee = caller.clone();
@@ -235,6 +285,52 @@ fn program(functions: Vec<Function>) -> Program {
         data: vec![0; 16],
         statics: vec![],
         thread_locals: vec![],
+    }
+}
+
+#[test]
+fn retained_call_targets_cover_small_and_large_register_accesses_and_live_spills() {
+    let wide = (1u128 << 127) | 0x4567;
+    for registers in [8usize, 2048, 2049, 5000] {
+        let pointer = registers as Reg - 1;
+        let value = registers as Reg - 2;
+        let mut root = function(vec![
+            Op::Local { dst: pointer, offset: 0 },
+            Op::Imm { dst: value, value: wide },
+            Op::Store { address: pointer, src: value, size: 16 },
+            Op::Call { function: 1, args: vec![pointer], destination: pointer },
+            Op::Call { function: 1, args: vec![pointer], destination: pointer },
+            Op::Load { dst: 0, address: pointer, size: 16 },
+            Op::Binary { dst: 1, overflow: 2, op: Binary::Eq, a: 0, b: value, bits: 128, signed: false },
+            Op::Assert { value: 1, expected: true, message: "caller live value or copied result changed".into() },
+            Op::Return,
+        ]);
+        root.registers = registers;
+        root.result.size = 16;
+        let mut child = function(vec![
+            Op::Local { dst: 0, offset: 0 },
+            Op::Load { dst: 1, address: 0, size: 16 },
+            Op::Imm { dst: 2, value: (1u128 << 100) | 0x123 },
+            Op::Binary { dst: 3, overflow: 7, op: Binary::Xor, a: 1, b: 2, bits: 128, signed: false },
+            Op::Store { address: 0, src: 3, size: 16 },
+            Op::Return,
+        ]);
+        child.args = vec![Slot { offset: 0, size: 16 }];
+        child.result.size = 16;
+        let p = program(vec![root, child]);
+        let reference = execute_with_engine(&p, &[], Limits::default(), Engine::Interpreter).unwrap();
+        assert_eq!(reference.value, wide);
+        for persistent in [false, true] {
+            let limits = || Limits { jit_resumable_calls: true, jit_persistent_registers: persistent, ..Limits::default() };
+            let actual = execute_with_engine(&p, &[], limits(), Engine::Jit).unwrap();
+            assert_eq!((actual.value, actual.instructions, actual.peak_memory),
+                (reference.value, reference.instructions, reference.peak_memory));
+            assert!(actual.jit_resumable_calls > 0);
+            for instructions in [0, 1, reference.instructions - 1, reference.instructions] {
+                equal_result(execute_with_engine(&p, &[], Limits { instructions, ..limits() }, Engine::Jit),
+                    &execute_with_engine(&p, &[], Limits { instructions, ..Limits::default() }, Engine::Interpreter));
+            }
+        }
     }
 }
 fn binary(dst: Reg, op: Binary, a: Reg, b: Reg) -> Op {
@@ -736,8 +832,7 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 profiles: profiles.as_ptr(),
                                 memory_end,
                                 register_end,
-                                frame_end,
-                                frame_limit: 3,
+                                frame_end: frame_end.min(3),
                                 working_budget,
                             };
                             let args = [

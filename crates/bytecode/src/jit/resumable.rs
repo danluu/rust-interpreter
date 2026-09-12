@@ -71,8 +71,8 @@ struct ResumeCursor {
     profiles: *const *mut u64,
     memory_end: usize,
     register_end: usize,
+    // Effective backing/logical depth bound, fixed before native execution.
     frame_end: usize,
-    frame_limit: usize,
     working_budget: usize,
 }
 
@@ -84,7 +84,6 @@ const PROFILES: usize = std::mem::offset_of!(ResumeCursor, profiles);
 const MEMORY_END: usize = std::mem::offset_of!(ResumeCursor, memory_end);
 const REGISTER_END: usize = std::mem::offset_of!(ResumeCursor, register_end);
 const FRAME_END: usize = std::mem::offset_of!(ResumeCursor, frame_end);
-const FRAME_LIMIT: usize = std::mem::offset_of!(ResumeCursor, frame_limit);
 const WORKING_BUDGET: usize = std::mem::offset_of!(ResumeCursor, working_budget);
 const _: () = {
     assert!(std::mem::offset_of!(ResumeCursor, state) == 0);
@@ -95,8 +94,8 @@ const _: () = {
     assert!(state::PROFILE_HITS == std::mem::offset_of!(Cursor, profile_hits));
     assert!(FRAMES == 64 && REGISTERS == 72 && ENTRIES == 80 && PROFILES == 88);
     assert!(MEMORY_END == 96 && REGISTER_END == 104 && FRAME_END == 112);
-    assert!(FRAME_LIMIT == 120 && WORKING_BUDGET == 128);
-    assert!(std::mem::size_of::<ResumeCursor>() == 136);
+    assert!(WORKING_BUDGET == 120);
+    assert!(std::mem::size_of::<ResumeCursor>() == 128);
 };
 
 impl<'a> Jit<'a> {
@@ -209,8 +208,7 @@ impl<'a> Jit<'a> {
             profiles: profiles.as_ptr(),
             memory_end,
             register_end,
-            frame_end,
-            frame_limit: limits.frames,
+            frame_end: frame_end.min(limits.frames),
             working_budget,
         };
         // SAFETY: all preparation precedes these fresh exclusive pointers.
@@ -510,6 +508,29 @@ impl Assembler<'_> {
         debug_assert_eq!(offset, size);
     }
 
+    /// x11/x12 delimit the complete prechecked clear, including actual padding;
+    /// x21 is the callee's guest base and x2 is the stable host memory base.
+    /// Small payloads can use fixed stores even when padding depends on call
+    /// history: first clear that exact dynamic prefix, then the fixed payload.
+    /// Preserve x16 (callee target), x17 (register cursor), and x22 (budget).
+    fn clear_call_frame(&mut self, caller: &Function, callee: &Function) -> Result<(), EmitError> {
+        if let Some(size) = fixed_frame_clear_size(caller, callee) {
+            self.zero_fixed(size);
+        } else if callee.frame_size.max(1) <= 256 {
+            self.three(0x8b000000, 12, 2, 21);
+            self.cmp(11, 12);
+            let empty = self.words.len();
+            self.emit(0x54000000 | Cond::Eq as u32);
+            self.zero_range()?;
+            self.patch_conditional(empty, self.words.len())?;
+            // zero_range leaves x11 at the end of the padding on both paths.
+            self.zero_fixed(callee.frame_size.max(1));
+        } else {
+            self.zero_range_at_least(callee.frame_size.max(1))?;
+        }
+        Ok(())
+    }
+
     fn resumable_call(
         &mut self,
         caller: &Function,
@@ -525,11 +546,9 @@ impl Assembler<'_> {
     ) -> Result<(), EmitError> {
         self.callee_target(id, Some(&mut *declines));
         self.load64(9, 19, state::FRAME_LEN);
-        for limit in [FRAME_END, FRAME_LIMIT] {
-            self.load64(10, 19, limit);
-            self.cmp(9, 10);
-            self.decline(Cond::Hs, declines);
-        }
+        self.load64(10, 19, FRAME_END);
+        self.cmp(9, 10);
+        self.decline(Cond::Hs, declines);
         self.imm(10, callee.frame_align as u64 - 1);
         self.three(0xab000000, 21, 3, 10); // adds; carry means alignment overflow
         self.decline(Cond::Hs, declines);
@@ -563,12 +582,7 @@ impl Assembler<'_> {
         self.imm(9, callee.frame_size.max(1) as u64);
         self.three(0x8b000000, 3, 21, 9);
         self.three(0x8b000000, 12, 2, 3);
-        if let Some(size) = fixed_frame_clear_size(caller, callee) {
-            self.zero_fixed(size);
-        } else {
-            // Dynamic alignment padding only increases this proven minimum.
-            self.zero_range_at_least(callee.frame_size.max(1))?;
-        }
+        self.clear_call_frame(caller, callee)?;
         self.load64(9, 19, state::PEAK_LINEAR);
         self.cmp(3, 9);
         self.emit(0x9a892069); // csel x9,x3,x9,hs
@@ -607,7 +621,11 @@ impl Assembler<'_> {
         self.mov(0, 17);
         self.mov(1, 21);
         self.switch_profile(profiled);
-        self.callee_target(id, None);
+        // reg_address uses x16 only beyond its scaled imm12 range. Both
+        // halves of all validated caller registers fit when there are <=2048
+        // slots. Other successful call helpers preserve x16; larger callers
+        // retain the reload after argument/result access and live-value spills.
+        if caller.registers > 2048 { self.callee_target(id, None); }
         self.emit(0xd61f0200); // br x16, no host-stack recursion
         Ok(())
     }
