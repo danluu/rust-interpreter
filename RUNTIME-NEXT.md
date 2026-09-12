@@ -4,16 +4,13 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-1. **Finish the host-MIR edit comparison.** Wrapper466c60a2 preserves original
-   flags for unselected host libraries under an explicit guest target. The
-   guest VM/exporter remain49746a22. Sixteen routing tests per profile,19
-   process checks,20 real Cargo/command checks and five driver checks pass.
-   Nushell type-relations is running with132 commands, fifteen edited pairs,
-   A/A and native repository/line-tables controls. Pgrust is mandatory; Ruff
-   confirmation follows only if both pass. No8% component threshold: the
-   Nushell gain must exceed observed A/A, with CPU not increasing. Keep all
-   outcomes and source restoration; no retiming to obtain a pass.
-   [Qualification](results/host-mir-cargo-01/summary.json).
+1. **Keep the completed host-MIR decision.** Wrapper466c60a2 completed all264
+   Nushell/pgrust commands with matching artifacts and original assertions.
+   Nushell paired wall+0.35% and CPU+0.31% show no gain;4.13% A/A wall also
+   exceeds the4% quality bound. Pgrust passes its regression guard. Ruff was
+   conditional and is not admitted. The wrapper stays experimental without
+   retiming; the gate already allowed component gains smaller than8%.
+   [Nushell assessment](results/host-mir-edit-nushell-01/assessment.md).
 2. **Keep the completed runtime decisions.** Composition completed528
    commands; its original three-test token selection improved11.59%, but its
    twelve-test selection missed adoption. The call-protocol rewrite completed
@@ -28,9 +25,9 @@ suggestion. Historical experiments retain their original decisions.
    exhaustive test process retires7.132× native instructions and4.398× cycles,
    with lower CPI. That favors instruction-volume work but does not identify
    which emitter change saves time. The historical operation profile points
-   to indirect calls and allocation primitives among VM returns; confirm this
-   on the current composed artifact before implementing a bridge or dispatch
-   change. Measure actual fast-path use if revisiting capacity design. Preserve
+   to indirect calls and allocation primitives among VM returns; a three-test exact census is now running
+   on current integrated token/folded artifacts before implementing a bridge
+   or dispatch change. Measure actual fast-path use if revisiting capacity design. Preserve
    readiness, ownership, fault order, exact budgets and strict checking.
    Do not repeat negligible width packing or tagged-address check shuffling.
    [Counter scope](results/process-instruction-counts-01-completed/assessment.md).

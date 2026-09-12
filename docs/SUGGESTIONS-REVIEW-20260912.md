@@ -110,3 +110,23 @@ Evidence: [composition](../results/composed-development-edit-token-03/stage-asse
 [width weighting](../results/jit-register-width-weighted-01/assessment.md),
 [Nushell native control](../results/large-native-nushell-02/assessment.md),
 [capacity qualification](../results/call-capacity-credit-coverage-01/summary.json).
+
+
+### Host-MIR comparison completed
+
+Suggestion4.1 now has the previously missing real-edited-command comparison.
+All264 Nushell/pgrust commands pass original/wrong/restored outcomes, and all
+custom artifacts and catalogs match. Nushell paired wall changes+0.35% and
+CPU+0.31%, within4.13% wall/1.68% CPU A/A; the wall-noise bound is also missed.
+Pgrust passes its guard with wall−0.13%, CPU−0.07%. Keep the wrapper experimental
+and cancel the conditional Ruff confirmation as declared. No unchanged-build
+or single cold-setup observation is used to overturn this result.
+
+The largest repeated Nushell unit intervals remain the distinct nu-protocol
+units and dependent checking. Cargo's rounded overlapping intervals do not
+establish a critical path or prove host routing by their labels. The separate
+real-Cargo fixture establishes routing; the full commands establish the lack
+of a useful measured warm gain. Next confirm runtime boundaries on the current
+integrated artifacts, keeping that compute-heavy investigation separate.
+[Nushell](../results/host-mir-edit-nushell-01/assessment.md),
+[pgrust](../results/host-mir-edit-pgrust-01/assessment.md).
