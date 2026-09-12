@@ -14,7 +14,7 @@ def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,4)
         build_path=args.build.resolve(strict=True);build=json.loads(build_path.read_text())
-        assert build['status']=='passed' and build['tests']['test-debug']==build['tests']['test-release']==dict(passed=377,ignored=1)
+        assert build['status']=='passed' and build['tests']['test-debug']==build['tests']['test-release']==dict(passed=378,ignored=1)
         plan_path=ROOT/build['raw']/'plan.json';plan=json.loads(plan_path.read_text())
         assert sha(plan_path)==build['source_manifest_sha256'] and all(sha(ROOT/p)==h for p,h in plan['frozen'].items())
         status_path=ROOT/'.work/experiments'/Path(build['raw']).name/'status.json';status=json.loads(status_path.read_text())

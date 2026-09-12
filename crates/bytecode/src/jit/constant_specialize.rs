@@ -103,10 +103,9 @@ pub(super) fn specialize(mut program:Program)->Result<(Program,serde_json::Value
             if members.len()<2 {continue;}
             attempted+=1;
             let original=&program.functions[callee];
-            let Some((mut body,fold))=super::constant_fold::seeded_function(&program,original,&known,&mut global) else {
+            let Some((body,fold))=super::constant_fold::seeded_function(&program,original,&known,&mut global) else {
                 report.attempt(callee,&known,members.len(),"fold proof or work limit",original.code.len(),None);continue;
             };
-            crate::control_flow::optimize_function(&mut body,true)?;
             let removed=original.code.len().saturating_sub(body.code.len());
             if removed<8 || removed*4<original.code.len() {
                 report.attempt(callee,&known,members.len(),"insufficient body reduction",original.code.len(),Some(body.code.len()));continue;

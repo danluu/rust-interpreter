@@ -112,7 +112,9 @@ fn dead_definitions(f:&mut Function)->Option<usize> {
     map_branches(&mut code,&mapping);f.code=code;Some(count)
 }
 fn function(p:&Program,f:&Function,meter:&mut Meter)->Option<(Function,Report)> {
-    function_from_entry(p,f,&State::default(),meter)
+    let (result,report)=function_from_entry(p,f,&State::default(),meter)?;
+    if !crate::registers::needs_initial_zeroes(f) && crate::registers::needs_initial_zeroes(&result) {return None;}
+    Some((result,report))
 }
 fn function_from_entry(p:&Program,f:&Function,initial:&State,meter:&mut Meter)->Option<(Function,Report)> {
     let blocks=blocks(f)?;let states=solve(p,f,&blocks,initial,meter)?;
@@ -135,14 +137,18 @@ fn function_from_entry(p:&Program,f:&Function,initial:&State,meter:&mut Meter)->
     map_branches(&mut code,&mapping);
     let mut result=f.clone();result.code=code;
     report.dead_definitions=dead_definitions(&mut result)?;
-    if !crate::registers::needs_initial_zeroes(f) && crate::registers::needs_initial_zeroes(&result) {return None;}
     report.new_operations=result.code.len();Some((result,report))
 }
 
 pub(super) fn seeded_function(p:&Program,f:&Function,known:&[(usize,usize,u128)],global:&mut usize)->Option<(Function,Report)> {
     let initial=State::argument_entry(f,known)?;
     let mut meter=Meter{used:0,global};
-    let (function,mut report)=function_from_entry(p,f,&initial,&mut meter)?;
+    let (mut function,mut report)=function_from_entry(p,f,&initial,&mut meter)?;
+    // Dead-definition liveness already ignores branches removed by folding.
+    // Remove their bodies before the block-local initialization proof examines
+    // them. The final clone must still satisfy the original no-clearing proof.
+    crate::control_flow::optimize_function(&mut function,true).ok()?;
+    if !crate::registers::needs_initial_zeroes(f) && crate::registers::needs_initial_zeroes(&function) {return None;}
     report.old_operations=f.code.len();report.solver_work=meter.used;
     Some((function,report))
 }
