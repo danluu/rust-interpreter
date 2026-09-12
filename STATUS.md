@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Shared-call specialization is parked: 386 host tests/profile and 34 real assertions pass, but final saved runtime is +1.57% token and -0.46% folded. Its compiler passes remain off main; no real-edit screen ran. Next add uninstrumented named-test selection, then sample exact generated native code in the two dominant token tests before choosing another runtime change.
+**Next:** Uninstrumented selection is qualified on main. Split-arena address checks pass363tests/profile and42real-suite commands but regress token2.51%; the candidate is parked without retiming. Next add seeded valid-program differential coverage for loops, calls, aliases and budgets before more structural runtime work.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
