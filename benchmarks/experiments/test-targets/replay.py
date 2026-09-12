@@ -54,7 +54,7 @@ def main():
                 require(binaries[name] == old_binaries[name], 'retained artifacts require the same frontend')
             inventory_path = ROOT / '.work/fre-unfiltered-native-01/inventory.json'
             require(sha(inventory_path) == parent['frozen'][str(inventory_path.relative_to(ROOT))], 'original inventory changed')
-            targets = {Path(t['target']).stem: t['names'] for t in read(inventory_path)['native'] if t['kind'] == 'integration'}
+            targets = {Path(t['target']).stem: list(t['names']) for t in read(inventory_path)['native'] if t['kind'] == 'integration'}
             require(len(previous) == len(targets) == 10 and sum(map(len, targets.values())) == 52 and
                 set(r['target'] for r in previous) == set(targets), 'original selection differs')
             source = ROOT / '.work/sources/fre'
