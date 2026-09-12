@@ -135,3 +135,17 @@ fn bounds_decline_complete_functions_without_partial_changes() {
     let p=program(vec![Op::Return;4097]);let bytes=bincode::serialize(&p).unwrap();assert_eq!(bincode::serialize(&fold(p).unwrap().0).unwrap(),bytes);
     let p=program(vec![Op::Imm{dst:0,value:1},Op::Return]);let f=&p.functions[0];let mut global=0;let mut meter=Meter{used:0,global:&mut global};assert!(function(&p,f,&mut meter).is_none());
 }
+
+#[test]
+fn immutable_reads_preserve_null_and_data_boundary_faults() {
+    for size in [1,2,4,8,16] {
+        for address in [0,1,32-size as usize,32,usize::MAX] {
+            let mut code=vec![Op::Imm{dst:2,value:address as u128},Op::Load{dst:3,address:2,size}];
+            code.extend(finish(3));
+            let p=program(code);let q=qualify(&p,&[0]);
+            if address==0 || address>=32 {
+                assert!(q.functions[0].code.iter().any(|op|matches!(op,Op::Load{..})),"address={address} size={size}");
+            }
+        }
+    }
+}

@@ -112,3 +112,11 @@ fn zero_large_arguments_and_pointer_arithmetic_are_not_constant_byte_proofs() {
         call(vec![0,0,3]),Op::Return]);
     assert!(sites(&program(code,&[0,16,8]))[0].arguments.is_empty());
 }
+
+#[test]
+fn null_argument_addresses_are_not_immutable_data() {
+    let code=vec![Op::Imm{dst:0,value:0},Op::Imm{dst:1,value:1},call(vec![0,1]),Op::Return];
+    let p=program(code,&[8,8]);let s=sites(&p);
+    assert_eq!(value(&s[0],0),None);
+    assert_eq!(value(&s[0],1),Some("0x807060504030201"));
+}
