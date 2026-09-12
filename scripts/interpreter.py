@@ -12,6 +12,7 @@ batches report every selected test with fresh guest state.
 Use --test-body --test-target NAME to select one Cargo integration-test target.
 """
 import argparse
+import contextlib
 import fcntl
 import hashlib
 import json
@@ -21,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import time
+from workspace_cache import workspace_cache_base, cache_subdirectory
 
 ROOT=Path(__file__).resolve().parents[1]
 TOOLCHAIN='nightly-2026-09-08'
@@ -192,6 +194,11 @@ def artifact_matches_target(event, test_body, test_target):
 
 
 def main():
+    with contextlib.ExitStack() as resources:
+        return _main(resources)
+
+
+def _main(resources):
     started=time.perf_counter()
     timings={}
     stats=os.environ.get('RUST_INTERP_LAUNCH_STATS')=='1'
@@ -220,6 +227,7 @@ def main():
     parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
+    parser.add_argument('--workspace-cache-root',type=Path,help='existing cache parent; create a separate namespace for this checkout (default: .work/interpreter-workspaces)')
     parser.add_argument('--inline-leaves',action='store_true',help='experimental bounded bytecode leaf inlining at export; intended for JIT comparisons')
     parser.add_argument('--trap-unsupported-calls',action='store_true',help='experimental: stop execution at unavailable direct foreign calls and catch_unwind intrinsics instead of rejecting their export')
     parser.add_argument('--run-try-callbacks',action='store_true',help='experimental: execute catch_unwind try callbacks; actual panic/unwinding still fails; requires --trap-unsupported-calls')
@@ -293,6 +301,10 @@ def main():
         parser.error(f'select between 1 and {maximum} distinct entries')
     if len(args.entry)>1 and (not args.test_body or [v for v in args.arguments if v!='--']):
         parser.error('multiple entries require --test-body and no function arguments')
+    try:
+        cache_base=workspace_cache_base(ROOT,args.workspace_cache_root)
+    except (OSError,ValueError) as error:
+        parser.error('--workspace-cache-root: '+str(error))
     manifest=args.manifest_path.resolve()
     stage=time.perf_counter()
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
@@ -319,11 +331,18 @@ def main():
     if std:identity_input+='\0std-mir:'+std[2]
     if args.cache_namespace:identity_input+='\0'+args.cache_namespace
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
-    work=ROOT/'.work/interpreter-workspaces'/key/identity
-    work.mkdir(parents=True,exist_ok=True)
+    if args.workspace_cache_root is None:
+        work=cache_base/key/identity
+        work.mkdir(parents=True,exist_ok=True)
+    else:
+        work=cache_subdirectory(cache_base,key,identity)
+        for name in ['target','invocation.lock']:
+            if (work/name).is_symlink():
+                raise RuntimeError('cache workspace contains a replacement symlink: '+name)
+    if stats:timings['workspace_path']=str(work)
     # Keep the selected metadata sidecar stable through execution when two
     # launcher invocations select different entries in this target directory.
-    invocation_lock=(work/'invocation.lock').open('a')
+    invocation_lock=resources.enter_context((work/'invocation.lock').open('a'))
     fcntl.flock(invocation_lock,fcntl.LOCK_EX)
     env=os.environ.copy()
     # Preserve Cargo's feature/profile/rustflag behavior. Tool-specific outputs

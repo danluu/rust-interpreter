@@ -40,3 +40,10 @@ Hold the global lock with a 45-second wait. Admit fre at 9.5 GiB free, pgrust at
 host/standalone correctness fixtures does not apply to these real projects.
 Restore source on every ordinary exit and preserve raw evidence. Resource or
 harness stops remain incomplete screens, never performance passes.
+
+Optional `--workspace-cache-root EXISTING_DIRECTORY` places all four fresh
+build caches under a marked checkout namespace on that filesystem. All source
+snapshots, selected artifacts, reports and raw records remain in this repository.
+Record canonical cache/evidence paths and check free space on both filesystems;
+the default paths and performance gates are unchanged. Freeze workspace_cache.py
+along with the launcher so cache placement is part of the reproducible recipe.

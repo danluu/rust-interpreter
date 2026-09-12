@@ -56,6 +56,13 @@ semantics are not implemented by this mode.
 Use `--engine interpreter` for the reference engine. Some standard-library paths
 require `--std-mir`, which prepares a reusable metadata sysroot.
 
+Use `--workspace-cache-root EXISTING_DIRECTORY` to place project Cargo outputs
+and bytecode sidecars on an existing scratch disk. The launcher creates a
+marked namespace for this checkout, then separates tool builds and
+`--cache-namespace` selections within it. Installed tools and standard-library
+metadata stay in the repository. The default cache location remains
+`.work/interpreter-workspaces`. This option creates no volume and moves no files.
+
 For an individual saved test profile, invoke the VM with `--profile NEW.json
 --profile-test EXACT_NAME --suite-catalog PROGRAM.rbc.entries.json PROGRAM.rbc`
 and the desired engine/limits. Selection validates the original artifact and
