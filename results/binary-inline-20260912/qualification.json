@@ -1,0 +1,181 @@
+{
+  "decision": "qualified",
+  "scope": "saved-bytecode process runtime including VM startup; no build-time, complete edit/build/test or unknown holdout qualification",
+  "source_parent": "ad31f94557f2907f71f88ad411c3e9b37f1b598a",
+  "baseline_source": "d2a2597 (runtime identical to merged ad31f94)",
+  "candidate_source_snapshot": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-source",
+  "candidate_source_files": {
+    "crates/bytecode/src/lib.rs": "d7876926de864e2ebcbe7e9f4e5a774e5b0c4706539167688944da60b43b39f9",
+    "crates/bytecode/src/registers.rs": "a678bea4afc3b3e93802934907d31e9125c5640ba06cfc0bee88c18cc22c04af",
+    "scripts/compare_saved_runtime.py": "bdc56aea276c2981fc42fcb39b1b7aa0bfc6a394506f44e44e44e1895b64b8a7",
+    "Cargo.lock": "b84a62188392eff7c4659e3f7825e5d97014ccebe4f859dbcd4770369ab1be16",
+    "rust-toolchain.toml": "0087d3a23067241ad1eb1f3dfa731d5daf8b8ea6b16ca3cf68a78fe43dc8c132"
+  },
+  "source_patch_sha256": "655ab80ba2c3c53cf146441638c4d4bc99d1fd5b9bceec24d277d7022b3342e3",
+  "binaries": {
+    "baseline": {
+      "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/complete-scalar-inline-vm",
+      "sha256": "d80780990ea38eceffb099a1494a20601adc1d5dabd038ff01a87e51eca4f7e3",
+      "bytes": 1082960
+    },
+    "candidate": {
+      "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-vm",
+      "sha256": "9a4a12b785fc737a09d224480d870f070566f17f7b49b5a1e81b37d2eaae61d9",
+      "bytes": 1099424
+    }
+  },
+  "build_and_tests": {
+    "binary-inline-build": {
+      "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-build.json",
+      "receipt_sha256": "10ad7c89a8c63542b3c754927996e7c941df06476ee611425448c61bd37ff909",
+      "log": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-build.log",
+      "log_sha256": "61fea7535058d59e3aa999bca0a19e35b596d4e3a4675505b30c45776909ee59",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        ".work/perf-general-20260912/target",
+        "-p",
+        "rust-interp-bytecode"
+      ],
+      "returncode": 0
+    },
+    "binary-inline-release-tests": {
+      "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-release-tests.json",
+      "receipt_sha256": "97dfd3673e18119039e6f24b6743e2679731ea6f47af48b36798314d3f1cec5c",
+      "log": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-release-tests.log",
+      "log_sha256": "b5cb01dddf43850166493774be0891e3589326f0f2c259c326bfae26cdf67ef5",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        ".work/perf-general-20260912/target",
+        "-p",
+        "rust-interp-bytecode",
+        "--lib",
+        "--tests"
+      ],
+      "returncode": 0,
+      "tests": {
+        "passed": 255,
+        "failed": 0,
+        "ignored": 1
+      }
+    },
+    "binary-inline-debug-tests": {
+      "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-debug-tests.json",
+      "receipt_sha256": "d51a984cc18ea82540fce67cb7d1c62ed46050f7caa42ae3585ef6b38c251bde",
+      "log": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-debug-tests.log",
+      "log_sha256": "8c973d5d22709ef9452375fc718af0429add0829e05b9c8b61b504ad0040eb75",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--workspace",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--config",
+        "profile.dev.debug=0",
+        "--config",
+        "profile.test.debug=0",
+        "--target-dir",
+        ".work/perf-general-20260912/target"
+      ],
+      "returncode": 0,
+      "tests": {
+        "passed": 297,
+        "failed": 0,
+        "ignored": 1
+      }
+    },
+    "binary-inline-dependent-release-tests": {
+      "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-dependent-release-tests.json",
+      "receipt_sha256": "e96ca61cfdc9ad7aa2a032dd4c3a7deb580a31f99a167086ae8d348866b9900c",
+      "log": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-dependent-release-tests.log",
+      "log_sha256": "d4ff1db688a3ef70b7e09e48b01873dd2040135c599c5429fa0b67a4147fa0d2",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        ".work/perf-general-20260912/target",
+        "-p",
+        "rust-interp-mir-export",
+        "-p",
+        "rust-interp-function-cache",
+        "-p",
+        "rustc-dispatch"
+      ],
+      "returncode": 0,
+      "tests": {
+        "passed": 42,
+        "failed": 0,
+        "ignored": 0
+      }
+    },
+    "complete-scalar-inline-merged-python-tests": {
+      "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/complete-scalar-inline-merged-python-tests.json",
+      "receipt_sha256": "897d3504729c508206350ad06080a4bf7747aab5570c5a457a74544cdefff738",
+      "log": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/complete-scalar-inline-merged-python-tests.log",
+      "log_sha256": "19acb3e9333589f1daf73d6f333a7be8e8772fd7f43cf03e311766d5c5f2f1ab",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_*.py"
+      ],
+      "returncode": 0
+    }
+  },
+  "public_comparison_commands": 308,
+  "native_oracle_commands": 280,
+  "total_comparison_commands": 588,
+  "warmup_commands": 84,
+  "oracle_generator_source": "96594bc:crates/bytecode/examples/division_runtime.rs (preserved local experiment branch)",
+  "raw_runs": {
+    "screen": {
+      "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-screen",
+      "commands_sha256": "18f1be155394b0187745365fddde15ff60f48456962effb65baaeb8b6587c861",
+      "measured_harness_sha256": "bdc56aea276c2981fc42fcb39b1b7aa0bfc6a394506f44e44e44e1895b64b8a7"
+    },
+    "confirmation": {
+      "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-confirmation",
+      "commands_sha256": "a3bea2cfbf44d904fb9e97a5d508a97848539728f2a23ad69a8e7a242b2d0b45",
+      "measured_harness_sha256": "bdc56aea276c2981fc42fcb39b1b7aa0bfc6a394506f44e44e44e1895b64b8a7"
+    },
+    "native-oracles": {
+      "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-native-oracles",
+      "commands_sha256": "950ec26f37ec830e945a3a6bfea746d8f339d2210f2685182cd8620ee47fbfb3",
+      "measured_harness_sha256": "bdc56aea276c2981fc42fcb39b1b7aa0bfc6a394506f44e44e44e1895b64b8a7"
+    }
+  },
+  "code_generation": {
+    "receipt": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-disassembly.json",
+    "receipt_sha256": "2eaa97253ff2039eb22fa693c06709e306d0148c328e1fed5ec4bd363385f775",
+    "disassembly": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/binary-inline-disassembly.log",
+    "disassembly_sha256": "1d954b32c5fe1222bcceda9781ea853ba6fa1fffe1f16c15c5db5590a71d54f3"
+  }
+}
