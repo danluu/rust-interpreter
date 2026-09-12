@@ -553,6 +553,17 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     eprintln!("rust-interp-cfg: before={} after={} seconds={:.6}",
         cfg.old_operations, cfg.new_operations, started.elapsed().as_secs_f64());
     timings.checkpoint("control_flow_optimization");
+    let started = std::time::Instant::now();
+    let (folded, report) = rust_interp_bytecode::fold_constants(program)?;
+    program = folded;
+    let folded_cfg = rust_interp_bytecode::optimize_control_flow(&mut program)?;
+    let parts = report["functions"].as_array().ok_or("invalid constant-fold report")?;
+    let count = |field: &str| parts.iter().map(|f| f[field].as_u64().unwrap_or(0)).sum::<u64>();
+    eprintln!("rust-interp-constant-fold: before={} after={} values={} switches={} dead={} declines={} work={} seconds={:.6}",
+        count("old_operations"), folded_cfg.new_operations, count("folded_values"), count("folded_switches"),
+        count("dead_definitions"), parts.iter().filter(|f| f["declined"] == true).count(),
+        report["solver_work"], started.elapsed().as_secs_f64());
+    timings.checkpoint("constant_folding");
     timings.finish();
     Ok(Exported { program, selected_entries, unavailable_calls: exporter.unavailable_calls,
         allocation_trace: exporter.trace, function_costs })

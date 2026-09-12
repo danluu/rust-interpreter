@@ -56,3 +56,10 @@ dead definitions can cross the minimum native-region size, changing that wording
 even in the same JIT mode. Treat exactly those two strings as one range-fault
 category for JIT comparisons; keep every other error and instruction-budget
 failure exact. Do not change the VM or broaden normalization to unrelated faults.
+
+Exporter placement: after the existing call/inlining/CFG pipeline, run the folder
+and then the existing CFG cleanup again. This makes the candidate exactly the
+standalone typed transformation of the fully optimized retained artifact. The
+extra cleanup cost is included in export time. The call-census CLI supports
+`--fold` and `--verify-fold` with whole-artifact byte equality, preserving all
+non-code fields. The verifier is untimed in subsequent workflow comparisons.

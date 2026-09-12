@@ -25,3 +25,29 @@ fn diagnostic_rejects_nonregular_large_invalid_and_trailing_inputs() {
     std::fs::write(&input,b"invalid").unwrap();assert!(!run(&input).status.success());
     let mut bytes=bincode::serialize(&program()).unwrap();bytes.push(0);std::fs::write(&input,bytes).unwrap();assert!(!run(&input).status.success());assert!(!output.exists());
 }
+
+#[test]
+fn fold_command_and_whole_artifact_verifier_match_a_separate_expected_program() {
+    let d=Directory::new();let input=d.0.join("input.rbc");let output=d.0.join("folded.rbc");let report=d.0.join("fold.json");
+    let mut p=program();p.functions[0].registers=1;p.functions[0].code.insert(0,Op::Imm{dst:0,value:123});
+    std::fs::write(&input,bincode::serialize(&p).unwrap()).unwrap();
+    assert!(Command::new(env!("CARGO_BIN_EXE_rust-interp-call-census")).args(["--fold"]).arg(&input).arg(&output).arg(&report).output().unwrap().status.success());
+    p.functions[0].code.remove(0);let expected=bincode::serialize(&p).unwrap();assert_eq!(std::fs::read(&output).unwrap(),expected);
+    let checked=d.0.join("checked.json");
+    assert!(Command::new(env!("CARGO_BIN_EXE_rust-interp-call-census")).arg("--verify-fold").arg(&input).arg(&output).arg(&checked).output().unwrap().status.success());
+    let r:serde_json::Value=serde_json::from_slice(&std::fs::read(&checked).unwrap()).unwrap();assert_eq!(r["exact_constant_fold"],true);
+    let before=std::fs::read(&report).unwrap();
+    assert!(!Command::new(env!("CARGO_BIN_EXE_rust-interp-call-census")).arg("--fold").arg(&input).arg(&output).arg(&report).output().unwrap().status.success());
+    assert_eq!(std::fs::read(&output).unwrap(),expected);assert_eq!(std::fs::read(&report).unwrap(),before);
+}
+#[test]
+fn fold_verifier_rejects_unrelated_data_and_layout_changes() {
+    let d=Directory::new();let input=d.0.join("input.rbc");let candidate=d.0.join("candidate.rbc");let p=program();
+    std::fs::write(&input,bincode::serialize(&p).unwrap()).unwrap();
+    for index in 0..2 {
+        let mut other=p.clone();if index==0 {other.data.push(1);} else {other.functions[0].frame_size=1;}
+        std::fs::write(&candidate,bincode::serialize(&other).unwrap()).unwrap();let report=d.0.join(format!("{index}.json"));
+        assert!(!Command::new(env!("CARGO_BIN_EXE_rust-interp-call-census")).arg("--verify-fold").arg(&input).arg(&candidate).arg(&report).output().unwrap().status.success());
+        let r:serde_json::Value=serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();assert_eq!(r["exact_constant_fold"],false);
+    }
+}
