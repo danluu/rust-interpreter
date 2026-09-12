@@ -5,10 +5,12 @@ import fcntl
 import hashlib
 import json
 from pathlib import Path
+import statistics
 import time
 
 from workflow_measurements import initial_modes, mode_order
 from workflow_jobs import recorded_build_jobs, verify_command_jobs
+from bench_e2e_workflow import build_metrics, cache_workspace, guest_test_failure
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -78,10 +80,36 @@ def verify(report, reference=None, *, compiler_flags=None):
                   if 'build_jobs' in report and 'native_control' in report else None)
     require('custom_build_jobs' not in report or job_counts is not None,
             'custom worker receipt lacks shared/native controls')
+    measuring_build = 'build_metrics' in report
+    restoring = 'restored_original' in report
+    aa_control = report.get('aa_control', False)
+    controlled_caches = measuring_build or aa_control
+    if measuring_build:
+        require('comparison' in report and report['batch'], 'build metrics require a batched paired comparison')
+    if restoring:
+        require('comparison' in report and report['batch'], 'restoration verification requires a batched paired comparison')
+    if aa_control:
+        require('comparison' in report and report['batch'] and job_counts is not None and not report.get('compare_isolated_batches'),
+                'A/A control requires identical batched paired jobs/settings')
+        require(report['tool_builds']['baseline'] == report['tool_builds']['candidate'] and
+                job_counts['baseline'] == job_counts['candidate'], 'A/A tools or settings differ')
+        require(report['comparison']['baseline_tool_key'] == report['comparison']['candidate_tool_key'] ==
+                report['tool_builds']['baseline']['tool_key'], 'A/A tool keys differ')
+    if controlled_caches:
+        require(set(report['cache_namespaces']) == set(report['cache_workspaces']) == {'baseline', 'candidate'},
+                'missing isolated comparison caches')
+        namespaces = report['cache_namespaces']
+        require(all(namespaces[m] == Path(report['raw']).name + ':' + m for m in namespaces) and
+                len(set(report['cache_workspaces'].values())) == 2, 'comparison caches are not isolated')
     rows = read(ROOT / report['raw'] / 'records.json')
     if 'case_file' in report:
         from workflow_case_file import verify_snapshot
-        verify_snapshot(ROOT, report, rows)
+        # The existing case verifier reconstructs its declared edit history.
+        # The optional final restoration is checked against that verified
+        # original below, without changing historical case-file schemas.
+        case_report = dict(report, mode_orders=report['mode_orders'][:-1]) if restoring else report
+        case_rows = [r for r in rows if r['state'] != -2] if restoring else rows
+        verify_snapshot(ROOT, case_report, case_rows)
     transitions = read(ROOT / report['raw'] / 'source-transitions.json')
     cycles = report['cycles']
     edits = len(report['edits'])
@@ -93,14 +121,24 @@ def verify(report, reference=None, *, compiler_flags=None):
         phase=('cold' if c == 0 else 'anchor') if s == 0 else ('wrong-edit' if s == -1 else 'edit'),
         modes=mode_order(scheduled_modes, c, s, 'comparison' in report))
         for c in range(cycles) for s in states]
+    if restoring:
+        expected_orders.append(dict(cycle=cycles,state=-2,phase='restored-original',
+            modes=mode_order(scheduled_modes,cycles,-2,'comparison' in report)))
     require(report['mode_orders'] == expected_orders, 'recorded mode schedule differs')
     require([(r['cycle'], r['state'], r['mode']) for r in rows] ==
         [(o['cycle'], o['state'], m) for o in expected_orders for m in o['modes']], 'command order differs from schedule')
-    expected = {(c, s, m) for c in range(cycles) for s in states for m in modes}
+    expected = {(o['cycle'],o['state'],m) for o in expected_orders for m in modes}
     actual = [(r['cycle'], r['state'], r['mode']) for r in rows]
     require(len(set(actual)) == len(actual) and set(actual) == expected, 'missing or duplicate samples')
     require(report['test_source_unchanged'] and report['wrong_production_edit_rejected'], 'source/test controls failed')
-    require(len(transitions) == cycles * len(states), 'missing source transitions')
+    require(len(transitions) == len(expected_orders), 'missing source transitions')
+    if restoring:
+        original = rows[0]['source_sha256']
+        require(report['restored_original'] == dict(verified=True,source_sha256=original,
+            cycle=cycles,state=-2,commands=len(modes),excluded_from_edited_medians=True), 'invalid restoration receipt')
+        require(transitions[-1]['cycle'] == cycles and transitions[-1]['state'] == -2 and
+                transitions[-1]['phase'] == 'restored-original' and transitions[-1]['source_sha256'] == original,
+                'restoration transition does not return to original source')
     require(all(t['content_changed'] for t in transitions if t['phase'] != 'cold'), 'unchanged warm sample')
     previous = dict.fromkeys(modes)
     artifacts = {}
@@ -108,7 +146,7 @@ def verify(report, reference=None, *, compiler_flags=None):
     paths = set()
     for row in rows:
         cycle, state, mode = row['cycle'], row['state'], row['mode']
-        phase = ('cold' if cycle == 0 else 'anchor') if state == 0 else ('wrong-edit' if state == -1 else 'edit')
+        phase = 'restored-original' if restoring and state == -2 else (('cold' if cycle == 0 else 'anchor') if state == 0 else ('wrong-edit' if state == -1 else 'edit'))
         require(row['phase'] == phase, 'incorrect cold/anchor/edit label')
         require(row['previous_source_sha256'] == previous[mode], 'source history mismatch')
         if phase != 'cold':
@@ -118,6 +156,24 @@ def verify(report, reference=None, *, compiler_flags=None):
         cpu = sum(c['cpu']['user_seconds'] + c['cpu']['system_seconds'] for c in row['calls'])
         require(abs(cpu - row['cpu_seconds']) < 1e-8, 'CPU total does not match child calls')
         require(all((c['returncode'] == 0) == (state != -1) for c in row['calls']), 'unexpected command result')
+        if measuring_build or restoring or aa_control:
+            package = report['build_controls']['package']
+            prefix = ('Compiling ' if mode == 'native' else 'Checking ') + package + ' '
+            require(any(line.strip().startswith(prefix) for call in row['calls'] for line in call['stderr'].splitlines()),
+                    'controlled source was not freshly compiled')
+            if state == -1 and not report.get('compare_isolated_batches'):
+                call = row['calls'][-1]
+                if mode == 'native':
+                    require('test result: FAILED.' in call['stdout'] and
+                            any(f'test {test} ... FAILED' in call['stdout'] for test in row['tests']),
+                            'wrong edit was not rejected by a native test body')
+                else:
+                    require(guest_test_failure(call['stderr']), 'wrong edit did not reach a guest assertion')
+            elif not report.get('compare_isolated_batches'):
+                require(all(call['stdout'].strip() == '0' for call in row['calls']) if mode != 'native' else
+                        f"{len(row['tests'])} passed" in row['calls'][0]['stdout'], 'successful test output differs')
+            if phase == 'restored-original':
+                require(row['source_sha256'] == original, 'final build did not use original source')
         if job_counts is not None:
             for call in row['calls']:
                 verify_command_jobs(call['command'], job_counts[mode])
@@ -151,6 +207,20 @@ def verify(report, reference=None, *, compiler_flags=None):
                         call['launch']['suite_report_path'] == str(path), 'launched suite differs')
         if mode != 'native':
             settings = report.get('tool_builds', {}).get(mode, {})
+            if controlled_caches or restoring:
+                for call in row['calls']:
+                    launches = [json.loads(line.split('rust-interp-launch: ',1)[1]) for line in call['stderr'].splitlines()
+                                if line.startswith('rust-interp-launch: ')]
+                    require(launches == [call['launch']], 'launch receipt differs from command stderr')
+                    require(call['launch']['tool_key'] == settings['tool_key'], 'executed tool differs')
+                    if controlled_caches:
+                        scope = ROOT / '.work/interpreter-workspaces' / settings['tool_key']
+                        workspace = cache_workspace(call['command'],call['launch']['artifact_path'],scope,namespaces[mode])
+                        require(workspace == report['cache_workspaces'][mode], 'executed cache workspace differs')
+                if measuring_build:
+                    measured = [build_metrics(call['launch']) for call in row['calls']]
+                    for field in measured[0]:
+                        require(row[field] == sum(value[field] for value in measured), 'sample build metrics differ from launch receipts')
             if compiler_flags is not None:
                 require(all(call.get('rustflags') == ' '.join(compiler_flags[mode]) and
                             call['launch']['tool_key'] == settings['tool_key'] for call in row['calls']),
@@ -170,22 +240,26 @@ def verify(report, reference=None, *, compiler_flags=None):
             paths.add(path)
             digest = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
             require(digest == artifact['sha256'], 'artifact hash mismatch')
+            if controlled_caches or restoring:
+                require(len(row['calls']) == 1 and row['calls'][0]['launch']['artifact_sha256'] == digest and
+                        row['calls'][0]['launch']['artifact_bytes'] == (ROOT / path).stat().st_size,
+                        'snapshot differs from the executed artifact receipt')
             verify_entry_catalog(ROOT, artifact, row['calls'][0]['launch'], row['tests'],
                                  suite if report.get('compare_isolated_batches') else None)
             artifacts[cycle, state, mode] = digest
     paired_identical = True
-    for c in range(cycles):
-        for s in states:
-            selected = [r for r in rows if r['cycle'] == c and r['state'] == s]
-            require(len({r['source_sha256'] for r in selected}) == 1, 'paired sources differ')
-            require(all(r['tests'] == selected[0]['tests'] for r in selected), 'paired test selections differ')
-            if report.get('compare_isolated_batches'):
-                require(suites[c, s, modes[0]] == suites[c, s, modes[1]] == suites[c, s, modes[2]],
-                        'isolated test outcomes differ between native/fresh/prepared')
-            identical = artifacts[c, s, custom_modes[0]] == artifacts[c, s, custom_modes[1]]
-            paired_identical &= identical
-            if compiler_flags is None:
-                require(identical, 'paired bytecode differs')
+    for order in expected_orders:
+        c,s = order['cycle'],order['state']
+        selected = [r for r in rows if r['cycle'] == c and r['state'] == s]
+        require(len({r['source_sha256'] for r in selected}) == 1, 'paired sources differ')
+        require(all(r['tests'] == selected[0]['tests'] for r in selected), 'paired test selections differ')
+        if report.get('compare_isolated_batches'):
+            require(suites[c, s, modes[0]] == suites[c, s, modes[1]] == suites[c, s, modes[2]],
+                    'isolated test outcomes differ between native/fresh/prepared')
+        identical = artifacts[c, s, custom_modes[0]] == artifacts[c, s, custom_modes[1]]
+        paired_identical &= identical
+        if compiler_flags is None:
+            require(identical, 'paired bytecode differs')
     for s in states:
         require(len({r['source_sha256'] for r in rows if r['state'] == s}) == 1, 'repeated source state differs')
     if cycles == 3:
@@ -195,6 +269,29 @@ def verify(report, reference=None, *, compiler_flags=None):
                 require(sorted(o.index(m) for o in orders) == [0, 1, 2], 'unbalanced mode positions')
     if 'comparison' in report:
         require(len(report['comparison']['pairs']) == cycles * edits, 'missing edited pairs')
+    if measuring_build:
+        expected_pairs = [(c,s) for c in range(cycles) for s in range(1,edits+1)]
+        require([(p['cycle'],p['state']) for p in report['comparison']['pairs']] == expected_pairs,
+                'build pairs include a control or omit an edit')
+        for pair in report['comparison']['pairs']:
+            selected = {r['mode']:r for r in rows if (r['cycle'],r['state']) == (pair['cycle'],pair['state'])}
+            for mode in ['baseline','candidate']:
+                for field in ['build_to_ready_seconds','build_to_ready_cpu_seconds','cargo_cpu_seconds']:
+                    require(pair[mode+'_'+field] == selected[mode][field], 'paired build timing differs from commands')
+            for field in ['build_to_ready_seconds','build_to_ready_cpu_seconds']:
+                difference = field.removesuffix('_seconds')+'_difference_seconds'
+                require(pair[difference] == selected['candidate'][field]-selected['baseline'][field], 'paired build difference differs')
+        for mode in ['baseline','candidate']:
+            selected = [r for r in rows if r['mode'] == mode and r['state'] > 0]
+            require(report['build_metrics']['median_seconds'][mode] == statistics.median(r['build_to_ready_seconds'] for r in selected) and
+                    report['build_metrics']['median_cpu_seconds'][mode] == statistics.median(r['build_to_ready_cpu_seconds'] for r in selected),
+                    'build medians include controls or differ from edited samples')
+    if restoring:
+        for mode in modes:
+            selected = [r for r in rows if r['mode'] == mode and r['state'] > 0]
+            require(report['median_seconds'][mode] == statistics.median(r['seconds'] for r in selected) and
+                    report['median_cpu_seconds'][mode] == statistics.median(r['cpu_seconds'] for r in selected),
+                    'edited command medians include restoration or other controls')
     require(len(report['cycle_anchor_seconds']) == cycles - 1, 'incorrect anchor count')
     require(report['cold_success_seconds'] == {r['mode']: r['seconds'] for r in rows if r['phase'] == 'cold'}, 'cold results contain warm anchors')
     cross_cycle = [{"state": s, "sha256_by_cycle": [artifacts[c, s, custom_modes[1]] for c in range(cycles)]} for s in states]
@@ -202,7 +299,7 @@ def verify(report, reference=None, *, compiler_flags=None):
     if report.get('check_floor') is not None:
         checks = read(ROOT / report['raw'] / 'check-records.json')
         keys = [(c['cycle'], c['state']) for c in checks]
-        require(len(set(keys)) == len(keys) and set(keys) == {(c, s) for c in range(cycles) for s in states}, 'missing/duplicate check controls')
+        require(len(set(keys)) == len(keys) and set(keys) == {(o['cycle'],o['state']) for o in expected_orders}, 'missing/duplicate check controls')
         check_count = len(checks)
         control = report['native_control']
         encoded = '\x1f'.join(control['rustflags']) or None
@@ -252,6 +349,9 @@ def verify(report, reference=None, *, compiler_flags=None):
     if compiler_flags is not None:
         result['compiler_comparison'] = dict(expected_guest_flags=compiler_flags,
             identical_tools_and_runtime_options=True, bytecode_equivalence_proven=False)
+    if measuring_build:result['build_to_ready_metrics_verified']=True
+    if restoring:result['restored_original_build_and_execution_verified']=True
+    if aa_control:result['identical_build_isolated_caches_verified']=True
     return result
 
 

@@ -46,6 +46,17 @@ reports help distinguish selected-target compilation, other compiler invocations
 and time before compilation begins. Treat such runs as diagnostic comparisons;
 they include report generation. [Cargo's timing-report documentation](https://doc.rust-lang.org/cargo/reference/timings.html).
 
+For paired batched compiler comparisons, `--build-metrics` records wall time
+and launcher plus waited-for child CPU through validated artifact readiness,
+before VM invocation. Cargo-only CPU is retained separately. `--aa-control`
+requires identical tools/options and verifies separate actual Cargo workspaces;
+`--verify-restoration` adds a fresh build and execution after the original source
+has been restored. Restoration, wrong edits and cold/anchor controls are excluded
+from edited medians. `--lock-wait-seconds` permits bounded waiting without
+changing another workload. These flags require paired `--batch` comparisons.
+The [measurement qualification](results/build-controls-20260912/assessment.md)
+records83 passing Python tests and two public identical-build control histories.
+
 ## Controls, setup and interpretation
 
 The harness now accepts `--native-profile repository|o0-incremental`, `--jobs`,

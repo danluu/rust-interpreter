@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import resource
 import shutil
 import subprocess
 import sys
@@ -28,6 +29,16 @@ ROOT=Path(__file__).resolve().parents[1]
 TOOLCHAIN='nightly-2026-09-08'
 LEGACY_TOOL_BINARIES=('rust-interp-vm','rust-interp-mir-export')
 CURRENT_TOOL_BINARIES=(*LEGACY_TOOL_BINARIES,'rust-interp-rustc-wrapper')
+
+
+def cpu_usage(who):
+    usage=resource.getrusage(who)
+    return usage.ru_utime,usage.ru_stime
+
+
+def cpu_since(who, before):
+    user,system=(after-start for after,start in zip(cpu_usage(who),before))
+    return dict(user_seconds=user,system_seconds=system,total_seconds=user+system)
 
 
 def installed_tools(key):
@@ -202,6 +213,12 @@ def _main(resources):
     started=time.perf_counter()
     timings={}
     stats=os.environ.get('RUST_INTERP_LAUNCH_STATS')=='1'
+    if stats:
+        # RUSAGE_CHILDREN includes waited-for descendant trees. Combined with
+        # RUSAGE_SELF this covers launcher work and completed build subprocesses,
+        # including tool/std-MIR preparation; Python startup/imports are excluded.
+        launcher_cpu_started=cpu_usage(resource.RUSAGE_SELF)
+        children_cpu_started=cpu_usage(resource.RUSAGE_CHILDREN)
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--manifest-path',type=Path,default=Path('Cargo.toml'))
     parser.add_argument('--package',required=True)
@@ -397,9 +414,13 @@ def _main(resources):
     if args.test_body:command+=['--profile','test']
     if std:command+=['--target',std[1]]
     if args.timings:command+=['--timings']
+    # Cargo CPU covers its waited-for child tree, excluding launcher CPU and
+    # earlier tool/std-MIR preparation or later sidecar verification.
+    if stats:cargo_cpu_started=cpu_usage(resource.RUSAGE_CHILDREN)
     stage=time.perf_counter()
     result=subprocess.run(command,cwd=manifest.parent,env=env,stdout=subprocess.PIPE,text=True)
     timings['cargo_seconds']=time.perf_counter()-stage
+    if stats:timings['cargo_cpu']=cpu_since(resource.RUSAGE_CHILDREN,cargo_cpu_started)
     if result.returncode:return result.returncode
     artifacts=[]
     suffix='.tests.json' if listing else '.audit.json' if auditing else '.rbc'
@@ -513,6 +534,16 @@ def _main(resources):
         digest=hashlib.sha256(artifacts[0].read_bytes()).hexdigest() if size<=64*1024*1024 else None
         timings.update(artifact_path=str(artifacts[0].resolve()),artifact_bytes=size,artifact_sha256=digest,
                        artifact_hash_seconds=time.perf_counter()-stage)
+        # Ready means Cargo's selected artifact passed every launcher check and
+        # its stats provenance is recorded. VM startup, decoding, validation and guest
+        # execution are excluded. Audit-only commands never reach this boundary.
+        timings['build_to_ready_seconds']=time.perf_counter()-started
+        launcher_cpu=cpu_since(resource.RUSAGE_SELF,launcher_cpu_started)
+        children_cpu=cpu_since(resource.RUSAGE_CHILDREN,children_cpu_started)
+        timings['build_to_ready_cpu']={
+            field:launcher_cpu[field]+children_cpu[field]
+            for field in ('user_seconds','system_seconds','total_seconds')}
+        timings['build_to_ready_cpu'].update(self=launcher_cpu,children=children_cpu)
     stage=time.perf_counter()
     result=subprocess.run([*vm_command,str(artifacts[0]),*values],env=env)
     timings['execution_seconds']=time.perf_counter()-stage
