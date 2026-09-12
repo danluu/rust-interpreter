@@ -70,6 +70,11 @@ catalog, preserves the bytecode file, and starts fresh guest/JIT state. Stderr
 records the selection digests. This diagnostic does not model shared prepared
 code across a suite; guest failures do not produce a complete profile.
 
+Use `--select-test EXACT_NAME --suite-catalog PROGRAM.rbc.entries.json` to
+execute one saved test without instruction profiling. It uses the same catalog
+validation and fresh guest state. This also permits `--jit-code-dump DIRECTORY`
+to capture the uninstrumented code for a selected test.
+
 `--trap-unsupported-calls` permits export past specific unavailable calls; reaching
 one still stops execution. `--run-try-callbacks` supports normal returns only,
 not panic unwinding. Fre's broad replay requires `--allocation-limit 150000` and

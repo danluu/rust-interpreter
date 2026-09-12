@@ -4,17 +4,15 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Investigate private pointer-value promotion.** Catalog-selected profiles
-   pass 340 Rust tests/profile and fourteen real VM commands for seven current
-   tests, with exact entropy and logical counts against the retained VM. The
-   two dominant token tests have different hot paths; precondition checking and
-   generic code expose substantial local memory operations. The existing scalar
-   promoter excludes pointers. Review whether private thin raw-pointer values
-   can use its existing proof while retaining address-exposure and call-ABI
-   exclusions. Keep all checking enabled and preserve legacy promotion capacity.
-   [Profiles](results/suite-profiling-real-01/assessment.md),
-   [plan](benchmarks/experiments/private-pointer-promotion/PLAN.md).
-   Both register-capacity candidates remain parked without retiming.
+1. **Choose from actual native costs.** Exact uninstrumented test selection
+   passes 360 Rust tests/profile and seven real selection controls. Six native
+   sampling windows expose different hot paths in the dominant token tests.
+   Inspect hot region instructions and boundary structure before implementing
+   another candidate; logical bytecode reductions have not predicted runtime
+   improvement. Shared-call specialization, pointer promotion, register-cache
+   and packing candidates remain parked without retiming.
+   [Native samples](results/selected-native-block-sample-01/assessment.md),
+   [shared-call decision](results/constant-specialize-replay-03/assessment.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%

@@ -8,23 +8,33 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+Exact saved-test selection now works independently of instruction profiling.
+The feature passes 360 host tests per profile and seven real selections with
+identical instructions, output, memory peaks and replayed entropy. Six native
+sampling windows show different hot paths in the two dominant token tests:
+regex determinization/hashing versus sorting, comparison and precondition
+checks. Generated code accounts for about 89% of both captures; bytecode-count
+reductions alone remain a poor guide. Inspect the actual hot region instructions
+and boundary structure before choosing another runtime candidate.
+[Selection and native samples](results/selected-native-block-sample-01/assessment.md).
+
 Shared-call specialization is parked on
 `experiment/constant-call-specialization-20260912`. The final version passes386
 host tests/profile and all34saved real assertions, but its three-pair runtime
 medians are +1.57% token, −0.46% folded and −0.45% pgrust. CFG cleanup and proven
 unobserved frame-write removal reduce bytecode operations without useful native
 runtime gains. The compiler remains off main and no edited-command screen ran.
-Next separate named-test selection from instruction profiling, then sample exact
-uninstrumented generated native code in both dominant token tests.
+The separate named-test selection and native sampling follow-up is complete
+above; this compiler candidate remains parked.
 [Decision](results/constant-specialize-replay-03/assessment.md).
 
 Catalog-bound single-test profiling passes 340 Rust tests/profile and fourteen
 real VM commands. Seven current token/folded/pgrust test profiles exactly match
 fresh retained-VM controls under replayed entropy. Their saved bytecode stays
 unchanged. The expanded token test emphasizes regex determinization; the original
-exhaustive test emphasizes bounds and copy preconditions. Next investigate private
-thin raw-pointer value promotion using the existing scalar-local proof, keeping
-all checks and call-ABI exclusions. [Profiles](results/suite-profiling-real-01/assessment.md).
+exhaustive test emphasizes bounds and copy preconditions. The subsequent private
+pointer promotion and shared-call candidates are parked; current native samples
+now guide further work. [Profiles](results/suite-profiling-real-01/assessment.md).
 
 The larger region-local cache is parked off main after 339 Rust tests/profile
 and exact real-suite correctness passed but its six-pair token runtime screen
