@@ -201,6 +201,7 @@ def main():
     parser.add_argument('--jobs',type=int,default=4,help='Cargo build jobs (1..256)')
     selected=parser.add_mutually_exclusive_group(required=True)
     selected.add_argument('--entry',action='append',help='function to run; repeat for a batch of unit test bodies')
+    selected.add_argument('--list-tests',action='store_true',help='list checked built-in test names and attributes without executing tests')
     selected.add_argument('--audit-entries',type=Path,help='JSON list of test body names to check for lowering support, without executing them')
     parser.add_argument('--retain-audit-bodies',action='store_true',help='retain bounded, hashed programs from a lowering audit for separate execution diagnostics')
     parser.add_argument('--allocation-trace',action='store_true',help='record bounded allocation origins and verify their binding to the selected bytecode before execution')
@@ -239,6 +240,16 @@ def main():
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     auditing=args.audit_entries is not None
+    listing=args.list_tests
+    if listing:
+        if (not args.test_body or args.arguments or args.engine!='interpreter' or
+                args.instruction_limit is not None or args.allocation_limit is not None or
+                args.isolated_batch is not None or args.suite_report is not None or args.jit_native_calls or
+                args.jit_native_call_stubs or args.jit_resumable_calls or args.jit_persistent_registers or
+                args.inline_leaves or args.trap_unsupported_calls or args.run_try_callbacks or
+                args.allocation_trace or args.retain_audit_bodies):
+            parser.error('--list-tests requires --test-body without execution or lowering options')
+        args.entry=[]
     if (args.isolated_batch is None) != (args.suite_report is None):
         parser.error('--isolated-batch and --suite-report must be supplied together')
     if args.isolated_batch is not None:
@@ -268,13 +279,14 @@ def main():
     if args.instruction_limit is not None and args.instruction_limit <= 0:
         parser.error('--instruction-limit must be positive')
     maximum=4096 if auditing else 256
-    if not 1<=len(args.entry)<=maximum or len(set(args.entry))!=len(args.entry):
+    if not listing and (not 1<=len(args.entry)<=maximum or len(set(args.entry))!=len(args.entry)):
         parser.error(f'select between 1 and {maximum} distinct entries')
     if len(args.entry)>1 and (not args.test_body or [v for v in args.arguments if v!='--']):
         parser.error('multiple entries require --test-body and no function arguments')
     manifest=args.manifest_path.resolve()
     stage=time.perf_counter()
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
+    if listing:require_export_option(tools,key,'list-tests')
     if args.inline_leaves:require_export_option(tools,key,'inline-leaves')
     if args.trap_unsupported_calls:require_export_option(tools,key,'trap-unsupported-calls')
     if args.run_try_callbacks:require_export_option(tools,key,'run-try-callbacks')
@@ -312,7 +324,7 @@ def main():
     timings['compiler_wrapper']=dict(name=wrapper_name,sha256=tool_manifest[wrapper_name])
     env.update(RUSTC_WRAPPER=str(tools/wrapper_name),RUSTC_WORKSPACE_WRAPPER='',
                RUST_INTERP_EXPORT_PACKAGE=args.package,
-               RUST_INTERP_OUTPUT=str(work/('audit.json' if auditing else 'program.rbc')),RUST_INTERP_EXPORT_TEST='1' if args.test_body else '0',CARGO_TARGET_DIR=str(work/'target'))
+               RUST_INTERP_OUTPUT=str(work/('tests.json' if listing else 'audit.json' if auditing else 'program.rbc')),RUST_INTERP_EXPORT_TEST='1' if args.test_body else '0',CARGO_TARGET_DIR=str(work/'target'))
     if args.test_target is not None:
         # The existing compiler router also checks Cargo package/primary/test
         # identity. A same-package library or sibling test cannot export here.
@@ -321,7 +333,9 @@ def main():
     if args.trap_unsupported_calls:env['RUST_INTERP_TRAP_UNSUPPORTED_CALLS']='1'
     if args.run_try_callbacks:env['RUST_INTERP_RUN_TRY_CALLBACKS']='1'
     if args.allocation_trace:env['RUST_INTERP_ALLOCATION_TRACE']='1'
-    if auditing:
+    if listing:
+        env['RUST_INTERP_LIST_TESTS']='1'
+    elif auditing:
         # Snapshot the selection under the invocation lock. Its content-addressed
         # path is tracked by rustc, avoiding argv/environment limits for suites.
         contents=json.dumps(args.entry,separators=(',',':')).encode()
@@ -353,14 +367,25 @@ def main():
     timings['cargo_seconds']=time.perf_counter()-stage
     if result.returncode:return result.returncode
     artifacts=[]
-    suffix='.audit.json' if auditing else '.rbc'
+    suffix='.tests.json' if listing else '.audit.json' if auditing else '.rbc'
     for line in result.stdout.splitlines():
         try:
             event=json.loads(line)
             if artifact_matches_target(event,args.test_body,args.test_target):
                 artifacts.extend(Path(p+suffix) for p in event['filenames'] if p.endswith('.rmeta') and Path(p+suffix).is_file())
         except json.JSONDecodeError:pass
-    if len(artifacts)!=1 or not artifacts[0].is_file():raise RuntimeError('Cargo did not select a valid '+('audit report' if auditing else 'bytecode sidecar')+'; no program was run')
+    if len(artifacts)!=1 or not artifacts[0].is_file():raise RuntimeError('Cargo did not select a valid '+('test listing' if listing else 'audit report' if auditing else 'bytecode sidecar')+'; no program was run')
+    if listing:
+        from test_discovery import read_listing
+        report,digest=read_listing(artifacts[0])
+        report['tool_key']=key
+        report['discovery_provenance']=dict(path=str(artifacts[0].resolve()),sha256=digest,
+            exporter_sha256=tool_manifest['rust-interp-mir-export'])
+        print(json.dumps(report,indent=2))
+        timings.update(launcher_seconds=time.perf_counter()-started,executed=False,
+            mode='test-discovery',discovery_count=report['count'],discovery_sha256=digest)
+        if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
+        return 0
     if auditing:
         if artifacts[0].stat().st_size>64*1024*1024:raise RuntimeError('lowering audit report exceeds 64 MiB')
         audit_bytes=artifacts[0].read_bytes()

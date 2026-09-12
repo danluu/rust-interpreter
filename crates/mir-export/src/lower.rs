@@ -196,17 +196,14 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     if requested.is_empty() || requested.len() > 256 {
         return Err("select between 1 and 256 entries".into());
     }
+    let candidates: Vec<_> = tcx.hir_body_owners()
+        .filter(|id| matches!(tcx.def_kind(*id), DefKind::Fn | DefKind::AssocFn))
+        .map(|id| (tcx.def_path_str(id.to_def_id()), tcx.item_name(id.to_def_id()).to_string(), id))
+        .collect();
     let mut selected = Vec::new();
     let mut test_results = Vec::new();
     for entry in requested {
-        let entries: Vec<_> = tcx
-            .hir_body_owners()
-            .filter(|id| {
-                matches!(tcx.def_kind(*id), DefKind::Fn | DefKind::AssocFn)
-                    && (tcx.def_path_str(id.to_def_id()) == *entry
-                        || tcx.item_name(id.to_def_id()).as_str() == entry.as_str())
-            })
-            .collect();
+        let entries = crate::names::resolve(&candidates, entry);
         if entries.len() != 1 {
             return Err(format!(
                 "entry {entry:?} matched {} functions; use its full definition path",

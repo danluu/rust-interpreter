@@ -1,6 +1,6 @@
 //! Lowering coverage after strict analysis. No guest body is executed.
 mod pack;
-mod metadata;
+use crate::test_metadata as metadata;
 
 use rustc_middle::ty::TyCtxt;
 use std::path::Path;

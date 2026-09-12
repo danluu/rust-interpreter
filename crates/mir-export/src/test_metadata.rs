@@ -47,25 +47,50 @@ impl<'tcx> Index<'tcx> {
         Self { tcx, builtin, descriptors, functions }
     }
 
+    pub fn list(&self) -> Result<serde_json::Value, String> {
+        if !self.builtin {
+            return Err("test discovery requires the built-in libtest harness".into());
+        }
+        if self.descriptors.len() > 16_384 {
+            return Err("test discovery exceeds 16384 descriptors".into());
+        }
+        let mut tests = Vec::with_capacity(self.descriptors.len());
+        for name in self.descriptors.keys() {
+            if name.is_empty() || name.len() > 4096 {
+                return Err("test name is outside the 1..4096 byte discovery bound".into());
+            }
+            let mut entry = self.describe(name);
+            if entry["status"] != "classified" {
+                return Err(format!("cannot classify built-in test {name:?}: {}", entry["reason"]));
+            }
+            entry["name"] = serde_json::json!(name);
+            tests.push(entry);
+        }
+        Ok(serde_json::json!({"kind":"test-discovery","schema_version":1,
+            "target":self.tcx.sess.opts.target_triple.to_string(),
+            "strict_frontend":true,"executed":false,"harness":"libtest",
+            "count":tests.len(),"tests":tests}))
+    }
+
     pub fn describe(&self, requested: &str) -> serde_json::Value {
         let unknown = |reason| serde_json::json!({"status":"unclassified",
             "ordinary_test":false,"reason":reason});
         if !self.builtin {
             return unknown("custom harness or compilation without the built-in test harness");
         }
-        let matches: Vec<_> = self.functions.iter()
-            .filter(|(full, short, _)| full == requested || short == requested).collect();
+        let matches = crate::names::resolve(&self.functions, requested);
         if matches.len() != 1 { return unknown("entry does not resolve to one function"); }
-        let (full, _, id) = matches[0];
-        let Some(descriptors) = self.descriptors.get(full) else {
+        let id = matches[0];
+        let full = self.tcx.def_path_str(id.to_def_id());
+        let Some(descriptors) = self.descriptors.get(&full) else {
             return unknown("no matching built-in test descriptor");
         };
         if descriptors.len() != 1 { return unknown("ambiguous built-in test descriptors"); }
-        let ignored = rustc_hir::find_attr!(self.tcx, *id, Ignore { .. });
-        let ignore_reason = rustc_hir::find_attr!(self.tcx, *id, Ignore { reason, .. } =>
+        let ignored = rustc_hir::find_attr!(self.tcx, id, Ignore { .. });
+        let ignore_reason = rustc_hir::find_attr!(self.tcx, id, Ignore { reason, .. } =>
             reason.map(|s| s.to_string())).flatten();
-        let should_panic = rustc_hir::find_attr!(self.tcx, *id, ShouldPanic { .. });
-        let panic_message = rustc_hir::find_attr!(self.tcx, *id, ShouldPanic { reason } =>
+        let should_panic = rustc_hir::find_attr!(self.tcx, id, ShouldPanic { .. });
+        let panic_message = rustc_hir::find_attr!(self.tcx, id, ShouldPanic { reason } =>
             reason.map(|s| s.to_string())).flatten();
         serde_json::json!({"status":"classified","harness":"libtest",
             "native_name":full,"function":full,

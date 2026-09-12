@@ -13,6 +13,8 @@ extern crate rustc_span;
 mod lower;
 mod allocation_trace;
 mod audit;
+mod test_metadata;
+mod names;
 mod wrapper_route;
 mod export_timings;
 mod function_costs;
@@ -33,6 +35,7 @@ struct Export {
     demand: bool,
     demand_cache: bool,
     audit_selection: Option<PathBuf>,
+    list_tests: bool,
     retain_audit_bodies: bool,
     test_body: bool,
     inline_leaves: bool,
@@ -63,6 +66,18 @@ impl Export {
     fn emit<'tcx>(&mut self, tcx: TyCtxt<'tcx>) -> Compilation {
         let checked = Instant::now();
         let mut timings = export_timings::Timings::new("emit");
+        if self.list_tests {
+            let report = test_metadata::Index::new(tcx).list()
+                .unwrap_or_else(|error| tcx.dcx().fatal(format!("cannot discover tests: {error}")));
+            let bytes = serde_json::to_vec(&report).expect("serialize test discovery");
+            if bytes.len() > 8 * 1024 * 1024 {
+                tcx.dcx().fatal("test discovery report exceeds 8 MiB");
+            }
+            if let Err(error) = self.publish(tcx, &bytes, ".tests.json") {
+                tcx.dcx().fatal(format!("cannot publish test discovery: {error}"));
+            }
+            return Compilation::Continue;
+        }
         if self.audit_selection.is_some() {
             let report = audit::report(tcx, &self.entries,
                 self.retain_audit_bodies.then_some(self.output.as_path()), self.inline_leaves, self.trap_unsupported_calls, self.run_try_callbacks)
@@ -158,7 +173,7 @@ impl Callbacks for Export {
             // execution graph changes, even if its Rust source is unchanged.
             // Library dependencies delegated to ordinary rustc do not record
             // these inputs, so their checked artifacts can be shared.
-            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES", "RUST_INTERP_BINDING_REPLAY", "RUST_INTERP_FUNCTION_CACHE"] {
+            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_LIST_TESTS", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES", "RUST_INTERP_BINDING_REPLAY", "RUST_INTERP_FUNCTION_CACHE"] {
                 sess.env_depinfo.borrow_mut().insert((
                     rustc_span::Symbol::intern(key),
                     std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
@@ -232,7 +247,7 @@ fn main() {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests"]}));
         return;
     }
     let environment = wrapper_route::Environment::read();
@@ -251,7 +266,17 @@ fn main() {
         std::process::exit(status.code().unwrap_or(1));
     }
     let audit_selection = std::env::var_os("RUST_INTERP_AUDIT_SELECTION").map(PathBuf::from);
-    let entries = if let Some(path) = &audit_selection {
+    let list_tests = match std::env::var_os("RUST_INTERP_LIST_TESTS") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => { eprintln!("RUST_INTERP_LIST_TESTS must be 1 when set"); std::process::exit(2); }
+    };
+    if list_tests && (!wants_test || audit_selection.is_some() ||
+        std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some()) {
+        eprintln!("test discovery requires a test target without execution or audit entries");
+        std::process::exit(2);
+    }
+    let entries = if list_tests { vec![] } else if let Some(path) = &audit_selection {
         if std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some() {
             eprintln!("audit selection cannot be combined with execution entries");
             std::process::exit(2);
@@ -387,6 +412,12 @@ fn main() {
         std::process::exit(2);
     }
     let demand_cache = demand && std::env::var("RUST_INTERP_DEMAND_CACHE").is_ok_and(|s| s == "1");
+    if list_tests && (demand || retain_audit_bodies || inline_leaves || trap_unsupported_calls ||
+        allocation_trace || function_costs || function_dependencies || binding_replay ||
+        function_cache != function_cache::Mode::Off) {
+        eprintln!("test discovery requires strict checking without execution-graph options");
+        std::process::exit(2);
+    }
     if audit_selection.is_some() && demand {
         eprintln!("lowering audits require ordinary strict frontend checking");
         std::process::exit(2);
@@ -450,6 +481,7 @@ fn main() {
         demand,
         demand_cache,
         audit_selection,
+        list_tests,
         retain_audit_bodies,
         test_body: wants_test,
         inline_leaves,
