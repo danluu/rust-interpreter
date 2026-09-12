@@ -1,5 +1,17 @@
 # Checked-in changes
 
+## 2026-09-12 integer operation inlining
+
+- Inline the existing integer helper without changing its arithmetic, overflow, fault or register-access semantics.
+- Saved-artifact interpreter runtime improves 5.8% on Ruff, 3.0% on pgrust and 2.8–7.5% on five additional workloads relative to the qualified scalar-inlining VM. JIT passes material-regression guards. These are runtime results; no build-time or unknown-holdout improvement is claimed.
+- All 297 workspace tests pass in debug and release (one ignored), and all 588 comparison commands preserve outputs, instructions and peak guest memory. [Qualification and measurements](results/binary-inline-20260912/assessment.md).
+
+## 2026-09-12 checked scalar memory inlining
+
+- Inline the complete scalar load/store path, including range validation. Method bodies, bounds checks and generic-width fallbacks are unchanged.
+- Saved-artifact interpreter runtime improves 6.7% on pgrust and 2.1–5.0% on four Fre cases relative to the frame-loop VM `f33b40d`. All public cases pass regression guards in both engines; this does not establish a general JIT speedup, full edit/build/test improvement or unknown-holdout result.
+- All 297 workspace tests pass in debug and release (one ignored), and all 588 comparison commands preserve results, instructions and peak guest memory. [Qualification and measurements](results/complete-scalar-inline-20260912/assessment.md).
+
 ## 2026-09-12 interpreter frame dispatch
 
 - Keep the current function and checked register slice across ordinary instructions and branches; reacquire them after frame transitions and each JIT fallback.

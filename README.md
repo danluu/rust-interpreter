@@ -92,6 +92,16 @@ improvements on pgrust and Ruff relative to that VM. Five additional workloads
 improve 15.2–29.4%; JIT stays within its wall/CPU regression guards. All bounds
 checks remain. [Frame-loop comparison](results/same-frame-interpreter-20260912/assessment.md).
 
+Inlining the complete checked scalar-memory path improves pgrust a further 6.7%
+relative to that frame-loop VM, and four Fre cases by 2.1–5.0%. Other cases stay
+within the regression guards; no general JIT speedup is claimed. Method bodies
+and memory checks are unchanged. [Scalar inlining comparison](results/complete-scalar-inline-20260912/assessment.md).
+
+Inlining the integer-operation helper then improves Ruff by 5.8%, pgrust by 3.0%,
+and five additional workloads by 2.8–7.5% relative to that scalar-inlining VM.
+Arithmetic semantics and checked register accesses remain unchanged; both-engine
+regression gates pass. [Integer inlining comparison](results/binary-inline-20260912/assessment.md).
+
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for mechanisms and limits,
 [RUNTIME-NEXT.md](RUNTIME-NEXT.md) for the next experiments,
 [CHANGELOG.md](CHANGELOG.md) for checked-in changes, and

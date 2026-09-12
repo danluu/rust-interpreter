@@ -256,6 +256,7 @@ fn signed(value: u128, bits: u8) -> i128 {
 }
 
 /// Integer semantics are explicit in the bytecode, including overflow results.
+#[inline(always)]
 pub fn binary(
     op: Binary,
     a: u128,
@@ -490,7 +491,7 @@ impl Memory {
             .saturating_sub(registers)
             .saturating_sub(self.auxiliary_bytes)
     }
-    #[inline]
+    #[inline(always)]
     fn range(&self, address: usize, size: usize) -> Result<(bool, std::ops::Range<usize>), String> {
         // Empty Rust slices may use aligned dangling pointers. No bytes are
         // read or written, so do not require such a pointer to name an arena.
@@ -525,6 +526,7 @@ impl Memory {
             &self.bytes[range]
         })
     }
+    #[inline(always)]
     fn load(&self, address: usize, size: usize) -> Result<u128, String> {
         if size > 16 {
             return Err("scalar exceeds 128 bits".into());
@@ -545,6 +547,7 @@ impl Memory {
             }
         })
     }
+    #[inline(always)]
     fn store(&mut self, address: usize, size: usize, value: u128) -> Result<(), String> {
         if size > 16 {
             return Err("scalar exceeds 128 bits".into());
