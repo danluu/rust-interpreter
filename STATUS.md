@@ -37,11 +37,13 @@ Token missed the 8% screening target. Execution saved about 170ms paired while C
 
 **Latest exporter attribution:** seven real token artifacts match the retained compiler exactly. Graph lowering costs 691ms; hashing 49ms, publication 30ms, serialization 14ms and validation 5ms. [Assessment](results/export-costs-token-02/assessment.md).
 
-Effective profiles are recorded for all five projects: pgrust/Ruff already use line tables; all use unpacked split debuginfo. [Native stage attribution](results/native-existing-stages-01/assessment.md) covers 135 existing edited commands; tuned timing follows.
+Effective profiles are recorded for all five projects: pgrust/Ruff already use line tables; all use unpacked split debuginfo. [Native stage attribution](results/native-existing-stages-01/assessment.md) covers 135 existing edited commands.
+
+[Fre native calibration](results/native-tuned-calibration-01/assessment.md) was inconclusive: line tables saved 7.86%, below its fixed 8% screen; debug=0 saved 5.17%. All 21 Cargo commands and 15 diagnostic repeats had the expected assertion outcomes. No new native preset was selected.
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Calibrate native debug settings on real fre edits, confirm the frozen choice, then measure other workflows and an unfiltered suite.
+**Next:** Measure the unfiltered fre suite and qualify a stronger native control on a large frontend-dominated target; preserve the inconclusive fre calibration.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

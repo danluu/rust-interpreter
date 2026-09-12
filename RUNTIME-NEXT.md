@@ -4,12 +4,13 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Qualify stronger native controls.** Effective profiles are now recorded for
-   all five projects: pgrust/Ruff already use line tables; all use unpacked split
-   info. Calibrate fre's three distinct presets on real edits, freeze the choice
-   before confirmation, then compare other workflows. Record actual Cargo wall/
-   CPU, rounded suite timing and separately labelled binary repeats. The source
-   branch has shared 18-worker defaults; historical controls remain explicit.
+1. **Finish the unfiltered fre suite baseline, then large native controls.** Fre's
+   debug-profile calibration was inconclusive: line tables saved 7.86%, below
+   the fixed 8% screen. No preset was selected; do not rerun that screen. Measure
+   the actual unfiltered Cargo command using its existing native target, with
+   original assertions and a real edit. Separately test native profiles on a
+   large frontend-dominated target. Pgrust/Ruff already use line tables, and all
+   five projects use unpacked split info. Keep old/new controls explicit.
 2. **Choose substantial export work from measured costs.** The retained observer
    produced seven byte-identical token artifacts. Graph lowering costs 691ms;
    hashing/publication/serialization/validation together cost about 98ms. Do not

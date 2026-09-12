@@ -4,7 +4,7 @@
 
 - Retained exporter instrumentation preserves all seven real token artifacts. Graph lowering costs 691ms; hash/publication/serialization/validation together cost about 98ms, too small for another full optimization primary.
 - Cargo effective profiles were inspected for all five projects; pgrust/Ruff already use line tables. Native suite times were recovered from 135 existing edited commands.
-- Added a small native debug-profile calibration with selection frozen before confirmation, actual Cargo timing and separate executable repeats. Ten parser/selection tests pass.
+- Native fre calibration is inconclusive: line tables improved calibration command wall by 7.86%, below the fixed 8% screen; debug=0 improved 5.17%. All 21 Cargo commands and 15 diagnostic repeats behaved as expected. Ten parser/selection tests pass.
 
 ## 2026-09-11 current decisions
 

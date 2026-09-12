@@ -73,10 +73,14 @@ folded 0.30s, and near-zero native execution on most frontend workflows. Outside
 suite time is a residual, not pure compilation. Nushell type-relations has a
 grouped harness; the rest use libtest. See native-existing-stages-01.
 
-Next experiment: native-tuned-calibration, three native debug presets on the
-seven existing fre token source states. Edits 1–3 select the preset; edits 4–5
-confirm it. Actual Cargo commands remain primary; native binary repeats are
-separate diagnostics. Ten parser/selection tests pass. No guest change.
+Native-tuned-calibration-01 is complete and inconclusive: line tables improved
+calibration command wall by 7.86%, missing the fixed 8% screen; no debuginfo
+improved 5.17%. No preset was selected before the last two edits. All 21 Cargo
+commands, 15 diagnostic repeats, wrong-edit controls and source restoration
+passed; ten parser/selection tests pass. Cargo-reported build durations barely
+changed, while suite execution decreased. Repeats use the workspace cwd and
+lack Cargo's full injected test environment; they remain separate diagnostics.
+No guest change. Next: unfiltered fre suite, then a large native-control target.
 Completed scalar-smoke native/check caches and four custom incremental folders
 were deleted after exact ownership/terminal/open-file and 48 preserved-hash
 checks. Freed about 1.78GB; no archive. Local detail is under
