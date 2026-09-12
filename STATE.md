@@ -8,6 +8,12 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+Cross-region rematerialization is parked: 315 tests pass in each profile, but
+its runtime screen regresses 0.78% wall/0.81% CPU, missing the 10% improvement
+gate. No conditional promotion benchmarks will run. Next build prepared custom
+JIT code with fresh guest state for each test, then measure source-edit/suite
+commands. [Decision](results/jit-remat-screen-01/assessment.md).
+
 Persistent function reuse is correct but its first complete-command screen
 misses the fixed 8% gate: 5.30% paired edited wall improvement and 4.32% CPU.
 All 21 primary commands, 7 independent checks and 14 bytecode comparisons pass.
