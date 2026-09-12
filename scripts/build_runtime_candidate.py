@@ -31,21 +31,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--expected-tests', type=int, required=True)
-    parser.add_argument('--minimum-free-gib', type=int, choices=[7, 8], default=8,
-        help='host-only qualification admission; 7 requires an explicit justification in the frozen plan, default 8')
+    parser.add_argument('--minimum-free-gib', type=int, choices=[4, 7, 8], default=8,
+        help='host-only qualification admission; values below 8 require explicit frozen-plan justification; 4 also requires the existing debug/release cache')
     parser.add_argument('--plan', type=Path, required=True)
     parser.add_argument('--build-exporter', action='store_true', help='also qualify and install the current exporter/wrapper')
     parser.add_argument('--exporter-key', default=CONTROL, help='immutable exporter/wrapper composition retained by a runtime-only build')
     parser.add_argument('--reuse-tests', type=Path, help='reuse both passed profiles from a build stopped before binary publication; Rust inputs must be identical')
     args = parser.parse_args()
-    if args.minimum_free_gib == 7:
-        assert 'Host qualification floor: 7 GiB' in args.plan.read_text(), 'lower host floor must be explicit in the frozen plan'
+    if args.minimum_free_gib < 8:
+        assert f'Host qualification floor: {args.minimum_free_gib} GiB' in args.plan.read_text(), 'lower host floor must be explicit in the frozen plan'
     control = args.exporter_key
     assert re.fullmatch(r'[a-z][a-z0-9-]*-build-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         prior = json.loads((ROOT / '.work/experiments/fixed-frame-clear-combined-build-01/status.json').read_text())
         assert prior['status'] == 'finished' and prior['returncode'] == 0
+        if args.minimum_free_gib == 4:
+            assert all((TARGET / profile / 'deps').is_dir() for profile in ['debug', 'release']), '4 GiB requires the existing host dependency cache'
         assert not subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=ROOT).strip()
         source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         paths = [ROOT / n for n in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml']]
@@ -103,11 +105,13 @@ def main():
             command += (['--workspace'] if action == 'test' else
                 ['-p', 'rust-interp-bytecode', '-p', 'rust-interp-mir-export', '--bins'] if args.build_exporter else
                 ['-p', 'rust-interp-bytecode', '--bin', 'rust-interp-vm'])
+            free_before = shutil.disk_usage(ROOT).free
             child, stdout, stderr = capture(command, cwd=ROOT, env=env,
                 receipt_path=work / 'active.json', receipt=dict(label=label))
             for suffix, content in [('stdout', stdout), ('stderr', stderr)]:
                 (work / f'{label}.{suffix}').write_text(content)
-            records.append(dict(label=label, command=command, pid=child.pid, returncode=child.returncode))
+            records.append(dict(label=label, command=command, pid=child.pid, returncode=child.returncode,
+                                free_before=free_before, free_after=shutil.disk_usage(ROOT).free))
             write(work / 'commands.json', records)
             assert child.returncode == 0, f'{label} failed'
             if action == 'test':
