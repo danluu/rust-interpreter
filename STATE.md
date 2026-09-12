@@ -10,6 +10,22 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 Inlining the complete checked scalar-memory path is now qualified: pgrust improves 6.7% and four Fre cases improve 2.1–5.0% relative to the frame-loop VM `f33b40d`. Other public cases stay within regression guards in both engines. All 297 workspace tests pass in debug and release (one ignored); all 588 comparison commands preserve outputs, instructions and peak guest memory. Only three inline attributes change; method bodies and checks remain intact. [Scalar-inlining assessment](results/complete-scalar-inline-20260912/assessment.md). These are saved-bytecode runtime measurements; full edit/build/test latency and unknown holdouts remain unmeasured.
 
+Fixed frame clearing is implemented on `experiment/fixed-frame-clear`, with
+runtime source `6f9e148` and candidate tool `fdbf713b`. It preserves all frame
+zeroing and specializes statically known extents up to 256 bytes. The
+[three-history es8 confirmation](results/fixed-frame-clear-confirm-02/assessment.md)
+passes the predeclared aggregate gate: 8.37% complete-command wall improvement,
+8.48% CPU, 15 real edited pairs; the initial pilot is excluded. Each history
+and all wrong-edit/restoration controls remain available. Candidate commands
+remain roughly 2.5 times native on this target.
+
+Broad qualification passes 47,004 native differential commands, 245 TLS checks,
+382 fre bodies with seven ignored, and all 52 integration assertions. The
+baseline and candidate share the exact exporter and wrapper. Nine original
+library workflow gates remain before runtime retention; keep this candidate
+separate from the historical full-workflow anchor below. Good tooling and
+evidence changes can be published independently of the experimental runtime.
+
 Keeping interpreter frame state across ordinary instructions is now qualified: an additional 26.8% saved-artifact runtime gain on pgrust and 28.1% on Ruff relative to the qualified arithmetic/scalar-memory VM. Five additional workloads improve 15.2–29.4%, with JIT within wall/CPU regression guards. All 297 workspace tests pass in debug and release (one ignored); all 588 comparison commands preserve results, instructions and peak guest memory. [Frame-loop assessment](results/same-frame-interpreter-20260912/assessment.md). Bounds checks remain; complete edit/build/test latency and unknown holdouts were not measured.
 
 General interpreter arithmetic and scalar-memory improvements are now qualified

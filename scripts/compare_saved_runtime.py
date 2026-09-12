@@ -56,19 +56,22 @@ def main():
     parser.add_argument('--lock', type=Path, required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=300)
     parser.add_argument('--repetitions', type=int, default=6)
+    parser.add_argument('--engines', nargs='+', choices=['interpreter', 'jit'], default=['interpreter', 'jit'])
     args = parser.parse_args()
     if args.repetitions < 2 or args.repetitions % 2:
         parser.error('use an even number of repetitions, at least two')
+    if len(set(args.engines)) != len(args.engines):
+        parser.error('specify each engine at most once')
     cases = json.loads(args.manifest.read_text())
     binaries = dict(baseline=args.baseline.resolve(), candidate=args.candidate.resolve())
     paths = [*binaries.values(), args.manifest.resolve(), Path(__file__).resolve()]
     paths += [Path(case['artifact']).resolve() for case in cases]
     frozen = {str(path): sha(path) for path in paths}
-    args.output.mkdir(parents=True, exist_ok=False)
     with args.lock.open('a') as lock:
         acquire_lock(lock, args.lock_wait_seconds)
+        args.output.mkdir(parents=True, exist_ok=False)
         plan = dict(binaries={k: str(v) for k, v in binaries.items()}, cases=cases,
-                    frozen=frozen, repetitions=args.repetitions,
+                    frozen=frozen, repetitions=args.repetitions, engines=args.engines,
                     controller_pid=os.getpid(), parent_pid=os.getppid(),
                     cwd=os.getcwd(), started_at=time.time(),
                     scope='Saved-artifact runtime including VM startup; excludes export/build.')
@@ -81,7 +84,7 @@ def main():
         samples = []
         with (args.output / 'commands.jsonl').open('x') as log:
             for case in cases:
-                for engine in ['interpreter', 'jit']:
+                for engine in args.engines:
                     # First pair warms executable pages and artifacts; excluded from timings.
                     for repetition in range(-1, args.repetitions):
                         order = ['baseline', 'candidate']
@@ -137,7 +140,7 @@ def main():
             raise RuntimeError('measured input changed')
         rows = []
         for case in cases:
-            for engine in ['interpreter', 'jit']:
+            for engine in args.engines:
                 selected = [s for s in samples if s['case'] == case['name'] and
                             s['engine'] == engine and s['repetition'] >= 0]
                 row = dict(case=case['name'], engine=engine)

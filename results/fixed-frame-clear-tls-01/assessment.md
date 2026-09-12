@@ -1,0 +1,1 @@
+The fixed-size clearing candidate passes all **245 TLS validation commands** across 24 configurations. The existing checks retain native destructor ordering, pinned standard-library MIR, normal-return callbacks and expected unsupported outcomes for actual unwinding. No OS or unwind support is inferred from these passes.

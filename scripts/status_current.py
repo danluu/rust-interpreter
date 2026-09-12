@@ -43,6 +43,9 @@ def render():
     coverage = read(config['latest_integration_coverage'])
     edit = read(config['latest_integration_edit'])
     compute = read(config['latest_integration_compute'])
+    fixed = read(config['latest_fixed_clear_confirmation'])
+    if fixed['status'] != 'passed' or not fixed['gate_passed'] or fixed['edited_pairs'] != 15:
+        raise RuntimeError('fixed-clear confirmation evidence changed')
     if coverage['status'] != 'passed' or edit['status'] != 'passed' or compute['status'] != 'passed':
         raise RuntimeError('integration target evidence changed')
     if costs['status'] != 'passed' or not costs['all_artifact_hashes_identical']:
@@ -64,6 +67,7 @@ def render():
         f"The [integration edit pilot]({Path(config['latest_integration_edit']).with_name('assessment.md')}) records five real edits: custom {edit['median_seconds']['custom']:.3f}s, native {edit['median_seconds']['native']:.3f}s, Cargo check {edit['median_seconds']['check']:.3f}s; paired wall {(edit['paired_median_wall_ratio']-1)*100:+.1f}%. Both sides use 18 jobs. This one-cycle pilot is separate from the retained histories above.", '',
         f"The [compute-heavy integration target]({Path(config['latest_integration_compute']).with_name('assessment.md')}) costs {compute['median_seconds']['custom']:.3f}s custom versus {compute['median_seconds']['native']:.3f}s native ({compute['paired_median_wall_ratio']:.3f}× paired), with check at {compute['median_seconds']['check']:.3f}s. All 24 edit/restoration controls pass. Native uses default test threads; custom runs its two bodies sequentially. Generated execution dominates the [profile]({Path(config['latest_integration_profile']).with_name('assessment.md')}).", '',
         f"[Source restoration now refreshes modification time]({Path(config['latest_source_restore']).with_name('assessment.md')}) so Cargo rebuilds the restored original. Actual Cargo regressions and 18 Python tests pass. Remaining original-source bytecode differences keep export determinism open.", '',
+        f"**Fixed frame clearing: experimental, confirmation passed.** Three further es8 edit histories improve paired complete-command wall by {(1-fixed['wall_ratio'])*100:.2f}% and CPU by {(1-fixed['cpu_ratio'])*100:.2f}%, excluding the pilot. Per-history wall gains range from 7.10% to 9.07%; the candidate remains roughly 2.5× native. All 47,004 native differential commands, 245 TLS checks, 382 fre bodies (seven ignored) and 52 integration assertions pass. Nine library workflow gates remain before runtime retention. [Confirmation]({Path(config['latest_fixed_clear_confirmation']).with_name('assessment.md')}).", '',
         '**Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.', '',
         '**Next:** ' + config['next'], '',
         f"[Review decisions]({config['review']}) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)", '',

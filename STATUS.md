@@ -51,9 +51,11 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 [Source restoration now refreshes modification time](results/source-restore-after-01/assessment.md) so Cargo rebuilds the restored original. Actual Cargo regressions and 18 Python tests pass. Remaining original-source bytecode differences keep export determinism open.
 
+**Fixed frame clearing: experimental, confirmation passed.** Three further es8 edit histories improve paired complete-command wall by 8.37% and CPU by 8.48%, excluding the pilot. Per-history wall gains range from 7.10% to 9.07%; the candidate remains roughly 2.5× native. All 47,004 native differential commands, 245 TLS checks, 382 fre bodies (seven ignored) and 52 integration assertions pass. Nine library workflow gates remain before runtime retention. [Confirmation](results/fixed-frame-clear-confirm-02/assessment.md).
+
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Test bounded constant-size frame clearing: the conservative elision proof covers only 3 of 1,135 clearing samples; large native controls and export reuse remain open.
+**Next:** Complete seven remaining library gates for fixed frame clearing: pgrust and folded fre pass; es8 confirmation saves 8.37% wall and 8.48% CPU. Then qualify composition with the newer main interpreter frame loop.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
