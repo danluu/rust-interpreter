@@ -38,8 +38,10 @@ impl Context {
                 // Backing elements never shrink during a VM execution. Fresh
                 // pointers below remain valid if an intervening VM allocation
                 // moved an arena; cached readiness retains no storage pointers.
-                debug_assert!(memory.bytes.initialized_len() >= ready.memory_end);
-                debug_assert!(registers.len() >= ready.register_end);
+                assert!(memory.bytes.initialized_len() >= ready.memory_end,
+                    "cached native readiness exceeds initialized memory");
+                assert!(registers.len() >= ready.register_end,
+                    "cached native readiness exceeds initialized registers");
                 return (true, ready.memory_end);
             }
         }

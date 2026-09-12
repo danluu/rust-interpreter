@@ -224,6 +224,12 @@ impl Boundary {
     /// The emitter separately maintains every ancestor descriptor, required
     /// zeroing/copy order and limits at each intermediate native Call. Checking
     /// the final top frame cannot prove that an earlier transient fit a budget.
+    ///
+    /// Fault exits are terminal. A fault during Call setup can advance the
+    /// live memory end before pushing a frame, and descriptors need not carry
+    /// a resumable fault PC. Validation here does not make that partial state
+    /// resumable; a future recoverable-fault API needs its own rollback or
+    /// committed-state contract.
     pub fn finish(
         self,
         program: &Program,

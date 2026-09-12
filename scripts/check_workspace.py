@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +23,32 @@ def write(path, value):
     temporary = path.with_suffix('.tmp')
     temporary.write_text(json.dumps(value, indent=2) + '\n')
     temporary.replace(path)
+
+
+def prechecks(work, env, status, receipt):
+    """Record formatting and the existing Python behavioral tests before Rust."""
+    checks = []
+    commands = [
+        ('format', ['cargo', '+nightly-2026-09-08', 'fmt', '--all', '--', '--check']),
+        ('python', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests']),
+    ]
+    for name, command in commands:
+        path = work / (name + '.log')
+        with path.open('x') as output:
+            child = subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL,
+                                     stdout=output, stderr=subprocess.STDOUT)
+            try:
+                status.update(status='checking ' + name, child_pid=child.pid,
+                              command=command, child_started_at=time.time())
+                write(receipt, status)
+            finally:
+                code = child.wait()
+        checks.append(dict(name=name, command=command, pid=child.pid, returncode=code,
+                           log=str(path.relative_to(ROOT)), log_sha256=sha(path)))
+        write(work / 'prechecks.json', checks)
+        if code:
+            raise RuntimeError(name + ' check failed; see ' + str(path))
+    return checks
 
 
 def install_tool(target, env, work, status, receipt, frozen):
@@ -115,9 +142,9 @@ def main():
                 write(receipt, status)
                 raise
             time.sleep(1)
-    paths = [ROOT / p for p in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'scripts/check_workspace.py']]
-    if args.install_tool:
-        paths.append(ROOT / 'scripts/interpreter.py')
+    paths = [ROOT / p for p in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'rustfmt.toml']]
+    paths += sorted((ROOT / 'scripts').glob('*.py'))
+    paths += sorted((ROOT / 'tests').glob('test_*.py'))
     paths += [p for p in (ROOT / 'crates').rglob('*') if p.is_file() and
               (p.suffix == '.rs' or p.name == 'Cargo.toml')]
     frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
@@ -143,6 +170,7 @@ def main():
     env['CARGO_TERM_COLOR'] = 'never'
     log = work / 'test.log'
     try:
+        checks = prechecks(work, env, status, receipt)
         with log.open('x') as output:
             child = subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL,
                                      stdout=output, stderr=subprocess.STDOUT)
@@ -162,6 +190,7 @@ def main():
         passed = sum(t['passed'] for t in tests)
         success = code == 0 and unchanged and passed > 0 and not any(t['failed'] for t in tests)
         summary = dict(status='passed' if success else 'failed', command=command, returncode=code,
+            prechecks=checks,
             frozen_sources_unchanged=unchanged, source_manifest_sha256=sha(work / 'plan.json'),
             workspace_passed=passed, workspace_ignored=sum(t['ignored'] for t in tests), tests=tests,
             raw_log=str(log.relative_to(ROOT)), raw_log_sha256=sha(log),

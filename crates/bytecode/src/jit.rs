@@ -627,7 +627,7 @@ impl<'a> Jit<'a> {
     /// `block` must be an entry published by this JIT for the current function,
     /// and neither it nor its native successors may contain Call stubs (use
     /// run_regions with the extended cursor for those functions).
-    /// and `code_len` must be that function's bytecode length. `registers` must
+    /// `code_len` must be that function's bytecode length. `registers` must
     /// address its complete, initialized u128 register slice. `memory` and `heap`
     /// must address distinct live byte arenas of `len` and `heap_len` bytes;
     /// `base` identifies the function's reserved frame and `readonly <= len`.
