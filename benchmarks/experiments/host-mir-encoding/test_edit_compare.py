@@ -57,6 +57,10 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(comparison.native_outcomes(failure,names,False),[('tests::a','failed'),('tests::b','passed')])
         for text in [success,'compiler failed',failure.replace('tests::a','tests::unrelated')]:
             with self.assertRaises(AssertionError):comparison.native_outcomes(text,names,False)
+        for wrapped in ['/path with spaces/report.html','`/path with spaces/report.html`','"/path with spaces/report.html"']:
+            self.assertEqual(comparison.timing_path('Timing report saved to '+wrapped),'/path with spaces/report.html')
+        for text in ['', 'Timing report saved to /a.html\nTiming report saved to /b.html']:
+            with self.assertRaises(AssertionError):comparison.timing_path(text)
 
     def test_fingerprints_track_directory_and_dangling_link_text(self):
         with tempfile.TemporaryDirectory() as directory:

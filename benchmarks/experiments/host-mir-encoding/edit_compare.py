@@ -57,6 +57,12 @@ def order(cycle, state):
     return [CUSTOM[int(i)] for i in ORDERS[index % len(ORDERS)]]
 
 
+def timing_path(stderr):
+    reports=re.findall(r'Timing report saved to [`"]?([^`\n"]+\.html)',stderr)
+    assert len(reports)==1,'missing or ambiguous Cargo unit timing report'
+    return reports[0]
+
+
 def assessment(rows, case):
     pairs = []
     for cycle in range(3):
@@ -93,9 +99,10 @@ def main():
     interpreter.ROOT = root
     assert re.fullmatch('host-mir-edit-'+args.case+r'-\d{2}', args.run_id)
     proofs = [root / 'results' / name / 'summary.json' for name in
-        ['host-mir-build-01', 'host-mir-process-01', 'host-mir-cargo-01']]
-    build, process, cargo = [json.loads(p.read_text()) for p in proofs]
-    assert all(p['status'] == 'passed' for p in [build, process, cargo])
+        ['host-mir-build-01', 'host-mir-process-01', 'host-mir-cargo-01', 'host-mir-python-tests-02']]
+    build, process, cargo, harness = [json.loads(p.read_text()) for p in proofs]
+    assert all(p['status'] == 'passed' for p in [build, process, cargo, harness])
+    assert harness['tests']==5 and all(sha(root/p)==h for p,h in harness['frozen'].items())
     assert build['tool_key'] == process['tool_key'] == cargo['tool_keys']['candidate'] == CANDIDATE
     assert build['tests'] == {p: dict(passed=16, failed=0, ignored=0) for p in ['debug', 'release']}
     assert process['commands'] == 19 and cargo['commands'] == 20 and cargo['host_and_guest_units_verified']
@@ -188,9 +195,7 @@ def main():
                     assert (child.returncode==0)==(success or mode=='check'),stderr[-3500:]
                     assert ('Checking ' if mode in CUSTOM or mode=='check' else 'Compiling ')+case['package'] in stderr
                     assert sha(changed)==digest
-                    reports=re.findall(r'Timing report saved to (.+?\.html)',stderr)
-                    assert len(reports)==1,'missing Cargo unit timing report'
-                    timing=work/f'{cycle}-{state}-{mode}-timing.html';shutil.copy2(reports[0],timing)
+                    timing=work/f'{cycle}-{state}-{mode}-timing.html';shutil.copy2(timing_path(stderr),timing)
                     row['cargo_timing']=dict(path=str(timing.relative_to(root)),sha256=sha(timing))
                     if mode in CUSTOM:
                         launch,=[json.loads(s.split(': ',1)[1]) for s in stderr.splitlines() if s.startswith('rust-interp-launch: ')]
