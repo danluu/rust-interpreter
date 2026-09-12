@@ -148,6 +148,7 @@ pub struct Exported {
     pub program: Program,
     unavailable_calls: BTreeSet<UnavailableCall>,
     pub(crate) allocation_trace: Option<crate::allocation_trace::Trace>,
+    pub(crate) function_costs: Option<crate::function_costs::Costs>,
 }
 impl Exported {
     pub fn unavailable_calls(&self) -> Vec<serde_json::Value> {
@@ -158,6 +159,8 @@ impl Exported {
 pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bool,
               inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool,
               allocation_trace: bool) -> Result<Exported> {
+    let mut timings = crate::export_timings::Timings::new("lower");
+    let mut function_costs = crate::function_costs::enabled()?.then(crate::function_costs::Costs::default);
     if allocation_trace && demand {
         return Err("allocation tracing requires ordinary strict frontend checking".into());
     }
@@ -267,6 +270,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         }
         entry_ids.push(exporter.register(instance));
     }
+    timings.checkpoint("entry_selection_and_registration");
     let mut functions: Vec<Option<Function>> = vec![];
     while let Some(index) = exporter.pending.pop_front() {
         if exporter.instances.len() >= 10_000 {
@@ -279,15 +283,23 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             "definition": tcx.def_path_str(instance.def_id()),
             "instance_kind": format!("{:?}", instance.def),
             "generic_arguments": format!("{:?}", instance.args)}))?;
-        let f = Lower::new(&mut exporter, instance)
-            .and_then(|lower| lower.lower())
-            .map_err(|e| format!("{name}: {e}"))?;
+        let started = function_costs.as_ref().map(|_| std::time::Instant::now());
+        let lower = Lower::new(&mut exporter, instance).map_err(|e| format!("{name}: {e}"))?;
+        let prepared = started.map(|_| std::time::Instant::now());
+        let mir_locals = lower.body.local_decls.len();
+        let mir_blocks = lower.body.basic_blocks.len();
+        let f = lower.lower().map_err(|e| format!("{name}: {e}"))?;
+        if let (Some(costs), Some(started), Some(prepared)) = (&mut function_costs, started, prepared) {
+            let lowered = prepared.elapsed();
+            costs.record(index, &f, prepared.duration_since(started), lowered, mir_locals, mir_blocks)?;
+        }
         if exporter.instances.len() > 10_000 {
             return Err("function expansion limit reached".into());
         }
         functions.resize_with(exporter.instances.len(), || None);
         functions[index] = Some(f);
     }
+    timings.checkpoint("reachable_mir_and_local_passes");
     // Preserve identities without expanding callbacks that cannot match any
     // indirect call's argument/return layout. Unknown shim shapes are always
     // included once an indirect call exists. This is conservative with respect
@@ -371,11 +383,14 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         statics: exporter.statics,
         thread_locals: exporter.thread_locals,
     };
+    timings.checkpoint("adapters_and_program_assembly");
     scalar_frame::byte_writes::report(exporter.byte_writes, &mut program);
     scalar_frame::report();
     scalar_promote::report();
+    timings.checkpoint("aggregate_relocation_and_reports");
     let (mut program, calls) = rust_interp_bytecode::optimize_calls(
         program, inline_leaves.then(Default::default))?;
+    timings.checkpoint("call_optimization");
     if let Some(report) = &calls.inlining {
         eprintln!("rust-interp-inline: sites={} operations={} seconds={:.6}",
             report["selected_sites"], report["new_operations"], calls.inline_time.as_secs_f64());
@@ -389,12 +404,15 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
                 forwarding.wrappers, forwarding.retargeted_calls, forwarding.longest_chain);
         }
     }
+    timings.checkpoint("call_reports");
     let started = std::time::Instant::now();
     let cfg = rust_interp_bytecode::optimize_control_flow(&mut program)?;
     eprintln!("rust-interp-cfg: before={} after={} seconds={:.6}",
         cfg.old_operations, cfg.new_operations, started.elapsed().as_secs_f64());
+    timings.checkpoint("control_flow_optimization");
+    timings.finish();
     Ok(Exported { program, unavailable_calls: exporter.unavailable_calls,
-        allocation_trace: exporter.trace })
+        allocation_trace: exporter.trace, function_costs })
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
