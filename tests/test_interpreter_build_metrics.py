@@ -49,6 +49,8 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
         self.artifact = self.root / 'libfixture.rmeta.rbc'
         self.artifact.write_bytes(b'selected bytecode')
         self.call_report = Path(str(self.artifact) + '.calls.json')
+        self.selection_report = Path(str(self.artifact) + '.selection.json')
+        self.entry_catalog = Path(str(self.artifact) + '.entries.json')
         self.call_report.write_text(json.dumps(dict(
             kind='unavailable-calls', schema_version=1, strict_frontend=True,
             trap_unsupported_calls=True, unavailable_calls=[],
@@ -91,6 +93,10 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
                 self.clock.advance(3.0, launcher=(.125, .25))
             elif path == self.call_report:
                 self.clock.advance(4.0, launcher=(.25, .5))
+            elif path == self.selection_report:
+                self.clock.advance(6.0, launcher=(.25, .5))
+            elif path == self.entry_catalog:
+                self.clock.advance(4.0, launcher=(.25, .5))
             return data
 
         stack.enter_context(patch.object(Path, 'read_bytes', read_bytes))
@@ -129,6 +135,30 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
         prefix = 'rust-interp-launch: '
         return [json.loads(line[len(prefix):]) for line in self.stderr.getvalue().splitlines()
                 if line.startswith(prefix)]
+
+    def discovery_report(self):
+        names = ['selected', 'sibling']
+        tests = [dict(name=name, native_name=name, function=name, descriptor='descriptor_' + name,
+                      status='classified', harness='libtest', ignored=False, should_panic=False,
+                      ordinary_test=True, ignore_reason=None, panic_message=None) for name in names]
+        return dict(kind='test-discovery', schema_version=1, strict_frontend=True,
+                    executed=False, harness='libtest', target='fixture', count=len(tests), tests=tests)
+
+    def isolated_suite(self, filtered=False):
+        self.argv = ['interpreter.py', '--manifest-path', str(self.manifest),
+                     '--package', 'fixture', '--tool-key', 'a' * 64, '--test-body',
+                     '--engine', 'jit', '--jit-resumable-calls', '--isolated-batch', 'prepared',
+                     '--suite-workers', '2', '--suite-report', str(self.root / 'suite.json')]
+        self.argv += ['--test-filter', ''] if filtered else ['--entry', 'selected', '--entry', 'sibling']
+        (self.tools / 'capabilities.json').write_text(json.dumps(dict(
+            schema_version=1, bytecode_version=5, tool_key='a' * 64,
+            exporter_sha256='b' * 64, export_options=['entry-catalog', 'filtered-tests'])))
+        digest = hashlib.sha256(b'selected bytecode').hexdigest()
+        self.selection_report.write_text(json.dumps(dict(self.discovery_report(),
+            kind='test-selection', filter=dict(pattern='', exact=False),
+            selected=['selected', 'sibling'], skipped_ignored=[], artifact_sha256=digest)))
+        self.entry_catalog.write_text(json.dumps(dict(schema_version=1, bytecode_version=5,
+            artifact_sha256=digest, entries=[dict(name='selected'), dict(name='sibling')])))
 
     def test_ready_includes_launcher_checks_and_waited_build_children_but_excludes_vm(self):
         self.assertEqual(self.launch(['--allocation-trace', '--trap-unsupported-calls']), 0)
@@ -205,6 +235,63 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
         self.assertNotIn('build_to_ready_cpu', stats)
         self.assertEqual(len(self.invocations), 1)
         self.assertIsNone(self.before_vm)
+
+    def test_list_tests_does_not_claim_execution_readiness(self):
+        listing = self.root / 'libfixture.rmeta.tests.json'
+        listing.write_text(json.dumps(self.discovery_report()))
+        self.argv = ['interpreter.py', '--manifest-path', str(self.manifest),
+                     '--package', 'fixture', '--tool-key', 'a' * 64,
+                     '--test-body', '--list-tests']
+        self.assertEqual(self.launch(arguments=()), 0)
+        [stats] = self.launch_stats()
+        self.assertEqual(stats['mode'], 'test-discovery')
+        self.assertFalse(stats['executed'])
+        self.assertIn('cargo_cpu', stats)
+        self.assertNotIn('build_to_ready_seconds', stats)
+        self.assertNotIn('build_to_ready_cpu', stats)
+        self.assertEqual(len(self.invocations), 1)
+        self.assertIsNone(self.before_vm)
+
+    def test_filtered_suite_checks_are_inside_readiness_and_worker_execution_is_outside(self):
+        self.isolated_suite(filtered=True)
+        self.assertEqual(self.launch(arguments=()), 0)
+        [stats] = self.launch_stats()
+        # Tools + Cargo + selection/hash verification + two catalog reads +
+        # artifact provenance. All suite workers start in the subsequent VM.
+        self.assertEqual(stats['build_to_ready_seconds'], 27.0)
+        self.assertEqual(stats['build_to_ready_seconds'], self.before_vm - 100.0)
+        self.assertEqual(stats['test_selection_verify_seconds'], 9.0)
+        self.assertEqual(stats['artifact_hash_seconds'], 3.0)
+        self.assertEqual(stats['build_to_ready_cpu'], dict(
+            user_seconds=12.5, system_seconds=19.25, total_seconds=31.75,
+            self=dict(user_seconds=2.5, system_seconds=4.25, total_seconds=6.75),
+            children=dict(user_seconds=10.0, system_seconds=15.0, total_seconds=25.0)))
+        self.assertEqual(stats['cargo_cpu']['total_seconds'], 18.0)
+        self.assertEqual(stats['execution_seconds'], 1000.0)
+        self.assertEqual(stats['suite_workers_requested'], 2)
+        self.assertEqual(len(self.invocations), 2)
+        vm = self.invocations[1][0]
+        self.assertEqual(vm[vm.index('--suite-workers') + 1], '2')
+        self.assertEqual(vm[vm.index('--suite-catalog') + 1], str(self.entry_catalog))
+
+    def test_invalid_isolated_entry_catalog_does_not_claim_ready_or_start_vm(self):
+        self.isolated_suite()
+        self.entry_catalog.write_text(json.dumps(dict(schema_version=1, bytecode_version=5,
+            entries=[dict(name='different_selection')])))
+        with self.assertRaisesRegex(RuntimeError, 'entry catalog does not match requested tests'):
+            self.launch(arguments=())
+        self.assertEqual(len(self.invocations), 1)
+        self.assertEqual(self.launch_stats(), [])
+
+    def test_invalid_filtered_selection_does_not_claim_ready_or_start_vm(self):
+        self.isolated_suite(filtered=True)
+        selection = json.loads(self.selection_report.read_text())
+        selection['artifact_sha256'] = '0' * 64
+        self.selection_report.write_text(json.dumps(selection))
+        with self.assertRaisesRegex(RuntimeError, 'selected bytecode digest differs'):
+            self.launch(arguments=())
+        self.assertEqual(len(self.invocations), 1)
+        self.assertEqual(self.launch_stats(), [])
 
     def test_vm_failure_preserves_ready_metrics_and_failure_exit(self):
         self.vm_returncode = 23
