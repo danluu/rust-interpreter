@@ -30,12 +30,12 @@ The candidate passes [39 compiler tests](results/aggregate-relocation-build-01/s
 [382 fre bodies, seven ignored, with fresh native controls](results/aggregate-relocation-fre-01/assessment.md).
 Original assertions and strict type/borrow rejections remain.
 
-The first of seven held-outs, [Nushell type-relations](results/aggregate-relocation-heldout-01-nushell-type-relations/relocation-assessment.md),
-passes: wall +1.10%, CPU +1.14%; native/control/candidate medians
-7.529s/4.051s/4.066s. All 84 commands, 15 edited pairs and 42 artifacts verify.
-Remaining order: Ruff, Nushell, fre forward/TLS, pgrust SHA-1, pgrust, private
-rg-aot. Every case must stay within 5% paired wall and CPU regression.
-Keep failures; do not adjust gates or pool cases to hide a regression.
+All [seven held-outs](results/aggregate-relocation-heldout-recovery-01/assessment.md)
+now pass their separate 5% wall/CPU guards: 588 commands, 105 edited pairs and
+294 artifact hashes verify. Paired wall changes range from −0.28% to +2.71%;
+CPU changes from −0.27% to +2.21%. Native/control/candidate absolute times are
+reported separately; no pooled speedup. Private output is aggregate-only.
+The original Ruff stop remains preserved and its five partial pairs excluded.
 
 Recorded [capture/finalization costs](results/aggregate-relocation-pass-costs-01/assessment.md)
 are 41.9 ms folded and 189.5 ms token. Token execution saves only 79.3 ms paired,
@@ -44,28 +44,23 @@ other pass effects and shared-host noise; the components do not prove causation.
 
 ## Immediate continuation
 
-The [complete Ruff retry](results/aggregate-relocation-heldout-01-ruff-retry-01/relocation-assessment.md)
-passes both guards: paired wall −0.28%, CPU −0.27%. All 84 commands, 15 pairs and
-42 artifacts verify. The original disk-guard stop retains its separate
-[audit](results/aggregate-relocation-ruff-stop-01/assessment.md); its five partial
-pairs are excluded. The declared retry had 24.33 GiB admission and a minimum
-observed 19.0 GiB free over 78 samples. No source/assertion/gate changes.
+The compiler experiment has completed primary, broad correctness and all seven
+held-out gates. The exact candidate is still isolated; source integration and
+production adoption have not been performed.
 
-[Recovery coordination](results/aggregate-relocation-recovery-controls-02/assessment.md)
-passes two original command-template checks, 30 rejection fixtures and two
-monitor lifecycle/error checks. Its first flag-suffix qualification failure is
-preserved. Frozen original verifier sources remain unchanged.
+Follow [PROFILE-NEXT.md](benchmarks/experiments/aggregate-byte-writes/PROFILE-NEXT.md):
+three owned original-test executions each, with exact emitted-code capture.
+Folded sampling is running as `aggregate-relocation-folded-sample-01`; token
+follows only after its VM children and supervisor finish. Do not alter tests,
+RNG, runtime options or source to lengthen a sample. Summarize and attribute each
+profile to its own mappings/code, then choose a substantial remaining cost.
 
-Nushell is running as `aggregate-relocation-heldout-01-nushell` through the
-qualified recovery runner (supervisor 79498), following the completed Ruff retry.
-Admission passed at 18.97 GiB against 12.65 GiB required.
-
-1. Wait for Nushell controller and supervisor terminal; verify it through
-   `report_heldout_recovery.collect_recovered`.
-2. Admit and run fre forward/TLS, pgrust SHA-1, pgrust and private rg-aot in order
-   using the original `run_heldout.py --case LABEL` runner.
-3. Reverify all seven complete histories using `report_heldout_recovery.py`.
-   No candidate adoption before every fixed guard passes.
+The [complete final report](results/aggregate-relocation-heldout-recovery-01/assessment.md)
+independently recomputes all seven gates using the explicit Ruff retry history.
+The [recovery coordinator qualification](results/aggregate-relocation-recovery-controls-02/assessment.md)
+checks both original command templates, 30 invalid receipts and two monitor
+lifecycle/error cases. Its first flag-suffix qualification failure is preserved.
+The retry observed at least 19 GiB free; the original stop's cause is unresolved.
 
 Five committed archive batches preserve completed public Cargo caches.
 The newest preserves a debug-check target: 781,927,676 unique bytes in
