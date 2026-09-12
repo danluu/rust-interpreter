@@ -66,11 +66,11 @@ restoring the host register. Preserve all three persistent guest-register pairs,
 checks, counts, initialization and non-resumable modes.
 
 No budget-register implementation or benchmark has started. Next actions:
-1. Implement an isolated VM build recipe, keeping exporter/wrapper9637 bytes.
+1. Implement an isolated VM build recipe, keeping exporter and wrapper bytes from tool `9637b0ac`.
 2. Add focused ABI/budget/fault/profile/TLS differential coverage and run broad
    qualifications; retain exact paired artifacts.
 3. Run the declared A/A controls, then fixed primary gates (at least 10% token
-   wall improvement, lower CPU, beyond the A/A envelope; folded within5%).
+   wall improvement, lower CPU, beyond the A/A envelope; folded within 5%).
 4. Require all seven independent held-out guards before any adoption; source
    integration remains a separate reproducible component-identity check.
 

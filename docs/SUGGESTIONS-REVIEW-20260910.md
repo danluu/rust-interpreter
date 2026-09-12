@@ -122,8 +122,8 @@ review are not commitments or evidence of feasibility.
   588 commands, 105 edited pairs and 294 artifacts. Wall changes range from
   −0.28% to +2.71%, CPU from −0.27% to +2.21%; no pooled speedup. The original
   Ruff disk-guard stop remains excluded and preserved. Six fresh exact-artifact
-  profiles verify. Item3.3 now has a [field-level cursor census](../results/aggregate-relocation-cursor-census-02/assessment.md):
-  instruction-budget accesses account for 10.06% token and7.54% folded samples.
+  profiles verify. Item 3.3 now has a [field-level cursor census](../results/aggregate-relocation-cursor-census-02/assessment.md):
+  instruction-budget accesses account for 10.06% token and 7.54% folded samples.
   The next bounded ABI experiment keeps budget in a native register while
   preserving exact charges, fault order and all VM exits. It is planned, not
   implemented or adopted. Production source integration remains separate.
