@@ -31,6 +31,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | fixed-clear-token | [fixed-frame-clear-library-token-02/summary.json](fixed-frame-clear-library-token-02/summary.json) |
 | fixed-clear-libraries | [fixed-frame-clear-libraries-01/summary.json](fixed-frame-clear-libraries-01/summary.json) |
 | fixed-clear-nushell | [fixed-frame-clear-library-nushell-01/summary.json](fixed-frame-clear-library-nushell-01/summary.json) |
+| fixed-clear-ruff | [fixed-frame-clear-library-ruff-01/summary.json](fixed-frame-clear-library-ruff-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
