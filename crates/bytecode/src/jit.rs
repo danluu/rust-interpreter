@@ -874,7 +874,7 @@ enum Failure {
 enum Fact {
     Imm(u128),
     Local(usize),
-    Cached { lo: u32, high_zero: bool },
+    Cached { lo: u32, hi: Option<u32> },
     Physical { lo: u32 },
 }
 
@@ -896,11 +896,13 @@ struct Assembler<'a> {
     facts: BTreeMap<Reg, Fact>,
     defined: BTreeSet<Reg>,
     live_in: BTreeSet<Reg>,
-    // x5/x6 are caller-saved and otherwise unused after heap relocation,
-    // except for medium copies, which explicitly evict this local cache.
-    // A narrow value occupies one slot; a wide value owns both slots.
-    cached: [Option<Reg>; 2],
-    cache_recent: usize,
+    // x5/x6 plus otherwise idle x23..x28 in resumable regions. Persistent
+    // assignments reserve their prefix. Facts flush before every region edge;
+    // the resumable external ABI already saves the entire callee-saved bank.
+    // Medium copies explicitly evict the cache before using x5/x6 as scratch.
+    cached: [Option<Reg>; 8],
+    cache_age: [u64; 8],
+    cache_clock: u64,
     region_start: usize,
     region_end: usize,
     current_pc: usize,
@@ -1185,23 +1187,41 @@ impl Assembler<'_> {
             self.remember(reg, Fact::Imm(0));
             return;
         }
-        let slot = if hi != 31 {
-            self.evict_cached(false);
-            self.mov(6, hi);
-            self.cached[1] = Some(reg);
-            0
-        } else if let Some(slot) = self.cached.iter().position(Option::is_none) {
-            slot
-        } else {
-            let slot = 1 - self.cache_recent;
+        let capacity = self.cache_capacity();
+        let needed = if hi == 31 { 1 } else { 2 };
+        while self.cached[..capacity].iter().filter(|v| v.is_none()).count() < needed {
+            let slot = (0..capacity).filter(|&i| self.cached[i].is_some())
+                .min_by_key(|&i| self.cache_age[i]).unwrap();
             self.evict_cached_reg(self.cached[slot].unwrap(), false);
-            slot
-        };
-        let physical = 5 + slot as u32;
+        }
+        let mut free = (0..capacity).filter(|&i| self.cached[i].is_none());
+        let low_slot = free.next().unwrap();
+        let high_slot = (needed == 2).then(|| free.next().unwrap());
+        let physical = self.cache_physical(low_slot);
+        let high_physical = high_slot.map(|slot| self.cache_physical(slot));
         self.mov(physical, lo);
-        self.facts.insert(reg, Fact::Cached { lo: physical, high_zero: hi == 31 });
-        self.cached[slot] = Some(reg);
-        self.cache_recent = slot;
+        if let Some(high) = high_physical { self.mov(high, hi); }
+        self.facts.insert(reg, Fact::Cached { lo: physical, hi: high_physical });
+        self.cached[low_slot] = Some(reg);
+        if let Some(slot) = high_slot { self.cached[slot] = Some(reg); }
+        self.touch_cached(physical, high_physical);
+    }
+    fn cache_capacity(&self) -> usize {
+        if self.resumable { 8 - 2 * self.assigned_count() } else { 2 }
+    }
+    fn cache_physical(&self, slot: usize) -> u32 {
+        assert!(slot < self.cache_capacity());
+        if slot < 2 { 5 + slot as u32 }
+        else { 23 + 2 * self.assigned_count() as u32 + (slot - 2) as u32 }
+    }
+    fn touch_cached(&mut self, lo: u32, hi: Option<u32>) {
+        // Each assembler handles at most 1024 guest operations; even repeated
+        // compile-time operand materializations cannot approach u64::MAX.
+        self.cache_clock = self.cache_clock.checked_add(1).expect("bounded region cache clock");
+        for slot in 0..self.cache_capacity() {
+            let physical = self.cache_physical(slot);
+            if physical == lo || Some(physical) == hi { self.cache_age[slot] = self.cache_clock; }
+        }
     }
     fn forget_cached(&mut self, reg: Reg) {
         self.forget_local_register(reg);
@@ -1210,13 +1230,13 @@ impl Assembler<'_> {
         }
     }
     fn evict_cached(&mut self, before_operands: bool) {
-        for slot in 0..2 {
+        for slot in 0..self.cache_capacity() {
             if let Some(reg) = self.cached[slot] { self.evict_cached_reg(reg, before_operands); }
         }
     }
     fn evict_cached_reg(&mut self, reg: Reg, before_operands: bool) {
         self.forget_cached(reg);
-        let Some(Fact::Cached { lo, high_zero }) = self.facts.remove(&reg) else {
+        let Some(Fact::Cached { lo, hi }) = self.facts.remove(&reg) else {
             unreachable!("cache owner must have a dynamic fact");
         };
         let (first, last) = self.reads[reg as usize].expect("cached value is read");
@@ -1226,7 +1246,7 @@ impl Assembler<'_> {
         let later = last > self.current_pc || (before_operands && last == self.current_pc);
         let needed = self.values.map_or(outside || later, |v|
             if before_operands { v.live.at(self.current_pc, reg) } else { v.live.after(self.current_pc, reg) });
-        if needed { self.spill(reg, lo, if high_zero { 31 } else { 6 }); }
+        if needed { self.spill(reg, lo, hi.unwrap_or(31)); }
     }
     fn spill(&mut self, reg: Reg, lo: u32, hi: u32) {
         if let Some(physical) = self.assigned_pair(reg) {
@@ -1251,9 +1271,9 @@ impl Assembler<'_> {
     fn materialize(&mut self, rd: u32, fact: Fact, high: bool) {
         match fact {
             Fact::Physical { lo } => self.mov(rd, lo + u32::from(high)),
-            Fact::Cached { lo, high_zero } => {
-                self.cache_recent = (lo - 5) as usize;
-                self.mov(rd, if high { if high_zero { 31 } else { 6 } } else { lo });
+            Fact::Cached { lo, hi } => {
+                self.touch_cached(lo, hi);
+                self.mov(rd, if high { hi.unwrap_or(31) } else { lo });
             },
             Fact::Imm(value) => self.imm(rd, if high { (value >> 64) as u64 } else { value as u64 }),
             Fact::Local(_) if high => self.mov(rd, 31),
@@ -1919,6 +1939,9 @@ mod local_memory_tests;
 
 mod register_widths;
 mod register_width_profile;
+
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod region_cache_tests;
 
 /// Inspect a possible narrower register assignment without running guest code.
 pub fn register_width_census(program: &Program) -> Result<serde_json::Value, String> {

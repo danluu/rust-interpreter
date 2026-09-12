@@ -223,7 +223,9 @@ fn bounded_value_table_preserves_register_ownership_and_cache_recency() {
     assert_eq!(a.local_values.len(),16);
     assert!(a.local_value(Some(0),8).is_none());assert!(a.local_value(Some(39*8),8).is_some());
     a.forget_cached(39);assert!(a.local_value(Some(39*8),8).is_none());
-    a.cache_recent=1;a.forward_local_value(Fact::Cached {lo:5,high_zero:true},1,"Load");assert_eq!(a.cache_recent,1);
+    a.cache_age[1]=7;a.cache_clock=7;
+    a.forward_local_value(Fact::Cached {lo:5,hi:None},1,"Load");
+    assert_eq!(a.cache_age,[0,7,0,0,0,0,0,0]);assert_eq!(a.cache_clock,7);
     a.invalidate_local_memory(None,0);assert_eq!(a.local_values.len(),15);
     a.invalidate_local_memory(None,1);assert!(a.local_values.is_empty());
 }

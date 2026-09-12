@@ -18,10 +18,10 @@ fn check(p: &Program, args: &[u128], expected: u128, max_budget: u64) {
     let budgets: Vec<_> = if max_budget < 160 { (0..=max_budget).collect() }
         else { vec![0,1,2,3,1023,1024,1025,1026,max_budget-2,max_budget-1,max_budget] };
     for budget in budgets {
-        for capacity in [0, MAX_CODE_BYTES] { for persistent in [false, true] {
+        for capacity in [0, MAX_CODE_BYTES] { for persistent in [false, true] { for resumable in [false, true] {
             let limits = || Limits { instructions: budget, jit_code_bytes: capacity, ..Limits::default() };
             let reference = execute_profiled(p,args,limits(),Engine::Interpreter);
-            let limits = || Limits { jit_persistent_registers: persistent, ..limits() };
+            let limits = || Limits { jit_persistent_registers: persistent, jit_resumable_calls: resumable, ..limits() };
             let normal = execute_with_engine(p,args,limits(),Engine::Jit);
             let observed = execute_profiled(p,args,limits(),Engine::Jit);
             match reference {
@@ -47,7 +47,7 @@ fn check(p: &Program, args: &[u128], expected: u128, max_budget: u64) {
                     }
                 }
             }
-        } }
+        } } }
     }
 }
 

@@ -48,9 +48,9 @@ impl Assembler<'_> {
     pub(super) fn forward_local_value(&mut self, fact: Fact, size: usize, _kind: &'static str) {
         // This extra use must not alter the original cache replacement order.
         // The owner is still available; no new register-array read is needed.
-        let recent = self.cache_recent;
+        let recent = (self.cache_age, self.cache_clock);
         self.materialize(9, fact, false);
-        self.cache_recent = recent;
+        (self.cache_age, self.cache_clock) = recent;
         self.mask(9, (size * 8) as u8);
         #[cfg(test)]
         self.local_forwarding.push((self.current_pc, _kind));
