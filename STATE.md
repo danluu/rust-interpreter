@@ -8,14 +8,14 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-Persistent function-cache verification now passes the complete token edit
-history, 229 semantic-edit commands and 98 cache fault/publication controls.
-Edited token builds use 5,178–5,202 prior-session payloads and reproduce the
-retained bytecode exactly. Every original function is still fully lowered.
-File load/encoding/write and template decoding already cost roughly 328 ms,
-so representation costs need attention before performance screening. Actual
-skipped lowering is under development, not yet qualified.
-[Evidence](results/export-reuse-token-05/assessment.md).
+Actual function reuse now passes both complete token/folded edit histories,
+337 complex-fixture commands, 293 semantic-edit commands and 98 cache fault
+controls. Token edits skip 5,178–5,202 functions; folded skips 976–1,040. All
+bytecode and original assertions match. Reuse is explicit and disabled by
+default, with strict frontend checks. Measured cache representation and binding
+costs consume the earlier lowering opportunity, so no performance claim is
+made. Improve those costs before the end-to-end screen.
+[Evidence](results/export-reuse-execute-token-01/assessment.md).
 
 The user's current priority is build-time improvement. The in-flight runtime work is finished: integer helper inlining improves Ruff 5.8%, pgrust 3.0% and five additional workloads 2.8–7.5% relative to the scalar-inlining VM, with unchanged semantics and passing regression guards. All 297 debug/release tests and 588 comparison commands pass (one Rust test ignored). [Integer-inlining assessment](results/binary-inline-20260912/assessment.md). Next work measures compiler/export/cache build latency separately from execution; the unbounded optimization goal remains active.
 

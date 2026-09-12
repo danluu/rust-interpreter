@@ -4,16 +4,16 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Implement persistent function reuse.** Current-MIR recipes reconstruct
-   5,203 token functions and 1,041 folded functions; unsupported recipes use full
-   lowering. All fixtures and eight-state production histories match exact
-   output and graph state. Store the owned payload in rustc's current incremental
-   session, replacing its inherited hard link atomically. Include compiler/tool
-   and lowering policy in dependency identity. First compare prior-session
-   payload reconstruction against complete lowering, then qualify actual skipped
-   work and measure edited commands. Account for 61 MB/15 MB payloads and
-   separate storage/decoding/binding costs from verification overhead.
-   [Persistent plan](benchmarks/experiments/export-costs/PERSISTENT-REUSE.md).
+1. **Reduce measured persistent-reuse costs, then screen real edits.** Actual
+   reuse passes token/folded histories, complex and semantic-edit fixtures, and
+   corrupt/missing/policy/failed-publication controls. Strict frontend checking
+   remains. Token cache load/encoding costs roughly 285 ms, binding 131 ms and
+   function decoding 36 ms, consuming the old ~444 ms lowering opportunity.
+   Qualify hardware-assisted SHA-256 and bulk byte serialization without
+   changing wire bytes or checksums. Measure costs again, then compare actual
+   edited build/test commands under a predeclared gate. Do not infer speedup
+   from hit counts or unchanged builds.
+   [Actual reuse](results/export-reuse-execute-token-01/assessment.md).
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%
    wall gate. All correctness controls pass, but the runtime stays off main.

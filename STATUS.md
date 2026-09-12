@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Qualify actual skipped lowering and separate persistent-cache representation costs before an edited end-to-end screen. Persistent verification passes token, semantic edits and fault/publication controls. Fixed frame clearing stays parked.
+**Next:** Reduce measured persistent-cache representation costs, preserve qualified actual reuse semantics, then run a predeclared edited end-to-end screen. Token/folded and all cache controls pass; no reuse speedup yet. Fixed frame clearing stays parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
