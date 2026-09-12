@@ -69,6 +69,13 @@ def main():
     frozen = {str(path): sha(path) for path in paths}
     with args.lock.open('a') as lock:
         acquire_lock(lock, args.lock_wait_seconds)
+        for case in cases:
+            artifact = str(Path(case['artifact']).resolve())
+            expected = case.get('artifact_sha256')
+            if expected is not None and frozen[artifact] != expected:
+                raise RuntimeError(f'{case["name"]}: artifact differs from declared provenance')
+        if any(sha(path) != digest for path, digest in frozen.items()):
+            raise RuntimeError('input changed before benchmark lock was acquired')
         args.output.mkdir(parents=True, exist_ok=False)
         plan = dict(binaries={k: str(v) for k, v in binaries.items()}, cases=cases,
                     frozen=frozen, repetitions=args.repetitions, engines=args.engines,

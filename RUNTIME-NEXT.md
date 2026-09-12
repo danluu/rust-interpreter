@@ -17,8 +17,11 @@ Historical plans and failed gates stay in Git and their linked result directorie
    merging the runtime change. Pgrust, folded fre and token pass; token saves
    3.43% wall and 3.32% CPU, while the first two show near-zero differences.
    [Progress](results/fixed-frame-clear-libraries-01/summary.json) records all
-   remaining cases. Each comparison requires identical bytecode. After these
-   isolated-VM gates, qualify composition with the newer main interpreter loop.
+   remaining cases. Each comparison requires identical bytecode. The
+   [combined-runtime plan](benchmarks/experiments/frame-initialization/FIXED-INTEGRATION.md)
+   adds checks against the newer main interpreter and the previous fixed-clear
+   candidate; composition work can proceed while a large library case awaits
+   storage. Both original and composition gates remain required.
    The [execution plan](benchmarks/experiments/frame-initialization/FIXED-WORKFLOWS.md)
    allows smaller cases first when storage admission prevents larger builds.
    Integration coverage now includes
