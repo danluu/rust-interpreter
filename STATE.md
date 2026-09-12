@@ -8,6 +8,13 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+The larger region-local cache is parked off main after 339 Rust tests/profile
+and exact real-suite correctness passed but its six-pair token runtime screen
+improved only 0.11% wall and 0.08% CPU, missing the fixed 10% gate. No retiming or
+conditional edit promotion follows. Next enable exact per-test profiles for the
+expanded suite and choose a structural direction from its dominant tests.
+[Decision](results/jit-region-cache-screen-01/assessment.md).
+
 The register-width feasibility diagnostic passes 337 Rust tests/profile and
 rejects the packing candidate before emission: only 7,628 additional token
 native reads out of 10.45 billion, and 900 out of 3.44 billion folded reads, on

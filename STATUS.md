@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Width packing rejected before emission: negligible dynamic traffic coverage; 337 Rust tests/profile pass. Next test idle persistent-bank registers as a larger local cache in resumable regions, qualify correctness, then a fixed six-pair 10% runtime screen before actual edited commands.
+**Next:** Both register-capacity directions are parked. Larger local cache: 339 Rust tests/profile and exact real suites pass, but fixed runtime screen improves only 0.11% wall/0.08% CPU versus its 10% gate. Next add catalog-bound per-test profiling and inspect the expanded suite for structural region/transition costs.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

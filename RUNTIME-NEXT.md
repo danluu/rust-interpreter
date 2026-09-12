@@ -4,16 +4,15 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Test unused native registers as a larger local value cache.** The bounded
-   width-packing census passes 337 Rust tests/profile and finds negligible
-   additional dynamic coverage: 7,628/10.45 billion token native reads and
-   900/3.44 billion folded reads. No packing emitter or timing screen follows.
-   The next candidate targets short-lived values: use otherwise idle x23–x28
-   registers alongside the two existing local cache registers, preserving global
-   assignments and the resumable ABI. Qualify correctness, then use the fixed
-   six-pair 10% runtime screen before real source-edit/build/test qualification.
-   [Decision](results/jit-register-width-weighted-01/assessment.md),
-   [cache plan](benchmarks/experiments/jit-region-cache/PLAN.md).
+1. **Profile the dominant tests in the expanded real suites.** Width packing
+   covered negligible additional dynamic traffic. A larger region-local cache
+   then passed 339 Rust tests/profile and 34 real assertions plus wrong edits,
+   but improved the fixed token runtime screen by only 0.11% wall and 0.08% CPU.
+   Both register-capacity directions are parked; no retiming or promotion.
+   Add exact catalog-bound per-test profiling without rewriting bytecode files,
+   then inspect current dominant tests for structural region/transition costs.
+   [Cache decision](results/jit-region-cache-screen-01/assessment.md),
+   [width decision](results/jit-register-width-weighted-01/assessment.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%
