@@ -28,6 +28,7 @@ def main():
     parser.add_argument('--jit-persistent-registers',action='store_true')
     parser.add_argument('--jit-resumable-calls',action='store_true')
     parser.add_argument('--run-id',default='audit-execution-'+str(time.time_ns()))
+    parser.add_argument('--lock-wait-seconds',type=int,choices=range(61),default=0)
     args=parser.parse_args()
     if not __debug__ or sys.flags.optimize:parser.error('execution surveys require enabled Python assertions')
     if args.instruction_limit<=0:parser.error('instruction limit must be positive')
@@ -42,7 +43,15 @@ def main():
     vm_flags=['--'+name.replace('_','-') for name,enabled in runtime_options.items() if enabled]
     if args.allocation_limit is not None:vm_flags+=['--allocation-limit',str(args.allocation_limit)]
     if Path(args.run_id).name!=args.run_id or args.run_id in ['.','..']:parser.error('invalid run id')
-    lock=(ROOT/'.work/benchmark.lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    lock=(ROOT/'.work/benchmark.lock').open('a')
+    deadline=time.monotonic()+args.lock_wait_seconds
+    while True:
+        try:
+            fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            break
+        except BlockingIOError:
+            if time.monotonic()>=deadline:raise
+            time.sleep(min(1,max(0,deadline-time.monotonic())))
     collection=json.loads(args.collection.read_text())
     report_path=ROOT/collection['raw']/'report.json'
     report=json.loads(report_path.read_text())

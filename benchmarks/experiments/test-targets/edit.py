@@ -92,6 +92,8 @@ def main():
     parser.add_argument('--case', choices=['end-greedy', 'es8'], default='end-greedy')
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--comparison-tools', type=Path, help='qualified baseline/candidate runtime composition receipt')
+    parser.add_argument('--initial-mode-offset', type=int, choices=range(4), default=0)
+    parser.add_argument('--lock-wait-seconds', type=int, choices=range(61), default=0)
     args = parser.parse_args()
     require(re.fullmatch(r'fre-integration-[a-z0-9-]+-\d{2}', args.run_id), 'invalid run id')
     target, source_name, make_edits = {
@@ -105,7 +107,15 @@ def main():
     write(work / 'status.json', status)
     try:
         with (ROOT / '.work/benchmark.lock').open('a') as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            deadline = time.monotonic() + args.lock_wait_seconds
+            while True:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise
+                    time.sleep(min(1, max(0, deadline - time.monotonic())))
             coverage = read(ROOT / 'results/fre-integration-targets-02/summary.json')
             require(coverage['status'] == 'passed' and coverage['original_tests_passed'] == 52 and
                 read(ROOT / '.work/experiments/fre-integration-targets-02/status.json')['status'] == 'finished', 'coverage not complete')
@@ -159,6 +169,10 @@ def main():
                 baseline_key, tool_key = (tools[m]['tool_key'] for m in ['baseline', 'candidate'])
                 composition_paths.append(tools_path)
             custom_modes = {'baseline', 'candidate'} if paired else {'custom'}
+            require(args.initial_mode_offset < len(commands), 'mode offset exceeds mode count')
+            order = list(commands)
+            order = order[args.initial_mode_offset:] + order[:args.initial_mode_offset]
+            commands = {name: commands[name] for name in order}
             target_ratio = .92 if paired else .90
             paths = [Path(__file__), HERE / ('ES8.md' if args.case == 'es8' else 'EDIT.md'), ROOT / 'scripts/interpreter.py',
                 test_source, ROOT / 'results/fre-integration-targets-02/summary.json', ROOT / 'scripts/workflow_io.py',
@@ -170,6 +184,7 @@ def main():
             write(work / 'plan.json', dict(owner=str(ROOT), source_commit=source_commit, tool_key=tool_key, baseline_tool_key=baseline_key,
                 source_pin=marker['revision'], frozen=frozen, commands=commands, source_states=[dict(state=s, label=l) for s, l, _ in states],
                 jobs=18, native_test_threads='default', warm_reused_caches=True, case=args.case, target=target,
+                initial_mode_order=order,
                 pilot_target_wall_ratio=target_ratio, comparison='candidate/baseline' if paired else 'custom/native',
                 note='Five real production edits; original assertions unchanged. Anchor excluded. CPU reported. No retention decision from this one-cycle pilot.'))
             records = []
@@ -229,6 +244,7 @@ def main():
                 paired_median_cpu_ratio=statistics.median(p['cpu_ratio'] for p in pairs),
                 pilot_target_met=statistics.median(p['wall_ratio'] for p in pairs) <= target_ratio,
                 pilot_target_wall_ratio=target_ratio, comparison='candidate/baseline' if paired else 'custom/native',
+                initial_mode_order=order,
                 records_sha256=sha(work / 'records.json'), frozen=frozen,
                 note='Actual production-library edits through one integration target. Five edited pairs, warm primed/reused caches, 18 jobs, native repository debuginfo/O0/incremental/default threads. Pilot only; no cold or whole-suite claim.'))
             status.update(status='finished', returncode=0, finished_at=time.time())
