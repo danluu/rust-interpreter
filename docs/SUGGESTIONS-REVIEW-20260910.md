@@ -118,6 +118,13 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Evidence preservation now includes [APFS copy-on-write snapshots](../results/artifact-clones-parked-01/assessment.md).
+  All 336 executed public snapshots from the two parked runtime experiments keep
+  their paths, bytes and relevant metadata; 312 duplicates use independent cloned
+  files. All eight original workflow checks still pass. Observed free space rose
+  by 5.47 GB, funding new edited-command comparisons without changing their space
+  floors. This is storage preservation, not guest performance.
+
 - Item 3.1's next [typed Call-slot census](../results/call-slot-census-02/assessment.md)
   verifies eight focused tests and both original profile totals. Caller-frame
   arguments cover 99.49% of token native checks and 98.08% folded. No speedup is

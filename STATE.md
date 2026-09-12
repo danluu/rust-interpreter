@@ -155,7 +155,16 @@ are unchanged. Exact inventory review and commit precede each retirement. The
 small completed pgrust archive batch is verified. Sixteen parked runtime workflow
 caches are also preserved and verified. Across 19 archives, 6.75 GB became
 2.28 GB with 47,626 files preserved and 693 external evidence hashes checked.
-All archive processes are terminal. The fixed A/A workflows are next.
+All archive processes are terminal. Both fresh A/A histories complete and verify:
+15 edited pairs per case, 168 total commands and 84 artifact hashes. Folded's
+paired wall ratio is 0.999899 with a 1.8924% envelope; token's is 1.002816 with a
+3.8303% envelope. Those envelopes are fixed for the candidate comparison.
+
+The [copy-on-write preservation procedure](benchmarks/experiments/artifact-clones/PLAN.md)
+passes actual APFS independent-write, metadata and failure tests. It preserves 312 duplicate files among the 336 completed parked snapshots, retaining
+every path, exact byte, mode, ownership and modification time. All eight original
+workflow checks and 134 external hashes still pass. Observed free space increased
+by 5.47 GB; every process is terminal. Candidate folded/token comparisons are next.
 
 The unbounded goal remains active. Continue implementation and real edited-command
 comparisons after this diagnostic. Integration and the failed budget experiment
