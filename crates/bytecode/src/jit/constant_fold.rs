@@ -45,8 +45,8 @@ fn trace(mut state:State,b:&Block,p:&Program,f:&Function,meter:&mut Meter)->Opti
     }
     Some(state)
 }
-fn solve(p:&Program,f:&Function,blocks:&[Block],meter:&mut Meter)->Option<Vec<Option<State>>> {
-    let mut incoming=vec![None;blocks.len()];incoming[0]=Some(State::default());
+fn solve(p:&Program,f:&Function,blocks:&[Block],initial:&State,meter:&mut Meter)->Option<Vec<Option<State>>> {
+    let mut incoming=vec![None;blocks.len()];incoming[0]=Some(initial.clone());
     let mut queue=VecDeque::from([0]);let mut queued=vec![false;blocks.len()];queued[0]=true;
     while let Some(id)=queue.pop_front() {
         queued[id]=false;let state=incoming[id].as_ref()?;meter.spend(state.cost())?;
@@ -59,7 +59,7 @@ fn solve(p:&Program,f:&Function,blocks:&[Block],meter:&mut Meter)->Option<Vec<Op
     }
     // Independently verify the post-fixpoint. Every claimed entry fact must
     // hold on every reachable predecessor, including the unknown root state.
-    if !incoming[0].as_ref()?.covered_by(&State::default()) {return None;}
+    if !incoming[0].as_ref()?.covered_by(initial) {return None;}
     for (id,b) in blocks.iter().enumerate() {
         let Some(state)=&incoming[id] else {continue;};meter.spend(state.cost())?;
         let output=trace(state.clone(),b,p,f,meter)?;
@@ -112,7 +112,10 @@ fn dead_definitions(f:&mut Function)->Option<usize> {
     map_branches(&mut code,&mapping);f.code=code;Some(count)
 }
 fn function(p:&Program,f:&Function,meter:&mut Meter)->Option<(Function,Report)> {
-    let blocks=blocks(f)?;let states=solve(p,f,&blocks,meter)?;
+    function_from_entry(p,f,&State::default(),meter)
+}
+fn function_from_entry(p:&Program,f:&Function,initial:&State,meter:&mut Meter)->Option<(Function,Report)> {
+    let blocks=blocks(f)?;let states=solve(p,f,&blocks,initial,meter)?;
     let mut report=Report::default();let mut mapping=vec![0;f.code.len()];let mut code=Vec::new();
     for (id,b) in blocks.iter().enumerate() {
         let mut state=states[id].clone();
@@ -134,6 +137,14 @@ fn function(p:&Program,f:&Function,meter:&mut Meter)->Option<(Function,Report)> 
     report.dead_definitions=dead_definitions(&mut result)?;
     if !crate::registers::needs_initial_zeroes(f) && crate::registers::needs_initial_zeroes(&result) {return None;}
     report.new_operations=result.code.len();Some((result,report))
+}
+
+pub(super) fn seeded_function(p:&Program,f:&Function,known:&[(usize,usize,u128)],global:&mut usize)->Option<(Function,Report)> {
+    let initial=State::argument_entry(f,known)?;
+    let mut meter=Meter{used:0,global};
+    let (function,mut report)=function_from_entry(p,f,&initial,&mut meter)?;
+    report.old_operations=f.code.len();report.solver_work=meter.used;
+    Some((function,report))
 }
 
 pub(super) fn fold(mut program:Program)->Result<(Program,serde_json::Value),String> {

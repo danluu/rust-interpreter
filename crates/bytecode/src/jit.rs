@@ -1945,8 +1945,14 @@ pub fn constant_call_argument_census(program: &Program, profile: Option<&[u8]>) 
 
 mod constant_fold_facts;
 mod constant_fold;
+mod constant_specialize;
 
 /// Experimental compiler transform. Guest execution never applies it implicitly.
 pub fn fold_constants(program: Program) -> Result<(Program, serde_json::Value), String> {
     constant_fold::fold(program)
+}
+
+/// Experimental compiler transformation; the VM never specializes implicitly.
+pub fn specialize_constant_calls(program: Program) -> Result<(Program, serde_json::Value), String> {
+    constant_specialize::specialize(program)
 }

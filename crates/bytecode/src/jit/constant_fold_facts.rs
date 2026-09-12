@@ -12,6 +12,20 @@ pub(super) struct State {
     pub bytes:BTreeMap<usize,u8>,
 }
 impl State {
+    pub fn argument_entry(f:&Function,known:&[(usize,usize,u128)])->Option<Self> {
+        if known.windows(2).any(|a|a[0].0>=a[1].0) {return None;}
+        for &(index,size,value) in known {
+            if ![1,2,4,8].contains(&size) || f.args.get(index)?.size!=size || value & !crate::mask((size*8) as u8)!=0 {return None;}
+        }
+        let mut state=Self::default();
+        // Match Call's copy order, including writes from unknown overlapping
+        // arguments. Entry memory is not otherwise assumed to contain zeroes.
+        for (index,slot) in f.args.iter().enumerate() {
+            let value=known.iter().find(|&&(i,_,_)|i==index).map(|&(_,_,value)|value);
+            state.write(Some(Fact::Local(slot.offset)),slot.size,value,f.frame_size);
+        }
+        Some(state)
+    }
     pub fn cost(&self)->usize {1+self.registers.len()+self.bytes.len()}
     pub fn get(&self,r:Reg)->Option<Fact> {self.registers.get(&r).copied()}
     pub fn scalar(&self,r:Reg)->Option<u128> {self.get(r)?.scalar()}

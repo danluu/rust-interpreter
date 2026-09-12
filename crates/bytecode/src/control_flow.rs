@@ -42,28 +42,34 @@ pub(crate) fn optimize(program: &mut Program, layout: bool) -> Result<ControlFlo
     crate::validate(program)?;
     let mut report = ControlFlowReport::default();
     for (id, function) in program.functions.iter_mut().enumerate() {
-        let before = crate::registers::needs_initial_zeroes(function);
-        let (code, mut part) = transform_code(&function.code, layout)?;
-        let original = std::mem::replace(&mut function.code, code);
-        let after = crate::registers::needs_initial_zeroes(function);
-        if !before && after {
-            function.code = original;
-            part = FunctionControlFlowReport {
-                old_operations: function.code.len(),
-                new_operations: function.code.len(),
-                rejected_register_clearing: true,
-                ..Default::default()
-            };
-        }
+        let mut part = optimize_function(function, layout)?;
         part.function = id;
-        part.register_zeroes_before = before;
-        part.register_zeroes_proposed = after;
         report.old_operations += part.old_operations;
         report.new_operations += function.code.len();
         report.functions.push(part);
     }
     crate::validate(program)?;
     Ok(report)
+}
+
+/// Internal function-local form for already validated compiler inputs.
+pub(crate) fn optimize_function(function: &mut crate::Function, layout: bool) -> Result<FunctionControlFlowReport, String> {
+    let before = crate::registers::needs_initial_zeroes(function);
+    let (code, mut part) = transform_code(&function.code, layout)?;
+    let original = std::mem::replace(&mut function.code, code);
+    let after = crate::registers::needs_initial_zeroes(function);
+    if !before && after {
+        function.code = original;
+        part = FunctionControlFlowReport {
+            old_operations: function.code.len(),
+            new_operations: function.code.len(),
+            rejected_register_clearing: true,
+            ..Default::default()
+        };
+    }
+    part.register_zeroes_before = before;
+    part.register_zeroes_proposed = after;
+    Ok(part)
 }
 
 fn terminal(op: &Op) -> bool {

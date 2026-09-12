@@ -126,7 +126,7 @@ fn joins_are_certified_and_initial_zero_uses_are_not_invented_constants() {
         Op::Imm{dst:1,value:7},Op::Jump{target:5},Op::Imm{dst:1,value:11}];code.extend(finish(1));
     let p=program(code);let q=qualify(&p,&[0]);assert!(q.functions[0].code.iter().any(|op|matches!(op,Op::Switch{value:31,..})));
     let f=&p.functions[0];let blocks=blocks(f).unwrap();let mut global=32_000_000;let mut meter=Meter{used:0,global:&mut global};
-    let states=solve(&p,f,&blocks,&mut meter).unwrap();assert!(states.last().unwrap().as_ref().unwrap().get(1).is_none());
+    let states=solve(&p,f,&blocks,&State::default(),&mut meter).unwrap();assert!(states.last().unwrap().as_ref().unwrap().get(1).is_none());
 }
 #[test]
 fn bounds_decline_complete_functions_without_partial_changes() {

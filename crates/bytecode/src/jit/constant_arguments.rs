@@ -117,9 +117,12 @@ impl<'a> Facts<'a> {
 }
 
 #[derive(Debug, Serialize)]
-struct Argument { index: usize, bytes: usize, value: String }
+pub(super) struct Argument {
+    pub index: usize, pub bytes: usize, value: String,
+    #[serde(skip)] pub value_bits: u128,
+}
 #[derive(Debug, Serialize)]
-struct Site { pc: usize, callee: usize, executions: Option<u64>, arguments: Vec<Argument> }
+pub(super) struct Site { pub pc: usize, pub callee: usize, executions: Option<u64>, pub arguments: Vec<Argument> }
 
 fn block_starts(f: &Function) -> Option<Vec<bool>> {
     if f.registers > MAX_SHAPE || f.code.len() > MAX_SHAPE { return None; }
@@ -142,7 +145,7 @@ fn block_starts(f: &Function) -> Option<Vec<bool>> {
     Some(starts)
 }
 
-fn analyze(program: &Program, id: usize, counts: Option<&[u64]>) -> Option<(Vec<Site>,usize)> {
+pub(super) fn analyze(program: &Program, id: usize, counts: Option<&[u64]>) -> Option<(Vec<Site>,usize)> {
     let f=&program.functions[id];let starts=block_starts(f)?;
     let mut facts=Facts::new(f,&program.data);let mut sites=Vec::new();
     for (pc,op) in f.code.iter().enumerate() {
@@ -152,7 +155,7 @@ fn analyze(program: &Program, id: usize, counts: Option<&[u64]>) -> Option<(Vec<
             for (index,(&address,slot)) in args.iter().zip(&callee.args).enumerate() {
                 if ![1,2,4,8].contains(&slot.size) {continue;}
                 if let Some(value)=facts.read(facts.get(address),slot.size) {
-                    arguments.push(Argument {index,bytes:slot.size,value:format!("0x{value:x}")});
+                    arguments.push(Argument {index,bytes:slot.size,value:format!("0x{value:x}"),value_bits:value});
                 }
             }
             sites.push(Site {pc,callee:*function,executions:counts.map(|c|c[pc]),arguments});
