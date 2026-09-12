@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Combined runtime passes full correctness checks. Run saved-runtime, fresh es8 and primary edit comparisons; the original Nushell type-relations gate still awaits storage.
+**Next:** Confirm combined es8 edit latency. Two-stream entropy replay resolves the token instruction mismatch; complete controlled runtime and primary edit comparisons. Original Nushell type-relations still awaits storage.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
