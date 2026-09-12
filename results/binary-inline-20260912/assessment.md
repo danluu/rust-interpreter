@@ -36,8 +36,9 @@ both engines. All gates pass. All 308 public comparison commands, including
 44 warmups, preserve outputs, logical instruction counts and peak guest memory
 on unchanged frozen artifacts.
 
-All 297 workspace tests pass in debug and release (one ignored). The unchanged
-Python code previously passed all 21 tests at the merged baseline. All 280
+All 297 workspace tests pass in debug and release (one ignored). The Python
+suite passed all 21 tests at the baseline; this optimization changes no Python
+code. All 280
 native-oracle commands, including 40 warmups, preserve expected native Rust
 outputs across signed/unsigned widths 8/16/32/64/128 in both engines. Narrow
 checksums supplement the existing boundary, fault and aliasing tests. All 588
@@ -64,3 +65,5 @@ estimates from earlier experiments. Subsequent optimization work targets build t
 [code generation](code-generation-review.md), [provenance](qualification.json).
 Exact snapshots, immutable binaries, commands, logs and harness/disassembly
 copies remain under the isolated worktree's `.work/perf-general-20260912`.
+
+Integration with upstream `1b57dae` preserves all qualified Rust source, Cargo configuration, the toolchain and measured comparison harness. Upstream documentation and status-generation changes remain included.
