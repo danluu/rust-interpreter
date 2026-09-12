@@ -129,15 +129,17 @@ def main():
         original = path.read_bytes()
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
-        # One fresh custom metadata cache, bounded by the prior token cache
-        # inventory, plus all eight preserved artifacts and 20% growth margin.
+        # Exact matching outputs share the already frozen immutable snapshot.
+        # A differing output is copied before failure, then the history stops;
+        # budget one such full copy, plus the fresh metadata cache and margin.
         inventory = json.loads((ROOT / 'results/parked-budget-e2e-token-phrase-candidate-archive-01/plan.json').read_text())
         cache_bytes = sum(g['bytes'] for g in inventory['manifest']['groups'])
         max_artifact = max((ROOT / r['artifacts'][0]['path']).stat().st_size for r in references.values())
-        required = 8 * 1024**3 + (cache_bytes + 8 * max_artifact) * 12 // 10 + 128 * 1024**2
+        required = 8 * 1024**3 + (cache_bytes + max_artifact) * 12 // 10 + 128 * 1024**2
         free = shutil.disk_usage(ROOT).free
         write(work / 'admission.json', dict(required_free_bytes=required, observed_free_bytes=free,
-              prior_custom_cache_bytes=cache_bytes, saved_artifacts=8, max_artifact_bytes=max_artifact))
+              prior_custom_cache_bytes=cache_bytes, saved_artifacts=8, max_artifact_bytes=max_artifact,
+              maximum_new_snapshot_copies=1, matching_snapshots_share_frozen_reference=True))
         assert free >= required, 'insufficient diagnostic storage; source is unchanged'
         command = list(references[0]['calls'][0]['command'])
         command[1] = str(HERE / 'reuse_launcher.py')
@@ -204,7 +206,15 @@ def main():
             assert launch['tool_key'] == key and launch['jit_resumable_calls'] and launch['jit_persistent_registers']
             artifact = Path(launch['artifact_path'])
             saved = work / (label + '.rbc')
-            shutil.copy2(artifact, saved)
+            expected = references[state]
+            digest = sha(artifact)
+            frozen_artifact = ROOT / expected['artifacts'][0]['path']
+            assert sha(frozen_artifact) == expected['artifacts'][0]['sha256']
+            if digest == expected['artifacts'][0]['sha256']:
+                os.link(frozen_artifact, saved)
+            else:
+                shutil.copy2(artifact, saved)
+            assert sha(saved) == digest
             row.update(artifact_sha256=sha(saved), artifact=str(saved.relative_to(ROOT)), launch=launch)
             report, scopes = observation(stderr, saved)
             if binding_replay:
@@ -216,7 +226,6 @@ def main():
                     assert not any(f['dependency']['previous_green'] for f in report['functions'])
             write(work / (label + '.census.json'), report)
             row.update(census_sha256=sha(work / (label + '.census.json')), timings=scopes)
-            expected = references[state]
             row['matches_retained_artifact'] = sha(saved) == expected['artifacts'][0]['sha256']
             write(work / 'records.json', records)
             assert row['source_sha256'] == expected['source_sha256']
