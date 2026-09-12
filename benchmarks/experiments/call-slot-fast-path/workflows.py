@@ -139,6 +139,11 @@ def main():
         with (ROOT/'.work/benchmark.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             paths = qualifications()
+            control_path = ROOT/'results/call-slot-workflow-controls-01/summary.json'
+            controls = read(control_path)
+            require(controls['status'] == 'passed' and all(sha(ROOT/p) == h for p,h in controls['frozen'].items()),
+                    'workflow control qualification changed')
+            paths.append(control_path)
             index = ORDER.index((args.phase, args.case))
             if index:
                 previous = run_id(*ORDER[index-1])
