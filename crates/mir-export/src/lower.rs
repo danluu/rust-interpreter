@@ -28,6 +28,7 @@ mod c_allocator;
 mod tls;
 mod reachability;
 mod allocation;
+pub(crate) mod reuse;
 fn env<'tcx>() -> ty::TypingEnv<'tcx> {
     ty::TypingEnv::fully_monomorphized()
 }
@@ -123,14 +124,14 @@ fn panic_preparation(statement: &mir::Statement<'_>) -> bool {
 
 /// Unavailable direct calls retained only by the explicit reachability option.
 /// Sorted symbol/caller pairs make diagnostics independent of hash iteration.
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 enum UnavailableCallKind { Foreign, Intrinsic }
 impl UnavailableCallKind {
     fn name(&self) -> &'static str {
         match self { Self::Foreign => "foreign", Self::Intrinsic => "intrinsic" }
     }
 }
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 pub struct UnavailableCall {
     kind: UnavailableCallKind,
     name: String,
@@ -166,6 +167,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         return Err("function dependency observation requires an incremental dependency graph".into());
     }
     let mut function_costs = crate::function_costs::enabled()?.then(crate::function_costs::Costs::default);
+    let binding_replay = reuse::enabled()?;
+    if binding_replay && (demand || allocation_trace || function_costs.is_none()) {
+        return Err("binding replay requires strict checking, function costs and disabled allocation tracing".into());
+    }
     if allocation_trace && demand {
         return Err("allocation tracing requires ordinary strict frontend checking".into());
     }
@@ -245,6 +250,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         relocation_targets: function_costs.as_ref().map(|_| HashMap::new()),
         tls_addresses: HashMap::new(),
         runtime_errno: None,
+        binding_replay,
         thread_locals: vec![],
         data: vec![0; 16],
         statics: vec![],
@@ -277,6 +283,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         entry_ids.push(exporter.register(instance));
     }
     timings.checkpoint("entry_selection_and_registration");
+    let mut replay_exporter = binding_replay.then(|| exporter.replay_seed());
+    let (mut replayed_functions, mut binding_events, mut replay_seconds) = (0usize, 0usize, 0.0f64);
+    let mut binding_payload_bytes = 0usize;
+    let mut replay_declines = BTreeMap::<String, usize>::new();
     let mut functions: Vec<Option<Function>> = vec![];
     while let Some(index) = exporter.pending.pop_front() {
         if exporter.instances.len() >= 10_000 {
@@ -295,12 +305,40 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             let prepared = started.map(|_| std::time::Instant::now());
             let mir_locals = lower.body.local_decls.len();
             let mir_blocks = lower.body.basic_blocks.len();
-            let (f, bindings) = lower.lower().map_err(|e| format!("{name}: {e}"))?;
+            let (f, bindings, tape) = lower.lower().map_err(|e| format!("{name}: {e}"))?;
             let elapsed = prepared.map(|p| p.elapsed()).unwrap_or_default();
             let prepare = started.zip(prepared).map(|(s, p)| p.duration_since(s)).unwrap_or_default();
-            Ok::<_, String>((f, bindings, prepare, elapsed, mir_locals, mir_blocks))
+            Ok::<_, String>((f, bindings, tape, prepare, elapsed, mir_locals, mir_blocks))
         });
-        let (f, bindings, prepare, elapsed, mir_locals, mir_blocks) = lowered?;
+        let (f, bindings, tape, prepare, elapsed, mir_locals, mir_blocks) = lowered?;
+        if let Some(replay) = &mut replay_exporter {
+            let started = std::time::Instant::now();
+            if replay.pending.pop_front() != Some(index) || replay.instances[index] != instance {
+                return Err(format!("binding replay function order differs at {name}"));
+            }
+            let tape = tape.ok_or("missing binding tape")?;
+            let observation = exporter.byte_writes.last().ok_or("missing frame observation")?;
+            let reconstructed = tcx.dep_graph.with_ignore(|| {
+                if let Some(reason) = &tape.decline {
+                    *replay_declines.entry(reason.clone()).or_default() += 1;
+                    Lower::new(replay, instance)?.lower().map(|(f, _, _)| f)
+                } else {
+                    replayed_functions += 1;
+                    binding_events += tape.events.len();
+                    let bytes = reuse::Template { function: f.clone(), observation: observation.clone(), tape }.encode()?;
+                    binding_payload_bytes += bytes.len();
+                    let decoded = reuse::Template::decode(&bytes)?;
+                    reuse::replay(replay, instance, index, &decoded.function, &decoded.observation, &decoded.tape)
+                }
+            }).map_err(|e| format!("binding replay {name}: {e}"))?;
+            if bincode::serialize(&f).map_err(|e| e.to_string())? != bincode::serialize(&reconstructed).map_err(|e| e.to_string())?
+                || observation.semantic_bytes()? != replay.byte_writes.last().ok_or("missing replay frame observation")?.semantic_bytes()?
+            {
+                return Err(format!("binding replay function or frame observation differs at {name}"));
+            }
+            exporter.verify_replayed_graph(replay).map_err(|e| format!("{name}: {e}"))?;
+            replay_seconds += started.elapsed().as_secs_f64();
+        }
         if let Some(costs) = &mut function_costs {
             costs.record(index, &f, prepare, elapsed, mir_locals, mir_blocks, bindings, dependency)?;
         }
@@ -309,6 +347,14 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         }
         functions.resize_with(exporter.instances.len(), || None);
         functions[index] = Some(f);
+    }
+    if binding_replay {
+        eprintln!("rust-interp-binding-replay: {}", serde_json::json!({"schema_version":1,
+            "replayed_functions":replayed_functions,"declines":replay_declines,
+            "binding_events":binding_events,"replay_and_verification_seconds":replay_seconds,
+            "payload_bytes":binding_payload_bytes,
+            "all_functions_fully_lowered":true,"graph_matches":true,
+            "scope":"same-session recipe reconstruction; no persistent cache or performance claim"}));
     }
     timings.checkpoint("reachable_mir_and_local_passes");
     // Preserve identities without expanding callbacks that cannot match any
@@ -426,7 +472,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         allocation_trace: exporter.trace, function_costs })
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 struct CallShape {
     args: Vec<usize>,
     result: usize,
@@ -450,6 +496,7 @@ struct Exporter<'tcx> {
     relocation_targets: Option<HashMap<AllocId, Option<PointerKind>>>,
     tls_addresses: HashMap<rustc_hir::def_id::DefId, usize>,
     runtime_errno: Option<usize>,
+    binding_replay: bool,
     thread_locals: Vec<Slot>,
     data: Vec<u8>,
     statics: Vec<u8>,
@@ -696,6 +743,8 @@ struct Lower<'a, 'tcx> {
     byte_origins_complete: bool,
     byte_spans: Vec<Vec<Option<(usize, usize)>>>,
     pointer_bindings: Option<Vec<PointerBinding>>,
+    binding_recorder: Option<reuse::Recorder>,
+    binding_position: reuse::Position,
 }
 #[derive(Clone, Copy)]
 struct Location<'tcx> {
@@ -712,6 +761,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             caller: format!("{}{:?}", self.tcx().def_path_str(self.instance.def_id()), self.instance.args),
         };
         self.code.push(Op::Trap { message: unavailable.message() });
+        if let Some(recorder) = &mut self.binding_recorder { recorder.record(reuse::Event::Unavailable(unavailable.clone())); }
         self.exporter.unavailable_calls.insert(unavailable);
     }
 
@@ -782,6 +832,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
     }
     fn empty(exporter: &'a mut Exporter<'tcx>, instance: Instance<'tcx>, body: &'tcx mir::Body<'tcx>) -> Self {
         let pointer_bindings = exporter.relocation_targets.as_ref().map(|_| vec![]);
+        let binding_recorder = exporter.binding_replay.then(|| reuse::Recorder::new(body));
         Self {
             exporter,
             instance,
@@ -798,6 +849,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             byte_origins: BTreeMap::new(),
             byte_origins_complete: true,
             pointer_bindings,
+            binding_recorder,
+            binding_position: reuse::Position { block: 0, statement: 0 },
             byte_spans: if body.local_decls.len() <= 4096 && body.basic_blocks.iter().map(|b| b.statements.len()+1).sum::<usize>() <= 32768 {
                 body.basic_blocks.iter().map(|b| vec![None; b.statements.len()+1]).collect()
             } else { vec![] },
@@ -847,14 +900,35 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         }
         Ok(())
     }
+    fn record_binding(&mut self, source: Option<reuse::Source>, register: Reg, original: u128) {
+        if let Some(recorder) = &mut self.binding_recorder {
+            if let Some(source) = source { recorder.record(reuse::Event::Value { source, register, original }); }
+            else { recorder.decline("binding has no current MIR recipe"); }
+        }
+    }
+    fn require_indirect_calls(&mut self, shape: CallShape) {
+        if let Some(recorder) = &mut self.binding_recorder { recorder.record(reuse::Event::Indirect(shape.clone())); }
+        self.exporter.require_indirect_calls(shape);
+    }
     fn imm_pointer(&mut self, value: u128, addend: u64, kind: PointerKind,
                    target: impl FnOnce() -> String) -> Result<Reg> {
         let dst = self.imm(value);
         self.note_pointer(dst, value, addend, kind, target)?;
+        if self.binding_recorder.is_some() {
+            let source = match kind {
+                PointerKind::Function => Some(reuse::Source::FunctionPointer(self.binding_position)),
+                PointerKind::ThreadLocal => Some(reuse::Source::ThreadLocal(self.binding_position)),
+                PointerKind::CallerLocation => Some(reuse::Source::Caller(self.binding_position)),
+                PointerKind::Errno => Some(reuse::Source::Errno),
+                _ => None,
+            };
+            self.record_binding(source, dst, value);
+        }
         Ok(dst)
     }
-    fn imm_allocation(&mut self, value: u128, id: AllocId, addend: u64) -> Result<Reg> {
+    fn imm_allocation(&mut self, value: u128, id: AllocId, addend: u64, recipe: Option<reuse::Source>) -> Result<Reg> {
         let dst = self.imm(value);
+        self.record_binding(recipe, dst, value);
         if let Some(targets) = &self.exporter.relocation_targets {
             let kind = *targets.get(&id).ok_or("missing typed allocation classification")?;
             if let Some(kind) = kind {
@@ -1102,6 +1176,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         }
     }
     fn constant_operand(&mut self, c: &mir::ConstOperand<'tcx>, as_scalar: bool) -> Result<Reg> {
+        let recipe = self.binding_recorder.as_mut().and_then(|r| r.constant(c, as_scalar));
         let cv = self.mono(c.const_);
         let size = self.layout(cv.ty())?.size.bytes_usize();
         if size == 0 {
@@ -1138,13 +1213,13 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     // pointers whose relative offset wraps the target width.
                     let mask = if size == 16 { u128::MAX } else { (1u128 << (size * 8)) - 1 };
                     return match relocation {
-                        Some((id, addend)) => self.imm_allocation(bits & mask, id, addend),
+                        Some((id, addend)) => self.imm_allocation(bits & mask, id, addend, recipe),
                         None => Ok(self.imm(bits & mask)),
                     };
                 }
                 // Calls and other address consumers still receive storage.
                 let src = match relocation {
-                    Some((id, addend)) => self.imm_allocation(bits, id, addend)?,
+                    Some((id, addend)) => self.imm_allocation(bits, id, addend, recipe)?,
                     None => self.imm(bits),
                 };
                 let address = self.temporary(size);
@@ -1153,12 +1228,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             }
             ConstValue::Indirect { alloc_id, offset } => {
                 let at = self.exporter.with_trace_parent(origin, |e| e.alloc(alloc_id))? + offset.bytes_usize();
-                self.imm_allocation(at as u128, alloc_id, offset.bytes())?
+                self.imm_allocation(at as u128, alloc_id, offset.bytes(), recipe)?
             }
             ConstValue::Slice { alloc_id, meta } => {
                 let at = self.exporter.with_trace_parent(origin, |e| e.alloc(alloc_id))?;
                 let bits = (at as u128) | ((meta as u128) << 64);
-                let src = self.imm_allocation(bits, alloc_id, 0)?;
+                let src = self.imm_allocation(bits, alloc_id, 0, recipe)?;
                 let address = self.temporary(16);
                 self.store(address, src, 16)?;
                 address
@@ -2083,7 +2158,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         }
         Ok(true)
     }
-    fn lower(mut self) -> Result<(Function, Vec<PointerBinding>)> {
+    fn lower(mut self) -> Result<(Function, Vec<PointerBinding>, Option<reuse::Tape>)> {
         let reachable = self.reachable_blocks()?;
         for (bb, block) in self.body.basic_blocks.iter_enumerated() {
             self.blocks[bb.as_usize()] = self.code.len();
@@ -2109,6 +2184,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 }
             }
             for (statement_index, statement) in block.statements.iter().enumerate() {
+                self.binding_position = reuse::Position { block: bb.as_usize(), statement: statement_index };
                 let emitted_start = self.code.len();
                 match &statement.kind {
                     StatementKind::Intrinsic(intrinsic) => match &**intrinsic {
@@ -2159,6 +2235,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 }
                 scalar_frame::byte_writes::remember(&mut self, bb.as_usize(), statement_index, emitted_start);
             }
+            self.binding_position = reuse::Position { block: bb.as_usize(), statement: block.statements.len() };
             let emitted_start = self.code.len();
             match &block.terminator().kind {
                 TerminatorKind::Goto { target } => self.jump(*target),
@@ -2206,7 +2283,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                         let (arguments, arg_sizes) = self.call_arguments(func, args)?;
                         let destination = self.place(*destination)?;
                         let result_size = self.layout(destination.ty)?.size.bytes_usize();
-                        self.exporter.require_indirect_calls(CallShape {
+                        self.require_indirect_calls(CallShape {
                             args: arg_sizes.clone(),
                             result: result_size,
                         });
@@ -2276,6 +2353,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                                 Instance { def: ty::InstanceKind::Item(def), args: instance.args }
                             } else { instance };
                             let function = self.exporter.register(instance);
+                            if let Some(recorder) = &mut self.binding_recorder {
+                                recorder.record(reuse::Event::Call { block: self.binding_position.block, original: function });
+                            }
                             let (mut arguments, _) = self.call_arguments(func, args)?;
                             if instance.def.requires_caller_location(self.tcx()) {
                                 arguments.push(self.caller_argument(source_info)?);
@@ -2307,6 +2387,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                         }
                         let instance = Instance::resolve_drop_glue(self.tcx(), ty);
                         let function = self.exporter.register(instance);
+                            if let Some(recorder) = &mut self.binding_recorder {
+                                recorder.record(reuse::Event::Call { block: self.binding_position.block, original: function });
+                            }
                         let pointer = self.temporary(if loc.metadata.is_some() {16} else {8});
                         self.store(pointer, loc.address, 8)?;
                         if let Some(metadata)=loc.metadata {
@@ -2389,6 +2472,6 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             args: arguments,
             result: self.locals[0],
             code: self.code,
-        }, self.pointer_bindings.unwrap_or_default()))
+        }, self.pointer_bindings.unwrap_or_default(), self.binding_recorder.map(|r| r.tape)))
     }
 }

@@ -250,7 +250,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         }
         let destination = self.place(destination)?;
         let result_size = self.layout(destination.ty)?.size.bytes_usize();
-        self.exporter.require_indirect_calls(CallShape {
+        self.require_indirect_calls(CallShape {
             args: sizes.clone(),
             result: result_size,
         });
@@ -270,7 +270,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         let pointer = self.temporary(8);
         self.store(pointer, loc.address, 8)?;
         let destination = self.imm(0);
-        self.exporter.require_indirect_calls(CallShape {
+        self.require_indirect_calls(CallShape {
             args: vec![8],
             result: 0,
         });

@@ -16,6 +16,19 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         match source {
             Source::Inherited(slot) => Ok(self.local(slot.offset)),
             Source::Constant(span) => {
+                if self.binding_recorder.is_some() {
+                    let block = &self.body.basic_blocks.as_slice()[self.binding_position.block];
+                    let terminator = block.terminator();
+                    let expected = match &terminator.kind {
+                        TerminatorKind::Call { fn_span, .. } => mir::SourceInfo { span: *fn_span, ..terminator.source_info },
+                        _ => terminator.source_info,
+                    };
+                    if source_info.span != expected.span || source_info.scope != expected.scope
+                        || self.binding_position.statement != block.statements.len()
+                    {
+                        self.binding_recorder.as_mut().unwrap().decline("caller source is not the current terminator");
+                    }
+                }
                 let value = self.tcx().span_as_caller_location(span);
                 let ConstValue::Scalar(Scalar::Ptr(pointer, _)) = value else {
                     return Err("caller location is not a constant pointer".into());

@@ -143,7 +143,7 @@ impl Callbacks for Export {
             // execution graph changes, even if its Rust source is unchanged.
             // Library dependencies delegated to ordinary rustc do not record
             // these inputs, so their checked artifacts can be shared.
-            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES"] {
+            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES", "RUST_INTERP_BINDING_REPLAY"] {
                 sess.env_depinfo.borrow_mut().insert((
                     rustc_span::Symbol::intern(key),
                     std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
@@ -330,6 +330,14 @@ fn main() {
     });
     if function_dependencies && !function_costs {
         eprintln!("function dependency observation requires function costs and strict checking");
+        std::process::exit(2);
+    }
+    let binding_replay = lower::reuse::enabled().unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    if binding_replay && (!function_costs || audit_selection.is_some() || demand) {
+        eprintln!("binding replay requires function costs and strict execution-graph checking");
         std::process::exit(2);
     }
     let allocation_trace = match std::env::var_os("RUST_INTERP_ALLOCATION_TRACE") {
