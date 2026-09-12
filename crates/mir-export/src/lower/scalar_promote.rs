@@ -1,14 +1,17 @@
-//! Select private primitive MIR slots; lower their scalar accesses to registers.
+//! Select private scalar MIR slots; lower their full-width accesses to registers.
 use super::*;
 use rustc_middle::mir::visit::{MutatingUseContext,NonMutatingUseContext,PlaceContext,Visitor};
 use std::sync::atomic::{AtomicU64,Ordering};
 #[path="scalar_promote_transform.rs"]
 mod transform;
+#[path="scalar_promote_slots.rs"]
+mod slots;
 static NANOS:AtomicU64=AtomicU64::new(0);
 static SLOTS:AtomicU64=AtomicU64::new(0);
 static ADDRESSES:AtomicU64=AtomicU64::new(0);
 static REWRITTEN:AtomicU64=AtomicU64::new(0);
 static MOVES:AtomicU64=AtomicU64::new(0);
+static POINTER_SLOTS:AtomicU64=AtomicU64::new(0);
 struct Uses<'a> { eligible:&'a mut [bool] }
 impl<'tcx> Visitor<'tcx> for Uses<'_> {
     fn visit_local(&mut self,local:mir::Local,context:PlaceContext,_:mir::Location) {
@@ -26,9 +29,16 @@ pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
     let start=std::time::Instant::now();
     if lower.locals.len()>4096 || lower.code.len()>100_000 {return Ok(());}
     let mut eligible=vec![false;lower.locals.len()];
+    let mut legacy=vec![false;lower.locals.len()];
     for (id,decl) in lower.body.local_decls.iter_enumerated() {
         let id=id.as_usize();let ty=lower.mono(decl.ty);
-        eligible[id]=id>lower.body.arg_count&&matches!(ty.kind(),ty::Int(_)|ty::Uint(_)|ty::Float(_)|ty::Bool|ty::Char);
+        legacy[id]=id>lower.body.arg_count&&matches!(ty.kind(),ty::Int(_)|ty::Uint(_)|ty::Float(_)|ty::Bool|ty::Char);
+        // Thin raw-pointer values already use the guest's 64-bit scalar bit
+        // representation. Only their private storage can be promoted: keep
+        // every existing MIR use exclusion and final-bytecode address check.
+        // References, fat pointers and function pointers remain excluded.
+        let pointer=id>lower.body.arg_count && lower.locals[id].size==8 && matches!(ty.kind(),ty::RawPtr(..));
+        eligible[id]=legacy[id]||pointer;
     }
     for (bb,block) in lower.body.basic_blocks.iter_enumerated() {
         for (statement_index,statement) in block.statements.iter().enumerate() {
@@ -40,28 +50,15 @@ pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
         Uses{eligible:&mut eligible}.visit_terminator(block.terminator(),mir::Location{block:bb,statement_index:block.statements.len()});
         if let TerminatorKind::Call{args,..}=&block.terminator().kind {for arg in args {exclude_operand(&mut eligible,&arg.node);}}
     }
-    // Merge exact colored ranges, then reject overlaps with any other range.
-    // A prefix maximum avoids a quadratic scan in large MIR functions.
-    let mut ranges=BTreeMap::<(usize,usize),bool>::new();
-    for (i,slot) in lower.locals.iter().enumerate() {
-        if slot.size==0 {continue;}
-        *ranges.entry((slot.offset,slot.size)).or_insert(true)&=eligible[i];
-    }
-    let ranges:Vec<_>=ranges.into_iter().collect();let mut prefix_end=0;let mut slots=vec![];
-    for (i,&((offset,size),yes)) in ranges.iter().enumerate() {
-        let end=offset.checked_add(size).ok_or("scalar promotion slot overflow")?;
-        if yes && prefix_end<=offset && ranges.get(i+1).is_none_or(|&((next,_),_)|next>=end) {
-            slots.push(Slot{offset,size});
-        }
-        prefix_end=prefix_end.max(end);
-    }
+    let (slots,pointer_offsets)=slots::select(&lower.locals,&eligible,&legacy);
     let r=transform::promote(&mut lower.code,&mut lower.registers,&slots);
+    POINTER_SLOTS.fetch_add(r.promoted_offsets.iter().filter(|offset|pointer_offsets.contains(offset)).count() as u64,Ordering::Relaxed);
     SLOTS.fetch_add(r.slots as u64,Ordering::Relaxed);ADDRESSES.fetch_add(r.removed_addresses as u64,Ordering::Relaxed);
     MOVES.fetch_add(r.removed_moves as u64,Ordering::Relaxed);
     REWRITTEN.fetch_add(r.rewritten as u64,Ordering::Relaxed);NANOS.fetch_add(start.elapsed().as_nanos() as u64,Ordering::Relaxed);
     Ok(())
 }
 pub(super) fn report() {
-    eprintln!("rust-interp-scalar-promotion: slots={} removed_addresses={} rewritten={} seconds={:.6} removed_moves={}",
-        SLOTS.load(Ordering::Relaxed),ADDRESSES.load(Ordering::Relaxed),REWRITTEN.load(Ordering::Relaxed),NANOS.load(Ordering::Relaxed) as f64/1e9,MOVES.load(Ordering::Relaxed));
+    eprintln!("rust-interp-scalar-promotion: slots={} removed_addresses={} rewritten={} seconds={:.6} removed_moves={} pointer_slots={}",
+        SLOTS.load(Ordering::Relaxed),ADDRESSES.load(Ordering::Relaxed),REWRITTEN.load(Ordering::Relaxed),NANOS.load(Ordering::Relaxed) as f64/1e9,MOVES.load(Ordering::Relaxed),POINTER_SLOTS.load(Ordering::Relaxed));
 }

@@ -1,11 +1,11 @@
-//! Only for private, non-address-exposed primitive MIR slots. The caller must
+//! Only for private, non-address-exposed scalar MIR slots. The caller must
 //! prove that other pointers cannot alias these ranges. This is not a general
 //! optimizer for externally supplied bytecode.
 use rust_interp_bytecode::{Op,Reg,Slot};
 use std::collections::BTreeMap;
 
 #[derive(Default,Debug)]
-pub(super) struct Report { pub slots:usize, pub removed_addresses:usize, pub rewritten:usize, pub removed_moves:usize }
+pub(super) struct Report { pub slots:usize, pub removed_addresses:usize, pub rewritten:usize, pub removed_moves:usize, pub promoted_offsets:Vec<usize> }
 
 // Explicit matches force review when the bytecode gains a register operand.
 fn registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnMut(Reg)) {
@@ -92,7 +92,7 @@ pub(super) fn promote(code:&mut Vec<Op>,count:&mut u32,slots:&[Slot])->Report {
     for (yes,uses) in candidate.iter_mut().zip(uses) {*yes &= uses>0;}
     let mut canonical=vec![None;slots.len()];let mut output=Vec::with_capacity(code.len()+slots.len());let mut report=Report::default();
     for (slot,&yes) in candidate.iter().enumerate() {
-        if yes {let dst=*count;*count+=1;canonical[slot]=Some(dst);output.push(Op::Imm{dst,value:0});report.slots+=1;}
+        if yes {let dst=*count;*count+=1;canonical[slot]=Some(dst);output.push(Op::Imm{dst,value:0});report.slots+=1;report.promoted_offsets.push(slots[slot].offset);}
     }
     if report.slots==0 {return report;}
     let promoted=|r:Reg|addresses[r as usize].and_then(|slot|canonical[slot]);

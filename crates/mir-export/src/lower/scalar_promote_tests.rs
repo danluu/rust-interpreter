@@ -111,3 +111,36 @@ fn scalar_promotion_preserves_faults_at_remaining_memory_accesses() {
         }
     }
 }
+
+#[test]
+fn promoted_pointer_storage_does_not_cache_or_hide_pointee_updates_across_calls() {
+    let mut p=program(function(vec![
+        Op::Local{dst:0,offset:48},Op::Imm{dst:1,value:5},Op::Store{address:0,src:1,size:8},
+        Op::Local{dst:2,offset:16},Op::Store{address:2,src:0,size:8},
+        Op::Local{dst:3,offset:32},Op::Copy{dst:3,src:2,size:8},
+        Op::Call{function:1,args:vec![3],destination:0},
+        Op::Local{dst:4,offset:16},Op::Load{dst:5,address:4,size:8},
+        Op::Load{dst:6,address:5,size:8},Op::Local{dst:7,offset:0},
+        Op::Store{address:7,src:6,size:8},Op::Return,
+    ],8));
+    let mut child=function(vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8},
+        Op::Imm{dst:2,value:9},Op::Store{address:1,src:2,size:8},Op::Return],3);
+    child.args=vec![Slot{offset:0,size:8}];child.result=Slot{offset:8,size:0};p.functions.push(child);
+    let (out,r)=transformed(&p,&[Slot{offset:16,size:8}]);assert_eq!(r.promoted_offsets,[16]);
+    check(&p,&[],9);check(&out,&[],9);
+}
+
+#[test]
+fn promoted_pointer_values_preserve_dereference_faults_and_null_bits() {
+    for address in [0,u64::MAX as u128,1_000_000] {
+        let p=program(function(vec![Op::Local{dst:0,offset:16},Op::Imm{dst:1,value:address},
+            Op::Store{address:0,src:1,size:8},Op::Load{dst:2,address:0,size:8},
+            Op::Load{dst:3,address:2,size:8},Op::Return],4));
+        let (out,r)=transformed(&p,&[Slot{offset:16,size:8}]);assert_eq!(r.promoted_offsets,[16]);
+        for engine in engines() {
+            let old=execute_with_engine(&p,&[],Limits::default(),engine).unwrap_err();
+            let new=execute_with_engine(&out,&[],Limits::default(),engine).unwrap_err();
+            assert_eq!(old,new);assert!(new.contains("memory"));
+        }
+    }
+}
