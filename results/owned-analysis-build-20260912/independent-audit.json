@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "auditor": "/root/binary_codegen",
+  "recorded_at_utc": "2026-09-12T21:22:17.448449+00:00",
+  "scope": "Independent read-only screen audit completed before this packaging: original raw records, executed artifacts, source/tool/common hashes, controller and qualification evidence. Packaging additionally rechecked copy hashes, raw metric pairing, fixed gate, archive roundtrip and staged source identity. No builds, tests, benchmarks or verifier commands executed by the auditor.",
+  "decision": "SCREEN PASS; public confirmations PENDING; experimental integration only",
+  "median_ratio_definition": "median(candidate build-to-ready / baseline build-to-ready) over all 15 edited pairs per project; CPU uses build_to_ready_cpu.total_seconds",
+  "recomputed_aggregate": {
+    "token": {
+      "pairs": 15,
+      "wall": {
+        "median": 0.9469384262216509,
+        "min": 0.9231486459958087,
+        "max": 1.0661757165289867
+      },
+      "cpu": {
+        "median": 0.9421516729634383,
+        "min": 0.9166488631334256,
+        "max": 1.0173511738445213
+      }
+    },
+    "pgrust": {
+      "pairs": 15,
+      "wall": {
+        "median": 1.0095530334540133,
+        "min": 0.9267949616881955,
+        "max": 1.0365435232512425
+      },
+      "cpu": {
+        "median": 1.0080018747736423,
+        "min": 0.9381287395621014,
+        "max": 1.036780858744911
+      }
+    }
+  },
+  "recomputed_histories": [
+    {
+      "run": "owned-analysis-token-20260912-01",
+      "wall": 0.9441305612818746,
+      "cpu": 0.9413196230704541
+    },
+    {
+      "run": "owned-analysis-token-20260912-02",
+      "wall": 0.9426394532428483,
+      "cpu": 0.9421516729634383
+    },
+    {
+      "run": "owned-analysis-token-20260912-03",
+      "wall": 0.9489921094409505,
+      "cpu": 0.9525415793740342
+    },
+    {
+      "run": "owned-analysis-pgrust-20260912-01",
+      "wall": 0.9941510136630209,
+      "cpu": 0.9956061851248013
+    },
+    {
+      "run": "owned-analysis-pgrust-20260912-02",
+      "wall": 1.0034528128431386,
+      "cpu": 1.002916922442917
+    },
+    {
+      "run": "owned-analysis-pgrust-20260912-03",
+      "wall": 1.0224395941336237,
+      "cpu": 1.0210962042799148
+    }
+  ],
+  "fixed_gates": {
+    "token_wall_ratio_max": 0.95,
+    "token_cpu_ratio_strictly_below": 1.0,
+    "every_history_wall_and_cpu_ratio_max": 1.05,
+    "pgrust_aggregate_wall_and_cpu_ratio_max": 1.05
+  },
+  "all_fixed_screen_gates_pass": true,
+  "aa_noise_subtracted": false,
+  "complete_workflow_evidence": {
+    "histories": 6,
+    "primary_commands": 144,
+    "fresh_primary_compilations": 144,
+    "checking_commands": 48,
+    "edited_pairs": 30,
+    "rehash_verified_executed_artifacts": 96,
+    "distinct_comparison_cache_workspaces": 12,
+    "warm_source_transitions_verified": true,
+    "wrong_edits_compile_then_fail_runtime_assertions": true,
+    "restored_original_build_and_execution_verified_in_each_history": true,
+    "control_states_excluded_from_edited_pairs_and_medians": true,
+    "paired_sources_and_test_selections_match": true,
+    "paired_bytecode_identical_in_all_states": true,
+    "summary_metrics_match_raw_launch_receipts": true,
+    "build_cpu_self_children_and_user_system_sums_verified": true
+  },
+  "controllers": {
+    "completed_calls": 12,
+    "planned_calls": 12,
+    "executed_calls_match_exact_original_plan": true,
+    "calls_sequential": true,
+    "repeated_performance_histories": 0,
+    "partial_performance_histories": 0,
+    "interruptions": 0,
+    "controller_sha256": "30a23657a3c539b98da6a6c61de0b6a37971794e22091f14fea693a5456e3ef3",
+    "controller_source_sha256": "cf7a053c32e79f0a395d7e67a7794e511bbe9460e4572a5e3f13b6a4d9835d18",
+    "history_admission_free_bytes": [
+      35232251904,
+      33755140096,
+      33746866176,
+      31904657408,
+      31895252992,
+      30331580416
+    ],
+    "admission_floor_bytes": 3221225472,
+    "per_command_floor_bytes": 1073741824
+  },
+  "identity_checks": {
+    "qualification_proof_hashes": 24,
+    "validation_input_hashes": 29,
+    "candidate_snapshot_file_hashes": 137,
+    "common_script_hashes": 14,
+    "archived_common_control_files": 15,
+    "std_mir_files": 26,
+    "both_frozen_toolsets_verified": true,
+    "same_vm_and_compiler_wrapper": true,
+    "baseline_tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "candidate_tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+    "selected_binaries": {
+      "rust-interp-vm": "03d401c1df926f99941cdd5325c2d58848d25e3b774ffa7f27db20b448c65a20",
+      "rust-interp-mir-export": "2a33492691a047483e010314a215bc3861ca733225fc8d9cac14b85cc289065c",
+      "rust-interp-rustc-wrapper": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+    },
+    "built_binaries": {
+      "rust-interp-vm": {
+        "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/target/release/rust-interp-vm",
+        "sha256": "1301b8b062eee656c348105d7a93d969aab7471c6c43507259eb6da889069ad9"
+      },
+      "rust-interp-mir-export": {
+        "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/target/release/rust-interp-mir-export",
+        "sha256": "2a33492691a047483e010314a215bc3861ca733225fc8d9cac14b85cc289065c"
+      },
+      "rust-interp-rustc-wrapper": {
+        "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/perf-general-20260912/target/release/rust-interp-rustc-wrapper",
+        "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+      }
+    },
+    "candidate_built_vm_selected": false
+  },
+  "qualification": {
+    "rust_tests": {
+      "debug": {
+        "passed": 388,
+        "failed": 0,
+        "ignored": 1
+      },
+      "release": {
+        "passed": 388,
+        "failed": 0,
+        "ignored": 1
+      }
+    },
+    "standalone_local_layout_oracle_inputs": 261,
+    "standalone_receipt_reused_from_prior_unchanged_fixture": true,
+    "full_validation_commands": 23727,
+    "full_records_json_equals_commands_jsonl": true,
+    "local_layout_native_outputs": 111,
+    "matching_local_layout_vm_commands": 222,
+    "local_layout_vm_engines": [
+      "interpreter",
+      "jit"
+    ],
+    "frozen_vm_commands": 22461,
+    "candidate_exporter_commands": 205,
+    "full_validation_summary_equals_qualified_snapshot": true
+  },
+  "integration": {
+    "base_commit": "955a19d66b9f6bc14d6382b1db9e8c40c3f9947e",
+    "measured_source_commit": "04bb082113ae6fc04eee4ea0c370cdf1f5b34648",
+    "upstream_compiler_changes_since_measured_baseline": [],
+    "staged_snapshot_files_equal_measured": 137,
+    "staged_recomputed_tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+    "candidate4_branches_excluded": [
+      "5b8ffcb",
+      "b8966c9",
+      "f1fba4e"
+    ],
+    "baseline_top_level_validation_sha256": "5e9462087181a6f6d9d75a57ef5b1ee04f5add79a1b1357e4f1923e5bdf15083",
+    "baseline_top_level_validation_preserved": true,
+    "existing_results_preserved": true,
+    "six_result_directories_copied_unchanged": true
+  },
+  "report_integrity": {
+    "copied_evidence_files": 107,
+    "validation_archives": 1,
+    "compressed_validation_log_roundtrip_byte_exact": true,
+    "original_raw_artifacts_tools_and_sources_left_in_place": true,
+    "format_check": "All compiler, test, design, authored prose/JSON and copied non-log/non-patch evidence pass git diff --cached --check. Full check reports only original whitespace in byte-preserved debug/release and standalone-oracle logs, plus space-prefixed blank context lines in the original qualified source patch. Evidence bytes were not normalized."
+  },
+  "claims": "The completed screen supports proceeding to the two fixed public confirmations. Their status is pending in this draft. No adoption, cold-build, full-command, runtime or unknown-holdout speedup claim is made.",
+  "packaging_peer_review": {
+    "reviewer": "/root/benchmark_review",
+    "result": "no blocker; no source/report changes requested",
+    "scope": "Read-only independent review: all 107 copied original/manifest hashes, 24 qualification proof mappings, 23,727-record archive roundtrip and records.json equality, 137 indexed compiler inputs/tool key, 20 exact source/design/fixture files, six unchanged result directories, all 30 raw edited ratios and six medians, twelve exact controller calls, preserved existing results/top-level baseline summary, pending-confirmation status and selected-versus-built VM distinction. No builds, tests, benchmarks or edits."
+  }
+}

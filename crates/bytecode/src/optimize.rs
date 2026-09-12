@@ -27,7 +27,7 @@ pub fn optimize_calls(
     if let Some(options) = inline {
         report.forwarding_before_inline = Some(crate::eliminate_direct_forwarders(&mut program)?);
         let started = std::time::Instant::now();
-        let (expanded, details) = crate::inline_leaves(&program, options)?;
+        let (expanded, details) = crate::inline::transform_owned(program, options)?;
         report.inline_time = started.elapsed();
         report.inlining = Some(details);
         program = expanded;

@@ -97,7 +97,7 @@ pub(super) fn transform(observations: Vec<Observation>, program: &mut Program) {
         assert_eq!(f.name,o.name,"function identity differs at relocation");
         if let Some(reason)=o.decline { *declines.entry(reason).or_default()+=1; continue; }
         assert!(o.baseline,"missing original scalar-layout certificate");
-        for w in &o.writes {
+        for w in o.writes {
             if !w.coverage.complete(o.slots[w.local],program) {
                 o.events[w.block][w.event].reads.insert(w.local);
             }
