@@ -8,14 +8,21 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+Split heap/linear native address checks are parked. All363host tests/profile
+and42saved-suite commands pass, but token regresses2.51% wall/2.50% CPU across
+six pairs and two recorded entropy streams. No real-edit promotion follows.
+The emitter remains off main. Next add seeded valid-program differential
+coverage requested in the review before more structural runtime changes.
+[Decision](results/native-address-checks-screen-01/assessment.md).
+
 Exact saved-test selection now works independently of instruction profiling.
 The feature passes 360 host tests per profile and seven real selections with
 identical instructions, output, memory peaks and replayed entropy. Six native
 sampling windows show different hot paths in the two dominant token tests:
 regex determinization/hashing versus sorting, comparison and precondition
 checks. Generated code accounts for about 89% of both captures; bytecode-count
-reductions alone remain a poor guide. Inspect the actual hot region instructions
-and boundary structure before choosing another runtime candidate.
+reductions alone remain a poor guide. The subsequent arena-branch experiment
+is recorded above and stays parked.
 [Selection and native samples](results/selected-native-block-sample-01/assessment.md).
 
 Shared-call specialization is parked on

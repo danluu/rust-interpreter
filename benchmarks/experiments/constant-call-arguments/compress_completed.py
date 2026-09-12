@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Apply transparent filesystem compression to an exact completed evidence list."""
-import hashlib,json,os,shutil,stat,subprocess,sys
+import argparse,hashlib,json,os,shutil,stat,subprocess,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
@@ -12,18 +12,41 @@ def properties(path):
         flags=s.st_flags & ~stat.UF_COMPRESSED,allocated=s.st_blocks*512)
 
 def main():
-    run='completed-evidence-compression-01'
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-id',choices=['completed-evidence-compression-01','completed-evidence-compression-02'],default='completed-evidence-compression-01')
+    run=parser.parse_args().run_id
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,3)
         work=ROOT/'.work'/run;work.mkdir(exist_ok=False)
         inputs=[];proofs=[Path(__file__),Path(__file__).with_name('TRANSPARENT-STORAGE.md')]
-        profile=ROOT/'results/suite-profiling-real-01/summary.json';report=json.loads(profile.read_text());assert report['status']=='passed';proofs.append(profile)
-        for item in report['profiles']:
-            inputs.append((ROOT/'.work/suite-profiling-real-01'/(str(item['index'])+'-profile.json'),item['profile_sha256'],'suite-profiling-real-01'))
-        for number in ['01','02','03']:
-            report_path=ROOT/'results'/('constant-specialize-saved-'+number)/'summary.json';report=json.loads(report_path.read_text());assert report['status']=='passed';proofs.append(report_path)
-            item=next(c for c in report['cases'] if c['case']=='token')
-            inputs.append((ROOT/report['raw']/'0.rbc',item['candidate_artifact_sha256'],Path(report['raw']).name))
+        if run.endswith('01'):
+            profile=ROOT/'results/suite-profiling-real-01/summary.json';report=json.loads(profile.read_text());assert report['status']=='passed';proofs.append(profile)
+            for item in report['profiles']:
+                inputs.append((ROOT/'.work/suite-profiling-real-01'/(str(item['index'])+'-profile.json'),item['profile_sha256'],'suite-profiling-real-01'))
+            for number in ['01','02','03']:
+                report_path=ROOT/'results'/('constant-specialize-saved-'+number)/'summary.json';report=json.loads(report_path.read_text());assert report['status']=='passed';proofs.append(report_path)
+                item=next(c for c in report['cases'] if c['case']=='token')
+                inputs.append((ROOT/report['raw']/'0.rbc',item['candidate_artifact_sha256'],Path(report['raw']).name))
+        else:
+            report_path=ROOT/'results/fixed-frame-clear-entropy-aa-01/summary.json';report=json.loads(report_path.read_text());assert report['status']=='passed';proofs.append(report_path)
+            for index in [0,1]:
+                path=Path('.work/fixed-frame-clear-entropy-aa-01')/(str(index)+'.profile.json')
+                inputs.append((ROOT/path,report['evidence'][str(path)],'fixed-frame-clear-entropy-aa-01'))
+            commands_path=ROOT/'.work/budget-register-smoke-05/commands.json';commands=json.loads(commands_path.read_text());proofs.append(commands_path)
+            for index in [1,3,11,13]:
+                path=Path('.work/budget-register-smoke-05')/(str(index)+'-profile.json')
+                rows=[row for row in commands if str(path) in row['files']];assert len(rows)==1 and rows[0]['returncode']==0
+                inputs.append((ROOT/path,rows[0]['files'][str(path)],'budget-register-smoke-05'))
+            for sample_run in ['selected-native-block-sample-01','selected-native-exhaustive-sample-01']:
+                report_path=ROOT/'results'/sample_run/'summary.json';report=json.loads(report_path.read_text());proofs.append(report_path)
+                assert report['performance_measurement'] is False and len(report['samples'])==3
+                for sample in report['samples']:
+                    record_path=ROOT/'.work'/sample_run/str(sample['index'])/'record.json'
+                    assert sha(record_path)==sample['evidence'][str(record_path.relative_to(ROOT))]
+                    record=json.loads(record_path.read_text());proofs.append(record_path)
+                    assert record['identity']['status']=='finished' and record['identity']['returncode']==0
+                    for name in ['jit-code/code.bin','jit-code/map.json']:
+                        inputs.append((record_path.parent/name,record['files'][name],sample_run))
         for run_name in sorted({run_name for _,_,run_name in inputs}):
             path=ROOT/'.work/experiments'/run_name/'status.json';s=json.loads(path.read_text())
             assert s['owner']==s['cwd']==str(ROOT) and s['status']=='finished' and s['returncode']==0
@@ -37,7 +60,7 @@ def main():
         records=[]
         env={k:v for k,v in os.environ.items() if not k.startswith('DITTO')};env['DITTOABORT']='1'
         for item in prepared:
-            path=ROOT/item['path'];stage=path.with_name(path.name+'.completed-evidence-compression-01')
+            path=ROOT/item['path'];stage=path.with_name(path.name+'.'+run)
             assert not stage.exists() and not stage.is_symlink();require_space(ROOT,3)
             assert sha(path)==item['sha256'] and properties(path)==item['before']
             command=['/usr/bin/ditto','--hfsCompression','--noclone',str(path),str(stage)]
