@@ -1,0 +1,3 @@
+Folded fre passes the 5% retention gate: paired candidate/baseline wall ratio **0.997043** (−0.30%), CPU ratio **1.002378** (+0.24%). Complete-command medians are native **1.636s**, baseline **1.723s**, candidate **1.714s**. This small measured difference does not establish a performance improvement.
+
+All 63 primary commands, 21 Cargo checks, 15 edited pairs and 42 bytecode snapshots verify. Baseline and candidate bytecode matches at every source state; original assertions, wrong production edits and source restoration remain intact. The isolated VM pair predates the independently published interpreter frame-loop change; final composition requires separate qualification.
