@@ -1,0 +1,5 @@
+The source audit found that the original fixed-clear proof assumed a stable amount of caller-to-callee alignment padding. Returns retain preceding alignment padding, so that amount can depend on call history. A successful selected-suite test does not prove the invariant for every valid frame layout.
+
+The corrected helper only returns a fixed length when the initial caller end is already callee-aligned. That alignment is preserved by subsequent round-ups to any validated power-of-two alignment. All uncertain layouts use the existing dynamic range clear. A new arithmetic model checks the accepted proof across successive alignment histories; no memory-corruption reproduction was executed.
+
+Build03 and the original fixed-clear candidate are held from further execution or adoption. Their historical qualification and pgrust measurements remain unchanged; they do not qualify the correction. Rebuild the VM with393 tests per profile, preserve the build03 exporter/wrapper, and repeat saved-test, serial/parallel-suite and native/cache correctness qualification before new timing. Token attempts01/02 measured no commands because they timed out at the shared lock.

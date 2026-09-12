@@ -16,14 +16,16 @@ const SPARE_MEMORY: usize = 1024 * 1024;
 const SPARE_REGISTERS: usize = 16 * 1024;
 const SPARE_FRAMES: usize = 64;
 
-/// The caller base is aligned to its validated power-of-two alignment. When
-/// that is a multiple of the callee alignment, padding after its fixed extent
-/// is constant even when the caller base itself is known only at runtime.
+/// Prove that the current memory end needs no callee alignment padding.
+/// Returns retain earlier callees' pre-frame padding, so the memory end need
+/// not equal the caller's original extent. If that extent is already aligned,
+/// rounding it to any other validated power-of-two alignment preserves this
+/// alignment: smaller alignments leave it alone and larger ones are multiples.
+/// Otherwise padding depends on call history and needs the dynamic clear.
 fn fixed_frame_clear_size(caller: &Function, callee: &Function) -> Option<usize> {
-    if caller.frame_align < callee.frame_align { return None; }
-    let old_size = caller.frame_size.max(1);
-    let next_base = old_size.checked_add(callee.frame_align - 1)? & !(callee.frame_align - 1);
-    let size = (next_base - old_size).checked_add(callee.frame_size.max(1))?;
+    if caller.frame_align < callee.frame_align
+        || caller.frame_size.max(1) % callee.frame_align != 0 { return None; }
+    let size = callee.frame_size.max(1);
     (size <= 256).then_some(size)
 }
 

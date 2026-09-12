@@ -21,6 +21,11 @@ decide whether to retain the combination.
 * Fixed frame clearing: exact mechanism and three tests from commit 46134e4,
   relative to ae0a49e. Clear the proved frame extent plus alignment padding
   up to 256 bytes; preserve the dynamic fallback and separate register buffer.
+  A subsequent source audit invalidated the padding proof for retained alignment
+  after earlier returns. The corrected candidate only fixes the clear length
+  when the caller's initial end is already callee-aligned and remains so after
+  any power-of-two alignment history. Otherwise retain dynamic clearing.
+  Add an arithmetic history-invariant test; no unsafe execution reproduction.
 * Function reuse: the existing strict compiler-validated cache in main,
   exposed by an explicit `--function-cache reuse` launcher option. Require
   exporter capability, pass the environment option only to Cargo, reject
@@ -49,9 +54,11 @@ compilation. It does not admit a fresh large-project cache. Respect the global
 benchmark lock and preserve unrelated workloads. Stop a stage before starting
 if its free-space floor is not met.
 
-Run all Python harness tests, then 392 Rust tests in each of debug and release
+Run all Python harness tests, then 393 Rust tests in each of debug and release
 with one ignored per profile, including generated CFG differential coverage.
 The initial build passed 391/profile; automatic cache eligibility adds one test.
+The retained-alignment proof adds another. Build03 is held from further execution
+or adoption after that audit; its historical pgrust result stays recorded.
 Build the current exporter and wrapper as well as the custom VM. Record failed
 attempts and fixes separately; do not overwrite qualification evidence.
 
@@ -69,6 +76,9 @@ including helper edits, type/borrow rejection and restoration. A failed Cargo
 check must stop before VM execution; previous successful artifacts may remain.
 If the rebuilt VM bytes match the first qualified VM, retain its exact saved-
 input qualification by binary hash rather than rerunning unchanged VM checks.
+The frame-clearing correction changes VM bytes, so it requires fresh saved-test,
+serial/parallel-suite and native/cache qualification. Preserve the build03
+exporter and wrapper bytes for this runtime-only correction.
 
 ## Subsequent experiment contract
 

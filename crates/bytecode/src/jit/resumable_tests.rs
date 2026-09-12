@@ -33,7 +33,7 @@ fn fixed_zeroing_matches_every_dirty_extent_and_unaligned_start() {
 }
 
 #[test]
-fn fixed_clear_layout_accounts_for_padding_and_declines_dynamic_alignment() {
+fn fixed_clear_layout_requires_an_already_aligned_extent() {
     let mut caller = function(vec![Op::Return]);
     let mut callee = caller.clone();
     for caller_align in [1, 2, 4, 8, 16, 32, 64, 128, 256, 4096] {
@@ -43,13 +43,48 @@ fn fixed_clear_layout_accounts_for_padding_and_declines_dynamic_alignment() {
                     caller.frame_align = caller_align; caller.frame_size = caller_size;
                     callee.frame_align = callee_align; callee.frame_size = callee_size;
                     let fixed = fixed_frame_clear_size(&caller, &callee);
-                    if caller_align < callee_align { assert_eq!(fixed, None); continue; }
+                    if caller_align < callee_align || caller_size.max(1) % callee_align != 0 {
+                        assert_eq!(fixed, None); continue;
+                    }
                     // Independent layout oracle: seek the next aligned byte.
                     for base in [0, caller_align, caller_align * 7] {
                         let end = base + caller_size.max(1);
                         let next = (end..).find(|n| n % callee_align == 0).unwrap();
                         let expected = next - end + callee_size.max(1);
                         assert_eq!(fixed, (expected <= 256).then_some(expected));
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn fixed_clear_proof_survives_retained_alignment_history() {
+    // Arithmetic layout oracle only: each return can retain padding inserted
+    // before an earlier callee. Every accepted fixed range must still match
+    // the actual end after arbitrary sequences of those round-ups.
+    let alignments = [1usize, 2, 4, 8, 16, 64, 256, 4096];
+    let mut caller = function(vec![Op::Return]);
+    let mut callee = caller.clone();
+    for caller_align in alignments {
+        for caller_size in [0usize, 1, 7, 16, 17, 32, 33, 256, 257] {
+            caller.frame_align = caller_align;
+            caller.frame_size = caller_size;
+            for callee_align in alignments {
+                callee.frame_align = callee_align;
+                for callee_size in [0usize, 1, 17, 255, 256, 257] {
+                    callee.frame_size = callee_size;
+                    let Some(fixed) = fixed_frame_clear_size(&caller, &callee) else { continue; };
+                    for first_align in alignments {
+                        for second_align in alignments {
+                            let mut end = caller_align * 3 + caller_size.max(1);
+                            for alignment in [first_align, second_align] {
+                                end = end.div_ceil(alignment) * alignment;
+                            }
+                            let next = end.div_ceil(callee_align) * callee_align;
+                            assert_eq!(fixed, next - end + callee_size.max(1));
+                        }
                     }
                 }
             }
