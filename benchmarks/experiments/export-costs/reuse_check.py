@@ -22,7 +22,7 @@ def observation(stderr, artifact):
     lines = [line[len(prefix):] for line in stderr.splitlines() if line.startswith(prefix)]
     assert len(lines) == 1 and len(lines[0].encode()) <= 16 * 1024**2
     result = json.loads(lines[0])
-    assert result['schema_version'] in [1, 2] and result['complete'] is True
+    assert result['schema_version'] in [1, 2, 3] and result['complete'] is True
     assert result['artifact_sha256'] == sha(artifact)
     rows = result['functions']
     assert 0 < len(rows) == result['observed_functions'] <= result['program_functions'] <= 10_257
@@ -33,7 +33,7 @@ def observation(stderr, artifact):
         assert row['name'] and all(re.fullmatch('[0-9a-f]{64}', row[key]) for key in ['lowered_sha256', 'final_sha256'])
         assert all(math.isfinite(row[key]) and row[key] >= 0 for key in ['prepare_seconds', 'lower_seconds'])
         assert all(type(row[key]) is int and row[key] >= 0 for key in ['mir_locals', 'mir_blocks', 'lowered_operations', 'final_operations'])
-        if result['schema_version'] == 2:
+        if result['schema_version'] >= 2:
             assert result['typed_relocations_reconstruct_original'] is True
             assert re.fullmatch('[0-9a-f]{64}', row['typed_template_sha256'])
             assert len(row['relocations']) <= 100_000
@@ -43,6 +43,12 @@ def observation(stderr, artifact):
                 assert type(relocation['addend']) is int and 0 <= relocation['addend'] < 2**64
                 assert relocation['pointer_bits'] == 64 and re.fullmatch('[0-9a-f]{32}', relocation['original_hex'])
                 assert relocation['target'] and relocation['kind'] in ['Allocation', 'Static', 'Function', 'VTable', 'ThreadLocal', 'CallerLocation', 'Errno']
+        if result['schema_version'] == 3:
+            dependency = row['dependency']
+            assert dependency['kind'] == 'CompileMonoItem'
+            assert re.fullmatch(r'[0-9a-f]{1,16}-[0-9a-f]{1,16}', dependency['node'])
+            assert type(dependency['previous_green']) is bool and dependency['lowering_executed'] is True
+            assert math.isfinite(dependency['green_check_seconds']) and dependency['green_check_seconds'] >= 0
     prefix = 'rust-interp-export-timings: '
     scopes = [json.loads(line[len(prefix):]) for line in stderr.splitlines() if line.startswith(prefix)]
     assert len(scopes) == 2 and {s['scope'] for s in scopes} == {'emit', 'lower'}
