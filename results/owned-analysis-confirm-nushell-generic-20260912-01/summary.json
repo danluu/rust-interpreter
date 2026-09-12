@@ -1,0 +1,2077 @@
+{
+  "schema_version": 2,
+  "project": "nushell",
+  "workflow": "nushell-generic-list",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "cycles": 3,
+  "initial_mode_order": [
+    "baseline",
+    "candidate",
+    "native"
+  ],
+  "minimum_free_gib": 1,
+  "tests": [
+    "ty::tests::oneof::oneof_lhs",
+    "ty::tests::oneof::oneof_rhs",
+    "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+    "ty::tests::oneof_flattening::test_oneof_deduplicates",
+    "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+    "ty::tests::subtype_relation::table_list_oneof_covariance",
+    "ty::tests::subtype_relation::test_any_is_top_type",
+    "ty::tests::subtype_relation::test_list_covariance",
+    "ty::tests::subtype_relation::test_number_supertype",
+    "ty::tests::subtype_relation::test_reflexivity",
+    "ty::tests::widen_shortcuts::test_chain_shortcut",
+    "ty::tests::widen_shortcuts::test_glob_string_union",
+    "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+    "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+  ],
+  "edits": [
+    "generalize-list-constructor-input"
+  ],
+  "workload": "Generalize the public Type::list constructor to Into<Type>. Existing constructor, covariance and OneOf assertions remain unchanged across all fourteen selected type-relation tests.",
+  "case_sha256": "b0ad719b750711ecba715ec85ab1ea96b4cdb93aa9ad30ee76efef84be343bed",
+  "test_source_unchanged": true,
+  "batch": true,
+  "compare_isolated_batches": false,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01",
+  "build_tool_opt_level": 0,
+  "build_jobs": 18,
+  "custom_build_jobs": {
+    "baseline": 18,
+    "candidate": 18
+  },
+  "native_control": {
+    "profile": "repository",
+    "jobs": 18,
+    "test_threads": "1",
+    "rustflags": [],
+    "isolation": "ordinary libtest batch"
+  },
+  "instruction_limit": 100000000000,
+  "allocation_limit": 150000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "candidate_jit_persistent_registers": true,
+  "candidate_jit_resumable_calls": true,
+  "candidate_jit_native_calls": false,
+  "candidate_jit_native_call_stubs": false,
+  "baseline_jit_resumable_calls": true,
+  "baseline_jit_persistent_registers": true,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": true,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+  "candidate_tool_key_requested": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 12.59646033399622,
+    "baseline": 10.040808957972331,
+    "candidate": 9.91610733300331
+  },
+  "median_cpu_seconds": {
+    "native": 35.08101599999998,
+    "baseline": 12.772555999999895,
+    "candidate": 12.66009200000002
+  },
+  "cpu_accounting": "RUSAGE_CHILDREN deltas around one waited-for child tree at a time; user plus system CPU; excludes harness CPU",
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "baseline": 49.09939104199293,
+    "candidate": 50.66910150001058,
+    "native": 50.628380332986126
+  },
+  "cycle_anchor_seconds": [
+    {
+      "cycle": 1,
+      "seconds": {
+        "candidate": 7.325425540999277,
+        "native": 11.231944208004279,
+        "baseline": 7.927070792007726
+      }
+    },
+    {
+      "cycle": 2,
+      "seconds": {
+        "native": 12.432784292002907,
+        "baseline": 8.753269250009907,
+        "candidate": 8.901345249993028
+      }
+    }
+  ],
+  "source_transitions": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "content_changed": false,
+      "previous_mode_sources": {
+        "native": null,
+        "baseline": null,
+        "candidate": null
+      }
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "baseline": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "candidate": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "baseline": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "candidate": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "baseline": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "candidate": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "baseline": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "candidate": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "baseline": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "candidate": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "baseline": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "candidate": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "baseline": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "candidate": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "baseline": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "candidate": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01"
+      }
+    },
+    {
+      "cycle": 3,
+      "state": -2,
+      "phase": "restored-original",
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "baseline": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "candidate": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2"
+      }
+    }
+  ],
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "605b874f1165811273cb750fff3a59017c758c37a75e504dd081a053b10202c9",
+    "scripts/interpreter.py": "84a8aa02f1826ac7b469feadcaad73787a503be249b93ef7db99deee0f6131f8",
+    "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+    "scripts/workflow_case_file.py": "4a138ac3b497b9871b3d0781b0272f68da886ef118a26b8795cb7c59141588d7",
+    "scripts/workflow_measurements.py": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132",
+    "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+    "scripts/workflow_io.py": "c159a3152a0019e0d9ebe189ca4b1c48927cc45623d729ed3fd6edf0b13c2acb",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+    "scripts/workflow_jobs.py": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5",
+    "scripts/native_suite.py": "b3c3d462cf1330c7ed07d7b4e80becca9975cffe4b154d58aa322242a97c85c3",
+    "scripts/suite_reports.py": "8c3f13a9812041bfd7e426ba37296e8f416eec95336dc9ac67e9c4ae27d98e7f",
+    "scripts/compare_saved_runtime.py": "34407784cbda57cf0239336c9e310f81a29a4bbfeae6f8c17fbe5a84b816d4d1",
+    "scripts/workspace_cache.py": "1f0848930ddfb1ad0b1d6f128ad79b0e91faf9610d93f5e2e082dc4b39bb76ec",
+    "scripts/test_discovery.py": "36578b7d275959ce3b706ad2f181f3f17d8bced1b7c554c64fdbc4b7862e9cc5",
+    "benchmarks/experiments/interface-edits/nushell-generic-list.json": "109ecc7c03981cdb3bd3f38e67a3130562e2d5e60a63fb57fe9b41ae12f822d3",
+    ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/case.json": "109ecc7c03981cdb3bd3f38e67a3130562e2d5e60a63fb57fe9b41ae12f822d3"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "03d401c1df926f99941cdd5325c2d58848d25e3b774ffa7f27db20b448c65a20",
+      "exporter_sha256": "0819d5dff1f3cfd4d2c32618786f0e075d16481cd4982ba0ea8905c33fdece5a"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "03d401c1df926f99941cdd5325c2d58848d25e3b774ffa7f27db20b448c65a20",
+      "exporter_sha256": "2a33492691a047483e010314a215bc3861ca733225fc8d9cac14b85cc289065c"
+    }
+  },
+  "mode_orders": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 3,
+      "state": -2,
+      "phase": "restored-original",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    }
+  ],
+  "vm_sha256": "03d401c1df926f99941cdd5325c2d58848d25e3b774ffa7f27db20b448c65a20",
+  "exporter_sha256": "2a33492691a047483e010314a215bc3861ca733225fc8d9cac14b85cc289065c",
+  "samples": [
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 49.09939104199293,
+      "cpu_seconds": 392.499706,
+      "previous_source_sha256": null,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        15.87353515625,
+        8.95068359375,
+        6.91748046875
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-0/0-0.rbc",
+          "sha256": "737cf363aafd060da31fa2b016de92441ef6057ccc05cc1ec06a1fcba778f5ac",
+          "bytes": 1251788
+        }
+      ],
+      "build_to_ready_seconds": 49.05278283302323,
+      "build_to_ready_cpu_seconds": 392.456743,
+      "cargo_cpu_seconds": 392.404939
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 50.66910150001058,
+      "cpu_seconds": 397.108158,
+      "previous_source_sha256": null,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        18.95751953125,
+        11.37890625,
+        7.962890625
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-0/0-0.rbc",
+          "sha256": "737cf363aafd060da31fa2b016de92441ef6057ccc05cc1ec06a1fcba778f5ac",
+          "bytes": 1251788
+        }
+      ],
+      "build_to_ready_seconds": 50.620753708994016,
+      "build_to_ready_cpu_seconds": 397.06309500000003,
+      "cargo_cpu_seconds": 397.010857
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 50.628380332986126,
+      "cpu_seconds": 364.620938,
+      "previous_source_sha256": null,
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        15.99169921875,
+        11.8740234375,
+        8.34716796875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 6.068890708003892,
+      "cpu_seconds": 18.51954900000004,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        15.712890625,
+        12.4638671875,
+        8.732421875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 5.8925394999969285,
+      "cpu_seconds": 8.90925499999986,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        14.61474609375,
+        12.2900390625,
+        8.69287109375
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-0/-1-0.rbc",
+          "sha256": "7d8b3cc85ea9cbbfbd570f69d1cd46fcfec62d8cc4ef6300a2adbb30daf54a40",
+          "bytes": 1251836
+        }
+      ],
+      "build_to_ready_seconds": 5.845853874983732,
+      "build_to_ready_cpu_seconds": 8.866228,
+      "cargo_cpu_seconds": 8.819600999999999
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 6.437301042024046,
+      "cpu_seconds": 9.14583800000014,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        13.8447265625,
+        12.1689453125,
+        8.6708984375
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-0/-1-0.rbc",
+          "sha256": "7d8b3cc85ea9cbbfbd570f69d1cd46fcfec62d8cc4ef6300a2adbb30daf54a40",
+          "bytes": 1251836
+        }
+      ],
+      "build_to_ready_seconds": 6.391355209023459,
+      "build_to_ready_cpu_seconds": 9.102994,
+      "cargo_cpu_seconds": 9.053879
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 7.182768666010816,
+      "cpu_seconds": 11.413457999999935,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        16.9169921875,
+        12.91259765625,
+        8.97705078125
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-0/1-0.rbc",
+          "sha256": "7d64902b5e9dfb3e928986ea01f81d46024495a3758d3b87d2287db7b8cc3530",
+          "bytes": 1253196
+        }
+      ],
+      "build_to_ready_seconds": 7.129740250005852,
+      "build_to_ready_cpu_seconds": 11.366335000000001,
+      "cargo_cpu_seconds": 11.318688000000002
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 7.056372291001026,
+      "cpu_seconds": 11.063546000000002,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        18.4599609375,
+        13.40185546875,
+        9.1982421875
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-0/1-0.rbc",
+          "sha256": "7d64902b5e9dfb3e928986ea01f81d46024495a3758d3b87d2287db7b8cc3530",
+          "bytes": 1253196
+        }
+      ],
+      "build_to_ready_seconds": 7.008519458991941,
+      "build_to_ready_cpu_seconds": 11.018824,
+      "cargo_cpu_seconds": 10.9713
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 10.41395966699929,
+      "cpu_seconds": 30.462286999999975,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        16.14990234375,
+        13.0751953125,
+        9.130859375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 7.325425540999277,
+      "cpu_seconds": 11.029349000000082,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        14.7490234375,
+        12.875,
+        9.10546875
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-1/0-0.rbc",
+          "sha256": "29392b0d6b8ac9f052c6844155e75503b7f125856e93df1916cb876d0a855ad3",
+          "bytes": 1251932
+        }
+      ],
+      "build_to_ready_seconds": 7.2721914169960655,
+      "build_to_ready_cpu_seconds": 10.981934999999998,
+      "cargo_cpu_seconds": 10.935385
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 11.231944208004279,
+      "cpu_seconds": 31.727027999999905,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        17.669921875,
+        13.5947265625,
+        9.40625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 7.927070792007726,
+      "cpu_seconds": 11.342932000000133,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        15.8017578125,
+        13.32763671875,
+        9.3603515625
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-1/0-0.rbc",
+          "sha256": "29392b0d6b8ac9f052c6844155e75503b7f125856e93df1916cb876d0a855ad3",
+          "bytes": 1251932
+        }
+      ],
+      "build_to_ready_seconds": 7.875440082978457,
+      "build_to_ready_cpu_seconds": 11.296564,
+      "cargo_cpu_seconds": 11.247022999999999
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 10.888176375010516,
+      "cpu_seconds": 13.338733000000104,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        14.95166015625,
+        13.24853515625,
+        9.400390625
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-1/-1-0.rbc",
+          "sha256": "5d279d00d0ec0e79fe861e217afa2f91d60600312a2680f438723aa7f0791e90",
+          "bytes": 1251884
+        }
+      ],
+      "build_to_ready_seconds": 10.766215042007389,
+      "build_to_ready_cpu_seconds": 13.283842000000002,
+      "cargo_cpu_seconds": 13.234958
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 14.997512542002369,
+      "cpu_seconds": 17.544119999999964,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        17.5322265625,
+        13.943359375,
+        9.71728515625
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-1/-1-0.rbc",
+          "sha256": "5d279d00d0ec0e79fe861e217afa2f91d60600312a2680f438723aa7f0791e90",
+          "bytes": 1251884
+        }
+      ],
+      "build_to_ready_seconds": 14.843770334002329,
+      "build_to_ready_cpu_seconds": 17.449534,
+      "cargo_cpu_seconds": 17.363477
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 11.398845166986575,
+      "cpu_seconds": 22.755972999999983,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        16.6298828125,
+        13.87646484375,
+        9.7431640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 10.10678500001086,
+      "cpu_seconds": 12.829788000000008,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        14.47119140625,
+        13.53759765625,
+        9.69482421875
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-1/1-0.rbc",
+          "sha256": "7d64902b5e9dfb3e928986ea01f81d46024495a3758d3b87d2287db7b8cc3530",
+          "bytes": 1253196
+        }
+      ],
+      "build_to_ready_seconds": 10.030134625005303,
+      "build_to_ready_cpu_seconds": 12.778315000000001,
+      "cargo_cpu_seconds": 12.729598
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 12.59646033399622,
+      "cpu_seconds": 35.08101599999998,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        14.00341796875,
+        13.4912109375,
+        9.74560546875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 10.040808957972331,
+      "cpu_seconds": 12.878091999999981,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        13.4482421875,
+        13.3916015625,
+        9.75390625
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-1/1-0.rbc",
+          "sha256": "7d64902b5e9dfb3e928986ea01f81d46024495a3758d3b87d2287db7b8cc3530",
+          "bytes": 1253196
+        }
+      ],
+      "build_to_ready_seconds": 9.974406291992636,
+      "build_to_ready_cpu_seconds": 12.828401,
+      "cargo_cpu_seconds": 12.77699
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 12.432784292002907,
+      "cpu_seconds": 35.65786699999995,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        12.55517578125,
+        13.20556640625,
+        9.7509765625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 8.753269250009907,
+      "cpu_seconds": 11.894567999999879,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        11.92138671875,
+        13.0498046875,
+        9.7353515625
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-2/0-0.rbc",
+          "sha256": "29392b0d6b8ac9f052c6844155e75503b7f125856e93df1916cb876d0a855ad3",
+          "bytes": 1251932
+        }
+      ],
+      "build_to_ready_seconds": 8.698278791998746,
+      "build_to_ready_cpu_seconds": 11.847419,
+      "cargo_cpu_seconds": 11.799029999999998
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 8.901345249993028,
+      "cpu_seconds": 11.604559000000108,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        14.91162109375,
+        13.66943359375,
+        9.99462890625
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-2/0-0.rbc",
+          "sha256": "29392b0d6b8ac9f052c6844155e75503b7f125856e93df1916cb876d0a855ad3",
+          "bytes": 1251932
+        }
+      ],
+      "build_to_ready_seconds": 8.847037625004305,
+      "build_to_ready_cpu_seconds": 11.557841,
+      "cargo_cpu_seconds": 11.509321
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 8.168173415993806,
+      "cpu_seconds": 11.064700000000016,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        14.45068359375,
+        13.61376953125,
+        10.017578125
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-2/-1-0.rbc",
+          "sha256": "5d279d00d0ec0e79fe861e217afa2f91d60600312a2680f438723aa7f0791e90",
+          "bytes": 1251884
+        }
+      ],
+      "build_to_ready_seconds": 8.1041531249939,
+      "build_to_ready_cpu_seconds": 11.010566,
+      "cargo_cpu_seconds": 10.95506
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 10.499771375005366,
+      "cpu_seconds": 23.072542999999882,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        13.3916015625,
+        13.41259765625,
+        9.98779296875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reverse-top-type-relation",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 9.284184874995844,
+      "cpu_seconds": 11.83795600000002,
+      "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "load": [
+        12.97509765625,
+        13.3173828125,
+        9.99365234375
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-2/-1-0.rbc",
+          "sha256": "5d279d00d0ec0e79fe861e217afa2f91d60600312a2680f438723aa7f0791e90",
+          "bytes": 1251884
+        }
+      ],
+      "build_to_ready_seconds": 9.218956207972951,
+      "build_to_ready_cpu_seconds": 11.781438,
+      "cargo_cpu_seconds": 11.7223
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 14.81683233298827,
+      "cpu_seconds": 38.3161090000001,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        11.228515625,
+        12.89208984375,
+        9.91748046875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 10.113427584001329,
+      "cpu_seconds": 12.772555999999895,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        12.4453125,
+        13.08056640625,
+        10.017578125
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-2/1-0.rbc",
+          "sha256": "7d64902b5e9dfb3e928986ea01f81d46024495a3758d3b87d2287db7b8cc3530",
+          "bytes": 1253196
+        }
+      ],
+      "build_to_ready_seconds": 10.05293420900125,
+      "build_to_ready_cpu_seconds": 12.722686000000001,
+      "cargo_cpu_seconds": 12.667911
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "generalize-list-constructor-input",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 9.91610733300331,
+      "cpu_seconds": 12.66009200000002,
+      "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+      "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "load": [
+        12.38916015625,
+        13.04541015625,
+        10.0400390625
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-2/1-0.rbc",
+          "sha256": "7d64902b5e9dfb3e928986ea01f81d46024495a3758d3b87d2287db7b8cc3530",
+          "bytes": 1253196
+        }
+      ],
+      "build_to_ready_seconds": 9.854371249995893,
+      "build_to_ready_cpu_seconds": 12.610491000000001,
+      "cargo_cpu_seconds": 12.560031
+    },
+    {
+      "mode": "native",
+      "cycle": 3,
+      "state": -2,
+      "phase": "restored-original",
+      "label": "restored-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 13.121138165995944,
+      "cpu_seconds": 34.88245499999999,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        10.869140625,
+        12.666015625,
+        9.9736328125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 3,
+      "state": -2,
+      "phase": "restored-original",
+      "label": "restored-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 9.66483604197856,
+      "cpu_seconds": 12.482426999999973,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        10.42138671875,
+        12.51171875,
+        9.9501953125
+      ],
+      "engine": "jit",
+      "tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/candidate/cycle-3/-2-0.rbc",
+          "sha256": "29392b0d6b8ac9f052c6844155e75503b7f125856e93df1916cb876d0a855ad3",
+          "bytes": 1251932
+        }
+      ],
+      "build_to_ready_seconds": 9.600417291017948,
+      "build_to_ready_cpu_seconds": 12.429875999999998,
+      "cargo_cpu_seconds": 12.37764
+    },
+    {
+      "mode": "baseline",
+      "cycle": 3,
+      "state": -2,
+      "phase": "restored-original",
+      "label": "restored-original",
+      "tests": [
+        "ty::tests::oneof::oneof_lhs",
+        "ty::tests::oneof::oneof_rhs",
+        "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+        "ty::tests::oneof_flattening::test_oneof_deduplicates",
+        "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+        "ty::tests::subtype_relation::table_list_oneof_covariance",
+        "ty::tests::subtype_relation::test_any_is_top_type",
+        "ty::tests::subtype_relation::test_list_covariance",
+        "ty::tests::subtype_relation::test_number_supertype",
+        "ty::tests::subtype_relation::test_reflexivity",
+        "ty::tests::widen_shortcuts::test_chain_shortcut",
+        "ty::tests::widen_shortcuts::test_glob_string_union",
+        "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+        "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+      ],
+      "seconds": 9.475809875002597,
+      "cpu_seconds": 12.277604000000053,
+      "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "load": [
+        9.654296875,
+        12.27978515625,
+        9.8974609375
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/artifacts/baseline/cycle-3/-2-0.rbc",
+          "sha256": "29392b0d6b8ac9f052c6844155e75503b7f125856e93df1916cb876d0a855ad3",
+          "bytes": 1251932
+        }
+      ],
+      "build_to_ready_seconds": 9.41389495797921,
+      "build_to_ready_cpu_seconds": 12.228297,
+      "cargo_cpu_seconds": 12.17547
+    }
+  ],
+  "build_controls": {
+    "package": "nu-protocol"
+  },
+  "cache_namespaces": {
+    "baseline": "owned-analysis-confirm-nushell-generic-20260912-01:baseline",
+    "candidate": "owned-analysis-confirm-nushell-generic-20260912-01:candidate"
+  },
+  "cache_workspaces": {
+    "baseline": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/9b17927314fddd8ab854e47f",
+    "candidate": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d/10dd993e809e8c9d51234509"
+  },
+  "restored_original": {
+    "verified": true,
+    "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+    "cycle": 3,
+    "state": -2,
+    "commands": 3,
+    "excluded_from_edited_medians": true
+  },
+  "build_metrics": {
+    "boundary": "launcher start to validated artifact ready, before VM invocation",
+    "cpu_accounting": "launcher self plus waited-for child CPU at the pre-VM boundary; user plus system",
+    "median_seconds": {
+      "baseline": 9.974406291992636,
+      "candidate": 9.854371249995893
+    },
+    "median_cpu_seconds": {
+      "baseline": 12.722686000000001,
+      "candidate": 12.610491000000001
+    }
+  },
+  "case_file": {
+    "path": "/Users/danluu/dev/rust-interp-perf-20260912/benchmarks/experiments/interface-edits/nushell-generic-list.json",
+    "sha256": "109ecc7c03981cdb3bd3f38e67a3130562e2d5e60a63fb57fe9b41ae12f822d3",
+    "label": "nushell-generic-list",
+    "edit_class": "public-interface-generic",
+    "schema_version": 1,
+    "snapshot": ".work/runs/owned-analysis-confirm-nushell-generic-20260912-01/case.json"
+  },
+  "exporter_seconds": {
+    "baseline": {
+      "frontend": 1.080887,
+      "lowering": 0.068278,
+      "scalar-frames": 0.002675,
+      "scalar-promotion": 0.002557,
+      "inline": 0.002174,
+      "cfg": 0.002626
+    },
+    "candidate": {
+      "frontend": 1.0703420000000001,
+      "lowering": 0.067555,
+      "scalar-frames": 0.002664,
+      "scalar-promotion": 0.002447,
+      "inline": 0.001938,
+      "cfg": 0.002633
+    }
+  },
+  "check_floor": {
+    "interpretation": "Independent library-test Cargo-check control; executes no tests, including the wrong runtime edit; not a strict lower bound or subtractive attribution",
+    "timing_position": "after each primary mode triplet; separate target/cache history; no Cargo timing-report generation",
+    "median_seconds": 4.604454749991419,
+    "median_cpu_seconds": 7.122616000000107,
+    "samples": [
+      {
+        "cycle": 0,
+        "state": 0,
+        "phase": "cold",
+        "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "previous_source_sha256": null,
+        "seconds": 33.05392320800456,
+        "cpu_seconds": 276.90501300000005,
+        "cpu": {
+          "user_seconds": 227.352571,
+          "system_seconds": 49.55244200000001,
+          "total_seconds": 276.90501300000005
+        },
+        "returncode": 0,
+        "load": [
+          16.73291015625,
+          12.60693359375,
+          8.7607421875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "seconds": 3.592995584011078,
+        "cpu_seconds": 6.909362999999928,
+        "cpu": {
+          "user_seconds": 4.2976209999999355,
+          "system_seconds": 2.6117419999999925,
+          "total_seconds": 6.909362999999928
+        },
+        "returncode": 0,
+        "load": [
+          17.78076171875,
+          13.0126953125,
+          8.98876953125
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "seconds": 4.009874708019197,
+        "cpu_seconds": 6.915186000000034,
+        "cpu": {
+          "user_seconds": 4.621116000000029,
+          "system_seconds": 2.294070000000005,
+          "total_seconds": 6.915186000000034
+        },
+        "returncode": 0,
+        "load": [
+          15.3369140625,
+          12.95751953125,
+          9.1123046875
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 0,
+        "phase": "anchor",
+        "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "seconds": 3.970749958010856,
+        "cpu_seconds": 6.918628999999896,
+        "cpu": {
+          "user_seconds": 4.621742999999924,
+          "system_seconds": 2.2968859999999722,
+          "total_seconds": 6.918628999999896
+        },
+        "returncode": 0,
+        "load": [
+          14.8564453125,
+          13.17236328125,
+          9.32861328125
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "seconds": 5.138112457992975,
+        "cpu_seconds": 7.451210000000003,
+        "cpu": {
+          "user_seconds": 4.947597999999971,
+          "system_seconds": 2.5036120000000324,
+          "total_seconds": 7.451210000000003
+        },
+        "returncode": 0,
+        "load": [
+          16.0185546875,
+          13.79541015625,
+          9.73876953125
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "seconds": 4.604454749991419,
+        "cpu_seconds": 7.122616000000107,
+        "cpu": {
+          "user_seconds": 4.909088000000111,
+          "system_seconds": 2.2135279999999966,
+          "total_seconds": 7.122616000000107
+        },
+        "returncode": 0,
+        "load": [
+          13.572265625,
+          13.41796875,
+          9.7841796875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 0,
+        "phase": "anchor",
+        "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "seconds": 4.4112389579822775,
+        "cpu_seconds": 7.259122999999988,
+        "cpu": {
+          "user_seconds": 4.936013000000003,
+          "system_seconds": 2.3231099999999856,
+          "total_seconds": 7.259122999999988
+        },
+        "returncode": 0,
+        "load": [
+          14.83837890625,
+          13.6748046875,
+          10.01806640625
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "previous_source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "seconds": 5.5030625840008724,
+        "cpu_seconds": 7.98552200000006,
+        "cpu": {
+          "user_seconds": 5.32792100000006,
+          "system_seconds": 2.6576009999999997,
+          "total_seconds": 7.98552200000006
+        },
+        "returncode": 0,
+        "load": [
+          12.41650390625,
+          13.19580078125,
+          9.97021484375
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "previous_source_sha256": "ec7810be5268e237caedfdea2d4084769df663f371331a83ef9a6e9d3e0bad01",
+        "seconds": 4.956892834015889,
+        "cpu_seconds": 7.338232000000062,
+        "cpu": {
+          "user_seconds": 4.8321280000000115,
+          "system_seconds": 2.5061040000000503,
+          "total_seconds": 7.338232000000062
+        },
+        "returncode": 0,
+        "load": [
+          12.43798828125,
+          13.04443359375,
+          10.05712890625
+        ]
+      },
+      {
+        "cycle": 3,
+        "state": -2,
+        "phase": "restored-original",
+        "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+        "previous_source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "seconds": 5.072862000000896,
+        "cpu_seconds": 7.785043999999971,
+        "cpu": {
+          "user_seconds": 5.127674999999954,
+          "system_seconds": 2.657369000000017,
+          "total_seconds": 7.785043999999971
+        },
+        "returncode": 0,
+        "load": [
+          9.201171875,
+          12.14208984375,
+          9.86279296875
+        ]
+      }
+    ]
+  },
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "candidate_tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "cycle": 0,
+        "state": 1,
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "baseline_seconds": 7.182768666010816,
+        "candidate_seconds": 7.056372291001026,
+        "native_seconds": 10.41395966699929,
+        "native_cpu_seconds": 30.462286999999975,
+        "baseline_cpu_seconds": 11.413457999999935,
+        "candidate_cpu_seconds": 11.063546000000002,
+        "cpu_difference_seconds": -0.3499119999999323,
+        "difference_seconds": -0.12639637500979006,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 7.080906666989904,
+            "execution_seconds": 0.014175707998219877,
+            "artifact_hash_seconds": 0.0004909170093014836,
+            "launcher_seconds": 7.143935000000056
+          },
+          "candidate": {
+            "cargo_seconds": 6.959781000012299,
+            "execution_seconds": 0.013824291992932558,
+            "artifact_hash_seconds": 0.00047524998080916703,
+            "launcher_seconds": 7.02236504200846
+          }
+        },
+        "identical_bytecode": true,
+        "baseline_build_to_ready_seconds": 7.129740250005852,
+        "baseline_build_to_ready_cpu_seconds": 11.366335000000001,
+        "baseline_cargo_cpu_seconds": 11.318688000000002,
+        "candidate_build_to_ready_seconds": 7.008519458991941,
+        "candidate_build_to_ready_cpu_seconds": 11.018824,
+        "candidate_cargo_cpu_seconds": 10.9713,
+        "build_to_ready_difference_seconds": -0.12122079101391137,
+        "build_to_ready_cpu_difference_seconds": -0.3475110000000008
+      },
+      {
+        "cycle": 1,
+        "state": 1,
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "baseline_seconds": 10.040808957972331,
+        "candidate_seconds": 10.10678500001086,
+        "native_seconds": 12.59646033399622,
+        "native_cpu_seconds": 35.08101599999998,
+        "baseline_cpu_seconds": 12.878091999999981,
+        "candidate_cpu_seconds": 12.829788000000008,
+        "cpu_difference_seconds": -0.04830399999997326,
+        "difference_seconds": 0.06597604203852825,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 9.919181708013639,
+            "execution_seconds": 0.021559457993134856,
+            "artifact_hash_seconds": 0.0004887920222245157,
+            "launcher_seconds": 9.99598170799436
+          },
+          "candidate": {
+            "cargo_seconds": 9.974852874991484,
+            "execution_seconds": 0.02195674998802133,
+            "artifact_hash_seconds": 0.0005070419865660369,
+            "launcher_seconds": 10.052109499985818
+          }
+        },
+        "identical_bytecode": true,
+        "baseline_build_to_ready_seconds": 9.974406291992636,
+        "baseline_build_to_ready_cpu_seconds": 12.828401,
+        "baseline_cargo_cpu_seconds": 12.77699,
+        "candidate_build_to_ready_seconds": 10.030134625005303,
+        "candidate_build_to_ready_cpu_seconds": 12.778315000000001,
+        "candidate_cargo_cpu_seconds": 12.729598,
+        "build_to_ready_difference_seconds": 0.05572833301266655,
+        "build_to_ready_cpu_difference_seconds": -0.05008599999999852
+      },
+      {
+        "cycle": 2,
+        "state": 1,
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "baseline_seconds": 10.113427584001329,
+        "candidate_seconds": 9.91610733300331,
+        "native_seconds": 14.81683233298827,
+        "native_cpu_seconds": 38.3161090000001,
+        "baseline_cpu_seconds": 12.772555999999895,
+        "candidate_cpu_seconds": 12.66009200000002,
+        "cpu_difference_seconds": -0.11246399999987489,
+        "difference_seconds": -0.1973202509980183,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 9.990093082975363,
+            "execution_seconds": 0.014586374978534877,
+            "artifact_hash_seconds": 0.0004885829985141754,
+            "launcher_seconds": 10.067535542009864
+          },
+          "candidate": {
+            "cargo_seconds": 9.801436540990835,
+            "execution_seconds": 0.014986417023465037,
+            "artifact_hash_seconds": 0.0005062909913249314,
+            "launcher_seconds": 9.869376499991631
+          }
+        },
+        "identical_bytecode": true,
+        "baseline_build_to_ready_seconds": 10.05293420900125,
+        "baseline_build_to_ready_cpu_seconds": 12.722686000000001,
+        "baseline_cargo_cpu_seconds": 12.667911,
+        "candidate_build_to_ready_seconds": 9.854371249995893,
+        "candidate_build_to_ready_cpu_seconds": 12.610491000000001,
+        "candidate_cargo_cpu_seconds": 12.560031,
+        "build_to_ready_difference_seconds": -0.1985629590053577,
+        "build_to_ready_cpu_difference_seconds": -0.11219499999999982
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": -0.12639637500979006,
+    "median_paired_cpu_difference_seconds": -0.11246399999987489,
+    "per_edit": [
+      {
+        "state": 1,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "560a45a3d5ec21c0044c2fc685d5744f82d91f866cc9bb52e8c41030cdf220b2",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 7.182768666010816,
+            "median": 10.040808957972331,
+            "max": 10.113427584001329
+          },
+          "candidate_seconds": {
+            "min": 7.056372291001026,
+            "median": 9.91610733300331,
+            "max": 10.10678500001086
+          },
+          "native_seconds": {
+            "min": 10.41395966699929,
+            "median": 12.59646033399622,
+            "max": 14.81683233298827
+          },
+          "difference_seconds": {
+            "min": -0.1973202509980183,
+            "median": -0.12639637500979006,
+            "max": 0.06597604203852825
+          },
+          "cpu_difference_seconds": {
+            "min": -0.3499119999999323,
+            "median": -0.11246399999987489,
+            "max": -0.04830399999997326
+          }
+        }
+      }
+    ]
+  }
+}

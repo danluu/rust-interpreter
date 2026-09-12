@@ -3,7 +3,7 @@
   "auditor": "/root/binary_codegen",
   "recorded_at_utc": "2026-09-12T21:22:17.448449+00:00",
   "scope": "Independent read-only screen audit completed before this packaging: original raw records, executed artifacts, source/tool/common hashes, controller and qualification evidence. Packaging additionally rechecked copy hashes, raw metric pairing, fixed gate, archive roundtrip and staged source identity. No builds, tests, benchmarks or verifier commands executed by the auditor.",
-  "decision": "SCREEN PASS; public confirmations PENDING; experimental integration only",
+  "decision": "All fixed screen and confirmation gates qualified for production review",
   "median_ratio_definition": "median(candidate build-to-ready / baseline build-to-ready) over all 15 edited pairs per project; CPU uses build_to_ready_cpu.total_seconds",
   "recomputed_aggregate": {
     "token": {
@@ -176,27 +176,39 @@
     "upstream_compiler_changes_since_measured_baseline": [],
     "staged_snapshot_files_equal_measured": 137,
     "staged_recomputed_tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
-    "candidate4_branches_excluded": [
-      "5b8ffcb",
-      "b8966c9",
-      "f1fba4e"
-    ],
     "baseline_top_level_validation_sha256": "5e9462087181a6f6d9d75a57ef5b1ee04f5add79a1b1357e4f1923e5bdf15083",
     "baseline_top_level_validation_preserved": true,
     "existing_results_preserved": true,
-    "six_result_directories_copied_unchanged": true
+    "six_result_directories_copied_unchanged": true,
+    "latest_integrated_upstream_commit": "a21fac1d90078e274df6916dbcedd7a4f5856609",
+    "upstream_updates_after_initial_integration": "Reports and STATE.md only; compiler/common/test inputs unchanged",
+    "two_confirmation_result_directories_copied_unchanged": true
   },
   "report_integrity": {
-    "copied_evidence_files": 107,
+    "copied_evidence_files": 156,
     "validation_archives": 1,
     "compressed_validation_log_roundtrip_byte_exact": true,
     "original_raw_artifacts_tools_and_sources_left_in_place": true,
-    "format_check": "All compiler, test, design, authored prose/JSON and copied non-log/non-patch evidence pass git diff --cached --check. Full check reports only original whitespace in byte-preserved debug/release and standalone-oracle logs, plus space-prefixed blank context lines in the original qualified source patch. Evidence bytes were not normalized."
+    "format_check": "All compiler, test, design, authored prose/JSON and copied non-log/non-patch evidence pass git diff --cached --check. Full check reports only original whitespace in byte-preserved debug/release and standalone-oracle logs, plus space-prefixed blank context lines in the original qualified source patch. Evidence bytes were not normalized.",
+    "retained_executed_artifact_receipts": 160,
+    "built_unselected_vm_preservation_receipt": "evidence/owned-analysis-built-vm-preservation.json"
   },
-  "claims": "The completed screen supports proceeding to the two fixed public confirmations. Their status is pending in this draft. No adoption, cold-build, full-command, runtime or unknown-holdout speedup claim is made.",
+  "claims": "The complete screen and both fixed public confirmations pass. Evidence concerns build-readiness edit histories; it does not establish cold-build, whole-command, runtime or unknown-holdout speedups.",
   "packaging_peer_review": {
     "reviewer": "/root/benchmark_review",
     "result": "no blocker; no source/report changes requested",
     "scope": "Read-only independent review: all 107 copied original/manifest hashes, 24 qualification proof mappings, 23,727-record archive roundtrip and records.json equality, 137 indexed compiler inputs/tool key, 20 exact source/design/fixture files, six unchanged result directories, all 30 raw edited ratios and six medians, twelve exact controller calls, preserved existing results/top-level baseline summary, pending-confirmation status and selected-versus-built VM distinction. No builds, tests, benchmarks or edits."
+  },
+  "confirmation_audit": "confirmation-independent-audit.json",
+  "confirmations": {
+    "assessment": "confirmations.json",
+    "both_fixed_case_guards_pass": true,
+    "histories": 2,
+    "primary_commands": 96,
+    "checking_commands": 32,
+    "edited_pairs": 18,
+    "rehash_verified_executed_artifacts": 64,
+    "all_outliers_retained": true,
+    "no_pooled_confirmation_median": true
   }
 }
