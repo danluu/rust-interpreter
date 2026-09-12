@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Isolated source-edit qualifications pass96commands across pgrust/token/folded. Descriptive prepared/fresh wall ratios1.0084/.9686/.8916; no repeated-confirmation claim. Nushell saved pilot passes9commands. Ruff passes6native+2ordinaryVM commands but optimized root shape blocks isolation. Replace root-shape discovery with artifact-bound entry catalogs, qualify stale/malformed/optimized-root cases, then actual exports and broader suites.
+**Next:** Catalogs pass322 Rust tests/profile,40 Python tests,16 fixture commands,12 Ruff commands and32 pgrust edit/check/restoration commands. Fresh nonincremental fre export fails RawVec allocation despite native success; old/new exporters and old/new JIT/interpreter reproduce it. Repair the lowering gap before catalog publication and automatic discovery.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

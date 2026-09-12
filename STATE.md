@@ -19,14 +19,20 @@ repeated preparation; token remains dominated by guest execution.
 [folded](results/prepared-suite-folded-01/assessment.md).
 
 The Nushell saved-artifact pilot passes four separate native tests plus five VM
-commands. Ruff passes six native tests and the old/new ordinary VM comparison,
-then rejects its optimized batch root before isolated execution. The current
-entry discovery depends on root instruction shape. Next replace that dependency
-with explicit artifact-bound entry catalogs and qualify malformed/stale catalogs
-before expanding automatic suite discovery. Full ignore/should-panic/unwind/thread
-semantics remain open.
-[Nushell](results/prepared-suite-pilot-nushell-01/summary.json),
-[Ruff limitation](results/prepared-suite-pilot-ruff-01/summary.json).
+commands. The artifact-bound catalog fix passes 322 Rust tests per profile,
+40 Python tests, a 16-command real Rust fixture, Ruff's actual export (12
+commands), and pgrust's full edit sequence (32 commands). Catalogs preserve
+explicit function IDs despite optimization and bind them to exact bytecode.
+
+Publication is held by a fresh fre export failure: native passes all three token
+tests, but the nonincremental custom export traps in RawVec::grow_one. The older
+exporter, older JIT, new JIT and interpreter reproduce the same fault. Diagnose
+and reduce this lowering gap before broadening automatic test discovery. Full
+ignore/should-panic/unwind/thread semantics remain open.
+[Ruff repair](results/prepared-catalog-ruff-01/summary.json),
+[pgrust catalogs](results/prepared-catalog-pgrust-02/assessment.md),
+[fre failure](results/prepared-catalog-token-01/summary.json),
+[diagnostic plan](benchmarks/experiments/token-allocation-failure/PLAN.md).
 
 Cross-region rematerialization remains parked after its 0.78% wall/0.81% CPU
 runtime regression. No conditional promotion benchmarks will run.
