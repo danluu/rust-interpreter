@@ -1,0 +1,3 @@
+Nushell parser passes its 5% retention gate: paired candidate/baseline wall ratio **1.003449** (+0.34%), CPU ratio **1.008153** (+0.82%). Complete-command medians are native **0.599s**, baseline **0.412s**, candidate **0.419s**. The small differences do not establish a performance improvement.
+
+All 63 primary commands, 21 Cargo checks, 15 edited pairs and 42 artifact snapshots verify. Bytecode is identical within every pair. Original assertions, wrong production edits, standard-library MIR identity, worker counts and source restoration pass. These results retain the isolated VM identities; the final combination with current main remains unqualified.
