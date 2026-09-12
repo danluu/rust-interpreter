@@ -86,9 +86,11 @@ def verify(report, reference=None, *, compiler_flags=None):
     controlled_caches = measuring_build or aa_control
     if measuring_build:
         require('comparison' in report and report['batch'], 'build metrics require a batched paired comparison')
+    if restoring:
+        require('comparison' in report and report['batch'], 'restoration verification requires a batched paired comparison')
     if aa_control:
-        require('comparison' in report and job_counts is not None and not report.get('compare_isolated_batches'),
-                'A/A control requires identical paired jobs/settings')
+        require('comparison' in report and report['batch'] and job_counts is not None and not report.get('compare_isolated_batches'),
+                'A/A control requires identical batched paired jobs/settings')
         require(report['tool_builds']['baseline'] == report['tool_builds']['candidate'] and
                 job_counts['baseline'] == job_counts['candidate'], 'A/A tools or settings differ')
         require(report['comparison']['baseline_tool_key'] == report['comparison']['candidate_tool_key'] ==

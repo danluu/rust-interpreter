@@ -155,8 +155,9 @@ def main():
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     if args.candidate_tool_key is not None and args.baseline_tool_key is None:
         parser.error('--candidate-tool-key requires --baseline-tool-key')
-    if args.aa_control and args.baseline_tool_key is None:parser.error('--aa-control requires --baseline-tool-key')
+    if args.aa_control and (args.baseline_tool_key is None or not args.batch):parser.error('--aa-control requires --baseline-tool-key and --batch')
     if args.build_metrics and (args.baseline_tool_key is None or not args.batch):parser.error('--build-metrics requires --baseline-tool-key and --batch')
+    if args.verify_restoration and (args.baseline_tool_key is None or not args.batch):parser.error('--verify-restoration requires --baseline-tool-key and --batch')
     if args.aa_control and args.compare_isolated_batches:parser.error('A/A control cannot compare different isolated-batch settings')
     if args.compare_isolated_batches:
         if (not args.batch or args.baseline_tool_key is None or args.comparison_engine=='interpreter'

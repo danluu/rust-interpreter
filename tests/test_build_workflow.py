@@ -181,7 +181,16 @@ class BuildWorkflowVerifierTests(unittest.TestCase):
 
     def test_different_suite_preparation_is_not_an_aa_control(self):
         self.report['compare_isolated_batches'] = True
-        with self.assertRaisesRegex(RuntimeError, 'identical paired jobs/settings'):
+        with self.assertRaisesRegex(RuntimeError, 'identical batched paired jobs/settings'):
+            self.verify()
+
+    def test_aa_and_restoration_each_require_batched_comparisons(self):
+        self.report.pop('build_metrics')
+        self.report['batch'] = False
+        with self.assertRaisesRegex(RuntimeError, 'restoration verification requires a batched paired comparison'):
+            self.verify()
+        self.report.pop('restored_original')
+        with self.assertRaisesRegex(RuntimeError, 'A/A control requires identical batched paired jobs/settings'):
             self.verify()
 
     def test_case_file_history_is_checked_before_separate_restoration(self):
