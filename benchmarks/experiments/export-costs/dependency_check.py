@@ -137,7 +137,14 @@ def main():
                 if not valid:
                     assert 'mismatched types' in stderr and not artifact.exists()
                     if mode == 'on' and args.persistent_cache:
-                        assert cache_files() == finalized_cache_files, 'invalid source changed finalized payloads'
+                        after = cache_files()
+                        # rustc also collects old generations when loading an
+                        # incremental session, before source checking succeeds.
+                        # The newest successful generation must survive, and a
+                        # rejected session must add or change no finalized file.
+                        latest = max(finalized_cache_files, key=lambda p: (ROOT / p).parent.name)
+                        assert latest in after and all(finalized_cache_files.get(p) == h for p, h in after.items()), 'invalid source published or changed a finalized payload'
+                        write(work / 'invalid-type-finalized-cache-files.json', after)
                     continue
                 saved = work / (name + '-' + mode + '.rbc')
                 shutil.copy2(artifact, saved)
@@ -204,7 +211,7 @@ def main():
               binding_replay=binding_replay, reconstruction=replay_reports,
               persistent_cache=args.persistent_cache, prior_payload_verification=cache_reports,
               records_sha256=sha(work / 'records.json'), observations_sha256=sha(work / 'observations.json'),
-              scope='No cached output or skipped lowering. Green status is tested against actual typed templates; binding and shared exporter state remain separate requirements.')
+              scope='All original lowering executes. Persistent verification, when enabled, reconstructs the second graph from prior-session payloads; this is not a performance measurement.')
         out = ROOT / 'results' / args.run_id
         out.mkdir(exist_ok=False)
         write(out / 'summary.json', result)
