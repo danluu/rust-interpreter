@@ -47,7 +47,8 @@ def main():
         prior = json.loads((ROOT / '.work/experiments/fixed-frame-clear-combined-build-01/status.json').read_text())
         assert prior['status'] == 'finished' and prior['returncode'] == 0
         if args.minimum_free_gib == 4:
-            assert all((TARGET / profile / 'deps').is_dir() for profile in ['debug', 'release']), '4 GiB requires the existing host dependency cache'
+            # The pinned Cargo stores dependencies under build/<crate>/<hash>/out.
+            assert all(any((TARGET / profile / 'build').rglob('*.rlib')) for profile in ['debug', 'release']), '4 GiB requires the existing host dependency cache'
         assert not subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=ROOT).strip()
         source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         paths = [ROOT / n for n in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml']]

@@ -8,17 +8,17 @@ from interpreter import installed_tools
 from workflow_io import require_space,write_json as write
 
 def main():
-    run='constant-fold-compose-02'
+    run='constant-fold-compose-03'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45);require_space(ROOT,7)
+        acquire_lock(lock,45);require_space(ROOT,4)
         base_path=ROOT/'results/suite-profiling-build-02/summary.json'
-        build_path=ROOT/'results/constant-fold-build-08/summary.json'
+        build_path=ROOT/'results/constant-fold-build-10/summary.json'
         base=json.loads(base_path.read_text());build=json.loads(build_path.read_text())
         assert base['status']==build['status']=='passed'
-        assert build['tests']['test-debug']==build['tests']['test-release']==dict(passed=366,ignored=1)
+        assert build['tests']['test-debug']==build['tests']['test-release']==dict(passed=368,ignored=1)
         plan_path=ROOT/build['raw']/'plan.json';plan=json.loads(plan_path.read_text())
         assert sha(plan_path)==build['source_manifest_sha256'] and all(sha(ROOT/p)==h for p,h in plan['frozen'].items())
-        status_path=ROOT/'.work/experiments/constant-fold-build-08/status.json';status=json.loads(status_path.read_text())
+        status_path=ROOT/'.work/experiments/constant-fold-build-10/status.json';status=json.loads(status_path.read_text())
         assert status['status']=='finished' and status['returncode']==0 and status['owner']==str(ROOT)
         assert sha(status_path.with_name('plan.json'))==status['plan_sha256'] and sha(status_path.with_name('command.log'))==status['log_sha256']
         control,_=installed_tools(base['tool_key']);compiler,_=installed_tools(build['tool_key'])
@@ -29,7 +29,7 @@ def main():
         work=ROOT/'.work'/run;work.mkdir(exist_ok=False)
         verifier=work/'rust-interp-call-census';built_verifier=Path(plan['target'])/'release'/verifier.name
         shutil.copy2(built_verifier,verifier);assert sha(verifier)==sha(built_verifier)
-        frozen_paths=[Path(__file__),Path(__file__).with_name('PROTOTYPE.md'),base_path,build_path,plan_path,status_path,verifier]
+        frozen_paths=[Path(__file__),Path(__file__).with_name('PROTOTYPE.md'),Path(__file__).with_name('NULL-QUALIFICATION.md'),base_path,build_path,plan_path,status_path,verifier]
         frozen_paths += [tool/n for tool in [control,compiler] for n in ['rust-interp-vm','rust-interp-mir-export','rust-interp-rustc-wrapper','source.json','capabilities.json','ready.json']]
         frozen={str(p.relative_to(ROOT)):sha(p) for p in frozen_paths}
         write(work/'plan.json',dict(owner=str(ROOT),composition=composition,frozen=frozen,execution_qualified=False))

@@ -23,3 +23,17 @@ frozen plan and existing debug/release dependency directories. This exception
 does not change the actual token screen's 6.5 GiB admission or 4 GiB reserve,
 nor any other real-project admission. It enables complete correctness checks
 for the already isolated fix without another cache-retirement cycle.
+
+Build09 stopped before Cargo because its cache admission check incorrectly
+expected the legacy deps/ layout. The pinned Cargo uses build/<crate>/<hash>/out;
+build10 checks for existing rlibs in both profile build trees. Preserve the
+preflight failure; it contains no compiled or executed test.
+
+After build10 passes, compose03 retains the exact baseline VM, saved03 repeats
+the three complete-artifact transforms/verifications, and fixture02 repeats the
+18 native/custom commands over nine standalone tests and uncalled type/borrow
+errors. These stages also use the 4 GiB reserve. Composition/saved diagnostics
+write only tool copies and small artifacts; fixture01's entire native cache was
+under 4 MiB and its project has no dependencies. No large project cache is made.
+If saved03 produces the exact previously replayed bytes, carry the 34-test replay
+through explicit digest bindings instead of repeating its timing.

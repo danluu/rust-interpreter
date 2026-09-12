@@ -10,14 +10,14 @@ from workflow_io import capture,require_space,write_json as write,SourceEdit
 
 
 def main():
-    run='constant-fold-fixture-01'
+    run='constant-fold-fixture-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45);require_space(ROOT,7)
+        acquire_lock(lock,45);require_space(ROOT,4)
         builds={mode:ROOT/'results'/name/'summary.json' for mode,name in [
-            ('baseline','suite-profiling-build-02'),('candidate','constant-fold-compose-02')]}
+            ('baseline','suite-profiling-build-02'),('candidate','constant-fold-compose-03')]}
         summaries={mode:json.loads(path.read_text()) for mode,path in builds.items()}
         assert summaries['baseline']['status']=='passed' and summaries['candidate']['status']=='composed'
-        compiler_build=ROOT/summaries['candidate']['build'];compiled=json.loads(compiler_build.read_text());assert compiled['tests']['test-debug']==compiled['tests']['test-release']==dict(passed=366,ignored=1)
+        compiler_build=ROOT/summaries['candidate']['build'];compiled=json.loads(compiler_build.read_text());assert compiled['tests']['test-debug']==compiled['tests']['test-release']==dict(passed=368,ignored=1)
         verifier=ROOT/summaries['candidate']['verifier'];assert sha(verifier)==summaries['candidate']['verifier_sha256']
         assert summaries['baseline']['binaries']['rust-interp-vm']==summaries['candidate']['binaries']['rust-interp-vm']
         tools={mode:installed_tools(s['tool_key'])[0] for mode,s in summaries.items()}
@@ -27,17 +27,18 @@ def main():
         (project/'Cargo.lock').write_text('version = 4\n\n[[package]]\nname = "constant-fold-fixture"\nversion = "0.0.0"\n')
         write(project/'.rust-interp-owned.json',dict(owner=str(ROOT),run=run,purpose='typed pointer compiler fixture'))
         frozen_paths=[Path(__file__),Path(__file__).with_name('fixture.rs'),Path(__file__).with_name('PROTOTYPE.md'),Path(__file__).with_name('FIXTURE.md'),*builds.values(),compiler_build,verifier,manifest,project/'Cargo.lock']
+        frozen_paths += [Path(__file__).with_name('NULL-QUALIFICATION.md')]+[ROOT/'scripts'/name for name in ['interpreter.py','workspace_cache.py','std_mir.py','test_discovery.py','suite_reports.py','workflow_io.py','compare_saved_runtime.py']]
         frozen_paths += [tool/name for tool in tools.values() for name in ['rust-interp-vm','rust-interp-mir-export','rust-interp-rustc-wrapper']]
         frozen={str(p.relative_to(ROOT)):sha(p) for p in frozen_paths}
         write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,tools={m:s['tool_key'] for m,s in summaries.items()},
-            original_source_sha256=sha(source),minimum_free_gib=7,performance_measurement=False,scope='native original assertions, both exports and unchanged VM, strict uncalled borrow/type errors'))
+            original_source_sha256=sha(source),minimum_free_gib=4,performance_measurement=False,scope='native original assertions, both exports and unchanged VM, strict uncalled borrow/type errors'))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_PROFILE_')) and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','CARGO_INCREMENTAL','CARGO_TARGET_DIR','CARGO_BUILD_TARGET']}
         assert not any(k.startswith('DYLD_') for k in env)
         env.update(CARGO_TERM_COLOR='never',RUST_INTERP_LAUNCH_STATS='1')
         native=['cargo','+nightly-2026-09-08','test','--manifest-path',str(manifest),'--target-dir',str(work/'native'),'--lib','--locked','--offline','--jobs','2']
         records=[];artifacts={};profile_paths={}
         def execute(label,command,success=True,error=None):
-            require_space(ROOT,7)
+            require_space(ROOT,4)
             child,stdout,stderr=capture(command,cwd=project,env=env,receipt_path=work/'active.json',receipt=dict(label=label))
             row=dict(label=label,command=command,pid=child.pid,returncode=child.returncode,stdout=stdout,stderr=stderr,source_sha256=sha(source))
             records.append(row);write(work/'records.json',records)
