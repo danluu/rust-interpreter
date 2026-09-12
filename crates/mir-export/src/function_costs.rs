@@ -35,6 +35,7 @@ struct Record {
     mir_locals: usize,
     mir_blocks: usize,
     lowered_ops: usize,
+    template: crate::typed_relocations::Template,
 }
 
 #[derive(Default)]
@@ -45,13 +46,15 @@ pub(crate) struct Costs {
 
 impl Costs {
     pub fn record(&mut self, index: usize, function: &Function, prepare: Duration,
-                  lower: Duration, mir_locals: usize, mir_blocks: usize) -> Result<(), String> {
+                  lower: Duration, mir_locals: usize, mir_blocks: usize,
+                  bindings: Vec<crate::typed_relocations::Binding>) -> Result<(), String> {
         if self.records.len() >= MAX_FUNCTIONS || !self.indices.insert(index) {
             return Err("function cost census exceeded its bound or repeated a function".into());
         }
         self.records.push(Record {
             index, name: function.name.clone(), lowered_hash: fingerprint(function)?,
             prepare, lower, mir_locals, mir_blocks, lowered_ops: function.code.len(),
+            template: crate::typed_relocations::inspect(function, bindings)?,
         });
         Ok(())
     }
@@ -66,11 +69,14 @@ impl Costs {
             }
             rows.push(json!({"index": record.index, "name": record.name,
                 "lowered_sha256": record.lowered_hash, "final_sha256": fingerprint(function)?,
+                "typed_template_sha256": record.template.sha256,
+                "relocations": record.template.bindings,
                 "prepare_seconds": record.prepare.as_secs_f64(), "lower_seconds": record.lower.as_secs_f64(),
                 "mir_locals": record.mir_locals, "mir_blocks": record.mir_blocks,
                 "lowered_operations": record.lowered_ops, "final_operations": function.code.len()}));
         }
-        let text = serde_json::to_string(&json!({"schema_version": 1, "complete": true,
+        let text = serde_json::to_string(&json!({"schema_version": 2, "complete": true,
+            "typed_relocations_reconstruct_original": true,
             "artifact_sha256": format!("{:x}", Sha256::digest(artifact)),
             "program_functions": program.functions.len(), "observed_functions": rows.len(),
             "unobserved_functions": program.functions.len() - rows.len(), "functions": rows,
@@ -101,7 +107,7 @@ mod tests {
         let original = bincode::serialize(&program).unwrap();
         let before = fingerprint(&program.functions[0]).unwrap();
         let mut costs = Costs::default();
-        costs.record(0, &program.functions[0], Duration::from_nanos(7), Duration::from_nanos(11), 1, 1).unwrap();
+        costs.record(0, &program.functions[0], Duration::from_nanos(7), Duration::from_nanos(11), 1, 1, vec![]).unwrap();
         assert_eq!(bincode::serialize(&program).unwrap(), original);
         program.functions[0].frame_size = 8;
         let artifact = bincode::serialize(&program).unwrap();
@@ -118,8 +124,8 @@ mod tests {
     fn rejects_duplicate_indices_and_changed_final_identity() {
         let mut program = fixture();
         let mut costs = Costs::default();
-        costs.record(0, &program.functions[0], Duration::ZERO, Duration::ZERO, 1, 1).unwrap();
-        assert!(costs.record(0, &program.functions[0], Duration::ZERO, Duration::ZERO, 1, 1).is_err());
+        costs.record(0, &program.functions[0], Duration::ZERO, Duration::ZERO, 1, 1, vec![]).unwrap();
+        assert!(costs.record(0, &program.functions[0], Duration::ZERO, Duration::ZERO, 1, 1, vec![]).is_err());
         program.functions[0].name = "different".into();
         assert!(costs.finish(&program, b"").is_err());
     }

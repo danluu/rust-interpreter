@@ -15,6 +15,7 @@ mod audit;
 mod wrapper_route;
 mod export_timings;
 mod function_costs;
+mod typed_relocations;
 
 use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface;

@@ -12,6 +12,7 @@ use rustc_middle::mir::{
 use rustc_middle::ty::layout::{LayoutCx, TyAndLayout};
 use rustc_middle::ty::{self, Instance, Ty, TyCtxt, TypeFoldable};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use crate::typed_relocations::{Binding as PointerBinding, Kind as PointerKind};
 
 type Result<T> = std::result::Result<T, String>;
 mod simd;
@@ -237,6 +238,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         pointer_shapes: BTreeMap::new(),
         indirect_shapes: HashSet::new(),
         allocations: HashMap::new(),
+        relocation_targets: function_costs.as_ref().map(|_| HashMap::new()),
         tls_addresses: HashMap::new(),
         runtime_errno: None,
         thread_locals: vec![],
@@ -288,10 +290,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         let prepared = started.map(|_| std::time::Instant::now());
         let mir_locals = lower.body.local_decls.len();
         let mir_blocks = lower.body.basic_blocks.len();
-        let f = lower.lower().map_err(|e| format!("{name}: {e}"))?;
+        let (f, bindings) = lower.lower().map_err(|e| format!("{name}: {e}"))?;
         if let (Some(costs), Some(started), Some(prepared)) = (&mut function_costs, started, prepared) {
             let lowered = prepared.elapsed();
-            costs.record(index, &f, prepared.duration_since(started), lowered, mir_locals, mir_blocks)?;
+            costs.record(index, &f, prepared.duration_since(started), lowered, mir_locals, mir_blocks, bindings)?;
         }
         if exporter.instances.len() > 10_000 {
             return Err("function expansion limit reached".into());
@@ -436,6 +438,7 @@ struct Exporter<'tcx> {
     pointer_shapes: BTreeMap<usize, Option<CallShape>>,
     indirect_shapes: HashSet<CallShape>,
     allocations: HashMap<AllocId, usize>,
+    relocation_targets: Option<HashMap<AllocId, Option<PointerKind>>>,
     tls_addresses: HashMap<rustc_hir::def_id::DefId, usize>,
     runtime_errno: Option<usize>,
     thread_locals: Vec<Slot>,
@@ -448,6 +451,11 @@ struct Exporter<'tcx> {
     byte_writes: Vec<scalar_frame::byte_writes::Observation>,
 }
 impl<'tcx> Exporter<'tcx> {
+    fn note_allocation_kind(&mut self, id: AllocId, kind: Option<PointerKind>) {
+        if let Some(targets) = &mut self.relocation_targets {
+            targets.insert(id, kind);
+        }
+    }
     fn register(&mut self, instance: Instance<'tcx>) -> usize {
         self.register_instance(instance, true)
     }
@@ -549,6 +557,7 @@ impl<'tcx> Exporter<'tcx> {
         }
         let alloc = match self.tcx.global_alloc(id) {
             GlobalAlloc::Memory(a) => {
+                self.note_allocation_kind(id, Some(PointerKind::Allocation));
                 self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "memory"}))?;
                 a
             }
@@ -557,6 +566,7 @@ impl<'tcx> Exporter<'tcx> {
                     "definition": tcx.def_path_str(instance.def_id()),
                     "instance_kind": format!("{:?}", instance.def), "generic_arguments": format!("{:?}", instance.args)}))?;
                 let pointer = self.function_pointer(instance) as usize;
+                self.note_allocation_kind(id, Some(PointerKind::Function));
                 self.allocations.insert(id, pointer);
                 return Ok(pointer);
             }
@@ -564,10 +574,12 @@ impl<'tcx> Exporter<'tcx> {
                 self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "vtable",
                     "type": format!("{ty:?}"), "predicates": format!("{predicates:?}")}))?;
                 let pointer=self.vtable(ty,predicates.principal())?;
+                self.note_allocation_kind(id, Some(PointerKind::VTable));
                 self.allocations.insert(id,pointer);
                 return Ok(pointer);
             }
             GlobalAlloc::Static(def) => {
+                self.note_allocation_kind(id, Some(PointerKind::Static));
                 self.trace_event(|tcx| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "static",
                     "definition": tcx.def_path_str(def), "definition_id": format!("{def:?}")}))?;
                 if self.tcx.is_thread_local_static(def) || self.tcx.is_foreign_item(def) {
@@ -577,6 +589,7 @@ impl<'tcx> Exporter<'tcx> {
                     .map_err(|e| format!("static initializer: {e:?}"))?
             }
             GlobalAlloc::TypeId { ty } => {
+                self.note_allocation_kind(id, None);
                 self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "type-id",
                     "type": format!("{ty:?}")}))?;
                 // These provenances decorate the numeric pieces of a TypeId.
@@ -673,6 +686,7 @@ struct Lower<'a, 'tcx> {
     byte_origins: BTreeMap<Reg,usize>,
     byte_origins_complete: bool,
     byte_spans: Vec<Vec<Option<(usize, usize)>>>,
+    pointer_bindings: Option<Vec<PointerBinding>>,
 }
 #[derive(Clone, Copy)]
 struct Location<'tcx> {
@@ -758,6 +772,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         Ok(this)
     }
     fn empty(exporter: &'a mut Exporter<'tcx>, instance: Instance<'tcx>, body: &'tcx mir::Body<'tcx>) -> Self {
+        let pointer_bindings = exporter.relocation_targets.as_ref().map(|_| vec![]);
         Self {
             exporter,
             instance,
@@ -773,6 +788,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             byte_local_extent: 0,
             byte_origins: BTreeMap::new(),
             byte_origins_complete: true,
+            pointer_bindings,
             byte_spans: if body.local_decls.len() <= 4096 && body.basic_blocks.iter().map(|b| b.statements.len()+1).sum::<usize>() <= 32768 {
                 body.basic_blocks.iter().map(|b| vec![None; b.statements.len()+1]).collect()
             } else { vec![] },
@@ -811,6 +827,32 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         let dst = self.reg();
         self.code.push(Op::Imm { dst, value });
         dst
+    }
+    fn note_pointer(&mut self, register: Reg, original: u128, addend: u64,
+                    kind: PointerKind, target: impl FnOnce() -> String) -> Result<()> {
+        if let Some(bindings) = &mut self.pointer_bindings {
+            if bindings.len() >= 100_000 {
+                return Err("typed relocation count exceeds diagnostic bound".into());
+            }
+            bindings.push(PointerBinding { register, original, addend, kind, target: target() });
+        }
+        Ok(())
+    }
+    fn imm_pointer(&mut self, value: u128, addend: u64, kind: PointerKind,
+                   target: impl FnOnce() -> String) -> Result<Reg> {
+        let dst = self.imm(value);
+        self.note_pointer(dst, value, addend, kind, target)?;
+        Ok(dst)
+    }
+    fn imm_allocation(&mut self, value: u128, id: AllocId, addend: u64) -> Result<Reg> {
+        let dst = self.imm(value);
+        if let Some(targets) = &self.exporter.relocation_targets {
+            let kind = *targets.get(&id).ok_or("missing typed allocation classification")?;
+            if let Some(kind) = kind {
+                self.note_pointer(dst, value, addend, kind, || format!("allocation:{}", id.0.get()))?;
+            }
+        }
+        Ok(dst)
     }
     fn named_local(&mut self, local: mir::Local) -> Reg {
         let dst=self.local(self.locals[local.as_usize()].offset);
@@ -1068,6 +1110,10 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         } else { None };
         let address = match value {
             ConstValue::Scalar(s) => {
+                let relocation = match s {
+                    Scalar::Ptr(p, _) => Some((p.provenance.alloc_id(), p.prov_and_relative_offset().1.bytes())),
+                    Scalar::Int(_) => None,
+                };
                 let bits = match s {
                     Scalar::Int(i) => i.to_bits(i.size()),
                     Scalar::Ptr(p, _) => {
@@ -1082,22 +1128,28 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     // Match the old store/load truncation, including constant
                     // pointers whose relative offset wraps the target width.
                     let mask = if size == 16 { u128::MAX } else { (1u128 << (size * 8)) - 1 };
-                    return Ok(self.imm(bits & mask));
+                    return match relocation {
+                        Some((id, addend)) => self.imm_allocation(bits & mask, id, addend),
+                        None => Ok(self.imm(bits & mask)),
+                    };
                 }
                 // Calls and other address consumers still receive storage.
-                let src = self.imm(bits);
+                let src = match relocation {
+                    Some((id, addend)) => self.imm_allocation(bits, id, addend)?,
+                    None => self.imm(bits),
+                };
                 let address = self.temporary(size);
                 self.store(address, src, size)?;
                 address
             }
             ConstValue::Indirect { alloc_id, offset } => {
                 let at = self.exporter.with_trace_parent(origin, |e| e.alloc(alloc_id))? + offset.bytes_usize();
-                self.imm(at as u128)
+                self.imm_allocation(at as u128, alloc_id, offset.bytes())?
             }
             ConstValue::Slice { alloc_id, meta } => {
                 let at = self.exporter.with_trace_parent(origin, |e| e.alloc(alloc_id))?;
                 let bits = (at as u128) | ((meta as u128) << 64);
-                let src = self.imm(bits);
+                let src = self.imm_allocation(bits, alloc_id, 0)?;
                 let address = self.temporary(16);
                 self.store(address, src, 16)?;
                 address
@@ -1236,7 +1288,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         match value {
             Rvalue::ThreadLocalRef(def) => {
                 let pointer = self.exporter.thread_local(*def)?;
-                let pointer = self.imm(pointer as u128);
+                let pointer = self.imm_pointer(pointer as u128, 0, PointerKind::ThreadLocal,
+                    || format!("static:{def:?}"))?;
                 self.store(dest.address, pointer, 8)?;
             }
             Rvalue::Use(op, _) => {
@@ -1400,7 +1453,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     )
                     .ok_or("unresolved function pointer")?;
                     let pointer = self.exporter.function_pointer(instance);
-                    let value = self.imm(pointer as u128);
+                    let value = self.imm_pointer(pointer as u128, 0, PointerKind::Function,
+                        || format!("function:{instance:?}"))?;
                     self.store(dest.address, value, size)?;
                 } else if matches!(
                     kind,
@@ -1423,7 +1477,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                         return Err("tracked closure function pointer requires a reification shim".into());
                     }
                     let pointer = self.exporter.function_pointer(instance);
-                    let value = self.imm(pointer as u128);
+                    let value = self.imm_pointer(pointer as u128, 0, PointerKind::Function,
+                        || format!("function:{instance:?}"))?;
                     self.store(dest.address, value, size)?;
                 } else if matches!(
                     kind,
@@ -2019,7 +2074,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         }
         Ok(true)
     }
-    fn lower(mut self) -> Result<Function> {
+    fn lower(mut self) -> Result<(Function, Vec<PointerBinding>)> {
         let reachable = self.reachable_blocks()?;
         for (bb, block) in self.body.basic_blocks.iter_enumerated() {
             self.blocks[bb.as_usize()] = self.code.len();
@@ -2313,7 +2368,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         let observed = scalar_frame::byte_writes::capture(&mut self);
         self.exporter.byte_writes.push(observed);
         scalar_promote::apply(&mut self)?;
-        Ok(Function {
+        Ok((Function {
             name: format!(
                 "{}{:?}",
                 self.tcx().def_path_str(self.instance.def_id()),
@@ -2325,6 +2380,6 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             args: arguments,
             result: self.locals[0],
             code: self.code,
-        })
+        }, self.pointer_bindings.unwrap_or_default()))
     }
 }

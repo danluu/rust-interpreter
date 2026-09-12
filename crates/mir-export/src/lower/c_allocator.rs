@@ -64,9 +64,13 @@ impl<'tcx> Lower<'_, 'tcx> {
             self.code.push(Op::CAlignedAllocate { dst, output: values[0], align: values[1], size: values[2] });
         } else {
             let address = self.exporter.errno_address()?;
-            let errno = self.imm(address as u128);
+            let errno = self.imm_pointer(address as u128, 0, PointerKind::Errno,
+                || "guest errno".into())?;
             match symbol {
-                "__error" => self.code.push(Op::Imm { dst, value: address as u128 }),
+                "__error" => {
+                    self.code.push(Op::Imm { dst, value: address as u128 });
+                    self.note_pointer(dst, address as u128, 0, PointerKind::Errno, || "guest errno".into())?;
+                }
                 "malloc" | "calloc" => {
                     let (count, size) = if symbol == "malloc" { (self.imm(1), values[0]) }
                         else { (values[0], values[1]) };

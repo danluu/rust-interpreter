@@ -213,7 +213,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     );
                 }
                 let table = self.exporter.vtable(tail, predicates.principal())?;
-                self.imm(table as u128)
+                self.imm_pointer(table as u128, 0, PointerKind::VTable,
+                    || format!("vtable:{tail:?}:{predicates:?}"))?
             }
             _ => return Err("unsupported unsized metadata".into()),
         };

@@ -24,7 +24,10 @@ TARGET = ROOT / '.work/fixed-frame-clear-combined-build-01/target'
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
-    run = parser.parse_args().run_id
+    parser.add_argument('--expected-tests', type=int, default=41)
+    args = parser.parse_args()
+    run = args.run_id
+    assert args.expected_tests >= 41
     assert re.fullmatch(r'export-reuse-build-\d{2}', run)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
@@ -66,7 +69,7 @@ def main():
                 matches = re.findall(r'test result: ok\. (\d+) passed; (\d+) failed;', stdout + stderr)
                 assert matches and all(int(failed) == 0 for _, failed in matches)
                 counts[label] = sum(int(passed) for passed, _ in matches)
-                assert counts[label] == 41, counts
+                assert counts[label] == args.expected_tests, counts
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
         binaries = json.loads((retained / 'ready.json').read_text())
         binaries['rust-interp-mir-export'] = sha(TARGET / 'release/rust-interp-mir-export')
