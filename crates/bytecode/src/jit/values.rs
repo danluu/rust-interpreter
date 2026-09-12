@@ -38,6 +38,12 @@ pub(super) fn analyze(f: &Function) -> Option<Allocation> {
     analyze_with_work(f, MAX_WORK)
 }
 fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
+    let (live, ranked) = ranked(f, max_work)?;
+    let registers = ranked.into_iter().take(3).map(|(_, r)| r).collect();
+    Some(Allocation { live, registers })
+}
+
+fn ranked(f: &Function, max_work: usize) -> Option<(Liveness, Vec<(u64, Reg)>)> {
     let n = f.code.len();
     if n == 0 || n > MAX_PCS || f.registers > MAX_REGISTERS { return None; }
     let stride = f.registers.div_ceil(64);
@@ -130,8 +136,7 @@ fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
     let mut registers: Vec<_> = scores.iter().enumerate().filter_map(|(r, &score)|
         (score != 0 && frequency[r] >= 2).then_some((score * frequency[r], r as Reg))).collect();
     registers.sort_unstable_by_key(|&(score, r)| (std::cmp::Reverse(score), r));
-    let registers = registers.into_iter().take(3).map(|(_, r)| r).collect();
-    Some(Allocation { live, registers })
+    Some((live, registers))
 }
 
 #[cfg(test)]
@@ -213,4 +218,47 @@ impl Assembler<'_> {
         self.stack_pair(false, 0, 1, 32);
         if !self.tree_caller_is_region { self.save_value_pairs(false, 64); }
     }
+}
+
+
+/// Static feasibility only; neither assignment nor generated code is changed.
+pub(super) fn width_census(program: &Program) -> Result<serde_json::Value, String> {
+    crate::validate(program)?;
+    let mut rows = Vec::new();
+    for (id, f) in program.functions.iter().enumerate() {
+        let Some((_, ranked)) = ranked(f, MAX_WORK) else {
+            rows.push(serde_json::json!({"function":id,"name":f.name,"declined":"liveness bounds"}));
+            continue;
+        };
+        let Some(narrow) = super::register_widths::prove(f) else {
+            rows.push(serde_json::json!({"function":id,"name":f.name,"declined":"width proof bounds"}));
+            continue;
+        };
+        let baseline: Vec<_> = ranked.iter().take(3).map(|&(_, r)| r).collect();
+        let mut packed = Vec::new();
+        let mut available = 6;
+        for &(_, r) in &ranked {
+            let cost = if narrow[r as usize] { 1 } else { 2 };
+            if cost <= available { packed.push(r); available -= cost; }
+            if available == 0 { break; }
+        }
+        let mut baseline_reads = 0u64;
+        let mut packed_reads = 0u64;
+        for op in &f.code {
+            crate::registers::visit_registers(op, |r| {
+                baseline_reads += u64::from(baseline.contains(&r));
+                packed_reads += u64::from(packed.contains(&r));
+            }, |_| {});
+        }
+        let assignments = |registers: &[Reg]| registers.iter().map(|&r| serde_json::json!({
+            "register":r,"upper_half_zero":narrow[r as usize]})).collect::<Vec<_>>();
+        rows.push(serde_json::json!({"function":id,"name":f.name,"registers":f.registers,
+            "proven_narrow":narrow.iter().filter(|&&v| v).count(),"eligible":ranked.len(),
+            "baseline":assignments(&baseline),"packed":assignments(&packed),
+            "packed_native_registers":6-available,
+            "baseline_static_reads":baseline_reads,"packed_static_reads":packed_reads}));
+    }
+    Ok(serde_json::json!({"kind":"register-width-census","schema_version":1,
+        "scope":"static definitions and current liveness ranking; no guest execution or generated-code change",
+        "functions":rows}))
 }

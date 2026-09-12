@@ -1915,3 +1915,11 @@ mod local_memory;
 #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
 #[path="jit/local_memory_tests.rs"]
 mod local_memory_tests;
+
+
+mod register_widths;
+
+/// Inspect a possible narrower register assignment without running guest code.
+pub fn register_width_census(program: &Program) -> Result<serde_json::Value, String> {
+    values::width_census(program)
+}
