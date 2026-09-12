@@ -83,10 +83,12 @@ counts/profiles match exactly; random token paths each reconcile their own count
 A/A staging qualification passes four key routes and two changed-guard rejections.
 Its brief lock admission rejection is preserved; no process was signalled.
 
-`call-slot-aa-01-folded-literal-trie` is active (supervisor 10938, controller
-10942, workflow 10949). Keep its frozen scripts/helpers and fixed plan unchanged.
-Wait for the workflow, controller and supervisor to finish before another lock
-user. Then verify and run token A/A, candidate folded and candidate token, in order.
+The folded A/A control completes and verifies 84 commands, 15 edited pairs and
+42 artifact hashes. Its paired wall ratio is 1.007006 and the fixed wall envelope
+is 1.6215%; this is a control, not a speedup. `call-slot-aa-01-token-phrase` is
+active (supervisor 31127, controller 31132, workflow 31140). Keep frozen inputs
+unchanged. Wait for all three to finish, verify, then run candidate folded and
+candidate token in that order.
 The fixed primary gate is ≥10% token wall gain, lower CPU and a gain exceeding
 fresh A/A variation; folded wall/CPU must remain within 5%. The tracked
 `report_primary.py` recomputes all four histories. A primary failure parks the
