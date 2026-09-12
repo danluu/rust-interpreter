@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Lifetime census qualifies346 Rust tests/profile and4 exact-profile diagnostics. Admitted virtual slot totals fall94% in token/folded, while estimated additional native residency is only0.85–3.60% of reads. Next qualify actual many-to-one mapping, preserving PCs/checks/full128-bit values, then use a fixed complete-command screen. Pointer promotion remains parked after0.34%.
+**Next:** Lifetime allocation is parked after the complete changed-source token screen regressed wall 4.64% and CPU 4.70%, despite 352 Rust tests/profile and all eight exact artifact checks passing. Next inspect constant direct-call arguments with a bounded offline typed census against current profiles before implementing specialization.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

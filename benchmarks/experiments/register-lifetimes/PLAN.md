@@ -47,3 +47,11 @@ Use the shared lock with a 45-second wait, two build workers and at least 8 GiB
 free before children. Preserve unrelated workloads, private data, installed
 tools and raw evidence. Checking stays strict and guest execution remains our
 own interpreter/direct AArch64 JIT.
+
+Prototype detail: the working-memory budget already charges actual register
+storage. A smaller artifact can therefore fit a budget that rejected the old
+artifact. Preserve that accounting and test each artifact's exact threshold
+in both engines; do not require an artificial identical memory failure across
+different storage requirements. Instruction order/count and ordinary fault
+ordering remain unchanged. The liveness and interval scans each have separate
+32-million-work bounds; sorting/certification is bounded by 65,536 registers.

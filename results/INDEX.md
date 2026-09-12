@@ -77,6 +77,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | suite-profiling | [suite-profiling-real-01/summary.json](suite-profiling-real-01/summary.json) |
 | pointer-promotion | [private-pointer-screen-token-01/summary.json](private-pointer-screen-token-01/summary.json) |
 | register-lifetimes | [register-lifetimes-census-01/summary.json](register-lifetimes-census-01/summary.json) |
+| register-allocation | [register-allocation-screen-token-01/summary.json](register-allocation-screen-token-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
