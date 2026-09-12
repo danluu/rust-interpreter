@@ -80,3 +80,30 @@ Relevant evidence: [fixed-clear composition scope](../benchmarks/experiments/fra
 [reuse screen](../results/export-reuse-screen-token-01/decision.json),
 [allocation census](../results/register-lifetimes-census-01/assessment.md),
 [native stage limits](../results/native-existing-stages-01/assessment.md).
+
+## Execution update after the reviewed proposals
+
+The suggestions file still has the hash recorded above. Several originally
+missing comparisons are now complete; their results change the next priorities.
+
+| Suggestions | Completed work and disposition |
+| --- | --- |
+| 1.1–1.3, 2.1, 2.3, 2.4 | The corrected composition completed all528 original/wrong/edit/restored commands. Its original three-test token selection improved11.59%, but the twelve-test selection improved4.91% and missed the composed gate. Folded and pgrust guards passed. Retain both selections and the observed noise; do not multiply component ratios or rerun this candidate to seek acceptance. The old fixed-clear proof needed an alignment correction, so its earlier test successes were insufficient reason to merge those exact bytes. |
+| 2.2, 2.6 | The first call-protocol rewrite completed all462 commands. Token improved1.62% against composition, below its3.81% A/A wall envelope; both guards passed. The next implementation replaces repeated capacity checks with a conservative native credit, while preserving independent frame limits, overflow/alignment checks on refill and exact exits. It passes422 Rust tests per profile,102 harness checks,7 exact tests,9 suite commands and203 strict cache/native checks. Its complete edit comparison is active; no speedup is claimed yet. |
+| 2.5, 2.8 | Three complete native/JIT pairs show7.132× retired instructions and4.398× cycles in the custom process. This measures the whole test process, including preparation, and is not a Cargo timing or pure guest count. It favors instruction-volume work over an assumed stall explanation. The existing weighted width-packing census found negligible additional resident reads; do not restart that rejected proposal. Upper-word store elimination would need a separate traffic census and an initialization/exit proof. |
+| 3.1–3.3 | Main's invocation-local compiler reuse is integrated and qualified in the experiment's baseline and candidate. Its prior build-to-ready improvement is not a whole-command result. Persistent rebinding still costs about184ms on token; inspect actual resolution/allocation/patch work before choosing lazy binding or a new file format. The current cache already reuses green function templates; compiler allocation identities still require current-session resolution. |
+| 4.1, 6.1–6.3 | The large Nushell native calibration completed88 commands with14 original assertions. Line tables improved paired wall3.85% and CPU2.57%; repository settings and observed A/A remain visible. This is a practical native control without an8% optimizer gate. A host-only MIR-encoding experiment is still open; guest dependencies must continue to carry MIR, and runtime reachability cannot replace strict checking. |
+| 5.1–5.3 | Current full comparisons use two Cargo workers on every route, two prepared custom workers, and ordinary native libtest concurrency. Scheduling/preparation stays fixed between custom candidates. No unmatched18-worker cold claim or new default adoption follows from these measurements. |
+| 7.1–7.4 | No interpreter-only speedup is credited to the JIT command, no additional storage cleanup is needed, and no frozen benchmark inputs were changed for optional-code retirement. |
+
+Next finish all capacity-credit edit pairs and both mandatory guards, then choose
+the next implementation from that result and the measured stage costs. Keep the
+large-project frontend investigation distinct from compute-heavy runtime work.
+
+Evidence: [composition](../results/composed-development-edit-token-03/stage-assessment.md),
+[original selection](../results/composed-development-edit-anchor-01/stage-assessment.md),
+[call protocol](../results/resumable-call-protocol-edit-token-01/stage-assessment.md),
+[instruction accounting](../results/process-instruction-counts-01-completed/assessment.md),
+[width weighting](../results/jit-register-width-weighted-01/assessment.md),
+[Nushell native control](../results/large-native-nushell-02/assessment.md),
+[capacity qualification](../results/call-capacity-credit-coverage-01/summary.json).
