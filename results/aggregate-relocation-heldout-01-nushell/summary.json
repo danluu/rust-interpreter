@@ -1,0 +1,3529 @@
+{
+  "schema_version": 2,
+  "project": "nushell",
+  "workflow": "default",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "cycles": 3,
+  "initial_mode_order": [
+    "native",
+    "baseline",
+    "candidate"
+  ],
+  "minimum_free_gib": 8,
+  "tests": [
+    "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+    "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+    "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+    "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+  ],
+  "edits": [
+    "express-membership-with-any",
+    "reject-empty-name-early",
+    "filter-spaces-before-utf8-conversion",
+    "chain-keyword-tables-for-membership",
+    "make-utf8-result-handling-explicit"
+  ],
+  "workload": "All four existing parser-keyword tests, including collection of single-word keywords",
+  "case_sha256": "9d94b6856a360257ca0e9f92dfda3797ea2708ba2d9fce148329ee3501526f9f",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/aggregate-relocation-heldout-01-nushell",
+  "build_tool_opt_level": null,
+  "build_jobs": 4,
+  "custom_build_jobs": {
+    "baseline": 4,
+    "candidate": 4
+  },
+  "native_control": {
+    "profile": "o0-incremental",
+    "jobs": 18,
+    "test_threads": "default",
+    "rustflags": []
+  },
+  "instruction_limit": 1000000000,
+  "allocation_limit": null,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "candidate_jit_persistent_registers": true,
+  "candidate_jit_resumable_calls": true,
+  "candidate_jit_native_calls": false,
+  "candidate_jit_native_call_stubs": false,
+  "baseline_jit_resumable_calls": true,
+  "baseline_jit_persistent_registers": true,
+  "trap_unsupported_calls": false,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": null,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [],
+  "guest_mir_inline_scale": null,
+  "guest_mir_inline_thresholds": null,
+  "guest_rustflags": [],
+  "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+  "candidate_tool_key_requested": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.6568268340000003,
+    "baseline": 0.4423994170000043,
+    "candidate": 0.4482467079999992
+  },
+  "median_cpu_seconds": {
+    "native": 0.7661050000000245,
+    "baseline": 0.4250510000000034,
+    "candidate": 0.42518400000000156
+  },
+  "cpu_accounting": "RUSAGE_CHILDREN deltas around one waited-for child tree at a time; user plus system CPU; excludes harness CPU",
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 16.170905875000003,
+    "baseline": 19.836396084,
+    "candidate": 19.648168874999996
+  },
+  "cycle_anchor_seconds": [
+    {
+      "cycle": 1,
+      "seconds": {
+        "baseline": 0.4946300000000008,
+        "candidate": 0.5144710420000109,
+        "native": 0.7335498749999942
+      }
+    },
+    {
+      "cycle": 2,
+      "seconds": {
+        "candidate": 0.43941170899999804,
+        "native": 0.719884792000002,
+        "baseline": 0.4278082499999982
+      }
+    }
+  ],
+  "source_transitions": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "content_changed": false,
+      "previous_mode_sources": {
+        "native": null,
+        "baseline": null,
+        "candidate": null
+      }
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "baseline": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "candidate": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "baseline": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "candidate": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "baseline": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "candidate": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "baseline": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "candidate": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "baseline": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "candidate": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "baseline": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "candidate": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "baseline": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "candidate": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "baseline": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "candidate": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "baseline": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "candidate": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "baseline": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "candidate": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "baseline": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "candidate": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "baseline": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "candidate": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "baseline": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "candidate": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "baseline": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "candidate": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "baseline": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "candidate": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "baseline": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "candidate": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "baseline": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "candidate": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "baseline": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "candidate": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "baseline": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "candidate": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "baseline": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "candidate": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539"
+      }
+    }
+  ],
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "14b4ce01da0c377692c0bce7b04979b3edc9f7617e4a3c7ac39e86ed88dfd961",
+    "scripts/interpreter.py": "bb7abab2614f27090a1a0d4f647ac31a1de5973a563ae0134b4f53d12667497b",
+    "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+    "scripts/workflow_case_file.py": "4a138ac3b497b9871b3d0781b0272f68da886ef118a26b8795cb7c59141588d7",
+    "scripts/workflow_measurements.py": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132",
+    "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+    "scripts/workflow_io.py": "29e006c3397fb762743783d13bfe3a2fca1d45091bfb2110380fe083108a4119",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+    "scripts/workflow_jobs.py": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "21d1e163a603aaf9d6f3238fd1057293c73afc41d17b5f73779b2d3188169ca9",
+      "exporter_sha256": "65c11a7d2aacc2941266f3ae9fc90805177a5d82174a4a90d0704e634cba9ad2"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": false,
+      "run_try_callbacks": false,
+      "guest_rustflags": [],
+      "vm_sha256": "21d1e163a603aaf9d6f3238fd1057293c73afc41d17b5f73779b2d3188169ca9",
+      "exporter_sha256": "556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095"
+    }
+  },
+  "mode_orders": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    }
+  ],
+  "vm_sha256": "21d1e163a603aaf9d6f3238fd1057293c73afc41d17b5f73779b2d3188169ca9",
+  "exporter_sha256": "556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095",
+  "samples": [
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 16.170905875000003,
+      "cpu_seconds": 67.342397,
+      "previous_source_sha256": null,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        3.65234375,
+        4.89111328125,
+        5.35400390625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 19.836396084,
+      "cpu_seconds": 52.368286999999995,
+      "previous_source_sha256": null,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        4.58935546875,
+        5.02587890625,
+        5.39111328125
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-0/0-0.rbc",
+          "sha256": "fcda47855b9b4e1784f12013e2dac187019b1067d71b559ef616f751b6bd099f",
+          "bytes": 669951
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 19.648168874999996,
+      "cpu_seconds": 52.11105100000001,
+      "previous_source_sha256": null,
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        4.6865234375,
+        5.0224609375,
+        5.38134765625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-0/0-0.rbc",
+          "sha256": "3d3bf54dbf0a72a061ef31631756a7d54d1b8a96a6ed6a5922f911f3172cc646",
+          "bytes": 669951
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.5975218330000018,
+      "cpu_seconds": 0.4216480000000189,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.685546875,
+        5.2333984375,
+        5.4521484375
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-0/-1-0.rbc",
+          "sha256": "d1043e9590df1cc40c4f84e4d5b1f95ff00cbcdb8d154307b43ce66970e4ef72",
+          "bytes": 663514
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.5061779580000092,
+      "cpu_seconds": 0.40880499999997966,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.685546875,
+        5.2333984375,
+        5.4521484375
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-0/-1-0.rbc",
+          "sha256": "cbb8a9203ad472e15d10cc156f01b6e51ddc08638ced8afcbbe79d6dcf7bd93c",
+          "bytes": 663514
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.7260895420000111,
+      "cpu_seconds": 0.761380999999993,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.685546875,
+        5.2333984375,
+        5.4521484375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6453094170000071,
+      "cpu_seconds": 0.7703420000000065,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4554496659999927,
+      "cpu_seconds": 0.43433399999999267,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-0/1-0.rbc",
+          "sha256": "3964e027cd4bc9d188c89ab50ab526bd713f35c12fb0ad364e01fe0059c57fc0",
+          "bytes": 673231
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.43674487500000225,
+      "cpu_seconds": 0.41911300000001717,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-0/1-0.rbc",
+          "sha256": "1c4fe932efee1ed5c1602ab8f6988912ee79e82870b5f7d1aeac8913d9b021b0",
+          "bytes": 673231
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6972717919999951,
+      "cpu_seconds": 0.7287919999999701,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.42666945900000997,
+      "cpu_seconds": 0.4016909999999996,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-0/2-0.rbc",
+          "sha256": "65626c1d7767e92b14e3d07561abd2ad63d6b0312908772b016de944600ea15d",
+          "bytes": 674140
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.41983362499999544,
+      "cpu_seconds": 0.39746000000000237,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-0/2-0.rbc",
+          "sha256": "5435d8e85b4666264d8c1740376fb22c8fc3cfe0ea7ae03859cc0fbd3b9cbd9c",
+          "bytes": 674140
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4298675830000036,
+      "cpu_seconds": 0.4150280000000066,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-0/3-0.rbc",
+          "sha256": "f7d70d5d6e43248d73943b313a81021f54ad5036dee9baacb42bbc98352e4685",
+          "bytes": 687258
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6611696669999958,
+      "cpu_seconds": 0.7323019999999971,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.43923787500000344,
+      "cpu_seconds": 0.42421499999997536,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.63037109375,
+        5.2294921875,
+        5.44921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-0/3-0.rbc",
+          "sha256": "d0e6acb1643680bd7382db6f850270be38dde46cd0a02ab6521a3beb277ecc01",
+          "bytes": 687258
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4327679999999958,
+      "cpu_seconds": 0.41683600000001775,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.49951171875,
+        5.208984375,
+        5.4404296875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-0/4-0.rbc",
+          "sha256": "8e3cf590c9277bc73d81bb1d32952735d0d3fb98c8bc1c1618d9b8188fbe91c3",
+          "bytes": 697996
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.694243415999992,
+      "cpu_seconds": 0.7950909999999993,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.49951171875,
+        5.208984375,
+        5.4404296875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.45928675000000396,
+      "cpu_seconds": 0.44526400000000166,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.49951171875,
+        5.208984375,
+        5.4404296875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-0/4-0.rbc",
+          "sha256": "1075efebb624a3e24e294add878caef22d0ba0deab77cdd0d870ccc8e389481a",
+          "bytes": 697996
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4557104590000023,
+      "cpu_seconds": 0.4398599999999888,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.49951171875,
+        5.208984375,
+        5.4404296875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-0/5-0.rbc",
+          "sha256": "df2a1aa8501c5e51ab3b19f99e185e23fc75c0c4024272aac98bbc0815866730",
+          "bytes": 696875
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4599288329999922,
+      "cpu_seconds": 0.4418489999999977,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.49951171875,
+        5.208984375,
+        5.4404296875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-0/5-0.rbc",
+          "sha256": "382d587574ac4424f4a80aa288cd7e6e9eeaf0405a0fff673874fabd34fda167",
+          "bytes": 696875
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.683263249999996,
+      "cpu_seconds": 0.8116240000000232,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.49951171875,
+        5.208984375,
+        5.4404296875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4946300000000008,
+      "cpu_seconds": 0.4784639999999811,
+      "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.49951171875,
+        5.208984375,
+        5.4404296875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-1/0-0.rbc",
+          "sha256": "fcda47855b9b4e1784f12013e2dac187019b1067d71b559ef616f751b6bd099f",
+          "bytes": 669951
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.5144710420000109,
+      "cpu_seconds": 0.4982360000000128,
+      "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.49951171875,
+        5.208984375,
+        5.4404296875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-1/0-0.rbc",
+          "sha256": "3d3bf54dbf0a72a061ef31631756a7d54d1b8a96a6ed6a5922f911f3172cc646",
+          "bytes": 669951
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.7335498749999942,
+      "cpu_seconds": 0.8252099999999913,
+      "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.45947265625,
+        5.205078125,
+        5.4375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4655693329999906,
+      "cpu_seconds": 0.44947399999998083,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.45947265625,
+        5.205078125,
+        5.4375
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-1/-1-0.rbc",
+          "sha256": "cbb8a9203ad472e15d10cc156f01b6e51ddc08638ced8afcbbe79d6dcf7bd93c",
+          "bytes": 663514
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6998834589999916,
+      "cpu_seconds": 0.7850610000000131,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.45947265625,
+        5.205078125,
+        5.4375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.47309733399998777,
+      "cpu_seconds": 0.45908799999999417,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.45947265625,
+        5.205078125,
+        5.4375
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-1/-1-0.rbc",
+          "sha256": "d1043e9590df1cc40c4f84e4d5b1f95ff00cbcdb8d154307b43ce66970e4ef72",
+          "bytes": 663514
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.46384145899999396,
+      "cpu_seconds": 0.4460210000000089,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.45947265625,
+        5.205078125,
+        5.4375
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-1/1-0.rbc",
+          "sha256": "3964e027cd4bc9d188c89ab50ab526bd713f35c12fb0ad364e01fe0059c57fc0",
+          "bytes": 673231
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4784872500000006,
+      "cpu_seconds": 0.46123499999998074,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.45947265625,
+        5.205078125,
+        5.4375
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-1/1-0.rbc",
+          "sha256": "1c4fe932efee1ed5c1602ab8f6988912ee79e82870b5f7d1aeac8913d9b021b0",
+          "bytes": 673231
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6481527079999978,
+      "cpu_seconds": 0.7661050000000245,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.45947265625,
+        5.205078125,
+        5.4375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4482467079999992,
+      "cpu_seconds": 0.43313399999998836,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.42236328125,
+        5.20166015625,
+        5.4345703125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-1/2-0.rbc",
+          "sha256": "65626c1d7767e92b14e3d07561abd2ad63d6b0312908772b016de944600ea15d",
+          "bytes": 674140
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.44185295799999835,
+      "cpu_seconds": 0.4250510000000034,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.42236328125,
+        5.20166015625,
+        5.4345703125
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-1/2-0.rbc",
+          "sha256": "5435d8e85b4666264d8c1740376fb22c8fc3cfe0ea7ae03859cc0fbd3b9cbd9c",
+          "bytes": 674140
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6552409579999932,
+      "cpu_seconds": 0.7626480000000058,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.42236328125,
+        5.20166015625,
+        5.4345703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6704096250000049,
+      "cpu_seconds": 0.7646870000000021,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.42236328125,
+        5.20166015625,
+        5.4345703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4611959589999941,
+      "cpu_seconds": 0.4438470000000123,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.42236328125,
+        5.20166015625,
+        5.4345703125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-1/3-0.rbc",
+          "sha256": "d0e6acb1643680bd7382db6f850270be38dde46cd0a02ab6521a3beb277ecc01",
+          "bytes": 687258
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4571052090000052,
+      "cpu_seconds": 0.4400660000000016,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.42236328125,
+        5.20166015625,
+        5.4345703125
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-1/3-0.rbc",
+          "sha256": "f7d70d5d6e43248d73943b313a81021f54ad5036dee9baacb42bbc98352e4685",
+          "bytes": 687258
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6636200840000015,
+      "cpu_seconds": 0.7663189999999815,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.42236328125,
+        5.20166015625,
+        5.4345703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4423994170000043,
+      "cpu_seconds": 0.4193880000000263,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.42236328125,
+        5.20166015625,
+        5.4345703125
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-1/4-0.rbc",
+          "sha256": "1075efebb624a3e24e294add878caef22d0ba0deab77cdd0d870ccc8e389481a",
+          "bytes": 697996
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.455527416999999,
+      "cpu_seconds": 0.43185999999997904,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.38818359375,
+        5.1982421875,
+        5.431640625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-1/4-0.rbc",
+          "sha256": "8e3cf590c9277bc73d81bb1d32952735d0d3fb98c8bc1c1618d9b8188fbe91c3",
+          "bytes": 697996
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.47032987500000445,
+      "cpu_seconds": 0.42518400000000156,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.38818359375,
+        5.1982421875,
+        5.431640625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-1/5-0.rbc",
+          "sha256": "382d587574ac4424f4a80aa288cd7e6e9eeaf0405a0fff673874fabd34fda167",
+          "bytes": 696875
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6332664579999943,
+      "cpu_seconds": 0.7901190000000184,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.38818359375,
+        5.1982421875,
+        5.431640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.40592483299998605,
+      "cpu_seconds": 0.39158099999998797,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.38818359375,
+        5.1982421875,
+        5.431640625
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-1/5-0.rbc",
+          "sha256": "df2a1aa8501c5e51ab3b19f99e185e23fc75c0c4024272aac98bbc0815866730",
+          "bytes": 696875
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.43941170899999804,
+      "cpu_seconds": 0.4224869999999967,
+      "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.38818359375,
+        5.1982421875,
+        5.431640625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-2/0-0.rbc",
+          "sha256": "3d3bf54dbf0a72a061ef31631756a7d54d1b8a96a6ed6a5922f911f3172cc646",
+          "bytes": 669951
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.719884792000002,
+      "cpu_seconds": 0.7554209999999912,
+      "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.38818359375,
+        5.1982421875,
+        5.431640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4278082499999982,
+      "cpu_seconds": 0.4120320000000035,
+      "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "load": [
+        5.38818359375,
+        5.1982421875,
+        5.431640625
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-2/0-0.rbc",
+          "sha256": "fcda47855b9b4e1784f12013e2dac187019b1067d71b559ef616f751b6bd099f",
+          "bytes": 669951
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6221661249999926,
+      "cpu_seconds": 0.7639110000000073,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.38818359375,
+        5.1982421875,
+        5.431640625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.41785058399999286,
+      "cpu_seconds": 0.4020499999999956,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.19677734375,
+        5.16162109375,
+        5.4169921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-2/-1-0.rbc",
+          "sha256": "d1043e9590df1cc40c4f84e4d5b1f95ff00cbcdb8d154307b43ce66970e4ef72",
+          "bytes": 663514
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "reject-valid-keywords",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.43291591700000254,
+      "cpu_seconds": 0.41340999999999184,
+      "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+      "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "load": [
+        5.19677734375,
+        5.16162109375,
+        5.4169921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-2/-1-0.rbc",
+          "sha256": "cbb8a9203ad472e15d10cc156f01b6e51ddc08638ced8afcbbe79d6dcf7bd93c",
+          "bytes": 663514
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.43266308299999423,
+      "cpu_seconds": 0.416056999999995,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.19677734375,
+        5.16162109375,
+        5.4169921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-2/1-0.rbc",
+          "sha256": "1c4fe932efee1ed5c1602ab8f6988912ee79e82870b5f7d1aeac8913d9b021b0",
+          "bytes": 673231
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6286825839999892,
+      "cpu_seconds": 0.7717039999999997,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.19677734375,
+        5.16162109375,
+        5.4169921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "express-membership-with-any",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.44486429200000543,
+      "cpu_seconds": 0.40614400000001183,
+      "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+      "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "load": [
+        5.19677734375,
+        5.16162109375,
+        5.4169921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-2/1-0.rbc",
+          "sha256": "3964e027cd4bc9d188c89ab50ab526bd713f35c12fb0ad364e01fe0059c57fc0",
+          "bytes": 673231
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.44220295799999576,
+      "cpu_seconds": 0.42524300000002313,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.19677734375,
+        5.16162109375,
+        5.4169921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-2/2-0.rbc",
+          "sha256": "5435d8e85b4666264d8c1740376fb22c8fc3cfe0ea7ae03859cc0fbd3b9cbd9c",
+          "bytes": 674140
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6453395409999985,
+      "cpu_seconds": 0.7602649999999969,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.19677734375,
+        5.16162109375,
+        5.4169921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "reject-empty-name-early",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4588967910000008,
+      "cpu_seconds": 0.4421259999999805,
+      "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+      "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "load": [
+        5.19677734375,
+        5.16162109375,
+        5.4169921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-2/2-0.rbc",
+          "sha256": "65626c1d7767e92b14e3d07561abd2ad63d6b0312908772b016de944600ea15d",
+          "bytes": 674140
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.474895042,
+      "cpu_seconds": 0.45448900000000236,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-2/3-0.rbc",
+          "sha256": "d0e6acb1643680bd7382db6f850270be38dde46cd0a02ab6521a3beb277ecc01",
+          "bytes": 687258
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.46768191600000364,
+      "cpu_seconds": 0.4509960000000106,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-2/3-0.rbc",
+          "sha256": "f7d70d5d6e43248d73943b313a81021f54ad5036dee9baacb42bbc98352e4685",
+          "bytes": 687258
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "filter-spaces-before-utf8-conversion",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6798747920000068,
+      "cpu_seconds": 0.7509049999999959,
+      "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+      "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4147402910000011,
+      "cpu_seconds": 0.39803399999997424,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-2/4-0.rbc",
+          "sha256": "1075efebb624a3e24e294add878caef22d0ba0deab77cdd0d870ccc8e389481a",
+          "bytes": 697996
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.43804283299999724,
+      "cpu_seconds": 0.4174210000000258,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-2/4-0.rbc",
+          "sha256": "8e3cf590c9277bc73d81bb1d32952735d0d3fb98c8bc1c1618d9b8188fbe91c3",
+          "bytes": 697996
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "chain-keyword-tables-for-membership",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6264372089999881,
+      "cpu_seconds": 0.7481249999999875,
+      "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+      "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.6568268340000003,
+      "cpu_seconds": 0.7773799999999937,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.4157768749999917,
+      "cpu_seconds": 0.39773700000000645,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": "jit",
+      "tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/baseline/cycle-2/5-0.rbc",
+          "sha256": "df2a1aa8501c5e51ab3b19f99e185e23fc75c0c4024272aac98bbc0815866730",
+          "bytes": 696875
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "make-utf8-result-handling-explicit",
+      "tests": [
+        "parse_keywords::tests::is_parser_keyword_matches_single_word_keywords",
+        "parse_keywords::tests::is_parser_keyword_rejects_ordinary_command_names",
+        "parse_keywords::tests::is_parser_keyword_includes_multi_word_entries",
+        "parse_keywords::tests::single_word_parser_keywords_excludes_multi_word_and_matches_is_parser_keyword"
+      ],
+      "seconds": 0.42989029199999607,
+      "cpu_seconds": 0.41344100000001305,
+      "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+      "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+      "load": [
+        5.2607421875,
+        5.17529296875,
+        5.419921875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/aggregate-relocation-heldout-01-nushell/artifacts/candidate/cycle-2/5-0.rbc",
+          "sha256": "382d587574ac4424f4a80aa288cd7e6e9eeaf0405a0fff673874fabd34fda167",
+          "bytes": 696875
+        }
+      ]
+    }
+  ],
+  "exporter_seconds": {
+    "baseline": {
+      "frontend": 0.102313,
+      "lowering": 0.019657,
+      "scalar-frames": 0.001197,
+      "scalar-promotion": 0.001179,
+      "inline": 0.001036,
+      "cfg": 0.001427
+    },
+    "candidate": {
+      "frontend": 0.10031399999999999,
+      "lowering": 0.024142,
+      "scalar-frames": 0.001252,
+      "scalar-promotion": 0.001251,
+      "inline": 0.001027,
+      "cfg": 0.001443
+    }
+  },
+  "check_floor": {
+    "interpretation": "Independent library-test Cargo-check control; executes no tests, including the wrong runtime edit; not a strict lower bound or subtractive attribution",
+    "timing_position": "after each primary mode triplet; separate target/cache history; no Cargo timing-report generation",
+    "median_seconds": 0.2918382080000015,
+    "median_cpu_seconds": 0.28280300000000125,
+    "samples": [
+      {
+        "cycle": 0,
+        "state": 0,
+        "phase": "cold",
+        "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "previous_source_sha256": null,
+        "seconds": 12.019098917000008,
+        "cpu_seconds": 54.61315699999999,
+        "cpu": {
+          "user_seconds": 46.26089999999999,
+          "system_seconds": 8.352256999999998,
+          "total_seconds": 54.61315699999999
+        },
+        "returncode": 0,
+        "load": [
+          5.685546875,
+          5.2333984375,
+          5.4521484375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "seconds": 0.30952725000000214,
+        "cpu_seconds": 0.28606099999999657,
+        "cpu": {
+          "user_seconds": 0.17528799999999478,
+          "system_seconds": 0.11077300000000179,
+          "total_seconds": 0.28606099999999657
+        },
+        "returncode": 0,
+        "load": [
+          5.685546875,
+          5.2333984375,
+          5.4521484375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "seconds": 0.2785081250000019,
+        "cpu_seconds": 0.2663090000000139,
+        "cpu": {
+          "user_seconds": 0.1664440000000127,
+          "system_seconds": 0.0998650000000012,
+          "total_seconds": 0.2663090000000139
+        },
+        "returncode": 0,
+        "load": [
+          5.63037109375,
+          5.2294921875,
+          5.44921875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "seconds": 0.27644179099999633,
+        "cpu_seconds": 0.26372600000001967,
+        "cpu": {
+          "user_seconds": 0.16812000000001603,
+          "system_seconds": 0.09560600000000363,
+          "total_seconds": 0.26372600000001967
+        },
+        "returncode": 0,
+        "load": [
+          5.63037109375,
+          5.2294921875,
+          5.44921875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "seconds": 0.29614341699999613,
+        "cpu_seconds": 0.2899770000000075,
+        "cpu": {
+          "user_seconds": 0.1866990000000044,
+          "system_seconds": 0.10327800000000309,
+          "total_seconds": 0.2899770000000075
+        },
+        "returncode": 0,
+        "load": [
+          5.49951171875,
+          5.208984375,
+          5.4404296875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "seconds": 0.29614025000000765,
+        "cpu_seconds": 0.2897649999999885,
+        "cpu": {
+          "user_seconds": 0.18175099999999134,
+          "system_seconds": 0.10801399999999717,
+          "total_seconds": 0.2897649999999885
+        },
+        "returncode": 0,
+        "load": [
+          5.49951171875,
+          5.208984375,
+          5.4404296875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "seconds": 0.31028425000000937,
+        "cpu_seconds": 0.298688999999996,
+        "cpu": {
+          "user_seconds": 0.18803099999999517,
+          "system_seconds": 0.11065800000000081,
+          "total_seconds": 0.298688999999996
+        },
+        "returncode": 0,
+        "load": [
+          5.49951171875,
+          5.208984375,
+          5.4404296875
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 0,
+        "phase": "anchor",
+        "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "seconds": 0.34107470899999726,
+        "cpu_seconds": 0.3281160000000227,
+        "cpu": {
+          "user_seconds": 0.2126970000000199,
+          "system_seconds": 0.11541900000000282,
+          "total_seconds": 0.3281160000000227
+        },
+        "returncode": 0,
+        "load": [
+          5.45947265625,
+          5.205078125,
+          5.4375
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "seconds": 0.29653791599999124,
+        "cpu_seconds": 0.2894729999999939,
+        "cpu": {
+          "user_seconds": 0.17932700000000068,
+          "system_seconds": 0.1101459999999932,
+          "total_seconds": 0.2894729999999939
+        },
+        "returncode": 0,
+        "load": [
+          5.45947265625,
+          5.205078125,
+          5.4375
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "seconds": 0.2853982079999895,
+        "cpu_seconds": 0.2775579999999991,
+        "cpu": {
+          "user_seconds": 0.17340699999999742,
+          "system_seconds": 0.10415100000000166,
+          "total_seconds": 0.2775579999999991
+        },
+        "returncode": 0,
+        "load": [
+          5.45947265625,
+          5.205078125,
+          5.4375
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "seconds": 0.2918382080000015,
+        "cpu_seconds": 0.28455499999999034,
+        "cpu": {
+          "user_seconds": 0.18106299999999464,
+          "system_seconds": 0.1034919999999957,
+          "total_seconds": 0.28455499999999034
+        },
+        "returncode": 0,
+        "load": [
+          5.42236328125,
+          5.20166015625,
+          5.4345703125
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "seconds": 0.301341917000002,
+        "cpu_seconds": 0.29377099999999245,
+        "cpu": {
+          "user_seconds": 0.18786399999999048,
+          "system_seconds": 0.10590700000000197,
+          "total_seconds": 0.29377099999999245
+        },
+        "returncode": 0,
+        "load": [
+          5.42236328125,
+          5.20166015625,
+          5.4345703125
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "seconds": 0.2954186249999964,
+        "cpu_seconds": 0.28280300000000125,
+        "cpu": {
+          "user_seconds": 0.17606399999999667,
+          "system_seconds": 0.10673900000000458,
+          "total_seconds": 0.28280300000000125
+        },
+        "returncode": 0,
+        "load": [
+          5.38818359375,
+          5.1982421875,
+          5.431640625
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "seconds": 0.26932279100000756,
+        "cpu_seconds": 0.2607759999999999,
+        "cpu": {
+          "user_seconds": 0.1616549999999961,
+          "system_seconds": 0.09912100000000379,
+          "total_seconds": 0.2607759999999999
+        },
+        "returncode": 0,
+        "load": [
+          5.38818359375,
+          5.1982421875,
+          5.431640625
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 0,
+        "phase": "anchor",
+        "source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "previous_source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "seconds": 0.28707254199999,
+        "cpu_seconds": 0.27999500000000666,
+        "cpu": {
+          "user_seconds": 0.18008100000000127,
+          "system_seconds": 0.09991400000000539,
+          "total_seconds": 0.27999500000000666
+        },
+        "returncode": 0,
+        "load": [
+          5.38818359375,
+          5.1982421875,
+          5.431640625
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "previous_source_sha256": "0380dbd231deeeb4b585d73e941d91c0c75567777db74da4bd309f01dff75461",
+        "seconds": 0.27431862499999227,
+        "cpu_seconds": 0.26700700000001376,
+        "cpu": {
+          "user_seconds": 0.16624100000001363,
+          "system_seconds": 0.10076600000000013,
+          "total_seconds": 0.26700700000001376
+        },
+        "returncode": 0,
+        "load": [
+          5.19677734375,
+          5.16162109375,
+          5.4169921875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "previous_source_sha256": "d4c3d27e799e2f235c46c03d26921f56b0ba577c591c921033680d6c1c0b933d",
+        "seconds": 0.28470500000000243,
+        "cpu_seconds": 0.2762019999999765,
+        "cpu": {
+          "user_seconds": 0.17131899999998268,
+          "system_seconds": 0.10488299999999384,
+          "total_seconds": 0.2762019999999765
+        },
+        "returncode": 0,
+        "load": [
+          5.19677734375,
+          5.16162109375,
+          5.4169921875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "previous_source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "seconds": 0.29876629199999627,
+        "cpu_seconds": 0.2912510000000026,
+        "cpu": {
+          "user_seconds": 0.18513300000000754,
+          "system_seconds": 0.10611799999999505,
+          "total_seconds": 0.2912510000000026
+        },
+        "returncode": 0,
+        "load": [
+          5.19677734375,
+          5.16162109375,
+          5.4169921875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "previous_source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "seconds": 0.2950755410000028,
+        "cpu_seconds": 0.28682400000000996,
+        "cpu": {
+          "user_seconds": 0.18353300000001127,
+          "system_seconds": 0.10329099999999869,
+          "total_seconds": 0.28682400000000996
+        },
+        "returncode": 0,
+        "load": [
+          5.2607421875,
+          5.17529296875,
+          5.419921875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "previous_source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "seconds": 0.2777219589999902,
+        "cpu_seconds": 0.26352399999998966,
+        "cpu": {
+          "user_seconds": 0.1640899999999874,
+          "system_seconds": 0.09943400000000224,
+          "total_seconds": 0.26352399999998966
+        },
+        "returncode": 0,
+        "load": [
+          5.2607421875,
+          5.17529296875,
+          5.419921875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "previous_source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "seconds": 0.2871902909999875,
+        "cpu_seconds": 0.2653959999999955,
+        "cpu": {
+          "user_seconds": 0.16426899999999023,
+          "system_seconds": 0.1011270000000053,
+          "total_seconds": 0.2653959999999955
+        },
+        "returncode": 0,
+        "load": [
+          5.31982421875,
+          5.18896484375,
+          5.4228515625
+        ]
+      }
+    ]
+  },
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "0e94d6d82b4b734e281e5b8c95a55866e5c7b0a8be53be2dafadd410708467ee",
+    "candidate_tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "cycle": 0,
+        "state": 1,
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "baseline_seconds": 0.4554496659999927,
+        "candidate_seconds": 0.43674487500000225,
+        "native_seconds": 0.6453094170000071,
+        "native_cpu_seconds": 0.7703420000000065,
+        "baseline_cpu_seconds": 0.43433399999999267,
+        "candidate_cpu_seconds": 0.41911300000001717,
+        "cpu_difference_seconds": -0.015220999999975504,
+        "difference_seconds": -0.01870479099999045,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.377621958,
+            "execution_seconds": 0.006255750000000004,
+            "artifact_hash_seconds": 0.0004895410000000378,
+            "launcher_seconds": 0.42942762500000004
+          },
+          "candidate": {
+            "cargo_seconds": 0.360174875,
+            "execution_seconds": 0.0058350420000000125,
+            "artifact_hash_seconds": 0.0004118330000000281,
+            "launcher_seconds": 0.409816459
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "baseline_seconds": 0.41983362499999544,
+        "candidate_seconds": 0.42666945900000997,
+        "native_seconds": 0.6972717919999951,
+        "native_cpu_seconds": 0.7287919999999701,
+        "baseline_cpu_seconds": 0.39746000000000237,
+        "candidate_cpu_seconds": 0.4016909999999996,
+        "cpu_difference_seconds": 0.004230999999997209,
+        "difference_seconds": 0.006835834000014529,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.34847041700000003,
+            "execution_seconds": 0.0060274999999999634,
+            "artifact_hash_seconds": 0.0005595419999999685,
+            "launcher_seconds": 0.3948675
+          },
+          "candidate": {
+            "cargo_seconds": 0.355266417,
+            "execution_seconds": 0.005424582999999983,
+            "artifact_hash_seconds": 0.0003941670000000008,
+            "launcher_seconds": 0.40126695900000003
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "baseline_seconds": 0.4298675830000036,
+        "candidate_seconds": 0.43923787500000344,
+        "native_seconds": 0.6611696669999958,
+        "native_cpu_seconds": 0.7323019999999971,
+        "baseline_cpu_seconds": 0.4150280000000066,
+        "candidate_cpu_seconds": 0.42421499999997536,
+        "cpu_difference_seconds": 0.009186999999968748,
+        "difference_seconds": 0.009370291999999836,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.357843292,
+            "execution_seconds": 0.006297041999999975,
+            "artifact_hash_seconds": 0.00039358299999997515,
+            "launcher_seconds": 0.404412125
+          },
+          "candidate": {
+            "cargo_seconds": 0.365607042,
+            "execution_seconds": 0.005875999999999992,
+            "artifact_hash_seconds": 0.0005055829999999761,
+            "launcher_seconds": 0.413049083
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "baseline_seconds": 0.45928675000000396,
+        "candidate_seconds": 0.4327679999999958,
+        "native_seconds": 0.694243415999992,
+        "native_cpu_seconds": 0.7950909999999993,
+        "baseline_cpu_seconds": 0.44526400000000166,
+        "candidate_cpu_seconds": 0.41683600000001775,
+        "cpu_difference_seconds": -0.02842799999998391,
+        "difference_seconds": -0.02651875000000814,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.37783633299999997,
+            "execution_seconds": 0.006922207999999985,
+            "artifact_hash_seconds": 0.00045320800000003825,
+            "launcher_seconds": 0.430832042
+          },
+          "candidate": {
+            "cargo_seconds": 0.36048987499999996,
+            "execution_seconds": 0.0066833330000000135,
+            "artifact_hash_seconds": 0.00044441699999997475,
+            "launcher_seconds": 0.407001375
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "baseline_seconds": 0.4557104590000023,
+        "candidate_seconds": 0.4599288329999922,
+        "native_seconds": 0.683263249999996,
+        "native_cpu_seconds": 0.8116240000000232,
+        "baseline_cpu_seconds": 0.4398599999999888,
+        "candidate_cpu_seconds": 0.4418489999999977,
+        "cpu_difference_seconds": 0.0019890000000089003,
+        "difference_seconds": 0.004218373999989922,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.37414349999999996,
+            "execution_seconds": 0.0067795830000000334,
+            "artifact_hash_seconds": 0.00048237499999997935,
+            "launcher_seconds": 0.426534417
+          },
+          "candidate": {
+            "cargo_seconds": 0.38032216599999996,
+            "execution_seconds": 0.0069640839999999815,
+            "artifact_hash_seconds": 0.0004505830000000044,
+            "launcher_seconds": 0.431092291
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 1,
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "baseline_seconds": 0.46384145899999396,
+        "candidate_seconds": 0.4784872500000006,
+        "native_seconds": 0.6481527079999978,
+        "native_cpu_seconds": 0.7661050000000245,
+        "baseline_cpu_seconds": 0.4460210000000089,
+        "candidate_cpu_seconds": 0.46123499999998074,
+        "cpu_difference_seconds": 0.015213999999971861,
+        "difference_seconds": 0.014645791000006625,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.38408912500000003,
+            "execution_seconds": 0.006623583000000044,
+            "artifact_hash_seconds": 0.0004470420000000086,
+            "launcher_seconds": 0.435385417
+          },
+          "candidate": {
+            "cargo_seconds": 0.397492208,
+            "execution_seconds": 0.0065826669999999865,
+            "artifact_hash_seconds": 0.00044158399999999487,
+            "launcher_seconds": 0.44978212500000003
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 2,
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "baseline_seconds": 0.44185295799999835,
+        "candidate_seconds": 0.4482467079999992,
+        "native_seconds": 0.6552409579999932,
+        "native_cpu_seconds": 0.7626480000000058,
+        "baseline_cpu_seconds": 0.4250510000000034,
+        "candidate_cpu_seconds": 0.43313399999998836,
+        "cpu_difference_seconds": 0.008082999999984963,
+        "difference_seconds": 0.006393750000000864,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.365539208,
+            "execution_seconds": 0.006287916999999976,
+            "artifact_hash_seconds": 0.00042879099999998393,
+            "launcher_seconds": 0.414623292
+          },
+          "candidate": {
+            "cargo_seconds": 0.37045179100000003,
+            "execution_seconds": 0.005995875000000039,
+            "artifact_hash_seconds": 0.00042520800000001024,
+            "launcher_seconds": 0.42032833399999997
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 3,
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "baseline_seconds": 0.4571052090000052,
+        "candidate_seconds": 0.4611959589999941,
+        "native_seconds": 0.6704096250000049,
+        "native_cpu_seconds": 0.7646870000000021,
+        "baseline_cpu_seconds": 0.4400660000000016,
+        "candidate_cpu_seconds": 0.4438470000000123,
+        "cpu_difference_seconds": 0.0037810000000106925,
+        "difference_seconds": 0.00409074999998893,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.38092316699999995,
+            "execution_seconds": 0.006384457999999982,
+            "artifact_hash_seconds": 0.0004665420000000142,
+            "launcher_seconds": 0.430208625
+          },
+          "candidate": {
+            "cargo_seconds": 0.381981417,
+            "execution_seconds": 0.006474583000000034,
+            "artifact_hash_seconds": 0.0004189580000000248,
+            "launcher_seconds": 0.43278591699999996
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 4,
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "baseline_seconds": 0.4423994170000043,
+        "candidate_seconds": 0.455527416999999,
+        "native_seconds": 0.6636200840000015,
+        "native_cpu_seconds": 0.7663189999999815,
+        "baseline_cpu_seconds": 0.4193880000000263,
+        "candidate_cpu_seconds": 0.43185999999997904,
+        "cpu_difference_seconds": 0.012471999999952743,
+        "difference_seconds": 0.0131279999999947,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.364012208,
+            "execution_seconds": 0.007838292000000024,
+            "artifact_hash_seconds": 0.0007256669999999854,
+            "launcher_seconds": 0.415194542
+          },
+          "candidate": {
+            "cargo_seconds": 0.378129416,
+            "execution_seconds": 0.006328374999999997,
+            "artifact_hash_seconds": 0.00044874999999999776,
+            "launcher_seconds": 0.42808591700000004
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 5,
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "baseline_seconds": 0.40592483299998605,
+        "candidate_seconds": 0.47032987500000445,
+        "native_seconds": 0.6332664579999943,
+        "native_cpu_seconds": 0.7901190000000184,
+        "baseline_cpu_seconds": 0.39158099999998797,
+        "candidate_cpu_seconds": 0.42518400000000156,
+        "cpu_difference_seconds": 0.033603000000013594,
+        "difference_seconds": 0.0644050420000184,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.334833167,
+            "execution_seconds": 0.005905207999999995,
+            "artifact_hash_seconds": 0.0004090409999999989,
+            "launcher_seconds": 0.38062270899999995
+          },
+          "candidate": {
+            "cargo_seconds": 0.39246920799999996,
+            "execution_seconds": 0.006531750000000003,
+            "artifact_hash_seconds": 0.00043116599999998284,
+            "launcher_seconds": 0.442667792
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 1,
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "baseline_seconds": 0.44486429200000543,
+        "candidate_seconds": 0.43266308299999423,
+        "native_seconds": 0.6286825839999892,
+        "native_cpu_seconds": 0.7717039999999997,
+        "baseline_cpu_seconds": 0.40614400000001183,
+        "candidate_cpu_seconds": 0.416056999999995,
+        "cpu_difference_seconds": 0.009912999999983185,
+        "difference_seconds": -0.012201209000011204,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.370618417,
+            "execution_seconds": 0.005875083000000003,
+            "artifact_hash_seconds": 0.0004077920000000179,
+            "launcher_seconds": 0.418359625
+          },
+          "candidate": {
+            "cargo_seconds": 0.355011292,
+            "execution_seconds": 0.007092833999999992,
+            "artifact_hash_seconds": 0.0004170419999999786,
+            "launcher_seconds": 0.40532054199999995
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 2,
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "baseline_seconds": 0.44220295799999576,
+        "candidate_seconds": 0.4588967910000008,
+        "native_seconds": 0.6453395409999985,
+        "native_cpu_seconds": 0.7602649999999969,
+        "baseline_cpu_seconds": 0.42524300000002313,
+        "candidate_cpu_seconds": 0.4421259999999805,
+        "cpu_difference_seconds": 0.01688299999995735,
+        "difference_seconds": 0.016693833000005043,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.367365167,
+            "execution_seconds": 0.006371041999999993,
+            "artifact_hash_seconds": 0.0004079170000000354,
+            "launcher_seconds": 0.41506220800000004
+          },
+          "candidate": {
+            "cargo_seconds": 0.381543542,
+            "execution_seconds": 0.00626741599999997,
+            "artifact_hash_seconds": 0.0004338329999999946,
+            "launcher_seconds": 0.431605
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 3,
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "baseline_seconds": 0.46768191600000364,
+        "candidate_seconds": 0.474895042,
+        "native_seconds": 0.6798747920000068,
+        "native_cpu_seconds": 0.7509049999999959,
+        "baseline_cpu_seconds": 0.4509960000000106,
+        "candidate_cpu_seconds": 0.45448900000000236,
+        "cpu_difference_seconds": 0.0034929999999917527,
+        "difference_seconds": 0.00721312599999635,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.389095458,
+            "execution_seconds": 0.006305082999999989,
+            "artifact_hash_seconds": 0.0004394580000000037,
+            "launcher_seconds": 0.4394735
+          },
+          "candidate": {
+            "cargo_seconds": 0.39622925,
+            "execution_seconds": 0.006415999999999977,
+            "artifact_hash_seconds": 0.0004433329999999902,
+            "launcher_seconds": 0.448490458
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 4,
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "baseline_seconds": 0.4147402910000011,
+        "candidate_seconds": 0.43804283299999724,
+        "native_seconds": 0.6264372089999881,
+        "native_cpu_seconds": 0.7481249999999875,
+        "baseline_cpu_seconds": 0.39803399999997424,
+        "candidate_cpu_seconds": 0.4174210000000258,
+        "cpu_difference_seconds": 0.019387000000051557,
+        "difference_seconds": 0.02330254199999615,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.341168584,
+            "execution_seconds": 0.006327499999999986,
+            "artifact_hash_seconds": 0.00041845800000001043,
+            "launcher_seconds": 0.389263
+          },
+          "candidate": {
+            "cargo_seconds": 0.36439337499999996,
+            "execution_seconds": 0.006147958999999981,
+            "artifact_hash_seconds": 0.0004161669999999673,
+            "launcher_seconds": 0.412307333
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 5,
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "baseline_seconds": 0.4157768749999917,
+        "candidate_seconds": 0.42989029199999607,
+        "native_seconds": 0.6568268340000003,
+        "native_cpu_seconds": 0.7773799999999937,
+        "baseline_cpu_seconds": 0.39773700000000645,
+        "candidate_cpu_seconds": 0.41344100000001305,
+        "cpu_difference_seconds": 0.0157040000000066,
+        "difference_seconds": 0.014113417000004347,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.343063291,
+            "execution_seconds": 0.006186124999999987,
+            "artifact_hash_seconds": 0.0004543340000000007,
+            "launcher_seconds": 0.390120875
+          },
+          "candidate": {
+            "cargo_seconds": 0.354691708,
+            "execution_seconds": 0.006060208000000011,
+            "artifact_hash_seconds": 0.00040054200000000373,
+            "launcher_seconds": 0.40394637499999997
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 3,
+    "median_paired_difference_seconds": 0.00721312599999635,
+    "median_paired_cpu_difference_seconds": 0.009186999999968748,
+    "per_edit": [
+      {
+        "state": 1,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "f7d71737969d58c898dfa4df6d852e537b19e744ea7732ccd51824111b79e6c0",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.44486429200000543,
+            "median": 0.4554496659999927,
+            "max": 0.46384145899999396
+          },
+          "candidate_seconds": {
+            "min": 0.43266308299999423,
+            "median": 0.43674487500000225,
+            "max": 0.4784872500000006
+          },
+          "native_seconds": {
+            "min": 0.6286825839999892,
+            "median": 0.6453094170000071,
+            "max": 0.6481527079999978
+          },
+          "difference_seconds": {
+            "min": -0.01870479099999045,
+            "median": -0.012201209000011204,
+            "max": 0.014645791000006625
+          },
+          "cpu_difference_seconds": {
+            "min": -0.015220999999975504,
+            "median": 0.009912999999983185,
+            "max": 0.015213999999971861
+          }
+        }
+      },
+      {
+        "state": 2,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "4d6467ad0e9d20085b1b84dbe8de6e21e8ff6467402a0483e4b4be40d2b8965c",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.41983362499999544,
+            "median": 0.44185295799999835,
+            "max": 0.44220295799999576
+          },
+          "candidate_seconds": {
+            "min": 0.42666945900000997,
+            "median": 0.4482467079999992,
+            "max": 0.4588967910000008
+          },
+          "native_seconds": {
+            "min": 0.6453395409999985,
+            "median": 0.6552409579999932,
+            "max": 0.6972717919999951
+          },
+          "difference_seconds": {
+            "min": 0.006393750000000864,
+            "median": 0.006835834000014529,
+            "max": 0.016693833000005043
+          },
+          "cpu_difference_seconds": {
+            "min": 0.004230999999997209,
+            "median": 0.008082999999984963,
+            "max": 0.01688299999995735
+          }
+        }
+      },
+      {
+        "state": 3,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "f36a663fae707126804fa5cf844b10d23b89c945faaf18a8d5a9954a1f3e369b",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.4298675830000036,
+            "median": 0.4571052090000052,
+            "max": 0.46768191600000364
+          },
+          "candidate_seconds": {
+            "min": 0.43923787500000344,
+            "median": 0.4611959589999941,
+            "max": 0.474895042
+          },
+          "native_seconds": {
+            "min": 0.6611696669999958,
+            "median": 0.6704096250000049,
+            "max": 0.6798747920000068
+          },
+          "difference_seconds": {
+            "min": 0.00409074999998893,
+            "median": 0.00721312599999635,
+            "max": 0.009370291999999836
+          },
+          "cpu_difference_seconds": {
+            "min": 0.0034929999999917527,
+            "median": 0.0037810000000106925,
+            "max": 0.009186999999968748
+          }
+        }
+      },
+      {
+        "state": 4,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "4f0d6acc59c77b4b8ba2bcd44c58702d7541ca04a7c6b6244ad2ca0f9d043539",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.4147402910000011,
+            "median": 0.4423994170000043,
+            "max": 0.45928675000000396
+          },
+          "candidate_seconds": {
+            "min": 0.4327679999999958,
+            "median": 0.43804283299999724,
+            "max": 0.455527416999999
+          },
+          "native_seconds": {
+            "min": 0.6264372089999881,
+            "median": 0.6636200840000015,
+            "max": 0.694243415999992
+          },
+          "difference_seconds": {
+            "min": -0.02651875000000814,
+            "median": 0.0131279999999947,
+            "max": 0.02330254199999615
+          },
+          "cpu_difference_seconds": {
+            "min": -0.02842799999998391,
+            "median": 0.012471999999952743,
+            "max": 0.019387000000051557
+          }
+        }
+      },
+      {
+        "state": 5,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "bab3c3fa9a74a48d19d8bd46b403d720725010ed8f8cb124fe3717e48f630407",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.40592483299998605,
+            "median": 0.4157768749999917,
+            "max": 0.4557104590000023
+          },
+          "candidate_seconds": {
+            "min": 0.42989029199999607,
+            "median": 0.4599288329999922,
+            "max": 0.47032987500000445
+          },
+          "native_seconds": {
+            "min": 0.6332664579999943,
+            "median": 0.6568268340000003,
+            "max": 0.683263249999996
+          },
+          "difference_seconds": {
+            "min": 0.004218373999989922,
+            "median": 0.014113417000004347,
+            "max": 0.0644050420000184
+          },
+          "cpu_difference_seconds": {
+            "min": 0.0019890000000089003,
+            "median": 0.0157040000000066,
+            "max": 0.033603000000013594
+          }
+        }
+      }
+    ]
+  }
+}
