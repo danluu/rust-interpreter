@@ -8,6 +8,14 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+The register-width feasibility diagnostic passes 337 Rust tests/profile and
+rejects the packing candidate before emission: only 7,628 additional token
+native reads out of 10.45 billion, and 900 out of 3.44 billion folded reads, on
+exact historical profiled artifacts. Current restored suite artifacts also pass
+the static census. Generated assignments remain unchanged. Next test a larger
+local cache using otherwise idle native registers, with a fixed 10% saved-runtime
+screen before real-edit promotion. [Decision](results/jit-register-width-weighted-01/assessment.md).
+
 The optional prepared JIT and isolated Cargo runner are published on main.
 All 320 Rust tests per profile (one ignored), 36 initial Python tests and 96 real
 source-edit/check/restoration commands pass. Across five distinct edits each,

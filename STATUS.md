@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Automatic filtered suites are qualified: 329 Rust tests per profile, 48 Python tests, 44 fixture commands and 96 real edit/check commands. Automatic and explicit bytecode and native outcomes match across 24 source states. The twelve-test token module takes 8.27 s per edited custom command versus 3.06 s native. Next measure conservative narrower persistent-register assignment feasibility before implementing a runtime candidate.
+**Next:** Width packing rejected before emission: negligible dynamic traffic coverage; 337 Rust tests/profile pass. Next test idle persistent-bank registers as a larger local cache in resumable regions, qualify correctness, then a fixed six-pair 10% runtime screen before actual edited commands.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

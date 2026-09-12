@@ -4,18 +4,16 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Measure narrower persistent-register assignment feasibility.** Automatic
-   filtering is qualified by 329 Rust tests/profile, 48 Python tests, 44 fixture
-   commands and 96 actual project commands. All 24 automatic/explicit source
-   pairs produce identical bytecode and match native assertions. The larger
-   twelve-test token module takes about 8.27 s per edited custom command versus
-   3.06 s native; automatic name selection adds little to that gap. The JIT currently
-   dedicates two native registers to every retained u128 value. Determine whether
-   conservative proof of zero upper halves would allow useful additional values
-   in the same register bank. Start with bounded static/profile coverage, not a
-   performance claim or another run of a parked candidate.
-   [Qualification](results/filtered-suites-qualification-01/assessment.md),
-   [feasibility plan](benchmarks/experiments/jit-register-width/PLAN.md).
+1. **Test unused native registers as a larger local value cache.** The bounded
+   width-packing census passes 337 Rust tests/profile and finds negligible
+   additional dynamic coverage: 7,628/10.45 billion token native reads and
+   900/3.44 billion folded reads. No packing emitter or timing screen follows.
+   The next candidate targets short-lived values: use otherwise idle x23–x28
+   registers alongside the two existing local cache registers, preserving global
+   assignments and the resumable ABI. Qualify correctness, then use the fixed
+   six-pair 10% runtime screen before real source-edit/build/test qualification.
+   [Decision](results/jit-register-width-weighted-01/assessment.md),
+   [cache plan](benchmarks/experiments/jit-region-cache/PLAN.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%

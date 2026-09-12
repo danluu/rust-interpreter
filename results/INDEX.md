@@ -72,6 +72,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | suite-limits | [prepared-limits-qualification-01/summary.json](prepared-limits-qualification-01/summary.json) |
 | test-discovery | [test-discovery-qualification-01/summary.json](test-discovery-qualification-01/summary.json) |
 | filtered-suites | [filtered-suites-qualification-01/summary.json](filtered-suites-qualification-01/summary.json) |
+| register-width | [jit-register-width-weighted-01/summary.json](jit-register-width-weighted-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
