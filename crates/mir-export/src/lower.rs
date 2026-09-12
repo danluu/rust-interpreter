@@ -161,6 +161,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
               inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool,
               allocation_trace: bool) -> Result<Exported> {
     let mut timings = crate::export_timings::Timings::new("lower");
+    let function_dependencies = crate::function_dependencies::enabled()?;
+    if function_dependencies && !tcx.dep_graph.is_fully_enabled() {
+        return Err("function dependency observation requires an incremental dependency graph".into());
+    }
     let mut function_costs = crate::function_costs::enabled()?.then(crate::function_costs::Costs::default);
     if allocation_trace && demand {
         return Err("allocation tracing requires ordinary strict frontend checking".into());
@@ -285,15 +289,20 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             "definition": tcx.def_path_str(instance.def_id()),
             "instance_kind": format!("{:?}", instance.def),
             "generic_arguments": format!("{:?}", instance.args)}))?;
-        let started = function_costs.as_ref().map(|_| std::time::Instant::now());
-        let lower = Lower::new(&mut exporter, instance).map_err(|e| format!("{name}: {e}"))?;
-        let prepared = started.map(|_| std::time::Instant::now());
-        let mir_locals = lower.body.local_decls.len();
-        let mir_blocks = lower.body.basic_blocks.len();
-        let (f, bindings) = lower.lower().map_err(|e| format!("{name}: {e}"))?;
-        if let (Some(costs), Some(started), Some(prepared)) = (&mut function_costs, started, prepared) {
-            let lowered = prepared.elapsed();
-            costs.record(index, &f, prepared.duration_since(started), lowered, mir_locals, mir_blocks, bindings)?;
+        let (lowered, dependency) = crate::function_dependencies::observe(tcx, instance, function_dependencies, || {
+            let started = function_costs.as_ref().map(|_| std::time::Instant::now());
+            let lower = Lower::new(&mut exporter, instance).map_err(|e| format!("{name}: {e}"))?;
+            let prepared = started.map(|_| std::time::Instant::now());
+            let mir_locals = lower.body.local_decls.len();
+            let mir_blocks = lower.body.basic_blocks.len();
+            let (f, bindings) = lower.lower().map_err(|e| format!("{name}: {e}"))?;
+            let elapsed = prepared.map(|p| p.elapsed()).unwrap_or_default();
+            let prepare = started.zip(prepared).map(|(s, p)| p.duration_since(s)).unwrap_or_default();
+            Ok::<_, String>((f, bindings, prepare, elapsed, mir_locals, mir_blocks))
+        });
+        let (f, bindings, prepare, elapsed, mir_locals, mir_blocks) = lowered?;
+        if let Some(costs) = &mut function_costs {
+            costs.record(index, &f, prepare, elapsed, mir_locals, mir_blocks, bindings, dependency)?;
         }
         if exporter.instances.len() > 10_000 {
             return Err("function expansion limit reached".into());

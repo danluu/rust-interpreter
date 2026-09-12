@@ -16,6 +16,7 @@ mod wrapper_route;
 mod export_timings;
 mod function_costs;
 mod typed_relocations;
+mod function_dependencies;
 
 use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface;
@@ -142,7 +143,7 @@ impl Callbacks for Export {
             // execution graph changes, even if its Rust source is unchanged.
             // Library dependencies delegated to ordinary rustc do not record
             // these inputs, so their checked artifacts can be shared.
-            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS"] {
+            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES"] {
                 sess.env_depinfo.borrow_mut().insert((
                     rustc_span::Symbol::intern(key),
                     std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
@@ -321,6 +322,14 @@ fn main() {
     });
     if function_costs && (demand || audit_selection.is_some()) {
         eprintln!("function costs require strict checking of one selected execution graph");
+        std::process::exit(2);
+    }
+    let function_dependencies = function_dependencies::enabled().unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    if function_dependencies && !function_costs {
+        eprintln!("function dependency observation requires function costs and strict checking");
         std::process::exit(2);
     }
     let allocation_trace = match std::env::var_os("RUST_INTERP_ALLOCATION_TRACE") {
