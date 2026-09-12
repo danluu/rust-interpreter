@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Complete the remaining eight library workflow gates for fixed frame clearing: basic pgrust passes, es8 confirmation saves 8.37% wall and 8.48% CPU, and broad correctness passes. Large native controls and reusable export graphs remain open.
+**Next:** Complete seven remaining library gates for fixed frame clearing: pgrust and folded fre pass; es8 confirmation saves 8.37% wall and 8.48% CPU. Then qualify composition with the newer main interpreter frame loop.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
