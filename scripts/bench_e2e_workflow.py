@@ -4,6 +4,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import statistics
@@ -14,14 +15,72 @@ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require
 
 
 from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
-from workflow_measurements import child_usage, child_cpu_since, initial_modes, per_edit_spread, sample_path, source_states
+from workflow_measurements import child_usage, child_cpu_since, initial_modes, mode_order, per_edit_spread, sample_path, source_states
 from workflow_controls import native_command, native_environment, exporter_seconds
 from workflow_io import SourceEdit, capture, require_space, write_json
 from workflow_case_file import load as load_case_file, source_file
 from workflow_jobs import UniqueJobCount, resolve_build_jobs
-
-
+from compare_saved_runtime import acquire_lock, lock_wait_seconds
 from suite_reports import guest_test_failure, read_report, validate_report
+
+
+def build_metrics(launch):
+    """Validate the measured pre-VM boundary; never infer it by subtraction."""
+    def number(value):
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+            raise ValueError('build timing must be finite and nonnegative')
+        return value
+
+    def cpu(value):
+        fields = {key: number(value[key]) for key in ['user_seconds', 'system_seconds', 'total_seconds']}
+        if not math.isclose(fields['total_seconds'], fields['user_seconds'] + fields['system_seconds'], rel_tol=1e-9, abs_tol=1e-8):
+            raise ValueError('build CPU total differs from user plus system')
+        return fields
+
+    try:
+        wall = number(launch['build_to_ready_seconds'])
+        build_cpu = cpu(launch['build_to_ready_cpu'])
+        own = cpu(launch['build_to_ready_cpu']['self'])
+        children = cpu(launch['build_to_ready_cpu']['children'])
+        cargo = cpu(launch['cargo_cpu'])
+        for key in build_cpu:
+            if not math.isclose(build_cpu[key], own[key] + children[key], rel_tol=1e-9, abs_tol=1e-8):
+                raise ValueError('build CPU total differs from self plus children')
+            if cargo[key] > children[key] + 1e-8:
+                raise ValueError('Cargo CPU exceeds pre-VM child CPU')
+        if wall <= 0 or build_cpu['total_seconds'] <= 0:
+            raise ValueError('build-to-ready measurement must be positive')
+        if wall > number(launch['launcher_seconds']) or number(launch['cargo_seconds']) > wall:
+            raise ValueError('build-to-ready wall is outside its launcher/Cargo bounds')
+        if wall + number(launch['execution_seconds']) > launch['launcher_seconds'] + 1e-8:
+            raise ValueError('build-to-ready and execution stages overlap')
+        return dict(build_to_ready_seconds=wall, build_to_ready_cpu_seconds=build_cpu['total_seconds'],
+                    cargo_cpu_seconds=cargo['total_seconds'])
+    except (KeyError, TypeError) as error:
+        raise ValueError('missing or malformed build-to-ready timing') from error
+
+
+def check_aa_settings(configs, jobs):
+    if set(configs) != {'baseline', 'candidate'} or configs['baseline'] != configs['candidate'] or jobs['baseline'] != jobs['candidate']:
+        raise ValueError('A/A control requires identical tools, guest/runtime settings, and Cargo jobs')
+
+
+def cache_workspace(command, artifact, scope, namespace):
+    """Bind the explicit namespace to a distinct actual Cargo workspace."""
+    if command.count('--cache-namespace') != 1:
+        raise ValueError('expected exactly one cache namespace')
+    index = command.index('--cache-namespace')
+    if index + 1 == len(command) or command[index + 1] != namespace:
+        raise ValueError('cache namespace differs from its recorded mode')
+    relative = Path(artifact).resolve().relative_to(scope.resolve())
+    if len(relative.parts) < 3 or relative.parts[1] != 'target':
+        raise ValueError('executed artifact is outside a scoped Cargo target')
+    return str(scope.resolve() / relative.parts[0])
+
+
+def restored_sample(cycles, modes, paired, original):
+    return dict(cycle=cycles, state=-2, phase='restored-original', label='restored-original',
+                source=original, modes=mode_order(modes, cycles, -2, paired))
 
 
 def main():
@@ -29,6 +88,7 @@ def main():
         raise RuntimeError('benchmark validation uses assertions; run Python without -O')
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id',default='e2e-workflow-'+str(time.time_ns()))
+    parser.add_argument('--lock-wait-seconds',type=lock_wait_seconds,default=0,help='bounded wait for the shared benchmark lock; default fails immediately')
     parser.add_argument('--project',choices=[*WORKFLOWS,'rg-aot'],default='fre')
     parser.add_argument('--workflow',default='default',help='additional named workload within a project')
     parser.add_argument('--case-file',type=Path,help='bounded public workflow JSON inside this workspace; mutually exclusive with a named workflow')
@@ -37,7 +97,6 @@ def main():
     parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
     parser.add_argument('--initial-mode-order',type=lambda value:value.split(','),help='comma-separated permutation of the three modes; rotates cold-run order without changing mode settings')
     parser.add_argument('--minimum-free-gib',type=int,default=8,help='refuse to start a command below this free-space threshold; not a disk reservation')
-    parser.add_argument('--lock-wait-seconds',type=float,default=0,help='bounded wait for the shared benchmark lock (0..45)')
     parser.add_argument('--jobs',type=int,action=UniqueJobCount,default=4,help='default Cargo jobs for custom engines and native (1..256)')
     parser.add_argument('--native-jobs',type=int,action=UniqueJobCount,help='override native/check Cargo jobs (1..256)')
     parser.add_argument('--baseline-jobs',type=int,action=UniqueJobCount,help='override baseline Cargo jobs in a paired comparison (1..256)')
@@ -61,6 +120,9 @@ def main():
     parser.add_argument('--run-try-callbacks',action='store_true',help='execute normal-return try callbacks; actual unwinding fails; requires --trap-unsupported-calls')
     parser.add_argument('--baseline-tool-key',help='compare an installed baseline with the candidate build on every edit, alongside native')
     parser.add_argument('--candidate-tool-key',help='use a retained candidate in a paired comparison; defaults to the current build')
+    parser.add_argument('--aa-control',action='store_true',help='require identical paired tools/settings in two isolated caches')
+    parser.add_argument('--build-metrics',action='store_true',help='require measured build-to-ready wall and CPU for batched paired comparisons')
+    parser.add_argument('--verify-restoration',action='store_true',help='build and execute the restored original after the source-edit context exits')
     parser.add_argument('--candidate-jit-native-call-stubs',action='store_true',help='also link candidate Calls into ordinary regions; requires --candidate-jit-native-calls')
     parser.add_argument('--candidate-jit-resumable-calls',action='store_true',help='enable resumable Calls in the paired JIT candidate')
     parser.add_argument('--candidate-jit-persistent-registers',action='store_true',help='enable persistent native registers in the paired JIT candidate')
@@ -85,7 +147,6 @@ def main():
             parser.error('--'+option.replace('_','-')+' requires a paired JIT comparison')
     if not 1<=args.cycles<=30:parser.error('cycles must be in 1..30')
     if not 1<=args.minimum_free_gib<=1024:parser.error('minimum-free-gib must be in 1..1024')
-    if not 0<=args.lock_wait_seconds<=45:parser.error('lock-wait-seconds must be in 0..45')
     if not 1<=args.jobs<=256 or (args.native_jobs is not None and not 1<=args.native_jobs<=256):parser.error('jobs must be in 1..256')
     if args.native_test_threads!='default' and (not args.native_test_threads.isdigit() or not 1<=int(args.native_test_threads)<=256):parser.error('native-test-threads must be default or in 1..256')
     if any(not flag or '\x1f' in flag or '\x00' in flag for flag in args.native_rustflag):parser.error('native rustflags must be nonempty arguments without NUL or unit separators')
@@ -94,6 +155,10 @@ def main():
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     if args.candidate_tool_key is not None and args.baseline_tool_key is None:
         parser.error('--candidate-tool-key requires --baseline-tool-key')
+    if args.aa_control and (args.baseline_tool_key is None or not args.batch):parser.error('--aa-control requires --baseline-tool-key and --batch')
+    if args.build_metrics and (args.baseline_tool_key is None or not args.batch):parser.error('--build-metrics requires --baseline-tool-key and --batch')
+    if args.verify_restoration and (args.baseline_tool_key is None or not args.batch):parser.error('--verify-restoration requires --baseline-tool-key and --batch')
+    if args.aa_control and args.compare_isolated_batches:parser.error('A/A control cannot compare different isolated-batch settings')
     if args.compare_isolated_batches:
         if (not args.batch or args.baseline_tool_key is None or args.comparison_engine=='interpreter'
                 or not args.baseline_jit_resumable_calls or not args.candidate_jit_resumable_calls
@@ -144,20 +209,16 @@ def main():
     tests=case['tests'];edits=case['edits'];package=case['package']
     if args.compare_isolated_batches and len(tests)<2:parser.error('isolated batch comparison requires at least two tests')
     lock=(ROOT/'.work/benchmark.lock').open('a')
-    deadline=time.monotonic()+args.lock_wait_seconds
-    while True:
-        try:
-            fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            break
-        except BlockingIOError:
-            if time.monotonic()>=deadline:raise
-            time.sleep(.1)
+    if args.lock_wait_seconds:
+        acquire_lock(lock,args.lock_wait_seconds)
+    else:
+        fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     tools,key=installed_tools(args.candidate_tool_key) if args.candidate_tool_key is not None else checked_tools()
     modes=['native','interpreter','jit']
     mode_tools={mode:dict(engine=mode,tool_key=key,directory=tools) for mode in modes[1:]}
     if args.baseline_tool_key is not None:
         baseline,baseline_key=installed_tools(args.baseline_tool_key)
-        if (baseline_key==key and baseline_guest_flags==guest_flags and
+        if (not args.aa_control and baseline_key==key and baseline_guest_flags==guest_flags and
             args.baseline_inline_leaves==args.inline_leaves and
             not args.compare_isolated_batches and
             resolved_jobs['baseline']==resolved_jobs['candidate'] and
@@ -176,6 +237,12 @@ def main():
         config['jit_native_call_stubs']=args.candidate_jit_native_call_stubs and mode=='candidate'
         config['jit_native_calls']=args.candidate_jit_native_calls and mode=='candidate'
         config['guest_flags']=baseline_guest_flags if mode=='baseline' else guest_flags
+    if args.aa_control:
+        try:check_aa_settings(mode_tools,resolved_jobs)
+        except ValueError as error:parser.error(str(error))
+    controlled_caches=args.aa_control or args.build_metrics
+    cache_namespaces={mode:args.run_id+':'+mode for mode in mode_tools}
+    cache_workspaces={}
     if args.trap_unsupported_calls:
         for config in mode_tools.values():require_export_option(config['directory'],config['tool_key'],'trap-unsupported-calls')
     if args.run_try_callbacks:
@@ -200,7 +267,8 @@ def main():
     work=ROOT/'.work/runs'/args.run_id
     work.mkdir(parents=True)
     script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
-    script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py']
+    script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
+                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py']
     if case_proof is not None:
         payload=case_path.read_bytes()
         if hashlib.sha256(payload).hexdigest()!=case_proof['sha256']:raise RuntimeError('case file changed during preparation')
@@ -271,7 +339,7 @@ def main():
             config=mode_tools[mode]
             base=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',manifest,
                   '--package',package,'--jobs',str(resolved_jobs[mode]),'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
-                  '--cache-namespace',args.run_id+':'+mode]
+                  '--cache-namespace',cache_namespaces[mode]]
             if args.baseline_tool_key is not None:base+=['--tool-key',config['tool_key']]
             if args.allocation_limit is not None:base+=['--allocation-limit',str(args.allocation_limit)]
             if config['inline_leaves']:base+=['--inline-leaves']
@@ -310,14 +378,14 @@ def main():
                     cpu_seconds=sum(c['cpu']['total_seconds'] for c in calls),previous_source_sha256=previous_source,
                     source_sha256=hashlib.sha256(file.read_bytes()).hexdigest(),
                     calls=calls,load=os.getloadavg())
-        if args.baseline_tool_key is not None or args.trap_unsupported_calls:
+        if args.baseline_tool_key is not None or args.trap_unsupported_calls or args.verify_restoration:
             record.update(engine=None if mode=='native' else mode_tools[mode]['engine'],
                           tool_key=None if mode=='native' else mode_tools[mode]['tool_key'],artifacts=snapshots)
         records.append(record)
         # Preserve command evidence even if provenance validation or copying
         # below fails. Source restoration still runs in the outer finally.
         write_json(work/'records.json',records)
-        if (args.baseline_tool_key is not None or args.trap_unsupported_calls) and mode!='native':
+        if (args.baseline_tool_key is not None or args.trap_unsupported_calls or args.verify_restoration) and mode!='native':
             # Snapshot the sidecar actually selected and executed by the
             # launcher. Diagnostic copying is outside the command timer.
             for index,call in enumerate(calls):
@@ -335,6 +403,11 @@ def main():
                 if args.allocation_limit is not None:assert launch['allocation_limit']==args.allocation_limit
                 artifact=Path(launch['artifact_path']).resolve()
                 assert artifact.is_relative_to(ROOT/'.work/interpreter-workspaces'/config['tool_key'])
+                if args.build_metrics:build_metrics(launch)
+                if controlled_caches:
+                    workspace=cache_workspace(call['command'],artifact,ROOT/'.work/interpreter-workspaces'/config['tool_key'],cache_namespaces[mode])
+                    assert cache_workspaces.setdefault(mode,workspace)==workspace,'mode changed its Cargo workspace'
+                    assert all(other==mode or path!=workspace for other,path in cache_workspaces.items()),'comparison modes shared a Cargo cache'
                 assert 0<launch['artifact_bytes']<=64*1024*1024
                 payload=artifact.read_bytes()
                 assert len(payload)==launch['artifact_bytes'] and hashlib.sha256(payload).hexdigest()==launch['artifact_sha256']
@@ -353,6 +426,9 @@ def main():
                     catalog_snapshot=Path(str(snapshot)+'.entries.json')
                     with catalog_snapshot.open('xb') as destination:destination.write(payload)
                     item['entry_catalog']=dict(path=str(catalog_snapshot.relative_to(ROOT)),sha256=digest)
+            if args.build_metrics:
+                measured=[build_metrics(call['launch']) for call in calls]
+                record.update({field:sum(row[field] for row in measured) for field in measured[0]})
         if args.cargo_timings:
             reports=[];record['cargo_timings']=reports
             for index,call in enumerate(calls):
@@ -407,6 +483,9 @@ def main():
             elif suite_path is None:
                 assert guest_test_failure(calls[-1]['stderr']),text
         assert any(('Compiling ' if mode=='native' else 'Checking ')+package in c['stderr'] for c in calls),'edited crate did not compile'
+        if args.build_metrics or args.verify_restoration or args.aa_control:
+            prefix=('Compiling ' if mode=='native' else 'Checking ')+package+' '
+            assert any(line.strip().startswith(prefix) for call in calls for line in call['stderr'].splitlines()),'controlled source was not freshly compiled'
         assert record['source_sha256']==source_digest,'source changed during the command'
         built_sources[mode]=source_digest
         print(mode,cycle,state,label,round(record['seconds'],3),flush=True)
@@ -434,12 +513,34 @@ def main():
                 paired=[next(r for r in records if r['mode']==mode and r['cycle']==cycle and r['state']==state) for mode in ['baseline','candidate']]
                 assert paired[0]['source_sha256']==paired[1]['source_sha256']
                 same=[a['sha256'] for a in paired[0]['artifacts']]==[a['sha256'] for a in paired[1]['artifacts']]
-                if args.expect_identical_bytecode:assert same,'baseline and candidate exported different bytecode; cannot isolate the runtime change'
+                if args.expect_identical_bytecode or args.aa_control:assert same,'baseline and candidate exported different bytecode; cannot isolate the runtime change'
             elif args.trap_unsupported_calls:
                 custom=[next(r for r in records if r['mode']==mode and r['cycle']==cycle and r['state']==state) for mode in ['interpreter','jit']]
                 assert custom[0]['source_sha256']==custom[1]['source_sha256']
                 assert [a['sha256'] for a in custom[0]['artifacts']]==[a['sha256'] for a in custom[1]['artifacts']],'custom engines exported different artifacts'
             if args.check_floor:check_reference(sample)
+    if args.verify_restoration:
+        # Exercise the actual SourceEdit.__exit__ restoration, including its
+        # fresh mtime, before declaring the workflow complete.
+        assert file.read_bytes()==original,'original source restoration failed'
+        previous=hashlib.sha256(current).hexdigest()
+        current=original
+        sample=restored_sample(args.cycles,scheduled_modes,args.baseline_tool_key is not None,original)
+        original_digest=hashlib.sha256(original).hexdigest()
+        assert previous!=original_digest,'final restoration did not change source'
+        orders.append({k:sample[k] for k in ['cycle','state','phase','modes']})
+        transitions.append(dict(cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],
+            previous_source_sha256=previous,source_sha256=original_digest,content_changed=True,
+            previous_mode_sources=dict(built_sources)))
+        write_json(work/'source-transitions.json',transitions)
+        for mode in sample['modes']:
+            assert file.read_bytes()==original,'restored source changed outside this benchmark'
+            invoke(mode,sample)
+        if args.baseline_tool_key is not None or args.trap_unsupported_calls:
+            restored=[r for r in records if r['phase']=='restored-original' and r['mode']!='native']
+            if args.expect_identical_bytecode or args.aa_control or args.trap_unsupported_calls and args.baseline_tool_key is None:
+                assert [a['sha256'] for a in restored[0]['artifacts']]==[a['sha256'] for a in restored[1]['artifacts']],'restored paired bytecode differs'
+        if args.check_floor:check_reference(sample)
     assert all(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest for path,digest in frozen_scripts.items()),'benchmark scripts changed during the run'
     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
     result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,initial_mode_order=scheduled_modes,
@@ -472,6 +573,17 @@ def main():
                 vm_sha256=hashlib.sha256((tools/'rust-interp-vm').read_bytes()).hexdigest(),
                 exporter_sha256=hashlib.sha256((tools/'rust-interp-mir-export').read_bytes()).hexdigest(),
                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
+    if args.aa_control:result['aa_control']=True
+    if args.build_metrics or args.verify_restoration or args.aa_control:result['build_controls']=dict(package=package)
+    if controlled_caches:result.update(cache_namespaces=cache_namespaces,cache_workspaces=cache_workspaces)
+    if args.verify_restoration:
+        result['restored_original']=dict(verified=True,source_sha256=hashlib.sha256(original).hexdigest(),
+            cycle=args.cycles,state=-2,commands=len(modes),excluded_from_edited_medians=True)
+    if args.build_metrics:
+        result['build_metrics']=dict(boundary='launcher start to validated artifact ready, before VM invocation',
+            cpu_accounting='launcher self plus waited-for child CPU at the pre-VM boundary; user plus system',
+            median_seconds={m:statistics.median(r['build_to_ready_seconds'] for r in records if r['mode']==m and r['state']>0) for m in mode_tools},
+            median_cpu_seconds={m:statistics.median(r['build_to_ready_cpu_seconds'] for r in records if r['mode']==m and r['state']>0) for m in mode_tools})
     if case_proof is not None:result['case_file']=case_proof
     result['exporter_seconds']={}
     for mode in modes:
@@ -502,6 +614,12 @@ def main():
                                   cpu_difference_seconds=after['cpu_seconds']-before['cpu_seconds'],
                                   difference_seconds=after['seconds']-before['seconds'],stage_seconds=stages,
                                   identical_bytecode=[a['sha256'] for a in before['artifacts']]==[a['sha256'] for a in after['artifacts']]))
+                if args.build_metrics:
+                    for mode,row in [('baseline',before),('candidate',after)]:
+                        for field in ['build_to_ready_seconds','build_to_ready_cpu_seconds','cargo_cpu_seconds']:
+                            pairs[-1][mode+'_'+field]=row[field]
+                    pairs[-1].update(build_to_ready_difference_seconds=after['build_to_ready_seconds']-before['build_to_ready_seconds'],
+                        build_to_ready_cpu_difference_seconds=after['build_to_ready_cpu_seconds']-before['build_to_ready_cpu_seconds'])
         result['comparison']=dict(engine=args.comparison_engine or 'jit',baseline_tool_key=args.baseline_tool_key,candidate_tool_key=key,
                                   identical_bytecode_required=args.expect_identical_bytecode,pairs=pairs,
                                   candidate_pair_wins=sum(p['difference_seconds']<0 for p in pairs),
@@ -517,6 +635,16 @@ def main():
     report+=('Custom engines use one command.\n\n' if args.batch else 'Custom engines use a serial launcher command per test.\n\n')
     if args.cargo_timings:
         report+='Every mode enables Cargo unit timing reports. Report generation is included in the command time; snapshot copying follows the timer. Snapshot paths and hashes are recorded with each sample.\n\n'
+    if args.aa_control:
+        report+='This A/A control uses identical tools and settings with distinct recorded cache namespaces and Cargo workspaces. It measures control variability, not an optimization.\n\n'
+    if args.verify_restoration:
+        report+='After source restoration completed, every mode freshly compiled and executed the original tests. These final controls are excluded from edited medians and pairs.\n\n'
+    if args.build_metrics:
+        report+='Build-to-ready measurements end after the launcher validates the selected artifact and before VM invocation. CPU includes launcher self and its waited-for build children; no VM execution time is subtracted.\n\n'
+        report+='| Mode | Median edited build-to-ready wall, s | Median edited build-to-ready CPU, s |\n|---|---:|---:|\n'
+        for mode in mode_tools:
+            report+=f'| {mode} | {result["build_metrics"]["median_seconds"][mode]:.3f} | {result["build_metrics"]["median_cpu_seconds"][mode]:.3f} |\n'
+        report+='\n'
     if args.baseline_tool_key is not None:
         comparison=result['comparison']
         report+=f"Baseline and candidate use `{comparison['engine']}` with separate Cargo caches. The installed builds are pinned by their recorded keys and binary hashes; source edits and selected tests match within every pair. Each executed artifact is retained. Snapshot copying occurs after the command timer; artifact hashing inside the launcher is timed and recorded.\n\n"
