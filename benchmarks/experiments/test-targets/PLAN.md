@@ -18,3 +18,18 @@ Then qualify original fre integration assertions on a fresh explicitly recorded
 Cargo target/cache. A target-selection fixture is correctness evidence only;
 real edit-to-test commands must guide any latency claim. Keep the original
 unfiltered native doc-test diagnostic failure visible.
+
+Shared-cache qualification: keep all integration targets for one package under
+one Cargo dependency cache. Cargo separates their metadata units; the launcher
+still binds execution to target kind/name and serializes selection/publication.
+A/B/A and strict-error fixture checks must verify one shared cache and distinct
+sidecars; the existing library cache stays unchanged.
+
+Real qualification runs all ten fre integration targets (52 original assertions)
+with 18 jobs, native default threads and O0/incremental. Custom batches use the
+retained std-MIR/inlining/resumable/persistent settings, a 100B instruction limit
+per target and 150K live allocations. Retain every executed artifact using APFS
+COW copies. This is original-source coverage; follow it with real production
+edits before making latency claims. The initial cache is admitted from measured
+historical size; later targets require at least 128MiB above the 8GiB floor.
+Report pending targets if admission stops; never silently omit them.

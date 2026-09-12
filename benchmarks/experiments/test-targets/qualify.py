@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Exercise actual Cargo routing and strict rejection with retained guest tools."""
+import argparse
 import fcntl
 import json
 import os
@@ -20,6 +21,11 @@ RUN = 'integration-targets-fixture-01'
 
 
 def main():
+    global RUN
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--attempt', type=int, choices=range(1, 10), default=1)
+    args = parser.parse_args()
+    RUN = f'integration-targets-fixture-{args.attempt:02}'
     work = ROOT / '.work' / RUN
     work.mkdir(exist_ok=False)
     status = dict(status='preflight', pid=os.getpid(), parent_pid=os.getppid(), started_at=time.time())
@@ -72,6 +78,10 @@ def main():
                 require((row['returncode'] == 0) == success, 'unexpected assertion outcome: ' + label)
                 if engine is not None and success:
                     require(stdout.strip() == '0', 'wrong guest result')
+                if engine is not None and not diagnostic:
+                    launches = [json.loads(line.split(': ', 1)[1]) for line in stderr.splitlines() if line.startswith('rust-interp-launch: ')]
+                    require(len(launches) == 1, 'missing executed artifact identity')
+                    row['launch'] = launches[0]
                 if engine is None and success:
                     require('1 passed; 0 failed' in stdout, 'native test did not run')
                 if diagnostic:
@@ -100,11 +110,19 @@ def main():
                 call('restored-native', 'target-a', True)
                 call('restored-jit', 'target-a', True, 'jit')
             require(lib.read_bytes() == original and all(sha(ROOT / p) == h for p, h in frozen.items()), 'source or inputs changed')
+            executed = {r['label']: r for r in records if 'launch' in r}
+            artifacts = {name: Path(r['launch']['artifact_path']) for name, r in executed.items()}
+            cache = lambda p: next(parent for parent in p.parents if parent.name == 'target').parent
+            shared = cache(artifacts['jit-a']) == cache(artifacts['jit-b'])
+            require(shared and artifacts['jit-a'] != artifacts['jit-b'] and
+                artifacts['jit-a-after-b'] == artifacts['jit-a'], 'target sidecar isolation or cache sharing differs')
+            require(cache(artifacts['jit-lib']) != cache(artifacts['jit-a']), 'existing library cache changed')
             out = ROOT / 'results' / RUN
             out.mkdir(exist_ok=False)
             write(out / 'summary.json', dict(status='passed', raw=str(work.relative_to(ROOT)), commands=len(records),
                 source_commit=commit, tool_key=TOOL, source_restored=True, native_controls=sum(r['engine']=='native' for r in records),
                 custom_commands=sum(r['engine']!='native' for r in records),
+                integration_dependency_cache_shared=shared, target_sidecars_distinct=True, library_cache_unchanged=True,
                 target_switches_and_library_route=True, strict_uncalled_type_and_borrow_errors=True,
                 records_sha256=sha(work / 'records.json'), frozen=frozen,
                 note='Actual isolated Cargo integration-target routing, native/interpreter/custom-JIT assertions and stale-output rejection. No guest compiler or runtime changed; this fixture is not a real-project performance result.'))
