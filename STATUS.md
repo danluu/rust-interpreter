@@ -51,11 +51,11 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 [Source restoration now refreshes modification time](results/source-restore-after-01/assessment.md) so Cargo rebuilds the restored original. Actual Cargo regressions and 18 Python tests pass. Remaining original-source bytecode differences keep export determinism open.
 
-**Fixed frame clearing: experimental, confirmation passed.** Three further es8 edit histories improve paired complete-command wall by 8.37% and CPU by 8.48%, excluding the pilot. Per-history wall gains range from 7.10% to 9.07%; the candidate remains roughly 2.5× native. All 47,004 native differential commands, 245 TLS checks, 382 fre bodies (seven ignored) and 52 integration assertions pass. [Library retention gates](results/fixed-frame-clear-libraries-01/summary.json): 8 of 9 pass. Final composition with the newer main interpreter frame loop remains unqualified. [Confirmation](results/fixed-frame-clear-confirm-02/assessment.md).
+**Fixed frame clearing: parked.** The fresh combined es8 confirmation improves complete-command wall by 7.39% and CPU by 7.61%, missing the required 8% wall gate. All 96 commands and 15 edited pairs pass correctness and restoration controls. The earlier isolated-source confirmation passed at 8.37% wall; 8 of 9 original library gates passed. The remaining comparisons are canceled. Broad combined correctness passes 300 debug/release tests (one ignored), 47,004 native differential commands, 245 TLS checks, 382 fre bodies (seven ignored) and 52 integration assertions. The runtime stays off main. [Decision](results/fixed-frame-clear-combined-01/assessment.md).
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Confirm combined es8 edit latency. Two-stream entropy replay resolves the token instruction mismatch; complete controlled runtime and primary edit comparisons. Original Nushell type-relations still awaits storage.
+**Next:** Investigate exporter graph reuse from the measured 691ms token lowering cost. Fixed frame clearing is parked after the combined es8 confirmation missed its 8% gate; remaining candidate comparisons are canceled.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

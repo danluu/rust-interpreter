@@ -12,24 +12,23 @@ The user's current priority is build-time improvement. The in-flight runtime wor
 
 Inlining the complete checked scalar-memory path is now qualified: pgrust improves 6.7% and four Fre cases improve 2.1–5.0% relative to the frame-loop VM `f33b40d`. Other public cases stay within regression guards in both engines. All 297 workspace tests pass in debug and release (one ignored); all 588 comparison commands preserve outputs, instructions and peak guest memory. Only three inline attributes change; method bodies and checks remain intact. [Scalar-inlining assessment](results/complete-scalar-inline-20260912/assessment.md). These are saved-bytecode runtime measurements; full edit/build/test latency and unknown holdouts remain unmeasured.
 
-Fixed frame clearing is implemented on `experiment/fixed-frame-clear`, with
-runtime source `6f9e148` and candidate tool `fdbf713b`. It preserves all frame
-zeroing and specializes statically known extents up to 256 bytes. The
-[three-history es8 confirmation](results/fixed-frame-clear-confirm-02/assessment.md)
-passes the predeclared aggregate gate: 8.37% complete-command wall improvement,
-8.48% CPU, 15 real edited pairs; the initial pilot is excluded. Each history
-and all wrong-edit/restoration controls remain available. Candidate commands
-remain roughly 2.5 times native on this target.
+Fixed frame clearing is **parked** on `experiment/fixed-frame-clear`. The
+[fresh combined es8 confirmation](results/fixed-frame-clear-combined-confirm-01/summary.json)
+improves complete edit/build/test commands by 7.39% wall and 7.61% CPU across
+15 pairs, missing the predeclared 8% wall gate. All 96 commands, 48 artifacts
+and wrong-edit/restoration controls pass. The earlier isolated-source 8.37%
+confirmation and eight successful library regression gates remain historical
+evidence; they do not override the failed combined gate. Remaining comparisons
+are canceled and the runtime change stays off main. Broad combined correctness
+passes 300 debug/release tests (one ignored), 47,004 native differential
+commands, 245 TLS checks, 382 fre bodies (seven ignored), and 52 integration
+assertions. [Decision](results/fixed-frame-clear-combined-01/assessment.md).
 
-Broad qualification passes 47,004 native differential commands, 245 TLS checks,
-382 fre bodies with seven ignored, and all 52 integration assertions. The
-baseline and candidate share the exact exporter and wrapper. The
-[library workflow report](results/fixed-frame-clear-libraries-01/summary.json)
-tracks each required gate: token improves 3.43% wall and 3.32% CPU; the other
-completed cases remain within their regression limits. Final composition with
-the newer main interpreter changes remains to be qualified. Keep this candidate
-separate from the historical full-workflow anchor below. Good tooling and
-evidence changes can be published independently of the experimental runtime.
+The next direction is exporter graph reuse, guided by the measured 691ms token
+lowering cost. Equal serialized functions or MIR hashes alone are insufficient
+cache keys: layout, call ABI, constant identity and dependency changes matter.
+The two-stream entropy diagnostic establishes exact token execution across both
+VMs and engines with identical inputs; it makes no performance claim.
 
 Keeping interpreter frame state across ordinary instructions is now qualified: an additional 26.8% saved-artifact runtime gain on pgrust and 28.1% on Ruff relative to the qualified arithmetic/scalar-memory VM. Five additional workloads improve 15.2–29.4%, with JIT within wall/CPU regression guards. All 297 workspace tests pass in debug and release (one ignored); all 588 comparison commands preserve results, instructions and peak guest memory. [Frame-loop assessment](results/same-frame-interpreter-20260912/assessment.md). Bounds checks remain; complete edit/build/test latency and unknown holdouts were not measured.
 
