@@ -52,3 +52,32 @@ fn fold_verifier_rejects_unrelated_data_and_layout_changes() {
         let r:serde_json::Value=serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();assert_eq!(r["exact_constant_fold"],false);
     }
 }
+
+#[test]
+fn specialization_cli_preserves_unspecialized_bodies_and_existing_outputs() {
+    let d=Directory::new();let input=d.0.join("input.rbc");let output=d.0.join("specialized.rbc");let report=d.0.join("specialize.json");
+    // This dead immediate would disappear under the global folder. The
+    // specializer must leave the original body intact when there are no calls.
+    let mut p=program();p.functions[0].registers=1;p.functions[0].code.insert(0,Op::Imm{dst:0,value:123});
+    let expected=bincode::serialize(&p).unwrap();std::fs::write(&input,&expected).unwrap();
+    let run=||Command::new(env!("CARGO_BIN_EXE_rust-interp-call-census")).arg("--specialize").arg(&input).arg(&output).arg(&report).output().unwrap();
+    assert!(run().status.success());assert_eq!(std::fs::read(&output).unwrap(),expected);
+    let before=std::fs::read(&report).unwrap();let r:serde_json::Value=serde_json::from_slice(&before).unwrap();
+    assert_eq!(r["exact_constant_specialization"],true);assert_eq!(r["specialization"]["rewritten_calls"],0);
+    assert!(!run().status.success());assert_eq!(std::fs::read(&output).unwrap(),expected);assert_eq!(std::fs::read(&report).unwrap(),before);
+    let checked=d.0.join("checked.json");
+    assert!(Command::new(env!("CARGO_BIN_EXE_rust-interp-call-census")).arg("--verify-specialize").arg(&input).arg(&output).arg(&checked).output().unwrap().status.success());
+    let r:serde_json::Value=serde_json::from_slice(&std::fs::read(checked).unwrap()).unwrap();assert_eq!(r["exact_constant_specialization"],true);
+}
+
+#[test]
+fn specialization_verifier_rejects_unrelated_data_and_layout_changes() {
+    let d=Directory::new();let input=d.0.join("input.rbc");let candidate=d.0.join("candidate.rbc");let p=program();
+    std::fs::write(&input,bincode::serialize(&p).unwrap()).unwrap();
+    for index in 0..2 {
+        let mut other=p.clone();if index==0 {other.data.push(1);} else {other.functions[0].frame_size=1;}
+        std::fs::write(&candidate,bincode::serialize(&other).unwrap()).unwrap();let report=d.0.join(format!("{index}.json"));
+        assert!(!Command::new(env!("CARGO_BIN_EXE_rust-interp-call-census")).arg("--verify-specialize").arg(&input).arg(&candidate).arg(&report).output().unwrap().status.success());
+        let r:serde_json::Value=serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();assert_eq!(r["exact_constant_specialization"],false);
+    }
+}

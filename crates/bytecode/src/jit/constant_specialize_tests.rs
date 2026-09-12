@@ -53,7 +53,11 @@ fn check(p:&Program,arguments:&[u128],clones:bool)->Program {
             for resumable in [false,true] {for persistent in [false,true] {for capacity in [0,16*1024*1024] {
                 for budget in [0,1,n.saturating_sub(1),n,n+1] {
                     let limits=Limits{instructions:budget,jit_resumable_calls:resumable,jit_persistent_registers:persistent,jit_code_bytes:capacity,..Limits::default()};
-                    let run=|engine|normalize(crate::execute_with_engine(artifact,&[argument],limits.clone(),engine).map(|r|(r.value,r.instructions,r.peak_memory)));
+                    let run=|engine| {
+                        let mut limits=limits.clone();
+                        if engine==Engine::Interpreter {limits.jit_resumable_calls=false;limits.jit_persistent_registers=false;}
+                        normalize(crate::execute_with_engine(artifact,&[argument],limits,engine).map(|r|(r.value,r.instructions,r.peak_memory)))
+                    };
                     assert_eq!(run(Engine::Jit),run(Engine::Interpreter),"resumable={resumable} persistent={persistent} capacity={capacity} budget={budget}");
                 }
             }}}
