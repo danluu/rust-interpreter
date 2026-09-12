@@ -16,20 +16,27 @@ from interpreter import installed_tools, TOOLCHAIN
 from std_mir import checked_std_mir
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from reuse_build import CONTROL
-from reuse_check import observation
+from reuse_check import observation, reconstruction
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--build', type=Path, default=ROOT / 'results/export-reuse-build-03/summary.json')
+    parser.add_argument('--binding-replay-qualification', type=Path)
     args = parser.parse_args()
     assert re.fullmatch(r'export-dependency-fixture-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 8)
-        build_path = ROOT / 'results/export-reuse-build-03/summary.json'
+        build_path = args.build.resolve()
         build = json.loads(build_path.read_text())
-        assert build['status'] == 'passed' and set(build['tests'].values()) == {44}
+        binding_replay = args.binding_replay_qualification is not None
+        assert build['status'] == 'passed' and set(build['tests'].values()) == ({47} if binding_replay else {44})
+        if binding_replay:
+            qualified = json.loads(args.binding_replay_qualification.read_text())
+            assert qualified['status'] == 'passed' and qualified['commands'] == 231
+            assert qualified['binding_replay'] and qualified['tool_key'] == build['tool_key']
         tool, key = installed_tools(build['tool_key'])
         baseline, _ = installed_tools(CONTROL)
         sysroot, _, std_key, _ = checked_std_mir(TOOLCHAIN)
@@ -60,6 +67,8 @@ def main():
                    ('invalid-type', original.decode() + '\nfn unused() { let _: u64 = "wrong"; }\n')]
         paths = [Path(__file__), HERE / 'reuse_check.py', HERE / 'DEPENDENCIES.md', build_path,
                  HERE / 'dependency_fixture/main.rs', HERE / 'dependency_fixture/model.rs']
+        if binding_replay:
+            paths += [args.binding_replay_qualification.resolve(), HERE / 'BINDING-REPLAY.md']
         paths += [p / name for p in [tool, baseline] for name in ['rust-interp-mir-export', 'rust-interp-vm', 'rust-interp-rustc-wrapper']]
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'plan.json', dict(frozen=frozen, tool_key=key, source_commit=build['source_commit'],
@@ -73,6 +82,7 @@ def main():
             stage.mkdir()
             stages[mode] = stage
         records, observations, seen = [], [], {}
+        replay_reports = []
         def invoke(label, command, selected=env, success=True):
             require_space(ROOT, 8)
             child, stdout, stderr = capture(list(map(str, command)), cwd=ROOT, env=selected,
@@ -108,6 +118,8 @@ def main():
                     selected.update(RUST_INTERP_FUNCTION_COSTS='1', RUST_INTERP_EXPORT_TIMINGS='1')
                 if mode == 'on':
                     selected['RUST_INTERP_FUNCTION_DEPENDENCIES'] = '1'
+                    if binding_replay:
+                        selected['RUST_INTERP_BINDING_REPLAY'] = '1'
                 _, stderr = invoke(name + '-export-' + mode, [compiler / 'rust-interp-mir-export', source / 'main.rs',
                     '--crate-name', 'dependency_case', '--edition=2024', '--emit=metadata', '--sysroot', sysroot,
                     '-C', 'incremental=' + str(stage / 'incremental'), '-o', stage / 'program.rmeta'], selected, success=valid)
@@ -122,6 +134,8 @@ def main():
                     assert report['schema_version'] == (3 if mode == 'on' else 2)
                     write(work / (name + '-' + mode + '.census.json'), report)
                     if mode == 'on':
+                        if binding_replay:
+                            replay_reports.append(dict(state=name, **reconstruction(stderr, report)))
                         functions = report['functions']
                         assert len({f['dependency']['node'] for f in functions}) == len(functions)
                         green = [f for f in functions if f['dependency']['previous_green']]
@@ -161,6 +175,7 @@ def main():
               strict_invalid_source_rejected=True, green_functions=green, changed_green_templates=mismatches,
               unknown_green=unknown, candidate_dependency_boundary_supported=green > 0 and mismatches == unknown == 0,
               all_lowering_executed=True, frozen=frozen, raw=str(work.relative_to(ROOT)),
+              binding_replay=binding_replay, reconstruction=replay_reports,
               records_sha256=sha(work / 'records.json'), observations_sha256=sha(work / 'observations.json'),
               scope='No cached output or skipped lowering. Green status is tested against actual typed templates; binding and shared exporter state remain separate requirements.')
         out = ROOT / 'results' / args.run_id
