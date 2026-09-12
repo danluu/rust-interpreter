@@ -28,6 +28,7 @@ def main():
     parser.add_argument('--jit-persistent-registers',action='store_true')
     parser.add_argument('--jit-resumable-calls',action='store_true')
     parser.add_argument('--run-id',default='audit-execution-'+str(time.time_ns()))
+    parser.add_argument('--report-directory',type=Path,help='optional local .work report directory for batched replays')
     parser.add_argument('--lock-wait-seconds',type=int,choices=range(61),default=0)
     args=parser.parse_args()
     if not __debug__ or sys.flags.optimize:parser.error('execution surveys require enabled Python assertions')
@@ -43,6 +44,12 @@ def main():
     vm_flags=['--'+name.replace('_','-') for name,enabled in runtime_options.items() if enabled]
     if args.allocation_limit is not None:vm_flags+=['--allocation-limit',str(args.allocation_limit)]
     if Path(args.run_id).name!=args.run_id or args.run_id in ['.','..']:parser.error('invalid run id')
+    output=ROOT/'results'/args.run_id
+    if args.report_directory is not None:
+        output=args.report_directory.resolve()
+        if not output.is_relative_to(ROOT/'.work') or output==ROOT/'.work':
+            parser.error('batched report directory must be inside local .work')
+    if output.exists():parser.error('report directory already exists')
     lock=(ROOT/'.work/benchmark.lock').open('a')
     deadline=time.monotonic()+args.lock_wait_seconds
     while True:
@@ -235,7 +242,7 @@ def main():
                 'A native failure does not count as an engine comparison; instruction and memory limits are separate outcomes.',
                 'Passing a body with unavailable-call metadata means its tested path avoided those calls; it does not implement those platform functions.',
                 'This is a coverage survey, not a complete suite or a production-edit speedup comparison.'])
-        output=ROOT/'results'/args.run_id;output.mkdir()
+        output.mkdir(parents=True)
         (output/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
         lines=[f"# Execution coverage: {project} / {package['name']}",'',
             f"Compared retained ordinary test bodies with a {'hash-verified native control reused from the preceding batch' if reused_native else 'freshly built native control'} at the pinned source revision. Each test runs in a fresh process. Custom execution used the JIT with a {args.instruction_limit:,}-instruction limit per body. Original sources and tests were preserved.",'',

@@ -61,11 +61,12 @@ def main():
         for batch in parent['records']:
             index = batch['index']
             run = args.run_id + '-batch-' + str(index).zfill(3)
+            report_path = work / 'reports' / str(index).zfill(3) / 'summary.json'
             command = [sys.executable, str(ROOT / 'scripts/survey_audit_execution.py'),
                 '--run-id', run, '--collection', str(ROOT / batch['collection']), '--vm-tool-key', key,
                 '--native-control-provenance', str(ROOT / batch['native_control']),
                 '--instruction-limit', str(parent['instruction_limit']), '--allocation-limit', str(parent['allocation_limit']),
-                '--lock-wait-seconds', '45']
+                '--lock-wait-seconds', '45', '--report-directory', str(report_path.parent)]
             command += ['--' + name.replace('_', '-') for name in OPTIONS if parent['runtime_options'][name]]
             with (work / (str(index).zfill(3) + '.log')).open('x') as output:
                 child = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT)
@@ -78,7 +79,6 @@ def main():
             status.update(child_returncode=code, child_finished_at=time.time())
             write(work / 'status.json', status)
             require(code == 0, 'replay child failed; log retained')
-            report_path = ROOT / 'results' / run / 'summary.json'
             report = read(report_path)
             rows_path = ROOT / report['raw'] / 'results.json'
             rows = read(rows_path)
