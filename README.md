@@ -17,7 +17,7 @@ unqualified.
 | Guest backend | Our bytecode interpreter and direct AArch64 emitter |
 | Native emitter platform | Apple Silicon macOS |
 | Benchmark projects | pgrust, fre, Nushell, Ruff, private rg-aot |
-| Broadest fresh replay (`9637b0ac`, explicit resumable calls) | 382 fre bodies passed, 7 ignored, with explicit options; not libtest |
+| Qualified fre assertions (`9637b0ac`, explicit resumable calls) | 382 library bodies and 52 integration tests passed in separate qualifications; 7 library bodies ignored; full libtest remains open |
 | Main gaps | Compute performance, native configuration qualification, reuse, real unwinding, threads/OS/FFI and complete test-harness semantics |
 
 ## Run a selected function or test
@@ -31,6 +31,9 @@ python3 scripts/interpreter.py --manifest-path .work/sources/pgrust/Cargo.toml -
 ```
 
 For a library test body, add `--test-body` and pass its qualified name to `--entry`.
+For an integration target, also add `--test-target NAME`. Use native test names
+from `cargo test --test NAME -- --list` without a crate-name prefix. Integration
+targets share dependency metadata while each command selects its exact artifact.
 Repeat `--entry` to batch zero-argument bodies returning unit or `Result<(), E>`.
 Use `--engine interpreter` for the reference engine. Some standard-library paths
 require `--std-mir`, which prepares a reusable metadata sysroot.
@@ -48,11 +51,11 @@ fallback to LLVM, Cranelift, Miri, or another execution engine.
 
 ```sh
 cargo +nightly-2026-09-08 test --workspace --locked --offline --jobs 2
-python3 -m unittest discover -s tests -p test_workflow_measurements.py
+python3 -m unittest discover -s tests
 python3 scripts/update_status.py
 ```
 
-Serialize task builds and benchmarks with `.work/benchmark.lock`. Current source
+Serialize task builds and benchmarks with `.work/benchmark.lock`. Compiler/runtime source
 `5b2330c` / tool `9637b0ac` passes 289 debug and release workspace tests (one
 ignored). A normal build reproduces the exact qualified binaries. Aggregate-frame
 reuse improves folded-trie edited commands 12.77% over the preceding compiler;
@@ -70,6 +73,9 @@ requires a wrong edit to fail, and supports repeated cycles with child CPU
 accounting. The stronger-native corpus completed 756 commands across nine
 workflows, including 189 independent checks. Repeated fre source states exposed
 compiler-cache-history artifact differences, retained alongside the timings.
+The newer [integration-target pilot](results/fre-integration-edit-01/assessment.md)
+measures five real edits at 0.816s custom versus 1.015s native (20.4% paired gain),
+with 18 jobs on both sides. This short batch needs broader repeated comparison.
 [Protocol](BENCHMARKING.md), [token reproducer](benchmarks/TOKEN-PHRASE.md),
 [repeated-run assessment](results/paired-repeated-token-01/assessment.md).
 
@@ -81,7 +87,7 @@ The [build index](benchmarks/tool-builds.json) maps source commits to exact tool
 keys and verified binary hashes; regenerate it with `python3 scripts/tool_source_index.py`.
 
 Every suggestion from the external review has an explicit
-[decision](docs/SUGGESTIONS-REVIEW-20260910.md). The original
+[decision](docs/SUGGESTIONS-REVIEW-20260911.md). The original
 [plan](PLAN.md), [five persona rounds](persona-reviews.md), earlier
 [native-cache/publication results](RESULTS.md), and
 [implementation history](docs/history/README-20260910-before-review.md) remain

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Qualify every original fre integration target with shared dependency metadata."""
+import argparse
 import fcntl
 import json
 import os
@@ -17,10 +18,16 @@ from native_results import libtest_summary
 from workflow_io import write_json as write
 
 RUN = 'fre-integration-targets-01'
+CACHE_NAMESPACE = RUN
 TOOL = '9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223'
 
 
 def main():
+    global RUN
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--attempt', type=int, choices=range(1, 10), default=1)
+    args = parser.parse_args()
+    RUN = f'fre-integration-targets-{args.attempt:02}'
     work = ROOT / '.work' / RUN
     work.mkdir(exist_ok=False)
     (work / 'artifacts').mkdir()
@@ -57,6 +64,11 @@ def main():
             reference = read(ROOT / 'results/parked-budget-e2e-token-phrase-candidate-archive-01/plan.json')
             reference_bytes = sum(g['bytes'] for g in reference['manifest']['groups'])
             needed = 8 * 1024**3 + (reference_bytes * 120 + 99) // 100 + 32 * 1024**2
+            if args.attempt > 1:
+                previous = read(ROOT / 'results/fre-integration-targets-01/summary.json')
+                require(previous['source_commit'] == source_commit and previous['tool_key'] == TOOL and
+                    read(ROOT / '.work/fre-integration-targets-01/status.json')['status'] == 'finished', 'reused cache qualification changed')
+                needed = 8 * 1024**3 + 128 * 1024**2
             free = shutil.disk_usage(ROOT).free
             write(work / 'admission.json', dict(required_bytes=needed, observed_bytes=free,
                 reference_cache_bytes=reference_bytes, incremental_target_margin_bytes=128 * 1024**2,
@@ -69,7 +81,8 @@ def main():
             write(work / 'plan.json', dict(owner=str(ROOT), source_commit=source_commit, tool_key=TOOL, source_pin=pin,
                 frozen=frozen, targets=[t['target'] for t in targets], native_target=str(native_target.relative_to(ROOT)),
                 jobs=18, native_test_threads='default', instruction_limit=100_000_000_000, allocation_limit=150_000,
-                original_sources=True, performance_measurement=False))
+                original_sources=True, performance_measurement=False, cache_namespace=CACHE_NAMESPACE,
+                reused_checked_dependencies=args.attempt > 1))
             env = environment('repository')
             guest_env = dict(env, RUST_INTERP_LAUNCH_STATS='1', RUSTFLAGS='-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240')
             records = []
@@ -89,11 +102,12 @@ def main():
                 suite = libtest_summary(stdout, selected=len(entries))
                 require(suite['filtered'] == suite['ignored'] == 0, 'native integration selection changed')
                 command = [sys.executable, str(HERE / 'launcher.py'), '--manifest-path', str(source / 'Cargo.toml'), '--package', 'fre-kernels',
-                    '--test-body', '--test-target', name, '--tool-key', TOOL, '--cache-namespace', RUN, '--jobs', '18', '--std-mir',
+                    '--test-body', '--test-target', name, '--tool-key', TOOL, '--cache-namespace', CACHE_NAMESPACE, '--jobs', '18', '--std-mir',
                     '--engine', 'jit', '--jit-resumable-calls', '--jit-persistent-registers', '--inline-leaves', '--trap-unsupported-calls',
                     '--run-try-callbacks', '--instruction-limit', '100000000000', '--allocation-limit', '150000']
                 for entry in entries:
-                    command += ['--entry', name.replace('-', '_') + '::' + entry]
+                    # Native libtest names already match rustc's local def paths.
+                    command += ['--entry', entry]
                 grow, gout, gerr = invoke(work, name + '-custom', command, source, guest_env)
                 launches = [json.loads(line.split(': ', 1)[1]) for line in gerr.splitlines() if line.startswith('rust-interp-launch: ')]
                 record = dict(target=name, tests=len(entries), native=nrow, custom=grow,

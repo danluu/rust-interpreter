@@ -6,6 +6,17 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 
 | Category | Report |
 | --- | --- |
+| screen | [scalar-edit-smoke-01/summary.json](scalar-edit-smoke-01/summary.json) |
+| decision | [scalar-edit-smoke-01/decision.json](scalar-edit-smoke-01/decision.json) |
+| export-costs | [export-costs-token-02/summary.json](export-costs-token-02/summary.json) |
+| native-profiles | [native-effective-profiles-02/summary.json](native-effective-profiles-02/summary.json) |
+| native-stages | [native-existing-stages-01/summary.json](native-existing-stages-01/summary.json) |
+| native-calibration | [native-tuned-calibration-01/summary.json](native-tuned-calibration-01/summary.json) |
+| unfiltered | [fre-unfiltered-native-01/summary.json](fre-unfiltered-native-01/summary.json) |
+| test-targets | [integration-targets-fixture-02/summary.json](integration-targets-fixture-02/summary.json) |
+| integration-coverage | [fre-integration-targets-02/summary.json](fre-integration-targets-02/summary.json) |
+| integration-edit | [fre-integration-edit-01/summary.json](fre-integration-edit-01/summary.json) |
+| source-restore | [source-restore-after-01/summary.json](source-restore-after-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

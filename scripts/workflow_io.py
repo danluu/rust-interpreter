@@ -100,6 +100,11 @@ class SourceEdit:
         if self.backup.is_symlink() or self.backup.read_bytes() != self.original:
             raise RuntimeError('staged original source changed; refusing restoration')
         try:
+            # The staged backup predates the edited build. Restoring that old
+            # mtime lets Cargo reuse the last edit's artifact despite different
+            # source bytes. Publish the original with a fresh timestamp, like
+            # every ordinary source replacement; keep the backup on failure.
+            os.utime(self.backup, None)
             self.backup.replace(self.path)
         except OSError as error:
             raise RuntimeError(f'source restoration failed; original preserved at {self.backup}') from error

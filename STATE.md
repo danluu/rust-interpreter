@@ -3,14 +3,13 @@
 The unbounded goal remains active: improve the custom Rust development engine
 using real source-edit/build/test benchmarks. Every item in `suggestions.txt`
 has an [explicit decision](docs/SUGGESTIONS-REVIEW-20260911.md); that user-owned
-file remains unchanged and untracked. Local commits are authorized; no push.
-Branch: `experiment/resumable-native-calls`.
+file remains unchanged and untracked. Local commits, private GitHub publication and regular pushes of qualified changes to main are authorized.
+Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
 The retained build is `5b2330c/9637b0ac`; [STATUS.md](STATUS.md) contains its
-compute, held-out, cold and Cargo-check measurements. The normal source and
-installed tool remain unchanged by the failed scalar experiment.
+compute, held-out, cold and Cargo-check measurements. The compiler/runtime and installed tool remain unchanged by the failed scalar experiment. The launcher now supports explicit integration targets.
 
 Scalar value calls are implemented end to end in our interpreter, custom
 AArch64 emitter and strict MIR exporter. Source is ordinary `crates/` code on
@@ -27,8 +26,7 @@ controls passed, with 42 primary commands, 14 independent Cargo checks and
 A/A or held-out histories will run for this candidate.
 
 Token execution saved 170ms at the median paired difference while Cargo added
-144ms. Retained-exporter attribution is now complete. Focus next on effective native
-profiles and tuned controls, then lowering reuse and unfiltered suite execution. Tool lookup is about 2ms, std-MIR
+144ms. Retained-exporter attribution is now complete. Native profiles, fre calibration and unfiltered coverage have since been measured. Next use integration edits, remaining native controls and lowering reuse to choose substantial work. Tool lookup is about 2ms, std-MIR
 lookup 36–38ms and artifact hashing about 10ms in this screen.
 
 The source branch also contains release native-readiness checks, clearer unsafe
@@ -80,7 +78,7 @@ commands, 15 diagnostic repeats, wrong-edit controls and source restoration
 passed; ten parser/selection tests pass. Cargo-reported build durations barely
 changed, while suite execution decreased. Repeats use the workspace cwd and
 lack Cargo's full injected test environment; they remain separate diagnostics.
-No guest change. Next: unfiltered fre suite, then a large native-control target.
+No guest change; a large native-control target remains open.
 Completed scalar-smoke native/check caches and four custom incremental folders
 were deleted after exact ownership/terminal/open-file and 48 preserved-hash
 checks. Freed about 1.78GB; no archive. Local detail is under
@@ -105,22 +103,36 @@ See [the baseline failure](results/fre-unfiltered-native-01/assessment.md). Its
 The existing 389-name custom replay exactly covers the native library target,
 excluding ten integration executables and all three doc tests.
 
-The new `--test-body --test-target NAME` selector is implemented on branch
-`experiment/test-targets`, worktree `.work/test-targets-source`, commit `3d3dfb6`.
-The existing retained exporter/router supports it; no guest engine changed.
-Four selection unit tests and [14 actual Cargo/native/custom commands](results/integration-targets-fixture-01/assessment.md)
-pass target A/B/A selection, the original library route, wrong production code,
-uncalled E0308/E0502 rejection and restoration. Five commands are native and
-nine custom; the initial hard-coded report counts were corrected from records.
-The executed driver is preserved locally. All task processes are terminal.
+The normal launcher now exposes `--test-body --test-target NAME`, integrated
+from qualified source `759bbbc`. Integration targets share dependency metadata
+while exact Cargo target matching selects their separate sidecars. Four unit
+checks and 14 Cargo/native/custom fixture commands cover A/B/A switching,
+wrong edits, strict uncalled errors and the unchanged library route.
 
-Next: qualify original fre integration assertions and design shared dependency
-caches across explicit targets without weakening artifact selection/locking.
-Only about 8.04GiB is free, just above the fixed 8GiB floor; admit any new real
-Cargo target before running it. Do not start another archive campaign. The two
-completed alternative native-profile targets can be considered disposable after
-exact ownership/terminal/open-file/evidence checks; the repository native target
-is now used by the unfiltered command and should remain available.
+[All 52 original fre integration assertions pass](results/fre-integration-targets-02/assessment.md)
+across ten targets. A first driver attempt prefixed entry names incorrectly;
+its failed exports remain recorded. Native test names work unchanged.
+
+The [five-edit integration pilot](results/fre-integration-edit-01/assessment.md)
+passes: median custom 0.816s, native 1.015s, check 0.539s; paired wall −20.4%
+and CPU −41.1%. All modes use 18 jobs and warm primed caches. All 21 commands,
+42 logs and seven snapshots are preserved. Original assertions reject the wrong
+edit, and every measured edit recompiles. This one-cycle result needs broader
+comparison, especially the compute-heavy es8i target.
+
+The root integration probe exposed a harness bug: restoring staged source kept
+an old modification time and Cargo reused the final edit's artifact. The helper
+now refreshes mtime before restoration. An actual native Cargo regression fails
+before and passes after; all 18 root Python tests pass. The fresh root fre probe
+rebuilds and passes original assertions. Its bytecode still differs from an
+earlier original-source artifact, so export determinism remains open.
+
+Task processes are terminal. Current fre native/check/shared custom targets are
+available for the next comparison. Two completed alternative native-profile
+caches and two older completed fre native caches were retired after exact
+ownership, terminal, open-file and preserved-evidence checks; their final test
+executables and logs remain. No archives were created. Check current free space
+against the 8GiB floor before starting further builds.
 
 ## Persistent rules
 
@@ -128,7 +140,7 @@ is now used by the unfiltered command and should remain available.
 - Strict type/borrow checks and original assertions; no fake unwinding/threads.
 - Serialize task builds, tests, profiles and benchmarks with `.work/benchmark.lock`.
 - Never signal or control unrelated work. Never queue lock users behind a live archive batch.
-- Local commits authorized; no push. No new AWS purchase/activation.
+- Merge qualified changes to main and push regularly to the private GitHub repo. No new AWS purchase/activation.
 - Private rg-aot output is aggregate-only. `suggestions.txt` remains user-owned and untracked.
 - Source and executed evidence are preserved; old gates are not rewritten after results.
 

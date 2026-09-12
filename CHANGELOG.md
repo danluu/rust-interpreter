@@ -1,5 +1,11 @@
 # Checked-in changes
 
+## 2026-09-12 integration targets and Cargo freshness
+
+- The normal launcher now accepts explicit integration targets and shares compatible dependency caches while selecting exact Cargo artifacts. All 52 original fre integration assertions pass.
+- A five-edit integration pilot passes its 10% target: custom 0.816s versus native 1.015s, with a 20.4% paired wall improvement. Runtime/compiler binaries are unchanged.
+- Source restoration now refreshes modification time so Cargo rebuilds the original source. Actual native Cargo commands reproduce the old stale executable and verify the fix; all 18 root Python tests pass. Export determinism remains open.
+
 ## 2026-09-12 controls before further optimization
 
 - The unfiltered fre command exposed 52 integration tests outside the custom library replay and a native compile-fail doc-test diagnostic mismatch. Original source was restored; no successful suite latency is claimed.

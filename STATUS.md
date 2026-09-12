@@ -2,7 +2,7 @@
 
 Retained build **5b2330c/9637b0ac**: custom interpreter and direct AArch64 JIT, strict rustc type/borrow checking. The exec Cargo wrapper is deployed.
 
-The retained measurements put folded near the specified native control and token about 2.3× slower. Other selected workflows save code-generation/link time while executing their original assertions. Native uses project debuginfo/link settings; alternatives have not been compared. Full libtest compatibility is unfinished.
+The retained measurements put folded near the specified native control and token about 2.3× slower. Other selected workflows save code-generation/link time while executing their original assertions. Native uses project debuginfo/link settings; fre debuginfo calibration selected no replacement preset. Large native controls and full libtest compatibility remain open.
 
 Times below come from each row’s own three-cycle, five-edit history. Native uses O0/incremental, 18 jobs/default test threads; custom uses four jobs. Cold means empty per-mode caches, excluding tool/sysroot bootstrap and OS cache coldness.
 
@@ -41,11 +41,15 @@ Effective profiles are recorded for all five projects: pgrust/Ruff already use l
 
 [Fre native calibration](results/native-tuned-calibration-01/assessment.md) was inconclusive: line tables saved 7.86%, below its fixed 8% screen; debug=0 saved 5.17%. All 21 Cargo commands and 15 diagnostic repeats had the expected assertion outcomes. No new native preset was selected.
 
-The [unfiltered fre command](results/fre-unfiltered-native-01/assessment.md) passed 382 unit and 52 integration tests (seven ignored), then failed a doc test whose expected diagnostic code was absent. The 52 integration tests are outside the custom library replay. A [new integration-target selector](results/integration-targets-fixture-01/assessment.md) passes four unit checks and 14 Cargo/native/custom controls; original fre target qualification follows.
+The [unfiltered fre command](results/fre-unfiltered-native-01/assessment.md) passed 382 unit and 52 integration tests (seven ignored), then failed a doc test whose expected diagnostic code was absent. The root launcher now runs all 52 original integration assertions across 10 targets with shared dependency metadata. [Coverage](results/fre-integration-targets-02/assessment.md).
+
+The [integration edit pilot](results/fre-integration-edit-01/assessment.md) records five real edits: custom 0.816s, native 1.015s, Cargo check 0.539s; paired wall -20.4%. Both sides use 18 jobs. This one-cycle pilot is separate from the retained histories above.
+
+[Source restoration now refreshes modification time](results/source-restore-after-01/assessment.md) so Cargo rebuilds the restored original. Actual Cargo regressions and 18 Python tests pass. Remaining original-source bytecode differences keep export determinism open.
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Qualify original fre integration-test targets with the new explicit selector; preserve the native doc-test failure and check a large native control.
+**Next:** Compare a compute-heavy integration target; diagnose export determinism before reuse and qualify a large native control.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
