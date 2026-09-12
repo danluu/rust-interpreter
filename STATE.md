@@ -83,12 +83,20 @@ counts/profiles match exactly; random token paths each reconcile their own count
 A/A staging qualification passes four key routes and two changed-guard rejections.
 Its brief lock admission rejection is preserved; no process was signalled.
 
-The folded A/A control completes and verifies 84 commands, 15 edited pairs and
-42 artifact hashes. Its paired wall ratio is 1.007006 and the fixed wall envelope
-is 1.6215%; this is a control, not a speedup. `call-slot-aa-01-token-phrase` is
-active (supervisor 31127, controller 31132, workflow 31140). Keep frozen inputs
-unchanged. Wait for all three to finish, verify, then run candidate folded and
-candidate token in that order.
+Both A/A controls complete and verify 168 commands and 84 artifacts in total.
+The fixed wall envelopes are 1.6215% folded and 2.0353% token. The candidate
+folded comparison verifies and passes its 5% guard: wall ratio 0.986095, CPU
+0.994460. Its 1.39% wall difference is inside the A/A envelope.
+
+Eight completed public caches were reviewed and archived outside timers:
+983,495,499 unique bytes in 353,204,322 archive bytes, with 149 external evidence
+hashes verified. All archive processes are terminal; original source/results/
+executed snapshots remain. A pre-review lock rejection is preserved.
+
+`call-slot-e2e-01-token-phrase` is active (supervisor 25827, controller 25831,
+workflow 25838). Keep frozen inputs unchanged. Wait for all three to finish,
+record the workflow, then run `call-slot-fast-path/report_primary.py` through
+supervisor ID `call-slot-primary-01`. Do not retune the candidate.
 The fixed primary gate is ≥10% token wall gain, lower CPU and a gain exceeding
 fresh A/A variation; folded wall/CPU must remain within 5%. The tracked
 `report_primary.py` recomputes all four histories. A primary failure parks the
