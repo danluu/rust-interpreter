@@ -13,11 +13,14 @@ fresh guest state. The API and optional VM runner pass 320 debug and release
 tests (one ignored); the real fre token pilot passes three native tests and
 five custom commands, including exact fresh/prepared equality with recorded
 inputs. The Cargo launcher and separate-process native control pass 36 Python
-tests. Next qualify real edited commands on pgrust, token and folded under
+tests. Pgrust also passes all 32 real commands, including wrong-edit assertions and
+a restored-source rebuild. Prepared/fresh edited latency is tied (ratio 1.0084);
+execution saves only about 2 ms. Next qualify token and folded under
 [the fixed protocol](benchmarks/experiments/prepared-jit/WORKFLOWS.md).
 No end-to-end performance gain or full libtest compatibility is claimed.
 [Build](results/prepared-jit-build-04/summary.json),
-[pilot](results/prepared-suite-pilot-01/summary.json).
+[pilot](results/prepared-suite-pilot-01/summary.json),
+[pgrust](results/prepared-suite-pgrust-01/assessment.md).
 
 Cross-region rematerialization remains parked after its 0.78% wall/0.81% CPU
 runtime regression. No conditional promotion benchmarks will run.
