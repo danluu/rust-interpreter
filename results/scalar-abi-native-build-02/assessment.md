@@ -1,0 +1,3 @@
+The second debug run passed 160 bytecode tests and failed one new hot-invalid-address check. It compared the literal diagnostics `JIT guest memory access failed` and `invalid guest memory access`; the established engines use those different messages for the same memory fault. The later workspace suites and release qualification did not run.
+
+Revision 3 changes only the test comparison for that exact diagnostic pair. It retains full error identity for budget, depth, assertions and every other message, so their precedence must agree. Native implementation source is unchanged. The failed source, command and output are preserved in [execution.json](execution.json).
