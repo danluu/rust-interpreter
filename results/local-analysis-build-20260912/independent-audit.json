@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "auditor": "/root/binary_codegen",
+  "recorded_at_utc": "2026-09-12T21:04:33.767637+00:00",
+  "scope": "Independent read-only audit of original raw records, artifacts, source/tool hashes, controller binding and qualification evidence; followed by copy/archive integrity checks. No builds, tests, benchmarks or verifier commands executed by the auditor.",
+  "decision": "PARK; fixed token median paired build-wall improvement gate missed",
+  "median_ratio_definition": "median(candidate build-to-ready / baseline build-to-ready) over all 15 edited pairs per project; CPU uses build_to_ready_cpu.total_seconds",
+  "recomputed_aggregate": {
+    "token": {
+      "pairs": 15,
+      "wall": {
+        "median": 0.963709236555161,
+        "min": 0.8643949537476708,
+        "max": 1.053940943289371
+      },
+      "cpu": {
+        "median": 0.9531580107713143,
+        "min": 0.8713295504935573,
+        "max": 1.0543073891215227
+      }
+    },
+    "pgrust": {
+      "pairs": 15,
+      "wall": {
+        "median": 1.0019110172680308,
+        "min": 0.9494599002604501,
+        "max": 1.3352545860440743
+      },
+      "cpu": {
+        "median": 1.002969693893091,
+        "min": 0.9451446308095006,
+        "max": 1.36608106683269
+      }
+    }
+  },
+  "fixed_gates": {
+    "token_wall_ratio_max": 0.95,
+    "token_cpu_ratio_strictly_below": 1.0,
+    "every_history_wall_and_cpu_ratio_max": 1.05,
+    "pgrust_aggregate_wall_and_cpu_ratio_max": 1.05
+  },
+  "all_history_regression_guards_pass": true,
+  "pgrust_aggregate_regression_guards_pass": true,
+  "token_cpu_improves": true,
+  "token_wall_gate_pass": false,
+  "aa_noise_subtracted": false,
+  "complete_workflow_evidence": {
+    "histories": 6,
+    "primary_commands": 144,
+    "fresh_primary_compilations": 144,
+    "checking_commands": 48,
+    "edited_pairs": 30,
+    "rehash_verified_executed_artifacts": 96,
+    "distinct_comparison_cache_workspaces": 12,
+    "warm_source_transitions_verified": true,
+    "wrong_edits_compile_then_fail_runtime_assertions": true,
+    "restored_original_build_and_execution_verified_in_each_history": true,
+    "control_states_excluded_from_edited_pairs_and_medians": true,
+    "paired_sources_and_test_selections_match": true,
+    "paired_bytecode_identical_in_all_states": true,
+    "summary_metrics_match_raw_launch_receipts": true,
+    "build_cpu_self_children_and_user_system_sums_verified": true
+  },
+  "controllers": {
+    "original_completed_calls": 10,
+    "continuation_completed_calls": 2,
+    "planned_calls": 12,
+    "executed_calls_match_exact_original_plan": true,
+    "calls_sequential": true,
+    "repeated_performance_histories": 0,
+    "partial_performance_histories": 0,
+    "continuation_original_sha256": "7fcb82e62267822fbbeaed7416514297b947a8e1f6ad8812c7154efddde3146c",
+    "continuation_sha256": "ea80eb19a70ad2354c9d7ea812fd5dc0037b450fad803c449aa8776d2b4a0fc6",
+    "continuation_free_bytes_at_admission": 4145213440,
+    "admission_floor_bytes": 3221225472,
+    "per_command_floor_bytes": 1073741824
+  },
+  "identity_checks": {
+    "qualification_proof_hashes": 15,
+    "validation_input_hashes": 29,
+    "candidate_snapshot_file_hashes": 135,
+    "common_script_hashes": 14,
+    "both_frozen_toolsets_verified": true,
+    "same_vm_and_compiler_wrapper": true,
+    "baseline_tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "candidate_tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6"
+  },
+  "qualification": {
+    "rust_tests": {
+      "debug": {
+        "passed": 375,
+        "failed": 0,
+        "ignored": 1
+      },
+      "release": {
+        "passed": 375,
+        "failed": 0,
+        "ignored": 1
+      }
+    },
+    "standalone_local_layout_oracle_inputs": 261,
+    "standalone_count_basis": "257 sequential seeds plus four directed cases; successful native test receipt",
+    "full_validation_commands": 23727,
+    "full_records_json_equals_commands_jsonl": true,
+    "local_layout_native_outputs": 111,
+    "matching_local_layout_vm_commands": 222,
+    "local_layout_vm_engines": [
+      "interpreter",
+      "jit"
+    ],
+    "initial_adapter_failure": "ModuleNotFoundError: std_mir",
+    "initial_adapter_command_receipts": 8176,
+    "initial_adapter_failure_retained_separately": true,
+    "full_validation_summary_equals_qualified_snapshot": true
+  },
+  "report_integrity": {
+    "base_commit": "ce3fa77",
+    "candidate_summary_kept_inside_report": true,
+    "baseline_top_level_validation_sha256": "5e9462087181a6f6d9d75a57ef5b1ee04f5add79a1b1357e4f1923e5bdf15083",
+    "six_result_directories_copied_unchanged": true,
+    "compressed_validation_logs_roundtrip_byte_exact": true,
+    "copied_evidence_files": 72,
+    "validation_archives": 2,
+    "original_raw_artifacts_tools_and_sources_left_in_place": true,
+    "format_check": "Authored prose/JSON and copied non-log evidence pass git diff --cached --check. Full check reports only original whitespace in the byte-preserved debug/release test logs and local-layout-oracle-tests.log."
+  },
+  "claims": "Evidence supports the fixed-screen PARK decision. Shared-host measurements do not establish cold-build, whole-command, runtime or unknown-holdout speedups."
+}
