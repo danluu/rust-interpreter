@@ -4,14 +4,15 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Repair the fresh token export failure.** Catalog qualification passes
-   the real Rust fixture, Ruff export and complete pgrust edits. A nonincremental
-   fre export then fails an allocation path that passes natively. Both old and
-   new exporters/runtimes reproduce it; the interpreter also fails. Preserve
-   these controls, compare the passing and failing bytecode and reduce the
-   lowering error. Do not publish the catalog work until the gap is repaired.
-   Afterward continue automatic test discovery and explicit harness semantics.
-   [Plan](benchmarks/experiments/token-allocation-failure/PLAN.md).
+1. **Record effective limits, then discover tests through rustc.** The catalog
+   fix passes 322 Rust tests/profile, 40 Python tests and 68 fixture/pgrust/Ruff/fre
+   commands. Fre's initial allocation trap came from an omitted 150,000 reference
+   limit, not an established lowering defect; identical bytecode passes after
+   correcting the controller. Add effective limits to suite reports and verify
+   them against independently supplied expectations. Then expose checked test
+   names and attributes without a native test binary, and use that discovery
+   for automatic filtered suites. Keep unsupported harness semantics explicit.
+   [Catalog qualification](results/prepared-catalog-qualification-01/assessment.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%

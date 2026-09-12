@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Catalogs pass322 Rust tests/profile,40 Python tests,16 fixture commands,12 Ruff commands and32 pgrust edit/check/restoration commands. Fresh nonincremental fre export fails RawVec allocation despite native success; old/new exporters and old/new JIT/interpreter reproduce it. Repair the lowering gap before catalog publication and automatic discovery.
+**Next:** Catalog fix qualified:322 Rust tests/profile,40 Python tests,68 fixture/pgrust/Ruff/fre commands. Fre’s initial trap was an omitted reference allocation limit; the corrected actual export and exact replay pass with unchanged bytecode. Record effective runtime limits in suite reports, then implement compiler-backed test discovery and automatic filtered suites.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

@@ -67,7 +67,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | catalog-fixture | [prepared-catalog-fixture-01/summary.json](prepared-catalog-fixture-01/summary.json) |
 | catalog-ruff | [prepared-catalog-ruff-01/summary.json](prepared-catalog-ruff-01/summary.json) |
 | catalog-pgrust | [prepared-catalog-pgrust-02/isolated-assessment.json](prepared-catalog-pgrust-02/isolated-assessment.json) |
-| catalog-token | [prepared-catalog-token-01/summary.json](prepared-catalog-token-01/summary.json) |
+| catalog-token | [prepared-catalog-token-corrected-02/summary.json](prepared-catalog-token-corrected-02/summary.json) |
+| catalog-qualification | [prepared-catalog-qualification-01/summary.json](prepared-catalog-qualification-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

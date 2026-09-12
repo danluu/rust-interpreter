@@ -24,15 +24,20 @@ commands. The artifact-bound catalog fix passes 322 Rust tests per profile,
 commands), and pgrust's full edit sequence (32 commands). Catalogs preserve
 explicit function IDs despite optimization and bind them to exact bytecode.
 
-Publication is held by a fresh fre export failure: native passes all three token
-tests, but the nonincremental custom export traps in RawVec::grow_one. The older
-exporter, older JIT, new JIT and interpreter reproduce the same fault. Diagnose
-and reduce this lowering gap before broadening automatic test discovery. Full
+Fre's corrected actual export passes eight commands, including three native
+assertions and exact fresh/prepared replay. The first controller omitted the
+reference's 150,000 allocation limit and used the default 100,000; this caused
+the recorded allocation trap. Recompilation at the correct limit produces the
+same bytecode and passes. The older/newer failing controls used that same wrong
+limit, so they did not establish a lowering defect. The correction is explicit
+and the failed evidence remains preserved. The catalog fix is qualified for
+publication. Next record effective runtime limits in suite reports, then add
+compiler-backed discovery of test names and attributes. Full
 ignore/should-panic/unwind/thread semantics remain open.
 [Ruff repair](results/prepared-catalog-ruff-01/summary.json),
 [pgrust catalogs](results/prepared-catalog-pgrust-02/assessment.md),
-[fre failure](results/prepared-catalog-token-01/summary.json),
-[diagnostic plan](benchmarks/experiments/token-allocation-failure/PLAN.md).
+[fre corrected qualification](results/prepared-catalog-token-corrected-02/summary.json),
+[original misconfigured run](results/prepared-catalog-token-01/summary.json).
 
 Cross-region rematerialization remains parked after its 0.78% wall/0.81% CPU
 runtime regression. No conditional promotion benchmarks will run.
