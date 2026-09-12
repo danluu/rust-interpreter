@@ -22,25 +22,25 @@ from workflow_measurements import source_states
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--run-id',required=True)
-    parser.add_argument('--case',choices=['ruff','folded'],default='ruff')
+    parser.add_argument('--case',choices=['ruff','token'],default='ruff')
     args=parser.parse_args();assert re.fullmatch('prepared-catalog-'+args.case+r'-\d{2}',args.run_id)
     project='ruff' if args.case=='ruff' else 'fre'
-    workflow='ruff' if args.case=='ruff' else 'folded-literal-trie'
+    workflow='ruff' if args.case=='ruff' else 'token-phrase-allocation'
     package='ruff_linter' if args.case=='ruff' else 'fre-kernels'
     case=WORKFLOWS[project] if args.case=='ruff' else WORKFLOW_VARIANTS[project,workflow]
-    start_floor=8.75 if args.case=='ruff' else 8.25
+    start_floor=8.75 if args.case=='ruff' else 8.375
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,start_floor)
         build_path=ROOT/'results/prepared-catalog-build-02/summary.json';build=json.loads(build_path.read_text())
         assert build['status']=='passed' and build['tests']['test-release']==dict(passed=322,ignored=1)
         tool,key=installed_tools(build['tool_key']);require_export_option(tool,key,'entry-catalog')
         fixture=ROOT/'results/prepared-catalog-fixture-01/summary.json';assert json.loads(fixture.read_text())['status']=='passed'
-        history_id='aggregate-relocation-heldout-01-ruff-retry-01' if args.case=='ruff' else 'aggregate-relocation-e2e-01-folded-literal-trie'
+        history_id='aggregate-relocation-heldout-01-ruff-retry-01' if args.case=='ruff' else 'export-reuse-screen-token-01'
         raw=ROOT/'.work/runs'/history_id
         reference_path=ROOT/'results'/history_id/'summary.json';reference=json.loads(reference_path.read_text())
         rows=json.loads((raw/'records.json').read_text());native_row=[row for row in rows if row['mode']=='native'][-1]
         assert native_row['state']==5 and native_row['calls'][0]['returncode']==0
-        names=native_row['tests'];assert len(names)==(6 if args.case=='ruff' else 18) and names==case['tests']
+        names=native_row['tests'];assert len(names)==(6 if args.case=='ruff' else 3) and names==case['tests']
         matches=re.findall(r'Running unittests src/lib.rs \(([^)]+)\)',native_row['calls'][0]['stderr']);assert len(matches)==1
         native=Path(matches[0]);assert native.is_relative_to(raw/'native') and not native.is_symlink()
         supervisor_path=ROOT/'.work/experiments'/history_id/'status.json';supervisor=json.loads(supervisor_path.read_text())
@@ -64,13 +64,14 @@ def main():
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,tool_key=key,revision=reference['revision'],
             original_sha256=sha(path),executed_source_sha256=hashlib.sha256(edited).hexdigest(),tests=names,
-            cargo_incremental=False,minimum_start_gib=start_floor,minimum_child_gib=8,
+            cargo_incremental=False,guest_rustflags=reference['guest_rustflags'],minimum_start_gib=start_floor,minimum_child_gib=8,
             scope='Actual custom export; matching retained native executable, no native rebuild or performance comparison'))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_PROFILE_')) and
             k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER',
                       'CARGO_INCREMENTAL','CARGO_TARGET_DIR','CARGO_BUILD_TARGET']}
         assert not any(k.startswith('DYLD_') for k in env)
         env.update(CARGO_INCREMENTAL='0',CARGO_TERM_COLOR='never',RUST_INTERP_LAUNCH_STATS='1')
+        if reference['guest_rustflags']:env['RUSTFLAGS']=' '.join(reference['guest_rustflags'])
         records=[]
         def invoke(label,command,child_env=env):
             require_space(ROOT,8)
@@ -88,6 +89,8 @@ def main():
                 '--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
                 '--instruction-limit',str(reference['instruction_limit']),'--isolated-batch','fresh','--suite-report',str(report_path),
                 '--cache-namespace',args.run_id,*[a for name in names for a in ['--entry',name]]]
+            for flag in ['trap-unsupported-calls','run-try-callbacks']:
+                if reference.get(flag.replace('-','_')):command.append('--'+flag)
             row=invoke('export-and-execute',command);assert row['returncode']==0,row['stderr']
             assert 'Checking '+package in row['stderr'] and path.read_bytes()==edited
             report,digest=read_report(report_path);validate_report(report,names,'fresh',True)

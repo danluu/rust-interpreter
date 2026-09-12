@@ -60,3 +60,13 @@ completed fre cache inventory is 43.8 MiB excluding incremental state; admit one
 nonincremental export at 8.25 GiB and keep the 8 GiB per-child floor. This check
 uses one real edited source and a retained native executable; it is not a new
 edit-loop performance measurement or a replacement for the full pgrust sequence.
+
+The folded setup first failed a controller lookup, then found that its old native
+executable is absent; neither attempt started workload commands. Use the token
+workflow's existing retained native executable instead. Its exact final source
+hash and previous completed receipt are available. Apply the reference's MIR
+flags, explicit unsupported-call traps and normal-return try callbacks. The
+three original tests must pass natively and through the new exported catalog;
+fresh/prepared replay must match exactly. Admit this nonincremental export at
+8.375 GiB with the unchanged 8 GiB child floor. Do not count the two setup failures
+as guest failures or substitute a native executable from another source state.
