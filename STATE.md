@@ -79,15 +79,23 @@ paired token execution −291.9 ms, Cargo +62.7 ms; folded execution −26.2 ms,
 Cargo +12.9 ms. Stage medians are descriptive and need not add to command medians.
 No causal attribution or gate change follows from these observations.
 
-Next: [typed scalar argument/result census](benchmarks/experiments/whole-call-inline/NEXT.md).
-The current promoter explicitly excludes arguments and results. Measure private,
-non-address-exposed MIR scalars and a separate broader scalar-layout category;
-bind records to function IDs and exact byte-identical original artifacts/profiles.
-Then choose entry/return promotion within the current ABI or a value-passing ABI
-if the evidence justifies it. Existing native Calls already cross guest frames
-without returning to the Rust VM; do not repeat that implemented direction.
-A new implementation needs its own frozen plan and full strict qualifications.
-The next census is planned, not yet built or executed.
+The [typed scalar boundary census](results/scalar-boundary-census-01/assessment.md)
+now passes. Diagnostic exporter `93c13c08` passes 45 exporter checks and preserves
+both original guest artifacts and all original assertions; its VM/wrapper are
+unchanged. Five typed-join tests pass. Both original profiles reconcile exactly,
+with 3,335 folded and 14,852 token boundary rows and no exhausted analysis bounds.
+The first export's wrong ABI-offset assumption failed closed; the revised observer
+follows certified aggregate relocation before checking final function IDs/hashes.
+
+Token's MIR-eligible scalars account for 88.54M direct argument copies and 47.67M
+result returns. An entry-load/return-store change keeps those boundary copies.
+Next is a [scalar value ABI prototype](benchmarks/experiments/scalar-boundary-census/NEXT.md),
+starting with bounded static admission using the actual scalar transform's full
+address-use proof. MIR eligibility is not final bytecode promotion eligibility.
+Counts do not forecast latency. Existing native Calls already cross guest frames
+without returning to the Rust VM. The wire/runtime contract, strict qualifications
+and fresh complete-command gates must be frozen before implementation timing.
+No scalar ABI implementation or performance comparison has run yet.
 
 ## Evidence storage and ownership
 

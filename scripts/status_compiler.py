@@ -11,8 +11,10 @@ def render():
         'aggregate-integration-root-01', 'aggregate-relocation-e2e-01',
         'aggregate-relocation-heldout-recovery-01', 'budget-register-primary-01',
         'call-slot-primary-01', 'whole-call-build-02', 'whole-call-fixtures-01',
-        'whole-call-export-smoke-02', 'whole-call-primary-02', 'whole-call-costs-01')]
-    integration, primary, held, budget, slots, whole, fixtures, smoke, whole_primary, whole_costs = [json.loads((ROOT / p).read_text()) for p in paths]
+        'whole-call-export-smoke-02', 'whole-call-primary-02', 'whole-call-costs-01',
+        'scalar-boundary-build-02', 'scalar-boundary-export-smoke-02', 'scalar-boundary-census-01')]
+    (integration, primary, held, budget, slots, whole, fixtures, smoke, whole_primary,
+        whole_costs, scalar_build, scalar_export, scalar_census) = [json.loads((ROOT / p).read_text()) for p in paths]
     key = integration['tool_key']
     if not (all(d['status'] == 'passed' for d in (integration, primary, budget))
             and held['status'] == 'all seven histories verified'
@@ -27,7 +29,13 @@ def render():
             and whole['tests']['debug']['passed'] == whole['tests']['release']['passed'] == 300
             and fixtures['vm_executions'] == 1024 and fixtures['strict_rejections'] == 2
             and whole_primary['status'] == whole_costs['status'] == 'passed'
-            and not whole_primary['primary_gates_passed']):
+            and not whole_primary['primary_gates_passed']
+            and all(d['status']=='passed' for d in (scalar_build,scalar_export,scalar_census))
+            and scalar_build['exporter_test_count']==45 and scalar_census['tests_passed']==5
+            and scalar_census['tool_key']==key
+            and scalar_build['tool_key']==scalar_export['tool_key']==scalar_census['observed_tool_key']
+            and len(scalar_export['cases'])==len(scalar_census['cases'])==2
+            and all(c['bytecode_identical'] and c['original_assertions_pass'] for c in scalar_export['cases'])):
         raise RuntimeError('integrated compiler evidence differs from the recorded decision')
     index = json.loads((ROOT / 'benchmarks/tool-builds.json').read_text())
     build = next(b for b in index['builds'] if b['commit'] == integration['source_commit'])
@@ -75,9 +83,14 @@ def render():
         'Token saves 291.9 ms paired execution and adds 62.7 ms Cargo time.',
         'Stage medians are descriptive and need not sum to command medians.',
         '[Recorded costs](results/whole-call-costs-01/assessment.md).', '',
-        'Next: measure typed scalar argument/result materialization before choosing',
-        'entry/return promotion or a new value-passing ABI.',
-        '[Census plan](benchmarks/experiments/whole-call-inline/NEXT.md).', '',
+        'The typed scalar observer passes 45 exporter checks and preserves both',
+        'original artifacts and assertions. Five join tests and both exact profile',
+        'reconciliations pass: 3,335 folded and 14,852 token boundary rows.',
+        'Token has 88.54M MIR-eligible scalar argument copies and 47.67M returns.',
+        'These counts motivate a value-passing ABI investigation, starting with',
+        'final-bytecode address-use admission. They do not predict a speedup.',
+        '[Census result](results/scalar-boundary-census-01/assessment.md);',
+        '[next work](benchmarks/experiments/scalar-boundary-census/NEXT.md).', '',
         'Full libtest, unwinding, threads and general OS/FFI',
         'remain open; runtime options remain explicit.', '',
         'The following sections preserve the preceding runtime comparisons.', '']

@@ -52,9 +52,14 @@ Token saves 291.9 ms paired execution and adds 62.7 ms Cargo time.
 Stage medians are descriptive and need not sum to command medians.
 [Recorded costs](results/whole-call-costs-01/assessment.md).
 
-Next: measure typed scalar argument/result materialization before choosing
-entry/return promotion or a new value-passing ABI.
-[Census plan](benchmarks/experiments/whole-call-inline/NEXT.md).
+The typed scalar observer passes 45 exporter checks and preserves both
+original artifacts and assertions. Five join tests and both exact profile
+reconciliations pass: 3,335 folded and 14,852 token boundary rows.
+Token has 88.54M MIR-eligible scalar argument copies and 47.67M returns.
+These counts motivate a value-passing ABI investigation, starting with
+final-bytecode address-use admission. They do not predict a speedup.
+[Census result](results/scalar-boundary-census-01/assessment.md);
+[next work](benchmarks/experiments/scalar-boundary-census/NEXT.md).
 
 Full libtest, unwinding, threads and general OS/FFI
 remain open; runtime options remain explicit.

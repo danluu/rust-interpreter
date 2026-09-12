@@ -143,9 +143,14 @@ review are not commitments or evidence of feasibility.
   parks it: token wall improves 5.23%, beyond 3.83% A/A variation but below the
   required 10%; folded's 0.56% is inside A/A. All four histories remain, with no
   threshold changes or integration. [Stage observations](../results/whole-call-costs-01/assessment.md)
-  show token execution −291.9 ms and Cargo +62.7 ms. Next is a
-  [typed scalar boundary census](../benchmarks/experiments/whole-call-inline/NEXT.md),
-  before choosing entry/return promotion or a value-passing ABI.
+  show token execution −291.9 ms and Cargo +62.7 ms. The
+  [typed scalar boundary census](../results/scalar-boundary-census-01/assessment.md)
+  now preserves both original artifact hashes/assertions and reconciles both exact
+  profiles. Diagnostic exporter checks pass 45 tests; the typed join passes five.
+  Token has 88.54M MIR-eligible scalar argument copies and 47.67M scalar returns.
+  Next is [value-passing ABI work](../benchmarks/experiments/scalar-boundary-census/NEXT.md),
+  starting with final-bytecode address-use admission. The counts do not establish
+  a speedup, and no ABI implementation has run yet.
 
 - The qualified aggregate compiler is now integrated as `5b2330c` / `9637b0ac`.
   [Normal root builds](../results/aggregate-integration-root-01/assessment.md)
