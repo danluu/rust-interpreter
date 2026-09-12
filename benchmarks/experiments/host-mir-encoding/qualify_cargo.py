@@ -77,6 +77,8 @@ def main():
             SOURCE / 'scripts/suite_reports.py', SOURCE / 'scripts/workflow_io.py',
             SOURCE / 'scripts/interpreter.py', SOURCE / 'scripts/compare_saved_runtime.py']
         paths += [p for p in template.rglob('*') if p.is_file()]
+        paths += [root / 'scripts' / name for name in ['interpreter.py', 'workspace_cache.py', 'std_mir.py',
+            'test_discovery.py', 'suite_reports.py', 'native_suite.py', 'workflow_io.py']]
         frozen = {str(p.relative_to(root)): sha(p) for p in paths}
         write(work / 'plan.json', dict(owner=str(root), source=str(SOURCE), frozen=frozen, tools=manifests,
             tool_keys=keys, tests=NAMES, cargo_workers=2, runtime_workers=2,
@@ -206,6 +208,8 @@ os.execv(compiler, [compiler, *sys.argv[1:]])
                         assert (a['sha256'] if field == 'artifact' else a) == (b['sha256'] if field == 'artifact' else b)
         assert shared.read_bytes() == original_shared and app.read_bytes() == original_app
         assert all(sha(root / p) == digest for p, digest in frozen.items())
+        for key in keys.values():
+            interpreter.installed_tools(key)
         for mode in keys:
             for phase in ['original', 'valid-edit', 'wrong-edit', 'type-error']:
                 assert {r['host'] for r in routing if r['mode'] == mode and r['phase'] == phase} == {False, True}
