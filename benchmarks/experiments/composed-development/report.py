@@ -5,7 +5,46 @@ import json
 from pathlib import Path
 import statistics
 
-from workflows import ROOT, CUSTOM, MODES, assessment, sha, write
+from workflows import ROOT, CUSTOM, MODES, assessment, read_report, sha, write
+
+
+def suite_stages(rows, raw):
+    """Overlapping worker durations are work measurements, not command stages."""
+    selected = [r for r in rows if r['state'] > 0 and r['mode'] in CUSTOM]
+    if not selected or 'suite_sha256' not in selected[0]:
+        return None
+    med = statistics.median
+    reports = {}
+    for row in selected:
+        path = raw / f"{row['cycle']}-{row['state']}-{row['mode']}-suite.json"
+        suite, _ = read_report(path, row['suite_sha256'])
+        assert suite['status'] == 'passed' and all(t['status'] == 'passed' for t in suite['tests'])
+        reports[row['cycle'], row['state'], row['mode']] = suite
+    totals = {}
+    for mode in CUSTOM:
+        suites = [s for (*_, m), s in reports.items() if m == mode]
+        assert len(suites) == 15
+        totals[mode] = {
+            'constructor_work_seconds': med(s['preparation_ns'] / 1e9 for s in suites),
+            'jit_compile_work_seconds': med(sum(t['jit_compile_ns'] for t in s['tests']) / 1e9 for s in suites),
+            'test_work_seconds': med(sum(t['seconds'] for t in s['tests']) for s in suites),
+        }
+    names = [t['name'] for t in reports[0, 1, 'baseline']['tests']]
+    by_test = []
+    for name in names:
+        values = {mode: [] for mode in CUSTOM}
+        for cycle in range(3):
+            for state in range(1, 6):
+                for mode in CUSTOM:
+                    test, = [t for t in reports[cycle, state, mode]['tests'] if t['name'] == name]
+                    values[mode].append(test)
+        by_test.append(dict(name=name,
+            median_seconds={m: med(t['seconds'] for t in tests) for m, tests in values.items()},
+            paired_wall_ratio=med(c['seconds'] / b['seconds'] for b, c in zip(values['baseline'], values['candidate'])),
+            logical_bytecode_instructions={m: med(t['instructions'] for t in tests) for m, tests in values.items()}))
+    by_test.sort(key=lambda t: t['median_seconds']['baseline'], reverse=True)
+    return dict(totals=totals, tests=by_test,
+        scope='Constructor and test durations can overlap across workers. Compilation is included within test time. Worker assignment and prepared-code sharing can differ; per-test ratios are descriptive, not causal attribution. Logical bytecode counts are not hardware retired instructions.')
 
 
 def main():
@@ -56,6 +95,7 @@ def main():
     result = dict(summary_sha256=sha(out / 'summary.json'), stages=stages, cache=cache,
                   native=native, initial_complete_seconds=initial,
                   stage_scope='Nested measured scopes; separate medians need not add. Native suite output is rounded; residual includes Cargo and process overhead.')
+    result['suite_work'] = suite_stages(rows, raw)
     assert not (out / 'stage-assessment.json').exists()
     write(out / 'stage-assessment.json', result)
     lines = [f"# Combined engine: {summary['case']}", '',
@@ -90,6 +130,15 @@ def main():
         lines += ['', 'Both custom routes use the original ordinary three-test batch, stopping at the '
                   'first assertion. Separate outcomes after that failure are unavailable. This result '
                   'does not measure prepared execution or parallel test scheduling.']
+    if result['suite_work'] is not None:
+        suites = result['suite_work']
+        lines += ['', 'Largest selected test durations:', '',
+                  '| Test | Baseline median | Candidate median | Paired ratio |',
+                  '| --- | ---: | ---: | ---: |']
+        for row in suites['tests'][:5]:
+            lines.append(f"| {row['name']} | {row['median_seconds']['baseline']:.3f}s | "
+                         f"{row['median_seconds']['candidate']:.3f}s | {row['paired_wall_ratio']:.3f} |")
+        lines += ['', suites['scope']]
     path = out / 'stage-assessment.md'
     assert not path.exists()
     path.write_text('\n'.join(lines) + '\n')
