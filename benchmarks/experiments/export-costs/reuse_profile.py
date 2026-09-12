@@ -47,7 +47,7 @@ def compare(previous, current, costs=None):
         repeated_prepare_seconds=sum(seconds(r, 'prepare_seconds') for r in same),
         repeated_lower_seconds=sum(seconds(r, 'lower_seconds') for r in same),
         semantics_proven=False)
-    if current['schema_version'] == 2:
+    if current['schema_version'] >= 2:
         templated = [r for r in rows if r['index'] in old and r['name'] == old[r['index']]['name']
                      and r['typed_template_sha256'] == old[r['index']]['typed_template_sha256']]
         result.update(repeated_typed_templates=len(templated),
@@ -56,6 +56,19 @@ def compare(previous, current, costs=None):
             pointer_bindings=sum(len(r['relocations']) for r in rows),
             prior_unannotated_weights=costs is not None,
             current_instrumented_function_seconds=sum(r['prepare_seconds'] + r['lower_seconds'] for r in rows))
+    if current['schema_version'] == 3:
+        old_nodes = {r['dependency']['node']: r for r in previous['functions']}
+        green = [r for r in rows if r['dependency']['previous_green']]
+        unknown = [r for r in green if r['dependency']['node'] not in old_nodes]
+        changed = [r for r in green if r['dependency']['node'] in old_nodes
+                   and r['typed_template_sha256'] != old_nodes[r['dependency']['node']]['typed_template_sha256']]
+        supported = [r for r in green if r['dependency']['node'] in old_nodes
+                     and r['typed_template_sha256'] == old_nodes[r['dependency']['node']]['typed_template_sha256']]
+        result.update(green_functions=len(green), unknown_green=len(unknown),
+            changed_green_templates=[dict(index=r['index'], name=r['name'], node=r['dependency']['node']) for r in changed],
+            supported_green_seconds=sum(seconds(r) for r in supported),
+            supported_green_cost_fraction=sum(seconds(r) for r in supported) / total if total else 0,
+            green_check_seconds=sum(r['dependency']['green_check_seconds'] for r in rows))
     return result
 
 
@@ -69,6 +82,8 @@ def main():
     parser.add_argument('--qualification', type=Path, default=ROOT / 'results/export-reuse-fixtures-01/summary.json')
     parser.add_argument('--weights-run', type=Path,
                         help='prior unannotated census with identical function outputs; required for typed template costs')
+    parser.add_argument('--dependency-qualification', type=Path,
+                        help='successful semantic-edit dependency fixture; enables full-recomputation dependency observation')
     args = parser.parse_args()
     assert re.fullmatch('export-reuse-' + args.case + r'-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -81,6 +96,12 @@ def main():
         assert qualification['commands'] == (179 if typed else 104) and qualification['all_artifact_hashes_identical']
         assert typed == (args.weights_run is not None)
         assert qualification['tool_key'] == build['tool_key']
+        dependencies = args.dependency_qualification is not None
+        if dependencies:
+            dep_check = json.loads(args.dependency_qualification.read_text())
+            assert dep_check['tool_key'] == build['tool_key'] and dep_check['commands'] == 229
+            assert dep_check['candidate_dependency_boundary_supported'] and dep_check['all_lowering_executed']
+            assert typed
         tool, key = installed_tools(build['tool_key'])
         reference_path = ROOT / 'results' / REFERENCES[args.case] / 'summary.json'
         reference = json.loads(reference_path.read_text())
@@ -139,17 +160,22 @@ def main():
                 assert value['schema_version'] == 1 and value['artifact_sha256'] == row['artifact_sha256']
                 weights[row['state']] = value
                 paths.append(census)
+        if dependencies:
+            paths.extend([args.dependency_qualification.resolve(), HERE / 'DEPENDENCIES.md'])
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'plan.json', dict(frozen=frozen, source_commit=build['source_commit'], tool_key=key,
               source_revision=marker['revision'], command=command, performance_measurement=False,
               restored_reference_cycle=args.restored_reference_cycle,
               weight_source=str(args.weights_run) if typed else 'current unannotated function intervals',
+              compiler_dependency_observation=dependencies, all_lowering_executed=True,
               states=[0, -1, 1, 2, 3, 4, 5, 'restored']))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
                              'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET']}
         env.update(RUST_INTERP_LAUNCH_STATS='1', RUSTFLAGS=references[0]['calls'][0]['rustflags'],
                    CARGO_PROFILE_DEV_BUILD_OVERRIDE_OPT_LEVEL='0', CARGO_PROFILE_TEST_BUILD_OVERRIDE_OPT_LEVEL='0')
+        if dependencies:
+            env['RUST_INTERP_FUNCTION_DEPENDENCIES'] = '1'
         records, censuses, transitions = [], [], []
         def execute(state):
             require_space(ROOT, 8)
@@ -172,6 +198,11 @@ def main():
             shutil.copy2(artifact, saved)
             row.update(artifact_sha256=sha(saved), artifact=str(saved.relative_to(ROOT)), launch=launch)
             report, scopes = observation(stderr, saved)
+            assert report['schema_version'] == (3 if dependencies else 2 if typed else 1)
+            if dependencies:
+                assert len({f['dependency']['node'] for f in report['functions']}) == len(report['functions'])
+                if state == 0:
+                    assert not any(f['dependency']['previous_green'] for f in report['functions'])
             write(work / (label + '.census.json'), report)
             row.update(census_sha256=sha(work / (label + '.census.json')), timings=scopes)
             expected = references[state]
@@ -214,6 +245,15 @@ def main():
                 median_repeated_template_cost_fraction=statistics.median(r['repeated_template_cost_fraction'] for r in edited),
                 weight_source=str(args.weights_run),
                 weight_scope='Prior unannotated per-function intervals with exact matching outputs. Current pointer-observation cost is excluded from the opportunity estimate; these are not performance samples.')
+        if dependencies:
+            changed = sum(len(r['changed_green_templates']) for r in transitions)
+            unknown = sum(r['unknown_green'] for r in transitions)
+            result.update(compiler_dependency_observation=True, all_lowering_executed=True,
+                changed_green_templates=changed, unknown_green=unknown,
+                candidate_dependency_boundary_supported=changed == unknown == 0 and any(r['green_functions'] for r in transitions),
+                median_supported_green_seconds=statistics.median(r['supported_green_seconds'] for r in edited),
+                median_supported_green_cost_fraction=statistics.median(r['supported_green_cost_fraction'] for r in edited),
+                median_green_check_seconds=statistics.median(r['green_check_seconds'] for r in edited))
         write(out / 'summary.json', result)
 
 
