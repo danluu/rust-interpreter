@@ -12,7 +12,7 @@ The scalar compiler/runtime is now ordinary `crates/` source on branch
 the retained `9637b0ac` wrapper. Its Cargo route passed all 19 publication checks.
 The original tests pass on both fre workloads. These are correctness results.
 
-First get the scalar timing result. A [short screen](../benchmarks/experiments/scalar-value-workflow/SMOKE.md)
+A [short screen](../benchmarks/experiments/scalar-value-workflow/SMOKE.md)
 now precedes the previously planned full histories. It requires at least 8%
 token complete-command improvement, improving CPU and separate 5% folded guards.
 Five real edits per workload are measured; cold and wrong-edit controls remain.
@@ -30,16 +30,16 @@ fixed comparison. Historical failures are not relabelled as passes.
 | --- | --- |
 | 0 Verdict | Agree on prioritization and weak adoption evidence. Correct one arithmetic claim: 1.48s frontend/export is below a 1.97s complete native command; zero guest execution could beat that control. It leaves only about 0.49s for guest execution and other overhead. Separate-run subtraction is not causal attribution. |
 | 1.1 Detectable effect | Implemented the 8% short screen before full primary/held-out work. It uses twice the largest recent token A/A envelope as a screening heuristic, not a confidence bound. Park failures without repeated attempts. |
-| 1.2 Scalar number | Compiler, frontend, Cargo and original-workload correctness are complete. Run the new short real-edit comparison immediately. |
+| 1.2 Scalar number | Done and parked: token improved 0.74%, below the 8% screen. No full comparison follows. |
 | 1.3 Register allocation | Accept as a structural candidate after profiling the scalar result. Design liveness across calls/back-edges, spills, u128 pairs and host ABI together; x19–x28 are not ten freely available guest registers. |
-| 1.4 Export overhead | Next measurement priority after the scalar screen. Attribute launcher, rustc frontend, capture/relocation, scalar proofs, serialization/hash and publication separately. “Free wins” still need measured cost and invalidation correctness. |
+| 1.4 Export overhead | Measured on seven byte-identical token exports: graph lowering 691ms, hash 49ms, publication 30ms, serialization 14ms, validation 5ms. Small publication wins cannot fund a full primary. Graph reuse remains substantial; see the export-cost result. |
 | 1.5 Hybrid analysis | Accept explicit cost modelling. Native compilation is paid per Cargo target; per-test guest timings alone cannot predict mixed execution. Report lower/upper bounds when native test timings are absent. No hidden native fallback. |
 | 1.6 Unfiltered suite | Accept and schedule one fre-kernels suite attempt after the latency controls. Report native all-tests time, guest executed/ignored/unsupported lists and setup costs separately. Direct body runs cannot be presented as successful libtest execution. |
 | 2.1 Control defaults | Correct the prose now. Done on the source branch: both runners share explicit O0/incremental, 18 jobs/default threads. Preserve fixed existing scalar settings (four custom jobs) during this comparison. |
-| 2.2 Native stage split | Accept. Instrument native build and binary execution separately in a new control run, while retaining the actual complete Cargo command as the main metric. Parsing rounded libtest output is descriptive; a second execution is not the original execution time. |
+| 2.2 Native stage split | Existing 135 edited native commands now have rounded suite timing and non-suite residuals; Nushell type-relations uses a grouped harness. The new calibration preserves actual Cargo timing and separately records diagnostic binary repeats. Repeats are not the original execution time. |
 | 2.3 Check floor | Accept a per-row check reference and exporter overhead. Correct the claim that these rows execute nothing useful: they do run selected original assertions, but their savings predominantly avoid native code generation/linking. |
 | 2.4 Workers | Agree that interactive wall latency should choose a development preset. The source branch now defaults both runners to 18 custom workers; report CPU cost and qualify fresh matched controls before performance claims. Preserve the historical CPU-gated failure and do not change workers inside the scalar comparison. Shared-host contention remains a reason to expose a worker limit. |
-| 2.5 Tuned native | High priority after scalar screening: fixed debuginfo and split-debuginfo candidates, chosen on calibration then checked on other edits. No fastest-native claim before that. |
+| 2.5 Tuned native | Now first: effective profiles inspected for all five projects (15 queries); pgrust/Ruff already use line tables, all five use unpacked split info. Calibrate the three distinct fre presets on real edits, freeze the choice before confirmation, then check other workflows. No fastest-native claim. |
 | 2.6 Cold | Accept a cold column alongside warm edits, with empty per-mode caches distinguished from OS/download/tool bootstrap coldness. Recompute from receipts; do not mix worker presets. |
 | 2.7 Fixed anchor | Accept. Before another integration, compare with the best previously retained engine for each primary in the same session. The immediate predecessor and a repeated 5% allowance are insufficient protection against cumulative regressions. |
 | 2.8 Drift | Accept. Use paired ratios for changes and same-history native ratios; absolute medians from different sessions are historical observations, not cross-version speedup estimates. |
@@ -82,3 +82,5 @@ fixed comparison. Historical failures are not relabelled as passes.
 | 8.5 Storage time | Agree. Finish the already running verified batch and stop additional archival before the scalar screen. Storage maintenance is not engine progress. |
 | 8.6 Index | Accept a manifest-driven index with date, source/tool, case, delta, decision and successor. Avoid inferring retention from commit verbs or result directory names. |
 | 9 Suggested order | Adopt scalar timing first, then tuned native/export costs and a usable suite workflow. Cheap documentation/source/check fixes can accompany that work. Do not change workers or binaries in the middle of the scalar comparison or reverse old gates after seeing data. |
+
+September 12 priority update: the supplied file still has the same SHA256. [Export costs](../results/export-costs-token-02/assessment.md) and [native stages](../results/native-existing-stages-01/assessment.md) are measured. Next is [native calibration](../benchmarks/experiments/tuned-native/PLAN.md), followed by a usable unfiltered suite and structural runtime/export reuse work.

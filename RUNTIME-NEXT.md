@@ -4,17 +4,18 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Measure export overhead on the retained compiler.** The scalar ABI screen
-   failed: token improved only 0.74% against an 8% target. Guest execution saved
-   about 170ms while Cargo added 144ms. Its full A/A and held-outs are stopped.
-   Attribute validation, lowering/proofs, serialization, hashing and publication
-   before choosing another optimization. Keep exact bytecode identity and strict
-   type/borrow/error controls. Tool lookup is about 2ms, not the main bottleneck.
-2. **Qualify stronger native controls.** Compare fixed debuginfo and
-   split-debuginfo presets, record native build and test execution separately,
-   and retain complete-command timing. Use calibration edits to choose a preset
-   before held-out edits. The development branch now shares an 18-worker latency
-   preset; report CPU costs and preserve explicit settings for old comparisons.
+1. **Qualify stronger native controls.** Effective profiles are now recorded for
+   all five projects: pgrust/Ruff already use line tables; all use unpacked split
+   info. Calibrate fre's three distinct presets on real edits, freeze the choice
+   before confirmation, then compare other workflows. Record actual Cargo wall/
+   CPU, rounded suite timing and separately labelled binary repeats. The source
+   branch has shared 18-worker defaults; historical controls remain explicit.
+2. **Choose substantial export work from measured costs.** The retained observer
+   produced seven byte-identical token artifacts. Graph lowering costs 691ms;
+   hashing/publication/serialization/validation together cost about 98ms. Do not
+   run full primaries for those small components. Diagnose allocation-order
+   determinism before designing semantic graph reuse. The scalar ABI remains
+   parked after its 0.74% gain missed the 8% screen.
 3. **Exercise a real unfiltered suite.** Start with fre-kernels: native all-tests
    timing, exact guest executed/ignored/unsupported inventory, original assertions.
    Direct body coverage is not libtest compatibility. Address real unwinding,

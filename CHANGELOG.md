@@ -1,5 +1,11 @@
 # Checked-in changes
 
+## 2026-09-12 controls before further optimization
+
+- Retained exporter instrumentation preserves all seven real token artifacts. Graph lowering costs 691ms; hash/publication/serialization/validation together cost about 98ms, too small for another full optimization primary.
+- Cargo effective profiles were inspected for all five projects; pgrust/Ruff already use line tables. Native suite times were recovered from 135 existing edited commands.
+- Added a small native debug-profile calibration with selection frozen before confirmation, actual Cargo timing and separate executable repeats. Ten parser/selection tests pass.
+
 ## 2026-09-11 current decisions
 
 - Aggregate relocation was integrated as `5b2330c/9637b0ac` after both primary gates and seven held-outs passed.

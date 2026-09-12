@@ -20,7 +20,7 @@ def render():
     cases = [(c['label'], c['run_id']) for c in primary['cases'] + held['cases']]
     lines = ['# Current measured status', '',
         f"Retained build **{config['source_commit'][:7]}/{config['tool_key'][:8]}**: custom interpreter and direct AArch64 JIT, strict rustc type/borrow checking. The exec Cargo wrapper is deployed.", '',
-        'The retained measurements put folded near the specified native control and token about 2.3× slower. Other selected workflows save code-generation/link time while executing their original assertions. Native debuginfo/link settings are untuned; full libtest compatibility is unfinished.', '',
+        'The retained measurements put folded near the specified native control and token about 2.3× slower. Other selected workflows save code-generation/link time while executing their original assertions. Native uses project debuginfo/link settings; alternatives have not been compared. Full libtest compatibility is unfinished.', '',
         'Times below come from each row’s own three-cycle, five-edit history. Native uses O0/incremental, 18 jobs/default test threads; custom uses four jobs. Cold means empty per-mode caches, excluding tool/sysroot bootstrap and OS cache coldness.', '',
         '| Workflow | Warm native | Warm custom | Cargo check | Custom/check | Cold native | Cold custom |',
         '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
@@ -38,6 +38,10 @@ def render():
         'Retained qualification: 289 debug/release tests (one ignored), 47,004 broad validation commands, 245 TLS/destructor commands and 382 fre body passes (seven ignored). Seven held-out histories passed separate 5% wall/CPU regression guards. Private results expose aggregates only.', '',
         'The lightweight wrapper is in the retained build despite failing its standalone cold-performance gate. Budget-register, call-slot and whole-call candidates remain parked. A new 18-custom-worker latency preset is on the development branch; it does not alter the measurements above.', '']
     screen, decision = read(config['latest_screen']), read(config['latest_decision'])
+    costs = read(config['latest_export_costs'])
+    if costs['status'] != 'passed' or not costs['all_artifact_hashes_identical']:
+        raise RuntimeError('export cost evidence changed')
+    emit = costs['stage_medians']['emit']
     if screen['status'] != 'passed' or decision['status'] != 'parked' or screen['advance_to_full_comparison']:
         raise RuntimeError('latest scalar decision changed')
     lines += ['**Latest scalar ABI screen: parked.** Five real edits per case, original tests and wrong-edit controls; all correctness checks passed.', '',
@@ -47,6 +51,8 @@ def render():
     lines += ['',
         'Token missed the 8% screening target. Execution saved about 170ms paired while Cargo added 144ms. Full scalar A/A and held-outs are stopped. Source lives under `crates/` on `experiment/scalar-value-abi` (measured commit `840fdb5`); the timing tool used the same wrapper on both sides.', '',
         '[Scalar assessment](results/scalar-edit-smoke-01/assessment.md).', '',
+        f"**Latest exporter attribution:** seven real token artifacts match the retained compiler exactly. Graph lowering costs {emit['lower_graph']*1000:.0f}ms; hashing {emit['call_report_hash']*1000:.0f}ms, publication {emit['bytecode_publication']*1000:.0f}ms, serialization {emit['serialization']*1000:.0f}ms and validation {emit['validation']*1000:.0f}ms. [Assessment]({Path(config['latest_export_costs']).with_name('assessment.md')}).", '',
+        f"Effective profiles are recorded for all five projects: pgrust/Ruff already use line tables; all use unpacked split debuginfo. [Native stage attribution]({Path(config['latest_native_stages']).with_name('assessment.md')}) covers 135 existing edited commands; tuned timing follows.", '',
         '**Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.', '',
         '**Next:** ' + config['next'], '',
         f"[Review decisions]({config['review']}) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)", '',

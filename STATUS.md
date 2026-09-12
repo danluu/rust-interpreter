@@ -2,7 +2,7 @@
 
 Retained build **5b2330c/9637b0ac**: custom interpreter and direct AArch64 JIT, strict rustc type/borrow checking. The exec Cargo wrapper is deployed.
 
-The retained measurements put folded near the specified native control and token about 2.3× slower. Other selected workflows save code-generation/link time while executing their original assertions. Native debuginfo/link settings are untuned; full libtest compatibility is unfinished.
+The retained measurements put folded near the specified native control and token about 2.3× slower. Other selected workflows save code-generation/link time while executing their original assertions. Native uses project debuginfo/link settings; alternatives have not been compared. Full libtest compatibility is unfinished.
 
 Times below come from each row’s own three-cycle, five-edit history. Native uses O0/incremental, 18 jobs/default test threads; custom uses four jobs. Cold means empty per-mode caches, excluding tool/sysroot bootstrap and OS cache coldness.
 
@@ -35,9 +35,13 @@ Token missed the 8% screening target. Execution saved about 170ms paired while C
 
 [Scalar assessment](results/scalar-edit-smoke-01/assessment.md).
 
+**Latest exporter attribution:** seven real token artifacts match the retained compiler exactly. Graph lowering costs 691ms; hashing 49ms, publication 30ms, serialization 14ms and validation 5ms. [Assessment](results/export-costs-token-02/assessment.md).
+
+Effective profiles are recorded for all five projects: pgrust/Ruff already use line tables; all use unpacked split debuginfo. [Native stage attribution](results/native-existing-stages-01/assessment.md) covers 135 existing edited commands; tuned timing follows.
+
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Measure retained-exporter stage costs and tuned native controls; keep the failed scalar candidate parked.
+**Next:** Calibrate native debug settings on real fre edits, confirm the frozen choice, then measure other workflows and an unfiltered suite.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

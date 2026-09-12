@@ -107,6 +107,10 @@ def profile(work,tools,key,env):
 
 
 def main():
+    global RUN
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--attempt',type=int,choices=range(1,10),default=1)
+    args=parser.parse_args();RUN=f'export-costs-token-{args.attempt:02}'
     work=ROOT/'.work'/RUN;work.mkdir(exist_ok=False)
     status=dict(status='preflight',pid=os.getpid(),parent_pid=os.getppid(),started_at=time.time());write(work/'status.json',status)
     try:
