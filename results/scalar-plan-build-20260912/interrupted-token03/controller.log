@@ -1,0 +1,32 @@
+candidate 0 0 cold-original 9.599
+native 0 0 cold-original 8.864
+baseline 0 0 cold-original 10.498
+check-floor 0 0 4.71
+baseline 0 -1 corrupt-short-input-count 3.056
+native 0 -1 corrupt-short-input-count 2.467
+candidate 0 -1 corrupt-short-input-count 2.931
+check-floor 0 -1 1.132
+candidate 0 1 name-literal-finder-result 5.719
+native 0 1 name-literal-finder-result 3.255
+baseline 0 1 name-literal-finder-result 6.243
+check-floor 0 1 1.386
+candidate 0 2 reuse-short-count-input-length 5.782
+baseline 0 2 reuse-short-count-input-length 6.005
+native 0 2 reuse-short-count-input-length 3.736
+check-floor 0 2 1.327
+native 0 3 reuse-short-span-input-length 3.405
+candidate 0 3 reuse-short-span-input-length 6.254
+baseline 0 3 reuse-short-span-input-length 6.172
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-perf-20260912/scripts/bench_e2e_workflow.py", line 696, in <module>
+    if __name__=='__main__':main()
+                            ~~~~^^
+  File "/Users/danluu/dev/rust-interp-perf-20260912/scripts/bench_e2e_workflow.py", line 521, in main
+    if args.check_floor:check_reference(sample)
+                        ~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-perf-20260912/scripts/bench_e2e_workflow.py", line 303, in check_reference
+    require_space(work,args.minimum_free_gib)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/danluu/dev/rust-interp-perf-20260912/scripts/workflow_io.py", line 35, in require_space
+    raise RuntimeError(f'insufficient free disk: {free} bytes; no child started or automatic cleanup attempted')
+RuntimeError: insufficient free disk: 1047363584 bytes; no child started or automatic cleanup attempted

@@ -1,0 +1,1682 @@
+{
+  "schema_version": 2,
+  "project": "pgrust",
+  "workflow": "default",
+  "revision": "38d2517d3e09168a8fe222837730d435238ff358",
+  "cycles": 1,
+  "initial_mode_order": [
+    "baseline",
+    "candidate",
+    "native"
+  ],
+  "minimum_free_gib": 1,
+  "tests": [
+    "tests::uint32_paths_match_byte_path",
+    "tests::extended_zero_seed_low_word_equals_hash_bytes",
+    "tests::murmurhash32_inverse_roundtrips",
+    "tests::dynahash_wrappers"
+  ],
+  "edits": [
+    "name-inverse-xorshift-intermediate",
+    "spell-out-four-byte-load",
+    "combine-constant-hash-initializers",
+    "name-string-hash-length-bound",
+    "use-immutable-hash-stages"
+  ],
+  "workload": "All four existing hashfn library unit tests, including the original 100,000-iteration roundtrip loop",
+  "case_sha256": "98a8ac961a4057c4429001c39b23156af64859522f4c864b260c93efcde8335a",
+  "test_source_unchanged": true,
+  "batch": true,
+  "compare_isolated_batches": false,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/scalar-plan-pgrust-20260912-02",
+  "build_tool_opt_level": 0,
+  "build_jobs": 18,
+  "custom_build_jobs": {
+    "baseline": 18,
+    "candidate": 18
+  },
+  "native_control": {
+    "profile": "repository",
+    "jobs": 18,
+    "test_threads": "1",
+    "rustflags": [],
+    "isolation": "ordinary libtest batch"
+  },
+  "instruction_limit": 100000000000,
+  "allocation_limit": 150000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "candidate_jit_persistent_registers": true,
+  "candidate_jit_resumable_calls": true,
+  "candidate_jit_native_calls": false,
+  "candidate_jit_native_call_stubs": false,
+  "baseline_jit_resumable_calls": true,
+  "baseline_jit_persistent_registers": true,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": true,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+  "candidate_tool_key_requested": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 0.6712934999959543,
+    "baseline": 0.5670697919849772,
+    "candidate": 0.5625931669783313
+  },
+  "median_cpu_seconds": {
+    "native": 0.5373120000000002,
+    "baseline": 0.5507599999999997,
+    "candidate": 0.5477829999999999
+  },
+  "cpu_accounting": "RUSAGE_CHILDREN deltas around one waited-for child tree at a time; user plus system CPU; excludes harness CPU",
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "baseline": 0.5682310000120196,
+    "candidate": 0.6260226669837721,
+    "native": 0.7522571250156034
+  },
+  "cycle_anchor_seconds": [],
+  "source_transitions": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "content_changed": false,
+      "previous_mode_sources": {
+        "native": null,
+        "baseline": null,
+        "candidate": null
+      }
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+        "baseline": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+        "candidate": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+        "baseline": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+        "candidate": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "baseline": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "candidate": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "baseline": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "candidate": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "baseline": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "candidate": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "baseline": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "candidate": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": -2,
+      "phase": "restored-original",
+      "previous_source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "baseline": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "candidate": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b"
+      }
+    }
+  ],
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "605b874f1165811273cb750fff3a59017c758c37a75e504dd081a053b10202c9",
+    "scripts/interpreter.py": "84a8aa02f1826ac7b469feadcaad73787a503be249b93ef7db99deee0f6131f8",
+    "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+    "scripts/workflow_case_file.py": "4a138ac3b497b9871b3d0781b0272f68da886ef118a26b8795cb7c59141588d7",
+    "scripts/workflow_measurements.py": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132",
+    "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+    "scripts/workflow_io.py": "c159a3152a0019e0d9ebe189ca4b1c48927cc45623d729ed3fd6edf0b13c2acb",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+    "scripts/workflow_jobs.py": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5",
+    "scripts/native_suite.py": "b3c3d462cf1330c7ed07d7b4e80becca9975cffe4b154d58aa322242a97c85c3",
+    "scripts/suite_reports.py": "8c3f13a9812041bfd7e426ba37296e8f416eec95336dc9ac67e9c4ae27d98e7f",
+    "scripts/compare_saved_runtime.py": "34407784cbda57cf0239336c9e310f81a29a4bbfeae6f8c17fbe5a84b816d4d1",
+    "scripts/workspace_cache.py": "1f0848930ddfb1ad0b1d6f128ad79b0e91faf9610d93f5e2e082dc4b39bb76ec",
+    "scripts/test_discovery.py": "36578b7d275959ce3b706ad2f181f3f17d8bced1b7c554c64fdbc4b7862e9cc5"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "03d401c1df926f99941cdd5325c2d58848d25e3b774ffa7f27db20b448c65a20",
+      "exporter_sha256": "0819d5dff1f3cfd4d2c32618786f0e075d16481cd4982ba0ea8905c33fdece5a"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "03d401c1df926f99941cdd5325c2d58848d25e3b774ffa7f27db20b448c65a20",
+      "exporter_sha256": "be540a6c39bafdab8e8351bcfa5caa961bc61c36452e1388ad9620cf7efcd1b2"
+    }
+  },
+  "mode_orders": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": -2,
+      "phase": "restored-original",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    }
+  ],
+  "vm_sha256": "03d401c1df926f99941cdd5325c2d58848d25e3b774ffa7f27db20b448c65a20",
+  "exporter_sha256": "be540a6c39bafdab8e8351bcfa5caa961bc61c36452e1388ad9620cf7efcd1b2",
+  "samples": [
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5682310000120196,
+      "cpu_seconds": 0.543839,
+      "previous_source_sha256": null,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        5.62255859375,
+        4.91650390625,
+        5.05078125
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/baseline/0-0.rbc",
+          "sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+          "bytes": 129558
+        }
+      ],
+      "build_to_ready_seconds": 0.5246882080100477,
+      "build_to_ready_cpu_seconds": 0.503363,
+      "cargo_cpu_seconds": 0.460048
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6260226669837721,
+      "cpu_seconds": 0.6023809999999999,
+      "previous_source_sha256": null,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        5.62255859375,
+        4.91650390625,
+        5.05078125
+      ],
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/candidate/0-0.rbc",
+          "sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+          "bytes": 129558
+        }
+      ],
+      "build_to_ready_seconds": 0.5802132499811705,
+      "build_to_ready_cpu_seconds": 0.559458,
+      "cargo_cpu_seconds": 0.515571
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.7522571250156034,
+      "cpu_seconds": 0.6042400000000001,
+      "previous_source_sha256": null,
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        5.62255859375,
+        4.91650390625,
+        5.05078125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6920812919852324,
+      "cpu_seconds": 0.5530269999999997,
+      "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        5.62255859375,
+        4.91650390625,
+        5.05078125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6146046659850981,
+      "cpu_seconds": 0.5963650000000001,
+      "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        5.62255859375,
+        4.91650390625,
+        5.05078125
+      ],
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/candidate/-1-0.rbc",
+          "sha256": "1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79",
+          "bytes": 129558
+        }
+      ],
+      "build_to_ready_seconds": 0.5754099170153495,
+      "build_to_ready_cpu_seconds": 0.5600419999999999,
+      "cargo_cpu_seconds": 0.514513
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "break-hash-multiplier",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5729573749995325,
+      "cpu_seconds": 0.5586480000000001,
+      "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "load": [
+        5.62255859375,
+        4.91650390625,
+        5.05078125
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/baseline/-1-0.rbc",
+          "sha256": "1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79",
+          "bytes": 129558
+        }
+      ],
+      "build_to_ready_seconds": 0.531990916992072,
+      "build_to_ready_cpu_seconds": 0.520489,
+      "cargo_cpu_seconds": 0.474831
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5608314580167644,
+      "cpu_seconds": 0.5426050000000001,
+      "previous_source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        5.4921875,
+        4.90087890625,
+        5.04443359375
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/baseline/1-0.rbc",
+          "sha256": "fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02",
+          "bytes": 129528
+        }
+      ],
+      "build_to_ready_seconds": 0.5154100419895258,
+      "build_to_ready_cpu_seconds": 0.500362,
+      "cargo_cpu_seconds": 0.45832599999999996
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5618770410073921,
+      "cpu_seconds": 0.5444859999999998,
+      "previous_source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        5.4921875,
+        4.90087890625,
+        5.04443359375
+      ],
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/candidate/1-0.rbc",
+          "sha256": "fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02",
+          "bytes": 129528
+        }
+      ],
+      "build_to_ready_seconds": 0.5167276669817511,
+      "build_to_ready_cpu_seconds": 0.502171,
+      "cargo_cpu_seconds": 0.457784
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-inverse-xorshift-intermediate",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6712934999959543,
+      "cpu_seconds": 0.5289310000000005,
+      "previous_source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+      "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "load": [
+        5.4921875,
+        4.90087890625,
+        5.04443359375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5670697919849772,
+      "cpu_seconds": 0.5507599999999997,
+      "previous_source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        5.4921875,
+        4.90087890625,
+        5.04443359375
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/baseline/2-0.rbc",
+          "sha256": "80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50",
+          "bytes": 152979
+        }
+      ],
+      "build_to_ready_seconds": 0.5218075840093661,
+      "build_to_ready_cpu_seconds": 0.5080929999999999,
+      "cargo_cpu_seconds": 0.46477899999999994
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6658607090066653,
+      "cpu_seconds": 0.5373120000000002,
+      "previous_source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        5.4921875,
+        4.90087890625,
+        5.04443359375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "spell-out-four-byte-load",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5613960830087308,
+      "cpu_seconds": 0.546511,
+      "previous_source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+      "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "load": [
+        5.4921875,
+        4.90087890625,
+        5.04443359375
+      ],
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/candidate/2-0.rbc",
+          "sha256": "80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50",
+          "bytes": 152979
+        }
+      ],
+      "build_to_ready_seconds": 0.5157352079986595,
+      "build_to_ready_cpu_seconds": 0.504137,
+      "cargo_cpu_seconds": 0.45927999999999997
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5625931669783313,
+      "cpu_seconds": 0.5477829999999999,
+      "previous_source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        5.4921875,
+        4.90087890625,
+        5.04443359375
+      ],
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/candidate/3-0.rbc",
+          "sha256": "ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3",
+          "bytes": 152763
+        }
+      ],
+      "build_to_ready_seconds": 0.5149899999960326,
+      "build_to_ready_cpu_seconds": 0.503447,
+      "cargo_cpu_seconds": 0.46029099999999995
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6358110409928486,
+      "cpu_seconds": 0.6159219999999999,
+      "previous_source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        5.77294921875,
+        4.96875,
+        5.0673828125
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/baseline/3-0.rbc",
+          "sha256": "ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3",
+          "bytes": 152763
+        }
+      ],
+      "build_to_ready_seconds": 0.5855358749977313,
+      "build_to_ready_cpu_seconds": 0.568899,
+      "cargo_cpu_seconds": 0.519933
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "combine-constant-hash-initializers",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.7037329169979785,
+      "cpu_seconds": 0.556543,
+      "previous_source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+      "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "load": [
+        5.77294921875,
+        4.96875,
+        5.0673828125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.7161954579933081,
+      "cpu_seconds": 0.5412960000000009,
+      "previous_source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        5.77294921875,
+        4.96875,
+        5.0673828125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5864180829958059,
+      "cpu_seconds": 0.5714229999999993,
+      "previous_source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        5.77294921875,
+        4.96875,
+        5.0673828125
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/baseline/4-0.rbc",
+          "sha256": "f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7",
+          "bytes": 152763
+        }
+      ],
+      "build_to_ready_seconds": 0.5411489580001216,
+      "build_to_ready_cpu_seconds": 0.528989,
+      "cargo_cpu_seconds": 0.48328299999999996
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-string-hash-length-bound",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5901561659993604,
+      "cpu_seconds": 0.5751340000000007,
+      "previous_source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+      "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "load": [
+        5.77294921875,
+        4.96875,
+        5.0673828125
+      ],
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/candidate/4-0.rbc",
+          "sha256": "f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7",
+          "bytes": 152763
+        }
+      ],
+      "build_to_ready_seconds": 0.5434158330026548,
+      "build_to_ready_cpu_seconds": 0.531281,
+      "cargo_cpu_seconds": 0.485517
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5648538329987787,
+      "cpu_seconds": 0.5513370000000011,
+      "previous_source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        5.77294921875,
+        4.96875,
+        5.0673828125
+      ],
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/candidate/5-0.rbc",
+          "sha256": "6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090",
+          "bytes": 152627
+        }
+      ],
+      "build_to_ready_seconds": 0.5197820409957785,
+      "build_to_ready_cpu_seconds": 0.508933,
+      "cargo_cpu_seconds": 0.464846
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.6671597090025898,
+      "cpu_seconds": 0.5282749999999985,
+      "previous_source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        7.072265625,
+        5.25146484375,
+        5.16650390625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "use-immutable-hash-stages",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5558563749946188,
+      "cpu_seconds": 0.5402000000000005,
+      "previous_source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+      "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "load": [
+        7.072265625,
+        5.25146484375,
+        5.16650390625
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/baseline/5-0.rbc",
+          "sha256": "6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090",
+          "bytes": 152627
+        }
+      ],
+      "build_to_ready_seconds": 0.5124008750135545,
+      "build_to_ready_cpu_seconds": 0.49955799999999995,
+      "cargo_cpu_seconds": 0.45598099999999997
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": -2,
+      "phase": "restored-original",
+      "label": "restored-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.559272125014104,
+      "cpu_seconds": 0.5449640000000011,
+      "previous_source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        7.072265625,
+        5.25146484375,
+        5.16650390625
+      ],
+      "engine": "jit",
+      "tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/candidate/-2-0.rbc",
+          "sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+          "bytes": 129558
+        }
+      ],
+      "build_to_ready_seconds": 0.514843666984234,
+      "build_to_ready_cpu_seconds": 0.50335,
+      "cargo_cpu_seconds": 0.461186
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": -2,
+      "phase": "restored-original",
+      "label": "restored-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5955317920015659,
+      "cpu_seconds": 0.5332269999999992,
+      "previous_source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        7.072265625,
+        5.25146484375,
+        5.16650390625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": -2,
+      "phase": "restored-original",
+      "label": "restored-original",
+      "tests": [
+        "tests::uint32_paths_match_byte_path",
+        "tests::extended_zero_seed_low_word_equals_hash_bytes",
+        "tests::murmurhash32_inverse_roundtrips",
+        "tests::dynahash_wrappers"
+      ],
+      "seconds": 0.5718571660108864,
+      "cpu_seconds": 0.5563110000000009,
+      "previous_source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+      "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+      "load": [
+        7.072265625,
+        5.25146484375,
+        5.16650390625
+      ],
+      "engine": "jit",
+      "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+      "artifacts": [
+        {
+          "path": ".work/runs/scalar-plan-pgrust-20260912-02/artifacts/baseline/-2-0.rbc",
+          "sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+          "bytes": 129558
+        }
+      ],
+      "build_to_ready_seconds": 0.5257739590015262,
+      "build_to_ready_cpu_seconds": 0.513234,
+      "cargo_cpu_seconds": 0.46673
+    }
+  ],
+  "build_controls": {
+    "package": "hashfn"
+  },
+  "cache_namespaces": {
+    "baseline": "scalar-plan-pgrust-20260912-02:baseline",
+    "candidate": "scalar-plan-pgrust-20260912-02:candidate"
+  },
+  "cache_workspaces": {
+    "baseline": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/2758f1d6f518b7417b6fcf04",
+    "candidate": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af/33ba0f023be9888a9dc0bc19"
+  },
+  "restored_original": {
+    "verified": true,
+    "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "cycle": 1,
+    "state": -2,
+    "commands": 3,
+    "excluded_from_edited_medians": true
+  },
+  "build_metrics": {
+    "boundary": "launcher start to validated artifact ready, before VM invocation",
+    "cpu_accounting": "launcher self plus waited-for child CPU at the pre-VM boundary; user plus system",
+    "median_seconds": {
+      "baseline": 0.5218075840093661,
+      "candidate": 0.5167276669817511
+    },
+    "median_cpu_seconds": {
+      "baseline": 0.5080929999999999,
+      "candidate": 0.504137
+    }
+  },
+  "exporter_seconds": {
+    "baseline": {
+      "frontend": 0.016659,
+      "lowering": 0.012018000000000001,
+      "scalar-frames": 0.000377,
+      "scalar-promotion": 0.000398,
+      "inline": 0.000217,
+      "cfg": 0.000339
+    },
+    "candidate": {
+      "frontend": 0.016877,
+      "lowering": 0.011743,
+      "scalar-frames": 0.000372,
+      "scalar-promotion": 0.000389,
+      "inline": 0.000226,
+      "cfg": 0.000332
+    }
+  },
+  "check_floor": {
+    "interpretation": "Independent library-test Cargo-check control; executes no tests, including the wrong runtime edit; not a strict lower bound or subtractive attribution",
+    "timing_position": "after each primary mode triplet; separate target/cache history; no Cargo timing-report generation",
+    "median_seconds": 0.4135734169976786,
+    "median_cpu_seconds": 0.4026430000000001,
+    "samples": [
+      {
+        "cycle": 0,
+        "state": 0,
+        "phase": "cold",
+        "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+        "previous_source_sha256": null,
+        "seconds": 0.4730512909882236,
+        "cpu_seconds": 0.46354000000000006,
+        "cpu": {
+          "user_seconds": 0.37739100000000003,
+          "system_seconds": 0.08614900000000003,
+          "total_seconds": 0.46354000000000006
+        },
+        "returncode": 0,
+        "load": [
+          5.62255859375,
+          4.91650390625,
+          5.05078125
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+        "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+        "seconds": 0.4186973339819815,
+        "cpu_seconds": 0.41202499999999964,
+        "cpu": {
+          "user_seconds": 0.3420129999999997,
+          "system_seconds": 0.07001199999999996,
+          "total_seconds": 0.41202499999999964
+        },
+        "returncode": 0,
+        "load": [
+          5.62255859375,
+          4.91650390625,
+          5.05078125
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "previous_source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+        "seconds": 0.41704116700566374,
+        "cpu_seconds": 0.4026430000000001,
+        "cpu": {
+          "user_seconds": 0.33141200000000026,
+          "system_seconds": 0.07123099999999982,
+          "total_seconds": 0.4026430000000001
+        },
+        "returncode": 0,
+        "load": [
+          5.4921875,
+          4.90087890625,
+          5.04443359375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "previous_source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "seconds": 0.40444308301084675,
+        "cpu_seconds": 0.39824000000000015,
+        "cpu": {
+          "user_seconds": 0.3291430000000002,
+          "system_seconds": 0.06909699999999996,
+          "total_seconds": 0.39824000000000015
+        },
+        "returncode": 0,
+        "load": [
+          5.4921875,
+          4.90087890625,
+          5.04443359375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "previous_source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "seconds": 0.4135734169976786,
+        "cpu_seconds": 0.40736299999999925,
+        "cpu": {
+          "user_seconds": 0.3380189999999992,
+          "system_seconds": 0.06934400000000007,
+          "total_seconds": 0.40736299999999925
+        },
+        "returncode": 0,
+        "load": [
+          5.77294921875,
+          4.96875,
+          5.0673828125
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "previous_source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "seconds": 0.4339633329946082,
+        "cpu_seconds": 0.42765099999999956,
+        "cpu": {
+          "user_seconds": 0.35262299999999946,
+          "system_seconds": 0.0750280000000001,
+          "total_seconds": 0.42765099999999956
+        },
+        "returncode": 0,
+        "load": [
+          5.77294921875,
+          4.96875,
+          5.0673828125
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "previous_source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "seconds": 0.4071506249892991,
+        "cpu_seconds": 0.40092199999999956,
+        "cpu": {
+          "user_seconds": 0.3310259999999996,
+          "system_seconds": 0.06989599999999996,
+          "total_seconds": 0.40092199999999956
+        },
+        "returncode": 0,
+        "load": [
+          7.072265625,
+          5.25146484375,
+          5.16650390625
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": -2,
+        "phase": "restored-original",
+        "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+        "previous_source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "seconds": 0.4103517910116352,
+        "cpu_seconds": 0.4028099999999992,
+        "cpu": {
+          "user_seconds": 0.3353749999999991,
+          "system_seconds": 0.06743500000000013,
+          "total_seconds": 0.4028099999999992
+        },
+        "returncode": 0,
+        "load": [
+          7.072265625,
+          5.25146484375,
+          5.16650390625
+        ]
+      }
+    ]
+  },
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "candidate_tool_key": "eb6c524082894f10291d09e6b63f7b04e1750b2406aaab802b27ac458d81c2af",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "cycle": 0,
+        "state": 1,
+        "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "baseline_seconds": 0.5608314580167644,
+        "candidate_seconds": 0.5618770410073921,
+        "native_seconds": 0.6712934999959543,
+        "native_cpu_seconds": 0.5289310000000005,
+        "baseline_cpu_seconds": 0.5426050000000001,
+        "candidate_cpu_seconds": 0.5444859999999998,
+        "cpu_difference_seconds": 0.0018809999999996885,
+        "difference_seconds": 0.0010455829906277359,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.46977816699654795,
+            "execution_seconds": 0.011331999994581565,
+            "artifact_hash_seconds": 0.00012466698535718024,
+            "launcher_seconds": 0.5267629589943681
+          },
+          "candidate": {
+            "cargo_seconds": 0.4688531249994412,
+            "execution_seconds": 0.010141334001673386,
+            "artifact_hash_seconds": 0.00011920800898224115,
+            "launcher_seconds": 0.526880124991294
+          }
+        },
+        "identical_bytecode": true,
+        "baseline_build_to_ready_seconds": 0.5154100419895258,
+        "baseline_build_to_ready_cpu_seconds": 0.500362,
+        "baseline_cargo_cpu_seconds": 0.45832599999999996,
+        "candidate_build_to_ready_seconds": 0.5167276669817511,
+        "candidate_build_to_ready_cpu_seconds": 0.502171,
+        "candidate_cargo_cpu_seconds": 0.457784,
+        "build_to_ready_difference_seconds": 0.0013176249922253191,
+        "build_to_ready_cpu_difference_seconds": 0.0018090000000000606
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "baseline_seconds": 0.5670697919849772,
+        "candidate_seconds": 0.5613960830087308,
+        "native_seconds": 0.6658607090066653,
+        "native_cpu_seconds": 0.5373120000000002,
+        "baseline_cpu_seconds": 0.5507599999999997,
+        "candidate_cpu_seconds": 0.546511,
+        "cpu_difference_seconds": -0.004248999999999725,
+        "difference_seconds": -0.005673708976246417,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.4748948750202544,
+            "execution_seconds": 0.01073087498662062,
+            "artifact_hash_seconds": 0.0001257499970961362,
+            "launcher_seconds": 0.5325514170108363
+          },
+          "candidate": {
+            "cargo_seconds": 0.46739466598955914,
+            "execution_seconds": 0.010427791974507272,
+            "artifact_hash_seconds": 0.00013137501082383096,
+            "launcher_seconds": 0.5261745000025257
+          }
+        },
+        "identical_bytecode": true,
+        "baseline_build_to_ready_seconds": 0.5218075840093661,
+        "baseline_build_to_ready_cpu_seconds": 0.5080929999999999,
+        "baseline_cargo_cpu_seconds": 0.46477899999999994,
+        "candidate_build_to_ready_seconds": 0.5157352079986595,
+        "candidate_build_to_ready_cpu_seconds": 0.504137,
+        "candidate_cargo_cpu_seconds": 0.45927999999999997,
+        "build_to_ready_difference_seconds": -0.006072376010706648,
+        "build_to_ready_cpu_difference_seconds": -0.0039559999999999595
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "baseline_seconds": 0.6358110409928486,
+        "candidate_seconds": 0.5625931669783313,
+        "native_seconds": 0.7037329169979785,
+        "native_cpu_seconds": 0.556543,
+        "baseline_cpu_seconds": 0.6159219999999999,
+        "candidate_cpu_seconds": 0.5477829999999999,
+        "cpu_difference_seconds": -0.06813899999999995,
+        "difference_seconds": -0.07321787401451729,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.5322258340020198,
+            "execution_seconds": 0.01211929100099951,
+            "artifact_hash_seconds": 0.00015104201156646013,
+            "launcher_seconds": 0.5976698749873322
+          },
+          "candidate": {
+            "cargo_seconds": 0.46843300000182353,
+            "execution_seconds": 0.011683166987495497,
+            "artifact_hash_seconds": 0.00012520901509560645,
+            "launcher_seconds": 0.5266867500031367
+          }
+        },
+        "identical_bytecode": true,
+        "baseline_build_to_ready_seconds": 0.5855358749977313,
+        "baseline_build_to_ready_cpu_seconds": 0.568899,
+        "baseline_cargo_cpu_seconds": 0.519933,
+        "candidate_build_to_ready_seconds": 0.5149899999960326,
+        "candidate_build_to_ready_cpu_seconds": 0.503447,
+        "candidate_cargo_cpu_seconds": 0.46029099999999995,
+        "build_to_ready_difference_seconds": -0.07054587500169873,
+        "build_to_ready_cpu_difference_seconds": -0.06545200000000007
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "baseline_seconds": 0.5864180829958059,
+        "candidate_seconds": 0.5901561659993604,
+        "native_seconds": 0.7161954579933081,
+        "native_cpu_seconds": 0.5412960000000009,
+        "baseline_cpu_seconds": 0.5714229999999993,
+        "candidate_cpu_seconds": 0.5751340000000007,
+        "cpu_difference_seconds": 0.003711000000001352,
+        "difference_seconds": 0.003738083003554493,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.4923344169801567,
+            "execution_seconds": 0.010435875010443851,
+            "artifact_hash_seconds": 0.00012399998377077281,
+            "launcher_seconds": 0.5516017499903683
+          },
+          "candidate": {
+            "cargo_seconds": 0.49400037500890903,
+            "execution_seconds": 0.011028124979929999,
+            "artifact_hash_seconds": 0.00013383300392888486,
+            "launcher_seconds": 0.5544567079923581
+          }
+        },
+        "identical_bytecode": true,
+        "baseline_build_to_ready_seconds": 0.5411489580001216,
+        "baseline_build_to_ready_cpu_seconds": 0.528989,
+        "baseline_cargo_cpu_seconds": 0.48328299999999996,
+        "candidate_build_to_ready_seconds": 0.5434158330026548,
+        "candidate_build_to_ready_cpu_seconds": 0.531281,
+        "candidate_cargo_cpu_seconds": 0.485517,
+        "build_to_ready_difference_seconds": 0.0022668750025331974,
+        "build_to_ready_cpu_difference_seconds": 0.0022919999999999607
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "baseline_seconds": 0.5558563749946188,
+        "candidate_seconds": 0.5648538329987787,
+        "native_seconds": 0.6671597090025898,
+        "native_cpu_seconds": 0.5282749999999985,
+        "baseline_cpu_seconds": 0.5402000000000005,
+        "candidate_cpu_seconds": 0.5513370000000011,
+        "cpu_difference_seconds": 0.011137000000000619,
+        "difference_seconds": 0.008997458004159853,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.465241458005039,
+            "execution_seconds": 0.009713207982713357,
+            "artifact_hash_seconds": 0.00013241698616184294,
+            "launcher_seconds": 0.5221261249971576
+          },
+          "candidate": {
+            "cargo_seconds": 0.4727040829893667,
+            "execution_seconds": 0.01000545799615793,
+            "artifact_hash_seconds": 0.00013183301780372858,
+            "launcher_seconds": 0.5298026659875177
+          }
+        },
+        "identical_bytecode": true,
+        "baseline_build_to_ready_seconds": 0.5124008750135545,
+        "baseline_build_to_ready_cpu_seconds": 0.49955799999999995,
+        "baseline_cargo_cpu_seconds": 0.45598099999999997,
+        "candidate_build_to_ready_seconds": 0.5197820409957785,
+        "candidate_build_to_ready_cpu_seconds": 0.508933,
+        "candidate_cargo_cpu_seconds": 0.464846,
+        "build_to_ready_difference_seconds": 0.007381165982224047,
+        "build_to_ready_cpu_difference_seconds": 0.009375000000000022
+      }
+    ],
+    "candidate_pair_wins": 2,
+    "median_paired_difference_seconds": 0.0010455829906277359,
+    "median_paired_cpu_difference_seconds": 0.0018809999999996885,
+    "per_edit": [
+      {
+        "state": 1,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.5608314580167644,
+            "median": 0.5608314580167644,
+            "max": 0.5608314580167644
+          },
+          "candidate_seconds": {
+            "min": 0.5618770410073921,
+            "median": 0.5618770410073921,
+            "max": 0.5618770410073921
+          },
+          "native_seconds": {
+            "min": 0.6712934999959543,
+            "median": 0.6712934999959543,
+            "max": 0.6712934999959543
+          },
+          "difference_seconds": {
+            "min": 0.0010455829906277359,
+            "median": 0.0010455829906277359,
+            "max": 0.0010455829906277359
+          },
+          "cpu_difference_seconds": {
+            "min": 0.0018809999999996885,
+            "median": 0.0018809999999996885,
+            "max": 0.0018809999999996885
+          }
+        }
+      },
+      {
+        "state": 2,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.5670697919849772,
+            "median": 0.5670697919849772,
+            "max": 0.5670697919849772
+          },
+          "candidate_seconds": {
+            "min": 0.5613960830087308,
+            "median": 0.5613960830087308,
+            "max": 0.5613960830087308
+          },
+          "native_seconds": {
+            "min": 0.6658607090066653,
+            "median": 0.6658607090066653,
+            "max": 0.6658607090066653
+          },
+          "difference_seconds": {
+            "min": -0.005673708976246417,
+            "median": -0.005673708976246417,
+            "max": -0.005673708976246417
+          },
+          "cpu_difference_seconds": {
+            "min": -0.004248999999999725,
+            "median": -0.004248999999999725,
+            "max": -0.004248999999999725
+          }
+        }
+      },
+      {
+        "state": 3,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.6358110409928486,
+            "median": 0.6358110409928486,
+            "max": 0.6358110409928486
+          },
+          "candidate_seconds": {
+            "min": 0.5625931669783313,
+            "median": 0.5625931669783313,
+            "max": 0.5625931669783313
+          },
+          "native_seconds": {
+            "min": 0.7037329169979785,
+            "median": 0.7037329169979785,
+            "max": 0.7037329169979785
+          },
+          "difference_seconds": {
+            "min": -0.07321787401451729,
+            "median": -0.07321787401451729,
+            "max": -0.07321787401451729
+          },
+          "cpu_difference_seconds": {
+            "min": -0.06813899999999995,
+            "median": -0.06813899999999995,
+            "max": -0.06813899999999995
+          }
+        }
+      },
+      {
+        "state": 4,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.5864180829958059,
+            "median": 0.5864180829958059,
+            "max": 0.5864180829958059
+          },
+          "candidate_seconds": {
+            "min": 0.5901561659993604,
+            "median": 0.5901561659993604,
+            "max": 0.5901561659993604
+          },
+          "native_seconds": {
+            "min": 0.7161954579933081,
+            "median": 0.7161954579933081,
+            "max": 0.7161954579933081
+          },
+          "difference_seconds": {
+            "min": 0.003738083003554493,
+            "median": 0.003738083003554493,
+            "max": 0.003738083003554493
+          },
+          "cpu_difference_seconds": {
+            "min": 0.003711000000001352,
+            "median": 0.003711000000001352,
+            "max": 0.003711000000001352
+          }
+        }
+      },
+      {
+        "state": 5,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 0.5558563749946188,
+            "median": 0.5558563749946188,
+            "max": 0.5558563749946188
+          },
+          "candidate_seconds": {
+            "min": 0.5648538329987787,
+            "median": 0.5648538329987787,
+            "max": 0.5648538329987787
+          },
+          "native_seconds": {
+            "min": 0.6671597090025898,
+            "median": 0.6671597090025898,
+            "max": 0.6671597090025898
+          },
+          "difference_seconds": {
+            "min": 0.008997458004159853,
+            "median": 0.008997458004159853,
+            "max": 0.008997458004159853
+          },
+          "cpu_difference_seconds": {
+            "min": 0.011137000000000619,
+            "median": 0.011137000000000619,
+            "max": 0.011137000000000619
+          }
+        }
+      }
+    ]
+  }
+}
