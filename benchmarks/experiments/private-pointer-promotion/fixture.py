@@ -10,7 +10,7 @@ from workflow_io import capture,require_space,write_json as write,SourceEdit
 
 
 def main():
-    run='private-pointer-promotion-fixture-01'
+    run='private-pointer-promotion-fixture-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,8)
         builds={mode:ROOT/'results'/name/'summary.json' for mode,name in [
@@ -45,7 +45,7 @@ def main():
             print(label,'PASS',flush=True);return row
         def exported(mode,label,success=True,error=None):
             suite_path=work/(label+'.json')
-            command=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',str(manifest),'--jobs','2',
+            command=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',str(manifest),'--package','private-pointer-fixture','--jobs','2',
                 '--tool-key',summaries[mode]['tool_key'],'--cache-namespace',run+':'+mode,'--test-body','--std-mir',
                 '--test-filter','tests::','--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
                 '--isolated-batch','prepared','--suite-report',str(suite_path),'--trap-unsupported-calls','--run-try-callbacks',
