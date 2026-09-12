@@ -24,10 +24,9 @@ call ordering remain. The result-copy forwarding proposal is deferred: this
 experiment's generic expansion can handle those bodies. No guest backend change.
 
 Qualify the isolated source in debug and release. Preserve original benchmark
-assertions; update the two legacy unit tests whose expected rejection is precisely
-the new proven cross-block behavior, adding observable execution and runtime-proof
-checks. Retain native memory-error wording and compare its precise fault point.
-Add focused CompareBytes and nested-call relocation, aliasing, branches,
+assertions; update only the legacy unit test whose expected rejection is precisely
+the new proven cross-block behavior, adding an observable value and runtime-proof
+check. Add focused CompareBytes and nested-call relocation, aliasing, branches,
 faults, profiles, exact budgets and exclusions. Check strict frontend rejection
 and real artifacts before timings. Runtime and exporter change; rebuild both
 and verify the unchanged wrapper rather than copying either changing component.

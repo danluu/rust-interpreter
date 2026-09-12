@@ -126,14 +126,7 @@ fn nested_faults_keep_transformed_interpreter_order_at_every_budget() {
     for budget in 0..100 {
         let expected=execute_with_engine(&q,&[7,11],limits(Engine::Interpreter,false,budget,false),Engine::Interpreter).unwrap_err();
         for (engine,resumable,fallback) in configurations() {
-            let got=execute_with_engine(&q,&[7,11],limits(engine,resumable,budget,fallback),engine).unwrap_err();
-            // Retained native modes use a generic memory diagnostic. Keep its
-            // exact spelling and require the same fault point; budget errors
-            // still compare exactly and cannot be normalized into memory errors.
-            if got == "JIT guest memory access failed" {
-                assert_eq!(engine,Engine::Jit); assert!(!fallback);
-                assert_eq!(expected,"invalid guest memory access");
-            } else { assert_eq!(got,expected); }
+            assert_eq!(execute_with_engine(&q,&[7,11],limits(engine,resumable,budget,fallback),engine).unwrap_err(),expected);
         }
     }
 }

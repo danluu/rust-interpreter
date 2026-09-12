@@ -63,17 +63,3 @@ def inject(source):
         assert_eq!(execute_with_engine(&p, &[], Limits::default(), engine).unwrap().value, 43);
         assert_eq!(execute_with_engine(&q, &[], Limits::default(), engine).unwrap().value, 43);
     }''')
-    replace(crate/'inline_tests/medium_copy_tests.rs', '''        // Cross-block register reads still fail the unchanged conservative
-        // eligibility proof. MIR lowering restates these addresses per block.
-        assert!(crate::registers::needs_initial_zeroes_for_inlining(&p.functions[1]));
-        assert_eq!(inline::transform(&p, options()).unwrap().1["selected_sites"], 0);''', '''        // The shared CFG proof now admits this cross-block form. Exercise it
-        // before retaining the original restated-address variant below.
-        assert!(crate::registers::needs_initial_zeroes_for_inlining(&p.functions[1]));
-        assert!(!crate::registers::needs_initial_zeroes(&p.functions[1]));
-        let (cross_block, report) = inline::transform(&p, options()).unwrap();
-        assert_eq!(report["selected_sites"], 1);
-        for engine in [Engine::Interpreter, Engine::Jit] {
-            let result = execute_with_engine(&cross_block, &[], Limits::default(), engine);
-            if cold { assert!(result.unwrap_err().contains("medium aggregate cold branch")); }
-            else { assert_eq!(result.unwrap().value, 0); }
-        }''')
