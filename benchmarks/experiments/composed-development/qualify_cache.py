@@ -39,8 +39,11 @@ def main():
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--automatic-cache', action='store_true',
                         help='also qualify automatic reuse and disabled incremental profiles')
+    parser.add_argument('--call-protocol-candidate', action='store_true', help='qualify the 395-test runtime with the retained composed exporter')
     args = parser.parse_args()
-    assert re.fullmatch(r'composed-development-cache-\d{2}', args.run_id)
+    assert not args.call_protocol_candidate or args.automatic_cache
+    prefix = 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development'
+    assert re.fullmatch(prefix + r'-cache-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         # Small standalone fixtures and one dependency-free Cargo crate only.
@@ -49,7 +52,7 @@ def main():
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
         assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(
-            passed=393 if args.automatic_cache else 391, ignored=1)
+            passed=395 if args.call_protocol_candidate else 393 if args.automatic_cache else 391, ignored=1)
         tools, key = installed_tools(build['tool_key'])
         require_export_option(tools, key, 'function-cache-reuse')
         if args.automatic_cache: require_export_option(tools, key, 'function-cache-auto')
@@ -57,6 +60,7 @@ def main():
         assert std_key == 'bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef'
         fixtures = ['scalar_constant', 'static', 'tls', 'caller', 'type_id', 'dynamic', 'c_allocator']
         paths = [Path(__file__), Path(__file__).with_name('PLAN.md'), build_path]
+        if args.call_protocol_candidate: paths.append(ROOT / 'benchmarks/experiments/resumable-call-protocol/PLAN.md')
         paths += [ROOT / 'tests' / (name + '_fixture.rs') for name in fixtures]
         paths += [tools / name for name in build['binaries']]
         paths += [ROOT / 'scripts' / name for name in ['interpreter.py', 'std_mir.py',

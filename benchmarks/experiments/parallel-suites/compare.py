@@ -50,15 +50,18 @@ def main():
     parser.add_argument('--phase', choices=['serial', 'screen'], required=True)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
-    parser.add_argument('--composed-candidate', action='store_true',
+    kinds = parser.add_mutually_exclusive_group()
+    kinds.add_argument('--call-protocol-candidate', action='store_true', help='qualify the 395-test call-protocol runtime')
+    kinds.add_argument('--composed-candidate', action='store_true',
                         help='qualify the composed runtime; no standalone speed screen')
     parser.add_argument('--selection-qualification', type=Path,
                         help='exact saved-test qualification for a rebuilt composed VM')
     args = parser.parse_args()
-    if args.composed_candidate and args.selection_qualification is None:
-        parser.error('--composed-candidate requires --selection-qualification')
-    prefix = 'composed-development' if args.composed_candidate else 'parallel-suites'
-    assert not args.composed_candidate or args.phase == 'serial'
+    runtime_candidate = args.composed_candidate or args.call_protocol_candidate
+    if runtime_candidate and args.selection_qualification is None:
+        parser.error('a runtime candidate requires --selection-qualification')
+    prefix = 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development' if args.composed_candidate else 'parallel-suites'
+    assert not runtime_candidate or args.phase == 'serial'
     assert re.fullmatch(prefix + '-' + args.phase + r'-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
@@ -68,14 +71,17 @@ def main():
             'workspace_cache.py', 'workflow_io.py', 'workflow_measurements.py', 'suite_reports.py', 'native_suite.py']]
         builds = dict(candidate=args.build.resolve(strict=True),
                       retained=ROOT / ('results/parallel-suites-build-01/summary.json'
-                          if args.composed_candidate else 'results/selected-native-build-01/summary.json'))
+                          if runtime_candidate else 'results/selected-native-build-01/summary.json'))
+        if args.call_protocol_candidate:
+            paths.append(ROOT / 'benchmarks/experiments/resumable-call-protocol/PLAN.md')
         if args.composed_candidate:
             paths.append(ROOT / 'benchmarks/experiments/composed-development/PLAN.md')
         vms, keys = {}, {}
         for mode, path in builds.items():
             build = json.loads(path.read_text())
             assert build['status'] == 'passed'
-            expected = dict(passed=(393 if mode == 'candidate' else 365) if args.composed_candidate
+            candidate_tests = 395 if args.call_protocol_candidate else 393
+            expected = dict(passed=(candidate_tests if mode == 'candidate' else 365) if runtime_candidate
                             else (365 if mode == 'candidate' else 360), ignored=1)
             assert build['tests']['test-debug'] == build['tests']['test-release'] == expected
             directory, keys[mode] = installed_tools(build['tool_key'])
