@@ -27,6 +27,14 @@ MODES = [*NATIVE, 'check']
 TOOLCHAIN = 'nightly-2026-09-08'
 
 
+def input_fingerprint(path):
+    # Git tracks the link text, including directory and dangling symlinks.
+    # Other tracked files bind the contents of in-repository link targets.
+    if path.is_symlink():
+        return dict(kind='symlink', sha256=hashlib.sha256(os.fsencode(os.readlink(path))).hexdigest())
+    return dict(kind='file', sha256=sha(path))
+
+
 def assessment(rows):
     pairs = []
     for cycle in range(3):
@@ -78,7 +86,7 @@ def main():
             'workflow_measurements.py', 'workflow_io.py', 'compare_saved_runtime.py']]
         paths += [source / p for p in subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
                   if p and source / p != changed]
-        frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
+        frozen = {str(p.relative_to(ROOT)): input_fingerprint(p) for p in paths}
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
             and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
                           'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET', 'CARGO_BUILD_BUILD_DIR', 'RUST_TEST_THREADS']}
@@ -160,7 +168,7 @@ def main():
                     print(sample['cycle'],sample['state'],mode,round(row['seconds'],3),flush=True)
                 assert selected['repository']==selected['duplicate']==selected['line_tables']
         assert len(rows)==88 and changed.read_bytes()==original
-        assert all(sha(ROOT/p)==h for p,h in frozen.items())
+        assert all(input_fingerprint(ROOT/p)==h for p,h in frozen.items())
         result=assessment(rows)
         result.update(status='passed',commands=88,profile_queries=2,test_count=14,tests=case['tests'],source_restored=True,
             original_assertions_match=True,test_source_unchanged=True,raw=str(work.relative_to(ROOT)),
