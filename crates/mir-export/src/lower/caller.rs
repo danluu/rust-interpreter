@@ -17,7 +17,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             Source::Inherited(slot) => Ok(self.local(slot.offset)),
             Source::Constant(span) => {
                 if self.binding_recorder.is_some() {
-                    let block = &self.body.basic_blocks.raw.as_slice()[self.binding_position.block];
+                    let block = &self.body.basic_blocks.raw[self.binding_position.block];
                     let terminator = block.terminator();
                     let expected = match &terminator.kind {
                         TerminatorKind::Call { fn_span, .. } => mir::SourceInfo { span: *fn_span, ..terminator.source_info },

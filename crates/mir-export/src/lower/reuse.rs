@@ -143,7 +143,7 @@ impl<'tcx> Current<'tcx> {
         self.mono(operand.ty(&self.body.local_decls, self.tcx))
     }
     fn block(&self, index: usize) -> Result<&'tcx mir::BasicBlockData<'tcx>> {
-        self.body.basic_blocks.raw.as_slice().get(index).ok_or("binding block out of bounds".into())
+        self.body.basic_blocks.raw.get(index).ok_or("binding block out of bounds".into())
     }
     fn rvalue(&self, at: Position) -> Result<&'tcx Rvalue<'tcx>> {
         match &self.block(at.block)?.statements.get(at.statement).ok_or("binding statement out of bounds")?.kind {
