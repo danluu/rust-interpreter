@@ -4,15 +4,15 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Record effective limits, then discover tests through rustc.** The catalog
-   fix passes 322 Rust tests/profile, 40 Python tests and 68 fixture/pgrust/Ruff/fre
-   commands. Fre's initial allocation trap came from an omitted 150,000 reference
-   limit, not an established lowering defect; identical bytecode passes after
-   correcting the controller. Add effective limits to suite reports and verify
-   them against independently supplied expectations. Then expose checked test
-   names and attributes without a native test binary, and use that discovery
-   for automatic filtered suites. Keep unsupported harness semantics explicit.
-   [Catalog qualification](results/prepared-catalog-qualification-01/assessment.md).
+1. **Discover tests through the checked compiler context.** The catalog and
+   effective-limit reports are qualified. The limit change passes 323 Rust
+   tests/profile, 41 Python tests, twelve saved-suite controls and 32 real pgrust
+   edit/check/restoration commands. Expose checked test names and attributes
+   without requiring a native executable. First qualify discovery, including
+   cfg/features, ignored and should-panic metadata, integration targets and strict
+   borrow errors; then use it for automatic filtered suites. Keep unsupported
+   harness semantics explicit.
+   [Limit qualification](results/prepared-limits-qualification-01/assessment.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%

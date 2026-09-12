@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Catalog fix qualified:322 Rust tests/profile,40 Python tests,68 fixture/pgrust/Ruff/fre commands. Fre’s initial trap was an omitted reference allocation limit; the corrected actual export and exact replay pass with unchanged bytecode. Record effective runtime limits in suite reports, then implement compiler-backed test discovery and automatic filtered suites.
+**Next:** Catalogs and effective-limit reports are qualified: latest323 Rust tests/profile,41 Python tests,12 saved-suite controls and32 actual pgrust edit/check/restoration commands. Next implement compiler-backed test discovery, preserving cfg/feature/target identity and explicit harness attributes, then automatic filtered suites.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

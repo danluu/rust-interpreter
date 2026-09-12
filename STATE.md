@@ -30,9 +30,10 @@ reference's 150,000 allocation limit and used the default 100,000; this caused
 the recorded allocation trap. Recompilation at the correct limit produces the
 same bytecode and passes. The older/newer failing controls used that same wrong
 limit, so they did not establish a lowering defect. The correction is explicit
-and the failed evidence remains preserved. The catalog fix is qualified for
-publication. Next record effective runtime limits in suite reports, then add
-compiler-backed discovery of test names and attributes. Full
+and the failed evidence remains preserved. The catalog fix is published on main. Effective runtime limits now also pass
+323 Rust tests/profile, 41 Python tests, twelve controlled saved-suite commands
+and 32 actual pgrust edit/check/restoration commands. Next add compiler-backed
+discovery of test names and attributes. Full
 ignore/should-panic/unwind/thread semantics remain open.
 [Ruff repair](results/prepared-catalog-ruff-01/summary.json),
 [pgrust catalogs](results/prepared-catalog-pgrust-02/assessment.md),
