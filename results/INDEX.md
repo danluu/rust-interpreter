@@ -88,13 +88,14 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | constant-specialize-build | [constant-specialize-build-06/summary.json](constant-specialize-build-06/summary.json) |
 | constant-specialize-saved | [constant-specialize-saved-04/summary.json](constant-specialize-saved-04/summary.json) |
 | constant-specialize-replay | [constant-specialize-replay-03/summary.json](constant-specialize-replay-03/summary.json) |
-| transparent-evidence-storage | [completed-evidence-compression-03/summary.json](completed-evidence-compression-03/summary.json) |
+| transparent-evidence-storage | [completed-evidence-compression-05/summary.json](completed-evidence-compression-05/summary.json) |
 | uninstrumented-selection | [selected-native-qualification-01/summary.json](selected-native-qualification-01/summary.json) |
 | selected-native-block | [selected-native-block-sample-01/summary.json](selected-native-block-sample-01/summary.json) |
 | selected-native-exhaustive | [selected-native-exhaustive-sample-01/summary.json](selected-native-exhaustive-sample-01/summary.json) |
 | address-checks | [native-address-checks-screen-01/summary.json](native-address-checks-screen-01/summary.json) |
 | generated-cfg | [generated-cfg-campaign-01/summary.json](generated-cfg-campaign-01/summary.json) |
-| parallel-suites | [parallel-suites-screen-01/summary.json](parallel-suites-screen-01/summary.json) |
+| parallel-suites | [parallel-suites-edit-screen-01/summary.json](parallel-suites-edit-screen-01/summary.json) |
+| public-cache-cleanup | [parallel-suite-space-07/summary.json](parallel-suite-space-07/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
