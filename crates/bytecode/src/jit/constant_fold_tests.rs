@@ -20,12 +20,16 @@ fn qualify(p:&Program,args:&[u128])->Program {
         std::fs::write(dir.join("folded.rbc"),bincode::serialize(&q).unwrap()).unwrap();std::fs::write(dir.join("arguments.txt"),format!("{args:?}")).unwrap();
         panic!("original {before:?} folded {after:?}; artifacts at {dir:?}");
     }
-    // Across compiler versions preserve exact errors within each engine;
-    // normalization below applies only to same-artifact cross-engine checks.
+    // Pure-definition removal can make a region too short for native emission.
+    // Thus the same JIT mode can switch to interpreter fallback and use its
+    // existing range-fault wording. Only these two messages form one category.
+    let fault_class=|r:Result<(u128,usize),String>|r.map_err(|e|match e.as_str() {
+        "invalid guest memory access"|"JIT guest memory access failed"=>"guest memory range fault".into(),_=>e,
+    });
     for resumable in [false,true] {for persistent in [false,true] {
         let limits=Limits{jit_resumable_calls:resumable,jit_persistent_registers:persistent,..Limits::default()};
         let original=run(p,args,Engine::Jit,limits.clone());let folded=run(&q,args,Engine::Jit,limits);
-        assert_eq!(observable(&original),observable(&folded));
+        assert_eq!(fault_class(observable(&original)),fault_class(observable(&folded)));
     }}
     for artifact in [p,&q] {
         let reference=run(artifact,args,Engine::Interpreter,Limits::default());

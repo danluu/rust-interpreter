@@ -48,3 +48,11 @@ fetches no dependencies. Admit each host child only above 7 GiB and record that
 choice explicitly. This exception does not lower any guest-project export,
 execution or actual-source-edit benchmark's 8 GiB floor. Do not retire more
 historical caches merely to meet the former blanket host threshold.
+
+Fault qualification compares exact original/folded interpreter errors. JIT
+regions already report memory-range errors differently from interpreter fallback:
+`JIT guest memory access failed` versus `invalid guest memory access`. Removing
+dead definitions can cross the minimum native-region size, changing that wording
+even in the same JIT mode. Treat exactly those two strings as one range-fault
+category for JIT comparisons; keep every other error and instruction-budget
+failure exact. Do not change the VM or broaden normalization to unrelated faults.
