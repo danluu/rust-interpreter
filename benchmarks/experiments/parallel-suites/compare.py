@@ -50,8 +50,12 @@ def main():
     parser.add_argument('--phase', choices=['serial', 'screen'], required=True)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
+    parser.add_argument('--composed-candidate', action='store_true',
+                        help='qualify the composed runtime; no standalone speed screen')
     args = parser.parse_args()
-    assert re.fullmatch('parallel-suites-' + args.phase + r'-\d{2}', args.run_id)
+    prefix = 'composed-development' if args.composed_candidate else 'parallel-suites'
+    assert not args.composed_candidate or args.phase == 'serial'
+    assert re.fullmatch(prefix + '-' + args.phase + r'-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 3.5)
@@ -59,18 +63,22 @@ def main():
         paths += [ROOT / 'scripts' / name for name in ['compare_saved_runtime.py', 'interpreter.py',
             'workspace_cache.py', 'workflow_io.py', 'workflow_measurements.py', 'suite_reports.py', 'native_suite.py']]
         builds = dict(candidate=args.build.resolve(strict=True),
-                      retained=ROOT / 'results/selected-native-build-01/summary.json')
+                      retained=ROOT / ('results/parallel-suites-build-01/summary.json'
+                          if args.composed_candidate else 'results/selected-native-build-01/summary.json'))
+        if args.composed_candidate:
+            paths.append(ROOT / 'benchmarks/experiments/composed-development/PLAN.md')
         vms, keys = {}, {}
         for mode, path in builds.items():
             build = json.loads(path.read_text())
             assert build['status'] == 'passed'
-            expected = dict(passed=365 if mode == 'candidate' else 360, ignored=1)
+            expected = dict(passed=(391 if mode == 'candidate' else 365) if args.composed_candidate
+                            else (365 if mode == 'candidate' else 360), ignored=1)
             assert build['tests']['test-debug'] == build['tests']['test-release'] == expected
             directory, keys[mode] = installed_tools(build['tool_key'])
             vms[mode] = directory / 'rust-interp-vm'
             assert sha(vms[mode]) == build['binaries']['rust-interp-vm']
             paths += [path, vms[mode]]
-        selected_path = ROOT / 'results/parallel-suites-qualification-01/summary.json'
+        selected_path = ROOT / 'results' / (prefix + '-qualification-01') / 'summary.json'
         selected = json.loads(selected_path.read_text())
         assert selected['status'] == 'passed' and selected['commands'] == 7
         assert selected['vm_sha256'] == sha(vms['candidate']) and selected['exact_instructions_memory_and_entropy']
