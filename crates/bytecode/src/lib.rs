@@ -775,7 +775,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     prepare_jit::<PROFILE>(&mut jit, program.entry, &mut profile)?;
     let mut steps = 0;
     let mut tls = tls::Tls::default();
-    let value = loop {
+    let value = 'execution: loop {
         if steps >= limits.instructions {
             return Err("interpreter instruction limit exceeded".into());
         }
@@ -855,359 +855,370 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                 }
             }
         } }
-        steps += 1;
         let function = &program.functions[frame.function];
-        let instruction = function.code.get(frame.pc).ok_or("invalid bytecode PC")?;
-        if PROFILE {
-            profile.as_deref_mut().unwrap().functions[frame.function].interpreted[frame.pc] += 1;
-        }
-        frame.pc += 1;
         let r = &mut registers[frame.register_base..frame.register_base + function.registers];
-        // The entry validation also covers callers using in-memory programs.
-        match instruction {
-            Op::ResetThreadLocals => {
-                if frames.len() != 1 || tls.completion.is_some() {
-                    return Err("thread-local reset requires the root frame".into());
-                }
-                tls.completion = Some(tls::Completion::Reset);
-                tls.advance(program, &mut memory, &mut frames, &mut registers,
-                    &mut register_bytes, &needs_register_zeroes, &limits)?;
-                if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+        // Keep these views until a frame transition. JIT specializations still
+        // execute exactly one fallback instruction before the next native entry.
+        'dispatch: loop {
+            steps += 1;
+            let instruction = function.code.get(frame.pc).ok_or("invalid bytecode PC")?;
+            if PROFILE {
+                profile.as_deref_mut().unwrap().functions[frame.function].interpreted[frame.pc] += 1;
             }
-            Op::RegisterTlsDestructor { callback, argument } => {
-                tls.register(program, &mut memory, register_bytes,
-                    r[*callback as usize], r[*argument as usize])?;
-            }
-            Op::RandomBytes { dst, address, size } => {
-                r[*dst as usize] = memory.random_bytes(r[*address as usize] as usize, r[*size as usize] as usize)?;
-            }
-            Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
-                r[*dst as usize] = memory.cpu_feature_query(r[*name as usize] as usize,
-                    r[*output as usize] as usize, r[*output_len as usize] as usize,
-                    r[*new_data as usize] as usize, r[*new_len as usize] as usize)?;
-            }
-            Op::CAllocate { dst, count, size, errno, zeroed } => {
-                r[*dst as usize] = memory.c_allocate(r[*count as usize], r[*size as usize],
-                    r[*errno as usize], *zeroed, register_bytes)?;
-            }
-            Op::CDeallocate { pointer } => memory.c_deallocate(r[*pointer as usize])?,
-            Op::CReallocate { dst, pointer, size, errno } => {
-                r[*dst as usize] = memory.c_reallocate(r[*pointer as usize], r[*size as usize],
-                    r[*errno as usize], register_bytes)?;
-            }
-            Op::CAlignedAllocate { dst, output, align, size } => {
-                r[*dst as usize] = memory.c_aligned_allocate(r[*output as usize], r[*align as usize],
-                    r[*size as usize], register_bytes)?;
-            }
-            Op::Imm { dst, value } => r[*dst as usize] = *value,
-            Op::Local { dst, offset } => r[*dst as usize] = (frame.base + offset) as u128,
-            Op::Load { dst, address, size } => {
-                r[*dst as usize] = memory.load(r[*address as usize] as usize, *size as usize)?
-            }
-            Op::Store { address, src, size } => memory.store(
-                r[*address as usize] as usize,
-                *size as usize,
-                r[*src as usize],
-            )?,
-            Op::Copy { dst, src, size } => {
-                memory.copy(r[*src as usize] as usize, r[*dst as usize] as usize, *size)?
-            }
-            Op::CopyDynamic { dst, src, size } => memory.copy(
-                r[*src as usize] as usize,
-                r[*dst as usize] as usize,
-                r[*size as usize] as usize,
-            )?,
-            Op::FillBytes {
-                address,
-                value,
-                size,
-            } => memory.fill(
-                r[*address as usize] as usize,
-                r[*value as usize] as u8,
-                r[*size as usize] as usize,
-            )?,
-            Op::CompareBytes {
-                dst,
-                left,
-                right,
-                size,
-            } => {
-                let count = r[*size as usize] as usize;
-                let left = memory.read(r[*left as usize] as usize, count)?;
-                let right = memory.read(r[*right as usize] as usize, count)?;
-                // The Rust intrinsic specifies the sign, not the magnitude.
-                // Check both complete ranges before examining any bytes.
-                let ordering = left.cmp(right);
-                r[*dst as usize] = match ordering {
-                    std::cmp::Ordering::Less => u32::MAX as u128,
-                    std::cmp::Ordering::Equal => 0,
-                    std::cmp::Ordering::Greater => 1,
-                };
-            }
-            Op::FloatBinary { dst, op, a, b, bits } => {
-                r[*dst as usize] = float::binary(*op, r[*a as usize], r[*b as usize], *bits)?;
-            }
-            Op::FloatUnary { dst, op, src, bits } => {
-                r[*dst as usize] = float::unary(*op, r[*src as usize], *bits)?;
-            }
-            Op::FloatConvert { dst, kind, src, from, to } => {
-                r[*dst as usize] = float::convert(*kind, r[*src as usize], *from, *to)?;
-            }
-            Op::Allocate {
-                dst,
-                size,
-                align,
-                zeroed,
-            } => {
-                let budget = memory.heap_budget(register_bytes);
-                r[*dst as usize] = memory.heap.allocate(
-                    r[*size as usize] as usize,
-                    r[*align as usize] as usize,
-                    budget,
-                    *zeroed,
-                )? as u128;
-                memory.peak = memory.peak.max(memory.total_len());
-            }
-            Op::Deallocate {
-                pointer,
-                size,
-                align,
-            } => {
-                memory.heap.deallocate(
-                    r[*pointer as usize] as usize,
-                    r[*size as usize] as usize,
-                    r[*align as usize] as usize,
-                )?;
-            }
-            Op::Reallocate {
-                dst,
-                pointer,
-                old_size,
-                align,
-                new_size,
-            } => {
-                let budget = memory.heap_budget(register_bytes);
-                r[*dst as usize] = memory.heap.reallocate(
-                    r[*pointer as usize] as usize,
-                    r[*old_size as usize] as usize,
-                    r[*align as usize] as usize,
-                    r[*new_size as usize] as usize,
-                    budget,
-                )? as u128;
-                memory.peak = memory.peak.max(memory.total_len());
-            }
-            Op::Binary {
-                dst,
-                overflow,
-                op,
-                a,
-                b,
-                bits,
-                signed,
-            } => {
-                let (value, over) = binary(*op, r[*a as usize], r[*b as usize], *bits, *signed)?;
-                r[*dst as usize] = value;
-                r[*overflow as usize] = u128::from(over);
-            }
-            Op::Unary { dst, op, src, bits } => {
-                let value = r[*src as usize] & mask(*bits);
-                r[*dst as usize] = match op {
-                    Unary::Not => !value & mask(*bits),
-                    Unary::Neg => value.wrapping_neg() & mask(*bits),
-                    Unary::CountOnes => value.count_ones() as u128,
-                    Unary::LeadingZeros => {
-                        (value.leading_zeros() - (128 - u32::from(*bits))) as u128
+            frame.pc += 1;
+            // The entry validation also covers callers using in-memory programs.
+            match instruction {
+                Op::ResetThreadLocals => {
+                    if frames.len() != 1 || tls.completion.is_some() {
+                        return Err("thread-local reset requires the root frame".into());
                     }
-                    Unary::TrailingZeros => value.trailing_zeros().min(u32::from(*bits)) as u128,
-                    Unary::SwapBytes => value.swap_bytes() >> (128 - *bits),
-                };
-            }
-            Op::Cast {
-                dst,
-                src,
-                from,
-                to,
-                signed: is_signed,
-            } => {
-                let value = r[*src as usize];
-                r[*dst as usize] = if *is_signed {
-                    signed(value, *from) as u128
-                } else {
-                    value & mask(*from)
-                } & mask(*to);
-            }
-            Op::Jump { target } => frame.pc = *target,
-            Op::Select {
-                dst,
-                condition,
-                yes,
-                no,
-            } => {
-                r[*dst as usize] = r[if r[*condition as usize] != 0 {
-                    *yes
-                } else {
-                    *no
-                } as usize]
-            }
-            Op::Switch {
-                value,
-                cases,
-                otherwise,
-            } => {
-                frame.pc = cases
-                    .iter()
-                    .find(|(n, _)| *n == r[*value as usize])
-                    .map_or(*otherwise, |(_, t)| *t)
-            }
-            Op::Assert {
-                value,
-                expected,
-                message,
-            } => {
-                if (r[*value as usize] != 0) != *expected {
-                    return Err(format!("guest assertion: {message} in {}", function.name));
-                }
-            }
-            Op::Trap { message } => {
-                return Err(format!("guest trap: {message} in {}", function.name));
-            }
-            Op::Call {
-                args, destination, ..
-            }
-            | Op::CallIndirect {
-                args, destination, ..
-            } => {
-                let callee_id = match instruction {
-                    Op::Call { function, .. } => *function,
-                    Op::CallIndirect {
-                        callee,
-                        arg_sizes,
-                        result_size,
-                        ..
-                    } => {
-                        let pointer = r[*callee as usize];
-                        if pointer > u64::MAX as u128 || pointer as u64 & FUNCTION_POINTER_TAG == 0
-                        {
-                            return Err("invalid guest function pointer".into());
-                        }
-                        let id = ((pointer as u64 & !FUNCTION_POINTER_TAG) as usize)
-                            .checked_sub(1)
-                            .ok_or("null guest function handle")?;
-                        let function = program
-                            .functions
-                            .get(id)
-                            .ok_or("invalid guest function handle")?;
-                        if function.args.len() != arg_sizes.len()
-                            || function
-                                .args
-                                .iter()
-                                .zip(arg_sizes)
-                                .any(|(slot, size)| slot.size != *size)
-                            || function.result.size != *result_size
-                        {
-                            return Err("guest function pointer signature mismatch".into());
-                        }
-                        id
-                    }
-                    _ => unreachable!(),
-                };
-                let callee = &program.functions[callee_id];
-                let return_address = r[*destination as usize] as usize;
-                let base = memory.reserve_frame(callee.frame_size, callee.frame_align)?;
-                let added = callee
-                    .registers
-                    .checked_mul(16)
-                    .ok_or("register size overflow")?;
-                register_bytes = register_bytes
-                    .checked_add(added)
-                    .ok_or("register size overflow")?;
-                if register_bytes
-                    .checked_add(memory.total_len())
-                    .is_none_or(|n| n > limits.memory)
-                {
-                    return Err("interpreter working-memory limit exceeded".into());
-                }
-                if local_call_arguments[frame.function][frame.pc - 1] {
-                    // Validation and the per-block proof establish that these
-                    // sources lie inside the live caller frame. Callee slots
-                    // lie inside the frame just reserved above. Keep argument
-                    // order even when callee slots overlap.
-                    for (src, slot) in args.iter().zip(&callee.args) {
-                        let source = r[*src as usize] as usize;
-                        memory.bytes.copy_within(source..source + slot.size, base + slot.offset);
-                    }
-                } else {
-                    for (src, slot) in args.iter().zip(&callee.args) {
-                        memory.copy(r[*src as usize] as usize, base + slot.offset, slot.size)?;
-                    }
-                }
-                if frames.len() >= limits.frames {
-                    return Err("interpreter call-depth limit exceeded".into());
-                }
-                let register_base = register_bytes / 16 - callee.registers;
-                // register_bytes has already been checked against the live
-                // working-memory budget. No pointer survives a guest call;
-                // the JIT receives fresh storage pointers on its next entry.
-                let register_end = register_bytes / 16;
-                if register_end > registers.len() {
-                    registers.resize(register_end, 0);
-                }
-                if needs_register_zeroes[callee_id] {
-                    registers[register_base..register_end].fill(0);
-                }
-                if NATIVE_CALLS {
-                    // The ordinary root Call has already reserved/initialized
-                    // its frame, copied arguments and checked depth in VM order.
-                    // A declined tree continues through the existing push path.
-                    if let Some(run) = native.as_mut().unwrap().run::<PROFILE>(
-                        jit.as_mut().unwrap(), callee_id, return_address, base, register_base,
-                        frames.len(), limits.instructions - steps, &limits,
-                        &mut memory, &mut registers, &mut profile)? {
-                        steps += run;
-                        jit_instructions += run;
-                        jit_entries += 1;
-                        register_bytes = register_base * 16;
-                        continue;
-                    }
-                }
-                frames.push(Frame {
-                    function: callee_id,
-                    pc: 0,
-                    base,
-                    register_base,
-                    return_address,
-                    tls_callback: false,
-                });
-                prepare_jit::<PROFILE>(&mut jit, callee_id, &mut profile)?;
-            }
-            Op::Return => {
-                let result = function.result;
-                let source = frame.base + result.offset;
-                let callback = frame.tls_callback;
-                if frames.len() == 1 && !callback {
-                    let value = memory.load(source, result.size)?;
-                    if tls.is_empty() { break value; }
-                    tls.completion = Some(tls::Completion::Entry(value));
-                    let frame = frames.pop().ok_or("missing entry frame")?;
-                    register_bytes = 0;
-                    memory.bytes.truncate(frame.base);
+                    tls.completion = Some(tls::Completion::Reset);
                     tls.advance(program, &mut memory, &mut frames, &mut registers,
                         &mut register_bytes, &needs_register_zeroes, &limits)?;
                     if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
-                    continue;
+                    break 'dispatch;
                 }
-                let frame = frames.pop().ok_or("missing return frame")?;
-                // Retain initialized backing elements for the next call.
-                // The active prefix, rather than retained length/capacity,
-                // remains subject to the live working-memory budget.
-                register_bytes = frame.register_base * 16;
-                if !callback { memory.copy(source, frame.return_address, result.size)?; }
-                memory.bytes.truncate(frame.base);
-                if callback {
-                    if let Some(value) = tls.advance(program, &mut memory, &mut frames, &mut registers,
-                        &mut register_bytes, &needs_register_zeroes, &limits)? { break value; }
-                    if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                Op::RegisterTlsDestructor { callback, argument } => {
+                    tls.register(program, &mut memory, register_bytes,
+                        r[*callback as usize], r[*argument as usize])?;
                 }
+                Op::RandomBytes { dst, address, size } => {
+                    r[*dst as usize] = memory.random_bytes(r[*address as usize] as usize, r[*size as usize] as usize)?;
+                }
+                Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
+                    r[*dst as usize] = memory.cpu_feature_query(r[*name as usize] as usize,
+                        r[*output as usize] as usize, r[*output_len as usize] as usize,
+                        r[*new_data as usize] as usize, r[*new_len as usize] as usize)?;
+                }
+                Op::CAllocate { dst, count, size, errno, zeroed } => {
+                    r[*dst as usize] = memory.c_allocate(r[*count as usize], r[*size as usize],
+                        r[*errno as usize], *zeroed, register_bytes)?;
+                }
+                Op::CDeallocate { pointer } => memory.c_deallocate(r[*pointer as usize])?,
+                Op::CReallocate { dst, pointer, size, errno } => {
+                    r[*dst as usize] = memory.c_reallocate(r[*pointer as usize], r[*size as usize],
+                        r[*errno as usize], register_bytes)?;
+                }
+                Op::CAlignedAllocate { dst, output, align, size } => {
+                    r[*dst as usize] = memory.c_aligned_allocate(r[*output as usize], r[*align as usize],
+                        r[*size as usize], register_bytes)?;
+                }
+                Op::Imm { dst, value } => r[*dst as usize] = *value,
+                Op::Local { dst, offset } => r[*dst as usize] = (frame.base + offset) as u128,
+                Op::Load { dst, address, size } => {
+                    r[*dst as usize] = memory.load(r[*address as usize] as usize, *size as usize)?
+                }
+                Op::Store { address, src, size } => memory.store(
+                    r[*address as usize] as usize,
+                    *size as usize,
+                    r[*src as usize],
+                )?,
+                Op::Copy { dst, src, size } => {
+                    memory.copy(r[*src as usize] as usize, r[*dst as usize] as usize, *size)?
+                }
+                Op::CopyDynamic { dst, src, size } => memory.copy(
+                    r[*src as usize] as usize,
+                    r[*dst as usize] as usize,
+                    r[*size as usize] as usize,
+                )?,
+                Op::FillBytes {
+                    address,
+                    value,
+                    size,
+                } => memory.fill(
+                    r[*address as usize] as usize,
+                    r[*value as usize] as u8,
+                    r[*size as usize] as usize,
+                )?,
+                Op::CompareBytes {
+                    dst,
+                    left,
+                    right,
+                    size,
+                } => {
+                    let count = r[*size as usize] as usize;
+                    let left = memory.read(r[*left as usize] as usize, count)?;
+                    let right = memory.read(r[*right as usize] as usize, count)?;
+                    // The Rust intrinsic specifies the sign, not the magnitude.
+                    // Check both complete ranges before examining any bytes.
+                    let ordering = left.cmp(right);
+                    r[*dst as usize] = match ordering {
+                        std::cmp::Ordering::Less => u32::MAX as u128,
+                        std::cmp::Ordering::Equal => 0,
+                        std::cmp::Ordering::Greater => 1,
+                    };
+                }
+                Op::FloatBinary { dst, op, a, b, bits } => {
+                    r[*dst as usize] = float::binary(*op, r[*a as usize], r[*b as usize], *bits)?;
+                }
+                Op::FloatUnary { dst, op, src, bits } => {
+                    r[*dst as usize] = float::unary(*op, r[*src as usize], *bits)?;
+                }
+                Op::FloatConvert { dst, kind, src, from, to } => {
+                    r[*dst as usize] = float::convert(*kind, r[*src as usize], *from, *to)?;
+                }
+                Op::Allocate {
+                    dst,
+                    size,
+                    align,
+                    zeroed,
+                } => {
+                    let budget = memory.heap_budget(register_bytes);
+                    r[*dst as usize] = memory.heap.allocate(
+                        r[*size as usize] as usize,
+                        r[*align as usize] as usize,
+                        budget,
+                        *zeroed,
+                    )? as u128;
+                    memory.peak = memory.peak.max(memory.total_len());
+                }
+                Op::Deallocate {
+                    pointer,
+                    size,
+                    align,
+                } => {
+                    memory.heap.deallocate(
+                        r[*pointer as usize] as usize,
+                        r[*size as usize] as usize,
+                        r[*align as usize] as usize,
+                    )?;
+                }
+                Op::Reallocate {
+                    dst,
+                    pointer,
+                    old_size,
+                    align,
+                    new_size,
+                } => {
+                    let budget = memory.heap_budget(register_bytes);
+                    r[*dst as usize] = memory.heap.reallocate(
+                        r[*pointer as usize] as usize,
+                        r[*old_size as usize] as usize,
+                        r[*align as usize] as usize,
+                        r[*new_size as usize] as usize,
+                        budget,
+                    )? as u128;
+                    memory.peak = memory.peak.max(memory.total_len());
+                }
+                Op::Binary {
+                    dst,
+                    overflow,
+                    op,
+                    a,
+                    b,
+                    bits,
+                    signed,
+                } => {
+                    let (value, over) = binary(*op, r[*a as usize], r[*b as usize], *bits, *signed)?;
+                    r[*dst as usize] = value;
+                    r[*overflow as usize] = u128::from(over);
+                }
+                Op::Unary { dst, op, src, bits } => {
+                    let value = r[*src as usize] & mask(*bits);
+                    r[*dst as usize] = match op {
+                        Unary::Not => !value & mask(*bits),
+                        Unary::Neg => value.wrapping_neg() & mask(*bits),
+                        Unary::CountOnes => value.count_ones() as u128,
+                        Unary::LeadingZeros => {
+                            (value.leading_zeros() - (128 - u32::from(*bits))) as u128
+                        }
+                        Unary::TrailingZeros => value.trailing_zeros().min(u32::from(*bits)) as u128,
+                        Unary::SwapBytes => value.swap_bytes() >> (128 - *bits),
+                    };
+                }
+                Op::Cast {
+                    dst,
+                    src,
+                    from,
+                    to,
+                    signed: is_signed,
+                } => {
+                    let value = r[*src as usize];
+                    r[*dst as usize] = if *is_signed {
+                        signed(value, *from) as u128
+                    } else {
+                        value & mask(*from)
+                    } & mask(*to);
+                }
+                Op::Jump { target } => frame.pc = *target,
+                Op::Select {
+                    dst,
+                    condition,
+                    yes,
+                    no,
+                } => {
+                    r[*dst as usize] = r[if r[*condition as usize] != 0 {
+                        *yes
+                    } else {
+                        *no
+                    } as usize]
+                }
+                Op::Switch {
+                    value,
+                    cases,
+                    otherwise,
+                } => {
+                    frame.pc = cases
+                        .iter()
+                        .find(|(n, _)| *n == r[*value as usize])
+                        .map_or(*otherwise, |(_, t)| *t)
+                }
+                Op::Assert {
+                    value,
+                    expected,
+                    message,
+                } => {
+                    if (r[*value as usize] != 0) != *expected {
+                        return Err(format!("guest assertion: {message} in {}", function.name));
+                    }
+                }
+                Op::Trap { message } => {
+                    return Err(format!("guest trap: {message} in {}", function.name));
+                }
+                Op::Call {
+                    args, destination, ..
+                }
+                | Op::CallIndirect {
+                    args, destination, ..
+                } => {
+                    let callee_id = match instruction {
+                        Op::Call { function, .. } => *function,
+                        Op::CallIndirect {
+                            callee,
+                            arg_sizes,
+                            result_size,
+                            ..
+                        } => {
+                            let pointer = r[*callee as usize];
+                            if pointer > u64::MAX as u128 || pointer as u64 & FUNCTION_POINTER_TAG == 0
+                            {
+                                return Err("invalid guest function pointer".into());
+                            }
+                            let id = ((pointer as u64 & !FUNCTION_POINTER_TAG) as usize)
+                                .checked_sub(1)
+                                .ok_or("null guest function handle")?;
+                            let function = program
+                                .functions
+                                .get(id)
+                                .ok_or("invalid guest function handle")?;
+                            if function.args.len() != arg_sizes.len()
+                                || function
+                                    .args
+                                    .iter()
+                                    .zip(arg_sizes)
+                                    .any(|(slot, size)| slot.size != *size)
+                                || function.result.size != *result_size
+                            {
+                                return Err("guest function pointer signature mismatch".into());
+                            }
+                            id
+                        }
+                        _ => unreachable!(),
+                    };
+                    let callee = &program.functions[callee_id];
+                    let return_address = r[*destination as usize] as usize;
+                    let base = memory.reserve_frame(callee.frame_size, callee.frame_align)?;
+                    let added = callee
+                        .registers
+                        .checked_mul(16)
+                        .ok_or("register size overflow")?;
+                    register_bytes = register_bytes
+                        .checked_add(added)
+                        .ok_or("register size overflow")?;
+                    if register_bytes
+                        .checked_add(memory.total_len())
+                        .is_none_or(|n| n > limits.memory)
+                    {
+                        return Err("interpreter working-memory limit exceeded".into());
+                    }
+                    if local_call_arguments[frame.function][frame.pc - 1] {
+                        // Validation and the per-block proof establish that these
+                        // sources lie inside the live caller frame. Callee slots
+                        // lie inside the frame just reserved above. Keep argument
+                        // order even when callee slots overlap.
+                        for (src, slot) in args.iter().zip(&callee.args) {
+                            let source = r[*src as usize] as usize;
+                            memory.bytes.copy_within(source..source + slot.size, base + slot.offset);
+                        }
+                    } else {
+                        for (src, slot) in args.iter().zip(&callee.args) {
+                            memory.copy(r[*src as usize] as usize, base + slot.offset, slot.size)?;
+                        }
+                    }
+                    if frames.len() >= limits.frames {
+                        return Err("interpreter call-depth limit exceeded".into());
+                    }
+                    let register_base = register_bytes / 16 - callee.registers;
+                    // register_bytes has already been checked against the live
+                    // working-memory budget. No pointer survives a guest call;
+                    // the JIT receives fresh storage pointers on its next entry.
+                    let register_end = register_bytes / 16;
+                    if register_end > registers.len() {
+                        registers.resize(register_end, 0);
+                    }
+                    if needs_register_zeroes[callee_id] {
+                        registers[register_base..register_end].fill(0);
+                    }
+                    if NATIVE_CALLS {
+                        // The ordinary root Call has already reserved/initialized
+                        // its frame, copied arguments and checked depth in VM order.
+                        // A declined tree continues through the existing push path.
+                        if let Some(run) = native.as_mut().unwrap().run::<PROFILE>(
+                            jit.as_mut().unwrap(), callee_id, return_address, base, register_base,
+                            frames.len(), limits.instructions - steps, &limits,
+                            &mut memory, &mut registers, &mut profile)? {
+                            steps += run;
+                            jit_instructions += run;
+                            jit_entries += 1;
+                            register_bytes = register_base * 16;
+                            continue 'execution;
+                        }
+                    }
+                    frames.push(Frame {
+                        function: callee_id,
+                        pc: 0,
+                        base,
+                        register_base,
+                        return_address,
+                        tls_callback: false,
+                    });
+                    prepare_jit::<PROFILE>(&mut jit, callee_id, &mut profile)?;
+                    break 'dispatch;
+                }
+                Op::Return => {
+                    let result = function.result;
+                    let source = frame.base + result.offset;
+                    let callback = frame.tls_callback;
+                    if frames.len() == 1 && !callback {
+                        let value = memory.load(source, result.size)?;
+                        if tls.is_empty() { break 'execution value; }
+                        tls.completion = Some(tls::Completion::Entry(value));
+                        let frame = frames.pop().ok_or("missing entry frame")?;
+                        register_bytes = 0;
+                        memory.bytes.truncate(frame.base);
+                        tls.advance(program, &mut memory, &mut frames, &mut registers,
+                            &mut register_bytes, &needs_register_zeroes, &limits)?;
+                        if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                        continue 'execution;
+                    }
+                    let frame = frames.pop().ok_or("missing return frame")?;
+                    // Retain initialized backing elements for the next call.
+                    // The active prefix, rather than retained length/capacity,
+                    // remains subject to the live working-memory budget.
+                    register_bytes = frame.register_base * 16;
+                    if !callback { memory.copy(source, frame.return_address, result.size)?; }
+                    memory.bytes.truncate(frame.base);
+                    if callback {
+                        if let Some(value) = tls.advance(program, &mut memory, &mut frames, &mut registers,
+                            &mut register_bytes, &needs_register_zeroes, &limits)? { break 'execution value; }
+                        if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                    }
+                    break 'dispatch;
+                }
+            }
+            if USE_JIT { break 'dispatch; }
+            if steps >= limits.instructions {
+                return Err("interpreter instruction limit exceeded".into());
             }
         }
     };

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Compare two immutable VMs on a manifest of saved bytecode, without rebuilding."""
 import argparse
+import errno
 import fcntl
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import resource
@@ -16,6 +18,35 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def lock_wait_seconds(value):
+    try:
+        seconds = float(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError('lock wait must be finite and nonnegative') from None
+    if not math.isfinite(seconds) or seconds < 0:
+        raise argparse.ArgumentTypeError('lock wait must be finite and nonnegative')
+    return seconds
+
+
+def acquire_lock(lock, wait_seconds):
+    wait_seconds = lock_wait_seconds(wait_seconds)
+    deadline = time.monotonic() + wait_seconds
+    first_attempt = True
+    while first_attempt or time.monotonic() < deadline:
+        first_attempt = False
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return
+        except OSError as error:
+            if error.errno not in (errno.EACCES, errno.EAGAIN):
+                raise
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(1.0, remaining))
+    raise TimeoutError(f'timed out after {wait_seconds:g}s waiting for benchmark lock {lock.name}')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--baseline', type=Path, required=True)
@@ -23,31 +54,21 @@ def main():
     parser.add_argument('--manifest', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--lock', type=Path, required=True)
+    parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=300)
     parser.add_argument('--repetitions', type=int, default=6)
     parser.add_argument('--engines', nargs='+', choices=['interpreter', 'jit'], default=['interpreter', 'jit'])
-    parser.add_argument('--lock-wait-seconds', type=int, default=0)
     args = parser.parse_args()
     if args.repetitions < 2 or args.repetitions % 2:
         parser.error('use an even number of repetitions, at least two')
     if len(set(args.engines)) != len(args.engines):
         parser.error('specify each engine at most once')
-    if not 0 <= args.lock_wait_seconds <= 60:
-        parser.error('lock wait must be between zero and 60 seconds')
     cases = json.loads(args.manifest.read_text())
     binaries = dict(baseline=args.baseline.resolve(), candidate=args.candidate.resolve())
     paths = [*binaries.values(), args.manifest.resolve(), Path(__file__).resolve()]
     paths += [Path(case['artifact']).resolve() for case in cases]
     frozen = {str(path): sha(path) for path in paths}
     with args.lock.open('a') as lock:
-        deadline = time.monotonic() + args.lock_wait_seconds
-        while True:
-            try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
-            except BlockingIOError:
-                if time.monotonic() >= deadline:
-                    raise
-                time.sleep(min(1, max(0, deadline - time.monotonic())))
+        acquire_lock(lock, args.lock_wait_seconds)
         args.output.mkdir(parents=True, exist_ok=False)
         plan = dict(binaries={k: str(v) for k, v in binaries.items()}, cases=cases,
                     frozen=frozen, repetitions=args.repetitions, engines=args.engines,
