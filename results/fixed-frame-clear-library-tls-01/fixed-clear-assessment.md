@@ -1,0 +1,1 @@
+The forward-anchored-tls retention gate **passes**: paired complete-command wall +0.39%, CPU +0.22%. All 63 primary commands, 21 checks, 15 edited pairs and 42 artifact hashes verify. Native, baseline and candidate absolute medians are recorded in JSON; original assertions and source controls are retained.
