@@ -102,7 +102,12 @@ def verify(report, reference=None, *, compiler_flags=None):
     rows = read(ROOT / report['raw'] / 'records.json')
     if 'case_file' in report:
         from workflow_case_file import verify_snapshot
-        verify_snapshot(ROOT, report, rows)
+        # The existing case verifier reconstructs its declared edit history.
+        # The optional final restoration is checked against that verified
+        # original below, without changing historical case-file schemas.
+        case_report = dict(report, mode_orders=report['mode_orders'][:-1]) if restoring else report
+        case_rows = [r for r in rows if r['state'] != -2] if restoring else rows
+        verify_snapshot(ROOT, case_report, case_rows)
     transitions = read(ROOT / report['raw'] / 'source-transitions.json')
     cycles = report['cycles']
     edits = len(report['edits'])

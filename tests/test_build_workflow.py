@@ -184,6 +184,16 @@ class BuildWorkflowVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'identical paired jobs/settings'):
             self.verify()
 
+    def test_case_file_history_is_checked_before_separate_restoration(self):
+        self.report['case_file'] = {'snapshot': 'case.json'}
+        with patch('workflow_case_file.verify_snapshot') as check_case:
+            verified = self.verify()
+        _, report, rows = check_case.call_args.args
+        self.assertEqual((len(report['mode_orders']), len(rows)), (21, 63))
+        self.assertTrue(all(row['state'] != -2 for row in rows))
+        self.assertEqual(verified['commands'], 66)
+        self.assertTrue(verified['restored_original_build_and_execution_verified'])
+
     def test_namespace_must_match_the_executed_command(self):
         row = next(r for r in self.rows if r['mode'] == 'candidate')
         row['calls'][0]['command'][-1] = 'control:baseline'
