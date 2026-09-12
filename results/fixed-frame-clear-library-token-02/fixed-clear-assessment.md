@@ -1,0 +1,5 @@
+Token-phrase passes its 5% retention gate: paired candidate/baseline complete-command wall ratio **0.965698** (3.43% improvement), CPU ratio **0.966753** (3.32% improvement). Across three cycles and five edits, command medians are native **1.999s**, baseline **4.631s**, candidate **4.463s**. The candidate remains about 2.23 times native on this workload.
+
+All 63 primary commands, 21 Cargo checks, 15 edited pairs and 42 artifact snapshots verify. Paired bytecode is identical; original assertions, wrong production edits and source restoration pass. The initial attempt refused disk admission before commands or edits; the completed attempt followed retirement of four incremental caches from the already completed folded history. All its other files and benchmark evidence were preserved.
+
+These measurements use the frozen VM pair from the fixed-clearing qualification. The experimental source branch now also includes the separately qualified main interpreter frame-loop change; the final combined build remains to be qualified.
