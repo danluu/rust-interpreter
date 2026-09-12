@@ -46,15 +46,20 @@ impl<'tcx> Exporter<'tcx> {
         }
     }
     pub(super) fn verify_replayed_graph(&self, replay: &Self) -> Result<()> {
-        if self.instances != replay.instances || self.ids != replay.ids || self.needs_body != replay.needs_body
-            || self.pending != replay.pending || self.pointer_shapes != replay.pointer_shapes
-            || self.indirect_shapes != replay.indirect_shapes || self.allocations != replay.allocations
-            || self.tls_addresses != replay.tls_addresses || self.runtime_errno != replay.runtime_errno
-            || self.thread_locals.len() != replay.thread_locals.len()
-            || self.thread_locals.iter().zip(&replay.thread_locals).any(|(a, b)| (a.offset, a.size) != (b.offset, b.size)) || self.data != replay.data || self.statics != replay.statics
-            || self.unavailable_calls != replay.unavailable_calls
-        {
-            return Err("binding replay exporter graph differs from full lowering".into());
+        macro_rules! compare {
+            ($field:ident) => {
+                if self.$field != replay.$field {
+                    return Err(format!("binding replay exporter {} differs from full lowering", stringify!($field)));
+                }
+            };
+        }
+        compare!(instances); compare!(ids); compare!(needs_body); compare!(pending);
+        compare!(pointer_shapes); compare!(indirect_shapes); compare!(allocations);
+        compare!(tls_addresses); compare!(runtime_errno); compare!(data); compare!(statics);
+        compare!(unavailable_calls);
+        if self.thread_locals.len() != replay.thread_locals.len()
+            || self.thread_locals.iter().zip(&replay.thread_locals).any(|(a, b)| (a.offset, a.size) != (b.offset, b.size)) {
+            return Err("binding replay exporter thread_locals differs from full lowering".into());
         }
         Ok(())
     }
