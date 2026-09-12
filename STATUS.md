@@ -66,8 +66,12 @@ The isolated versioned artifact contract passes 297 debug/release tests,
 one ignored, and exact legacy roundtrips. The custom interpreter now passes
 305 debug/release tests; serialized CLI checks pass 23 commands with
 native Rust controls. No scalar performance comparison has run.
-Native resumable support, caller value operands and compiler promotion
-remain next. The experimental runtime is unpublished.
+The custom native ABI passes 310 debug/release tests and 64 serialized
+CLI commands, including actual generated execution in all four JIT modes.
+Caller value operands and compiler promotion remain next.
+The experimental runtime is unpublished.
+[Native ABI](results/scalar-abi-native-build-03/assessment.md);
+[native CLI](results/scalar-abi-native-cli-01/assessment.md);
 [Interpreter](results/scalar-abi-interpreter-build-01/assessment.md);
 [CLI qualification](results/scalar-abi-cli-01/assessment.md);
 [Artifact qualification](results/scalar-abi-artifact-build-01/assessment.md);

@@ -1,0 +1,5 @@
+All 64 serialized-artifact CLI commands pass. Twenty-one successful engine cases agree with native Rust for zero, an ordinary input and wrapping overflow. The scalar fixture executes exactly three native instructions in each of the four JIT configurations; its fourth instruction is root Return. Five profiles have one hit at each PC. Thirty budget checks and four malformed/unsupported-input checks pass.
+
+The CLI source and runtime are byte-identical to the library qualified by 310 debug/release tests. Only the fixture writer changes, adding an identity cast to ensure the ordinary native region reaches its three-operation minimum. This explicitly rules out all-interpreter fallback as a native CLI success. Tool key: `1064287db5c0f1075c6c0974827939707c1e024a5ee88c56eb53d1c48f0f49ed`.
+
+No runtime was published and no performance comparison ran. Caller value operands and compiler promotion precede fresh real-workflow comparisons. [Commands and hashes](summary.json), [terminal receipt](execution.json).

@@ -154,8 +154,10 @@ review are not commitments or evidence of feasibility.
   passes 297 debug/release tests and exact legacy roundtrips. The
   [custom interpreter](../results/scalar-abi-interpreter-build-01/assessment.md)
   now passes 305 debug/release tests; [CLI checks](../results/scalar-abi-cli-01/assessment.md)
-  pass 23 commands with native controls. Native resumable/caller-value/compiler
-  support remains next. No scalar performance comparison has run; the counts are not
+  pass 23 commands with native controls. The [custom native ABI](../results/scalar-abi-native-build-03/assessment.md)
+  passes 310 debug/release tests and [native CLI checks](../results/scalar-abi-native-cli-01/assessment.md)
+  pass 64 commands with generated execution verified. Caller value operands and
+  compiler promotion remain next. No scalar performance comparison has run; the counts are not
   a speedup claim. [Implementation contract](../benchmarks/experiments/scalar-value-abi/CONTRACT.md).
 
 - The qualified aggregate compiler is now integrated as `5b2330c` / `9637b0ac`.

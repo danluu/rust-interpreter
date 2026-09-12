@@ -101,8 +101,12 @@ uses a companion ABI table; existing Program execution APIs reject scalar bodies
 The [custom interpreter](results/scalar-abi-interpreter-build-01/assessment.md) now
 passes 305 debug/release tests (one ignored), including recursion, TLS, faults
 and exact budgets. [Serialized CLI checks](results/scalar-abi-cli-01/assessment.md)
-pass 23 commands with native Rust controls. No runtime was published. Next are
-native resumable support, caller value operands and compiler promotion.
+pass 23 commands with native Rust controls. The [custom native ABI](results/scalar-abi-native-build-03/assessment.md)
+now passes 310 debug/release tests (one ignored), with actual hot native calls,
+per-PC profiles and every budget boundary. [Native CLI qualification](results/scalar-abi-native-cli-01/assessment.md)
+passes 64 commands and requires generated execution in all four JIT modes.
+No runtime was published. Next are [caller value operands](benchmarks/experiments/scalar-value-calls/CONTRACT.md)
+and compiler promotion.
 The [contract and fresh complete-command gates](benchmarks/experiments/scalar-value-abi/CONTRACT.md)
 remain required. Existing native Calls already cross guest frames without
 returning to the Rust VM. No scalar performance comparison has run yet.

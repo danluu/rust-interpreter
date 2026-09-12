@@ -14,10 +14,11 @@ def render():
         'whole-call-export-smoke-02', 'whole-call-primary-02', 'whole-call-costs-01',
         'scalar-boundary-build-02', 'scalar-boundary-export-smoke-02', 'scalar-boundary-census-01',
         'scalar-boundary-admission-01', 'scalar-abi-artifact-build-01',
-        'scalar-abi-interpreter-build-01', 'scalar-abi-cli-01')]
+        'scalar-abi-interpreter-build-01', 'scalar-abi-cli-01',
+        'scalar-abi-native-build-03', 'scalar-abi-native-cli-01')]
     (integration, primary, held, budget, slots, whole, fixtures, smoke, whole_primary,
         whole_costs, scalar_build, scalar_export, scalar_census, scalar_admission,
-        scalar_artifact, scalar_interpreter, scalar_cli) = [json.loads((ROOT / p).read_text()) for p in paths]
+        scalar_artifact, scalar_interpreter, scalar_cli, scalar_native, scalar_native_cli) = [json.loads((ROOT / p).read_text()) for p in paths]
     key = integration['tool_key']
     if not (all(d['status'] == 'passed' for d in (integration, primary, budget))
             and held['status'] == 'all seven histories verified'
@@ -46,7 +47,13 @@ def render():
             and scalar_interpreter['tests']['debug']['passed']==scalar_interpreter['tests']['release']['passed']==305
             and len(scalar_cli['commands'])==23 and scalar_cli['successful_engine_cases']==9
             and scalar_cli['parent_tool_key']==scalar_interpreter['tool_key']
-            and not scalar_cli['runtime_published']):
+            and not scalar_cli['runtime_published']
+            and scalar_native['status']==scalar_native_cli['status']=='passed'
+            and scalar_native['tests']['debug']['passed']==scalar_native['tests']['release']['passed']==310
+            and len(scalar_native_cli['commands'])==64 and scalar_native_cli['successful_engine_cases']==21
+            and scalar_native_cli['parent_tool_key']==scalar_native['tool_key']
+            and scalar_native_cli['native_modes']==4 and scalar_native_cli['native_instructions_per_success']==3
+            and not scalar_native_cli['runtime_published']):
         raise RuntimeError('integrated compiler evidence differs from the recorded decision')
     index = json.loads((ROOT / 'benchmarks/tool-builds.json').read_text())
     build = next(b for b in index['builds'] if b['commit'] == integration['source_commit'])
@@ -107,8 +114,12 @@ def render():
         'one ignored, and exact legacy roundtrips. The custom interpreter now passes',
         '305 debug/release tests; serialized CLI checks pass 23 commands with',
         'native Rust controls. No scalar performance comparison has run.',
-        'Native resumable support, caller value operands and compiler promotion',
-        'remain next. The experimental runtime is unpublished.',
+        'The custom native ABI passes 310 debug/release tests and 64 serialized',
+        'CLI commands, including actual generated execution in all four JIT modes.',
+        'Caller value operands and compiler promotion remain next.',
+        'The experimental runtime is unpublished.',
+        '[Native ABI](results/scalar-abi-native-build-03/assessment.md);',
+        '[native CLI](results/scalar-abi-native-cli-01/assessment.md);',
         '[Interpreter](results/scalar-abi-interpreter-build-01/assessment.md);',
         '[CLI qualification](results/scalar-abi-cli-01/assessment.md);',
         '[Artifact qualification](results/scalar-abi-artifact-build-01/assessment.md);',
