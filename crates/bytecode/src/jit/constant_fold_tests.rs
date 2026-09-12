@@ -20,6 +20,13 @@ fn qualify(p:&Program,args:&[u128])->Program {
         std::fs::write(dir.join("folded.rbc"),bincode::serialize(&q).unwrap()).unwrap();std::fs::write(dir.join("arguments.txt"),format!("{args:?}")).unwrap();
         panic!("original {before:?} folded {after:?}; artifacts at {dir:?}");
     }
+    // Across compiler versions preserve exact errors within each engine;
+    // normalization below applies only to same-artifact cross-engine checks.
+    for resumable in [false,true] {for persistent in [false,true] {
+        let limits=Limits{jit_resumable_calls:resumable,jit_persistent_registers:persistent,..Limits::default()};
+        let original=run(p,args,Engine::Jit,limits.clone());let folded=run(&q,args,Engine::Jit,limits);
+        assert_eq!(observable(&original),observable(&folded));
+    }}
     for artifact in [p,&q] {
         let reference=run(artifact,args,Engine::Interpreter,Limits::default());
         let n=reference.as_ref().map_or(50,|e|e.1);
@@ -28,7 +35,12 @@ fn qualify(p:&Program,args:&[u128])->Program {
                 let limits=Limits{instructions:budget,..Limits::default()};
                 let expected=run(artifact,args,Engine::Interpreter,limits.clone());
                 let actual=run(artifact,args,Engine::Jit,Limits{jit_resumable_calls:resumable,jit_persistent_registers:persistent,jit_code_bytes:capacity,..limits});
-                assert_eq!(actual,expected,"resumable={resumable} persistent={persistent} capacity={capacity} budget={budget}");
+                // Ordinary native regions already use a distinct range-fault
+                // message. Keep all other messages and all budget failures exact.
+                let normalize=|r:Result<(u128,u64,usize),String>|r.map_err(|e|match e.as_str() {
+                    "invalid guest memory access"|"JIT guest memory access failed"=>"guest memory range fault".into(),_=>e,
+                });
+                assert_eq!(normalize(actual),normalize(expected),"resumable={resumable} persistent={persistent} capacity={capacity} budget={budget}");
             }
         }}}
     }
