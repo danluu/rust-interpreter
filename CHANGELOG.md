@@ -2,6 +2,9 @@
 
 ## 2026-09-12 controls before further optimization
 
+- The unfiltered fre command exposed 52 integration tests outside the custom library replay and a native compile-fail doc-test diagnostic mismatch. Original source was restored; no successful suite latency is claimed.
+- Explicit integration-test target selection is implemented in ordinary source at `3d3dfb6` on `experiment/test-targets`. Four unit checks and 14 Cargo/native/custom controls pass, including strict uncalled errors and target switching. Original fre integration qualification follows.
+
 - Retained exporter instrumentation preserves all seven real token artifacts. Graph lowering costs 691ms; hash/publication/serialization/validation together cost about 98ms, too small for another full optimization primary.
 - Cargo effective profiles were inspected for all five projects; pgrust/Ruff already use line tables. Native suite times were recovered from 135 existing edited commands.
 - Native fre calibration is inconclusive: line tables improved calibration command wall by 7.86%, below the fixed 8% screen; debug=0 improved 5.17%. All 21 Cargo commands and 15 diagnostic repeats behaved as expected. Ten parser/selection tests pass.

@@ -94,6 +94,34 @@ source and test logs remain; no new archive was created. All task processes are
 terminal. The maintenance build target is now disposable/retired, so future
 host compilation will recreate it.
 
+## Unfiltered suite and integration targets
+
+`cargo test -p fre-kernels` ran without filters: 382 unit tests and 52 integration
+tests passed; seven unit tests were ignored. Two doc tests passed and one failed
+because the pinned nightly omitted expected diagnostic E0451. The controller
+stopped on original source before either edit, restored source and is terminal.
+See [the baseline failure](results/fre-unfiltered-native-01/assessment.md). Its
+9.615s duration is failure latency, not a successful edit-to-suite result.
+The existing 389-name custom replay exactly covers the native library target,
+excluding ten integration executables and all three doc tests.
+
+The new `--test-body --test-target NAME` selector is implemented on branch
+`experiment/test-targets`, worktree `.work/test-targets-source`, commit `3d3dfb6`.
+The existing retained exporter/router supports it; no guest engine changed.
+Four selection unit tests and [14 actual Cargo/native/custom commands](results/integration-targets-fixture-01/assessment.md)
+pass target A/B/A selection, the original library route, wrong production code,
+uncalled E0308/E0502 rejection and restoration. Five commands are native and
+nine custom; the initial hard-coded report counts were corrected from records.
+The executed driver is preserved locally. All task processes are terminal.
+
+Next: qualify original fre integration assertions and design shared dependency
+caches across explicit targets without weakening artifact selection/locking.
+Only about 8.04GiB is free, just above the fixed 8GiB floor; admit any new real
+Cargo target before running it. Do not start another archive campaign. The two
+completed alternative native-profile targets can be considered disposable after
+exact ownership/terminal/open-file/evidence checks; the repository native target
+is now used by the unfiltered command and should remain available.
+
 ## Persistent rules
 
 - No subagents or independent models. Custom guest interpreter/emitter only.
