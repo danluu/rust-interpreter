@@ -71,6 +71,19 @@ fn solve(p:&Program,f:&Function,blocks:&[Block],initial:&State,meter:&mut Meter)
     Some(incoming)
 }
 
+/// Visit facts from the certified solution without retaining per-op maps.
+pub(super) fn visit_facts(p:&Program,f:&Function,initial:&State,global:&mut usize,mut visit:impl FnMut(usize,&State))->Option<()> {
+    let mut meter=Meter{used:0,global};let blocks=blocks(f)?;
+    let states=solve(p,f,&blocks,initial,&mut meter)?;
+    for (id,block) in blocks.iter().enumerate() {
+        let Some(mut state)=states[id].clone() else {continue;};
+        for pc in block.start..block.end {
+            meter.spend(1+state.bytes.len())?;visit(pc,&state);state.step(&f.code[pc],p,f);
+        }
+    }
+    Some(())
+}
+
 #[derive(Default,Debug,Serialize)]
 pub(super) struct Report {pub function:usize,pub old_operations:usize,pub new_operations:usize,
     pub folded_values:usize,pub folded_switches:usize,pub dead_definitions:usize,pub solver_work:usize,pub declined:bool}
