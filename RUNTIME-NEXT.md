@@ -4,7 +4,20 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Specialize small constant frame clears.** Integration coverage now includes
+1. **Finish the fixed-clear retention gates.** The bounded store sequence for
+   statically known frames up to 256 bytes is implemented on
+   `experiment/fixed-frame-clear`. It still clears every byte and alignment
+   gap. The [three-history confirmation](results/fixed-frame-clear-confirm-02/assessment.md)
+   improves complete es8 edit/build/test commands by 8.37% wall and 8.48% CPU
+   across 15 pairs, excluding the pilot. Per-history wall gains range from
+   7.10% to 9.07%; candidate execution remains roughly 2.5 times native.
+   All 47,004 native differential commands, 245 TLS checks, 382 fre bodies
+   (seven ignored) and 52 integration assertions pass. Run the nine original
+   library workflows with independent 5% wall/CPU regression gates before
+   merging the runtime change. Each comparison requires identical bytecode.
+   The [execution plan](benchmarks/experiments/frame-initialization/FIXED-WORKFLOWS.md)
+   allows smaller cases first when storage admission prevents larger builds.
+   Integration coverage now includes
    all 52 fre assertions. The short end-greedy edit pilot gains 20.4%, but es8i
    costs 3.867s custom versus 1.449s native (2.678× paired). Native uses default
    threads; custom batches are sequential. Three owned es8i profiles place
@@ -12,8 +25,8 @@ Historical plans and failed gates stay in Git and their linked result directorie
    [initialization proof](results/frame-initialization-proof-01/assessment.md)
    covers only 3 of 1,135 clearing samples, so elision stays diagnostic. A bounded
    sequence of stores for statically known extents up to 256 bytes covers 1,041
-   samples and preserves zero initialization. Test that candidate separately,
-   including alignment padding, arbitrary aliases and exact limits.
+   samples and motivated the current candidate. Its targeted checks include
+   16,448 dirty host buffers plus guest alias, alignment and exact-limit cases.
    Keep the native doc-test failure and incomplete libtest semantics visible.
 2. **Choose substantial export work from measured costs.** The retained observer
    produced seven byte-identical token artifacts. Graph lowering costs 691ms;
