@@ -22,3 +22,16 @@ decoded and hashed before originals are retired. To recover, use
 `cache_archive.restore(archive_path, plan['manifest'], new_owned_directory)`;
 it refuses an existing destination and verifies bytes, modes, times and internal
 hardlinks. Filesystem identities and future Cargo cache reuse are not promised.
+
+`runtime.py` supplies a separate read-only evidence selector to that unchanged
+archive lifecycle. Its exact catalogue is the four completed guarded-Call
+histories and four target modes. It recomputes the qualified workflow assessment,
+checks the fixed parked decision, process ownership and every saved evidence hash,
+then uses the existing namespace/artifact derivation. The original cache selector
+and all original benchmark helpers remain unchanged. Run `runtime.py --check`
+first; its four real target derivations and invalid selections must pass.
+
+For this adapter, `--build` is the selection ID `WORKFLOW:MODE`; otherwise the
+prepare/review/commit/apply/verify procedure is identical. Use `runtime.py` for
+all actions on those identities. Native/check/custom targets remain distinct;
+executed bytecode snapshots and timing records stay outside each target.
