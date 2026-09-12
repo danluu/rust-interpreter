@@ -1,438 +1,100 @@
 # Current state — September 11, 2026
 
 The unbounded goal remains active: improve the custom Rust development engine
-using real source-edit/build/test measurements. Every user suggestion has an
-[item-by-item decision](docs/SUGGESTIONS-REVIEW-20260910.md). `suggestions.txt`
-is user-owned, unchanged and intentionally untracked. Local commits are authorized;
-no push was requested. Branch: `experiment/resumable-native-calls`.
+using real source-edit/build/test benchmarks. Every item in `suggestions.txt`
+has an [explicit decision](docs/SUGGESTIONS-REVIEW-20260910.md); that user-owned
+file remains unchanged and untracked. Local commits are authorized; no push.
+Branch: `experiment/resumable-native-calls`.
 
-## Active direction
+## Current experiment
 
-The [aggregate byte-write observer](results/aggregate-byte-writes-weights-01/assessment.md)
-now passes its scope gate: 55.97% additional weighted direct-frame-byte scope on
-folded and 31.90% on token. Fresh exports preserve both original bytecode hashes
-and assertions; 35 compiler tests (nine observer) and two typed join tests pass.
-No direct-frame bytes are unobserved or declined. Counts are historical executions
-of identical artifacts, not fresh timings. The first compile failure is preserved.
-The resulting [frame relocation](benchmarks/experiments/aggregate-byte-writes/RELOCATION-NEXT.md)
-uses named MIR local origins, complete ABI/scratch relocation and atomic fallback.
-The production compiler and current runtime are unchanged. The isolated
-[relocating exporter](results/aggregate-relocation-build-01/summary.json) now
-passes 39 tests, [both original workloads](results/aggregate-relocation-smoke-01/summary.json)
-and [1,024 native differential VM executions](results/aggregate-relocation-fixtures-01/summary.json).
-Uncalled type/borrow errors remain rejected. A separate changed-exporter verifier
-reproduces six historical reports and rejects 19 invalid cases; the production
-verifier and historical receipts remain unchanged. Actual frame savings before
-inlining are 557,392 static bytes across 454 folded functions and 1,091,040 bytes
-across 2,440 token functions, with zero relocation declines. The completed
-[three-cycle source-edit comparison](results/aggregate-relocation-e2e-01/assessment.md)
-passes both fixed primary gates: folded wall −12.77%, CPU −12.89%; token wall
-+3.70%, CPU +3.33%, within its 5% guard. All 168 commands, 30 edited pairs and
-84 artifacts verify. Folded medians are native 1.702s, control 1.939s, candidate
-1.696s; token medians are 1.965s, 4.290s and 4.462s. Added analysis is included:
-token's execution improvement does not offset its compiler overhead. The candidate
-is not retained yet. The candidate now passes [47,004 broad native-validation commands](results/aggregate-relocation-native-01/assessment.md)
-and [245 TLS/destructor commands](results/aggregate-relocation-tls-01/assessment.md).
-The per-case held-out verifier reproduces nine actual histories and rejects
-105 invalid synthetic cases while preserving both prior verifiers. Fresh fre
-body coverage now [passes all 382 bodies with seven ignored](results/aggregate-relocation-fre-01/assessment.md),
-382 fresh native controls, unchanged outcomes and zero JIT declines. All 382
-artifacts differ, as expected for the compiler change. The first held-out,
-[Nushell type-relations](results/aggregate-relocation-heldout-01-nushell-type-relations/relocation-assessment.md),
-passes: paired wall +1.10%, CPU +1.14%; native/control/candidate medians are
-7.529s/4.051s/4.066s. All 84 commands, 15 edited pairs and 42 artifact hashes
-verify. Six fixed held-outs remain; the candidate stays isolated. The final
-report helper reproduces this actual history and rejects 15 invalid receipts.
-The [recorded pass timers](results/aggregate-relocation-pass-costs-01/assessment.md)
-show median capture/finalization costs of 41.9 ms folded and 189.5 ms token;
-token's paired execution gain is only 79.3 ms versus 237.4 ms more Cargo time.
-This diagnostic reuses the completed edits, changes no gates, and omits earlier
-span/origin recording costs. The reviewed four-cache
-archive of the completed public Nushell history has [completed and verified](results/aggregate-relocation-space-01/summary.json),
-preserving 13.46 GB of payloads in 4.36 GB of archives. Private and active caches
-were excluded. Held-out admission now qualifies all seven independently bound
-case controls, six ratio-gate examples and 54 rejected inputs, including the
-required running floor. Continue the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
-After fre, a [live space check](results/aggregate-relocation-nu-space-check-01/summary.json)
-rejected a start at 25.31 GiB free against the 25.99 GiB requirement. No benchmark
-history was created. A second [reviewed public Ruff archive batch](results/aggregate-relocation-space-02/assessment.md)
-preserved 5.45 GB of payloads in 1.78 GB of archives. The fresh Nushell admission
-passed with 28.75 GiB free. No unrelated process or private cache was changed.
-Ruff has not started: its latest live admission still falls below 16.16 GiB,
-despite the [third completed public archive batch](results/aggregate-relocation-space-03/assessment.md).
-An explicit [compiler-comparison cache selector](results/compiler-cache-selector-03/assessment.md)
-now qualifies four actual targets, 25 selector rejections, a restore fixture,
-27 batch-routing rejections and 44 archive regressions. Its first two failed
-qualification histories are preserved. Next prepare and review the newly
-completed Nushell comparison caches under this distinct provenance kind;
-original assertions, source, measurements and artifact snapshots remain.
+The isolated aggregate-frame relocation exporter is tool `9637b0ac`, built from
+the current `0e94d6d8` source with [tracked injection recipes](benchmarks/experiments/aggregate-byte-writes/build_relocation.py).
+It reuses storage for nonoverlapping MIR locals with emitted-byte write proofs,
+normal-return edge handling, named origins, and checked ABI/scratch relocation.
+All VM initialization remains. VM and wrapper binaries are unchanged.
+The production compiler has not adopted this experiment.
 
-Source `aa2f6ea` / tool `0e94d6d8` now completes the current runtime qualification.
-Our direct AArch64 JIT keeps checked dynamic/large copies inside resumable
-native regions and retains values across native branches/calls. The
-[matched-frontend comparison](results/resumable-copy-e2e-01/assessment.md) isolates
-native copies: token paired wall −15.14%, CPU −15.28%, with folded within both
-5% guards. The [original b2 comparison](results/resumable-copy-original-e2e-01/assessment.md)
-passes both original targets: folded wall −21.82%, token −33.09%, with lower CPU.
-Candidate medians still exceed native on these compute workloads: 1.913s versus
-1.653s folded and 4.418s versus 2.012s token. The b2 comparison includes the
-candidate's exporter/wrapper changes; the matched comparison isolates copies.
+Its [primary comparison](results/aggregate-relocation-e2e-01/assessment.md)
+passes both predeclared gates (168 commands, 30 edited pairs, 84 artifacts):
 
-The [complete seven-case held-out verification](results/resumable-copy-heldout-recovery-01/assessment.md)
-passes 588 commands, 105 edited pairs and 294 artifacts. No case has wall or CPU
-regression above 5%. Paired wall changes: Nushell type-relations −1.20%, Ruff
-−0.84%, Nushell −6.63%, fre forward/TLS −6.04%, pgrust SHA-1 −13.70%, pgrust
-−5.56%, private rg-aot −9.22%. Corresponding artifacts match and all tracked
-sources are restored. The fre workflow retains cross-cycle layout differences.
-This completes the fixed selected-workflow checks; options remain explicit.
+| Case | Paired wall | Paired CPU | Native median | Control | Candidate |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Folded trie | −12.77% | −12.89% | 1.702s | 1.939s | 1.696s |
+| Token phrase | +3.70% | +3.33% | 1.965s | 4.290s | 4.462s |
 
-[Debug/release](results/resumable-copy-release-01/assessment.md) pass 276 tests,
-one ignored. [Fresh native validation](results/resumable-copy-native-02/assessment.md)
-passes 47,004 mixed commands, including 22,238 JIT and 22,238 interpreter
-invocations. [TLS/destructor qualification](results/resumable-copy-tls-01/assessment.md)
-passes 245 commands. [Fresh fre replay](results/resumable-copy-fre-01/assessment.md)
-passes 382 original bodies with seven ignored, 382 fresh native controls and
-unchanged corresponding artifacts. Real unwinding, threads, general OS/FFI and
-complete libtest behavior remain missing; body replay is not full-suite support.
+The candidate passes [39 compiler tests](results/aggregate-relocation-build-01/summary.json),
+[1,024 differential VM executions](results/aggregate-relocation-fixtures-01/summary.json),
+[47,004 broad validation commands](results/aggregate-relocation-native-01/assessment.md),
+[245 TLS/destructor commands](results/aggregate-relocation-tls-01/assessment.md), and
+[382 fre bodies, seven ignored, with fresh native controls](results/aggregate-relocation-fre-01/assessment.md).
+Original assertions and strict type/borrow rejections remain.
 
-The original [Nushell stop](results/resumable-copy-heldout-01-case-01-stop/assessment.md)
-remains excluded with zero edited pairs. Its preflight omitted the 8 GiB running
-floor; the corrected, qualified admission and [explicit retry amendment](benchmarks/experiments/resumable-native-calls/COPY-HELDOUTS-RETRY-01.json)
-preserve all original controls. A later [aggregate schema rejection](results/copy-heldout-aggregate-schema-stop-01/assessment.md)
-exposed the extra `_specified_job_counts` parser field. The [narrow adapter](results/copy-heldout-receipt-adapter-01/assessment.md)
-verifies all seven actual receipts, reproduces both primaries and rejects 27
-invalid inputs. Original evaluators and measured receipts are unchanged. Final
-aggregation uses `assess_copy_heldout_receipts.py` and the bound adapter plan.
-All measurement and aggregation processes are terminal; no source change or
-benchmark rerun was used to resolve this receipt mismatch.
+The first of seven held-outs, [Nushell type-relations](results/aggregate-relocation-heldout-01-nushell-type-relations/relocation-assessment.md),
+passes: wall +1.10%, CPU +1.14%; native/control/candidate medians
+7.529s/4.051s/4.066s. All 84 commands, 15 edited pairs and 42 artifacts verify.
+Remaining order: Ruff, Nushell, fre forward/TLS, pgrust SHA-1, pgrust, private
+rg-aot. Every case must stay within 5% paired wall and CPU regression.
+Keep failures; do not adjust gates or pool cases to hide a regression.
 
-The [post-copy profile protocol](benchmarks/experiments/resumable-native-calls/POST-COPY-PROFILES.md)
-uses the immutable current tool and the recorded original candidate artifacts.
-Token native entries fell from ~22.4 million to ~2.65 million; the old profile
-mix no longer identifies the next bottleneck. Choose one substantial cost from
-fresh exact-code attribution before changing the runtime. Earlier narrow frame
-reuse proposals remain parked. An unfiltered suite attempt remains the separate
-compatibility direction. The fresh [token profile](results/resumable-copy-token-sample-01/assessment.md)
-and [folded profile](results/resumable-copy-folded-sample-01/assessment.md) now
-verify three original-artifact processes each with no declines. All 7,186 token
-and 2,297 folded samples reconcile; 6,459 and 2,289 generated samples map to
-their exact emitted code, with zero unresolved samples. Token boundary self
-samples are 2.23% (previously 15.59%); exact clearing is 12.23% token and 41.01%
-folded. The analyzers are unchanged; one relative-path analysis-wrapper failure
-is preserved, and analysis alone was rerun with absolute paths. Next map hot
-clearing sites to callee frames and determine whether a substantial set of
-bytes is provably written before any read, including alias/call effects.
-The [typed arena split](results/register-clearing-attribution-01/assessment.md)
-now attributes all 942 folded and 879 token clearing samples to guest memory,
-with zero register-array hits. Twenty positive cases and 140 rejected mutants
-qualify the analyzer; all six original captures reproduce. A stronger register
-proof is parked. The hottest folded frame has 18,224 bytes, of which 16,704 are
-MIR locals in the existing verified inventory. The [completed inlining comparison](results/mir-call-policy-01/assessment.md)
-rejects ordinary budgets: paired wall +4.55% folded and +6.88% token, CPU +5.56%
-and +7.04%. Both policies used the same 0e tools/runtime. All 168 commands,
-30 edited pairs and 84 artifacts verify. Smaller artifacts/native code do not
-offset more guest instructions and Calls. Keep enlarged inlining; no threshold
-sweep. No new runtime optimization has been implemented yet. Next follow the
-[broader byte-write plan](benchmarks/experiments/aggregate-reuse-census/BYTE-WRITES-NEXT.md)
-for private aggregate storage, including actual lowering coverage, partial
-writes, padding, aliases and normal Call-return edges. Require meaningful
-additional scope before implementing a compiler transformation.
+Recorded [capture/finalization costs](results/aggregate-relocation-pass-costs-01/assessment.md)
+are 41.9 ms folded and 189.5 ms token. Token execution saves only 79.3 ms paired,
+against 237.4 ms more Cargo time. These are completed-run observations, with
+other pass effects and shared-host noise; the components do not prove causation.
 
-The verifier's default still requires identical runtime artifacts. Its explicit
-compiler-flags path checks identical tools/other options and actual child flags,
-and reports differing artifact hashes honestly. Qualification reproduces six
-historical reports and rejects 18 invalid cases. Reporting binds the historical
-verifier to its exact Git object; measured files remain exact and four negative
-reporting checks reject substitution/corruption. All current processes are
-terminal; new performance defaults were not selected.
-Do not reopen the parked narrow argument/private-array optimizations or tune
-clearing batches.
+## Immediate continuation
 
-Function-level reuse remains correctness/design work: the [Nushell reduction](results/allocation-history-reduction-02/assessment.md)
-and [built-MIR observer](results/allocation-history-mir-dumps-02/assessment.md)
-locate history-sensitive literal allocations in rustc incremental reuse. Equal
-bytes do not establish allocation identity, and session-local IDs are unsuitable
-cache keys. Roughly 71 ms of lowering inside a 5.3-second command does not justify
-function reuse as the immediate speed project.
+Ruff has not started because live space admission remains below its 16.16 GiB
+requirement. Three completed public archive batches are committed. The new
+[compiler-comparison cache selector](results/compiler-cache-selector-03/assessment.md)
+qualifies four real identities, 25 selector rejections, a restore fixture,
+27 batch-routing rejections and 44 archive regressions. Two qualification
+failures and their source snapshots are preserved. Existing measured verifier
+sources remain unchanged.
 
-Storage maintenance remains at 205 verified archives. This continuation created
-fresh benchmark caches but reclaimed or archived no historical cache and did
-not signal any process. Bounded [remaining-case inventories](results/copy-remaining-space-inventory-01/assessment.md)
-inspect public/private cache sizes and publish only aggregates. Lock-only stops
-and the corrected object-presence guard are retained. No private cache was
-archived. The original suggestions file remains unchanged and untracked.
+The fourth batch, `aggregate-relocation-space-04`, is **applying** the separately
+[reviewed](results/aggregate-relocation-space-04/inventory-review.json) four
+caches of the completed new Nushell type-relations comparison. It contains
+13,455,530,886 unique bytes. Plan:
+`.work/cache-batches/aggregate-relocation-space-04.json`, SHA-256
+`0143f41fa889a896895a30836736dfba0f93b92eec3e03158abe158f3754782d`.
+Supervisor receipt: `.work/experiments/aggregate-relocation-space-04-apply/status.json`.
 
-## Closed worker-count experiment
+1. Wait for every archive child and supervisor to finish. Do not queue another
+   lock waiter. Then run supervised `assess_archive_batch.py --batch aggregate-relocation-space-04`
+   and preserve terminal receipts.
+2. Recheck live Ruff admission using `heldout_space.estimate`. Only then launch
+   supervised `run_heldout.py --case ruff` from `aggregate-byte-writes`.
+3. Complete the six remaining fixed cases under the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
+   The [qualified final reporter](benchmarks/experiments/aggregate-byte-writes/report_heldouts.py)
+   independently reverifies all seven histories. No adoption before that result.
 
-The [worker plan](benchmarks/experiments/compiler-pipeline/WORKER-COUNT-NEXT.md)
-compares four versus eighteen Cargo workers using identical tool **78e60cdd**
-in both arms. Ordinary JIT and leaf inlining are matched; resumable/persistent/
-tree/stub options are off. Native/check retain eighteen jobs, O0/incremental
-and default test concurrency. No guest runtime or installed binary changed.
+Exact process identities, full tool hashes and current receipts are in
+`.work/continuation-state.json`; inspect live receipts after a restart.
 
-Source **2c86d1f** integrates independent custom counts in the workflow/corpus
-CLIs and receipts. [Harness qualification](results/worker-count-harness-02/assessment.md)
-reverifies seventeen histories (1,524 commands / 762 artifacts), rejects two
-false worker receipts and eighteen invalid CLI cases, and tests two actual late
-guard paths. [Helper02](results/worker-count-helper-02/assessment.md) covers JSON
-namespace serialization; [archive07](results/cache-archive-qualification-07/assessment.md)
-passes 44 rejections, four coordinator cases and both older formats.
+## Qualified runtime and limits
 
-The first pgrust attempt was [rejected before compilation](results/worker-count-pgrust-rejection-01/assessment.md)
-by the old same-tool guard. Its corrected [three-cycle qualification](results/worker-count-pgrust-qualification-02/assessment.md)
-passes 36 commands, eighteen matching artifacts, eleven frozen inputs/eighteen
-wrapper traces and exact source restoration. Paired wall ratio **1.0055983071**;
-qualification timings are excluded from adoption measurements.
+Current runtime source `aa2f6ea` / tool `0e94d6d8` retains resumable native calls,
+persistent registers, initialized guest frames and checked bulk copies.
+It passes 276 debug/release tests (one ignored), 47,004 validation commands,
+245 TLS commands and 382 fre bodies (seven ignored). Its [original-baseline comparison](results/resumable-copy-original-e2e-01/assessment.md)
+improves folded 21.82% and token 33.09%; both still exceed native Cargo times.
+Its [seven held-outs](results/resumable-copy-heldout-recovery-01/assessment.md)
+pass 588 commands, 105 pairs and 294 artifacts, within both 5% guards.
+Runtime options remain explicit.
 
-[Nushell qualification](results/worker-count-nushell-qualification-01/assessment.md)
-passes twelve commands, six artifacts and exact tool/configuration/source checks.
-Cold wall is **61.125s at four workers / 30.550s at eighteen**; child CPU is
-**178.047s / 233.596s**. This ~50% latency reduction costs ~31% more child CPU
-in one excluded qualification. API-edit wall is 4.972s / 4.957s. Keep the planned
-CPU guard and all observations; no adoption follows from this pilot.
-
-The [corpus qualification](results/worker-count-corpus-qualification-01/assessment.md)
-completed 84 commands and 42 artifacts, verifying JSON receipts and actual
-four/eighteen-job forwarding. Its timings are excluded from primary statistics.
-
-The [fifteen-cycle pgrust primary comparison](results/worker-count-pgrust-repeated-01/assessment.md)
-verifies 180 commands, ninety artifacts, eleven frozen inputs and source
-restoration. Median paired wall ratio is **0.9981098106** and child-CPU ratio
-**0.9996062101**: no material worker-count gain, with warm guards passing.
-
-The [fifteen-cycle Nushell primary comparison](results/worker-count-nushell-repeated-01/assessment.md)
-completed and verifies 180 commands/ninety artifacts, eleven frozen inputs,
-exact tools/options and source restoration. Median paired wall ratio
-**1.0059031510** and CPU ratio **1.0732865843** pass both warm guards but show
-no warm-build gain. Original/wrong-edit artifacts repeat the known cross-cycle
-layout difference; corresponding modes match and the API-edit artifact is stable.
-Reported lowering is about 71 ms within roughly 5.3-second edited commands.
-
-Both warm primaries and four fixed cold histories completed and verified.
-The [four-history decision](results/worker-count-cold-decision-through-04/assessment.md)
-stops the unstarted fifth and sixth histories under the predeclared failure rule.
-Even the best possible final CPU median is **1.2724474026**, above the 1.1 guard.
-The six-history protocol is explicitly incomplete; no adoption/default change.
-Cold wall falls about 45–51% in the observed runs, while child CPU rises 24–52%.
-Warm primary latency shows no material benefit. Exact observations and source
-restoration are preserved, including [cold04](results/worker-count-nushell-cold-04/assessment.md).
-
-The worker experiment is closed. Its eleven inputs remained unchanged through
-the decision; Git e4bbffb preserves the tracked source versions. The launcher
-was released for the now-qualified allocation-origin diagnostic.
-The original/wrong/API/restored Nushell history and small reduction are complete.
-Guest code and runtime defaults remain unchanged.
-
-The [latest 32-cache batch](results/worker-cold-storage-batch-05/assessment.md)
-completed and verified. The [four cold04 caches](results/allocation-history-storage-01/assessment.md)
-also verified. The [eight copy-comparison caches](results/copy-comparison-storage-01/assessment.md)
-and the [eight original-comparison caches](results/copy-qualification-storage-01/assessment.md)
-plus the [eight recovered Nushell/Ruff caches](results/heldout-recovery-storage-01/assessment.md)
-bring the total to 181 archives (160 workflow and 21 host). The new
-[artifact clone qualification](benchmarks/experiments/compiler-pipeline/ARTIFACT-CLONES.md)
-preserves independent write behavior and rejects 18 invalid/failure cases.
-The [pilot](results/artifact-clone-pilot-01/assessment.md) and
-[six-history batch](results/artifact-clone-storage-batch-01/assessment.md)
-retain all 294 executed snapshot paths, bytes and checked metadata while sharing
-data for 203 duplicates. All seven original workflow verifications reproduce.
-This maintenance is outside benchmark timers; it is not a compilation gain.
-
-The earlier [warm-cache recovery](results/warm-storage-batch-01-recovery-01/assessment.md)
-preserves its original lock-scheduling failure and completed recovery receipts.
-Never queue another lock waiter during an archive batch.
-
-Worker retention requires at least 10% median cold wall reduction, no >5% warm
-wall regression and no >10% child-CPU increase for the checked primary groups.
-The plan now predeclares deterministic futility stopping only for failure bounds,
-with incomplete protocols identified; no early acceptance or extra trials.
-Conditional held-out checks remain required before any adoption claim.
-
-## Closed wrapper experiment
-
-The [lightweight compiler wrapper](benchmarks/experiments/compiler-pipeline/LIGHTWEIGHT-WRAPPER.md)
-execs ordinary rustc for unselected units and loads the heavy exporter only for
-selected units. Source `b54dc6e`, tool `c341296c`; baseline tool `78e60cdd`.
-Both use the same VM and ordinary JIT, matched leaf inlining and strict checking.
-Resumable calls, persistent registers and native call trees/stubs are off.
-
-Qualification passes 268 debug/release tests (one ignored), fifteen process
-probes, five manifest checks, 99 launcher checks and historical-tool execution.
-The two fifteen-cycle API-edit comparisons verify 360 commands and 180 artifacts:
-
-| Workflow | Median paired wall change | CPU change |
-| --- | ---: | ---: |
-| [pgrust](results/lightweight-wrapper-pgrust-repeated-01/assessment.md) | −4.57% | −4.46% |
-| [Nushell](results/lightweight-wrapper-nushell-repeated-01/assessment.md) | −4.24% | −1.94% |
-
-All corresponding artifacts match. Nushell original/wrong-edit artifacts differ
-across cache histories; its API-edit artifact is stable. This known discrepancy
-is unresolved and does not establish semantic equivalence across histories.
-
-The [fixed cold experiment](benchmarks/experiments/compiler-pipeline/REPEATED.md)
-requires all six fresh-target histories. Original tests, wrong edits, independent
-checks and source restoration remain required. Native uses eighteen jobs,
-O0/incremental and default test concurrency; custom uses four jobs and prebuilt
-std-MIR. Installation/downloads/std-MIR setup are excluded from cold timing.
-
-| History | Initial order | Candidate/baseline cold wall ratio | State |
-| --- | --- | ---: | --- |
-| 01 | native,baseline,candidate | 1.0016210970 | verified |
-| 02 | candidate,baseline,native | 0.9868934347 | verified |
-| 03 | baseline,candidate,native | 1.0085092329 | verified |
-| 04 | native,candidate,baseline | 0.9847329487 | verified |
-| 05 | candidate,native,baseline | — | unexecuted: futility |
-| 06 | baseline,native,candidate | — | unexecuted: futility |
-
-All four histories verify twelve commands and six artifacts each. The
-[futility assessment](results/lightweight-wrapper-cold-futility-01/assessment.md)
-rechecks those histories and both warm comparisons. Any possible final two
-ratios leave the six-sample median at least **0.9858131917**: at most **1.4187%**
-improvement, below the original 5% requirement. Histories 05/06 never started.
-The stopping rule was not predeclared; the amendment is explicit and the original
-six-history protocol remains **incomplete**. No six-sample estimate, threshold
-relaxation, wrapper retention or conditional held-out testing is claimed.
-
-
-## Resource planning
-
-The next storage operation is inventory preparation for
-`.work/cache-batches/worker-cold-storage-batch-05.json`: 32 exact completed
-public targets, including cold03 and earlier fre comparisons. Review and commit
-its inventories before application; no competing lock waiter during the batch.
-Cold04 remains unstarted. Current completed archive count is 121.
-
-The [latest eight-target selection](results/worker-cold-storage-batch-03/assessment.md)
-completed seven archives before a shared-volume space drop rejected the final
-child at preflight. Its original files were untouched. The [separate recovery](results/worker-cold-storage-batch-03-recovery-01/assessment.md)
-archives that final target and verifies its evidence; the original failed batch
-stays incomplete. That recovery brought completed archives to **89** (68 workflow, 21 host).
-Available space briefly fell to about 636 MiB, then recovered to about 19 GiB
-without process intervention. The cause is unknown. Do not weaken the guards.
-
-The [32-target fre batch](results/worker-cold-storage-batch-04/assessment.md)
-is now complete and verified: 56,584 paths, 407 external evidence hashes,
-all original payloads preserved. Completed archives now total **121**
-(100 workflow, 21 host). About 23.7 GiB was free afterward. Cold03 subsequently completed; prepare
-space for cold04 with all eleven worker inputs still frozen.
-
-
-The [completed twenty-four-target batch](results/worker-cold-storage-batch-02/assessment.md)
-preserves the first cold history's four Cargo targets and twenty completed debug
-host caches: 64,858 paths / 16.77 GiB unique contents in 5.70 GiB of archives.
-All 2,150 external evidence hashes verify. That batch brought completed archives to 81
-(sixty workflow targets and 21 host targets); the newer total is 89 above. The host reported about 23 GiB
-free afterward. Cold02 is complete; prepare space for cold03 next.
-
-The [host selector](results/host-cache-selector-03/assessment.md) and archive
-regression checks pass, as does the [actual pilot](results/host-cache-pilot-01/assessment.md).
-Only completed default-debug checks without installed-tool publication qualify;
-all external qualification evidence remains outside retired targets.
-
-The [completed twelve-target batch](results/worker-cold-storage-combined-01/assessment.md)
-preserves worker Nushell and older Nushell/Ruff corpus caches: 249,643 paths /
-19.16 GiB unique contents in 5.72 GiB of archives. All terminal receipts and
-207 distinct source/evidence hashes verify. That batch brought completed archives to 56; the newer total is 81 above.
-the host reported about 21 GiB free afterward. The old unapplied Ruff object-only
-inventory is obsolete because its exact target has now been archived.
-
-
-[Completed batch04](results/cold-storage-batch-04/assessment.md) preserves eight
-exact completed targets: 84,333 paths / 21.42 GiB unique contents in 7.21 GiB
-of archives. Final receipts, inventories and all 38 distinct external evidence/
-source hashes verify. That batch brought the archive count to thirty-six; the current total is
-eighty-nine after the separately reviewed storage work above. All payloads
-were decoded and hashed before retirement. Executed snapshots and reports remain
-in place. Archival ran outside benchmark timing and controlled no other work.
-
-The [archive implementation](benchmarks/experiments/compiler-pipeline/CACHE-ARCHIVAL.md)
-passes 44 rejection checks, four coordinator cases and two legacy restores.
-Mode derivation passes 31 rejections and nine real targets. It preserves recorded
-bytes/metadata/internal hardlinks, not future Cargo reuse behavior. Only exact
-reviewed task-owned completed targets may be retired. Archive outside benchmarks;
-keep query metadata, private caches, installed tools and historical evidence.
-Allow at least roughly 21 GiB before each large fresh history; the per-command
-guard remains eight GiB and is not a reservation against other host activity.
-
-## Evidence for next directions
-
-[Historical Cargo timelines](results/compiler-cold-concurrency-01/assessment.md)
-show 800 custom timed units under four jobs and CPU/wall about 3.1 when cold,
-versus about 1.5 after edits. Native has 608 units under eighteen jobs. Overlap
-is not CPU utilization, a ready queue or a critical-path proof. This motivated
-the now-closed isolated worker comparison.
-
-[Constant-history inspection](results/interface-nushell-literal-history-01/assessment.md)
-finds an extra `Expected OneOf` literal and changed guest offsets after edit/revert.
-The allocation HashMap is never iterated for layout. This is not proof of an
-interning cause or permission for content-only deduplication. The
-[bounded trace](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md)
-is qualified on fixtures and the completed large history. Stable allocation/
-relocation identity is required before function reuse.
-
-The opt-in allocation trace is implemented in the exporter and a tracked
-[fixture qualification driver](benchmarks/experiments/artifact-diff/check_allocation_trace.py).
-It captures initialized bytes, full instance kinds and relocation origins, with
-bounded output and an artifact-hash footer. Four new Rust boundary tests and
-original-fixture differential checks are written. The [debug workspace check](results/allocation-trace-debug-01/assessment.md)
-and [release check](results/allocation-trace-release-01/assessment.md) pass all
-272 tests, one existing ignored. [All 383 original-fixture commands](results/allocation-trace-fixtures-01/assessment.md)
-pass with byte-identical baseline/disabled/enabled artifacts. Tool `e965f566`
-changes only the exporter; VM and wrapper hashes match their previous versions.
-The completed worker measurements used unchanged installed tool78.
-The launcher now exposes explicit allocation tracing. Its [17-command qualification](results/allocation-trace-launcher-02/assessment.md)
-and [99-check original regression](results/allocation-trace-launcher-regression-01/assessment.md)
-pass, including historical-tool execution. The [large-project history](results/allocation-trace-nushell-history-01/assessment.md)
-now passes eight native/custom commands and preserves four complete traces.
-Function reuse is not implemented. See the [draft details](benchmarks/experiments/artifact-diff/CONSTANT-IDENTITY-NEXT.md).
-
-## Existing engine and limits
-
-The broadly compared control remains `a2a0e04` / `b2aa6efe`. Its nine-workflow
-[corpus](results/native-controls-corpus-01/assessment.md) verifies 756 commands,
-189 independent checks, 135 edited pairs and 378 artifacts. Native controls are
-explicit; a fastest-available AOT claim still needs backend/linker qualification.
-
-The custom resumable Call/Return + persistent-register + bulk-clear experiment
-is `001065a` / `78e60cdd`. [Both primary runs](results/resumable-bulk-replication-01/assessment.md)
-miss the token threshold: ratios 0.8004639304 and 0.8003441753 exceed 0.8.
-Folded passes; the combined gates fail. Keep these options off by default;
-no rounding, more primary replication or tiny emitter tuning to cross the gate.
-Its broader checks pass 47,004 mixed commands, 245 TLS commands and 382 original
-fre bodies (seven ignored). The [seven held-out cases](results/resumable-bulk-heldout-recovery-01/assessment.md)
-verify 588 commands, 105 pairs and 294 artifacts with no >5% paired wall
-regression. These do not waive primary failures or establish full libtest support.
-
-Strict type/borrow checking, exact budgets, original assertions and explicit
-unsupported outcomes remain required. Real unwinding, threads, broad FFI and
-unfiltered full suites remain incomplete. No fake synchronization or longjmp
-cleanup, LLVM/external guest backend, or silent native fallback. Native controls
-and native host tools are separate from the custom guest execution path.
-
-## Continuation rules
-
-Exact hashes, source pins, reports and active receipts are in
-`.work/continuation-state.json`. Toolchain: `nightly-2026-09-08`, rustc `cea272fa3`.
-Private adapter: `.work/private/workflow-rg-aot.json`; publish aggregates only.
-The [previous full checkpoint](docs/history/STATE-20260911-before-cold03.md)
-preserves detailed chronology and older failures.
+This is selected-function/body execution, not full libtest or arbitrary Rust.
+Real unwinding, threads, broad OS/FFI support and fastest-available native
+configuration qualification remain incomplete. No fake synchronization,
+longjmp cleanup, LLVM/external guest backend or silent native fallback.
+Toolchain: `nightly-2026-09-08`, rustc `cea272fa3`. The private adapter is
+`.work/private/workflow-rg-aot.json`; publish aggregates only.
 
 No subagents or independent model calls. No AWS activation or unrelated process
-control. Serialize builds/tests/benchmarks/cache maintenance with
-`.work/benchmark.lock`; an external user-owned cleanup may hold it, so wait.
-Never recursively search all `.work`. Preserve sources, receipts and artifacts.
+control. Serialize task builds/tests/benchmarks/cache work with
+`.work/benchmark.lock`. Never recursively search all `.work`; preserve sources,
+receipts and artifacts. Archive only reviewed, owned, completed public caches.
 Do not mark the unbounded goal complete at a checkpoint.
 
-The [qualified origin inspector](results/allocation-origin-queries-02/assessment.md)
-can join exact initialized allocation contents to all request ancestry and full
-function context. It preserves distinct mutable TLS identities and checks exact
-serialized output bounds. The [actual Nushell attribution](results/allocation-origin-nushell-history-01/assessment.md)
-finds the literal split already present in compiler allocation IDs after the API
-edit and revert. All four artifacts match historical bytes. The small incremental-on/off
-reduction and its byte-preserving MIR observer reproduce selective rebuilding;
-no content-only deduplication or cache adoption.
-
-The [allocation transport helper](results/allocation-trace-transport-01/assessment.md)
-passes four real traces and 33 malformed-file checks with exact byte/event
-boundaries. It checks the selected artifact hash before use; deeper origin
-semantics remain in the qualified inspector. Launcher integration and the traced Nushell history are qualified.
-No performance claim follows.
+The [full previous checkpoint](docs/history/STATE-20260911-before-compiler-cache.md)
+preserves earlier experiments, parked directions, failures and source identities.
