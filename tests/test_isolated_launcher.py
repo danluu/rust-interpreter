@@ -1,5 +1,6 @@
 import contextlib
 import io
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -43,6 +44,32 @@ class IsolatedLauncherValidation(unittest.TestCase):
                 with self.subTest(path=path): self.rejected(base + [str(path)])
             self.assertEqual(existing.read_bytes(), b'prior evidence')
             self.assertTrue(dangling.is_symlink()); self.assertFalse(destination.exists())
+
+    def test_entry_catalog_cannot_silently_select_different_tests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            artifact=Path(directory)/'program.rbc';artifact.write_bytes(b'VM checks the exact artifact digest')
+            path=Path(str(artifact)+'.entries.json')
+            valid=dict(schema_version=1,bytecode_version=5,entries=[dict(name='one'),dict(name='two')])
+            path.write_text(json.dumps(valid))
+            self.assertEqual(interpreter.selected_entry_catalog(artifact,['one','two']),path)
+            for bad in [dict(valid,entries=[dict(name='two'),dict(name='one')]),dict(valid,entries=[]),
+                        dict(valid,entries=['one','two']),dict(valid,schema_version=2),[],None]:
+                path.write_text(json.dumps(bad))
+                with self.subTest(bad=bad),self.assertRaises(RuntimeError):
+                    interpreter.selected_entry_catalog(artifact,['one','two'])
+            path.write_text('{')
+            with self.assertRaises(RuntimeError):interpreter.selected_entry_catalog(artifact,['one','two'])
+
+    def test_catalog_capability_is_bound_to_its_exporter_and_tool(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);key='a'*64;exporter='b'*64
+            self.assertFalse(interpreter.entry_catalog_supported(root,key))
+            (root/'ready.json').write_text(json.dumps({'rust-interp-mir-export':exporter}))
+            caps=dict(schema_version=1,tool_key=key,exporter_sha256=exporter,bytecode_version=5,export_options=['entry-catalog'])
+            (root/'capabilities.json').write_text(json.dumps(caps))
+            self.assertTrue(interpreter.entry_catalog_supported(root,key))
+            (root/'capabilities.json').write_text(json.dumps(dict(caps,exporter_sha256='c'*64)))
+            with self.assertRaises(RuntimeError):interpreter.entry_catalog_supported(root,key)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 #![cfg(all(target_arch = "aarch64", target_os = "macos"))]
 use rust_interp_bytecode::{Function, Op, Program, Slot, VERSION, HEAP_POINTER_TAG};
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::{path::{Path, PathBuf}, process::{Command, Output}, sync::atomic::{AtomicUsize, Ordering}};
 
 static NEXT: AtomicUsize = AtomicUsize::new(0);
@@ -111,5 +112,82 @@ fn malformed_batches_incompatible_flags_and_existing_reports_are_rejected() {
         }
         let artifact = files.program(&bad); let out = files.0.join(format!("bad-program-{index}.json"));
         assert!(!command(&artifact, "prepared", &out, &[]).status.success()); assert!(!out.exists());
+    }
+}
+
+fn catalog(program: &Program) -> rust_interp_bytecode::EntryCatalog {
+    rust_interp_bytecode::EntryCatalog::new(program, format!("{:x}", Sha256::digest(bincode::serialize(program).unwrap())),
+        (0..2).map(|function| rust_interp_bytecode::SelectedEntry {
+            name: ["first", "second"][function].into(), function,
+            body_name: program.functions[function].name.clone(),
+        }).collect()).unwrap()
+}
+
+#[test]
+fn explicit_catalog_survives_actual_batch_call_optimization_and_isolates_failures() {
+    for failure in [false, true] {
+        let files = Files::new();
+        let original = fixture(failure);
+        let (program, _) = rust_interp_bytecode::optimize_calls(original.clone(), Some(Default::default())).unwrap();
+        assert_ne!(bincode::serialize(&program.functions[program.entry]).unwrap(),
+                   bincode::serialize(&original.functions[original.entry]).unwrap());
+        let artifact = files.program(&program);
+        let catalog_path = files.0.join("entries.json");
+        std::fs::write(&catalog_path, serde_json::to_vec(&catalog(&program)).unwrap()).unwrap();
+        for mode in ["fresh", "prepared"] {
+            let report = files.0.join(format!("{mode}.json"));
+            let run = command(&artifact, mode, &report, &["--suite-catalog", catalog_path.to_str().unwrap()]);
+            assert_eq!(run.status.success(), !failure, "{}", String::from_utf8_lossy(&run.stderr));
+            let report: Value = serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
+            assert_eq!(report["entry_source"], "artifact-bound catalog");
+            assert_eq!(report["passed"], if failure {1} else {2});
+            assert_eq!(report["failed"], usize::from(failure));
+            assert_eq!(report["tests"][0]["name"], "first");
+            assert_eq!(report["tests"][1]["name"], "second");
+            assert_eq!(report["tests"][1]["status"], "passed");
+        }
+    }
+}
+
+#[test]
+fn bad_catalogs_reject_before_report_creation_or_guest_execution() {
+    let files = Files::new(); let program = fixture(false); let artifact = files.program(&program);
+    let valid = serde_json::to_value(catalog(&program)).unwrap();
+    for index in 0..12 {
+        let mut bad = valid.clone();
+        match index {
+            0 => bad["artifact_sha256"] = "0".repeat(64).into(),
+            1 => bad["schema_version"] = 2.into(),
+            2 => bad["bytecode_version"] = (VERSION | rust_interp_bytecode::PARTIAL_VALIDATION).into(),
+            3 => bad["target"] = "other-target".into(),
+            4 => bad["program_entry"] = 0.into(),
+            5 => bad["entries"][1]["function"] = 0.into(),
+            6 => bad["entries"][0]["function"] = 999.into(),
+            7 => bad["entries"][1]["name"] = "first".into(),
+            8 => bad["entries"][0]["body_name"] = "wrong-body".into(),
+            9 => bad["entries"].as_array_mut().unwrap().clear(),
+            10 => bad["unrecognized"] = true.into(),
+            _ => {
+                // Change same-sized bytecode, preserving names, signatures and
+                // entry IDs. The previous catalog must still be rejected.
+                let mut changed = program.clone(); changed.data[0] ^= 1; files.program(&changed);
+            }
+        }
+        let path = files.0.join(format!("catalog-{index}.json"));
+        std::fs::write(&path, serde_json::to_vec(&bad).unwrap()).unwrap();
+        let report = files.0.join(format!("rejected-{index}.json"));
+        let run = command(&artifact, "prepared", &report, &["--suite-catalog", path.to_str().unwrap()]);
+        assert!(!run.status.success(), "accepted malformed catalog {index}");
+        assert!(!report.exists());
+    }
+    for mutate in 0..3 {
+        let mut invalid = program.clone();
+        match mutate {
+            0 => invalid.functions[0].args.push(Slot {offset: 0, size: 8}),
+            1 => invalid.functions[0].result.size = 8,
+            _ => invalid.version |= rust_interp_bytecode::PARTIAL_VALIDATION,
+        }
+        assert!(serde_json::from_value::<rust_interp_bytecode::EntryCatalog>(valid.clone()).unwrap()
+            .validated_entries(&invalid, &bincode::serialize(&invalid).unwrap()).is_err());
     }
 }

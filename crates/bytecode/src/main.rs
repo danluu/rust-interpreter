@@ -10,6 +10,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut profile_path = None;
     let mut isolated_batch = None;
     let mut suite_report = None;
+    let mut suite_catalog = None;
     let mut path = args.next().ok_or(
         "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
     )?;
@@ -26,6 +27,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--suite-report" => {
                 if suite_report.is_some() { return Err("duplicate suite report path".into()); }
                 suite_report = Some(args.next().ok_or("missing suite report path")?);
+            }
+            "--suite-catalog" => {
+                if suite_catalog.is_some() { return Err("duplicate suite catalog path".into()); }
+                suite_catalog = Some(args.next().ok_or("missing suite catalog path")?);
             }
             "--jit-native-calls" => limits.jit_native_calls = true,
             "--jit-native-call-stubs" => limits.jit_native_call_stubs = true,
@@ -89,13 +94,22 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if isolated_batch.is_some() != suite_report.is_some() {
         return Err("isolated batch mode and suite report must be supplied together".into());
     }
+    if suite_catalog.is_some() && isolated_batch.is_none() {
+        return Err("--suite-catalog requires an isolated batch".into());
+    }
     if let Some(mode) = isolated_batch {
         if engine != Engine::Jit || !limits.jit_resumable_calls || limits.jit_native_calls
             || limits.jit_native_call_stubs || profile_path.is_some() || limits.jit_code_dump.is_some() || !args.is_empty()
         {
             return Err("isolated batches require resumable JIT execution without tree/stub, profile, code dump or entry arguments".into());
         }
-        suite::run(&program, mode, &limits, suite_report.as_deref().unwrap())?;
+        let catalog = if let Some(path) = suite_catalog {
+            if std::fs::metadata(&path)?.len() > 8 * 1024 * 1024 {
+                return Err("entry catalog exceeds 8 MiB".into());
+            }
+            Some(serde_json::from_slice::<rust_interp_bytecode::EntryCatalog>(&std::fs::read(path)?)?)
+        } else { None };
+        suite::run(&program, mode, &limits, suite_report.as_deref().unwrap(), catalog.as_ref(), &bytes)?;
         println!("0");
         return Ok(());
     }

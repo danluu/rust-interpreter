@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--expected-tests', type=int, required=True)
     parser.add_argument('--plan', type=Path, required=True)
+    parser.add_argument('--build-exporter', action='store_true', help='also qualify and install the current exporter/wrapper')
     args = parser.parse_args()
     assert re.fullmatch(r'[a-z][a-z0-9-]*-build-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -41,7 +42,7 @@ def main():
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(source_commit=source, frozen=frozen, target=str(TARGET), control=CONTROL,
-            expected_tests=args.expected_tests, jobs=2, minimum_free_gib=8, performance_measurement=False))
+            expected_tests=args.expected_tests, build_exporter=args.build_exporter, jobs=2, minimum_free_gib=8, performance_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
                              'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET']}
@@ -53,7 +54,9 @@ def main():
             require_space(ROOT, 8)
             command = ['cargo', '+nightly-2026-09-08', action, *profile, '--locked', '--offline', '--jobs', '2',
                        '--target-dir', str(TARGET)]
-            command += ['--workspace'] if action == 'test' else ['-p', 'rust-interp-bytecode', '--bin', 'rust-interp-vm']
+            command += (['--workspace'] if action == 'test' else
+                ['-p', 'rust-interp-bytecode', '-p', 'rust-interp-mir-export', '--bins'] if args.build_exporter else
+                ['-p', 'rust-interp-bytecode', '--bin', 'rust-interp-vm'])
             child, stdout, stderr = capture(command, cwd=ROOT, env=env,
                 receipt_path=work / 'active.json', receipt=dict(label=label))
             for suffix, content in [('stdout', stdout), ('stderr', stderr)]:
@@ -70,16 +73,23 @@ def main():
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
         binaries = json.loads((retained / 'ready.json').read_text())
         binaries['rust-interp-vm'] = sha(TARGET / 'release/rust-interp-vm')
-        composition = dict(kind='runtime-candidate', schema_version=1, source_commit=source,
-                           exporter_and_wrapper_key=CONTROL, binaries=binaries)
+        if args.build_exporter:
+            for name in ['rust-interp-mir-export', 'rust-interp-rustc-wrapper']:
+                binaries[name] = sha(TARGET / 'release' / name)
+        composition = dict(kind='tool-candidate' if args.build_exporter else 'runtime-candidate', schema_version=1, source_commit=source,
+                           exporter_and_wrapper_key=None if args.build_exporter else CONTROL, binaries=binaries)
         key = hashlib.sha256(json.dumps(composition, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         with (ROOT / '.work/interpreter-tools.lock').open('a') as publication:
             acquire_lock(publication, 45)
             installed = ROOT / '.work/interpreter-tools' / key
             installed.mkdir(exist_ok=False)
             for name in binaries:
-                shutil.copy2(TARGET / 'release' / name if name == 'rust-interp-vm' else retained / name, installed / name)
-            caps = json.loads((retained / 'capabilities.json').read_text())
+                shutil.copy2(TARGET / 'release' / name if name == 'rust-interp-vm' or args.build_exporter else retained / name, installed / name)
+            if args.build_exporter:
+                caps = json.loads(subprocess.check_output([str(installed / 'rust-interp-mir-export'), '--rust-interp-capabilities'], text=True))
+                assert caps['schema_version'] == 1
+            else:
+                caps = json.loads((retained / 'capabilities.json').read_text())
             caps.update(tool_key=key, exporter_sha256=binaries['rust-interp-mir-export'])
             write(installed / 'capabilities.json', caps)
             write(installed / 'source.json', dict(tool_key=key, composition=composition, files=frozen,

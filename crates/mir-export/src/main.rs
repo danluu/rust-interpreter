@@ -81,11 +81,14 @@ impl Export {
             timings.checkpoint("validation");
             let bytes = bincode::serialize(&program).map_err(|e| e.to_string())?;
             timings.checkpoint("serialization");
+            use sha2::Digest;
+            let artifact_sha256 = (self.allocation_trace || self.trap_unsupported_calls || !exported.selected_entries.is_empty())
+                .then(|| format!("{:x}", sha2::Sha256::digest(&bytes)));
+            timings.checkpoint("artifact_hash");
             // Finish the bounded trace before publishing any successful output.
             let trace = match exported.allocation_trace.take() {
                 Some(trace) => {
-                    use sha2::Digest;
-                    Some(trace.finish(&format!("{:x}", sha2::Sha256::digest(&bytes)))?)
+                    Some(trace.finish(artifact_sha256.as_deref().ok_or("missing trace digest")?)?)
                 }
                 None => None,
             };
@@ -97,10 +100,20 @@ impl Export {
             // configuration reverts that reuse a previous artifact directly.
             self.publish(tcx, &bytes, ".rbc")?;
             timings.checkpoint("bytecode_publication");
+            if !exported.selected_entries.is_empty() {
+                let entries = exported.selected_entries.iter().map(|(name, function)| {
+                    Ok(rust_interp_bytecode::SelectedEntry { name: name.clone(), function: *function,
+                        body_name: program.functions.get(*function).ok_or("selected entry disappeared during optimization")?.name.clone() })
+                }).collect::<Result<Vec<_>, String>>()?;
+                let catalog = rust_interp_bytecode::EntryCatalog::new(program,
+                    artifact_sha256.clone().ok_or("missing entry catalog digest")?, entries)?;
+                let mut output = self.output.as_os_str().to_owned(); output.push(".entries.json");
+                self.publish_to(tcx, &serde_json::to_vec(&catalog).map_err(|e| e.to_string())?,
+                    ".rbc.entries.json", Path::new(&output))?;
+            }
+            timings.checkpoint("entry_catalog_publication");
             if self.trap_unsupported_calls {
-                use sha2::Digest;
-                let artifact_sha256 = format!("{:x}", sha2::Sha256::digest(&bytes));
-                timings.checkpoint("call_report_hash");
+                timings.checkpoint("call_report_setup");
                 let report = serde_json::json!({"kind":"unavailable-calls","schema_version":1,
                     "trap_unsupported_calls":true,"run_try_callbacks":self.run_try_callbacks,"strict_frontend":!self.demand,
                     "artifact_sha256":artifact_sha256,
@@ -219,7 +232,7 @@ fn main() {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog"]}));
         return;
     }
     let environment = wrapper_route::Environment::read();

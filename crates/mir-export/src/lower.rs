@@ -148,6 +148,7 @@ impl UnavailableCall {
 
 pub struct Exported {
     pub program: Program,
+    pub(crate) selected_entries: Vec<(String, usize)>,
     unavailable_calls: BTreeSet<UnavailableCall>,
     pub(crate) allocation_trace: Option<crate::allocation_trace::Trace>,
     pub(crate) function_costs: Option<crate::function_costs::Costs>,
@@ -473,6 +474,11 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             functions.push(adapter);
         }
     }
+    // Function IDs remain stable through call/leaf/CFG optimization. Keep this
+    // identity independently of the synthetic caller's eventual instructions.
+    let selected_entries = if test_body && !demand && entry_ids.len() > 1 {
+        requested.iter().cloned().zip(entry_ids.iter().copied()).collect()
+    } else { Vec::new() };
     let entry = if entry_ids.len() == 1 {
         entry_ids[0]
     } else {
@@ -550,7 +556,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         cfg.old_operations, cfg.new_operations, started.elapsed().as_secs_f64());
     timings.checkpoint("control_flow_optimization");
     timings.finish();
-    Ok(Exported { program, unavailable_calls: exporter.unavailable_calls,
+    Ok(Exported { program, selected_entries, unavailable_calls: exporter.unavailable_calls,
         allocation_trace: exporter.trace, function_costs })
 }
 

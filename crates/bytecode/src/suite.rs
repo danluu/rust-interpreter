@@ -1,5 +1,5 @@
 //! Explicit isolated selected-entry execution, not a replacement for libtest.
-use rust_interp_bytecode::{Limits, Op, PreparedJit, Program, PARTIAL_VALIDATION};
+use rust_interp_bytecode::{EntryCatalog, Limits, Op, PreparedJit, Program, PARTIAL_VALIDATION};
 use serde_json::{Value, json};
 use std::{collections::HashSet, io::Write, time::Instant};
 
@@ -39,9 +39,13 @@ fn selected_entries(program: &Program) -> Result<Vec<(&str, usize)>, String> {
     Ok(entries)
 }
 
-pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
+           catalog: Option<&EntryCatalog>, bytes: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
     let started = Instant::now();
-    let entries = selected_entries(program)?;
+    let entries = match catalog {
+        Some(catalog) => catalog.validated_entries(program, bytes)?,
+        None => selected_entries(program)?,
+    };
     // Reserve the report before any guest code runs. Never replace a previous
     // result merely because the same command was invoked a second time.
     let file = std::fs::OpenOptions::new().write(true).create_new(true).open(path)?;
@@ -73,6 +77,7 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str) -> Result
     }
     let report = json!({"schema_version":1,"status":if failures == 0 {"passed"} else {"failed"},
         "mode":match mode {Mode::Fresh=>"fresh",Mode::Prepared=>"prepared"},
+        "entry_source":if catalog.is_some() {"artifact-bound catalog"} else {"legacy batch descriptor"},
         "isolation":"new guest memory, statics, registers, frames, heap and TLS for each entry",
         "scope":"explicit selected unit-result entries; no libtest ignore, should-panic, unwind or thread semantics",
         "seconds_before_report_write":started.elapsed().as_secs_f64(),

@@ -103,6 +103,32 @@ def require_export_option(directory, key, option):
         raise RuntimeError('installed exporter does not support --'+option+': '+key) from error
 
 
+def entry_catalog_supported(directory, key):
+    path=directory/'capabilities.json'
+    if not path.exists():return False # Legacy immutable tool builds remain usable.
+    caps=json.loads(path.read_text())
+    if 'entry-catalog' not in caps.get('export_options',[]):return False
+    require_export_option(directory,key,'entry-catalog')
+    return True
+
+
+def selected_entry_catalog(artifact, requested):
+    path=Path(str(artifact)+'.entries.json')
+    if path.is_symlink() or not path.is_file() or path.stat().st_size>8*1024*1024:
+        raise RuntimeError('Cargo selected a missing or oversized entry catalog')
+    try:report=json.loads(path.read_bytes())
+    except (OSError,ValueError) as error:
+        raise RuntimeError('Cargo selected an unreadable entry catalog') from error
+    entries=report.get('entries') if isinstance(report,dict) else None
+    if (not isinstance(report,dict) or report.get('schema_version')!=1 or report.get('bytecode_version')!=5 or
+            not isinstance(entries,list) or not all(isinstance(entry,dict) for entry in entries) or
+            [entry.get('name') for entry in entries]!=requested):
+        raise RuntimeError('Cargo entry catalog does not match requested tests')
+    # The VM binds this catalog to the exact bytecode bytes it reads; the
+    # invocation lock keeps Cargo's selected sidecars fixed through execution.
+    return path
+
+
 def validate_audit_pack(report, work):
     """Verify immutable files named by Cargo's exact selected audit sidecar."""
     try:
@@ -399,6 +425,10 @@ def main():
     if args.allocation_limit is not None:vm_command+=['--allocation-limit',str(args.allocation_limit)]
     if args.isolated_batch is not None:
         vm_command+=['--isolated-batch',args.isolated_batch,'--suite-report',str(args.suite_report)]
+        if entry_catalog_supported(tools,key):
+            catalog=selected_entry_catalog(artifacts[0],args.entry)
+            vm_command+=['--suite-catalog',str(catalog)]
+            timings['entry_catalog_path']=str(catalog)
         timings.update(isolated_batch=args.isolated_batch,suite_report_path=str(args.suite_report),
                        runtime_limits_scope='each isolated test')
     if stats:timings['allocation_limit']=args.allocation_limit if args.allocation_limit is not None else 100_000
