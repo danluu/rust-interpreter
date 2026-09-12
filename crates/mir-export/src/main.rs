@@ -13,6 +13,7 @@ mod lower;
 mod allocation_trace;
 mod audit;
 mod wrapper_route;
+mod export_timings;
 
 use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface;
@@ -56,6 +57,7 @@ impl Export {
     }
     fn emit<'tcx>(&mut self, tcx: TyCtxt<'tcx>) -> Compilation {
         let checked = Instant::now();
+        let mut timings = export_timings::Timings::new("emit");
         if self.audit_selection.is_some() {
             let report = audit::report(tcx, &self.entries,
                 self.retain_audit_bodies.then_some(self.output.as_path()), self.inline_leaves, self.trap_unsupported_calls, self.run_try_callbacks)
@@ -68,9 +70,12 @@ impl Export {
         }
         match lower::export(tcx, &self.entries, self.demand, self.test_body, self.inline_leaves,
                             self.trap_unsupported_calls, self.run_try_callbacks, self.allocation_trace).and_then(|mut exported| {
+            timings.checkpoint("lower_graph");
             let program = &exported.program;
             rust_interp_bytecode::validate(&program)?;
+            timings.checkpoint("validation");
             let bytes = bincode::serialize(&program).map_err(|e| e.to_string())?;
+            timings.checkpoint("serialization");
             // Finish the bounded trace before publishing any successful output.
             let trace = match exported.allocation_trace.take() {
                 Some(trace) => {
@@ -79,30 +84,40 @@ impl Export {
                 }
                 None => None,
             };
+            timings.checkpoint("trace_hash_and_finalize");
             // Associate bytecode with Cargo's exact metadata artifact, including
             // configuration reverts that reuse a previous artifact directly.
             self.publish(tcx, &bytes, ".rbc")?;
+            timings.checkpoint("bytecode_publication");
             if self.trap_unsupported_calls {
                 use sha2::Digest;
+                let artifact_sha256 = format!("{:x}", sha2::Sha256::digest(&bytes));
+                timings.checkpoint("call_report_hash");
                 let report = serde_json::json!({"kind":"unavailable-calls","schema_version":1,
                     "trap_unsupported_calls":true,"run_try_callbacks":self.run_try_callbacks,"strict_frontend":!self.demand,
-                    "artifact_sha256":format!("{:x}",sha2::Sha256::digest(&bytes)),
+                    "artifact_sha256":artifact_sha256,
                     "unavailable_calls":exported.unavailable_calls()});
                 let mut output = self.output.as_os_str().to_owned();
                 output.push(".calls.json");
                 self.publish_to(tcx, &serde_json::to_vec(&report).map_err(|e|e.to_string())?,
                     ".rbc.calls.json", Path::new(&output))?;
             }
+            timings.checkpoint("call_report_and_publication");
             if let Some(trace) = trace {
                 self.publish_to(tcx, &trace, ".rbc.allocations.jsonl", &allocation_trace_path(&self.output))?;
             }
+            timings.checkpoint("trace_publication");
             eprintln!("rust-interp-export: frontend_ms={:.3} lowering_ms={:.3} functions={} ops={} bytes={}",
                 checked.duration_since(self.started).as_secs_f64() * 1000.0,
                 checked.elapsed().as_secs_f64() * 1000.0,
                 program.functions.len(), program.functions.iter().map(|f| f.code.len()).sum::<usize>(), bytes.len());
+            timings.checkpoint("summary_reporting");
             Ok(())
         }) {
-            Ok(()) => if self.demand { Compilation::Stop } else { Compilation::Continue },
+            Ok(()) => {
+                timings.finish();
+                if self.demand { Compilation::Stop } else { Compilation::Continue }
+            },
             Err(error) => tcx.dcx().fatal(format!("custom interpreter cannot lower this entry: {error}")),
         }
     }
