@@ -52,6 +52,16 @@ green status (excluding key construction). [Token](results/export-reuse-token-03
 recipes and actual reuse. The payload must retain frame-packing observations,
 replay graph interactions in order and preserve current allocation aliases.
 This is not yet a measured end-to-end saving.
+
+Current-MIR binding recipes now pass 47 exporter tests per profile, 231 complex
+fixture commands, 229 semantic-edit commands, and all eight states on token and
+folded. Encoded/decoded payloads reconstruct 5,203 token functions (172 declines)
+and 1,041 folded functions (four declines) in a second graph. Exact output,
+frame observations, scheduling, guest memory and alias classes match. The
+payloads are 61 MB/15 MB in the initial representation. [Token](results/export-reuse-token-04/assessment.md),
+[folded](results/export-reuse-folded-05/assessment.md). Next verify payloads from
+prior compiler sessions, using rustc's incremental directory transaction;
+original lowering still always executes today.
 The two-stream entropy diagnostic establishes exact token execution across both
 VMs and engines with identical inputs; it makes no performance claim.
 

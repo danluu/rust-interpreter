@@ -4,16 +4,16 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Implement function reuse with current-session bindings.** Compiler query
-   dependency observation passes the small semantic-edit fixture and real
-   token/folded histories with no changed green templates. Every function was
-   still lowered. Supported green work covers 444ms/81ms under prior weights;
-   green checks cost 22ms/16ms before key construction and binding/cache costs.
-   Store owned instructions and frame-packing observations. Replay graph
-   requests in their original order, resolving constants and function targets
-   from current MIR; preserve aliasing, TLS, caller locations and diagnostics.
-   Qualify replay against full lowering before skipping it, then measure actual
-   edited end-to-end commands. [Token result](results/export-reuse-token-03/assessment.md).
+1. **Implement persistent function reuse.** Current-MIR recipes reconstruct
+   5,203 token functions and 1,041 folded functions; unsupported recipes use full
+   lowering. All fixtures and eight-state production histories match exact
+   output and graph state. Store the owned payload in rustc's current incremental
+   session, replacing its inherited hard link atomically. Include compiler/tool
+   and lowering policy in dependency identity. First compare prior-session
+   payload reconstruction against complete lowering, then qualify actual skipped
+   work and measure edited commands. Account for 61 MB/15 MB payloads and
+   separate storage/decoding/binding costs from verification overhead.
+   [Persistent plan](benchmarks/experiments/export-costs/PERSISTENT-REUSE.md).
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%
    wall gate. All correctness controls pass, but the runtime stays off main.
