@@ -28,3 +28,15 @@ success, and malformed catalog rejection before guest side effects. Then export
 and run real pgrust/fre edits, and repair the Ruff coverage failure with an actual
 exported catalog when storage admits the frontend build. Preserve the failed
 Ruff attempt. Keep the 8 GiB floor, two workers and 45-second lock waits.
+
+The real Rust fixture passes all sixteen commands, including a Result adapter,
+an optimized root, wrong-edit failures and an unselected borrow error. Next
+re-export Ruff at the exact final source state of its retained native oracle,
+then compare native assertions and fresh/prepared execution using the actual
+new catalog. Run one custom Cargo export with incremental storage disabled;
+this is correctness coverage, with no native rebuild or timing comparison.
+The earlier Ruff cache inventory is 514.6 MiB after retiring incremental state;
+admit this metadata export at 8.75 GiB free and preserve the 8 GiB per-child
+floor. Run native tests individually, record/replay guest entropy for isolated
+equality, and verify that omitting the catalog reproduces the format rejection.
+Restore the original source. Preserve this setup's profile difference explicitly.
