@@ -138,14 +138,19 @@ fn function(p:&Program,f:&Function,meter:&mut Meter)->Option<(Function,Report)> 
 
 pub(super) fn fold(mut program:Program)->Result<(Program,serde_json::Value),String> {
     crate::validate(&program)?;
-    let mut global=32_000_000usize;let mut reports=Vec::new();
-    for id in 0..program.functions.len() {
+    let mut global=32_000_000usize;
+    let mut reports:Vec<Option<Report>>=(0..program.functions.len()).map(|_|None).collect();
+    // Spend the fixed global budget on smaller bodies before large functions
+    // can consume it. Stable IDs break ties; no names or profiles participate.
+    let mut order:Vec<_>=(0..program.functions.len()).collect();
+    order.sort_unstable_by_key(|&id|(program.functions[id].code.len(),id));
+    for id in order {
         let f=&program.functions[id];let old=f.code.len();let mut meter=Meter{used:0,global:&mut global};
         let (result,mut report)=if let Some((result,report))=function(&program,f,&mut meter) {(Some(result),report)}
             else {(None,Report{declined:true,new_operations:old,..Report::default()})};
         report.function=id;report.old_operations=old;report.solver_work=meter.used;
         if let Some(result)=result {program.functions[id]=result;}
-        reports.push(report);
+        reports[id]=Some(report);
     }
     crate::validate(&program)?;
     Ok((program,serde_json::json!({"functions":reports,"solver_work":32_000_000-global})))

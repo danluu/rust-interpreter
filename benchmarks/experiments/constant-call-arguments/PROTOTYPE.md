@@ -63,3 +63,10 @@ standalone typed transformation of the fully optimized retained artifact. The
 extra cleanup cost is included in export time. The call-census CLI supports
 `--fold` and `--verify-fold` with whole-artifact byte equality, preserving all
 non-code fields. The verifier is untimed in subsequent workflow comparisons.
+
+Offline census 01 exhausted the token global budget after admitting 1,041 of
+5,468 functions in ID order. Revise scheduling before any real timing screen:
+visit functions by ascending original operation count, with stable ID as tie
+breaker. Keep the same per-function/global bounds and retain reports in function
+ID order. This generic static priority prevents early large bodies from starving
+all later cheap functions; it does not use profiles or increase the budget.
