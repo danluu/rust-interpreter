@@ -85,6 +85,7 @@ def main():
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--typed-relocations', action='store_true')
     parser.add_argument('--binding-replay', action='store_true')
+    parser.add_argument('--expected-tests', type=int)
     args = parser.parse_args()
     assert re.fullmatch(r'export-reuse-fixtures-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -93,6 +94,9 @@ def main():
         build = json.loads(args.build.read_text())
         assert not args.binding_replay or args.typed_relocations
         expected_tests = 47 if args.binding_replay else (44 if args.typed_relocations else 41)
+        if args.expected_tests is not None:
+            assert args.expected_tests >= expected_tests
+            expected_tests = args.expected_tests
         assert build['status'] == 'passed' and set(build['tests'].values()) == {expected_tests}
         tool, key = installed_tools(build['tool_key'])
         baseline, _ = installed_tools(CONTROL)
