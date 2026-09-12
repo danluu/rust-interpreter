@@ -22,6 +22,34 @@ def read(path):
     return json.loads(path.read_text())
 
 
+def verify_entry_catalog(root, artifact, launch, names, suite=None):
+    """Bind a retained catalog to its launch, bytecode and executed identities."""
+    present = 'entry_catalog' in artifact
+    require(present == ('entry_catalog_path' in launch) == ('entry_catalog_sha256' in launch),
+            'catalog launch or snapshot receipt is missing')
+    if not present:
+        require(suite is None or suite.get('entry_source', 'legacy batch descriptor') == 'legacy batch descriptor',
+                'catalog execution lacks retained evidence')
+        return
+    item = artifact['entry_catalog']
+    path = root / item['path']
+    require(path == Path(str(root / artifact['path']) + '.entries.json') and not path.is_symlink(),
+            'catalog snapshot is outside its artifact')
+    require(path.is_file() and 0 < path.stat().st_size <= 8 * 1024 * 1024, 'invalid catalog snapshot size')
+    payload = path.read_bytes()
+    require(hashlib.sha256(payload).hexdigest() == item['sha256'], 'catalog snapshot changed')
+    catalog = json.loads(payload)
+    require(catalog['artifact_sha256'] == artifact['sha256'] and
+            [e['name'] for e in catalog['entries']] == names, 'catalog artifact or test selection differs')
+    require(launch['entry_catalog_sha256'] == item['sha256'] and
+            launch['entry_catalog_path'] == launch['artifact_path'] + '.entries.json', 'launched catalog differs')
+    if suite is not None:
+        require(suite['entry_source'] == 'artifact-bound catalog' and
+                [(e['name'], e['function']) for e in catalog['entries']] ==
+                [(t['name'], t['function']) for t in suite['tests']],
+                'executed entry identities differ from the catalog')
+
+
 def verify(report, reference=None, *, compiler_flags=None):
     """Verify runtime comparisons by default; explicitly bind compiler changes.
 
@@ -76,6 +104,7 @@ def verify(report, reference=None, *, compiler_flags=None):
     require(all(t['content_changed'] for t in transitions if t['phase'] != 'cold'), 'unchanged warm sample')
     previous = dict.fromkeys(modes)
     artifacts = {}
+    suites = {}
     paths = set()
     for row in rows:
         cycle, state, mode = row['cycle'], row['state'], row['mode']
@@ -92,6 +121,34 @@ def verify(report, reference=None, *, compiler_flags=None):
         if job_counts is not None:
             for call in row['calls']:
                 verify_command_jobs(call['command'], job_counts[mode])
+        if report.get('compare_isolated_batches'):
+            from suite_reports import read_report, validate_report, validate_runtime_limits
+            suite_mode = 'native' if mode == 'native' else 'fresh' if mode == 'baseline' else 'prepared'
+            item = row['suite_report']
+            path = ROOT / item['path']
+            require(path.resolve().is_relative_to((ROOT / report['raw'] / 'suites' / mode).resolve()),
+                    'suite report outside this mode')
+            suite, _ = read_report(path, item['sha256'])
+            suites[cycle, state, mode] = validate_report(suite, row['tests'], suite_mode, state != -1)
+            require(len(row['calls']) == 1, 'isolated suite must execute in one complete command')
+            call = row['calls'][0]
+            command = call['command']
+            require(command.count('--suite-report') == 1 and command[command.index('--suite-report')+1] == str(path),
+                    'command selected another report')
+            if mode == 'native':
+                require(Path(command[1]).resolve() == ROOT / 'scripts/native_suite.py', 'native isolation runner differs')
+                verify_command_jobs(suite['build']['command'], job_counts[mode])
+                require(suite['build']['returncode'] == 0, 'native suite did not build')
+                for test in suite['tests']:
+                    require(test['command'] == [suite['executable'], '--exact', test['name'], '--test-threads=1'],
+                            'native test process did not select its exact body')
+            else:
+                validate_runtime_limits(suite,report.get('instruction_limit'),report.get('allocation_limit'))
+                require(command.count('--isolated-batch') == 1 and command[command.index('--isolated-batch')+1] == suite_mode,
+                        'isolated mode differs from command')
+                require(call['launch']['isolated_batch'] == suite_mode and
+                        call['launch']['suite_report_sha256'] == item['sha256'] and
+                        call['launch']['suite_report_path'] == str(path), 'launched suite differs')
         if mode != 'native':
             settings = report.get('tool_builds', {}).get(mode, {})
             if compiler_flags is not None:
@@ -113,6 +170,8 @@ def verify(report, reference=None, *, compiler_flags=None):
             paths.add(path)
             digest = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
             require(digest == artifact['sha256'], 'artifact hash mismatch')
+            verify_entry_catalog(ROOT, artifact, row['calls'][0]['launch'], row['tests'],
+                                 suite if report.get('compare_isolated_batches') else None)
             artifacts[cycle, state, mode] = digest
     paired_identical = True
     for c in range(cycles):
@@ -120,6 +179,9 @@ def verify(report, reference=None, *, compiler_flags=None):
             selected = [r for r in rows if r['cycle'] == c and r['state'] == s]
             require(len({r['source_sha256'] for r in selected}) == 1, 'paired sources differ')
             require(all(r['tests'] == selected[0]['tests'] for r in selected), 'paired test selections differ')
+            if report.get('compare_isolated_batches'):
+                require(suites[c, s, modes[0]] == suites[c, s, modes[1]] == suites[c, s, modes[2]],
+                        'isolated test outcomes differ between native/fresh/prepared')
             identical = artifacts[c, s, custom_modes[0]] == artifacts[c, s, custom_modes[1]]
             paired_identical &= identical
             if compiler_flags is None:

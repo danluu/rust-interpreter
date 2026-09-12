@@ -2,7 +2,7 @@
 use super::*;
 
 impl Exporter<'_> {
-    fn errno_address(&mut self) -> Result<usize> {
+    pub(super) fn errno_address(&mut self) -> Result<usize> {
         if let Some(address) = self.runtime_errno { return Ok(address); }
         let offset = self.statics.len().max(16).checked_add(3)
             .ok_or("guest errno offset overflow")? & !3;
@@ -64,9 +64,14 @@ impl<'tcx> Lower<'_, 'tcx> {
             self.code.push(Op::CAlignedAllocate { dst, output: values[0], align: values[1], size: values[2] });
         } else {
             let address = self.exporter.errno_address()?;
-            let errno = self.imm(address as u128);
+            let errno = self.imm_pointer(address as u128, 0, PointerKind::Errno,
+                || "guest errno".into())?;
             match symbol {
-                "__error" => self.code.push(Op::Imm { dst, value: address as u128 }),
+                "__error" => {
+                    self.code.push(Op::Imm { dst, value: address as u128 });
+                    self.note_pointer(dst, address as u128, 0, PointerKind::Errno, || "guest errno".into())?;
+                    self.record_binding(Some(reuse::Source::Errno), dst, address as u128);
+                }
                 "malloc" | "calloc" => {
                     let (count, size) = if symbol == "malloc" { (self.imm(1), values[0]) }
                         else { (values[0], values[1]) };

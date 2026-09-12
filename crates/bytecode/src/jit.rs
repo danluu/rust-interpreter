@@ -1915,3 +1915,30 @@ mod local_memory;
 #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
 #[path="jit/local_memory_tests.rs"]
 mod local_memory_tests;
+
+
+mod register_widths;
+mod register_width_profile;
+mod register_lifetimes;
+
+/// Offline lifetime allocation diagnostic; the original program is unchanged.
+pub fn register_lifetime_census(program: &Program, profile: Option<&[u8]>) -> Result<serde_json::Value, String> {
+    register_lifetimes::census(program, profile)
+}
+
+/// Inspect a possible narrower register assignment without running guest code.
+pub fn register_width_census(program: &Program) -> Result<serde_json::Value, String> {
+    values::width_census(program, None)
+}
+
+/// Offline counts from a separately recorded, bytecode-verified execution profile.
+pub fn register_width_profile_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
+    values::width_census(program, Some(profile))
+}
+
+mod constant_arguments;
+
+/// Offline argument-byte coverage; never changes or executes the program.
+pub fn constant_call_argument_census(program: &Program, profile: Option<&[u8]>) -> Result<serde_json::Value, String> {
+    constant_arguments::census(program, profile)
+}

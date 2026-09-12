@@ -1,5 +1,14 @@
 # Checked-in changes
 
+## 2026-09-12 uninstrumented test selection
+
+- Add catalog-validated `--select-test` independently of instruction profiling;
+  preserve the saved bytecode and start fresh guest/JIT state.
+- All 360 host tests per profile and seven real fixed-entropy selections pass.
+  Six owned native sampling windows bind captured PCs to exact uninstrumented
+  code. This is a diagnostic feature, with no latency improvement claimed.
+  [Qualification and findings](results/selected-native-block-sample-01/assessment.md).
+
 ## 2026-09-12 integer operation inlining
 
 - Inline the existing integer helper without changing its arithmetic, overflow, fault or register-access semantics.

@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Sample fresh, explicitly owned macOS VM executions; never report latency."""
 import argparse
-import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import time
 
 from interpreter import ROOT, installed_tools
+from compare_saved_runtime import acquire_lock, lock_wait_seconds
 
 
 def digest(path):
@@ -39,6 +40,10 @@ def main():
     parser.add_argument('--jit-native-call-stubs', action='store_true')
     parser.add_argument('--jit-resumable-calls', action='store_true')
     parser.add_argument('--dump-code', action='store_true', help='save emitted code from each sampled process after execution')
+    parser.add_argument('--select-test', help='run one exact catalog test without instruction profiling')
+    parser.add_argument('--suite-catalog', type=Path)
+    parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=0)
+    parser.add_argument('--minimum-free-bytes', type=int, default=0)
     args = parser.parse_args()
     if args.jit_resumable_calls and (args.jit_native_calls or args.jit_native_call_stubs):
         parser.error('--jit-resumable-calls cannot be combined with native tree/stub calls')
@@ -52,16 +57,32 @@ def main():
         parser.error('use 1..10 repetitions and 1..30 seconds per sample')
     if not 1 <= args.instruction_limit < 2**64 or not 0 <= args.allocation_limit <= 1_000_000:
         parser.error('invalid instruction or allocation limit')
+    if args.minimum_free_bytes < 0:
+        parser.error('minimum free bytes must be nonnegative')
+    if (args.select_test is None) != (args.suite_catalog is None):
+        parser.error('--select-test and --suite-catalog must be supplied together')
     artifact = args.artifact.resolve()
     if digest(artifact) != args.artifact_sha256:
         parser.error('artifact hash does not match')
+    selection = None
+    if args.select_test is not None:
+        catalog = args.suite_catalog.resolve(strict=True)
+        if not catalog.is_file() or catalog.stat().st_size > 8 * 1024 * 1024:
+            parser.error('catalog is not a bounded regular file')
+        contents = json.loads(catalog.read_text())
+        entries = [entry for entry in contents['entries'] if entry['name'] == args.select_test]
+        if contents['artifact_sha256'] != args.artifact_sha256 or len(entries) != 1:
+            parser.error('test must belong to this exact artifact catalog')
+        selection = dict(name=args.select_test, function=entries[0]['function'], catalog=str(catalog),
+                         catalog_sha256=digest(catalog), artifact_sha256=args.artifact_sha256)
     (ROOT / '.work').mkdir(exist_ok=True)
     guard = (ROOT / '.work/benchmark.lock').open('a')
-    fcntl.flock(guard, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    acquire_lock(guard, args.lock_wait_seconds)
     tool, key = installed_tools(args.tool_key)
     vm = tool / 'rust-interp-vm'
     vm_hash = digest(vm)
-    paths = [ROOT / 'Cargo.toml', ROOT / 'Cargo.lock', Path(__file__).resolve(), ROOT / 'scripts/interpreter.py']
+    paths = [ROOT / 'Cargo.toml', ROOT / 'Cargo.lock', Path(__file__).resolve(), ROOT / 'scripts/interpreter.py',
+             ROOT / 'scripts/compare_saved_runtime.py']
     for crate in ['bytecode', 'mir-export']:
         paths += sorted((ROOT / 'crates' / crate).rglob('*.rs'))
         paths.append(ROOT / 'crates' / crate / 'Cargo.toml')
@@ -74,7 +95,8 @@ def main():
         instruction_limit=args.instruction_limit, allocation_limit=args.allocation_limit,
         jit_persistent_registers=args.jit_persistent_registers, jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
         jit_resumable_calls=args.jit_resumable_calls,
-        dump_code=args.dump_code,
+        dump_code=args.dump_code, selection=selection,
+        minimum_free_bytes=args.minimum_free_bytes,
         performance_measurement=False))
     env = os.environ.copy()
     for name in list(env):
@@ -87,10 +109,14 @@ def main():
             raise RuntimeError('sampled binary or artifact changed')
         if any(digest(ROOT / p) != h for p, h in frozen.items()):
             raise RuntimeError('frozen diagnostic source changed')
+        if selection and digest(Path(selection['catalog'])) != selection['catalog_sha256']:
+            raise RuntimeError('selected test catalog changed')
 
     results = []
     for index in range(args.repetitions):
         verify()
+        if shutil.disk_usage(ROOT).free < args.minimum_free_bytes:
+            raise RuntimeError('disk floor; no new sample execution started')
         run = work / str(index); run.mkdir()
         command = [str(vm), '--engine', 'jit', '--instruction-limit', str(args.instruction_limit),
                    '--allocation-limit', str(args.allocation_limit)]
@@ -104,6 +130,8 @@ def main():
             command.append('--jit-resumable-calls')
         if args.dump_code:
             command += ['--jit-code-dump', str(run / 'jit-code')]
+        if selection:
+            command += ['--select-test', selection['name'], '--suite-catalog', selection['catalog']]
         command.append(str(artifact))
         with (run / 'vm.stdout').open('x') as stdout, (run / 'vm.stderr').open('x') as stderr:
             child = subprocess.Popen(command, cwd=ROOT, env=env, stdout=stdout, stderr=stderr)
@@ -169,6 +197,12 @@ def main():
         verify()
         if code != 0 or (run / 'vm.stdout').read_text().strip() != '0':
             raise RuntimeError('sampled original test execution failed')
+        if selection:
+            selected = [json.loads(line.split(': ', 1)[1]) for line in (run / 'vm.stderr').read_text().splitlines()
+                        if line.startswith('rust-interp-test-selection: ')]
+            if len(selected) != 1 or any(selected[0][k] != selection[k] for k in
+                                         ['name', 'function', 'catalog_sha256', 'artifact_sha256']):
+                raise RuntimeError('executed test selection differs from the plan')
         stats = {name: int(value) for name, value in re.findall(
             r'\b([a-z_]+)=(\d+)\b', (run / 'vm.stderr').read_text())}
         if stats['jit_declined_functions'] != 0 or stats['instructions'] <= 0:

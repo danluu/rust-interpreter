@@ -1,0 +1,1850 @@
+{
+  "schema_version": 2,
+  "project": "fre",
+  "workflow": "folded-literal-trie",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "cycles": 1,
+  "initial_mode_order": [
+    "native",
+    "baseline",
+    "candidate"
+  ],
+  "minimum_free_gib": 8,
+  "tests": [
+    "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+    "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+    "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+    "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+    "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+    "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+    "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+    "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+    "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+    "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+    "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+    "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+    "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+    "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+    "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+    "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+    "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+    "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+  ],
+  "edits": [
+    "test-ascii-leading-bit",
+    "express-continuation-prefix-as-shift",
+    "name-root-membership-mask",
+    "name-two-byte-scalar-fields",
+    "match-first-byte-explicitly"
+  ],
+  "workload": "All eighteen original folded-literal-trie tests, including complete short-byte-string/window differentials, malformed UTF-8, canonical folding, exact resource gates, SIMD prefilters and accounting",
+  "case_sha256": "9e0d625495cfb05db0be059f2d69f15c6f9be60f810dbd20de05e24343f35a67",
+  "test_source_unchanged": true,
+  "batch": true,
+  "compare_isolated_batches": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/prepared-suite-folded-01",
+  "build_tool_opt_level": null,
+  "build_jobs": 2,
+  "custom_build_jobs": {
+    "baseline": 2,
+    "candidate": 2
+  },
+  "native_control": {
+    "profile": "repository",
+    "jobs": 2,
+    "test_threads": "1",
+    "rustflags": [],
+    "isolation": "one native process per test"
+  },
+  "instruction_limit": 100000000000,
+  "allocation_limit": null,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "candidate_jit_persistent_registers": true,
+  "candidate_jit_resumable_calls": true,
+  "candidate_jit_native_calls": false,
+  "candidate_jit_native_call_stubs": false,
+  "baseline_jit_resumable_calls": true,
+  "baseline_jit_persistent_registers": true,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": false,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+  "candidate_tool_key_requested": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.8446822920000017,
+    "baseline": 2.0418465830000017,
+    "candidate": 1.820556707999998
+  },
+  "median_cpu_seconds": {
+    "native": 1.7568479999999962,
+    "baseline": 2.0191520000000027,
+    "candidate": 1.7983240000000054
+  },
+  "cpu_accounting": "RUSAGE_CHILDREN deltas around one waited-for child tree at a time; user plus system CPU; excludes harness CPU",
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 9.315085167,
+    "baseline": 7.274582582999999,
+    "candidate": 7.195829708999998
+  },
+  "cycle_anchor_seconds": [],
+  "source_transitions": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "previous_source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "content_changed": false,
+      "previous_mode_sources": {
+        "native": null,
+        "baseline": null,
+        "candidate": null
+      }
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+        "baseline": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+        "candidate": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+        "baseline": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+        "candidate": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+        "baseline": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+        "candidate": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+        "baseline": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+        "candidate": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+        "baseline": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+        "candidate": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+        "baseline": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+        "candidate": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed"
+      }
+    }
+  ],
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "89503688668132606ba8b11740eb4e25e3e0db1327d0ca098b91fb27e466c3b1",
+    "scripts/interpreter.py": "28ee2aa2991902a8d62bffaf02092df23800a0e063d0278ebcb0bb2c0962d432",
+    "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+    "scripts/workflow_case_file.py": "4a138ac3b497b9871b3d0781b0272f68da886ef118a26b8795cb7c59141588d7",
+    "scripts/workflow_measurements.py": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132",
+    "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+    "scripts/workflow_io.py": "c159a3152a0019e0d9ebe189ca4b1c48927cc45623d729ed3fd6edf0b13c2acb",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+    "scripts/workflow_jobs.py": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5",
+    "scripts/native_suite.py": "9af96310ea08374d4ea0d007ee52192fb48918e56772dc5a62344e6f959dd40a",
+    "scripts/suite_reports.py": "f37bf75d12fee33daad874b967977045228bea826c3a894b889e887d8442dd85"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": false,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "9e8b428ee5c4477084db07eeb5819a301867a47105a34fbfdd9784106ac360fc",
+      "exporter_sha256": "556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": false,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "9e8b428ee5c4477084db07eeb5819a301867a47105a34fbfdd9784106ac360fc",
+      "exporter_sha256": "556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095"
+    }
+  },
+  "mode_orders": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    }
+  ],
+  "vm_sha256": "9e8b428ee5c4477084db07eeb5819a301867a47105a34fbfdd9784106ac360fc",
+  "exporter_sha256": "556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095",
+  "samples": [
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 9.315085167,
+      "cpu_seconds": 13.348548000000001,
+      "previous_source_sha256": null,
+      "source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "load": [
+        4.2353515625,
+        3.6796875,
+        3.53076171875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/native/0-0.json",
+        "sha256": "85c4acd329cba4c5a26baa488864a4fd7c9d7f0985dea4b6d06f8be6f9ff4fb3"
+      },
+      "native_executable": {
+        "path": "/Users/danluu/dev/rust-interp/.work/runs/prepared-suite-folded-01/native/debug/build/fre-kernels/44fc7f703cf1863b/out/fre_kernels-44fc7f703cf1863b",
+        "sha256": "1b8f941f74860795377e30f4f67c90cb11aa3253c9931b7e25d73bf38a01eaec"
+      }
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 7.274582582999999,
+      "cpu_seconds": 8.617746,
+      "previous_source_sha256": null,
+      "source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "load": [
+        4.37646484375,
+        3.7177734375,
+        3.544921875
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/baseline/0-0.rbc",
+          "sha256": "cf45794029c9d2fe5538da4cb1f7c74e28f909da0c0a2825c1410ef2de25320e",
+          "bytes": 6399589
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/baseline/0-0.json",
+        "sha256": "1674b382b2d55bf40eeb954f83f72fbead77b411124aae7c046fa4bd1d99cfc0"
+      }
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 7.195829708999998,
+      "cpu_seconds": 8.459017,
+      "previous_source_sha256": null,
+      "source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "load": [
+        4.50634765625,
+        3.75537109375,
+        3.55908203125
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/candidate/0-0.rbc",
+          "sha256": "cf45794029c9d2fe5538da4cb1f7c74e28f909da0c0a2825c1410ef2de25320e",
+          "bytes": 6399589
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/candidate/0-0.json",
+        "sha256": "84d902dff8c8e1edff169ccd6debdcadb77921b227b1f5cb4e3e24baf0743ef0"
+      }
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "break-ascii-scalar-decoding",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.8802095419999993,
+      "cpu_seconds": 1.786573999999995,
+      "previous_source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "load": [
+        4.88916015625,
+        3.86181640625,
+        3.59912109375
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/candidate/-1-0.rbc",
+          "sha256": "664efa545a742413f449662a0388f4bc1a63c8a1f02b9634ba209a11fd5f72f8",
+          "bytes": 6399217
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/candidate/-1-0.json",
+        "sha256": "8ea93c9c5a7026887a779182058e51dda8fa2477d119ac7cf16b8b7f69535f68"
+      }
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "break-ascii-scalar-decoding",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.157492000000005,
+      "cpu_seconds": 2.063028000000005,
+      "previous_source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "load": [
+        4.88916015625,
+        3.86181640625,
+        3.59912109375
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/baseline/-1-0.rbc",
+          "sha256": "664efa545a742413f449662a0388f4bc1a63c8a1f02b9634ba209a11fd5f72f8",
+          "bytes": 6399217
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/baseline/-1-0.json",
+        "sha256": "dfc893eb2b479767682ec3229ff1e15d3f3063d22c34555b8a203db58e4c5016"
+      }
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "break-ascii-scalar-decoding",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.7947302500000006,
+      "cpu_seconds": 1.6738619999999953,
+      "previous_source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+      "source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "load": [
+        5.05810546875,
+        3.91357421875,
+        3.61865234375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/native/-1-0.json",
+        "sha256": "4b828c9beff3d35e082e03681d7bfaa81ae80d75763d267ab7efa903f46ea035"
+      },
+      "native_executable": {
+        "path": "/Users/danluu/dev/rust-interp/.work/runs/prepared-suite-folded-01/native/debug/build/fre-kernels/44fc7f703cf1863b/out/fre_kernels-44fc7f703cf1863b",
+        "sha256": "79b1ebd98606a42de3a0ed306cccae03126f5f05b5a4dbcbdf809ce6706f4fd7"
+      }
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "test-ascii-leading-bit",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.8446822920000017,
+      "cpu_seconds": 1.680626999999998,
+      "previous_source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "load": [
+        5.05810546875,
+        3.91357421875,
+        3.61865234375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/native/1-0.json",
+        "sha256": "8d7e67c7ad0943bff4ab0f44c604112d8389f252c5ea3f5b6a6dfa9de50917eb"
+      },
+      "native_executable": {
+        "path": "/Users/danluu/dev/rust-interp/.work/runs/prepared-suite-folded-01/native/debug/build/fre-kernels/44fc7f703cf1863b/out/fre_kernels-44fc7f703cf1863b",
+        "sha256": "57003401e8c5304a2303b245e9a338f74b31feab70c66dd58e5f94dd30d2a1f9"
+      }
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "test-ascii-leading-bit",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.0206472079999998,
+      "cpu_seconds": 1.9703909999999984,
+      "previous_source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "load": [
+        4.97314453125,
+        3.91455078125,
+        3.62060546875
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/baseline/1-0.rbc",
+          "sha256": "130b942be9056f7336f159860044817a54e7340bd7743ef0dc7e3532cbbf765d",
+          "bytes": 6399653
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/baseline/1-0.json",
+        "sha256": "d906c14855595824bfbb4b47c6c192870841554d5d8d0feabbd5dae2469bbcc8"
+      }
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "test-ascii-leading-bit",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.8172344580000015,
+      "cpu_seconds": 1.7946209999999994,
+      "previous_source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+      "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "load": [
+        4.97314453125,
+        3.91455078125,
+        3.62060546875
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/candidate/1-0.rbc",
+          "sha256": "130b942be9056f7336f159860044817a54e7340bd7743ef0dc7e3532cbbf765d",
+          "bytes": 6399653
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/candidate/1-0.json",
+        "sha256": "5181871471d1862ec371e93e5bf6e5ba70c7ca2410337f2d959d3e0101b05524"
+      }
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "express-continuation-prefix-as-shift",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.84566375,
+      "cpu_seconds": 1.720798999999995,
+      "previous_source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "load": [
+        4.97314453125,
+        3.91455078125,
+        3.62060546875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/native/2-0.json",
+        "sha256": "6c31ea96d36c39f2e6157ee11c39a4b84751f1387720aba8be0f55163438bb0b"
+      },
+      "native_executable": {
+        "path": "/Users/danluu/dev/rust-interp/.work/runs/prepared-suite-folded-01/native/debug/build/fre-kernels/44fc7f703cf1863b/out/fre_kernels-44fc7f703cf1863b",
+        "sha256": "3c020c8c2eb531e89763529f1dfb2c5b41d8e0be96235610697dddd3c8553d89"
+      }
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "express-continuation-prefix-as-shift",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.7929512500000016,
+      "cpu_seconds": 1.7702900000000028,
+      "previous_source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "load": [
+        4.97509765625,
+        3.93212890625,
+        3.62841796875
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/candidate/2-0.rbc",
+          "sha256": "96fd87cd0b85dbf6138b3dc0f94d636779c01ffb2481fe338a98b8e81ef4fe1a",
+          "bytes": 6399669
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/candidate/2-0.json",
+        "sha256": "ea698a1b21a8e3324d6927ece3daea3f2682222511936e17c38c135f4299d8a5"
+      }
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "express-continuation-prefix-as-shift",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.037418875,
+      "cpu_seconds": 1.9798579999999966,
+      "previous_source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+      "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "load": [
+        4.97509765625,
+        3.93212890625,
+        3.62841796875
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/baseline/2-0.rbc",
+          "sha256": "96fd87cd0b85dbf6138b3dc0f94d636779c01ffb2481fe338a98b8e81ef4fe1a",
+          "bytes": 6399669
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/baseline/2-0.json",
+        "sha256": "f9d929befd4b8a12f7b2e27b3710c0bc78bf52a4f3d0ed88455837cc97840e95"
+      }
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "name-root-membership-mask",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.0943802500000004,
+      "cpu_seconds": 2.055026999999999,
+      "previous_source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "load": [
+        5.05712890625,
+        3.96630859375,
+        3.64208984375
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/baseline/3-0.rbc",
+          "sha256": "43ea5b59593dbda5e1f089a04d11b2c5a999acca593ecacf65a03a934c4e2284",
+          "bytes": 6399749
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/baseline/3-0.json",
+        "sha256": "5676fd5ac7ff924a0a8e8b0eedc01682fef9be473dd85e7d2ec73da97e132cfa"
+      }
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "name-root-membership-mask",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.9323307499999984,
+      "cpu_seconds": 1.9526220000000025,
+      "previous_source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "load": [
+        5.05712890625,
+        3.96630859375,
+        3.64208984375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/native/3-0.json",
+        "sha256": "ff0dbe502e8a00444f8ab7e3823395b9948c12fe48a6a2c49278a82ec8530f11"
+      },
+      "native_executable": {
+        "path": "/Users/danluu/dev/rust-interp/.work/runs/prepared-suite-folded-01/native/debug/build/fre-kernels/44fc7f703cf1863b/out/fre_kernels-44fc7f703cf1863b",
+        "sha256": "f829e689416983b05fc69ff38fc7b324201182143f69c301dad2d9b48a976042"
+      }
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "name-root-membership-mask",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.9396000420000021,
+      "cpu_seconds": 1.9022569999999996,
+      "previous_source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+      "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "load": [
+        5.05712890625,
+        3.96630859375,
+        3.64208984375
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/candidate/3-0.rbc",
+          "sha256": "43ea5b59593dbda5e1f089a04d11b2c5a999acca593ecacf65a03a934c4e2284",
+          "bytes": 6399749
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/candidate/3-0.json",
+        "sha256": "700d5dcb7f67f4940022f24813f5dfe6a3e18fc64247e8d1a6757d8a2eb598b4"
+      }
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-two-byte-scalar-fields",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.820556707999998,
+      "cpu_seconds": 1.7983240000000054,
+      "previous_source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "load": [
+        4.97216796875,
+        3.966796875,
+        3.64404296875
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/candidate/4-0.rbc",
+          "sha256": "ab14f209dca486cbda8e75e4ede3a470b03e359e6d3012b649423efaf3ad8fcb",
+          "bytes": 6399765
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/candidate/4-0.json",
+        "sha256": "4705b6d0e7d84afc6a51baf51312e5eec3bf3e4e848db89b5d0d989c6e4e7c32"
+      }
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-two-byte-scalar-fields",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.8088480830000009,
+      "cpu_seconds": 1.7568479999999962,
+      "previous_source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "load": [
+        4.97216796875,
+        3.966796875,
+        3.64404296875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/native/4-0.json",
+        "sha256": "4a6c0863932347037e7ab13b672f71103a1a9826471767375dfb0e5b9c5a9d6c"
+      },
+      "native_executable": {
+        "path": "/Users/danluu/dev/rust-interp/.work/runs/prepared-suite-folded-01/native/debug/build/fre-kernels/44fc7f703cf1863b/out/fre_kernels-44fc7f703cf1863b",
+        "sha256": "ae1582794eea3fd8e1abcc18e28f0bbfbc3a8eb368edd691d35261a008c36e14"
+      }
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "name-two-byte-scalar-fields",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.0418465830000017,
+      "cpu_seconds": 2.0191520000000027,
+      "previous_source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+      "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "load": [
+        4.97412109375,
+        3.98388671875,
+        3.65185546875
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/baseline/4-0.rbc",
+          "sha256": "ab14f209dca486cbda8e75e4ede3a470b03e359e6d3012b649423efaf3ad8fcb",
+          "bytes": 6399765
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/baseline/4-0.json",
+        "sha256": "18ed95153885a8b0ef8ecad82c6e0b143f0b19cfd7ed57536d0fef511b8cb029"
+      }
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-first-byte-explicitly",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 2.120668375000001,
+      "cpu_seconds": 2.0928579999999952,
+      "previous_source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+      "load": [
+        4.97412109375,
+        3.98388671875,
+        3.65185546875
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/baseline/5-0.rbc",
+          "sha256": "65389b17e131efa4ac4fae17cbe9060742754b0e18d9dae73a1b801bd6736d39",
+          "bytes": 6399794
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/baseline/5-0.json",
+        "sha256": "0c117055107018bc2fee3219ba3380af1239bc33d266c8c8d8e50f87ac3b8a3d"
+      }
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-first-byte-explicitly",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.8381500409999987,
+      "cpu_seconds": 1.8124120000000055,
+      "previous_source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+      "load": [
+        4.89599609375,
+        3.98388671875,
+        3.65380859375
+      ],
+      "engine": "jit",
+      "tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+      "artifacts": [
+        {
+          "path": ".work/runs/prepared-suite-folded-01/artifacts/candidate/5-0.rbc",
+          "sha256": "65389b17e131efa4ac4fae17cbe9060742754b0e18d9dae73a1b801bd6736d39",
+          "bytes": 6399794
+        }
+      ],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/candidate/5-0.json",
+        "sha256": "bb075d1006221133a3955abb1f39e0d581222716f304919fe30b039f5d7c6294"
+      }
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-first-byte-explicitly",
+      "tests": [
+        "folded_literal_trie::tests::kelvin_sigma_russian_and_duplicates_keep_original_byte_offsets",
+        "folded_literal_trie::tests::malformed_utf8_never_matches_and_advances_one_byte",
+        "folded_literal_trie::tests::prefix_lengths_duplicates_and_pattern_priority_have_stable_order",
+        "folded_literal_trie::tests::first_candidate_projection_stops_after_one_start_and_keeps_pattern_priority",
+        "folded_literal_trie::tests::windows_and_ascii_fold_differential_are_exact",
+        "folded_literal_trie::tests::russian_root_uses_rare_common_continuation_offset",
+        "folded_literal_trie::tests::lead_only_root_uses_wide_continuation_classifier",
+        "folded_literal_trie::tests::four_byte_root_exercises_later_common_offset",
+        "folded_literal_trie::tests::four_distinct_root_bytes_use_wide_classifier",
+        "folded_literal_trie::tests::wide_classifier_matches_complete_scan_across_blocks_and_tail",
+        "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+        "folded_literal_trie::tests::empty_unsorted_and_overlapping_classes_return_typed_fallback",
+        "folded_literal_trie::tests::a_window_split_inside_multibyte_scalar_cannot_match_across_boundary",
+        "folded_literal_trie::tests::every_build_dimension_has_an_exact_one_below_gate",
+        "folded_literal_trie::tests::every_positive_scan_dimension_refuses_before_emission",
+        "folded_literal_trie::tests::maximum_state_fanout_bounds_linked_transition_probes",
+        "folded_literal_trie::tests::fixed_trie_doubling_counters_are_linear",
+        "folded_literal_trie::tests::prospective_overflow_is_typed_without_source_access"
+      ],
+      "seconds": 1.8442434170000013,
+      "cpu_seconds": 1.780358000000004,
+      "previous_source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+      "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+      "load": [
+        4.89599609375,
+        3.98388671875,
+        3.65380859375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": [],
+      "suite_report": {
+        "path": ".work/runs/prepared-suite-folded-01/suites/native/5-0.json",
+        "sha256": "fead584ff15b18a6abea772c0499773f7d8e0e0f9a78a90c17673057170f8e8e"
+      },
+      "native_executable": {
+        "path": "/Users/danluu/dev/rust-interp/.work/runs/prepared-suite-folded-01/native/debug/build/fre-kernels/44fc7f703cf1863b/out/fre_kernels-44fc7f703cf1863b",
+        "sha256": "9450acae7ac4157985b5d60ef1e56870a2a453329f84880ec31da804e1831eff"
+      }
+    }
+  ],
+  "exporter_seconds": {
+    "baseline": {
+      "frontend": 0.546736,
+      "lowering": 0.199691,
+      "scalar-frames": 0.012079,
+      "scalar-promotion": 0.012638,
+      "inline": 0.012244,
+      "cfg": 0.012551
+    },
+    "candidate": {
+      "frontend": 0.541865,
+      "lowering": 0.196894,
+      "scalar-frames": 0.012039,
+      "scalar-promotion": 0.012505,
+      "inline": 0.012181,
+      "cfg": 0.01279
+    }
+  },
+  "check_floor": {
+    "interpretation": "Independent library-test Cargo-check control; executes no tests, including the wrong runtime edit; not a strict lower bound or subtractive attribution",
+    "timing_position": "after each primary mode triplet; separate target/cache history; no Cargo timing-report generation",
+    "median_seconds": 0.675698041000004,
+    "median_cpu_seconds": 0.6606909999999875,
+    "samples": [
+      {
+        "cycle": 0,
+        "state": 0,
+        "phase": "cold",
+        "source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+        "previous_source_sha256": null,
+        "seconds": 4.885369875000002,
+        "cpu_seconds": 5.886496000000005,
+        "cpu": {
+          "user_seconds": 5.340768000000004,
+          "system_seconds": 0.545728,
+          "total_seconds": 5.886496000000005
+        },
+        "returncode": 0,
+        "load": [
+          4.70556640625,
+          3.80908203125,
+          3.5791015625
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+        "previous_source_sha256": "e2f9b1572aeee057df5efa08a838f01261caf8ccce46deb79b602c90c06baf56",
+        "seconds": 0.6934002090000035,
+        "cpu_seconds": 0.6366750000000039,
+        "cpu": {
+          "user_seconds": 0.5382730000000038,
+          "system_seconds": 0.0984020000000001,
+          "total_seconds": 0.6366750000000039
+        },
+        "returncode": 0,
+        "load": [
+          5.05810546875,
+          3.91357421875,
+          3.61865234375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+        "previous_source_sha256": "2dfa2d961e8c95ef1da96079c7fe84b3da4c55983a7307cfafaf790a461939b3",
+        "seconds": 0.6678042500000032,
+        "cpu_seconds": 0.6583160000000046,
+        "cpu": {
+          "user_seconds": 0.5606490000000051,
+          "system_seconds": 0.0976669999999995,
+          "total_seconds": 0.6583160000000046
+        },
+        "returncode": 0,
+        "load": [
+          4.97314453125,
+          3.91455078125,
+          3.62060546875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+        "previous_source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+        "seconds": 0.6358755830000007,
+        "cpu_seconds": 0.6268910000000032,
+        "cpu": {
+          "user_seconds": 0.5335960000000028,
+          "system_seconds": 0.09329500000000035,
+          "total_seconds": 0.6268910000000032
+        },
+        "returncode": 0,
+        "load": [
+          4.97509765625,
+          3.93212890625,
+          3.62841796875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+        "previous_source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+        "seconds": 0.6947660410000012,
+        "cpu_seconds": 0.6828809999999965,
+        "cpu": {
+          "user_seconds": 0.5886179999999968,
+          "system_seconds": 0.09426299999999976,
+          "total_seconds": 0.6828809999999965
+        },
+        "returncode": 0,
+        "load": [
+          4.97216796875,
+          3.966796875,
+          3.64404296875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+        "previous_source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+        "seconds": 0.7077141669999989,
+        "cpu_seconds": 0.683967,
+        "cpu": {
+          "user_seconds": 0.5807760000000002,
+          "system_seconds": 0.10319099999999981,
+          "total_seconds": 0.683967
+        },
+        "returncode": 0,
+        "load": [
+          4.97412109375,
+          3.98388671875,
+          3.65185546875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+        "previous_source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+        "seconds": 0.675698041000004,
+        "cpu_seconds": 0.6606909999999875,
+        "cpu": {
+          "user_seconds": 0.5673849999999874,
+          "system_seconds": 0.09330600000000011,
+          "total_seconds": 0.6606909999999875
+        },
+        "returncode": 0,
+        "load": [
+          4.89599609375,
+          3.98388671875,
+          3.65380859375
+        ]
+      }
+    ]
+  },
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+    "candidate_tool_key": "5b26d9673309e9fa2db50fe364bc6bc8f279d874127fbaf46275e48bb08ae842",
+    "identical_bytecode_required": true,
+    "pairs": [
+      {
+        "cycle": 0,
+        "state": 1,
+        "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+        "baseline_seconds": 2.0206472079999998,
+        "candidate_seconds": 1.8172344580000015,
+        "native_seconds": 1.8446822920000017,
+        "native_cpu_seconds": 1.680626999999998,
+        "baseline_cpu_seconds": 1.9703909999999984,
+        "candidate_cpu_seconds": 1.7946209999999994,
+        "cpu_difference_seconds": -0.1757699999999991,
+        "difference_seconds": -0.20341274999999825,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.904345375,
+            "execution_seconds": 1.0467025409999997,
+            "artifact_hash_seconds": 0.002355499999999955,
+            "launcher_seconds": 1.995119417
+          },
+          "candidate": {
+            "cargo_seconds": 0.87850125,
+            "execution_seconds": 0.8672670419999999,
+            "artifact_hash_seconds": 0.0024919580000000163,
+            "launcher_seconds": 1.791168292
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+        "baseline_seconds": 2.037418875,
+        "candidate_seconds": 1.7929512500000016,
+        "native_seconds": 1.84566375,
+        "native_cpu_seconds": 1.720798999999995,
+        "baseline_cpu_seconds": 1.9798579999999966,
+        "candidate_cpu_seconds": 1.7702900000000028,
+        "cpu_difference_seconds": -0.20956799999999376,
+        "difference_seconds": -0.24446762499999863,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.915974792,
+            "execution_seconds": 1.0485404580000002,
+            "artifact_hash_seconds": 0.0023399170000000247,
+            "launcher_seconds": 2.010044416
+          },
+          "candidate": {
+            "cargo_seconds": 0.863628625,
+            "execution_seconds": 0.858058084,
+            "artifact_hash_seconds": 0.0024914580000000575,
+            "launcher_seconds": 1.7670186669999999
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+        "baseline_seconds": 2.0943802500000004,
+        "candidate_seconds": 1.9396000420000021,
+        "native_seconds": 1.9323307499999984,
+        "native_cpu_seconds": 1.9526220000000025,
+        "baseline_cpu_seconds": 2.055026999999999,
+        "candidate_cpu_seconds": 1.9022569999999996,
+        "cpu_difference_seconds": -0.1527699999999994,
+        "difference_seconds": -0.15478020799999825,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.9794740000000001,
+            "execution_seconds": 1.0461334580000001,
+            "artifact_hash_seconds": 0.0023661249999999967,
+            "launcher_seconds": 2.068913
+          },
+          "candidate": {
+            "cargo_seconds": 1.0119310000000001,
+            "execution_seconds": 0.8502576669999999,
+            "artifact_hash_seconds": 0.0024580419999999936,
+            "launcher_seconds": 1.911167333
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+        "baseline_seconds": 2.0418465830000017,
+        "candidate_seconds": 1.820556707999998,
+        "native_seconds": 1.8088480830000009,
+        "native_cpu_seconds": 1.7568479999999962,
+        "baseline_cpu_seconds": 2.0191520000000027,
+        "candidate_cpu_seconds": 1.7983240000000054,
+        "cpu_difference_seconds": -0.22082799999999736,
+        "difference_seconds": -0.22128987500000363,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.917827417,
+            "execution_seconds": 1.0521340000000001,
+            "artifact_hash_seconds": 0.002395582999999979,
+            "launcher_seconds": 2.015580792
+          },
+          "candidate": {
+            "cargo_seconds": 0.909463667,
+            "execution_seconds": 0.8383549170000001,
+            "artifact_hash_seconds": 0.002292209000000045,
+            "launcher_seconds": 1.793167792
+          }
+        },
+        "identical_bytecode": true
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+        "baseline_seconds": 2.120668375000001,
+        "candidate_seconds": 1.8381500409999987,
+        "native_seconds": 1.8442434170000013,
+        "native_cpu_seconds": 1.780358000000004,
+        "baseline_cpu_seconds": 2.0928579999999952,
+        "candidate_cpu_seconds": 1.8124120000000055,
+        "cpu_difference_seconds": -0.28044599999998976,
+        "difference_seconds": -0.28251833400000237,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 0.972186834,
+            "execution_seconds": 1.070323583,
+            "artifact_hash_seconds": 0.0025340000000000362,
+            "launcher_seconds": 2.0917414169999997
+          },
+          "candidate": {
+            "cargo_seconds": 0.925091375,
+            "execution_seconds": 0.842101042,
+            "artifact_hash_seconds": 0.0025032919999999903,
+            "launcher_seconds": 1.811360292
+          }
+        },
+        "identical_bytecode": true
+      }
+    ],
+    "candidate_pair_wins": 5,
+    "median_paired_difference_seconds": -0.22128987500000363,
+    "median_paired_cpu_difference_seconds": -0.20956799999999376,
+    "per_edit": [
+      {
+        "state": 1,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "1a2923582bb062dbc6a95faaa75324806980ae8e411daebad1ff4141567aa5e0",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.0206472079999998,
+            "median": 2.0206472079999998,
+            "max": 2.0206472079999998
+          },
+          "candidate_seconds": {
+            "min": 1.8172344580000015,
+            "median": 1.8172344580000015,
+            "max": 1.8172344580000015
+          },
+          "native_seconds": {
+            "min": 1.8446822920000017,
+            "median": 1.8446822920000017,
+            "max": 1.8446822920000017
+          },
+          "difference_seconds": {
+            "min": -0.20341274999999825,
+            "median": -0.20341274999999825,
+            "max": -0.20341274999999825
+          },
+          "cpu_difference_seconds": {
+            "min": -0.1757699999999991,
+            "median": -0.1757699999999991,
+            "max": -0.1757699999999991
+          }
+        }
+      },
+      {
+        "state": 2,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "50bb5608311abbf854fbc23a79903e12c0aecd6cb531c6c432dbf81c4917006e",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.037418875,
+            "median": 2.037418875,
+            "max": 2.037418875
+          },
+          "candidate_seconds": {
+            "min": 1.7929512500000016,
+            "median": 1.7929512500000016,
+            "max": 1.7929512500000016
+          },
+          "native_seconds": {
+            "min": 1.84566375,
+            "median": 1.84566375,
+            "max": 1.84566375
+          },
+          "difference_seconds": {
+            "min": -0.24446762499999863,
+            "median": -0.24446762499999863,
+            "max": -0.24446762499999863
+          },
+          "cpu_difference_seconds": {
+            "min": -0.20956799999999376,
+            "median": -0.20956799999999376,
+            "max": -0.20956799999999376
+          }
+        }
+      },
+      {
+        "state": 3,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "98427be7ccd3762b49c080dfabf07fc439b8bcee1eeae553098a9e16dfde5adc",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.0943802500000004,
+            "median": 2.0943802500000004,
+            "max": 2.0943802500000004
+          },
+          "candidate_seconds": {
+            "min": 1.9396000420000021,
+            "median": 1.9396000420000021,
+            "max": 1.9396000420000021
+          },
+          "native_seconds": {
+            "min": 1.9323307499999984,
+            "median": 1.9323307499999984,
+            "max": 1.9323307499999984
+          },
+          "difference_seconds": {
+            "min": -0.15478020799999825,
+            "median": -0.15478020799999825,
+            "max": -0.15478020799999825
+          },
+          "cpu_difference_seconds": {
+            "min": -0.1527699999999994,
+            "median": -0.1527699999999994,
+            "max": -0.1527699999999994
+          }
+        }
+      },
+      {
+        "state": 4,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "5fe18b9cc22b37e417b094f6bab81f13152cdf60c0b94c2e12a902e50afa45ed",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.0418465830000017,
+            "median": 2.0418465830000017,
+            "max": 2.0418465830000017
+          },
+          "candidate_seconds": {
+            "min": 1.820556707999998,
+            "median": 1.820556707999998,
+            "max": 1.820556707999998
+          },
+          "native_seconds": {
+            "min": 1.8088480830000009,
+            "median": 1.8088480830000009,
+            "max": 1.8088480830000009
+          },
+          "difference_seconds": {
+            "min": -0.22128987500000363,
+            "median": -0.22128987500000363,
+            "max": -0.22128987500000363
+          },
+          "cpu_difference_seconds": {
+            "min": -0.22082799999999736,
+            "median": -0.22082799999999736,
+            "max": -0.22082799999999736
+          }
+        }
+      },
+      {
+        "state": 5,
+        "cycles": [
+          0
+        ],
+        "source_sha256": "6dde7c13638ca7409e7ec78e59e04fb968bb103d6bd87cca02e9a6c631d59950",
+        "samples": 1,
+        "spread": {
+          "baseline_seconds": {
+            "min": 2.120668375000001,
+            "median": 2.120668375000001,
+            "max": 2.120668375000001
+          },
+          "candidate_seconds": {
+            "min": 1.8381500409999987,
+            "median": 1.8381500409999987,
+            "max": 1.8381500409999987
+          },
+          "native_seconds": {
+            "min": 1.8442434170000013,
+            "median": 1.8442434170000013,
+            "max": 1.8442434170000013
+          },
+          "difference_seconds": {
+            "min": -0.28251833400000237,
+            "median": -0.28251833400000237,
+            "max": -0.28251833400000237
+          },
+          "cpu_difference_seconds": {
+            "min": -0.28044599999998976,
+            "median": -0.28044599999998976,
+            "max": -0.28044599999998976
+          }
+        }
+      }
+    ]
+  }
+}

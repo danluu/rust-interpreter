@@ -21,18 +21,7 @@ from workflow_case_file import load as load_case_file, source_file
 from workflow_jobs import UniqueJobCount, resolve_build_jobs
 
 
-def guest_test_failure(stderr):
-    """Recognize runtime test panics, excluding compiler and resource failures."""
-    prefix='rust-interp-vm: guest trap: '
-    for line in stderr.splitlines():
-        if not line.startswith(prefix):continue
-        message=line.removeprefix(prefix)
-        if 'assertion' in message or 'panicking::' in message:return True
-        # These compiler-known panic helpers also implement failed unwrap/expect.
-        for crate in ['core','std']:
-            for helper in ['option::unwrap_failed','option::expect_failed','result::unwrap_failed']:
-                if message.startswith(crate+'::'+helper+' '):return True
-    return False
+from suite_reports import guest_test_failure, read_report, validate_report
 
 
 def main():
@@ -44,9 +33,11 @@ def main():
     parser.add_argument('--workflow',default='default',help='additional named workload within a project')
     parser.add_argument('--case-file',type=Path,help='bounded public workflow JSON inside this workspace; mutually exclusive with a named workflow')
     parser.add_argument('--batch',action='store_true',help='invoke all custom test entries in one command')
+    parser.add_argument('--compare-isolated-batches',action='store_true',help='compare fresh and prepared per-test JIT state; native builds once and runs each test in a separate process')
     parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
     parser.add_argument('--initial-mode-order',type=lambda value:value.split(','),help='comma-separated permutation of the three modes; rotates cold-run order without changing mode settings')
     parser.add_argument('--minimum-free-gib',type=int,default=8,help='refuse to start a command below this free-space threshold; not a disk reservation')
+    parser.add_argument('--lock-wait-seconds',type=float,default=0,help='bounded wait for the shared benchmark lock (0..45)')
     parser.add_argument('--jobs',type=int,action=UniqueJobCount,default=4,help='default Cargo jobs for custom engines and native (1..256)')
     parser.add_argument('--native-jobs',type=int,action=UniqueJobCount,help='override native/check Cargo jobs (1..256)')
     parser.add_argument('--baseline-jobs',type=int,action=UniqueJobCount,help='override baseline Cargo jobs in a paired comparison (1..256)')
@@ -94,6 +85,7 @@ def main():
             parser.error('--'+option.replace('_','-')+' requires a paired JIT comparison')
     if not 1<=args.cycles<=30:parser.error('cycles must be in 1..30')
     if not 1<=args.minimum_free_gib<=1024:parser.error('minimum-free-gib must be in 1..1024')
+    if not 0<=args.lock_wait_seconds<=45:parser.error('lock-wait-seconds must be in 0..45')
     if not 1<=args.jobs<=256 or (args.native_jobs is not None and not 1<=args.native_jobs<=256):parser.error('jobs must be in 1..256')
     if args.native_test_threads!='default' and (not args.native_test_threads.isdigit() or not 1<=int(args.native_test_threads)<=256):parser.error('native-test-threads must be default or in 1..256')
     if any(not flag or '\x1f' in flag or '\x00' in flag for flag in args.native_rustflag):parser.error('native rustflags must be nonempty arguments without NUL or unit separators')
@@ -102,6 +94,12 @@ def main():
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     if args.candidate_tool_key is not None and args.baseline_tool_key is None:
         parser.error('--candidate-tool-key requires --baseline-tool-key')
+    if args.compare_isolated_batches:
+        if (not args.batch or args.baseline_tool_key is None or args.comparison_engine=='interpreter'
+                or not args.baseline_jit_resumable_calls or not args.candidate_jit_resumable_calls
+                or args.candidate_jit_native_calls or args.candidate_jit_native_call_stubs
+                or args.native_test_threads!='1' or args.vary_selection):
+            parser.error('--compare-isolated-batches requires a fixed batched paired resumable JIT selection and one native test thread')
     if (args.comparison_engine is not None or args.expect_identical_bytecode) and args.baseline_tool_key is None:
         parser.error('--comparison-engine and --expect-identical-bytecode require --baseline-tool-key')
     if args.baseline_inline_leaves and args.baseline_tool_key is None:parser.error('--baseline-inline-leaves requires --baseline-tool-key')
@@ -144,8 +142,16 @@ def main():
         case=WORKFLOWS[args.project]
     private=case.get('private',False)
     tests=case['tests'];edits=case['edits'];package=case['package']
+    if args.compare_isolated_batches and len(tests)<2:parser.error('isolated batch comparison requires at least two tests')
     lock=(ROOT/'.work/benchmark.lock').open('a')
-    fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    deadline=time.monotonic()+args.lock_wait_seconds
+    while True:
+        try:
+            fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            break
+        except BlockingIOError:
+            if time.monotonic()>=deadline:raise
+            time.sleep(.1)
     tools,key=installed_tools(args.candidate_tool_key) if args.candidate_tool_key is not None else checked_tools()
     modes=['native','interpreter','jit']
     mode_tools={mode:dict(engine=mode,tool_key=key,directory=tools) for mode in modes[1:]}
@@ -153,6 +159,7 @@ def main():
         baseline,baseline_key=installed_tools(args.baseline_tool_key)
         if (baseline_key==key and baseline_guest_flags==guest_flags and
             args.baseline_inline_leaves==args.inline_leaves and
+            not args.compare_isolated_batches and
             resolved_jobs['baseline']==resolved_jobs['candidate'] and
             not args.candidate_jit_native_calls and
             args.candidate_jit_persistent_registers==args.baseline_jit_persistent_registers and
@@ -193,6 +200,7 @@ def main():
     work=ROOT/'.work/runs'/args.run_id
     work.mkdir(parents=True)
     script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
+    script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py']
     if case_proof is not None:
         payload=case_path.read_bytes()
         if hashlib.sha256(payload).hexdigest()!=case_proof['sha256']:raise RuntimeError('case file changed during preparation')
@@ -247,9 +255,18 @@ def main():
         selected=tests
         if args.vary_selection and state>0:
             selected=[tests[i] for i in case['selections'][state-1]]
+        suite_path=None
+        if args.compare_isolated_batches:
+            suite_path=work/'suites'/mode/sample_path(sample,0,args.cycles,'json')
+            suite_path.parent.mkdir(parents=True,exist_ok=True)
         if mode=='native':
             commands=[native_command(TOOLCHAIN,manifest,package,work/'native',native_jobs,
                 args.native_test_threads,selected,timings=args.cargo_timings)]
+            if suite_path is not None:
+                commands=[[sys.executable,str(ROOT/'scripts/native_suite.py'),'--manifest-path',manifest,
+                    '--package',package,'--target-dir',str(work/'native'),'--jobs',str(native_jobs),
+                    '--test-threads=1','--suite-report',str(suite_path),
+                    *(['--timings'] if args.cargo_timings else []),*[a for test in selected for a in ['--entry',test]]]]
         else:
             config=mode_tools[mode]
             base=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',manifest,
@@ -266,6 +283,8 @@ def main():
             if args.run_try_callbacks:base+=['--run-try-callbacks']
             if std:base+=['--std-mir']
             if args.cargo_timings:base+=['--timings']
+            if suite_path is not None:
+                base+=['--isolated-batch','fresh' if mode=='baseline' else 'prepared','--suite-report',str(suite_path)]
             commands=[[*base,*[arg for test in selected for arg in ['--entry',test]]]] if args.batch else [[*base,'--entry',test] for test in selected]
         start=time.perf_counter();calls=[]
         child_env=env.copy()
@@ -321,7 +340,19 @@ def main():
                 assert len(payload)==launch['artifact_bytes'] and hashlib.sha256(payload).hexdigest()==launch['artifact_sha256']
                 snapshot=work/'artifacts'/mode/sample_path(sample,index,args.cycles,'rbc');snapshot.parent.mkdir(parents=True,exist_ok=True)
                 with snapshot.open('xb') as destination:destination.write(payload)
-                snapshots.append(dict(path=str(snapshot.relative_to(ROOT)),sha256=launch['artifact_sha256'],bytes=len(payload)))
+                item=dict(path=str(snapshot.relative_to(ROOT)),sha256=launch['artifact_sha256'],bytes=len(payload))
+                snapshots.append(item)
+                if launch.get('entry_catalog_path') is not None:
+                    catalog=Path(launch['entry_catalog_path'])
+                    assert catalog==Path(str(artifact)+'.entries.json') and not catalog.is_symlink()
+                    assert 0<catalog.stat().st_size<=8*1024*1024
+                    payload=catalog.read_bytes();digest=hashlib.sha256(payload).hexdigest()
+                    assert digest==launch['entry_catalog_sha256']
+                    descriptor=json.loads(payload)
+                    assert descriptor['artifact_sha256']==item['sha256'] and [e['name'] for e in descriptor['entries']]==selected
+                    catalog_snapshot=Path(str(snapshot)+'.entries.json')
+                    with catalog_snapshot.open('xb') as destination:destination.write(payload)
+                    item['entry_catalog']=dict(path=str(catalog_snapshot.relative_to(ROOT)),sha256=digest)
         if args.cargo_timings:
             reports=[];record['cargo_timings']=reports
             for index,call in enumerate(calls):
@@ -344,10 +375,25 @@ def main():
                 with snapshot.open('xb') as destination:destination.write(payload)
                 reports.append(dict(path=str(snapshot.relative_to(ROOT)),sha256=hashlib.sha256(payload).hexdigest(),bytes=len(payload)))
         write_json(work/'records.json',records)
+        if suite_path is not None:
+            suite,suite_hash=read_report(suite_path)
+            validate_report(suite,selected,'native' if mode=='native' else 'fresh' if mode=='baseline' else 'prepared',success)
+            record['suite_report']=dict(path=str(suite_path.relative_to(ROOT)),sha256=suite_hash)
+            if mode=='native':
+                # Bind the built executable outside the complete-command timer,
+                # just as the executed bytecode snapshots are copied outside it.
+                executable=Path(suite['executable'])
+                assert not executable.is_symlink() and executable.resolve().is_relative_to((work/'native').resolve())
+                record['native_executable']=dict(path=str(executable),sha256=hashlib.sha256(executable.read_bytes()).hexdigest())
+            else:
+                assert calls[0]['launch']['suite_report_sha256']==record['suite_report']['sha256']
+                assert calls[0]['launch']['suite_report_path']==str(suite_path)
+            write_json(work/'records.json',records)
         if success:
             assert all(c['returncode']==0 for c in calls),calls[-1]['stderr']
             assert len(calls)==len(commands)
-            if mode=='native':assert f'{len(selected)} passed' in calls[0]['stdout'],calls[0]['stdout']
+            if mode=='native' and suite_path is None:assert f'{len(selected)} passed' in calls[0]['stdout'],calls[0]['stdout']
+            elif mode=='native':pass # The report above requires each exact original test to pass.
             else:assert all(c['stdout'].strip()=='0' for c in calls),calls
         else:
             assert calls[-1]['returncode']!=0,calls
@@ -358,7 +404,7 @@ def main():
                 # so compiler errors cannot satisfy the negative control.
                 assert 'test result: FAILED.' in calls[-1]['stdout'],text
                 assert any(f'test {test} ... FAILED' in calls[-1]['stdout'] for test in selected),text
-            else:
+            elif suite_path is None:
                 assert guest_test_failure(calls[-1]['stderr']),text
         assert any(('Compiling ' if mode=='native' else 'Checking ')+package in c['stderr'] for c in calls),'edited crate did not compile'
         assert record['source_sha256']==source_digest,'source changed during the command'
@@ -401,11 +447,12 @@ def main():
                 tests=f'{len(tests)} existing private test bodies' if private else tests,
                 edits=[e[0] for e in edits],
                 workload=case['workload'],case_sha256=hashlib.sha256(json.dumps(case,sort_keys=True).encode()).hexdigest(),
-                test_source_unchanged=True,batch=args.batch,cargo_timings=args.cargo_timings,vary_selection=args.vary_selection,raw=str(work.relative_to(ROOT)),
+                test_source_unchanged=True,batch=args.batch,compare_isolated_batches=args.compare_isolated_batches,cargo_timings=args.cargo_timings,vary_selection=args.vary_selection,raw=str(work.relative_to(ROOT)),
                 build_tool_opt_level=args.build_tool_opt_level,
                 build_jobs=args.jobs,custom_build_jobs={mode:resolved_jobs[mode] for mode in mode_tools},
                 native_control=dict(profile=args.native_profile,jobs=native_jobs,
-                    test_threads=args.native_test_threads,rustflags=args.native_rustflag),
+                    test_threads=args.native_test_threads,rustflags=args.native_rustflag,
+                    isolation='one native process per test' if args.compare_isolated_batches else 'ordinary libtest batch'),
                 instruction_limit=args.instruction_limit,allocation_limit=args.allocation_limit,
                 inline_leaves=args.inline_leaves,baseline_inline_leaves=args.baseline_inline_leaves,candidate_jit_persistent_registers=args.candidate_jit_persistent_registers,candidate_jit_resumable_calls=args.candidate_jit_resumable_calls,candidate_jit_native_calls=args.candidate_jit_native_calls,candidate_jit_native_call_stubs=args.candidate_jit_native_call_stubs,
                 baseline_jit_resumable_calls=args.baseline_jit_resumable_calls,baseline_jit_persistent_registers=args.baseline_jit_persistent_registers,

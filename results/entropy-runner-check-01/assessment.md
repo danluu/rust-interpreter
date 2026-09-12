@@ -1,0 +1,3 @@
+The optional entropy mode in `compare_saved_runtime.py` passes two native controls, four fresh recordings and 56 A/A replay commands across both engines. The original TLS/HashMap fixture consumes randomness; the destructor fixture verifies zero-request replay. Every original assertion, output, instruction count and peak-memory count matches within each stream. Both sides use the same immutable VM. Hash and option rejection controls also pass. This qualifies the comparison tooling and makes no performance claim.
+
+Fixed frame clearing remains parked; its canceled performance comparisons were not run. Raw entropy bytes and command details stay local.

@@ -1,0 +1,805 @@
+{
+  "status": "passed",
+  "commands": 6,
+  "new_commands": 2,
+  "reused_commands": 4,
+  "tool_key": "a789442ceb850a3f38bc4279ea122817c88b6200158d13374fc9342e72570179",
+  "exports": {
+    "pgrust": {
+      "artifact": ".work/private-pointer-promotion-coverage-02/pgrust.rbc",
+      "artifact_sha256": "262c8f133b7d4a42ac6515a37973e17c24577ec4dd109c4f8fca42057c047860",
+      "catalog_sha256": "fee07bc712f5c07fc24ae56569ce955ebf08d9a09f325c38e154d48004b20deb",
+      "suite_sha256": "87d89e45cd1642d6b3f9dbd659388098ddb3ca6c027f74e9e24cfa8cf534b0c6",
+      "pointer_slots": 18,
+      "tests": 4
+    },
+    "folded": {
+      "artifact": ".work/private-pointer-promotion-coverage-02/folded.rbc",
+      "artifact_sha256": "1029789cbc251f28494f010ca9bec15ccf488558e93024c83cb4d8fe8c95b6dc",
+      "catalog_sha256": "0fb5732d00f54d60fd640ccaa2962d178cd9c09f86b099c27a93d0a07f7ed0f2",
+      "suite_sha256": "7b0ccc2ee4a4fab538f09fa1193a64657d5d5858996db18fe08db9eb51af1b38",
+      "pointer_slots": 1232,
+      "tests": 18
+    },
+    "token": {
+      "artifact": ".work/private-pointer-promotion-coverage-02/token.rbc",
+      "artifact_sha256": "caf537a63cc94cde17714c04bfa22d133f10daafaae0993cea64ae18aaccae10",
+      "catalog_sha256": "aecaaae006fab1d77df56f4b83cfb189ba442199b27ca518d6ea23d7cad13e55",
+      "suite_sha256": "49735e2babcb7e6ec61bfcd4d1d7b8c070bbfb55ea15ed8450f3e77ae8ab52a1",
+      "pointer_slots": 7875,
+      "tests": 12
+    }
+  },
+  "profiles": [
+    {
+      "index": 0,
+      "case": "token",
+      "name": "token_phrase::tests::block_boundaries_preserve_maximal_runs_literal_gating_and_restart",
+      "baseline_instructions": 15570943472,
+      "candidate_instructions": 15323233610,
+      "logical_reduction": 0.01590846838827953,
+      "baseline_functions": 5468,
+      "candidate_functions": 5468,
+      "ambiguous_or_unmatched_baseline_functions": 22,
+      "ambiguous_or_unmatched_candidate_functions": 22,
+      "common_functions": 5446,
+      "changed_common_function_bodies": 2300,
+      "changed_baseline_hot_functions": [
+        {
+          "name_prefix": "regex_automata::util::determinize::next[]",
+          "function": 2262,
+          "native_operations": 1731399035
+        },
+        {
+          "name_prefix": "regex_automata::util::determinize::epsilon_closure[]",
+          "function": 2726,
+          "native_operations": 1719520320
+        },
+        {
+          "name_prefix": "regex_automata::util::determinize::state::Repr::<'a>::iter_nfa_state_ids['{erased}, Closure(DefId(35:4279 ~ regex_automata[605a]::util::determinize::next::{closure#0}), [i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::primi",
+          "function": 2717,
+          "native_operations": 1257075454
+        },
+        {
+          "name_prefix": "regex_automata::util::determinize::next::{closure#0}[i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::primitives::StateID,)), bound_vars: [] }, (&'{erased} mut regex_automata::util::sparse_set::SparseSet,)]",
+          "function": 3226,
+          "native_operations": 814483264
+        },
+        {
+          "name_prefix": "std::ptr::copy_nonoverlapping::precondition_check[]",
+          "function": 21,
+          "native_operations": 632283749
+        },
+        {
+          "name_prefix": "regex_automata::dfa::determinize::Runner::<'a>::maybe_add_state['{erased}]",
+          "function": 3516,
+          "native_operations": 527053181
+        },
+        {
+          "name_prefix": "regex_automata::util::determinize::add_nfa_states[]",
+          "function": 2728,
+          "native_operations": 508287356
+        },
+        {
+          "name_prefix": "std::slice::from_raw_parts::precondition_check[]",
+          "function": 20,
+          "native_operations": 375980320
+        },
+        {
+          "name_prefix": "regex_automata::dfa::dense::TransitionTable::<std::vec::Vec<u32>>::set[]",
+          "function": 3528,
+          "native_operations": 294604352
+        }
+      ],
+      "statistics": {
+        "instructions": 15323233610,
+        "peak_guest_memory": 790688,
+        "jit_bytes": 12080600,
+        "jit_operations": 327671,
+        "jit_compile_ns": 76820060,
+        "jit_instructions": 15316459285,
+        "jit_entries": 6774325,
+        "jit_compiled_functions": 1372,
+        "jit_declined_functions": 0,
+        "jit_resumable_calls": 86773426,
+        "jit_resumable_returns": 87800437,
+        "jit_tree_entries": 0,
+        "jit_tree_calls": 0,
+        "jit_tree_instructions": 0,
+        "jit_tree_bytes": 0,
+        "jit_tree_operations": 0,
+        "jit_tree_compiled_functions": 0,
+        "jit_tree_declined_functions": 0,
+        "jit_tree_compile_ns": 0,
+        "jit_call_stubs": 0,
+        "jit_stub_calls": 0,
+        "jit_register_functions": 234,
+        "jit_register_pairs": 379,
+        "jit_liveness_declines": 2,
+        "entropy_calls": 2,
+        "entropy_bytes": 32
+      },
+      "distribution": {
+        "native_operations": 15316459285,
+        "interpreted_operations": 6774325,
+        "native_operations_by_variant": {
+          "Local": 5181872533,
+          "Imm": 2404642566,
+          "Load": 2150478764,
+          "Binary": 1979907834,
+          "Copy": 1327679673,
+          "Store": 1030134411,
+          "Cast": 494480004,
+          "Switch": 305151143,
+          "Assert": 118007648,
+          "Return": 87800437,
+          "Call": 86773426,
+          "Jump": 66165415,
+          "FillBytes": 49302089,
+          "Unary": 20727397,
+          "Select": 7801335,
+          "CopyDynamic": 4516738,
+          "CompareBytes": 1017872,
+          "Trap": 0,
+          "CallIndirect": 0,
+          "Deallocate": 0,
+          "Reallocate": 0,
+          "Allocate": 0,
+          "RegisterTlsDestructor": 0,
+          "CpuFeatureQuery": 0,
+          "CAllocate": 0,
+          "CAlignedAllocate": 0,
+          "RandomBytes": 0,
+          "CDeallocate": 0,
+          "ResetThreadLocals": 0
+        },
+        "native_block_entries_by_length": {
+          "33..64": 93372597,
+          "2..4": 41865430,
+          "17..32": 107174682,
+          "65..1024": 46646233,
+          "1": 197823422,
+          "9..16": 145577306,
+          "5..8": 77221718
+        },
+        "native_region_entries_excluding_single_call_return": 535107525,
+        "mean_native_region_operations": 28.296902425358343,
+        "top_native_functions": [
+          {
+            "function": 2726,
+            "name_prefix": "regex_automata::util::determinize::epsilon_closure[]",
+            "name_truncated": false,
+            "native_operations": 1728374592,
+            "interpreted_operations": 0,
+            "native_block_entries": 27976256,
+            "frame_size": 512,
+            "registers": 1422
+          },
+          {
+            "function": 2262,
+            "name_prefix": "regex_automata::util::determinize::next[]",
+            "name_truncated": false,
+            "native_operations": 1643893435,
+            "interpreted_operations": 5,
+            "native_block_entries": 76013947,
+            "frame_size": 1144,
+            "registers": 2777
+          },
+          {
+            "function": 2717,
+            "name_prefix": "regex_automata::util::determinize::state::Repr::<'a>::iter_nfa_state_ids['{erased}, Closure(DefId(35:4279 ~ regex_automata[605a]::util::determinize::next::{closure#0}), [i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::primi",
+            "name_truncated": true,
+            "native_operations": 1187151614,
+            "interpreted_operations": 2,
+            "native_block_entries": 52156158,
+            "frame_size": 377,
+            "registers": 488
+          },
+          {
+            "function": 3226,
+            "name_prefix": "regex_automata::util::determinize::next::{closure#0}[i16, Binder { value: extern \"RustCall\" fn((regex_automata::util::primitives::StateID,)), bound_vars: [] }, (&'{erased} mut regex_automata::util::sparse_set::SparseSet,)]",
+            "name_truncated": false,
+            "native_operations": 824815936,
+            "interpreted_operations": 0,
+            "native_block_entries": 13810496,
+            "frame_size": 232,
+            "registers": 405
+          },
+          {
+            "function": 2038,
+            "name_prefix": "<core::hash::sip::Sip13Rounds as core::hash::sip::Sip>::c_rounds[]",
+            "name_truncated": false,
+            "native_operations": 813542912,
+            "interpreted_operations": 0,
+            "native_block_entries": 6587392,
+            "frame_size": 32,
+            "registers": 270
+          },
+          {
+            "function": 2954,
+            "name_prefix": "<core::hash::sip::Sip13Rounds as core::hash::sip::Sip>::d_rounds[]",
+            "name_truncated": false,
+            "native_operations": 787637760,
+            "interpreted_operations": 0,
+            "native_block_entries": 2143232,
+            "frame_size": 32,
+            "registers": 806
+          },
+          {
+            "function": 21,
+            "name_prefix": "std::ptr::copy_nonoverlapping::precondition_check[]",
+            "name_truncated": false,
+            "native_operations": 636584999,
+            "interpreted_operations": 1,
+            "native_block_entries": 60217499,
+            "frame_size": 304,
+            "registers": 212
+          },
+          {
+            "function": 3516,
+            "name_prefix": "regex_automata::dfa::determinize::Runner::<'a>::maybe_add_state['{erased}]",
+            "name_truncated": false,
+            "native_operations": 524228093,
+            "interpreted_operations": 3,
+            "native_block_entries": 25584829,
+            "frame_size": 1584,
+            "registers": 1242
+          },
+          {
+            "function": 2728,
+            "name_prefix": "regex_automata::util::determinize::add_nfa_states[]",
+            "name_truncated": false,
+            "native_operations": 472026236,
+            "interpreted_operations": 4,
+            "native_block_entries": 21596732,
+            "frame_size": 184,
+            "registers": 299
+          },
+          {
+            "function": 20,
+            "name_prefix": "std::slice::from_raw_parts::precondition_check[]",
+            "name_truncated": false,
+            "native_operations": 380680074,
+            "interpreted_operations": 0,
+            "native_block_entries": 32898278,
+            "frame_size": 288,
+            "registers": 185
+          },
+          {
+            "function": 3528,
+            "name_prefix": "regex_automata::dfa::dense::TransitionTable::<std::vec::Vec<u32>>::set[]",
+            "name_truncated": false,
+            "native_operations": 296554048,
+            "interpreted_operations": 0,
+            "native_block_entries": 12673024,
+            "frame_size": 304,
+            "registers": 433
+          },
+          {
+            "function": 74,
+            "name_prefix": "core::ub_checks::maybe_is_nonoverlapping::runtime[]",
+            "name_truncated": false,
+            "native_operations": 247154793,
+            "interpreted_operations": 0,
+            "native_block_entries": 21506250,
+            "frame_size": 105,
+            "registers": 81
+          }
+        ],
+        "limitation": "Instrumented logical bytecode counters; block lengths do not predict machine cost. Operation labels group counts only; no operands or CFG edges inferred from Debug strings."
+      },
+      "profile_sha256": "53c47b859ccdc02803c4dbd56c7643044b30fa616b3f7a3b4f1b21ed8a0b4296",
+      "baseline_profile_sha256": "b83c8b34f1c41e5f133fb7d232505aa980026615ceee15f48da20c8ccd9c24cf",
+      "tape_sha256": "de03d26c5522ec55056909a7945a3f7c3c9db27995055665f0be1d13bc9eb30c"
+    },
+    {
+      "index": 1,
+      "case": "token",
+      "name": "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+      "baseline_instructions": 12862074426,
+      "candidate_instructions": 12710309205,
+      "logical_reduction": 0.011799435765448174,
+      "baseline_functions": 5468,
+      "candidate_functions": 5468,
+      "ambiguous_or_unmatched_baseline_functions": 22,
+      "ambiguous_or_unmatched_candidate_functions": 22,
+      "common_functions": 5446,
+      "changed_common_function_bodies": 2300,
+      "changed_baseline_hot_functions": [
+        {
+          "name_prefix": "token_phrase::enforce_upper_bounds[]",
+          "function": 130,
+          "native_operations": 1762918655
+        },
+        {
+          "name_prefix": "std::ptr::copy_nonoverlapping::precondition_check[]",
+          "function": 21,
+          "native_operations": 1751120447
+        },
+        {
+          "name_prefix": "token_phrase::TokenPhrasePlan::scan_block_masks[]",
+          "function": 133,
+          "native_operations": 818968318
+        },
+        {
+          "name_prefix": "core::slice::sort::stable::quicksort::stable_partition[std::vec::Vec<u8, std::alloc::Global>, FnDef(DefId(2:30283 ~ core[affe]::cmp::PartialOrd::lt), Binder { value: [std::vec::Vec<u8, std::alloc::Global>, std::vec::Vec<u8, std::alloc::Glob",
+          "function": 471,
+          "native_operations": 775944459
+        },
+        {
+          "name_prefix": "core::slice::sort::stable::quicksort::PartitionState::<T>::partition_one[std::vec::Vec<u8, std::alloc::Global>]",
+          "function": 656,
+          "native_operations": 764210304
+        },
+        {
+          "name_prefix": "token_phrase::verify[usize, usize]",
+          "function": 234,
+          "native_operations": 734101544
+        },
+        {
+          "name_prefix": "token_phrase::TokenPhrasePlan::consume_classified_block[]",
+          "function": 227,
+          "native_operations": 591563262
+        },
+        {
+          "name_prefix": "token_phrase::TokenPhrasePlan::derive_short_input_upper_bounds[]",
+          "function": 129,
+          "native_operations": 304585396
+        }
+      ],
+      "statistics": {
+        "instructions": 12710309205,
+        "peak_guest_memory": 8164929,
+        "jit_bytes": 14997896,
+        "jit_operations": 405420,
+        "jit_compile_ns": 92730697,
+        "jit_instructions": 12707872330,
+        "jit_entries": 2436875,
+        "jit_compiled_functions": 1633,
+        "jit_declined_functions": 0,
+        "jit_resumable_calls": 109540226,
+        "jit_resumable_returns": 110385595,
+        "jit_tree_entries": 0,
+        "jit_tree_calls": 0,
+        "jit_tree_instructions": 0,
+        "jit_tree_bytes": 0,
+        "jit_tree_operations": 0,
+        "jit_tree_compiled_functions": 0,
+        "jit_tree_declined_functions": 0,
+        "jit_tree_compile_ns": 0,
+        "jit_call_stubs": 0,
+        "jit_stub_calls": 0,
+        "jit_register_functions": 289,
+        "jit_register_pairs": 487,
+        "jit_liveness_declines": 3,
+        "entropy_calls": 2,
+        "entropy_bytes": 32
+      },
+      "distribution": {
+        "native_operations": 12707872330,
+        "interpreted_operations": 2436875,
+        "native_operations_by_variant": {
+          "Local": 4203325447,
+          "Imm": 2271353958,
+          "Binary": 1451100181,
+          "Load": 1410036602,
+          "Copy": 945267845,
+          "Store": 931393209,
+          "Cast": 588884450,
+          "Switch": 386313026,
+          "Return": 110385595,
+          "Call": 109540226,
+          "Jump": 91078860,
+          "FillBytes": 73248592,
+          "Assert": 48030593,
+          "Select": 36979132,
+          "Unary": 30599935,
+          "CopyDynamic": 11913117,
+          "CompareBytes": 8421562,
+          "Trap": 0,
+          "CallIndirect": 0,
+          "Deallocate": 0,
+          "Reallocate": 0,
+          "Allocate": 0,
+          "RegisterTlsDestructor": 0,
+          "CpuFeatureQuery": 0,
+          "CAllocate": 0,
+          "CAlignedAllocate": 0,
+          "RandomBytes": 0,
+          "CDeallocate": 0,
+          "ResetThreadLocals": 0
+        },
+        "native_block_entries_by_length": {
+          "65..1024": 20470015,
+          "33..64": 118119282,
+          "2..4": 92507734,
+          "9..16": 145214394,
+          "1": 259385973,
+          "17..32": 110404756,
+          "5..8": 167166738
+        },
+        "native_region_entries_excluding_single_call_return": 693343071,
+        "mean_native_region_operations": 18.011208348831975,
+        "top_native_functions": [
+          {
+            "function": 130,
+            "name_prefix": "token_phrase::enforce_upper_bounds[]",
+            "name_truncated": false,
+            "native_operations": 1763366551,
+            "interpreted_operations": 1,
+            "native_block_entries": 47924871,
+            "frame_size": 3104,
+            "registers": 774
+          },
+          {
+            "function": 21,
+            "name_prefix": "std::ptr::copy_nonoverlapping::precondition_check[]",
+            "name_truncated": false,
+            "native_operations": 1763032831,
+            "interpreted_operations": 1,
+            "native_block_entries": 166773375,
+            "frame_size": 304,
+            "registers": 212
+          },
+          {
+            "function": 133,
+            "name_prefix": "token_phrase::TokenPhrasePlan::scan_block_masks[]",
+            "name_truncated": false,
+            "native_operations": 822172030,
+            "interpreted_operations": 2,
+            "native_block_entries": 34079614,
+            "frame_size": 1840,
+            "registers": 1517
+          },
+          {
+            "function": 234,
+            "name_prefix": "token_phrase::verify[usize, usize]",
+            "name_truncated": false,
+            "native_operations": 734101544,
+            "interpreted_operations": 0,
+            "native_block_entries": 29561136,
+            "frame_size": 560,
+            "registers": 198
+          },
+          {
+            "function": 471,
+            "name_prefix": "core::slice::sort::stable::quicksort::stable_partition[std::vec::Vec<u8, std::alloc::Global>, FnDef(DefId(2:30283 ~ core[affe]::cmp::PartialOrd::lt), Binder { value: [std::vec::Vec<u8, std::alloc::Global>, std::vec::Vec<u8, std::alloc::Glob",
+            "name_truncated": true,
+            "native_operations": 708743363,
+            "interpreted_operations": 1,
+            "native_block_entries": 63862431,
+            "frame_size": 688,
+            "registers": 616
+          },
+          {
+            "function": 656,
+            "name_prefix": "core::slice::sort::stable::quicksort::PartitionState::<T>::partition_one[std::vec::Vec<u8, std::alloc::Global>]",
+            "name_truncated": false,
+            "native_operations": 695634192,
+            "interpreted_operations": 0,
+            "native_block_entries": 56107728,
+            "frame_size": 120,
+            "registers": 130
+          },
+          {
+            "function": 74,
+            "name_prefix": "core::ub_checks::maybe_is_nonoverlapping::runtime[]",
+            "name_truncated": false,
+            "native_operations": 683485251,
+            "interpreted_operations": 0,
+            "native_block_entries": 59561920,
+            "frame_size": 105,
+            "registers": 81
+          },
+          {
+            "function": 1940,
+            "name_prefix": "<A as core::slice::cmp::SliceOrd>::compare[u8]",
+            "name_truncated": false,
+            "native_operations": 631908072,
+            "interpreted_operations": 0,
+            "native_block_entries": 39513046,
+            "frame_size": 105,
+            "registers": 91
+          },
+          {
+            "function": 227,
+            "name_prefix": "token_phrase::TokenPhrasePlan::consume_classified_block[]",
+            "name_truncated": false,
+            "native_operations": 591739902,
+            "interpreted_operations": 2,
+            "native_block_entries": 30180478,
+            "frame_size": 724,
+            "registers": 695
+          },
+          {
+            "function": 949,
+            "name_prefix": "<std::vec::Vec<T, A1> as std::cmp::PartialOrd<std::vec::Vec<T, A2>>>::partial_cmp[u8, std::alloc::Global, std::alloc::Global]",
+            "name_truncated": false,
+            "native_operations": 544982147,
+            "interpreted_operations": 1,
+            "native_block_entries": 23694875,
+            "frame_size": 96,
+            "registers": 63
+          },
+          {
+            "function": 129,
+            "name_prefix": "token_phrase::TokenPhrasePlan::derive_short_input_upper_bounds[]",
+            "name_truncated": false,
+            "native_operations": 304585396,
+            "interpreted_operations": 0,
+            "native_block_entries": 9281412,
+            "frame_size": 1624,
+            "registers": 872
+          },
+          {
+            "function": 655,
+            "name_prefix": "std::cmp::PartialOrd::lt[std::vec::Vec<u8, std::alloc::Global>, std::vec::Vec<u8, std::alloc::Global>]",
+            "name_truncated": false,
+            "native_operations": 244847051,
+            "interpreted_operations": 1,
+            "native_block_entries": 39491459,
+            "frame_size": 49,
+            "registers": 36
+          }
+        ],
+        "limitation": "Instrumented logical bytecode counters; block lengths do not predict machine cost. Operation labels group counts only; no operands or CFG edges inferred from Debug strings."
+      },
+      "profile_sha256": "93e8ee532f1ad5a7e2bf98f90b4e5784628672d5f1c40ff04f94216878b6cd60",
+      "baseline_profile_sha256": "672240232433d58f5ff4ef85f39f07a2131cacbb8208594654718ea4f98c07fe",
+      "tape_sha256": "c381c3e7227b1d97424bcc77a0245ef478c3f2ba6fbc66b528f27d5e73b1abfb"
+    },
+    {
+      "index": 2,
+      "case": "folded",
+      "name": "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows",
+      "baseline_instructions": 4109988334,
+      "candidate_instructions": 4117153382,
+      "logical_reduction": -0.001743325629595338,
+      "baseline_functions": 1048,
+      "candidate_functions": 1048,
+      "ambiguous_or_unmatched_baseline_functions": 2,
+      "ambiguous_or_unmatched_candidate_functions": 2,
+      "common_functions": 1046,
+      "changed_common_function_bodies": 467,
+      "changed_baseline_hot_functions": [
+        {
+          "name_prefix": "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows[]",
+          "function": 1,
+          "native_operations": 536614995
+        },
+        {
+          "name_prefix": "folded_literal_trie::scan_folded_start[Closure(DefId(0:11968 ~ fre_kernels[f022]::folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows#1::{closure#0}), [i16, Binder { value: exte",
+          "function": 124,
+          "native_operations": 454863369
+        },
+        {
+          "name_prefix": "folded_literal_trie::RootPrefilter::scan[Closure(DefId(0:11969 ~ fre_kernels[f022]::folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows#1::{closure#1}), [i16, Binder { value: ex",
+          "function": 128,
+          "native_operations": 436930855
+        },
+        {
+          "name_prefix": "folded_literal_trie::transition_with_actual[]",
+          "function": 262,
+          "native_operations": 164488645
+        },
+        {
+          "name_prefix": "folded_literal_trie::decode_scalar[]",
+          "function": 261,
+          "native_operations": 138601580
+        },
+        {
+          "name_prefix": "folded_literal_trie::IncumbentHitState::<'_, '_, '_, S>::on_hit['{erased}, '{erased}, '{erased}, Closure(DefId(0:11969 ~ fre_kernels[f022]::folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strin",
+          "function": 411,
+          "native_operations": 82563423
+        }
+      ],
+      "statistics": {
+        "instructions": 4117153382,
+        "peak_guest_memory": 69619,
+        "jit_bytes": 2012028,
+        "jit_operations": 56550,
+        "jit_compile_ns": 13936586,
+        "jit_instructions": 4117078072,
+        "jit_entries": 75310,
+        "jit_compiled_functions": 132,
+        "jit_declined_functions": 0,
+        "jit_resumable_calls": 25769303,
+        "jit_resumable_returns": 25769464,
+        "jit_tree_entries": 0,
+        "jit_tree_calls": 0,
+        "jit_tree_instructions": 0,
+        "jit_tree_bytes": 0,
+        "jit_tree_operations": 0,
+        "jit_tree_compiled_functions": 0,
+        "jit_tree_declined_functions": 0,
+        "jit_tree_compile_ns": 0,
+        "jit_call_stubs": 0,
+        "jit_stub_calls": 0,
+        "jit_register_functions": 29,
+        "jit_register_pairs": 53,
+        "jit_liveness_declines": 0,
+        "entropy_calls": 1,
+        "entropy_bytes": 16
+      },
+      "distribution": {
+        "native_operations": 4117078072,
+        "interpreted_operations": 75310,
+        "native_operations_by_variant": {
+          "Local": 1384038672,
+          "Imm": 744122280,
+          "Binary": 574578328,
+          "Copy": 386332414,
+          "Store": 369550080,
+          "Load": 367925800,
+          "Switch": 92412321,
+          "Cast": 78946706,
+          "Jump": 31219744,
+          "Return": 25769464,
+          "Call": 25769303,
+          "Select": 17913069,
+          "FillBytes": 13540874,
+          "Assert": 4883932,
+          "Unary": 75085,
+          "Trap": 0,
+          "CallIndirect": 0,
+          "CopyDynamic": 0,
+          "CompareBytes": 0,
+          "Reallocate": 0,
+          "Deallocate": 0,
+          "Allocate": 0,
+          "RegisterTlsDestructor": 0,
+          "CpuFeatureQuery": 0,
+          "CAllocate": 0,
+          "CAlignedAllocate": 0,
+          "CDeallocate": 0,
+          "ResetThreadLocals": 0
+        },
+        "native_block_entries_by_length": {
+          "65..1024": 12570237,
+          "33..64": 30261599,
+          "5..8": 18200370,
+          "17..32": 30971981,
+          "1": 56752278,
+          "9..16": 53387086,
+          "2..4": 8192731
+        },
+        "native_region_entries_excluding_single_call_return": 158797515,
+        "mean_native_region_operations": 25.60203353937875,
+        "top_native_functions": [
+          {
+            "function": 32,
+            "name_prefix": "folded_literal_trie::FoldedLiteralTriePlan::scan_upper_bounds[]",
+            "name_truncated": false,
+            "native_operations": 813995644,
+            "interpreted_operations": 0,
+            "native_block_entries": 21142744,
+            "frame_size": 1441,
+            "registers": 1037
+          },
+          {
+            "function": 1,
+            "name_prefix": "folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows[]",
+            "name_truncated": false,
+            "native_operations": 534060812,
+            "interpreted_operations": 12,
+            "native_block_entries": 38020166,
+            "frame_size": 4017,
+            "registers": 2199
+          },
+          {
+            "function": 124,
+            "name_prefix": "folded_literal_trie::scan_folded_start[Closure(DefId(0:11968 ~ fre_kernels[f022]::folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows#1::{closure#0}), [i16, Binder { value: exte",
+            "name_truncated": true,
+            "native_operations": 452450001,
+            "interpreted_operations": 3,
+            "native_block_entries": 27397623,
+            "frame_size": 2384,
+            "registers": 911
+          },
+          {
+            "function": 128,
+            "name_prefix": "folded_literal_trie::RootPrefilter::scan[Closure(DefId(0:11969 ~ fre_kernels[f022]::folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows#1::{closure#1}), [i16, Binder { value: ex",
+            "name_truncated": true,
+            "native_operations": 447989161,
+            "interpreted_operations": 3,
+            "native_block_entries": 21577063,
+            "frame_size": 6800,
+            "registers": 3884
+          },
+          {
+            "function": 38,
+            "name_prefix": "folded_literal_trie::execute_folded_scan_impl[Closure(DefId(0:11968 ~ fre_kernels[f022]::folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows#1::{closure#0}), [i16, Binder { valu",
+            "name_truncated": true,
+            "native_operations": 417114557,
+            "interpreted_operations": 1,
+            "native_block_entries": 15680804,
+            "frame_size": 2344,
+            "registers": 775
+          },
+          {
+            "function": 123,
+            "name_prefix": "folded_literal_trie::checked_actual_add[]",
+            "name_truncated": false,
+            "native_operations": 365299908,
+            "interpreted_operations": 0,
+            "native_block_entries": 17675802,
+            "frame_size": 489,
+            "registers": 75
+          },
+          {
+            "function": 39,
+            "name_prefix": "folded_literal_trie::execute_folded_scan_impl[Closure(DefId(0:11969 ~ fre_kernels[f022]::folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strings_and_windows#1::{closure#1}), [i16, Binder { valu",
+            "name_truncated": true,
+            "native_operations": 307324477,
+            "interpreted_operations": 2,
+            "native_block_entries": 8306065,
+            "frame_size": 2344,
+            "registers": 775
+          },
+          {
+            "function": 262,
+            "name_prefix": "folded_literal_trie::transition_with_actual[]",
+            "name_truncated": false,
+            "native_operations": 164488645,
+            "interpreted_operations": 0,
+            "native_block_entries": 6063950,
+            "frame_size": 1216,
+            "registers": 271
+          },
+          {
+            "function": 403,
+            "name_prefix": "memchr::arch::generic::memchr::Two::<V>::new[std::arch::aarch64::uint8x16_t]",
+            "name_truncated": false,
+            "native_operations": 146783286,
+            "interpreted_operations": 0,
+            "native_block_entries": 2127294,
+            "frame_size": 113,
+            "registers": 69
+          },
+          {
+            "function": 261,
+            "name_prefix": "folded_literal_trie::decode_scalar[]",
+            "name_truncated": false,
+            "native_operations": 138601580,
+            "interpreted_operations": 0,
+            "native_block_entries": 7651170,
+            "frame_size": 616,
+            "registers": 863
+          },
+          {
+            "function": 411,
+            "name_prefix": "folded_literal_trie::IncumbentHitState::<'_, '_, '_, S>::on_hit['{erased}, '{erased}, '{erased}, Closure(DefId(0:11969 ~ fre_kernels[f022]::folded_literal_trie::tests::common_offset_prefilter_matches_scalar_reference_on_all_short_byte_strin",
+            "name_truncated": true,
+            "native_operations": 82563423,
+            "interpreted_operations": 1,
+            "native_block_entries": 3403343,
+            "frame_size": 1522,
+            "registers": 751
+          },
+          {
+            "function": 247,
+            "name_prefix": "std::ptr::const_ptr::<impl *const T>::offset::precondition_check[]",
+            "name_truncated": false,
+            "native_operations": 54613173,
+            "interpreted_operations": 0,
+            "native_block_entries": 2776941,
+            "frame_size": 176,
+            "registers": 141
+          }
+        ],
+        "limitation": "Instrumented logical bytecode counters; block lengths do not predict machine cost. Operation labels group counts only; no operands or CFG edges inferred from Debug strings."
+      },
+      "profile_sha256": "42bf6f9525f1f8d467a6504dbdb3214f876371326f37951a8d9222fdef2a4dac",
+      "baseline_profile_sha256": "6a7a51af8609a67a283ece9228f8eaa4005ae31be86b5b4d8c7f32cd1e503b8c",
+      "tape_sha256": "2a228061b58e575c8c68331990d1d9f9c4ac32cfe413b8858b36a63aecbfe41e"
+    }
+  ],
+  "source_unchanged": true,
+  "retained_native_outcomes_match": true,
+  "entropy_replay_complete": true,
+  "vm_bytes_identical": true,
+  "performance_measurement": false,
+  "raw": ".work/private-pointer-promotion-coverage-02",
+  "plan_sha256": "ed77782c795b7d8dee465db329b8affe6aae25ab5b522cf3328b37cc963c9811",
+  "records_sha256": "3dbc41c94aafc666b4f90bf6b1bc9871285cacbba8f15983601621dab8a9c91a"
+}
