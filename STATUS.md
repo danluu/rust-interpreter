@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** The corrected folder passes368Rust tests/profile and18standalone native/custom commands. Its saved programs exactly match the34tested real artifacts, but token runtime saves only~0.17s versus~0.30s of folding; standalone full-workflow performance remains unmeasured. Keep global folding off main. Next: bounded direct-call specialization using shared constant arguments and folding only cloned callees, followed by real edit gates if promising. Lifetime allocation stays parked.
+**Next:** Shared-call specialization passes 34 saved real tests and 377 host tests/profile, but initial runtime gains are only 0.69% token and 2.38% folded. Keep the compiler off main. A reproduced ordering limitation rejects clones because unreachable branches are checked before CFG cleanup; qualify that fix, then replay changed artifacts before considering real edit gates. Global folding and lifetime allocation remain parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

@@ -85,6 +85,9 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | constant-null | [constant-null-analyses-01/summary.json](constant-null-analyses-01/summary.json) |
 | workspace-cache | [workspace-cache-controls-02/summary.json](workspace-cache-controls-02/summary.json) |
 | constant-null-build | [constant-fold-build-10/summary.json](constant-fold-build-10/summary.json) |
+| constant-specialize-build | [constant-specialize-build-03/summary.json](constant-specialize-build-03/summary.json) |
+| constant-specialize-saved | [constant-specialize-saved-02/summary.json](constant-specialize-saved-02/summary.json) |
+| constant-specialize-replay | [constant-specialize-replay-01/summary.json](constant-specialize-replay-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
