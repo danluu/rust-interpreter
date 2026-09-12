@@ -4,19 +4,16 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Use the whole-command bottleneck to choose the next strategy.** Persistent
-   function reuse passes correctness but improves the first paired token screen
-   by 5.30% wall/4.32% CPU, missing its 8% wall gate. Keep it disabled by default
-   and do not retime it or run conditional promotion holdouts. The remaining
-   3.1 s guest execution dominates the roughly 4.7 s custom command. This
-   isolated exporter screen retained the historical VM; the current
-   merged custom JIT is effectively tied with that VM (0.18% difference).
-   Fresh profiles put 88.64% of samples in generated code. Next evaluate
-   bounded cross-region value/address rematerialization with explicit
-   interpreter-continuation state. Inlining/CFG savings alone are too
-   small to close the native gap. Preserve strict checks and compare with the
-   best retained full-workflow/native controls.
-   [Screen decision](results/export-reuse-screen-token-01/assessment.md).
+1. **Build a usable isolated test runner.** The current-source JIT is tied with
+   the historical VM on token. Cross-region constant/address rematerialization
+   passes 315 tests per profile but regresses its six-pair runtime screen by
+   0.78%; it is parked without retiming or promotion runs. Next implement
+   prepared custom JIT code reusable across distinct test entries, with fresh
+   guest memory, registers, frames and TLS for every execution. Qualify errors,
+   limits and state isolation, then use real source-edit/multi-test commands.
+   No performance gain or full libtest compatibility is established.
+   [Rematerialization decision](results/jit-remat-screen-01/assessment.md).
+   Persistent exporter reuse also remains disabled after its failed 8% screen.
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%
    wall gate. All correctness controls pass, but the runtime stays off main.
