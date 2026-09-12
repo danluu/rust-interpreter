@@ -100,58 +100,13 @@ target. Folded wall improves 1.39%, inside its 1.62% envelope. The candidate is
 parked with no threshold changes or tuning retries. It is not integrated.
 All supervisor/controller/workflow processes are terminal.
 
-The [whole-call census](results/whole-call-census-05/assessment.md) now completes.
-Twenty-one tests include an independent 38,416-graph initialization oracle;
-both original profiles reconcile. Bounded placement selects sites responsible
-for 11,839,956 folded and 50,007,778 token calls in the old profiles. Those are
-opportunities, not measured removals or speedups. The earlier placement exposed
-newly required clearing, so the candidate shares a bounded CFG proof between
-runtime and compiler. Bound exhaustion retains initialization.
-
-The [isolated whole-call candidate](benchmarks/experiments/whole-call-inline/PLAN.md)
-is tool `46b8332d`, VM `8d016bfc`, exporter `668e7934`; the wrapper is unchanged.
-It permits CompareBytes and at most one direct Call under existing body/growth
-limits, excluding recursive/unknown call closures. Its [workspace qualification](results/whole-call-build-02/assessment.md)
-passes 300 debug and release tests, one ignored. Eleven focused tests cover the
-proof, bounds, call graph, aliases, nested calls, cold faults, profiles and budgets.
-[Original-artifact smoke](results/whole-call-runtime-smoke-01/assessment.md) passes
-20 commands with exact deterministic accounting and original entropy retained.
-
-The first build's two unit-test expectation failures remain. Two old heuristic
-rejections now check observable cross-block execution; original cold/alias/budget
-assertions remain. A new test handles the established generic native memory
-message while preserving the exact fault budget. Runtime diagnostics are unchanged.
-
-The first fresh-export attempt stopped before compilation because the experiment
-builder copied old capability metadata. [Exact capability publication](results/whole-call-capabilities-01/assessment.md)
-probes the new exporter, verifies all four launcher option guards, and retains
-all binary/source/ready hashes. The historical builder remains frozen; follow
-[its publication procedure](benchmarks/experiments/whole-call-inline/PUBLICATION.md).
-
-The [fresh-export smoke](results/whole-call-export-smoke-02/assessment.md) passes
-both original cases with no JIT declines. Folded executes 14.08 million native
-Calls, compared with 25.91 million on its original artifact. Expanded code also
-adds logical instructions and native bytes; these counts do not establish a
-complete-command gain. Token retains its original random inputs.
-
-The [strict differential qualification](results/whole-call-fixtures-01/assessment.md)
-passes 1,050 commands: 1,024 VM executions match fresh native outputs, and two
-uncalled type/borrow errors are rejected. Root Rust and the normal launcher remain
-integrated compiler `9637b0ac`; whole-call tool `46b8332d` is isolated.
-
-Generation 01's first A/A attempt stopped at disk admission, before any benchmark
-child or source edit. Its failed receipt remains. [Generation 02](benchmarks/experiments/whole-call-inline/WORKFLOWS.md)
-retains the same tools, real edits, controls and space/performance gates. The
-control driver needs its generation-02 qualification before any timed command.
-Fixed gate: token wall <=0.90, CPU <1 and gain outside fresh A/A variation;
-folded wall/CPU <=1.05. Native/TLS/fre and seven held-outs precede adoption.
-
-Completed host-build caches are being preserved to fund those timings. The new
-narrow [published-build selector](benchmarks/experiments/published-build-cache/README.md)
-qualifies three exact successful builds and rejects 33 invalid identities or
-metadata. It preserves source, binaries and receipts; frozen guest-cache selectors
-are unchanged. Exact inventory review and commit precede each retirement. The
-small completed pgrust archive batch is verified. No benchmark pairs have run.
+Next: inspect and measure missed whole-call elimination in the existing typed
+artifacts and profiles. A hot slice-comparison wrapper only forwards its arguments
+and copies a one-byte temporary result, but the current forwarding pass requires
+a direct result destination. Another hot comparison leaf contains CompareBytes,
+which the current inliner does not accept. Measure these opportunities and code
+growth before selecting an isolated compiler experiment. Keep current limits,
+original assertions and native controls; profile counts are not speedup forecasts.
 
 The unbounded goal remains active. Continue implementation and real edited-command
 comparisons after this diagnostic. Integration and the failed budget experiment

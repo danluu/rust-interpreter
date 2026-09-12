@@ -128,7 +128,14 @@ review are not commitments or evidence of feasibility.
   now parks this candidate: token wall improves 1.27%, below 10% and inside
   2.04% identical-tool variation. Folded improves 1.39%, also inside its 1.62%
   envelope. All four complete histories remain; no tuning retries or integration.
-  Next: measure missed whole-call forwarding and leaf-inlining opportunities.
+  The subsequent [whole-call census](../results/whole-call-census-05/assessment.md)
+  uses bounded placement and an independent 38,416-graph initialization oracle.
+  It motivated a shared runtime/compiler proof and bounded nonrecursive call
+  expansion. The [isolated candidate](../benchmarks/experiments/whole-call-inline/PLAN.md)
+  passes 300 debug/release tests, 1,024 differential executions, strict uncalled
+  type/borrow rejections and both original fresh exports. Its first timing run
+  stopped at disk admission before any benchmark child; no gain is claimed.
+  Fixed fresh A/A and real edited-command comparisons are next.
 
 - The qualified aggregate compiler is now integrated as `5b2330c` / `9637b0ac`.
   [Normal root builds](../results/aggregate-integration-root-01/assessment.md)

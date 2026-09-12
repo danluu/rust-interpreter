@@ -39,8 +39,15 @@ The guarded Call-argument experiment is also parked: token wall improved
 It passed 297 debug/release tests and original-artifact smoke checks.
 [Fixed decision](results/call-slot-primary-01/assessment.md).
 
-Next: measure missed whole-call forwarding and leaf-inlining opportunities
-in existing typed artifacts and profiles. Full libtest, unwinding, threads and general OS/FFI
+The isolated whole-call candidate now passes 300 debug/release tests,
+1,024 differential executions, strict uncalled type/borrow rejections and
+both original real export smokes. It expands bounded nonrecursive calls
+using a shared definite-initialization proof. No timing pairs have run;
+the first attempt stopped at disk admission before any benchmark child.
+[Candidate plan](benchmarks/experiments/whole-call-inline/PLAN.md).
+
+Next: fixed fresh A/A and real edited-command comparisons after preserving
+completed build caches. Full libtest, unwinding, threads and general OS/FFI
 remain open; runtime options remain explicit.
 
 The following sections preserve the preceding runtime comparisons.
