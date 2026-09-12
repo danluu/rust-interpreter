@@ -10,6 +10,7 @@ import time
 
 from build import ROOT, environment, installed_tools, read, require, sha, write
 from build_budget_register import CONTROL
+from diagnose_budget_smoke import account
 
 
 def counters(text):
@@ -49,7 +50,12 @@ def main():
                     'candidate binary changed')
             for name in ['rust-interp-mir-export', 'rust-interp-rustc-wrapper']:
                 require(sha(tools['baseline']/name) == sha(tools['candidate']/name), 'frontend differs')
-            paths = [Path(__file__), build_path, ROOT/build['provenance']]
+            randomness_path = ROOT/'results/budget-register-randomness-01/summary.json'
+            randomness = read(randomness_path)
+            require(randomness['status'] == 'passed' and randomness['same_control_counts_differ'] and
+                    all(e['random_events'] > 0 for e in randomness['executions']), 'random-workload control missing')
+            paths = [Path(__file__), build_path, ROOT/build['provenance'], randomness_path,
+                     Path(__file__).with_name('diagnose_budget_smoke.py')]
             paths += [directory/name for directory in tools.values() for name in build['binaries']]
             frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
             frozen.update(proof['root_frozen'])
@@ -115,21 +121,38 @@ def main():
                             if k not in ['jit_bytes', 'jit_compile_ns', 'jit_tree_compile_ns']}
                         if profiled:
                             profiles[mode] = read(profile_path)
-                require(all(v == observed['baseline', False] for v in observed.values()), 'observable counters differ')
-                require(profiles['baseline'] == profiles['candidate'], 'exact per-PC profiles differ')
+                accounting = {mode:account(profile) for mode,profile in profiles.items()}
+                require(all(a['instructions'] == observed[mode, True]['instructions'] for mode,a in accounting.items()),
+                        'per-profile logical instruction accounting differs')
+                random = label == 'token-phrase'
+                require(all((a['random_events'] > 0) == random for a in accounting.values()), 'unexpected randomness behavior')
+                if not random:
+                    require(all(v == observed['baseline', False] for v in observed.values()), 'deterministic counters differ')
+                    require(profiles['baseline'] == profiles['candidate'], 'deterministic per-PC profiles differ')
+                else:
+                    # Each original token run gets fresh CommonCrypto entropy.
+                    # Keep it: compare fixed program metadata and account for
+                    # each run's actual path, rather than equating random paths.
+                    left, right = profiles['baseline']['functions'], profiles['candidate']['functions']
+                    require(len(left) == len(right) and all(all(a[k] == b[k] for k in
+                        ['name','frame_size','registers','operations']) for a,b in zip(left,right)),
+                        'fixed profile program metadata differs')
                 total = observed['baseline', False]['instructions']
-                for budget in [0, 1, total-1]:
+                short_budgets = [0,1,32] if random else [0,1,total-1]
+                for budget in short_budgets:
                     failures = [run(label, mode, budget)[:3] for mode in tools]
                     require(all(code != 0 and not out.strip() and err.strip() == 'rust-interp-vm: interpreter instruction limit exceeded'
                                 for code,out,err in failures), 'short budget did not produce the exact limit fault')
                 cases.append(dict(label=label, artifact=str(artifacts[label].relative_to(ROOT)),
-                    artifact_sha256=sha(artifacts[label]), counters=observed['baseline', False],
-                    profiles_identical=True, original_assertions_pass=True, short_budgets=[0,1,total-1]))
+                    artifact_sha256=sha(artifacts[label]),
+                    counters={mode+('-profiled' if profiled else '-plain'):v for (mode,profiled),v in observed.items()},
+                    profiles_identical=profiles['baseline'] == profiles['candidate'], accounting=accounting,
+                    independent_randomness=random, original_assertions_pass=True, short_budgets=short_budgets))
                 print(label, 'PASS', flush=True)
             verify()
             result = dict(status='passed', tool_key=build['tool_key'], control_tool_key=CONTROL,
                 cases=cases, commands=commands, frozen=frozen, performance_measurement=False,
-                note='Exact original artifacts, unchanged assertions, matched counters/profiles and short budgets. No compilation timing or performance claim.')
+                note='Exact original artifacts and unchanged assertions/randomness. Deterministic folded counters/profiles match; each random token profile reconciles its own exact instruction total. Fixed short budgets fail identically. No compilation timing or performance claim.')
             out = ROOT/'results'/args.run_id
             out.mkdir(exist_ok=False)
             write(out/'summary.json', result)
