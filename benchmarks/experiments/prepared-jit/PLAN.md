@@ -34,6 +34,11 @@ or repeated-identical-entry microbenchmark serves as developer-latency evidence.
 The existing historical three-test batch has weaker failure/state isolation and
 is not an interchangeable control for a full test harness.
 
+Fresh statics model independent executions. Ordinary libtest may share process
+globals across tests; this API does not by itself reproduce that behavior.
+Native checks for isolated entries must use the same per-test isolation, with
+ordinary full-suite results reported as a separate control.
+
 This additive API can be retained for correctness and usability after its
 qualifications; it does not enable a new default. Promotion to the Cargo runner
 requires real test coverage and unchanged one-shot behavior. Preserve original

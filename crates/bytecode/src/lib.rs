@@ -11,6 +11,7 @@ mod native_continuation;
 mod jit;
 mod float;
 mod profile;
+mod prepared;
 mod optimize;
 mod control_flow;
 mod inline;
@@ -26,6 +27,7 @@ mod forwarding;
 mod memory_tests;
 pub use float::{FloatBinary, FloatUnary, FloatConversion};
 pub use profile::{ExecutionProfile, FunctionProfile};
+pub use prepared::PreparedJit;
 pub use optimize::{remove_fallthrough_jumps, optimize_calls, CallOptimizationReport};
 pub use control_flow::{optimize_control_flow, ControlFlowReport, FunctionControlFlowReport};
 pub use inline::{transform as inline_leaves, Options as LeafInlineOptions};
@@ -688,12 +690,21 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     program: &Program,
     arguments: &[u128],
     limits: Limits,
-    mut profile: Option<&mut ExecutionProfile>,
+    profile: Option<&mut ExecutionProfile>,
 ) -> Result<Execution, String> {
     validate(program)?;
     if limits.allocations > MAX_ALLOCATION_LIMIT {
         return Err(format!("live allocation limit exceeds supported maximum of {MAX_ALLOCATION_LIMIT}"));
     }
+    let mut jit = create_jit::<PROFILE, USE_JIT, CALL_STUBS, RESUMABLE>(program, &limits)?;
+    let metadata = ExecutionMetadata::new(program, jit.as_ref(), RESUMABLE);
+    execute_prepared_impl::<PROFILE, USE_JIT, NATIVE_CALLS, CALL_STUBS, RESUMABLE>(
+        program, program.entry, arguments, limits, profile, &mut jit, &metadata)
+}
+
+fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STUBS: bool, const RESUMABLE: bool>(
+    program: &'program Program, limits: &Limits,
+) -> Result<Option<jit::Jit<'program>>, String> {
     let started = std::time::Instant::now();
     let mut jit = if USE_JIT {
         Some(if RESUMABLE {
@@ -707,6 +718,36 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         })
     } else { None };
     if let Some(jit) = &mut jit { jit.compile_nanos = started.elapsed().as_nanos(); }
+    Ok(jit)
+}
+
+struct ExecutionMetadata {
+    needs_register_zeroes: Vec<bool>,
+    local_call_arguments: Vec<Vec<bool>>,
+}
+impl ExecutionMetadata {
+    fn new(program: &Program, jit: Option<&jit::Jit<'_>>, resumable: bool) -> Self {
+        Self {
+            needs_register_zeroes: if resumable {
+                jit.unwrap().resumable_register_zeroes().to_vec()
+            } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() },
+            local_call_arguments: calls::local_arguments(program),
+        }
+    }
+}
+
+fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool, const CALL_STUBS: bool, const RESUMABLE: bool>(
+    program: &'program Program,
+    entry_id: usize,
+    arguments: &[u128],
+    limits: Limits,
+    mut profile: Option<&mut ExecutionProfile>,
+    jit: &mut Option<jit::Jit<'program>>,
+    metadata: &ExecutionMetadata,
+) -> Result<Execution, String> {
+    if limits.allocations > MAX_ALLOCATION_LIMIT {
+        return Err(format!("live allocation limit exceeds supported maximum of {MAX_ALLOCATION_LIMIT}"));
+    }
     let mut jit_instructions = 0;
     let mut jit_entries = 0;
     let mut resumable_calls = 0;
@@ -723,7 +764,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     }
     let entry = program
         .functions
-        .get(program.entry)
+        .get(entry_id)
         .ok_or("missing entry function")?;
     if arguments.len() != entry.args.len() {
         return Err("wrong entry argument count".into());
@@ -762,20 +803,18 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     // Host elements always stay initialized. On reuse, functions proven to
     // overwrite every register before reading it need no repeated clearing.
     // Other functions retain the bytecode's initial-zero semantics.
-    let needs_register_zeroes: Vec<_> = if RESUMABLE {
-        jit.as_ref().unwrap().resumable_register_zeroes().to_vec()
-    } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() };
-    let local_call_arguments = calls::local_arguments(program);
+    let needs_register_zeroes = &metadata.needs_register_zeroes;
+    let local_call_arguments = &metadata.local_call_arguments;
     let mut registers = vec![0; entry.registers];
     let mut frames = Frames::from(Frame {
-        function: program.entry,
+        function: entry_id,
         pc: 0,
         base,
         register_base: 0,
         return_address: 0,
         tls_callback: false,
     });
-    prepare_jit::<PROFILE>(&mut jit, program.entry, &mut profile)?;
+    prepare_jit::<PROFILE>(jit, entry_id, &mut profile)?;
     let mut steps = 0;
     let mut tls = tls::Tls::default();
     let value = 'execution: loop {
@@ -805,7 +844,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         }
         let active_frames = frames.len();
         let frame = frames.last_mut().ok_or("missing frame")?;
-        if !RESUMABLE { if let Some(jit) = &mut jit {
+        if !RESUMABLE { if let Some(jit) = jit.as_mut() {
             if let Some(block) = jit.blocks[frame.function].get(frame.pc).copied().flatten() {
                 let count = (block.end - frame.pc) as u64;
                 // Interpret the tail when the budget is smaller than a block,
@@ -878,7 +917,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     tls.completion = Some(tls::Completion::Reset);
                     tls.advance(program, &mut memory, &mut frames, &mut registers,
                         &mut register_bytes, &needs_register_zeroes, &limits)?;
-                    if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                    if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(jit, frame.function, &mut profile)?; }
                     break 'dispatch;
                 }
                 Op::RegisterTlsDestructor { callback, argument } => {
@@ -1185,7 +1224,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                         return_address,
                         tls_callback: false,
                     });
-                    prepare_jit::<PROFILE>(&mut jit, callee_id, &mut profile)?;
+                    prepare_jit::<PROFILE>(jit, callee_id, &mut profile)?;
                     break 'dispatch;
                 }
                 Op::Return => {
@@ -1201,7 +1240,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                         memory.bytes.truncate(frame.base);
                         tls.advance(program, &mut memory, &mut frames, &mut registers,
                             &mut register_bytes, &needs_register_zeroes, &limits)?;
-                        if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                        if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(jit, frame.function, &mut profile)?; }
                         continue 'execution;
                     }
                     let frame = frames.pop().ok_or("missing return frame")?;
@@ -1214,7 +1253,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     if callback {
                         if let Some(value) = tls.advance(program, &mut memory, &mut frames, &mut registers,
                             &mut register_bytes, &needs_register_zeroes, &limits)? { break 'execution value; }
-                        if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                        if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(jit, frame.function, &mut profile)?; }
                     }
                     break 'dispatch;
                 }
