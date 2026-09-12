@@ -93,6 +93,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | selected-native-block | [selected-native-block-sample-01/summary.json](selected-native-block-sample-01/summary.json) |
 | selected-native-exhaustive | [selected-native-exhaustive-sample-01/summary.json](selected-native-exhaustive-sample-01/summary.json) |
 | address-checks | [native-address-checks-screen-01/summary.json](native-address-checks-screen-01/summary.json) |
+| generated-cfg | [generated-cfg-campaign-01/summary.json](generated-cfg-campaign-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

@@ -8,11 +8,19 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+Seeded valid-program differential coverage passes all362workspace tests in both
+profiles plus768additional seeds/profile. Programs cover loops, diamonds,
+calls, widths, heap/linear aliases, budgets, code declines and exact PC counts.
+The final VM build stopped on storage after both test profiles passed; runtime
+sources are unchanged, so this tests-only feature needs no new VM publication.
+Next test parallel isolated workers, each owning its JIT on its creating thread.
+[Coverage](results/generated-cfg-campaign-01/assessment.md).
+
 Split heap/linear native address checks are parked. All363host tests/profile
 and42saved-suite commands pass, but token regresses2.51% wall/2.50% CPU across
 six pairs and two recorded entropy streams. No real-edit promotion follows.
-The emitter remains off main. Next add seeded valid-program differential
-coverage requested in the review before more structural runtime changes.
+The emitter remains off main. The seeded differential follow-up is complete
+above; the next workflow direction is independent test concurrency.
 [Decision](results/native-address-checks-screen-01/assessment.md).
 
 Exact saved-test selection now works independently of instruction profiling.

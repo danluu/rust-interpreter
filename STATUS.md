@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Uninstrumented selection is qualified on main. Split-arena address checks pass363tests/profile and42real-suite commands but regress token2.51%; the candidate is parked without retiming. Next add seeded valid-program differential coverage for loops, calls, aliases and budgets before more structural runtime work.
+**Next:** Seeded differential coverage passes362tests/profile plus768additional seeds/profile. Next test concurrent isolated suites with one JIT owner per worker thread, fresh guest state per test and deterministic reports. Measure real source-edit commands before changing defaults. Split-arena and shared-call candidates remain parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

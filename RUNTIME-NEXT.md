@@ -4,15 +4,17 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Strengthen differential coverage before more emitter work.** Exact
-   uninstrumented test selection passes360tests/profile and seven real controls.
-   Six native sample windows led to the split-arena experiment, which passes
-   correctness but regresses token2.51% across six runtime pairs. Keep it parked.
-   Implement the review's deterministic valid-program generator spanning loops,
-   calls, width truncation, aliases and budgets, with reproducible failures.
+1. **Test concurrent isolated suites.** Seeded differential coverage now passes
+   362tests/profile plus768additional seeds/profile, with loops, calls, aliases,
+   widths, budgets and exact PC counts. Native controls run tests concurrently;
+   the prepared custom runner is serial. Investigate independent workers that
+   create and retain their own JITs on their creating threads. Preserve fresh
+   guest memory/statics/TLS per test and deterministic report ordering. Measure
+   complete source-edit commands before making concurrency a default.
    Shared-call specialization, pointer promotion, register-cache and packing
    candidates also remain parked without retiming.
    [Native samples](results/selected-native-block-sample-01/assessment.md),
+   [generated coverage](results/generated-cfg-campaign-01/assessment.md),
    [address-check decision](results/native-address-checks-screen-01/assessment.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation

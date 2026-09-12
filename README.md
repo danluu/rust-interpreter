@@ -75,6 +75,12 @@ execute one saved test without instruction profiling. It uses the same catalog
 validation and fresh guest state. This also permits `--jit-code-dump DIRECTORY`
 to capture the uninstrumented code for a selected test.
 
+Engine differential tests include reproducible generated control-flow programs.
+For a larger campaign, set `RUST_INTERP_DIFF_SEED` and `RUST_INTERP_DIFF_CASES`
+(at most4096) when running `cargo test -p rust-interp-bytecode --test generated_cfg
+-- --nocapture`. Mismatches save a bytecode reproducer and settings under
+`.work/generated-cfg-failures`, or the explicit `RUST_INTERP_DIFF_OUTPUT` directory.
+
 `--trap-unsupported-calls` permits export past specific unavailable calls; reaching
 one still stops execution. `--run-try-callbacks` supports normal returns only,
 not panic unwinding. Fre's broad replay requires `--allocation-limit 150000` and
