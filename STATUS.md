@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Persistent reuse misses its 8% complete-command gate(5.30% wall, 4.32% CPU); keep it disabled and do not retime. Inspect the current merged JIT and its roughly 3.1 s guest-execution cost before choosing the next strategy; do not infer large gains from the remaining small graph passes.
+**Next:** Current-source JIT is effectively tied with historical VM (0.18% paired runtime change). Generated code dominates fresh samples. Evaluate bounded cross-region constant/address rematerialization with explicit interpreter continuation state; preserve all parked candidates and require a new end-to-end gate.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

@@ -53,6 +53,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | actual-cache-controls | [export-cache-fixture-02/summary.json](export-cache-fixture-02/summary.json) |
 | function-reuse-screen | [export-reuse-screen-token-01/decision.json](export-reuse-screen-token-01/decision.json) |
 | accelerated-function-cache | [export-reuse-execute-token-02/summary.json](export-reuse-execute-token-02/summary.json) |
+| merged-jit | [jit-merged-token-01/summary.json](jit-merged-token-01/summary.json) |
+| merged-jit-profile | [jit-merged-token-sample-01/generated-attribution.json](jit-merged-token-sample-01/generated-attribution.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

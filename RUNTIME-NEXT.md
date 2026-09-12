@@ -9,9 +9,11 @@ Historical plans and failed gates stay in Git and their linked result directorie
    by 5.30% wall/4.32% CPU, missing its 8% wall gate. Keep it disabled by default
    and do not retime it or run conditional promotion holdouts. The remaining
    3.1 s guest execution dominates the roughly 4.7 s custom command. This
-   isolated exporter screen retained the historical VM; establish the current
-   merged custom JIT's contribution and profiles before proposing another
-   representation or graph-cache change. Inlining/CFG savings alone are too
+   isolated exporter screen retained the historical VM; the current
+   merged custom JIT is effectively tied with that VM (0.18% difference).
+   Fresh profiles put 88.64% of samples in generated code. Next evaluate
+   bounded cross-region value/address rematerialization with explicit
+   interpreter-continuation state. Inlining/CFG savings alone are too
    small to close the native gap. Preserve strict checks and compare with the
    best retained full-workflow/native controls.
    [Screen decision](results/export-reuse-screen-token-01/assessment.md).

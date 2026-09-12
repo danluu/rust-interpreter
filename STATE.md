@@ -13,11 +13,13 @@ misses the fixed 8% gate: 5.30% paired edited wall improvement and 4.32% CPU.
 All 21 primary commands, 7 independent checks and 14 bytecode comparisons pass.
 The candidate stays opt-in and disabled by default; its conditional promotion
 holdouts are canceled. Do not retime it. Guest execution remains about 3.1 s
-of the 4.7 s command, versus native's 2.2 s complete command. Inspect the current
-merged JIT composition and execution costs before expanding graph caching.
+of the 4.7 s command, versus native's 2.2 s complete command. The current-source JIT is now measured against the historical VM: effectively
+tied (0.18% median difference across six controlled runtime pairs). Fresh
+samples put 88.64% in generated code. Next investigate cross-region value
+rematerialization with explicit interpreter continuation state.
 [Decision](results/export-reuse-screen-token-01/assessment.md).
 
-The user's current priority is build-time improvement. The in-flight runtime work is finished: integer helper inlining improves Ruff 5.8%, pgrust 3.0% and five additional workloads 2.8–7.5% relative to the scalar-inlining VM, with unchanged semantics and passing regression guards. All 297 debug/release tests and 588 comparison commands pass (one Rust test ignored). [Integer-inlining assessment](results/binary-inline-20260912/assessment.md). Next work measures compiler/export/cache build latency separately from execution; the unbounded optimization goal remains active.
+Earlier runtime qualification: integer helper inlining improves Ruff 5.8%, pgrust 3.0% and five additional workloads 2.8–7.5% relative to the scalar-inlining VM, with unchanged semantics and passing regression guards. All 297 debug/release tests and 588 comparison commands pass (one Rust test ignored). [Integer-inlining assessment](results/binary-inline-20260912/assessment.md). These gains primarily concern interpretation. The new JIT diagnosis is in [its assessment](results/jit-merged-token-01/assessment.md); the unbounded whole-command optimization goal remains active.
 
 Inlining the complete checked scalar-memory path is now qualified: pgrust improves 6.7% and four Fre cases improve 2.1–5.0% relative to the frame-loop VM `f33b40d`. Other public cases stay within regression guards in both engines. All 297 workspace tests pass in debug and release (one ignored); all 588 comparison commands preserve outputs, instructions and peak guest memory. Only three inline attributes change; method bodies and checks remain intact. [Scalar-inlining assessment](results/complete-scalar-inline-20260912/assessment.md). These are saved-bytecode runtime measurements; full edit/build/test latency and unknown holdouts remain unmeasured.
 

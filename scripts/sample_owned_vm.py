@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """Sample fresh, explicitly owned macOS VM executions; never report latency."""
 import argparse
-import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import time
 
 from interpreter import ROOT, installed_tools
+from compare_saved_runtime import acquire_lock, lock_wait_seconds
 
 
 def digest(path):
@@ -39,6 +40,8 @@ def main():
     parser.add_argument('--jit-native-call-stubs', action='store_true')
     parser.add_argument('--jit-resumable-calls', action='store_true')
     parser.add_argument('--dump-code', action='store_true', help='save emitted code from each sampled process after execution')
+    parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=0)
+    parser.add_argument('--minimum-free-bytes', type=int, default=0)
     args = parser.parse_args()
     if args.jit_resumable_calls and (args.jit_native_calls or args.jit_native_call_stubs):
         parser.error('--jit-resumable-calls cannot be combined with native tree/stub calls')
@@ -52,16 +55,19 @@ def main():
         parser.error('use 1..10 repetitions and 1..30 seconds per sample')
     if not 1 <= args.instruction_limit < 2**64 or not 0 <= args.allocation_limit <= 1_000_000:
         parser.error('invalid instruction or allocation limit')
+    if args.minimum_free_bytes < 0:
+        parser.error('minimum free bytes must be nonnegative')
     artifact = args.artifact.resolve()
     if digest(artifact) != args.artifact_sha256:
         parser.error('artifact hash does not match')
     (ROOT / '.work').mkdir(exist_ok=True)
     guard = (ROOT / '.work/benchmark.lock').open('a')
-    fcntl.flock(guard, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    acquire_lock(guard, args.lock_wait_seconds)
     tool, key = installed_tools(args.tool_key)
     vm = tool / 'rust-interp-vm'
     vm_hash = digest(vm)
-    paths = [ROOT / 'Cargo.toml', ROOT / 'Cargo.lock', Path(__file__).resolve(), ROOT / 'scripts/interpreter.py']
+    paths = [ROOT / 'Cargo.toml', ROOT / 'Cargo.lock', Path(__file__).resolve(), ROOT / 'scripts/interpreter.py',
+             ROOT / 'scripts/compare_saved_runtime.py']
     for crate in ['bytecode', 'mir-export']:
         paths += sorted((ROOT / 'crates' / crate).rglob('*.rs'))
         paths.append(ROOT / 'crates' / crate / 'Cargo.toml')
@@ -75,6 +81,7 @@ def main():
         jit_persistent_registers=args.jit_persistent_registers, jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
         jit_resumable_calls=args.jit_resumable_calls,
         dump_code=args.dump_code,
+        minimum_free_bytes=args.minimum_free_bytes,
         performance_measurement=False))
     env = os.environ.copy()
     for name in list(env):
@@ -91,6 +98,8 @@ def main():
     results = []
     for index in range(args.repetitions):
         verify()
+        if shutil.disk_usage(ROOT).free < args.minimum_free_bytes:
+            raise RuntimeError('disk floor; no new sample execution started')
         run = work / str(index); run.mkdir()
         command = [str(vm), '--engine', 'jit', '--instruction-limit', str(args.instruction_limit),
                    '--allocation-limit', str(args.allocation_limit)]

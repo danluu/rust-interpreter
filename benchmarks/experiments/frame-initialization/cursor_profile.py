@@ -22,10 +22,13 @@ FIELDS = dict(enumerate(['remaining', 'profile_hits', 'memory_len', 'peak_linear
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
-    run = parser.parse_args().run_id
+    parser.add_argument('--source', type=Path, default=ROOT / '.work/fixed-frame-clear-combined-build-01/source',
+                        help='source whose cursor files match the frozen sample manifest')
+    args = parser.parse_args()
+    run = args.run_id
     require(Path(run).name == run and run not in ['.', '..'], 'invalid run ID')
     work = ROOT / '.work' / run
-    source = ROOT / '.work/fixed-frame-clear-combined-build-01/source'
+    source = args.source.resolve()
     paths = ['crates/bytecode/src/native_continuation.rs', 'crates/bytecode/src/jit/resumable.rs']
     plan = json.loads((work / 'plan.json').read_text())
     require(all(sha(source / p) == plan['source_files'][p] for p in paths), 'sampled cursor source differs')
@@ -79,7 +82,7 @@ def main():
         fields=[dict(field=f, samples=n, percent=100 * n / report['total_samples']) for f, n in totals.most_common()],
         details=[dict(field=f, operation=o, entry_kind=k, samples=n) for (f, o, k), n in details.most_common()],
         samples=samples, performance_measurement=False,
-        evidence={str(p.relative_to(ROOT)): sha(p) for p in [Path(__file__), report_path, work / 'plan.json',
+        evidence={str(p.resolve().relative_to(ROOT)): sha(p) for p in [Path(__file__), report_path, work / 'plan.json',
             *(source / p for p in paths)]},
         limitation='Partial perturbed windows. A load/store sample is not a standalone cost or a prediction of savings from removing it.')
     output = report_path.with_name('cursor-attribution.json')
