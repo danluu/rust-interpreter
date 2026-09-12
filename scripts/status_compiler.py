@@ -15,10 +15,10 @@ def render():
         'scalar-boundary-build-02', 'scalar-boundary-export-smoke-02', 'scalar-boundary-census-01',
         'scalar-boundary-admission-01', 'scalar-abi-artifact-build-01',
         'scalar-abi-interpreter-build-01', 'scalar-abi-cli-01',
-        'scalar-abi-native-build-03', 'scalar-abi-native-cli-01', 'scalar-value-calls-build-02')]
+        'scalar-abi-native-build-03', 'scalar-abi-native-cli-01', 'scalar-value-calls-build-02', 'scalar-value-compiler-build-02')]
     (integration, primary, held, budget, slots, whole, fixtures, smoke, whole_primary,
         whole_costs, scalar_build, scalar_export, scalar_census, scalar_admission,
-        scalar_artifact, scalar_interpreter, scalar_cli, scalar_native, scalar_native_cli, caller_values) = [json.loads((ROOT / p).read_text()) for p in paths]
+        scalar_artifact, scalar_interpreter, scalar_cli, scalar_native, scalar_native_cli, caller_values, scalar_compiler) = [json.loads((ROOT / p).read_text()) for p in paths]
     key = integration['tool_key']
     if not (all(d['status'] == 'passed' for d in (integration, primary, budget))
             and held['status'] == 'all seven histories verified'
@@ -57,7 +57,10 @@ def render():
             and caller_values['status']=='passed' and not caller_values['runtime_published']
             and caller_values['parent_tool_key']==scalar_native['tool_key']
             and caller_values['tests']['debug']['passed']==caller_values['tests']['release']['passed']==319
-            and caller_values['caller_value_tests']==8):
+            and caller_values['caller_value_tests']==8
+            and scalar_compiler['status']=='passed' and not scalar_compiler['runtime_published']
+            and scalar_compiler['parent_tool_key']==caller_values['tool_key']
+            and scalar_compiler['tests']['debug']['passed']==scalar_compiler['tests']['release']['passed']==334):
         raise RuntimeError('integrated compiler evidence differs from the recorded decision')
     index = json.loads((ROOT / 'benchmarks/tool-builds.json').read_text())
     build = next(b for b in index['builds'] if b['commit'] == integration['source_commit'])
@@ -122,7 +125,9 @@ def render():
         'CLI commands, including actual generated execution in all four JIT modes.',
         'Caller values now pass 319 debug/release tests, including all 80 scalar',
         'width/storage combinations and actual hot native transitions.',
-        'Typed compiler promotion and versioned artifact publication remain next.',
+        'Typed compiler promotion now passes 334 debug/release tests. Real source',
+        'exports and Cargo publication are being qualified before any timing.',
+        '[Compiler qualification](results/scalar-value-compiler-build-02/assessment.md);',
         '[Caller-value qualification](results/scalar-value-calls-build-02/assessment.md);',
         'The experimental runtime is unpublished.',
         '[Native ABI](results/scalar-abi-native-build-03/assessment.md);',

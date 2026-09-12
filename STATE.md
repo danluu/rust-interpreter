@@ -108,7 +108,12 @@ passes 64 commands and requires generated execution in all four JIT modes.
 [Caller value operands](results/scalar-value-calls-build-02/assessment.md) now pass
 319 debug/release tests (one ignored): all 80 width/storage combinations, hot
 native transitions, recursion, mixed calls and TLS. No runtime was published.
-Next is [typed compiler promotion and artifact publication](benchmarks/experiments/scalar-value-compiler/NEXT.md).
+[Typed compiler promotion](results/scalar-value-compiler-build-02/assessment.md)
+now passes 334 debug/release tests, one ignored, using tool `aa56492e`.
+The pass preserves typed identities through validated relocation and proves
+final caller value operands after existing optimization. The first run's
+oversized-input test error remains preserved. Real Rust export and Cargo
+publication qualification are in progress, before any scalar timing.
 The [contract and fresh complete-command gates](benchmarks/experiments/scalar-value-abi/CONTRACT.md)
 remain required. Existing native Calls already cross guest frames without
 returning to the Rust VM. No scalar performance comparison has run yet.
@@ -133,7 +138,8 @@ all eight original workflow verifications and 134 external hashes still pass.
 Observed free space increased 5.47 GB. Clone file identity/change/birth times can
 differ. Actual fixtures verify independent writes and failure before replacement.
 No benchmark overlapped storage work. No private data or unrelated processes were
-changed. All current supervisors, controllers and children are terminal.
+changed. All storage supervisors, controllers and children are terminal.
+Current compiler/frontend process state is recorded in `.work/continuation-state.json`.
 
 The unbounded goal remains active. Next work follows the typed census plan;
 this is a checkpoint, not completion of a general Rust development engine.

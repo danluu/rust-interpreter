@@ -70,7 +70,9 @@ The custom native ABI passes 310 debug/release tests and 64 serialized
 CLI commands, including actual generated execution in all four JIT modes.
 Caller values now pass 319 debug/release tests, including all 80 scalar
 width/storage combinations and actual hot native transitions.
-Typed compiler promotion and versioned artifact publication remain next.
+Typed compiler promotion now passes 334 debug/release tests. Real source
+exports and Cargo publication are being qualified before any timing.
+[Compiler qualification](results/scalar-value-compiler-build-02/assessment.md);
 [Caller-value qualification](results/scalar-value-calls-build-02/assessment.md);
 The experimental runtime is unpublished.
 [Native ABI](results/scalar-abi-native-build-03/assessment.md);
