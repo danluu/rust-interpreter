@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Prototype typed relocation records at exporter pointer creation sites. Exact function-output repetition covers only 178ms of 460ms on token and 44ms of 96ms on folded; inspect compiler dependencies before implementing cross-edit reuse. Fixed frame clearing stays parked.
+**Next:** Measure compiler dependency reuse for typed function templates while continuing to lower and verify every function. Templates repeat 454ms of token work and 90ms of folded work under prior unannotated weights; binding resolution and cache costs remain unmeasured. Fixed frame clearing stays parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

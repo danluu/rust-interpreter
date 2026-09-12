@@ -1,0 +1,3 @@
+Token's typed templates repeat a median **454ms** of the previously observed function work (**99.02%**), versus **178ms** for exact raw outputs. All eight original/wrong/five-edit/restored commands pass their expected assertions and match the corresponding retained artifacts. Every typed binding reconstructs its original function bytes.
+
+Weights come from the earlier unannotated census, with exact indexed name and pre/post-transform hashes required. Current pointer-recording overhead is excluded from this opportunity estimate. No cache, skipped work, end-to-end saving or semantic cache-key proof is claimed. The next prerequisite is compiler dependency tracking and current-session binding resolution.

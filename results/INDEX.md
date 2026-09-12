@@ -40,6 +40,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | fixed-clear-combined-confirmation | [fixed-frame-clear-combined-confirm-01/summary.json](fixed-frame-clear-combined-confirm-01/summary.json) |
 | export-reuse-token | [export-reuse-token-01/summary.json](export-reuse-token-01/summary.json) |
 | export-reuse-folded | [export-reuse-folded-01/summary.json](export-reuse-folded-01/summary.json) |
+| typed-template-token | [export-reuse-token-02/summary.json](export-reuse-token-02/summary.json) |
+| typed-template-folded | [export-reuse-folded-02/summary.json](export-reuse-folded-02/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

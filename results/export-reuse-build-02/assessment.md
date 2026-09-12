@@ -1,0 +1,1 @@
+The typed-relocation observer builds from committed source `3559ca5` and passes all 44 exporter tests in debug and release. The composed tool keeps the retained VM and wrapper unchanged. [Original fixture qualification](../export-reuse-fixtures-03/assessment.md) passes 179 commands; real token and folded histories preserve all expected artifacts. No performance claim.

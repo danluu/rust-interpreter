@@ -4,14 +4,16 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Investigate exporter reuse from substantial measured costs.** The retained
-   observer produced seven byte-identical token artifacts. Graph lowering costs
-   691ms; hashing/publication/serialization/validation together cost about 98ms.
-   Measure reuse potential across real edit histories before implementing a
-   cache. Keys must account for layouts, call ABI, constant identity, compiler
-   options and dependencies; equal bytes or MIR hashes alone are insufficient.
-   Preserve strict checking and immutable assertions. The scalar ABI remains
-   parked after its 0.74% gain missed the 8% screen.
+1. **Establish dependencies for typed function reuse.** The qualified pointer
+   observer reconstructs every original function and excludes numeric TypeId
+   provenance. Real token/folded templates repeat 454ms/90ms of earlier function
+   work, weighted without pointer-recording overhead. All artifacts match.
+   Prototype compiler dependency tracking while still executing every lowering
+   step; compare any claimed reusable template against actual output. Shared
+   exporter memo tables and binding identities are additional dependencies.
+   Then implement current-session binding resolution and measure cache overhead
+   before choosing a full end-to-end candidate. Template equality is not proof
+   of a cache hit. [Token result](results/export-reuse-token-02/assessment.md).
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%
    wall gate. All correctness controls pass, but the runtime stays off main.

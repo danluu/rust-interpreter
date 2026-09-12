@@ -34,9 +34,20 @@ existing restored-state history, without a rerun. The source is restored.
 [Token census](results/export-reuse-token-01/assessment.md),
 [folded census](results/export-reuse-folded-01/assessment.md).
 
-The next direction is typed relocation records and a dependency audit before
-exporter graph reuse, guided by the measured 691ms token lowering cost. Equal serialized functions or MIR hashes alone are insufficient
-cache keys: layout, call ABI, constant identity and dependency changes matter.
+Typed relocation observation is now qualified: 44 debug/release exporter tests
+and 179 original-fixture commands pass, including exclusion of eleven actual
+compiler TypeId allocations. The typed token/folded histories preserve all eight
+artifacts and expected assertion outcomes. Using prior unannotated weights,
+repeated templates cover median 454ms (99.02%) on token and 90ms (87.61%) on
+folded. [Token](results/export-reuse-token-02/assessment.md),
+[folded](results/export-reuse-folded-02/assessment.md). Every binding reconstructs
+the original bytes; no executable output is rewritten or reused.
+
+Next measure compiler dependency reuse while still lowering every function.
+A cache must resolve current-session bindings and account for type layout, call
+ABI, instance identity, compiler/target/options and allocation alias relations.
+The template hash is not a semantic cache key and the repeated cost is not a
+measured end-to-end saving.
 The two-stream entropy diagnostic establishes exact token execution across both
 VMs and engines with identical inputs; it makes no performance claim.
 

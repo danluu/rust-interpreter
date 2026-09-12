@@ -1,0 +1,3 @@
+Typed relocation qualification passes **179 commands** over seven original Rust fixtures: constants and wrapping pointers, statics, TLS/HashMap, caller locations, TypeId/Any, trait objects and C allocation. Retained/disabled/enabled artifacts are byte-identical; 21 native and 126 guest executions pass. All seven relocation categories are observed. Eleven actual compiler TypeId allocations are excluded from pointer bindings. Four invalid-type/borrow/configuration controls reject before artifact publication.
+
+The previous attempt stopped because the native C allocator was invoked without its required raw/system selector; that failed harness run is preserved. Source `3559ca5` passes 44 exporter tests in debug and release. No runtime or cache behavior changes.
