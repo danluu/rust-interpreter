@@ -397,5 +397,8 @@ def render():
 
 
 if __name__ == '__main__':
-    for name, content in render().items():
+    from status_current import render as current_status
+    outputs = render()
+    outputs['STATUS.md'] = current_status()
+    for name, content in outputs.items():
         (ROOT / name).write_text(content)

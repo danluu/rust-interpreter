@@ -38,9 +38,11 @@ case and script hashes are recorded with each run. Results go to
 `results/RUN_ID`; raw commands and artifacts go to `.work/runs/RUN_ID` and the
 isolated interpreter workspaces. Existing output directories are never reused.
 
-The current native control uses the repository's test profile, four Cargo jobs
-and one test thread. It is a specified control, not the best possible native
-configuration. Three cycles produce fifteen edited pairs, with each edit in
+The current repeated comparisons use the explicit O0/incremental test profile,
+18 native Cargo jobs and default libtest concurrency; custom builds use four
+jobs. Pass these controls explicitly to the legacy single-workflow CLI.
+Native debuginfo/link settings have not been tuned. Three cycles produce
+fifteen edited pairs, with each edit in
 every mode position. Each cycle rebuilds original source and repeats the wrong
 edit control. Only the initial original commands are cold. Per-edit timing and
 CPU spreads remain descriptive; their win count is not a statistical or general

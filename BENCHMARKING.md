@@ -84,8 +84,11 @@ Receipts retain exact child identities and commands under `.work/experiments`.
 The runner waits a bounded time for the benchmark lock, retains failures and
 does not stop other processes or perform automatic cache cleanup.
 
-The native control currently uses repository test settings, four build jobs and
-one test thread when the single-workflow options are omitted. Record explicit changes to optimization, incrementality,
+Current repeated comparisons use `--native-profile o0-incremental`,
+`--native-jobs 18` and `--native-test-threads default`, with four custom build
+jobs. The legacy single-workflow CLI still needs these explicit options;
+omitting them selects repository settings, four jobs and one test thread.
+Record explicit changes to optimization, incrementality,
 linker/backend, compiler workers, build jobs and test concurrency. A tuned control
 must preserve the selected behavior and diagnostics; unsupported native backend
 configurations are reported separately. Never select a fastest configuration

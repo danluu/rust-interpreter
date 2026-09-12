@@ -1,5 +1,15 @@
 # Checked-in changes
 
+## 2026-09-11 current decisions
+
+- Aggregate relocation was integrated as `5b2330c/9637b0ac` after both primary gates and seven held-outs passed.
+- Budget-register, call-slot and whole-call experiments were parked after their declared token gates failed. Their failures remain recorded.
+- Scalar value calls now live as normal Rust source on `experiment/scalar-value-abi`, measured commit `840fdb5`. Compiler/runtime qualification passed 334 debug and release tests, frontend/Cargo controls and original fre assertions.
+- The scalar short edit screen failed its 8% target: token paired wall −0.74%, folded −0.41%. Full A/A and held-out runs are stopped; next work targets export costs and stronger native controls.
+- The source branch adds release readiness checks, terminal-fault documentation, custom default workspace members, automatic Python/format checks, a dedicated rustfmt commit and shared 18-worker benchmark defaults.
+
+[Current status](STATUS.md) · [Scalar decision](results/scalar-edit-smoke-01/assessment.md) · [Review](docs/SUGGESTIONS-REVIEW-20260911.md). Earlier entries below describe their historical state.
+
 ## 2026-09-11 held-out and interface qualification
 
 - The resumable/bulk candidate now independently passes native, TLS and fresh
