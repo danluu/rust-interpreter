@@ -74,6 +74,15 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
             interpreter.resource, 'getrusage', side_effect=self.clock.usage))
         stack.enter_context(patch.object(interpreter.subprocess, 'run', self.run_process))
         stack.enter_context(patch.object(allocation_trace, 'selected_trace', self.selected_trace))
+        original_open = Path.open
+
+        def owned_open(path, *args, **kwargs):
+            handle = original_open(path, *args, **kwargs)
+            if path.name == 'invocation.lock':
+                stack.callback(handle.close)
+            return handle
+
+        stack.enter_context(patch.object(Path, 'open', owned_open))
         original_read = Path.read_bytes
 
         def read_bytes(path):
