@@ -5,6 +5,7 @@ fn program(code:Vec<Op>)->Program {
     Program{version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,data:vec![0;32],statics:vec![],thread_locals:vec![],functions:vec![
         Function{name:"root".into(),frame_size:64,frame_align:16,registers:16,args:vec![Slot{offset:16,size:8}],result:Slot{offset:0,size:8},code}
     ]}
+}
 fn finish(value:u128)->Vec<Op> {vec![Op::Local{dst:10,offset:0},Op::Imm{dst:11,value},Op::Store{address:10,src:11,size:8},Op::Return]}
 fn returned(register:u32)->Vec<Op> {vec![Op::Local{dst:10,offset:0},Op::Store{address:10,src:register,size:8},Op::Return]}
 fn checked(p:&Program,args:&[u128],removes:bool)->Program {
