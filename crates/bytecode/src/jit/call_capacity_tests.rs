@@ -26,7 +26,7 @@ fn credit_remains_conservative_across_mixed_calls_and_retained_padding() {
         let mut credit = 0u128;
         let mut stack = vec![];
         for step in 0..600u128 {
-            let slack = |m, r| (end-m).min(16*(slots-r)).min(budget-m-16*r);
+            let slack = |m: u128, r: u128| (end-m).min(16*(slots-r)).min(budget-m-16*r);
             assert!(credit <= slack(memory, registers));
             if step % 3 == 2 && !stack.is_empty() {
                 // Return retains the callee's actual aligned base, not the
