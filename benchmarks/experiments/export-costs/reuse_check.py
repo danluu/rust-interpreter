@@ -107,7 +107,9 @@ def main():
             source = ROOT / 'tests' / (name + '_fixture.rs')
             native = work / (name + '-native')
             invoke(name + '-native-build', ['rustc', '+' + TOOLCHAIN, source, '--edition=2024', '-o', native])
-            expected = {seed: invoke(name + '-native-' + seed, [native, seed])[0] for seed in seeds}
+            expected = {seed: invoke(name + '-native-' + seed,
+                [native, *(['raw'] if name == 'c_allocator' else []), seed])[0] for seed in seeds}
+            assert all(re.fullmatch(r'\d+\n', value) for value in expected.values()), 'native fixture did not execute exactly one entry'
             hashes = []
             for label, compiler, enabled in [('retained', baseline, False), ('off', tool, False), ('on', tool, True)]:
                 artifact = work / (name + '-' + label + '.rbc')
@@ -178,7 +180,7 @@ def main():
               type_id_numeric_allocations_excluded=type_id_numeric_allocations,
               all_artifact_hashes_identical=True, frozen=frozen, raw=str(work.relative_to(ROOT)),
               records_sha256=sha(work / 'records.json')))
-        print('PASS', len(records), 'commands; four original fixtures; exact artifacts; strict rejections')
+        print('PASS', len(records), 'commands;', len(fixtures), 'original fixtures; exact artifacts; strict rejections')
 
 
 if __name__ == '__main__':
