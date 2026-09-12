@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Checked discovery passes325 Rust tests/profile,44 Python tests,25 fixture commands and6 real controls. Pgrust4 and fre389 names match native, including7 ignored. Next select filtered suites inside the same fully checked compiler invocation used for export; qualify actual edits and keep unsupported harness semantics explicit.
+**Next:** Automatic filtered suites are qualified: 329 Rust tests per profile, 48 Python tests, 44 fixture commands and 96 real edit/check commands. Automatic and explicit bytecode and native outcomes match across 24 source states. The twelve-test token module takes 8.27 s per edited custom command versus 3.06 s native. Next measure conservative narrower persistent-register assignment feasibility before implementing a runtime candidate.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

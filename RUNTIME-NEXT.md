@@ -4,16 +4,18 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Run automatically selected suites in one compiler pass.** Discovery is
-   qualified by 325 Rust tests/profile, 44 Python tests, 25 fixture commands and
-   six real-project controls. All four hashfn and 389 fre-kernels names match
-   native libtest, including seven ignored tests. Select compiler-derived test
-   names inside the same checked invocation that exports them; listing followed
-   by a second full check would add frontend work to every edited command.
-   Handle single/empty selections and the 256-entry bound explicitly. Skip
-   ignored tests by default, and reject selected unsupported harness semantics
-   before executing any body. Qualify actual source edits against native controls.
-   [Discovery qualification](results/test-discovery-qualification-01/assessment.md).
+1. **Measure narrower persistent-register assignment feasibility.** Automatic
+   filtering is qualified by 329 Rust tests/profile, 48 Python tests, 44 fixture
+   commands and 96 actual project commands. All 24 automatic/explicit source
+   pairs produce identical bytecode and match native assertions. The larger
+   twelve-test token module takes about 8.27 s per edited custom command versus
+   3.06 s native; automatic name selection adds little to that gap. The JIT currently
+   dedicates two native registers to every retained u128 value. Determine whether
+   conservative proof of zero upper halves would allow useful additional values
+   in the same register bank. Start with bounded static/profile coverage, not a
+   performance claim or another run of a parked candidate.
+   [Qualification](results/filtered-suites-qualification-01/assessment.md),
+   [feasibility plan](benchmarks/experiments/jit-register-width/PLAN.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%

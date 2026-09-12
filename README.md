@@ -39,6 +39,13 @@ each command selects its exact artifact.
 Repeat `--entry` to batch zero-argument bodies returning unit or `Result<(), E>`.
 For experimental test isolation, add `--engine jit --jit-resumable-calls
 --isolated-batch prepared --suite-report NEW_FILE.json` with at least two entries.
+To select tests automatically in that mode, replace the entries with
+`--test-filter PATTERN`; add `--test-exact` for one complete name. An empty pattern
+selects all ordinary nonignored tests in the chosen target. Matching happens in
+the checked compiler invocation that exports them. A selected expected-panic
+test, zero runnable matches or more than 256 matches produces an error before
+execution. A single filtered test is supported.
+
 Each test gets fresh guest memory, statics and TLS; compiled code is shared.
 All selected tests are attempted and reported, including after an assertion
 failure. `--isolated-batch fresh` constructs separate JIT code for comparison.

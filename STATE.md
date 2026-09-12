@@ -35,10 +35,23 @@ and the failed evidence remains preserved. The catalog fix is published on main.
 and 32 actual pgrust edit/check/restoration commands. Checked test discovery now
 also passes 325 Rust tests/profile, 44 Python tests, 25 fixture commands and six
 real-project listing controls. All four pgrust hashfn and 389 fre-kernels names
-match native libtest, including seven ignored tests. Next select filtered suites
-inside the same checked compiler invocation used for export. Full
+match native libtest, including seven ignored tests. Those names now feed the
+filtered runner qualified below. Full
 ignore/should-panic/unwind/thread execution semantics remain open.
 [Discovery qualification](results/test-discovery-qualification-01/assessment.md).
+
+Automatic filtered suites are now qualified by 329 Rust tests/profile, 48 Python
+tests, 44 fixture commands and 96 actual edit/build/test/check commands. Filtering
+uses the same checked compiler invocation as export. Single tests work; ignored
+tests are skipped; expected-panic, empty and oversized selections fail before
+execution. Across pgrust/folded/twelve-test token, edited automatic medians are
+0.533/1.726/8.267 s, versus native 0.673/1.711/3.059 s. All 24 paired source states
+produce identical automatic/explicit bytecode and match native test outcomes.
+These are one-cycle descriptive results. Token expands the old three-test
+subset; its first attempt stopped on disk admission before any valid edit, and
+the successful retry used fresh caches with more headroom. Next measure the
+feasibility of narrower persistent native-register assignments.
+[Filtered suite qualification](results/filtered-suites-qualification-01/assessment.md).
 [Ruff repair](results/prepared-catalog-ruff-01/summary.json),
 [pgrust catalogs](results/prepared-catalog-pgrust-02/assessment.md),
 [fre corrected qualification](results/prepared-catalog-token-corrected-02/summary.json),
