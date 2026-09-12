@@ -112,8 +112,15 @@ native transitions, recursion, mixed calls and TLS. No runtime was published.
 now passes 334 debug/release tests, one ignored, using tool `aa56492e`.
 The pass preserves typed identities through validated relocation and proves
 final caller value operands after existing optimization. The first run's
-oversized-input test error remains preserved. Real Rust export and Cargo
-publication qualification are in progress, before any scalar timing.
+oversized-input test error remains preserved. [Real Rust exports](results/scalar-value-frontend-02/assessment.md) pass 424
+commands, including 360 native/VM differentials. [Cargo publication](results/scalar-value-cargo-01/assessment.md)
+passes 19 commands, including flag changes, malformed-header rejection, audit
+packs, traces, strict cold errors and original assertions. The tool is installed
+under its explicit experimental key; normal source selection remains unchanged.
+[Both real original batches](results/scalar-value-real-01/assessment.md) now pass
+on V5 and fresh V6 artifacts, with 981 folded/4,835 token value call sites and
+no proof/JIT declines. No scalar timing has run. Follow the
+[fresh benchmark handoff](benchmarks/experiments/scalar-value-real/NEXT.md).
 The [contract and fresh complete-command gates](benchmarks/experiments/scalar-value-abi/CONTRACT.md)
 remain required. Existing native Calls already cross guest frames without
 returning to the Rust VM. No scalar performance comparison has run yet.
@@ -141,7 +148,7 @@ No benchmark overlapped storage work. No private data or unrelated processes wer
 changed. All storage supervisors, controllers and children are terminal.
 Current compiler/frontend process state is recorded in `.work/continuation-state.json`.
 
-The unbounded goal remains active. Next work follows the typed census plan;
+The unbounded goal remains active. Next work is the fresh scalar edit/build/run comparison;
 this is a checkpoint, not completion of a general Rust development engine.
 Every suggestion has an [explicit disposition](docs/SUGGESTIONS-REVIEW-20260910.md).
 `suggestions.txt` stays user-owned, unchanged and untracked. Local commits are

@@ -27,6 +27,9 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | integrated-compiler-evidence | [scalar-abi-native-cli-01/summary.json](scalar-abi-native-cli-01/summary.json) |
 | integrated-compiler-evidence | [scalar-value-calls-build-02/summary.json](scalar-value-calls-build-02/summary.json) |
 | integrated-compiler-evidence | [scalar-value-compiler-build-02/summary.json](scalar-value-compiler-build-02/summary.json) |
+| integrated-compiler-evidence | [scalar-value-frontend-02/summary.json](scalar-value-frontend-02/summary.json) |
+| integrated-compiler-evidence | [scalar-value-cargo-01/summary.json](scalar-value-cargo-01/summary.json) |
+| integrated-compiler-evidence | [scalar-value-real-01/summary.json](scalar-value-real-01/summary.json) |
 | current-copy-evidence | [resumable-copy-original-e2e-01/gate-evaluation.json](resumable-copy-original-e2e-01/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-e2e-01/gate-evaluation.json](resumable-copy-e2e-01/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-release-01/summary.json](resumable-copy-release-01/summary.json) |
