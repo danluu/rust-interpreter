@@ -51,3 +51,17 @@ The four drift profiles and six PC maps retain their historical hash checks.
 Only diagnostic JSON outputs are compressed; no benchmark inputs, source,
 executables, tool libraries, caches or private data enter this batch. Keep the
 same staging, metadata equality, atomic replacement and3GiB reserve rules.
+
+The fifth batch covers294 retained bytecode snapshots from the seven exact
+completed public token workflow runs listed in completed_artifacts.py. These
+historical comparison outputs occupy8.47GB; they are separate from retained
+runtime anchors and all scheduled timing inputs. Their parent supervisors must
+have finished successfully under this workspace owner, with unchanged plans
+and logs. Bind each child report to its parent corpus and reproduce its entire
+stored workflow verification before touching files. Require unique canonical
+artifact paths, recorded sizes and historical SHA256 values, no open files and
+no matching active process. Preserve all artifacts and measurements; this does
+not establish cross-cycle semantic equivalence or improve historical timings.
+No live caches, current filtered-suite inputs, private data, executables or
+unfinished runs enter this batch. Keep the3GiB reserve and single-file staging
+(each snapshot about29MB), and all byte/metadata/atomic replacement checks.

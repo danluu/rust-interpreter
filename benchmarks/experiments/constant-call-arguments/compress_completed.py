@@ -13,7 +13,7 @@ def properties(path):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--run-id',choices=['completed-evidence-compression-01','completed-evidence-compression-02','completed-evidence-compression-03','completed-evidence-compression-04'],default='completed-evidence-compression-01')
+    parser.add_argument('--run-id',choices=['completed-evidence-compression-01','completed-evidence-compression-02','completed-evidence-compression-03','completed-evidence-compression-04','completed-evidence-compression-05'],default='completed-evidence-compression-01')
     run=parser.parse_args().run_id
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,3)
@@ -68,9 +68,12 @@ def main():
                     path=Path('.work')/run_name/(str(index)+'-profile.json')
                     rows=[row for row in commands if str(path) in row['files']];assert len(rows)==1 and rows[0]['returncode']==0
                     inputs.append((ROOT/path,rows[0]['files'][str(path)],run_name))
-        else:
+        elif run.endswith('04'):
             from legacy_profiles import inputs as legacy_inputs
             inputs,legacy_proofs,digest_origins=legacy_inputs();proofs+=legacy_proofs
+        else:
+            from completed_artifacts import inputs as artifact_inputs
+            inputs,artifact_proofs,digest_origins=artifact_inputs();proofs+=artifact_proofs
         for run_name in sorted({run_name for _,_,run_name in inputs}) if not run.endswith('04') else []:
             path=ROOT/'.work/experiments'/run_name/'status.json';s=json.loads(path.read_text())
             expected_returncode=1 if run.endswith('03') and run_name=='budget-register-smoke-04' else 0
