@@ -70,6 +70,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | catalog-token | [prepared-catalog-token-corrected-02/summary.json](prepared-catalog-token-corrected-02/summary.json) |
 | catalog-qualification | [prepared-catalog-qualification-01/summary.json](prepared-catalog-qualification-01/summary.json) |
 | suite-limits | [prepared-limits-qualification-01/summary.json](prepared-limits-qualification-01/summary.json) |
+| test-discovery | [test-discovery-qualification-01/summary.json](test-discovery-qualification-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

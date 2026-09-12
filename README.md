@@ -31,9 +31,11 @@ python3 scripts/interpreter.py --manifest-path .work/sources/pgrust/Cargo.toml -
 ```
 
 For a library test body, add `--test-body` and pass its qualified name to `--entry`.
-For an integration target, also add `--test-target NAME`. Use native test names
-from `cargo test --test NAME -- --list` without a crate-name prefix. Integration
-targets share dependency metadata while each command selects its exact artifact.
+For an integration target, also add `--test-target NAME`. Use
+`--test-body --list-tests` in place of `--entry` to list checked test names and
+ignore/expected-panic attributes as JSON. Listing runs no test bodies and needs
+no native test executable. Integration targets share dependency metadata while
+each command selects its exact artifact.
 Repeat `--entry` to batch zero-argument bodies returning unit or `Result<(), E>`.
 For experimental test isolation, add `--engine jit --jit-resumable-calls
 --isolated-batch prepared --suite-report NEW_FILE.json` with at least two entries.

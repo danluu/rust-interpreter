@@ -4,15 +4,16 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Discover tests through the checked compiler context.** The catalog and
-   effective-limit reports are qualified. The limit change passes 323 Rust
-   tests/profile, 41 Python tests, twelve saved-suite controls and 32 real pgrust
-   edit/check/restoration commands. Expose checked test names and attributes
-   without requiring a native executable. First qualify discovery, including
-   cfg/features, ignored and should-panic metadata, integration targets and strict
-   borrow errors; then use it for automatic filtered suites. Keep unsupported
-   harness semantics explicit.
-   [Limit qualification](results/prepared-limits-qualification-01/assessment.md).
+1. **Run automatically selected suites in one compiler pass.** Discovery is
+   qualified by 325 Rust tests/profile, 44 Python tests, 25 fixture commands and
+   six real-project controls. All four hashfn and 389 fre-kernels names match
+   native libtest, including seven ignored tests. Select compiler-derived test
+   names inside the same checked invocation that exports them; listing followed
+   by a second full check would add frontend work to every edited command.
+   Handle single/empty selections and the 256-entry bound explicitly. Skip
+   ignored tests by default, and reject selected unsupported harness semantics
+   before executing any body. Qualify actual source edits against native controls.
+   [Discovery qualification](results/test-discovery-qualification-01/assessment.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%

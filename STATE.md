@@ -32,9 +32,13 @@ same bytecode and passes. The older/newer failing controls used that same wrong
 limit, so they did not establish a lowering defect. The correction is explicit
 and the failed evidence remains preserved. The catalog fix is published on main. Effective runtime limits now also pass
 323 Rust tests/profile, 41 Python tests, twelve controlled saved-suite commands
-and 32 actual pgrust edit/check/restoration commands. Next add compiler-backed
-discovery of test names and attributes. Full
-ignore/should-panic/unwind/thread semantics remain open.
+and 32 actual pgrust edit/check/restoration commands. Checked test discovery now
+also passes 325 Rust tests/profile, 44 Python tests, 25 fixture commands and six
+real-project listing controls. All four pgrust hashfn and 389 fre-kernels names
+match native libtest, including seven ignored tests. Next select filtered suites
+inside the same checked compiler invocation used for export. Full
+ignore/should-panic/unwind/thread execution semantics remain open.
+[Discovery qualification](results/test-discovery-qualification-01/assessment.md).
 [Ruff repair](results/prepared-catalog-ruff-01/summary.json),
 [pgrust catalogs](results/prepared-catalog-pgrust-02/assessment.md),
 [fre corrected qualification](results/prepared-catalog-token-corrected-02/summary.json),
