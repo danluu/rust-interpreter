@@ -62,11 +62,21 @@ remain the next diagnostic inputs. Native Call and Return entries account for
 are not speedup predictions: budget accesses were 10.06% of token samples but
 did not produce a meaningful complete-command gain.
 
-Next investigate static argument/result slot facts across native Calls and
-Returns. Start with a typed, profile-weighted census using the existing artifacts;
-audit VM re-entry contracts and preserve dynamic fault order. Do not optimize
-until the census identifies a material, safely removable cost. Keep all frame
-initialization, exact budgets, original assertions and real host randomness.
+The [typed Call census](results/call-slot-census-02/assessment.md) now completes:
+eight focused tests, both exact original profiles and all logical/native counters
+verify. Known caller-frame slots cover 99.49% of token's 326,206,317 native argument
+checks and 98.08% of folded's 82,536,622. No function hit an analysis bound. No new
+guest execution or runtime change. The first receipt-path admission failure is
+preserved with its source; the corrected check follows the exact smoke summary.
+
+Next implement the [guarded Call argument path](benchmarks/experiments/call-slot-census/FAST-PATH-NEXT.md)
+in an isolated VM from integrated source `5b2330c`. Match the actual guest address
+to the expected current-frame offset, keep the original dynamic check on mismatch,
+and retain argument order, charges, copies, initialization and Return checks.
+Static facts alone are insufficient for arbitrary initialized entry registers.
+The fixed primary gate is ≥10% token wall gain, lower CPU and a gain exceeding
+fresh A/A variation; folded wall/CPU must remain within 5%. A primary failure
+parks the candidate. Broad validation and all seven held-outs precede adoption.
 
 The unbounded goal remains active. Continue implementation and real edited-command
 comparisons after this diagnostic. Integration and the failed budget experiment
