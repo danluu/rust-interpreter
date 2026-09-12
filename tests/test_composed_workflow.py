@@ -11,6 +11,21 @@ spec.loader.exec_module(workflow)
 
 
 class ComposedWorkflowTests(unittest.TestCase):
+    def test_original_batch_requires_a_guest_assertion_and_the_primary_gate(self):
+        self.assertTrue(workflow.batch_outcome('0\n', '', True))
+        assertion = 'rust-interp-vm: guest trap: core::panicking::assert_failed in selected_test[]'
+        self.assertFalse(workflow.batch_outcome('', assertion, False))
+        for stdout, stderr, success in [('', 'compiler error', False),
+                ('', 'rust-interp-vm: instruction limit exceeded', False),
+                ('0\n', assertion, False), ('', assertion, True), ('garbage', '', True)]:
+            with self.subTest(stderr=stderr), self.assertRaises(AssertionError):
+                workflow.batch_outcome(stdout, stderr, success)
+        rows = self.rows()
+        for row in rows:
+            if row['mode'] == 'candidate': row['seconds'] = 1.94
+        self.assertFalse(workflow.assessment(rows, 'anchor')['gate_passed'])
+        self.assertTrue(workflow.assessment(rows, 'folded')['gate_passed'])
+
     def test_native_parallel_order_is_allowed_but_exact_names_and_failures_are_required(self):
         output = ('running 2 tests\ntest suite::b ... ok\ntest suite::a ... ok\n'
                   'test result: ok. 2 passed; 0 failed; 0 ignored; 4 filtered out; finished in 0.12s\n')

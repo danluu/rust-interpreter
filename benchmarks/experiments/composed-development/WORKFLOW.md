@@ -6,14 +6,16 @@ fixtures. Its first pgrust command stopped before any edited pair because that
 repository disables incremental compilation and forced reuse requires it.
 The corrected candidate adds automatic cache eligibility, preserving repository
 profiles. Supply its exact qualified `--build` and `--cache-qualification` paths.
-Require 392 passing tests/profile and automatic-cache fixture qualification.
-Its VM must match the initially qualified VM bytes; an exporter-only change
-does not invalidate saved-bytecode execution evidence. Freeze the new exporter,
-VM, wrapper and tool key in the plan before the first child.
+The later retained-alignment correction requires393 passing tests/profile and
+fresh VM and automatic-cache fixture qualification. Supply explicit
+`--execution-qualification` and `--serial-qualification` paths; their VM hashes
+must match the candidate. Build03 is held after the source audit and will not
+be retimed. Freeze the exporter, VM, wrapper and tool key before the first child.
 The retained selected-suite tool is
 fe9dcae0c86c6df0b6ac629034bab3a291e15e5315f9bfc87f5da9cbb4d0fe6e.
 
-Run token, folded and pgrust once each with `workflows.py`. Use their unchanged
+Run token, folded and pgrust once each per distinct qualified implementation
+with `workflows.py`. Use their unchanged
 current selections of 12, 18 and 4 original tests. Use three cycles of the existing
 five production edits. Each cycle includes original source and the known wrong
 production edit; finish by restoring, compiling and executing the original.

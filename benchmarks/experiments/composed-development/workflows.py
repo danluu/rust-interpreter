@@ -21,13 +21,23 @@ from workflow_controls import native_command, exporter_seconds
 from workflow_measurements import source_states, child_usage, child_cpu_since
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from test_discovery import read_listing, read_selection
-from suite_reports import read_report, validate_report, validate_runtime_limits
+from suite_reports import guest_test_failure, read_report, validate_report, validate_runtime_limits
 
 CASES = {'token': ('fre', 'token-phrase-allocation', 'token_phrase::tests::', 'prepared-suite-token-01'),
+         'anchor': ('fre', 'token-phrase-allocation', None, 'aggregate-relocation-e2e-01-token-phrase'),
          'folded': ('fre', 'folded-literal-trie', 'folded_literal_trie::tests::', 'prepared-suite-folded-01'),
          'pgrust': ('pgrust', None, '', 'prepared-catalog-pgrust-03')}
 CUSTOM = ['baseline', 'duplicate', 'candidate']
 MODES = [*CUSTOM, 'native', 'native_lines', 'check']
+
+
+def batch_outcome(stdout, stderr, success):
+    """The historical batch stops at its first assertion, with no per-test report."""
+    if success:
+        assert stdout == '0\n' and not guest_test_failure(stderr)
+    else:
+        assert stdout == '' and guest_test_failure(stderr)
+    return success
 
 
 def native_outcomes(stdout, names, success):
@@ -63,8 +73,8 @@ def assessment(rows, case):
     envelope = {kind: max(abs(statistics.median(p['aa_' + kind + '_ratio'] for p in pairs
                 if p['state'] == state) - 1) for state in range(1, 6)) for kind in ['wall', 'cpu']}
     noise_ok = envelope['wall'] <= .04 and envelope['cpu'] <= .03
-    wall_ok = med('wall_ratio') <= (.92 if case == 'token' else 1.05)
-    cpu_ok = med('cpu_ratio') <= (1 + max(.01, envelope['cpu']) if case == 'token' else 1.05)
+    wall_ok = med('wall_ratio') <= (.92 if case in ['token', 'anchor'] else 1.05)
+    cpu_ok = med('cpu_ratio') <= (1 + max(.01, envelope['cpu']) if case in ['token', 'anchor'] else 1.05)
     return dict(pairs=pairs, edited_pairs=15, aa_pairs=15, aa_envelope=envelope,
                 noise_acceptable=noise_ok, gate_passed=noise_ok and wall_ok and cpu_ok,
                 paired_wall_ratio=med('wall_ratio'), paired_cpu_ratio=med('cpu_ratio'),
@@ -78,7 +88,10 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--cache-qualification', type=Path, required=True)
+    parser.add_argument('--execution-qualification', type=Path, required=True)
+    parser.add_argument('--serial-qualification', type=Path, required=True)
     args = parser.parse_args()
+    historical = args.case == 'anchor'
     assert re.fullmatch('composed-development-edit-' + args.case + r'-\d{2}', args.run_id)
     project, variant, pattern, reference = CASES[args.case]
     case = WORKFLOWS[project] if variant is None else WORKFLOW_VARIANTS[project, variant]
@@ -96,21 +109,31 @@ def main():
         assert not subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=source).strip()
         listing_path = ROOT / '.work/test-discovery-real-01' / (project + '-tests.json')
         listing, _ = read_listing(listing_path)
-        names = [t['name'] for t in listing['tests'] if pattern in t['name'] and not t['ignored']]
+        names = list(case['tests']) if historical else [
+            t['name'] for t in listing['tests'] if pattern in t['name'] and not t['ignored']]
         assert names and set(case['tests']) <= set(names)
         assert all(t['ordinary_test'] for t in listing['tests'] if t['name'] in names)
+        if historical:
+            assert names == ref['tests'] and ref['batch'] and ref['wrong_production_edit_rejected']
+            assert ref['tool_key'] == '9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223'
         build_paths = {m: args.build.resolve(strict=True) if m == 'candidate' else
-                       ROOT / 'results/parallel-suites-build-01/summary.json' for m in CUSTOM}
+                       ROOT / 'results' / ('aggregate-relocation-build-01' if historical else
+                       'parallel-suites-build-01') / 'summary.json' for m in CUSTOM}
         builds = {m: json.loads(p.read_text()) for m, p in build_paths.items()}
         tools = {m: installed_tools(b['tool_key'])[0] for m, b in builds.items()}
         for m, build in builds.items():
             assert build['status'] == 'passed'
-            assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(
-                passed=392 if m == 'candidate' else 365, ignored=1)
-            require_export_option(tools[m], build['tool_key'], 'filtered-tests')
+            assert all(sha(tools[m] / name) == digest for name, digest in build['binaries'].items())
+            if historical and m != 'candidate':
+                assert build['tool_key'] == ref['tool_key']
+            else:
+                assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(
+                    passed=393 if m == 'candidate' else 365, ignored=1)
+            if not historical:
+                require_export_option(tools[m], build['tool_key'], 'filtered-tests')
         require_export_option(tools['candidate'], builds['candidate']['tool_key'], 'function-cache-auto')
-        proofs = [args.cache_qualification.resolve(strict=True), *[ROOT / 'results' / name / 'summary.json'
-                  for name in ['composed-development-serial-01', 'composed-development-qualification-01']]]
+        proofs = [args.cache_qualification.resolve(strict=True), args.serial_qualification.resolve(strict=True),
+                  args.execution_qualification.resolve(strict=True)]
         for p in proofs:
             proof = json.loads(p.read_text())
             assert proof['status'] == 'passed'
@@ -133,6 +156,8 @@ def main():
         paths += [tool / name for tool in tools.values() for name in builds['candidate']['binaries']]
         paths += [source / p for p in subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
                   if p and source / p != changed]
+        if historical:
+            paths.append(Path(__file__).with_name('ANCHOR.md'))
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
@@ -140,13 +165,14 @@ def main():
         plan = dict(owner=str(ROOT), case=case, revision=ref['revision'], names=names, filter=pattern,
             tools={m: b['tool_key'] for m, b in builds.items()}, frozen=frozen,
             original_source_sha256=sha(changed), admission_gib=admission, minimum_child_gib=3,
-            cargo_workers=2, custom_suite_workers=2, native_test_threads='libtest default',
-            custom_runner='prepared, fresh guest state per test', cycles=3, edited_pairs=15, aa_pairs=15,
+            cargo_workers=2, custom_suite_workers=None if historical else 2, native_test_threads='libtest default',
+            custom_runner='original ordinary batch' if historical else 'prepared, fresh guest state per test',
+            cycles=3, edited_pairs=15, aa_pairs=15,
             guest_rustflags=ref['guest_rustflags'], build_tool_opt_level=ref.get('build_tool_opt_level'),
             instruction_limit=ref['instruction_limit'], allocation_limit=ref['allocation_limit'],
             native_profiles=['repository', 'repository with dev/test debug=line-tables-only'],
             timings='complete commands; native suite time from rounded libtest output, residual is not pure compilation',
-            gate='token wall<=0.92, CPU<=1+max(0.01,AA CPU envelope); guards wall/CPU<=1.05; AA wall<=0.04 and CPU<=0.03',
+            gate='token/anchor wall<=0.92, CPU<=1+max(0.01,AA CPU envelope); guards wall/CPU<=1.05; AA wall<=0.04 and CPU<=0.03',
             stop='retain any failure; no partial-pair splicing, automatic retry, or repeat to cross a gate')
         write(work / 'plan.json', plan)
         env = {k: v for k, v in os.environ.items()
@@ -183,9 +209,13 @@ def main():
                 command = [sys.executable, ROOT / 'scripts/interpreter.py', '--manifest-path', source / 'Cargo.toml',
                     '--package', case['package'], '--jobs', '2', '--tool-key', builds[mode]['tool_key'],
                     '--cache-namespace', args.run_id + ':' + mode, '--test-body', '--std-mir', '--engine', 'jit',
-                    '--jit-resumable-calls', '--jit-persistent-registers', '--isolated-batch', 'prepared',
-                    '--suite-workers', '2', '--suite-report', suite_path, '--test-filter', pattern,
+                    '--jit-resumable-calls', '--jit-persistent-registers',
                     '--instruction-limit', str(ref['instruction_limit'])]
+                if historical:
+                    command += [arg for name in names for arg in ['--entry', name]]
+                else:
+                    command += ['--isolated-batch', 'prepared', '--suite-workers', '2',
+                                '--suite-report', suite_path, '--test-filter', pattern]
                 if ref['allocation_limit'] is not None:
                     command += ['--allocation-limit', str(ref['allocation_limit'])]
                 for field in ['inline_leaves', 'trap_unsupported_calls', 'run_try_callbacks']:
@@ -212,30 +242,35 @@ def main():
             assert sha(changed) == digest and (child.returncode == 0) == (success or mode == 'check'), stderr[-3000:]
             assert ('Checking ' if mode in CUSTOM or mode == 'check' else 'Compiling ') + case['package'] in stderr
             if mode in CUSTOM:
-                suite, suite_sha = read_report(suite_path)
-                row['outcomes'] = validate_report(suite, names, 'prepared', success)
-                validate_runtime_limits(suite, ref['instruction_limit'], ref['allocation_limit'], required=True)
-                assert suite['workers'] == suite['requested_workers'] == 2
+                if historical:
+                    row['batch_passed'] = batch_outcome(stdout, stderr, success)
+                else:
+                    suite, suite_sha = read_report(suite_path)
+                    row['outcomes'] = validate_report(suite, names, 'prepared', success)
+                    validate_runtime_limits(suite, ref['instruction_limit'], ref['allocation_limit'], required=True)
+                    assert suite['workers'] == suite['requested_workers'] == 2
                 launches = [json.loads(line.split(': ', 1)[1]) for line in stderr.splitlines()
                             if line.startswith('rust-interp-launch: ')]
                 assert len(launches) == 1
                 launch = launches[0]
                 assert launch['function_cache'] == ('auto' if mode == 'candidate' else 'off')
-                assert launch['suite_report_sha256'] == suite_sha
                 artifact = Path(launch['artifact_path'])
-                row.update(launch=launch, suite_sha256=suite_sha, artifact=snapshot(artifact),
+                row.update(launch=launch, artifact=snapshot(artifact),
                            exporter_stages=exporter_seconds(stderr))
                 assert row['artifact']['sha256'] == launch['artifact_sha256']
-                catalog = Path(launch['entry_catalog_path'])
-                row['catalog'] = snapshot(catalog)
-                assert row['catalog']['sha256'] == launch['entry_catalog_sha256']
-                entries = json.loads(catalog.read_text())['entries']
-                assert [e['name'] for e in entries] == names
-                assert [e['function'] for e in entries] == [t['function'] for t in suite['tests']]
-                selection_path = Path(launch['test_selection_path'])
-                selection, selection_sha = read_selection(selection_path, artifact, pattern, False)
-                assert selection['selected'] == names and selection_sha == launch['test_selection_sha256']
-                row['selection'] = snapshot(selection_path)
+                if not historical:
+                    assert launch['suite_report_sha256'] == suite_sha
+                    row['suite_sha256'] = suite_sha
+                    catalog = Path(launch['entry_catalog_path'])
+                    row['catalog'] = snapshot(catalog)
+                    assert row['catalog']['sha256'] == launch['entry_catalog_sha256']
+                    entries = json.loads(catalog.read_text())['entries']
+                    assert [e['name'] for e in entries] == names
+                    assert [e['function'] for e in entries] == [t['function'] for t in suite['tests']]
+                    selection_path = Path(launch['test_selection_path'])
+                    selection, selection_sha = read_selection(selection_path, artifact, pattern, False)
+                    assert selection['selected'] == names and selection_sha == launch['test_selection_sha256']
+                    row['selection'] = snapshot(selection_path)
                 assert sum(line.startswith('rust-interp-export: ') for line in stderr.splitlines()) == 1
                 if mode == 'candidate':
                     reports = [json.loads(line.split(': ', 1)[1]) for line in stderr.splitlines()
@@ -271,14 +306,20 @@ def main():
                 native = ['native', 'native_lines'] if (sample['state'] + sample['cycle']) % 2 else ['native_lines', 'native']
                 order = [native[0], *order, native[1], 'check']
                 selected = {m: invoke(m, sample) for m in order}
-                assert len({tuple(map(tuple, row['outcomes'])) for m, row in selected.items() if m != 'check'}) == 1
+                if historical:
+                    assert selected['native']['outcomes'] == selected['native_lines']['outcomes']
+                    assert all(selected[m]['batch_passed'] == (sample['state'] != -1) for m in CUSTOM)
+                else:
+                    assert len({tuple(map(tuple, row['outcomes'])) for m, row in selected.items() if m != 'check'}) == 1
                 assert selected['baseline']['artifact'] == selected['duplicate']['artifact']
-                assert selected['baseline']['catalog'] == selected['duplicate']['catalog']
+                if not historical:
+                    assert selected['baseline']['catalog'] == selected['duplicate']['catalog']
         assert changed.read_bytes() == original and all(sha(ROOT / p) == h for p, h in frozen.items())
         assert len(rows) == 132
         result = assessment(rows, args.case)
         result.update(status='passed', case=args.case, commands=len(rows), test_count=len(names), tests=names,
-            source_restored=True, test_source_unchanged=True, native_assertion_outcomes_match=True,
+            source_restored=True, test_source_unchanged=True,
+            native_assertion_outcomes_match=not historical, batch_success_and_assertion_failure_match=historical,
             tool_keys=plan['tools'], raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),
             records_sha256=sha(work / 'records.json'), transitions_sha256=sha(work / 'transitions.json'),
             space_sha256=sha(work / 'space.json'), minimum_recorded_free_bytes=min(s['free_bytes'] for s in space),

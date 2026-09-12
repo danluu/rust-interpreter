@@ -49,7 +49,7 @@ def main():
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
         assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(
-            passed=392 if args.automatic_cache else 391, ignored=1)
+            passed=393 if args.automatic_cache else 391, ignored=1)
         tools, key = installed_tools(build['tool_key'])
         require_export_option(tools, key, 'function-cache-reuse')
         if args.automatic_cache: require_export_option(tools, key, 'function-cache-auto')

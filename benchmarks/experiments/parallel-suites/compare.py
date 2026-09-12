@@ -71,7 +71,7 @@ def main():
         for mode, path in builds.items():
             build = json.loads(path.read_text())
             assert build['status'] == 'passed'
-            expected = dict(passed=(391 if mode == 'candidate' else 365) if args.composed_candidate
+            expected = dict(passed=(393 if mode == 'candidate' else 365) if args.composed_candidate
                             else (365 if mode == 'candidate' else 360), ignored=1)
             assert build['tests']['test-debug'] == build['tests']['test-release'] == expected
             directory, keys[mode] = installed_tools(build['tool_key'])
