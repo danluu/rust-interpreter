@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run the pinned workflow corpus serially with explicit native controls."""
 import argparse
+from workflow_controls import DEFAULT_BUILD_JOBS, DEFAULT_NATIVE_JOBS, DEFAULT_NATIVE_PROFILE, DEFAULT_TEST_THREADS
 import fcntl
 import hashlib
 import json
@@ -58,12 +59,12 @@ def main():
     parser.add_argument('--baseline-jit-persistent-registers', action='store_true')
     parser.add_argument('--only', action='append', help='case label; repeat to select a subset')
     parser.add_argument('--cycles', type=int, default=3)
-    parser.add_argument('--jobs', type=int, action=UniqueJobCount, default=4)
-    parser.add_argument('--native-jobs', type=int, action=UniqueJobCount, default=18)
+    parser.add_argument('--jobs', type=int, action=UniqueJobCount, default=DEFAULT_BUILD_JOBS)
+    parser.add_argument('--native-jobs', type=int, action=UniqueJobCount, default=DEFAULT_NATIVE_JOBS)
     parser.add_argument('--baseline-jobs', type=int, action=UniqueJobCount)
     parser.add_argument('--candidate-jobs', type=int, action=UniqueJobCount)
-    parser.add_argument('--native-profile', choices=['repository', 'o0-incremental'], default='o0-incremental')
-    parser.add_argument('--native-test-threads', default='default')
+    parser.add_argument('--native-profile', choices=['repository', 'o0-incremental'], default=DEFAULT_NATIVE_PROFILE)
+    parser.add_argument('--native-test-threads', default=DEFAULT_TEST_THREADS)
     parser.add_argument('--native-rustflag', action='append', default=[])
     parser.add_argument('--lock-wait-seconds', type=int, default=600)
     parser.add_argument('--minimum-free-gib', type=int, default=30)

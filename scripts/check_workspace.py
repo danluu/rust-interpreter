@@ -145,6 +145,7 @@ def main():
     paths = [ROOT / p for p in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'rustfmt.toml']]
     paths += sorted((ROOT / 'scripts').glob('*.py'))
     paths += sorted((ROOT / 'tests').glob('test_*.py'))
+    paths.append(ROOT / 'benchmarks/corpus.json')
     paths += [p for p in (ROOT / 'crates').rglob('*') if p.is_file() and
               (p.suffix == '.rs' or p.name == 'Cargo.toml')]
     frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}

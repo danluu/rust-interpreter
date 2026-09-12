@@ -16,6 +16,7 @@ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require
 from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
 from workflow_measurements import child_usage, child_cpu_since, initial_modes, per_edit_spread, sample_path, source_states
 from workflow_controls import native_command, native_environment, exporter_seconds
+from workflow_controls import DEFAULT_BUILD_JOBS, DEFAULT_NATIVE_JOBS, DEFAULT_NATIVE_PROFILE, DEFAULT_TEST_THREADS
 from workflow_io import SourceEdit, capture, require_space, write_json
 from workflow_case_file import load as load_case_file, source_file
 from workflow_jobs import UniqueJobCount, resolve_build_jobs
@@ -47,12 +48,12 @@ def main():
     parser.add_argument('--cycles',type=int,default=1,help='repeat the actual edit sequence after rebuilding an original-source anchor (1..30)')
     parser.add_argument('--initial-mode-order',type=lambda value:value.split(','),help='comma-separated permutation of the three modes; rotates cold-run order without changing mode settings')
     parser.add_argument('--minimum-free-gib',type=int,default=8,help='refuse to start a command below this free-space threshold; not a disk reservation')
-    parser.add_argument('--jobs',type=int,action=UniqueJobCount,default=4,help='default Cargo jobs for custom engines and native (1..256)')
-    parser.add_argument('--native-jobs',type=int,action=UniqueJobCount,help='override native/check Cargo jobs (1..256)')
+    parser.add_argument('--jobs',type=int,action=UniqueJobCount,default=DEFAULT_BUILD_JOBS,help='default custom Cargo jobs (1..256); interactive latency preset')
+    parser.add_argument('--native-jobs',type=int,action=UniqueJobCount,default=DEFAULT_NATIVE_JOBS,help='native/check Cargo jobs (1..256)')
     parser.add_argument('--baseline-jobs',type=int,action=UniqueJobCount,help='override baseline Cargo jobs in a paired comparison (1..256)')
     parser.add_argument('--candidate-jobs',type=int,action=UniqueJobCount,help='override candidate Cargo jobs in a paired comparison (1..256)')
-    parser.add_argument('--native-profile',choices=['repository','o0-incremental'],default='repository',help='explicit native/check profile override; no fastest-native claim')
-    parser.add_argument('--native-test-threads',default='1',help='positive libtest thread count or default')
+    parser.add_argument('--native-profile',choices=['repository','o0-incremental'],default=DEFAULT_NATIVE_PROFILE,help='explicit native/check profile override; no fastest-native claim')
+    parser.add_argument('--native-test-threads',default=DEFAULT_TEST_THREADS,help='positive libtest thread count or default')
     parser.add_argument('--native-rustflag',action='append',default=[],help='one explicit native/check rustc argument; repeat, using --native-rustflag=VALUE')
     parser.add_argument('--check-floor',action='store_true',help='independently time cargo check of the library-test target after each primary mode triplet')
     parser.add_argument('--cargo-timings',action='store_true',help='collect Cargo unit timing reports in every mode; report generation remains timed')

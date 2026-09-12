@@ -1,6 +1,13 @@
 """Explicit native controls and exporter timing fields for edit benchmarks."""
 import re
 
+# Interactive latency preset. Existing experiments pass their worker settings
+# explicitly; CPU usage is still reported independently of wall latency.
+DEFAULT_BUILD_JOBS = 18
+DEFAULT_NATIVE_JOBS = 18
+DEFAULT_NATIVE_PROFILE = 'o0-incremental'
+DEFAULT_TEST_THREADS = 'default'
+
 
 def native_environment(base, profile, rustflags):
     env = base.copy()
