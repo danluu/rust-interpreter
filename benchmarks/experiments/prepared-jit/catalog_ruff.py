@@ -64,7 +64,7 @@ def main():
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,tool_key=key,revision=reference['revision'],
             original_sha256=sha(path),executed_source_sha256=hashlib.sha256(edited).hexdigest(),tests=names,
-            cargo_incremental=False,guest_rustflags=reference['guest_rustflags'],minimum_start_gib=start_floor,minimum_child_gib=8,
+            cargo_incremental=False,guest_rustflags=reference['guest_rustflags'],allocation_limit=reference.get('allocation_limit'),minimum_start_gib=start_floor,minimum_child_gib=8,
             scope='Actual custom export; matching retained native executable, no native rebuild or performance comparison'))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_PROFILE_')) and
             k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER',
@@ -89,6 +89,8 @@ def main():
                 '--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
                 '--instruction-limit',str(reference['instruction_limit']),'--isolated-batch','fresh','--suite-report',str(report_path),
                 '--cache-namespace',args.run_id,*[a for name in names for a in ['--entry',name]]]
+            if reference.get('allocation_limit') is not None:
+                command+=['--allocation-limit',str(reference['allocation_limit'])]
             for flag in ['trap-unsupported-calls','run-try-callbacks']:
                 if reference.get(flag.replace('-','_')):command.append('--'+flag)
             row=invoke('export-and-execute',command);assert row['returncode']==0,row['stderr']
@@ -102,6 +104,7 @@ def main():
             assert sha(artifact)==launch['artifact_sha256']==json.loads(catalog.read_text())['artifact_sha256']
             base=[str(tool/'rust-interp-vm'),'--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
                   '--instruction-limit',str(reference['instruction_limit'])]
+            if reference.get('allocation_limit') is not None:base+=['--allocation-limit',str(reference['allocation_limit'])]
             normal=invoke('ordinary-batch',base+[str(artifact)]);assert normal['returncode']==0 and normal['stdout']=='0\n'
             exact=[];consumption=[]
             for label,mode,action in [('fresh-record','fresh','record'),('fresh-replay','fresh','replay'),('prepared-replay','prepared','replay')]:

@@ -1,21 +1,20 @@
-# Fresh token allocation failure
+# Token allocation-limit mismatch
 
-A nonincremental fre export passes native controls but fails the first of three
-custom token tests with a guest capacity/allocation trap in RawVec::grow_one.
-The new artifact also fails ordinary execution on the older JIT, new JIT and
-interpreter, and fails prepared isolation. The older exporter reproduces the
-failure under the same explicit nonincremental Cargo profile and MIR flags.
-This is evidence of a latent lowering problem, not a PreparedJit-only fault.
+The first fre catalog controller omitted the existing reference's explicit
+150,000-allocation limit. It used the default 100,000 and trapped in the
+exhaustive test's generate() helper. Older/newer exporters and runtimes reproduced
+the same failure under that incorrect limit. Those controls did not establish a
+lowering defect. The diagnostic stack and original workflow receipt exposed the
+configuration mistake. Preserve the failed run and this correction.
 
-Preserve exact passing and failing artifacts. Compare the RawVec path, then
-reduce the responsible operation or compiler configuration into a native/custom
-fixture. Do not avoid the failing path, change expected assertions, synthesize
-allocation success, or classify a trap as an expected wrong-edit failure.
-Keep strict checking, the original runtime limits, two workers and 8 GiB floor.
-After a fix, qualify both incremental histories and fresh nonincremental exports,
-then rerun the complete affected source-edit command. Hold catalog publication
-until this fresh-export correctness gap is understood and repaired.
-
-Automatic suite discovery follows this correctness work. Prepared/fresh timing
-results already published remain descriptive, restricted to their recorded
-artifacts, profiles and edited histories.
+Propagate the independently recorded allocation limit to both Cargo-launched and
+saved VM commands. Complete the qualification at 150,000 using the exact owned
+previous export cache and source state, then ordinary/fresh/prepared comparisons
+with controlled entropy. Verify all native assertions and original source
+restoration. The earlier source is already strictly checked; reusing its own
+nonincremental cache avoids another cold dependency cache. The cache is private
+to the terminal failed run and protected by the normal invocation lock. Admit
+this correction at the existing 8 GiB child floor; the larger fresh-cache floor
+still applies to new cold exports. Preserve prior bytecode before any re-export;
+reuse its immutable saved copy if the corrected launch selects identical bytes.
+No timing comparison or guest semantic change is involved.
