@@ -10,11 +10,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut engine = Engine::Interpreter;
     let mut profile_path = None;
     let mut profile_test = None;
+    let mut selection_requires_profile = false;
     let mut isolated_batch = None;
     let mut suite_report = None;
     let mut suite_catalog = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
@@ -46,9 +47,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 if profile_path.is_some() { return Err("duplicate profile path".into()); }
                 profile_path = Some(args.next().ok_or("missing profile path")?);
             }
-            "--profile-test" => {
-                if profile_test.is_some() { return Err("duplicate profile test".into()); }
-                profile_test = Some(args.next().ok_or("missing exact profile test name")?);
+            "--profile-test" | "--select-test" => {
+                if profile_test.is_some() { return Err("duplicate test selection".into()); }
+                selection_requires_profile = path == "--profile-test";
+                profile_test = Some(args.next().ok_or("missing exact test name")?);
             }
             "--allocation-limit" => {
                 limits.allocations = args.next().ok_or("missing allocation limit")?.parse()?;
@@ -100,12 +102,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if isolated_batch.is_some() != suite_report.is_some() {
         return Err("isolated batch mode and suite report must be supplied together".into());
     }
-    if profile_test.is_some() && (profile_path.is_none() || suite_catalog.is_none()
+    if profile_test.is_some() && ((selection_requires_profile && profile_path.is_none()) || suite_catalog.is_none()
         || isolated_batch.is_some() || !args.is_empty()) {
-        return Err("--profile-test requires --profile and --suite-catalog without an isolated batch or entry arguments".into());
+        return Err(if selection_requires_profile {
+            "--profile-test requires --profile and --suite-catalog without an isolated batch or entry arguments"
+        } else {
+            "--select-test requires --suite-catalog without an isolated batch or entry arguments"
+        }.into());
     }
     if suite_catalog.is_some() && isolated_batch.is_none() && profile_test.is_none() {
-        return Err("--suite-catalog requires an isolated batch or --profile-test".into());
+        return Err("--suite-catalog requires an isolated batch, --profile-test or --select-test".into());
     }
     let catalog_bytes = if let Some(path) = suite_catalog {
         if std::fs::metadata(&path)?.len() > 8 * 1024 * 1024 {
@@ -119,12 +125,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let catalog = catalog.as_ref().unwrap();
         let entries = catalog.validated_entries(&program, &bytes)?;
         let selected = entries.iter().find(|(entry, _)| *entry == name)
-            .ok_or("profile test name is absent from the exact entry catalog")?.1;
+            .ok_or("test name is absent from the exact entry catalog")?.1;
         rust_interp_bytecode::validate(&program)?;
         // Record the selection against the original artifact before changing
         // only the in-memory entry. The bytecode file and all functions stay
         // intact. Each command starts fresh guest state and a fresh JIT owner.
-        eprintln!("rust-interp-profile-selection: {}", serde_json::json!({
+        let prefix=if selection_requires_profile {"rust-interp-profile-selection"} else {"rust-interp-test-selection"};
+        eprintln!("{prefix}: {}", serde_json::json!({
             "schema_version":1,"name":name,"function":selected,"original_entry":program.entry,
             "artifact_sha256":format!("{:x}",Sha256::digest(&bytes)),
             "catalog_sha256":format!("{:x}",Sha256::digest(catalog_bytes.as_ref().unwrap())),

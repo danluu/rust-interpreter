@@ -235,6 +235,52 @@ fn catalog_profile_preserves_existing_output_and_reports_selected_failure() {
 }
 
 #[test]
+fn catalog_selection_runs_without_instrumentation_and_dumps_the_selected_code() {
+    let files=Files::new();let mut program=fixture(true);
+    program.functions[program.entry].code=vec![Op::Trap{message:"batch root must not run".into()}];
+    let artifact=files.program(&program);let before=std::fs::read(&artifact).unwrap();
+    let cat=files.0.join("catalog.json");let cat_bytes=serde_json::to_vec(&catalog(&program)).unwrap();std::fs::write(&cat,&cat_bytes).unwrap();
+    for engine in ["interpreter","jit"] {
+        let dump=files.0.join("code");
+        let mut cmd=Command::new(env!("CARGO_BIN_EXE_rust-interp-vm"));cmd.args(["--engine",engine,"--select-test","second","--suite-catalog"]).arg(&cat);
+        if engine=="jit" {cmd.args(["--jit-resumable-calls","--jit-persistent-registers","--jit-code-dump"]).arg(&dump);}
+        let run=cmd.arg(&artifact).output().unwrap();assert!(run.status.success(),"{}",String::from_utf8_lossy(&run.stderr));assert_eq!(run.stdout,b"0\n");
+        let stderr=String::from_utf8(run.stderr).unwrap();
+        let selected:Vec<Value>=stderr.lines().filter_map(|line|line.strip_prefix("rust-interp-test-selection: ").map(|s|serde_json::from_str(s).unwrap())).collect();
+        assert_eq!(selected.len(),1);let selected=&selected[0];assert_eq!(selected["name"],"second");assert_eq!(selected["function"],1);
+        assert_eq!(selected["artifact_sha256"],format!("{:x}",Sha256::digest(&before)));
+        assert_eq!(selected["catalog_sha256"],format!("{:x}",Sha256::digest(&cat_bytes)));
+        if engine=="jit" {
+            let map:Value=serde_json::from_slice(&std::fs::read(dump.join("map.json")).unwrap()).unwrap();assert_eq!(map["profiled"],false);
+            assert!(map["ranges"].as_array().unwrap().iter().any(|r|r["function"]==1));
+            assert!(map["ranges"].as_array().unwrap().iter().all(|r|r["function"]!=0&&r["function"]!=3));
+        }
+        assert_eq!(std::fs::read(&artifact).unwrap(),before);
+    }
+}
+
+#[test]
+fn uninstrumented_selection_rejects_bad_catalogs_conflicts_and_selected_failures() {
+    let files=Files::new();let program=fixture(true);let artifact=files.program(&program);
+    let cat=files.0.join("catalog.json");let original=serde_json::to_value(catalog(&program)).unwrap();
+    for index in 0..7 {
+        let mut contents=original.clone();if index==1 {contents["artifact_sha256"]="0".repeat(64).into();}
+        if index==2 {contents["entries"][1]["function"]=0.into();}
+        std::fs::write(&cat,serde_json::to_vec(&contents).unwrap()).unwrap();
+        let dump=files.0.join(format!("rejected-{index}"));let mut cmd=Command::new(env!("CARGO_BIN_EXE_rust-interp-vm"));
+        cmd.args(["--engine","jit","--jit-resumable-calls","--select-test",if index==0 {"absent"} else {"second"}]);
+        if index!=3 {cmd.arg("--suite-catalog").arg(&cat);}
+        if index==4 {cmd.args(["--profile-test","second"]);}
+        if index==5 {cmd.args(["--isolated-batch","prepared","--suite-report"]).arg(files.0.join("not-created.json"));}
+        cmd.arg("--jit-code-dump").arg(&dump).arg(&artifact);if index==6 {cmd.arg("1");}
+        assert!(!cmd.output().unwrap().status.success());assert!(!dump.exists());
+    }
+    std::fs::write(&cat,serde_json::to_vec(&original).unwrap()).unwrap();
+    let run=Command::new(env!("CARGO_BIN_EXE_rust-interp-vm")).args(["--select-test","first","--suite-catalog"]).arg(&cat).arg(&artifact).output().unwrap();
+    assert!(!run.status.success());assert!(String::from_utf8_lossy(&run.stderr).contains("selected failure"));
+}
+
+#[test]
 fn explicit_catalog_survives_actual_batch_call_optimization_and_isolates_failures() {
     for failure in [false, true] {
         let files = Files::new();
