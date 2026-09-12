@@ -1,0 +1,105 @@
+{
+  "status": "passed",
+  "tool_key": "366567663f043d4a2370d72ae7eeade60bb91cda07ac19e12831491b4f606504",
+  "control_tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+  "binaries": {
+    "rust-interp-vm": "d0eb1143476fbd9344152601d35249d2343b8f85b09483eca7b766504ad33be0",
+    "rust-interp-mir-export": "556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095",
+    "rust-interp-rustc-wrapper": "ba366dd3b4815e4ddb25d130c5d1f861396bc24c3f99cf960bb7433618d29f35"
+  },
+  "tests": {
+    "debug": {
+      "passed": 293,
+      "ignored": 1,
+      "budget_register_tests": [
+        "jit::resumable::tests::budget_register::arithmetic_memory_and_assertion_exits_publish_the_same_budget",
+        "jit::resumable::tests::budget_register::budget_survives_internal_entries_and_profiled_fallback_at_every_step",
+        "jit::resumable::tests::budget_register::large_register_zero_and_abi_copies_preserve_budget_and_callee_pointer",
+        "jit::resumable::tests::budget_register::return_copy_fault_preserves_the_charged_budget_and_fault_order"
+      ]
+    },
+    "release": {
+      "passed": 293,
+      "ignored": 1,
+      "budget_register_tests": [
+        "jit::resumable::tests::budget_register::arithmetic_memory_and_assertion_exits_publish_the_same_budget",
+        "jit::resumable::tests::budget_register::budget_survives_internal_entries_and_profiled_fallback_at_every_step",
+        "jit::resumable::tests::budget_register::large_register_zero_and_abi_copies_preserve_budget_and_callee_pointer",
+        "jit::resumable::tests::budget_register::return_copy_fault_preserves_the_charged_budget_and_fault_order"
+      ]
+    }
+  },
+  "source": ".work/budget-register-build-02/tool-source",
+  "provenance": ".work/budget-register-build-02/provenance.json",
+  "provenance_sha256": "10ae9d51538c30b19c67d2cb8690c7349f33fbed4160f7198e520e871ba4a9e8",
+  "commands": [
+    {
+      "label": "debug",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/Users/danluu/dev/rust-interp/.work/budget-register-build-02/tool-source/Cargo.toml",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/budget-register-build-02",
+        "--workspace"
+      ],
+      "pid": 94190,
+      "returncode": 0,
+      "log_sha256": "0be12b2c5e342dc8fa5ed6492eb994b2b10189508482f9488d5cbdc1c9d1230e"
+    },
+    {
+      "label": "release",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/Users/danluu/dev/rust-interp/.work/budget-register-build-02/tool-source/Cargo.toml",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/budget-register-build-02",
+        "--workspace",
+        "--release"
+      ],
+      "pid": 99702,
+      "returncode": 0,
+      "log_sha256": "95c8d16a12a5841cc8caca3af65f79c4802e25d5a77d97680a3ab2845991fb37"
+    },
+    {
+      "label": "vm",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "build",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/Users/danluu/dev/rust-interp/.work/budget-register-build-02/tool-source/Cargo.toml",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/budget-register-build-02",
+        "--release",
+        "-p",
+        "rust-interp-bytecode",
+        "--bin",
+        "rust-interp-vm"
+      ],
+      "pid": 4702,
+      "returncode": 0,
+      "log_sha256": "6bfa9e18ffdef821c711a542cfebd7db0982665615563e5a191285e489609c6f"
+    }
+  ],
+  "experimental_budget_register": true,
+  "production_change": false,
+  "performance_measurement": false
+}
