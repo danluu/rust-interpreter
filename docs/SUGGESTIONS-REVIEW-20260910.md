@@ -120,8 +120,9 @@ review are not commitments or evidence of feasibility.
 
 - Item 3.3's isolated x22 budget ABI now passes [293 debug/release workspace tests](../results/budget-register-build-02/assessment.md),
   one ignored. It preserves exact checking points, fault order, host ABI and
-  all persistent register pairs. Broad execution qualification is underway;
-  matched A/A and real-edit performance gates remain pending. The first build's
+  all persistent register pairs. Native validation (47,004 commands), original-artifact smoke (20) and TLS
+  qualification (245) now pass; full fre replay is active. Matched A/A and
+  real-edit performance gates remain pending. The first build's
   test-message mismatch is preserved, with no runtime error change.
 
 - Aggregate relocation now passes all [seven fixed held-outs](../results/aggregate-relocation-heldout-recovery-01/assessment.md):

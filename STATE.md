@@ -72,25 +72,31 @@ Focused cases cover every budget, faults, profiles and large register/ABI copies
 Build 01's test-message mismatch remains preserved; runtime error behavior did
 not change. The implementation is committed and production sources are unchanged.
 
-The [native differential validator](results/budget-register-native-01/assessment.md)
-passes all 47,004 commands across both modes. Smoke 01 matched folded-trie
-success counters/profiles but its checker expected a shortened budget error.
-The exact existing literal is corrected; attempts 02 and 03 were rejected at
-lock acquisition before guest execution. All failures and sources are preserved.
-A separate user-owned cleanup session is archiving caches. Do not control it or
-queue another lock waiter during its active archive work. Inspect lock holders
-and active archive children read-only, not the lifetime of the Codex session.
-No task-owned process is currently active.
+The [native validator](results/budget-register-native-01/assessment.md) passes
+47,004 commands. The [original-artifact smoke](results/budget-register-smoke-05/assessment.md)
+passes 20 commands, and the TLS/destructor suite passes 245 commands. All original
+assertions and runtime limits remain.
+
+Smoke 01's incorrect expected error literal and lock rejections 02/03 are
+preserved. Smoke 04 exposed an invalid cross-process determinism assumption:
+token uses actual host entropy. An [unchanged-VM repetition](results/budget-register-randomness-01/assessment.md)
+confirms varying paths while all profiles account exactly for their own totals.
+Smoke 05 preserves randomness, checks per-run accounting, and retains exact
+cross-run counts for deterministic folded-trie. Performance gates are unchanged.
+
+`budget-register-fre-01` is active (supervisor 1972), replaying all 389 discovered
+fre bodies with fresh native controls. Its frozen files must remain unchanged.
+Wait for its controller and supervisor to finish before another benchmark user.
 
 Next actions:
-1. Once external archive activity is terminal, run the corrected exact-artifact smoke
-   under fresh ID `budget-register-smoke-04`,
-   then TLS/destructor and fre body qualifications against the same VM.
-2. Run matched A/A controls for both primaries, then the fixed primary gates:
-   at least 10% token complete-command wall improvement, lower CPU and beyond
-   the A/A envelope; folded within 5% wall/CPU regression.
-3. Require all seven independent held-out guards before any adoption; source
-   integration remains a separate reproducible component-identity check.
+1. Verify fre's 382 passes, seven ignored and 382 identical compiler artifacts.
+2. Run `budget_workflows.py` in its [fixed order](benchmarks/experiments/aggregate-byte-writes/BUDGET-WORKFLOWS.md):
+   A/A folded, A/A token, candidate folded, candidate token. Use the supervisor
+   and the script's fixed run IDs. No valid A/A retries or changed thresholds.
+3. Token must improve full edit/build/test wall time at least 10%, reduce CPU
+   and exceed its A/A envelope; folded stays within 5% wall/CPU regression.
+4. Require all seven separate held-out guards before adoption. If primary gates
+   fail, park this ABI without tuning variants; source integration is separate.
 
 The unbounded goal remains active. No budget-register performance result exists.
 
