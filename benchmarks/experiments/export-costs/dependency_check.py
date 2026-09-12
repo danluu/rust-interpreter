@@ -16,7 +16,7 @@ from interpreter import installed_tools, TOOLCHAIN
 from std_mir import checked_std_mir
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from reuse_build import CONTROL
-from reuse_check import observation, reconstruction, persistent_cache
+from reuse_check import observation, reconstruction, persistent_cache, actual_cache
 
 
 def main():
@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--build', type=Path, default=ROOT / 'results/export-reuse-build-03/summary.json')
     parser.add_argument('--binding-replay-qualification', type=Path)
     parser.add_argument('--persistent-cache', action='store_true')
+    parser.add_argument('--function-reuse', action='store_true')
     args = parser.parse_args()
     assert re.fullmatch(r'export-dependency-fixture-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -34,11 +35,13 @@ def main():
         build = json.loads(build_path.read_text())
         binding_replay = args.binding_replay_qualification is not None
         assert not args.persistent_cache or binding_replay
+        assert not args.function_reuse or args.persistent_cache
         assert build['status'] == 'passed' and set(build['tests'].values()) == ({50} if args.persistent_cache else {47} if binding_replay else {44})
         if binding_replay:
             qualified = json.loads(args.binding_replay_qualification.read_text())
-            assert qualified['status'] == 'passed' and qualified['commands'] == 231
+            assert qualified['status'] == 'passed' and qualified['commands'] == (337 if qualified.get('function_reuse') else 231)
             assert qualified['binding_replay'] and qualified['tool_key'] == build['tool_key']
+            assert not args.function_reuse or qualified['function_reuse']
         tool, key = installed_tools(build['tool_key'])
         baseline, _ = installed_tools(CONTROL)
         sysroot, _, std_key, _ = checked_std_mir(TOOLCHAIN)
@@ -81,16 +84,17 @@ def main():
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER', 'CARGO_INCREMENTAL']}
         stages = {}
-        for mode in ['native', 'retained', 'off', 'on']:
+        for mode in ['native', 'retained', 'off', 'on'] + (['reuse'] if args.function_reuse else []):
             stage = work / mode
             stage.mkdir()
             stages[mode] = stage
         records, observations, seen = [], [], {}
         replay_reports = []
         cache_reports = []
+        actual_reports = []
         finalized_cache_files = {}
-        def cache_files():
-            return {str(p.relative_to(ROOT)): sha(p) for p in (stages['on'] / 'incremental').glob('*/s-*/rust-interp-functions-v1.bin')
+        def cache_files(mode='on'):
+            return {str(p.relative_to(ROOT)): sha(p) for p in (stages[mode] / 'incremental').glob('*/s-*/rust-interp-functions-v1.bin')
                     if not p.parent.name.endswith('-working')}
         def invoke(label, command, selected=env, success=True):
             require_space(ROOT, 8)
@@ -119,7 +123,7 @@ def main():
                 expected = {seed: invoke(name + '-native-' + seed, [native, seed])[0] for seed in seeds}
                 assert all(re.fullmatch(r'\d+\n', value) for value in expected.values())
             hashes = []
-            for mode, compiler in [('retained', baseline), ('off', tool), ('on', tool)]:
+            for mode, compiler in [('retained', baseline), ('off', tool), ('on', tool)] + ([('reuse', tool)] if args.function_reuse else []):
                 stage = stages[mode]
                 artifact = stage / 'program.rbc'
                 selected = dict(env, RUST_INTERP_OUTPUT=str(artifact), RUST_INTERP_ENTRY='rust_interp_entry')
@@ -131,6 +135,9 @@ def main():
                         selected['RUST_INTERP_BINDING_REPLAY'] = '1'
                     if args.persistent_cache:
                         selected['RUST_INTERP_FUNCTION_CACHE'] = 'verify'
+                reuse_before = cache_files('reuse') if mode == 'reuse' else {}
+                if mode == 'reuse':
+                    selected['RUST_INTERP_FUNCTION_CACHE'] = 'reuse'
                 _, stderr = invoke(name + '-export-' + mode, [compiler / 'rust-interp-mir-export', source / 'main.rs',
                     '--crate-name', 'dependency_case', '--edition=2024', '--emit=metadata', '--sysroot', sysroot,
                     '-C', 'incremental=' + str(stage / 'incremental'), '-o', stage / 'program.rmeta'], selected, success=valid)
@@ -145,10 +152,22 @@ def main():
                         latest = max(finalized_cache_files, key=lambda p: (ROOT / p).parent.name)
                         assert latest in after and all(finalized_cache_files.get(p) == h for p, h in after.items()), 'invalid source published or changed a finalized payload'
                         write(work / 'invalid-type-finalized-cache-files.json', after)
+                    if mode == 'reuse':
+                        after = cache_files('reuse')
+                        latest = max(reuse_before, key=lambda p: (ROOT / p).parent.name)
+                        assert latest in after and all(reuse_before.get(p) == h for p, h in after.items())
+                        write(work / 'invalid-type-reuse-cache-files.json', after)
                     continue
                 saved = work / (name + '-' + mode + '.rbc')
                 shutil.copy2(artifact, saved)
                 hashes.append(sha(saved))
+                if mode == 'reuse':
+                    cached = actual_cache(stderr)
+                    assert cached['skipped_functions'] == 0 if name == 'original' else cached['skipped_functions'] > 0
+                    after = cache_files('reuse')
+                    assert after and all(after[p] == h for p, h in reuse_before.items() if p in after)
+                    write(work / (name + '-reuse-cache-files.json'), after)
+                    actual_reports.append(dict(state=name, **cached))
                 if mode in ['off', 'on']:
                     report, scopes = observation(stderr, saved)
                     assert report['schema_version'] == (3 if mode == 'on' else 2)
@@ -210,8 +229,9 @@ def main():
               all_lowering_executed=True, frozen=frozen, raw=str(work.relative_to(ROOT)),
               binding_replay=binding_replay, reconstruction=replay_reports,
               persistent_cache=args.persistent_cache, prior_payload_verification=cache_reports,
+              function_reuse=args.function_reuse, actual_reuse=actual_reports,
               records_sha256=sha(work / 'records.json'), observations_sha256=sha(work / 'observations.json'),
-              scope='All original lowering executes. Persistent verification, when enabled, reconstructs the second graph from prior-session payloads; this is not a performance measurement.')
+              scope='The observation modes fully lower and compare functions. The optional reuse mode actually skips green cached functions; all modes match retained bytecode and original assertions. This is not a performance measurement.')
         out = ROOT / 'results' / args.run_id
         out.mkdir(exist_ok=False)
         write(out / 'summary.json', result)

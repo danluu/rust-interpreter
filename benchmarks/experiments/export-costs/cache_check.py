@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Qualify owned persistent-cache faults, policy changes and failed publication."""
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -17,7 +16,7 @@ from interpreter import installed_tools, TOOLCHAIN
 from std_mir import checked_std_mir
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from reuse_build import CONTROL
-from reuse_check import observation, reconstruction, persistent_cache
+from reuse_check import observation, reconstruction, persistent_cache, actual_cache
 
 
 def main():
@@ -25,6 +24,7 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--qualification', type=Path, required=True)
+    parser.add_argument('--function-reuse', action='store_true')
     args = parser.parse_args()
     assert re.fullmatch(r'export-cache-fixture-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -33,7 +33,8 @@ def main():
         build = json.loads(args.build.read_text())
         qualified = json.loads(args.qualification.read_text())
         assert build['status'] == 'passed' and set(build['tests'].values()) == {50}
-        assert qualified['commands'] == 229 and qualified['persistent_cache']
+        assert qualified['commands'] == (293 if qualified.get('function_reuse') else 229) and qualified['persistent_cache']
+        assert not args.function_reuse or qualified['function_reuse']
         assert qualified['candidate_dependency_boundary_supported'] and qualified['all_lowering_executed']
         assert qualified['tool_key'] == build['tool_key']
         tool, key = installed_tools(build['tool_key'])
@@ -56,7 +57,7 @@ def main():
         paths += [p / n for p in [tool, baseline] for n in ['rust-interp-mir-export', 'rust-interp-vm', 'rust-interp-rustc-wrapper']]
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'plan.json', dict(frozen=frozen, source_commit=build['source_commit'], tool_key=key,
-              performance_measurement=False, all_original_lowering_executed=True,
+              performance_measurement=False, function_reuse=args.function_reuse,
               faults=['body checksum', 'header namespace', 'missing cache', 'trap policy', 'callback policy',
                       'bytecode publication after cache staging'], compiler_cache_mutation_scope=str(work)))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
@@ -103,12 +104,20 @@ def main():
                 RUST_INTERP_FUNCTION_COSTS='1', RUST_INTERP_EXPORT_TIMINGS='1',
                 RUST_INTERP_FUNCTION_DEPENDENCIES='1', RUST_INTERP_BINDING_REPLAY='1', RUST_INTERP_FUNCTION_CACHE='verify')
             selected.update(policy or {})
+            if args.function_reuse:
+                for key in ['RUST_INTERP_FUNCTION_COSTS', 'RUST_INTERP_EXPORT_TIMINGS', 'RUST_INTERP_FUNCTION_DEPENDENCIES', 'RUST_INTERP_BINDING_REPLAY']:
+                    selected.pop(key)
+                selected['RUST_INTERP_FUNCTION_CACHE'] = 'reuse'
             before = finalized()
             _, stderr = invoke(label + '-export', command(tool), selected)
             assert sha(artifact) == digest, 'cache control changed the bytecode'
-            census, _ = observation(stderr, artifact)
-            replay = reconstruction(stderr, census)
-            cached = persistent_cache(stderr, census)
+            if args.function_reuse:
+                census, replay = None, None
+                cached = actual_cache(stderr)
+            else:
+                census, _ = observation(stderr, artifact)
+                replay = reconstruction(stderr, census)
+                cached = persistent_cache(stderr, census)
             after = finalized()
             assert after and all(after[p] == h for p, h in before.items() if p in after)
             # Retain bytes independently of rustc's generation collection and
@@ -119,7 +128,8 @@ def main():
                 shutil.copy2(ROOT / path, saved)
                 inventory[path] = dict(sha256=h, snapshot=str(saved.relative_to(ROOT)))
             write(work / (label + '-cache-files.json'), inventory)
-            write(work / (label + '.census.json'), census)
+            if census:
+                write(work / (label + '.census.json'), census)
             for engine in ['interpreter', 'jit']:
                 flags = ['--jit-resumable-calls', '--jit-persistent-registers'] if engine == 'jit' else []
                 for seed in seeds:
@@ -127,7 +137,7 @@ def main():
                         [tool / 'rust-interp-vm', '--engine', engine, *flags, artifact, seed])
                     assert output == expected[seed]
             reports.append(dict(label=label, cache=cached, reconstruction=replay,
-                                nodes=[f['dependency']['node'] for f in census['functions']]))
+                                nodes=[f['dependency']['node'] for f in census['functions']] if census else None))
             write(work / 'reports.json', reports)
             print('PASS', label, cached['previous_payload_uses'], 'prior payloads', flush=True)
             return cached, selected
@@ -168,7 +178,8 @@ def main():
                 cached, selected = verify(label, digest, policy)
                 assert cached['namespace'] != previous['cache']['namespace']
                 assert cached['loaded_entries'] == cached['previous_payload_uses'] == 0 and cached['red_functions'] == 20
-                assert set(previous['nodes']).isdisjoint(reports[-1]['nodes'])
+                if not args.function_reuse:
+                    assert set(previous['nodes']).isdisjoint(reports[-1]['nodes'])
             before = finalized()
             latest = max(before, key=lambda p: (ROOT / p).parent.name)
             missing_output = work / 'absent-parent' / 'failed.rbc'
@@ -187,7 +198,8 @@ def main():
             all_artifact_hashes_identical=True, original_assertions_unchanged=True, source_restored=True,
             checksum_namespace_missing_controls=True, both_policy_namespaces_and_nodes_invalidated=True,
             failed_publication_after_staging_published_no_session=True, cache_recovery=True,
-            all_original_lowering_executed=True, performance_measurement=False, reports=reports, frozen=frozen,
+            all_original_lowering_executed=not args.function_reuse, function_reuse=args.function_reuse,
+            performance_measurement=False, reports=reports, frozen=frozen,
             raw=str(work.relative_to(ROOT)), records_sha256=sha(work / 'records.json'))
         out = ROOT / 'results' / args.run_id
         out.mkdir(exist_ok=False)
