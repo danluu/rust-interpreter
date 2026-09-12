@@ -51,6 +51,7 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
     kinds = parser.add_mutually_exclusive_group()
+    kinds.add_argument('--capacity-credit-candidate', action='store_true', help='qualify the 422-test capacity-credit runtime')
     kinds.add_argument('--main-integration-candidate', action='store_true', help='qualify the 418-test compiler/runtime integration')
     kinds.add_argument('--call-protocol-candidate', action='store_true', help='qualify the 395-test call-protocol runtime')
     kinds.add_argument('--composed-candidate', action='store_true',
@@ -58,10 +59,10 @@ def main():
     parser.add_argument('--selection-qualification', type=Path,
                         help='exact saved-test qualification for a rebuilt composed VM')
     args = parser.parse_args()
-    runtime_candidate = args.composed_candidate or args.call_protocol_candidate or args.main_integration_candidate
+    runtime_candidate = args.capacity_credit_candidate or args.composed_candidate or args.call_protocol_candidate or args.main_integration_candidate
     if runtime_candidate and args.selection_qualification is None:
         parser.error('a runtime candidate requires --selection-qualification')
-    prefix = 'call-protocol-main' if args.main_integration_candidate else 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development' if args.composed_candidate else 'parallel-suites'
+    prefix = 'call-capacity-credit' if args.capacity_credit_candidate else 'call-protocol-main' if args.main_integration_candidate else 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development' if args.composed_candidate else 'parallel-suites'
     assert not runtime_candidate or args.phase == 'serial'
     assert re.fullmatch(prefix + '-' + args.phase + r'-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -73,6 +74,8 @@ def main():
         builds = dict(candidate=args.build.resolve(strict=True),
                       retained=ROOT / ('results/parallel-suites-build-01/summary.json'
                           if runtime_candidate else 'results/selected-native-build-01/summary.json'))
+        if args.capacity_credit_candidate:
+            paths.append(ROOT / 'benchmarks/experiments/call-capacity-credit/PLAN.md')
         if args.main_integration_candidate:
             paths.append(ROOT / 'benchmarks/experiments/call-protocol-main/PLAN.md')
         if args.call_protocol_candidate:
@@ -83,7 +86,7 @@ def main():
         for mode, path in builds.items():
             build = json.loads(path.read_text())
             assert build['status'] == 'passed'
-            candidate_tests = 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393
+            candidate_tests = 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393
             expected = dict(passed=(candidate_tests if mode == 'candidate' else 365) if runtime_candidate
                             else (365 if mode == 'candidate' else 360), ignored=1)
             assert build['tests']['test-debug'] == build['tests']['test-release'] == expected
