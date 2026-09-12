@@ -152,6 +152,7 @@ pub(crate) fn remember(lower: &mut Lower<'_, '_>, block: usize, event: usize, st
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct Write { block: usize, event: usize, local: usize, coverage: Coverage }
+type Reason = &'static str;
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Observation {
     id: usize,
@@ -163,13 +164,13 @@ pub(crate) struct Observation {
     slots: Vec<Slot>,
     shapes: Vec<(usize, usize)>,
     #[serde(deserialize_with = "owned_reasons")]
-    reasons: Vec<Option<&'static str>>,
+    reasons: Vec<Option<Reason>>,
     events: Vec<Vec<Event>>,
     successors: Vec<Vec<usize>>,
     writes: Vec<Write>,
     baseline: bool,
     #[serde(deserialize_with = "owned_reason")]
-    decline: Option<&'static str>,
+    decline: Option<Reason>,
 }
 
 // Cache decoding retains only this closed diagnostic vocabulary. It never

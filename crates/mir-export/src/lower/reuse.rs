@@ -50,7 +50,8 @@ impl<'tcx> Exporter<'tcx> {
             || self.pending != replay.pending || self.pointer_shapes != replay.pointer_shapes
             || self.indirect_shapes != replay.indirect_shapes || self.allocations != replay.allocations
             || self.tls_addresses != replay.tls_addresses || self.runtime_errno != replay.runtime_errno
-            || self.thread_locals != replay.thread_locals || self.data != replay.data || self.statics != replay.statics
+            || self.thread_locals.len() != replay.thread_locals.len()
+            || self.thread_locals.iter().zip(&replay.thread_locals).any(|(a, b)| (a.offset, a.size) != (b.offset, b.size)) || self.data != replay.data || self.statics != replay.statics
             || self.unavailable_calls != replay.unavailable_calls
         {
             return Err("binding replay exporter graph differs from full lowering".into());
@@ -75,6 +76,17 @@ pub(super) enum Event {
     Call { block: usize, original: usize },
     Indirect(CallShape),
     Unavailable(UnavailableCall),
+}
+impl Event {
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Self::Value { source, .. } => match source {
+                Source::Constant { .. } => "constant", Source::FunctionPointer(_) => "function_pointer",
+                Source::ThreadLocal(_) => "thread_local", Source::Caller(_) => "caller", Source::Errno => "errno",
+            },
+            Self::Call { .. } => "call", Self::Indirect(_) => "indirect", Self::Unavailable(_) => "unavailable",
+        }
+    }
 }
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub(super) struct Tape {
@@ -131,7 +143,7 @@ impl<'tcx> Current<'tcx> {
         self.mono(operand.ty(&self.body.local_decls, self.tcx))
     }
     fn block(&self, index: usize) -> Result<&'tcx mir::BasicBlockData<'tcx>> {
-        self.body.basic_blocks.as_slice().get(index).ok_or("binding block out of bounds".into())
+        self.body.basic_blocks.raw.as_slice().get(index).ok_or("binding block out of bounds".into())
     }
     fn rvalue(&self, at: Position) -> Result<&'tcx Rvalue<'tcx>> {
         match &self.block(at.block)?.statements.get(at.statement).ok_or("binding statement out of bounds")?.kind {

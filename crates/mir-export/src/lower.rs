@@ -286,6 +286,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     let mut replay_exporter = binding_replay.then(|| exporter.replay_seed());
     let (mut replayed_functions, mut binding_events, mut replay_seconds) = (0usize, 0usize, 0.0f64);
     let mut binding_payload_bytes = 0usize;
+    let mut binding_kinds = BTreeMap::<&str, usize>::new();
     let mut replay_declines = BTreeMap::<String, usize>::new();
     let mut functions: Vec<Option<Function>> = vec![];
     while let Some(index) = exporter.pending.pop_front() {
@@ -325,6 +326,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
                 } else {
                     replayed_functions += 1;
                     binding_events += tape.events.len();
+                    for event in &tape.events { *binding_kinds.entry(event.kind()).or_default() += 1; }
                     let bytes = reuse::Template { function: f.clone(), observation: observation.clone(), tape }.encode()?;
                     binding_payload_bytes += bytes.len();
                     let decoded = reuse::Template::decode(&bytes)?;
@@ -353,6 +355,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             "replayed_functions":replayed_functions,"declines":replay_declines,
             "binding_events":binding_events,"replay_and_verification_seconds":replay_seconds,
             "payload_bytes":binding_payload_bytes,
+            "event_kinds":binding_kinds,
             "all_functions_fully_lowered":true,"graph_matches":true,
             "scope":"same-session recipe reconstruction; no persistent cache or performance claim"}));
     }
