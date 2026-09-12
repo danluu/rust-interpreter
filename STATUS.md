@@ -45,11 +45,13 @@ The [unfiltered fre command](results/fre-unfiltered-native-01/assessment.md) pas
 
 The [integration edit pilot](results/fre-integration-edit-01/assessment.md) records five real edits: custom 0.816s, native 1.015s, Cargo check 0.539s; paired wall -20.4%. Both sides use 18 jobs. This one-cycle pilot is separate from the retained histories above.
 
+The [compute-heavy integration target](results/fre-integration-es8-edit-01/assessment.md) costs 3.867s custom versus 1.449s native (2.678× paired), with check at 0.529s. All 24 edit/restoration controls pass. Native uses default test threads; custom runs its two bodies sequentially. Generated execution dominates the [profile](results/fre-integration-es8-sample-01/assessment.md).
+
 [Source restoration now refreshes modification time](results/source-restore-after-01/assessment.md) so Cargo rebuilds the restored original. Actual Cargo regressions and 18 Python tests pass. Remaining original-source bytecode differences keep export determinism open.
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Compare a compute-heavy integration target; diagnose export determinism before reuse and qualify a large native control.
+**Next:** Measure conservative frame-initialization proof coverage on es8i before runtime changes; large native controls and export reuse remain open.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

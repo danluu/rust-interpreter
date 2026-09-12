@@ -4,14 +4,15 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Broaden integration edit measurements.** The root launcher now supports
-   explicit integration targets sharing compatible dependencies. All 52 original
-   fre integration assertions pass; a five-edit end-greedy pilot improves paired
-   wall 20.4%. Compare a compute-heavy integration target before repeated
-   histories. Preserve exact artifacts, strict errors and source freshness.
-   The restored-source mtime bug is fixed with actual Cargo regressions; remaining
-   original-source export differences still require diagnosis. Keep the native
-   unfiltered doc-test failure visible; target batches do not implement libtest.
+1. **Test frame-initialization proof coverage.** Integration coverage now includes
+   all 52 fre assertions. The short end-greedy edit pilot gains 20.4%, but es8i
+   costs 3.867s custom versus 1.449s native (2.678× paired). Native uses default
+   threads; custom batches are sequential. Three owned es8i profiles place
+   98.33% of samples in generated code and 14.81% in clearing. Count eligible
+   clearing sites under a conservative stronger initialization proof before
+   implementing elision. The old argument-only idea stays parked. Preserve
+   caller-local source proofs, unknown-pointer aliases, padding and exact limits.
+   Keep the native doc-test failure and incomplete libtest semantics visible.
 2. **Choose substantial export work from measured costs.** The retained observer
    produced seven byte-identical token artifacts. Graph lowering costs 691ms;
    hashing/publication/serialization/validation together cost about 98ms. Do not

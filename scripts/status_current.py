@@ -41,7 +41,8 @@ def render():
     costs = read(config['latest_export_costs'])
     coverage = read(config['latest_integration_coverage'])
     edit = read(config['latest_integration_edit'])
-    if coverage['status'] != 'passed' or edit['status'] != 'passed':
+    compute = read(config['latest_integration_compute'])
+    if coverage['status'] != 'passed' or edit['status'] != 'passed' or compute['status'] != 'passed':
         raise RuntimeError('integration target evidence changed')
     if costs['status'] != 'passed' or not costs['all_artifact_hashes_identical']:
         raise RuntimeError('export cost evidence changed')
@@ -60,6 +61,7 @@ def render():
         f"[Fre native calibration]({Path(config['latest_native_calibration']).with_name('assessment.md')}) was inconclusive: line tables saved 7.86%, below its fixed 8% screen; debug=0 saved 5.17%. All 21 Cargo commands and 15 diagnostic repeats had the expected assertion outcomes. No new native preset was selected.", '',
         f"The [unfiltered fre command]({Path(config['latest_unfiltered']).with_name('assessment.md')}) passed 382 unit and 52 integration tests (seven ignored), then failed a doc test whose expected diagnostic code was absent. The root launcher now runs all {coverage['original_tests_passed']} original integration assertions across {coverage['targets_passed']} targets with shared dependency metadata. [Coverage]({Path(config['latest_integration_coverage']).with_name('assessment.md')}).", '',
         f"The [integration edit pilot]({Path(config['latest_integration_edit']).with_name('assessment.md')}) records five real edits: custom {edit['median_seconds']['custom']:.3f}s, native {edit['median_seconds']['native']:.3f}s, Cargo check {edit['median_seconds']['check']:.3f}s; paired wall {(edit['paired_median_wall_ratio']-1)*100:+.1f}%. Both sides use 18 jobs. This one-cycle pilot is separate from the retained histories above.", '',
+        f"The [compute-heavy integration target]({Path(config['latest_integration_compute']).with_name('assessment.md')}) costs {compute['median_seconds']['custom']:.3f}s custom versus {compute['median_seconds']['native']:.3f}s native ({compute['paired_median_wall_ratio']:.3f}× paired), with check at {compute['median_seconds']['check']:.3f}s. All 24 edit/restoration controls pass. Native uses default test threads; custom runs its two bodies sequentially. Generated execution dominates the [profile]({Path(config['latest_integration_profile']).with_name('assessment.md')}).", '',
         f"[Source restoration now refreshes modification time]({Path(config['latest_source_restore']).with_name('assessment.md')}) so Cargo rebuilds the restored original. Actual Cargo regressions and 18 Python tests pass. Remaining original-source bytecode differences keep export determinism open.", '',
         '**Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.', '',
         '**Next:** ' + config['next'], '',

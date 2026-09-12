@@ -117,8 +117,18 @@ The [five-edit integration pilot](results/fre-integration-edit-01/assessment.md)
 passes: median custom 0.816s, native 1.015s, check 0.539s; paired wall −20.4%
 and CPU −41.1%. All modes use 18 jobs and warm primed caches. All 21 commands,
 42 logs and seven snapshots are preserved. Original assertions reject the wrong
-edit, and every measured edit recompiles. This one-cycle result needs broader
-comparison, especially the compute-heavy es8i target.
+edit, and every measured edit recompiles. The compute-heavy es8i target now provides that contrast: custom 3.867s versus
+native 1.449s and check 0.529s, paired wall 2.678× and CPU 1.860×. All 24
+commands and eight snapshots verify, including original-source rebuilds after
+restoration. This workload fails the pilot target and will not be retried to
+change that outcome. Native runs its two tests with default threads; custom
+bodies are sequential. See fre-integration-es8-edit-01.
+
+Three owned es8i profiles pass and bind all sampled PCs to their own code dumps.
+98.33% of 7,662 samples are generated execution, 14.81% clearing and 14.66%
+cursor loads/stores; host boundaries are 0.80%. Next measure a stronger frame
+initialization proof before changing runtime behavior. Original assertions,
+alias semantics, alignment padding and exact faults/limits stay intact.
 
 The root integration probe exposed a harness bug: restoring staged source kept
 an old modification time and Cargo reused the final edit's artifact. The helper
@@ -132,7 +142,10 @@ available for the next comparison. Two completed alternative native-profile
 caches and two older completed fre native caches were retired after exact
 ownership, terminal, open-file and preserved-evidence checks; their final test
 executables and logs remain. No archives were created. Check current free space
-against the 8GiB floor before starting further builds.
+against the 8GiB floor before starting further builds. Additional completed
+scalar host incremental caches and old fre/stopped-Ruff incremental metadata
+were retired locally; all protected artifacts/logs remain. Another session uses
+the shared lock periodically; wait without controlling its processes.
 
 ## Persistent rules
 

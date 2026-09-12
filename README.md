@@ -75,7 +75,9 @@ workflows, including 189 independent checks. Repeated fre source states exposed
 compiler-cache-history artifact differences, retained alongside the timings.
 The newer [integration-target pilot](results/fre-integration-edit-01/assessment.md)
 measures five real edits at 0.816s custom versus 1.015s native (20.4% paired gain),
-with 18 jobs on both sides. This short batch needs broader repeated comparison.
+with 18 jobs on both sides. The [compute-heavy integration target](results/fre-integration-es8-edit-01/assessment.md)
+takes 3.867s custom versus 1.449s native (2.678× paired). Execution remains the
+main gap; the short batch does not establish a general speedup.
 [Protocol](BENCHMARKING.md), [token reproducer](benchmarks/TOKEN-PHRASE.md),
 [repeated-run assessment](results/paired-repeated-token-01/assessment.md).
 

@@ -1,5 +1,10 @@
 # Checked-in changes
 
+## 2026-09-12 compute-heavy integration result
+
+- All 24 real-edit/restoration controls pass on fre es8i, but custom takes 2.678× native wall time. The 20.4% short-target gain does not generalize.
+- Three owned profiles attribute 98.33% of samples to generated code and 14.81% to clearing. Next measure stronger frame-initialization proof coverage; no runtime optimization is adopted from these samples.
+
 ## 2026-09-12 integration targets and Cargo freshness
 
 - The normal launcher now accepts explicit integration targets and shares compatible dependency caches while selecting exact Cargo artifacts. All 52 original fre integration assertions pass.
