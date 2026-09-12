@@ -1,0 +1,3 @@
+Two executions of the same combined VM and unchanged token artifact produced 13,345,298,962 and 13,345,361,742 logical instructions. Both returned the expected result and used 8,161,249 bytes peak guest memory. Each made three real CommonCrypto random-byte requests. This establishes instruction-count nondeterminism without a binary change; it does not by itself exclude a separate interpreter regression.
+
+Next record and replay the exact entropy inputs across both unchanged VMs, preserving the instruction-equality guard. The stopped comparison remains inconclusive. These profiled A/A executions are diagnostics, not timing samples.
