@@ -4,16 +4,17 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Reduce measured persistent-reuse costs, then screen real edits.** Actual
-   reuse passes token/folded histories, complex and semantic-edit fixtures, and
-   corrupt/missing/policy/failed-publication controls. Strict frontend checking
-   remains. Token cache load/encoding costs roughly 285 ms, binding 131 ms and
-   function decoding 36 ms, consuming the old ~444 ms lowering opportunity.
-   Qualify hardware-assisted SHA-256 and bulk byte serialization without
-   changing wire bytes or checksums. Measure costs again, then compare actual
-   edited build/test commands under a predeclared gate. Do not infer speedup
-   from hit counts or unchanged builds.
-   [Actual reuse](results/export-reuse-execute-token-01/assessment.md).
+1. **Use the whole-command bottleneck to choose the next strategy.** Persistent
+   function reuse passes correctness but improves the first paired token screen
+   by 5.30% wall/4.32% CPU, missing its 8% wall gate. Keep it disabled by default
+   and do not retime it or run conditional promotion holdouts. The remaining
+   3.1 s guest execution dominates the roughly 4.7 s custom command. This
+   isolated exporter screen retained the historical VM; establish the current
+   merged custom JIT's contribution and profiles before proposing another
+   representation or graph-cache change. Inlining/CFG savings alone are too
+   small to close the native gap. Preserve strict checks and compare with the
+   best retained full-workflow/native controls.
+   [Screen decision](results/export-reuse-screen-token-01/assessment.md).
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%
    wall gate. All correctness controls pass, but the runtime stays off main.

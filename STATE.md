@@ -8,14 +8,14 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-Actual function reuse now passes both complete token/folded edit histories,
-337 complex-fixture commands, 293 semantic-edit commands and 98 cache fault
-controls. Token edits skip 5,178–5,202 functions; folded skips 976–1,040. All
-bytecode and original assertions match. Reuse is explicit and disabled by
-default, with strict frontend checks. Measured cache representation and binding
-costs consume the earlier lowering opportunity, so no performance claim is
-made. Improve those costs before the end-to-end screen.
-[Evidence](results/export-reuse-execute-token-01/assessment.md).
+Persistent function reuse is correct but its first complete-command screen
+misses the fixed 8% gate: 5.30% paired edited wall improvement and 4.32% CPU.
+All 21 primary commands, 7 independent checks and 14 bytecode comparisons pass.
+The candidate stays opt-in and disabled by default; its conditional promotion
+holdouts are canceled. Do not retime it. Guest execution remains about 3.1 s
+of the 4.7 s command, versus native's 2.2 s complete command. Inspect the current
+merged JIT composition and execution costs before expanding graph caching.
+[Decision](results/export-reuse-screen-token-01/assessment.md).
 
 The user's current priority is build-time improvement. The in-flight runtime work is finished: integer helper inlining improves Ruff 5.8%, pgrust 3.0% and five additional workloads 2.8–7.5% relative to the scalar-inlining VM, with unchanged semantics and passing regression guards. All 297 debug/release tests and 588 comparison commands pass (one Rust test ignored). [Integer-inlining assessment](results/binary-inline-20260912/assessment.md). Next work measures compiler/export/cache build latency separately from execution; the unbounded optimization goal remains active.
 

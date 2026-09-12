@@ -51,6 +51,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | actual-function-reuse-token | [export-reuse-execute-token-01/summary.json](export-reuse-execute-token-01/summary.json) |
 | actual-function-reuse-folded | [export-reuse-execute-folded-01/summary.json](export-reuse-execute-folded-01/summary.json) |
 | actual-cache-controls | [export-cache-fixture-02/summary.json](export-cache-fixture-02/summary.json) |
+| function-reuse-screen | [export-reuse-screen-token-01/decision.json](export-reuse-screen-token-01/decision.json) |
+| accelerated-function-cache | [export-reuse-execute-token-02/summary.json](export-reuse-execute-token-02/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
