@@ -33,8 +33,10 @@ def main():
     parser.add_argument('--expected-tests', type=int, required=True)
     parser.add_argument('--plan', type=Path, required=True)
     parser.add_argument('--build-exporter', action='store_true', help='also qualify and install the current exporter/wrapper')
+    parser.add_argument('--exporter-key', default=CONTROL, help='immutable exporter/wrapper composition retained by a runtime-only build')
     parser.add_argument('--reuse-tests', type=Path, help='reuse both passed profiles from a build stopped before binary publication; Rust inputs must be identical')
     args = parser.parse_args()
+    control = args.exporter_key
     assert re.fullmatch(r'[a-z][a-z0-9-]*-build-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
@@ -57,7 +59,7 @@ def main():
             assert sha(old_status_path.with_name('plan.json')) == old_status['plan_sha256']
             assert sha(old_status_path.with_name('command.log')) == old_status['log_sha256']
             assert old_plan['target'] == str(TARGET) and old_plan['expected_tests'] == args.expected_tests
-            assert old_plan.get('build_exporter', False) == args.build_exporter
+            assert old_plan.get('build_exporter', False) == args.build_exporter and old_plan['control'] == control
             for name, digest in old_plan['frozen'].items():
                 if name == str(Path(__file__).resolve().relative_to(ROOT)):
                     content = subprocess.check_output(['git', 'show', old_plan['source_commit'] + ':' + name], cwd=ROOT)
@@ -75,10 +77,10 @@ def main():
                 assert reused_counts[label] == dict(passed=args.expected_tests, ignored=1)
                 proof_paths += logs
             frozen.update({str(p.relative_to(ROOT)): sha(p) for p in proof_paths})
-        retained, _ = installed_tools(CONTROL)
+        retained, _ = installed_tools(control)
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
-        write(work / 'plan.json', dict(source_commit=source, frozen=frozen, target=str(TARGET), control=CONTROL,
+        write(work / 'plan.json', dict(source_commit=source, frozen=frozen, target=str(TARGET), control=control,
             expected_tests=args.expected_tests, build_exporter=args.build_exporter,
             tests_reused_from=str(args.reuse_tests) if args.reuse_tests is not None else None,
             jobs=2, minimum_free_gib=8, performance_measurement=False))
@@ -114,7 +116,7 @@ def main():
             for name in ['rust-interp-mir-export', 'rust-interp-rustc-wrapper']:
                 binaries[name] = sha(TARGET / 'release' / name)
         composition = dict(kind='tool-candidate' if args.build_exporter else 'runtime-candidate', schema_version=1, source_commit=source,
-                           exporter_and_wrapper_key=None if args.build_exporter else CONTROL, binaries=binaries)
+                           exporter_and_wrapper_key=None if args.build_exporter else control, binaries=binaries)
         key = hashlib.sha256(json.dumps(composition, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         with (ROOT / '.work/interpreter-tools.lock').open('a') as publication:
             acquire_lock(publication, 45)

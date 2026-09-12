@@ -30,6 +30,21 @@ def read_report(path, expected_hash=None):
     return json.loads(payload), digest
 
 
+def validate_runtime_limits(report, instruction_limit=None, allocation_limit=None, *, required=False):
+    """Compare VM-effective limits with independently supplied command expectations."""
+    if 'runtime_limits' not in report:
+        if required: raise RuntimeError('suite lacks effective runtime limits')
+        return  # Older immutable VMs remain usable; they provide no effective-limit receipt.
+    expected = dict(instructions=100_000_000 if instruction_limit is None else instruction_limit,
+                    allocations=100_000 if allocation_limit is None else allocation_limit,
+                    memory_bytes=64*1024*1024, frames=4096)
+    actual = report['runtime_limits']
+    if (not isinstance(actual, dict) or actual != expected or
+            any(type(value) is not int for value in actual.values()) or
+            type(report.get('jit_code_limit_bytes')) is not int or report['jit_code_limit_bytes'] != 16*1024*1024):
+        raise RuntimeError('suite effective runtime limits differ from the expected command')
+
+
 def validate_report(report, names, mode, success):
     def require(condition, message):
         if not condition:

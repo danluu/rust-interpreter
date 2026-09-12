@@ -56,6 +56,11 @@ fn distinct_selected_tests_share_only_prepared_code_and_report_each_outcome() {
         assert_eq!(run.stdout, b"0\n");
         let report: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
         assert_eq!(report["passed"], 2); assert_eq!(report["failed"], 0);
+        assert_eq!(report["runtime_limits"]["allocations"], 100_000);
+        assert_eq!(report["runtime_limits"]["instructions"], 100_000_000);
+        assert_eq!(report["runtime_limits"]["memory_bytes"], 64 * 1024 * 1024);
+        assert_eq!(report["runtime_limits"]["frames"], 4096);
+        assert_eq!(report["jit_code_limit_bytes"], 16 * 1024 * 1024);
         assert_eq!(report["tests"][0]["name"], "first"); assert_eq!(report["tests"][1]["name"], "second");
         assert_eq!(report["tests"][0]["jit_compiled_functions"], 2);
         assert_eq!(report["tests"][1]["jit_compiled_functions"], if mode == "fresh" {2} else {3});
@@ -70,6 +75,23 @@ fn distinct_selected_tests_share_only_prepared_code_and_report_each_outcome() {
     for index in 0..2 {
         assert!(reports[1]["tests"][index]["jit_instructions"].as_u64().unwrap()
             >= reports[0]["tests"][index]["jit_instructions"].as_u64().unwrap());
+    }
+}
+
+#[test]
+fn effective_limits_are_reported_when_each_isolated_test_exhausts_its_budget() {
+    let files = Files::new(); let artifact = files.program(&fixture(false));
+    for mode in ["fresh", "prepared"] {
+        let path = files.0.join(format!("{mode}-limits.json"));
+        let run = command(&artifact, mode, &path, &["--instruction-limit", "1", "--allocation-limit", "150000"]);
+        assert!(!run.status.success());
+        let report: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+        assert_eq!(report["runtime_limits"]["allocations"], 150_000);
+        assert_eq!(report["runtime_limits"]["instructions"], 1);
+        assert_eq!(report["failed"], 2);
+        for test in report["tests"].as_array().unwrap() {
+            assert!(test["error"].as_str().unwrap().contains("instruction limit exceeded"));
+        }
     }
 }
 

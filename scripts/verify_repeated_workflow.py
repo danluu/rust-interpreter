@@ -122,7 +122,7 @@ def verify(report, reference=None, *, compiler_flags=None):
             for call in row['calls']:
                 verify_command_jobs(call['command'], job_counts[mode])
         if report.get('compare_isolated_batches'):
-            from suite_reports import read_report, validate_report
+            from suite_reports import read_report, validate_report, validate_runtime_limits
             suite_mode = 'native' if mode == 'native' else 'fresh' if mode == 'baseline' else 'prepared'
             item = row['suite_report']
             path = ROOT / item['path']
@@ -143,6 +143,7 @@ def verify(report, reference=None, *, compiler_flags=None):
                     require(test['command'] == [suite['executable'], '--exact', test['name'], '--test-threads=1'],
                             'native test process did not select its exact body')
             else:
+                validate_runtime_limits(suite,report.get('instruction_limit'),report.get('allocation_limit'))
                 require(command.count('--isolated-batch') == 1 and command[command.index('--isolated-batch')+1] == suite_mode,
                         'isolated mode differs from command')
                 require(call['launch']['isolated_batch'] == suite_mode and

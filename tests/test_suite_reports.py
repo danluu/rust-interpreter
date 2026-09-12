@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from native_suite import selected_executable, test_status
-from suite_reports import read_report, validate_report
+from suite_reports import read_report, validate_report, validate_runtime_limits
 
 
 def libtest(name='fixture', status='ok', passed=1, failed=0, ignored=0):
@@ -15,6 +15,21 @@ def libtest(name='fixture', status='ok', passed=1, failed=0, ignored=0):
 
 
 class SuiteReportTests(unittest.TestCase):
+    def test_omitted_reference_limit_cannot_match_an_effective_default_receipt(self):
+        report = dict(runtime_limits=dict(instructions=100_000_000_000, allocations=100_000,
+                                          memory_bytes=64*1024*1024, frames=4096),
+                      jit_code_limit_bytes=16*1024*1024)
+        with self.assertRaises(RuntimeError):
+            validate_runtime_limits(report, 100_000_000_000, 150_000, required=True)
+        report['runtime_limits']['allocations'] = 150_000
+        validate_runtime_limits(report, 100_000_000_000, 150_000, required=True)
+        validate_runtime_limits({}, 100_000_000_000, 150_000)
+        with self.assertRaises(RuntimeError):
+            validate_runtime_limits({}, 100_000_000_000, 150_000, required=True)
+        report['runtime_limits']['instructions'] = True
+        with self.assertRaises(RuntimeError):
+            validate_runtime_limits(report, 1, 150_000, required=True)
+
     def test_native_control_requires_one_real_exact_test(self):
         self.assertEqual(test_status('fixture', 0, libtest()), 'passed')
         self.assertEqual(test_status('fixture', 101, libtest(status='FAILED', passed=0, failed=1)), 'failed')
