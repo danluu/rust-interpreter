@@ -36,9 +36,15 @@ def acquire(lock):
             time.sleep(min(1, max(0, deadline - time.monotonic())))
 
 
-def tools_for():
+def tools_for(build_path=None):
     receipt_path = ROOT / '.work/fixed-frame-clear-01/installed-tools.json'
     receipt = read(receipt_path)
+    if build_path is not None:
+        build = read(build_path)
+        combined = ROOT / build['raw'] / 'installed-tools.json'
+        require(build['status'] == 'passed' and sha(combined) == build['installed_tools_sha256'] and
+            read(combined) == build['installed_tools'], 'combined build/tool receipt differs')
+        receipt = dict(baseline=receipt['candidate'], candidate=build['installed_tools']['candidate'])
     result = {}
     for mode in ['baseline', 'candidate']:
         key = receipt[mode]['tool_key']
@@ -90,7 +96,7 @@ def reference_path(label):
     return ROOT / 'results' / name / 'summary.json'
 
 
-def assess(report, case, tools):
+def assess(report, case, tools, limit=1.05):
     compare_controls(report, case, tools)
     require(report['comparison']['identical_bytecode_required'], 'runtime comparison must require identical bytecode')
     checked = verify(report)
@@ -116,6 +122,8 @@ def assess(report, case, tools):
             flags = report['tool_builds'][row['mode']]['guest_rustflags']
             require(call['rustflags'] == (' '.join(flags) if flags else None), 'executed guest flags differ')
     result = paired(rows)
+    result.update(wall_limit=limit, cpu_limit=limit,
+        passed=result['wall_ratio'] <= limit and result['cpu_ratio'] <= limit)
     for field, key in [('median_seconds', 'seconds'), ('median_cpu_seconds', 'cpu_seconds')]:
         actual = {mode: statistics.median(r[key] for r in rows if r['mode'] == mode and r['state'] > 0)
                   for mode in ['native', 'baseline', 'candidate']}
@@ -130,7 +138,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--case', choices=CASES, required=True)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--comparison-build', type=Path,
+        help='compare a qualified combined candidate with the previous fixed-clear candidate on a primary')
     args = parser.parse_args()
+    if args.comparison_build is not None:
+        args.comparison_build = args.comparison_build.resolve()
+        require(args.case in CASES[:2] and args.run_id.startswith('fixed-frame-clear-combined-library-'),
+            'combined workflow comparisons are the two predeclared primaries')
+    else:
+        require(not args.run_id.startswith('fixed-frame-clear-combined-'), 'combined run requires its build receipt')
     require(Path(args.run_id).name == args.run_id and args.run_id not in ['.', '..'], 'invalid run ID')
     work = ROOT / '.work' / args.run_id
     work.mkdir(exist_ok=False)
@@ -139,16 +155,21 @@ def main():
     try:
         with (ROOT / '.work/benchmark.lock').open('a') as lock:
             acquire(lock)
-            paths = [ROOT / 'results' / ('fixed-frame-clear-' + suffix) / 'summary.json'
-                     for suffix in ['confirm-02', 'native-01', 'tls-01', 'fre-01', 'integration-02']]
+            combined = args.comparison_build is not None
+            prefix = 'fixed-frame-clear-combined-' if combined else 'fixed-frame-clear-'
+            suffixes = ['confirm-01', 'native-01', 'tls-01', 'fre-01', 'integration-01'] if combined else [
+                'confirm-02', 'native-01', 'tls-01', 'fre-01', 'integration-02']
+            paths = [ROOT / 'results' / (prefix + suffix) / 'summary.json' for suffix in suffixes]
             confirm, native, tls, fre, integration = [read(p) for p in paths]
             require(all(r['status'] == 'passed' for r in [confirm, native, tls, fre, integration]), 'qualification incomplete')
             require(confirm['gate_passed'] and confirm['edited_pairs'] == 15 and native['commands'] == 47004 and
                 tls['commands'] == 245 and fre['counts'] == dict(passed=382, ignored=7) and
                 integration['original_tests_passed'] == 52 and integration['source_unchanged'], 'qualification counts differ')
-            tools = tools_for()
+            tools = tools_for(args.comparison_build)
+            confirmation_baseline = (read(args.comparison_build)['installed_tools']['baseline']['tool_key']
+                if combined else tools['baseline']['tool_key'])
             require(all(r['tool_key'] == tools['candidate']['tool_key'] for r in [confirm, native, tls, fre, integration]) and
-                confirm['baseline_tool_key'] == tools['baseline']['tool_key'], 'qualified VM differs')
+                confirm['baseline_tool_key'] == confirmation_baseline, 'qualified VM differs')
             case = next(c for c in read(ROOT / 'benchmarks/workflow-corpus.json')['cases'] if c['label'] == args.case)
             estimate, bound = space_estimate(args.case)
             fs = os.statvfs(ROOT)
@@ -170,9 +191,14 @@ def main():
                 'workflow_cases.py', 'workflow_case_file.py', 'workflow_controls.py', 'workflow_measurements.py',
                 'workflow_io.py', 'workflow_jobs.py', 'workflow_space.py', 'std_mir.py']]
             paths += [ROOT / 'benchmarks/experiments/aggregate-byte-writes' / n for n in ['heldout_controls.py', 'heldout_space.py']]
+            if combined:
+                build = read(args.comparison_build)
+                paths += [args.comparison_build, ROOT / build['raw'] / 'installed-tools.json', HERE / 'FIXED-INTEGRATION.md']
             frozen = {**bound, **{str(p.relative_to(ROOT)): sha(p) for p in paths}}
             write(work / 'plan.json', dict(command=command, frozen=frozen, expected_tools=tools, case=case,
-                admission=admission, source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()))
+                admission=admission, wall_cpu_limit=1.04 if combined else 1.05,
+                comparison_scope='combined candidate versus previous fixed-clear candidate' if combined else 'original fixed-clear candidate versus baseline',
+                source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()))
         require(time.time() - admission['checked_at'] < 60, 'space admission expired')
         with (work / 'command.log').open('x') as log:
             child = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
@@ -186,9 +212,9 @@ def main():
         with (ROOT / '.work/benchmark.lock').open('a') as lock:
             acquire(lock)
             require(all(sha(ROOT / p) == h for p, h in frozen.items()), 'frozen workflow inputs changed')
-            require(tools_for() == tools, 'installed VM changed')
+            require(tools_for(args.comparison_build) == tools, 'installed VM changed')
             path = ROOT / 'results' / args.run_id / 'summary.json'
-            result = assess(read(path), case, tools)
+            result = assess(read(path), case, tools, 1.04 if combined else 1.05)
             result.update(evidence={str(path.relative_to(ROOT)): sha(path), **frozen})
             write(path.with_name('fixed-clear-assessment.json'), result)
             path.with_name('fixed-clear-assessment.md').write_text(
