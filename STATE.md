@@ -47,7 +47,7 @@ other pass effects and shared-host noise; the components do not prove causation.
 The aggregate compiler is integrated and qualified. The ordinary launcher selects
 its exact measured source key. The [normal workspace qualification](results/aggregate-integration-root-01/assessment.md)
 passes 289 debug and release tests (one ignored) and reproduces all three
-executables byte-for-byte. No task build, test or benchmark is active.
+executables byte-for-byte. The isolated guarded Call VM is now qualified; its first A/A workflow is active.
 
 The x22 budget-register experiment is parked after its [fixed primary decision](results/budget-register-primary-01/assessment.md).
 It passes broad correctness, native/TLS/fre replay and original-artifact checks,
@@ -69,14 +69,28 @@ checks and 98.08% of folded's 82,536,622. No function hit an analysis bound. No 
 guest execution or runtime change. The first receipt-path admission failure is
 preserved with its source; the corrected check follows the exact smoke summary.
 
-Next implement the [guarded Call argument path](benchmarks/experiments/call-slot-census/FAST-PATH-NEXT.md)
-in an isolated VM from integrated source `5b2330c`. Match the actual guest address
-to the expected current-frame offset, keep the original dynamic check on mismatch,
-and retain argument order, charges, copies, initialization and Return checks.
-Static facts alone are insufficient for arbitrary initialized entry registers.
+The [guarded Call argument path](benchmarks/experiments/call-slot-census/FAST-PATH-NEXT.md)
+is implemented in isolated tool `ac38fa59`, VM `af5dd300`, from integrated
+source `5b2330c`. The exporter and wrapper are byte-identical to control `9637b0ac`.
+[Debug/release qualification](results/call-slot-build-01/assessment.md) passes
+297 tests, one ignored. Eight new tests cover the static hints, mismatched
+entry registers, faults/partial copies, budgets/profiles, large registers and ABI.
+Root Rust sources and the parked budget ABI remain unchanged.
+
+The [original-artifact smoke](results/call-slot-smoke-01/assessment.md) passes
+20 commands: eight successes and twelve exact short-budget failures. Folded
+counts/profiles match exactly; random token paths each reconcile their own counts.
+A/A staging qualification passes four key routes and two changed-guard rejections.
+Its brief lock admission rejection is preserved; no process was signalled.
+
+`call-slot-aa-01-folded-literal-trie` is active (supervisor 10938, controller
+10942, workflow 10949). Keep its frozen scripts/helpers and fixed plan unchanged.
+Wait for the workflow, controller and supervisor to finish before another lock
+user. Then verify and run token A/A, candidate folded and candidate token, in order.
 The fixed primary gate is ≥10% token wall gain, lower CPU and a gain exceeding
-fresh A/A variation; folded wall/CPU must remain within 5%. A primary failure
-parks the candidate. Broad validation and all seven held-outs precede adoption.
+fresh A/A variation; folded wall/CPU must remain within 5%. The tracked
+`report_primary.py` recomputes all four histories. A primary failure parks the
+candidate. Fresh native/TLS/fre validation and seven held-outs precede adoption.
 
 The unbounded goal remains active. Continue implementation and real edited-command
 comparisons after this diagnostic. Integration and the failed budget experiment
