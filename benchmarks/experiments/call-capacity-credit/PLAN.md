@@ -22,8 +22,11 @@ TLS, ABI, profile and generated-CFG tests remain enabled. No historical unsafe
 VM or memory-corruption reproduction is used.
 
 Run all 422 workspace tests in debug and release, one ignored, with two Cargo
-workers and locked offline dependencies. Use the existing owned host target,
-the shared benchmark lock with 45-second admission, and a 4 GiB free floor.
+workers and locked offline dependencies. Host qualification floor: 4 GiB.
+Reuse the existing qualified debug/release host dependency cache at
+`.work/fixed-frame-clear-combined-build-01/target`; this is a host-only build,
+not a new large-project target. Use the shared benchmark lock with 45-second
+admission and check the free floor before each child.
 Freeze source and plan. Publish immutable VM bytes while retaining exporter and
 wrapper from qualified integrated tool49746a22. No exporter source changed.
 
