@@ -14,6 +14,8 @@ import time
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 import interpreter
+import workflow_io
+import compare_saved_runtime
 from workflow_io import require_space, write_json
 
 
@@ -40,7 +42,7 @@ def main():
         interpreter.ROOT = ROOT
     require(Path(args.run_id).name == args.run_id and args.run_id not in ['.', '..'], 'invalid run ID')
     lock = (ROOT / '.work/benchmark.lock').open('a')
-    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    compare_saved_runtime.acquire_lock(lock, 45)
     require_space(ROOT / '.work', 8)
     tools, key = interpreter.installed_tools(args.tool_key)
     manifest = json.loads((tools / 'ready.json').read_text())
@@ -68,7 +70,7 @@ sys.exit(int(os.environ.get('WRAPPER_TEST_EXIT', '0')))
         path.write_text('#!' + sys.executable + '\n' + fake)
         path.chmod(0o755)
     rows = []
-    source_paths = [Path(__file__), Path(interpreter.__file__), ROOT / 'scripts/workflow_io.py']
+    source_paths = [Path(__file__), Path(interpreter.__file__), Path(workflow_io.__file__), Path(compare_saved_runtime.__file__)]
     frozen = {str(p.relative_to(ROOT)): sha(p) for p in source_paths}
 
     def run(label, command, env, pass_fds=()):
