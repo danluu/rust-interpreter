@@ -1,17 +1,32 @@
 use bincode::Options;
 use rust_interp_bytecode::{Engine, Limits, Program, execute_profiled, execute_with_engine};
 use std::io::Write;
+mod suite;
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
     let mut limits = Limits::default();
     let mut engine = Engine::Interpreter;
     let mut profile_path = None;
+    let mut isolated_batch = None;
+    let mut suite_report = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--profile NEW_JSON_PATH] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
+            "--isolated-batch" => {
+                if isolated_batch.is_some() { return Err("duplicate isolated batch mode".into()); }
+                isolated_batch = Some(match args.next().as_deref() {
+                    Some("fresh") => suite::Mode::Fresh,
+                    Some("prepared") => suite::Mode::Prepared,
+                    _ => return Err("isolated batch mode must be fresh or prepared".into()),
+                });
+            }
+            "--suite-report" => {
+                if suite_report.is_some() { return Err("duplicate suite report path".into()); }
+                suite_report = Some(args.next().ok_or("missing suite report path")?);
+            }
             "--jit-native-calls" => limits.jit_native_calls = true,
             "--jit-native-call-stubs" => limits.jit_native_call_stubs = true,
             "--jit-persistent-registers" => limits.jit_persistent_registers = true,
@@ -71,6 +86,19 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args = args
         .map(|s| s.parse::<u128>())
         .collect::<Result<Vec<_>, _>>()?;
+    if isolated_batch.is_some() != suite_report.is_some() {
+        return Err("isolated batch mode and suite report must be supplied together".into());
+    }
+    if let Some(mode) = isolated_batch {
+        if engine != Engine::Jit || !limits.jit_resumable_calls || limits.jit_native_calls
+            || limits.jit_native_call_stubs || profile_path.is_some() || limits.jit_code_dump.is_some() || !args.is_empty()
+        {
+            return Err("isolated batches require resumable JIT execution without tree/stub, profile, code dump or entry arguments".into());
+        }
+        suite::run(&program, mode, &limits, suite_report.as_deref().unwrap())?;
+        println!("0");
+        return Ok(());
+    }
     let result = if let Some(path) = profile_path {
         let file = std::fs::OpenOptions::new().write(true).create_new(true).open(path)?;
         let (result, profile) = execute_profiled(&program, &args, limits, engine)?;

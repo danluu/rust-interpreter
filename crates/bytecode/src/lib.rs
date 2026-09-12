@@ -384,6 +384,7 @@ pub const DEFAULT_ALLOCATION_LIMIT: usize = 100_000;
 /// Bound allocator bookkeeping even when the caller requests a larger budget.
 pub const MAX_ALLOCATION_LIMIT: usize = 1_000_000;
 
+#[derive(Clone)]
 pub struct Limits {
     pub memory: usize,
     /// Live guest allocations, including temporary replacements during realloc.
