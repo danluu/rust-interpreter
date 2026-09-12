@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check a Cargo library and run supported functions in the custom VM.
+"""Check a Cargo library or integration-test target and run supported functions.
 
 Example: interpreter.py --manifest-path PROJECT/Cargo.toml --package hashfn
          --entry murmurhash32 -- 123
@@ -8,6 +8,7 @@ Repeat --entry with --test-body to run several zero-argument functions returning
 unit or Result<(), E> in one command. Ordinary function inputs and output are integer bit
 patterns. This prototype provides a guest allocator, but no general Rust main
 or OS runtime. Test batches stop at the first failure.
+Use --test-body --test-target NAME to select one Cargo integration-test target.
 """
 import argparse
 import fcntl
@@ -153,6 +154,16 @@ def unavailable_call_failure(stderr, sites):
     return None
 
 
+def artifact_matches_target(event, test_body, test_target):
+    """Only the requested Cargo target can supply execution bytecode."""
+    if event.get('reason') != 'compiler-artifact' or bool(event['profile']['test']) != test_body:
+        return False
+    if test_target is None:
+        return True  # Preserve the qualified library route.
+    target = event.get('target', {})
+    return target.get('kind') == ['test'] and target.get('name') == test_target
+
+
 def main():
     started=time.perf_counter()
     timings={}
@@ -183,8 +194,13 @@ def main():
     parser.add_argument('--std-mir',action='store_true',help='use reusable standard-library metadata with complete MIR')
     parser.add_argument('--timings',action='store_true',help='write Cargo\'s compilation timing report for this command')
     parser.add_argument('--test-body',action='store_true',help='invoke a function from the library unit-test target directly; libtest attributes are not implemented')
+    parser.add_argument('--test-target',help='select a named Cargo integration-test target; requires --test-body')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    if args.test_target is not None:
+        if not args.test_body:parser.error('--test-target requires --test-body')
+        if not args.test_target or any(c in args.test_target for c in '\x00\r\n'):
+            parser.error('--test-target must be a nonempty Cargo target name')
     if args.jit_native_call_stubs and not args.jit_native_calls:parser.error('--jit-native-call-stubs requires --jit-native-calls')
     if args.jit_persistent_registers and args.engine != 'jit':parser.error('--jit-persistent-registers requires --engine=jit')
     if args.jit_resumable_calls and args.engine != 'jit':parser.error('--jit-resumable-calls requires --engine=jit')
@@ -234,6 +250,7 @@ def main():
         timings['std_mir_seconds']=time.perf_counter()-stage
     selection=args.entry[0] if len(args.entry)==1 else json.dumps(args.entry,separators=(',',':'))
     identity_input='shared-entries-v1\0'+str(manifest)+'\0'+args.package+'\0'+str(args.test_body)
+    if args.test_target is not None:identity_input+='\0integration-test:'+args.test_target
     if std:identity_input+='\0std-mir:'+std[2]
     if args.cache_namespace:identity_input+='\0'+args.cache_namespace
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
@@ -254,6 +271,10 @@ def main():
     env.update(RUSTC_WRAPPER=str(tools/wrapper_name),RUSTC_WORKSPACE_WRAPPER='',
                RUST_INTERP_EXPORT_PACKAGE=args.package,
                RUST_INTERP_OUTPUT=str(work/('audit.json' if auditing else 'program.rbc')),RUST_INTERP_EXPORT_TEST='1' if args.test_body else '0',CARGO_TARGET_DIR=str(work/'target'))
+    if args.test_target is not None:
+        # The existing compiler router also checks Cargo package/primary/test
+        # identity. A same-package library or sibling test cannot export here.
+        env['RUST_INTERP_EXPORT_CRATE']=args.test_target.replace('-', '_')
     if args.inline_leaves:env['RUST_INTERP_INLINE_LEAVES']='1'
     if args.trap_unsupported_calls:env['RUST_INTERP_TRAP_UNSUPPORTED_CALLS']='1'
     if args.run_try_callbacks:env['RUST_INTERP_RUN_TRY_CALLBACKS']='1'
@@ -274,7 +295,9 @@ def main():
         env['RUST_INTERP_STD_SYSROOT']=str(std[0])
         env['RUST_INTERP_STD_TARGET']=std[1]
     if stats:env['RUST_INTERP_VM_STATS']='1'
-    command=['cargo','+'+TOOLCHAIN,'check','--manifest-path',str(manifest),'--package',args.package,'--lib','--locked','--offline','--jobs',str(args.jobs),'--message-format=json-render-diagnostics']
+    command=['cargo','+'+TOOLCHAIN,'check','--manifest-path',str(manifest),'--package',args.package]
+    command+=['--lib'] if args.test_target is None else ['--test',args.test_target]
+    command+=['--locked','--offline','--jobs',str(args.jobs),'--message-format=json-render-diagnostics']
     if args.features:command+=['--features',args.features]
     if args.no_default_features:command+=['--no-default-features']
     # On the pinned Cargo, this selects Check { test: true } for exactly
@@ -292,7 +315,7 @@ def main():
     for line in result.stdout.splitlines():
         try:
             event=json.loads(line)
-            if event.get('reason')=='compiler-artifact' and bool(event['profile']['test'])==args.test_body:
+            if artifact_matches_target(event,args.test_body,args.test_target):
                 artifacts.extend(Path(p+suffix) for p in event['filenames'] if p.endswith('.rmeta') and Path(p+suffix).is_file())
         except json.JSONDecodeError:pass
     if len(artifacts)!=1 or not artifacts[0].is_file():raise RuntimeError('Cargo did not select a valid '+('audit report' if auditing else 'bytecode sidecar')+'; no program was run')
