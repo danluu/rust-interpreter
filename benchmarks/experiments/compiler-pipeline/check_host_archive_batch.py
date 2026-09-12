@@ -36,6 +36,8 @@ def main():
                        corpus='assessed-stopped-corpus', proof_kind='stopped-workflow')
         legacy = dict(archive='legacy', workflow='legacy-complete-case', mode='native',
                       corpus='legacy-complete-corpus', proof_kind='legacy-native')
+        compiler = dict(archive='compiler', workflow='completed-compiler-case', mode='candidate',
+                        proof_kind='compiler-comparison')
         rejected, routes = [], []
 
         def invoke(label, entries, action='prepare', altered=None, should_fail=False):
@@ -81,7 +83,7 @@ def main():
                 routes.append(dict(label=label, commands=calls))
             return calls
 
-        calls = invoke('mixed-prepare', [host, guest, recovered, stopped, legacy])
+        calls = invoke('mixed-prepare', [host, guest, recovered, stopped, legacy, compiler])
         require(calls[0][2:] == ['--prepare', 'host', '--workspace-check', 'completed-check'] and
                 calls[1][2:] == ['--prepare', 'guest', '--workflow', 'completed-workflow',
                                 '--mode', 'candidate', '--corpus', 'completed-corpus'] and
@@ -90,10 +92,12 @@ def main():
                 calls[3][2:] == ['--prepare', 'stopped', '--workflow', 'assessed-stopped-case', '--mode',
                                 'native', '--corpus', 'assessed-stopped-corpus', '--stopped-corpus'] and
                 calls[4][2:] == ['--prepare', 'legacy', '--workflow', 'legacy-complete-case', '--mode',
-                                'native', '--corpus', 'legacy-complete-corpus', '--legacy-native'],
+                                'native', '--corpus', 'legacy-complete-corpus', '--legacy-native'] and
+                calls[5][2:] == ['--prepare', 'compiler', '--workflow', 'completed-compiler-case', '--mode',
+                                'candidate', '--compiler-comparison'],
                 'selector arguments differ')
-        calls = invoke('mixed-apply', [host, guest, recovered, stopped, legacy], action='apply')
-        require([call[2:] for call in calls] == [['--apply', name] for name in ['host', 'guest', 'recovered', 'stopped', 'legacy']],
+        calls = invoke('mixed-apply', [host, guest, recovered, stopped, legacy, compiler], action='apply')
+        require([call[2:] for call in calls] == [['--apply', name] for name in ['host', 'guest', 'recovered', 'stopped', 'legacy', 'compiler']],
                 'apply arguments differ')
         for label, changed in [
             ('host-with-guest-mode', dict(host, mode='native')),
@@ -107,6 +111,8 @@ def main():
             ('stopped-without-corpus', {k: v for k, v in stopped.items() if k != 'corpus'}),
             ('recovered-with-host-mode', dict(recovered, mode='host')),
             ('recovered-without-corpus', {k: v for k, v in recovered.items() if k != 'corpus'}),
+            ('compiler-with-host-mode', dict(compiler, mode='host')),
+            ('compiler-with-corpus', dict(compiler, corpus='unexpected')),
         ]:
             # Invalid later entries must prevent even the valid prefix running.
             invoke(label, [dict(guest, archive='valid-prefix'), changed], should_fail=True)
@@ -118,6 +124,8 @@ def main():
         invoke('changed-stopped-kind', [stopped], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)
         invoke('duplicate-stopped-target', [stopped, dict(stopped, archive='second')], should_fail=True)
         invoke('changed-recovered-kind', [recovered], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)
+        invoke('changed-compiler-kind', [compiler], action='apply', altered={'proof_kind': 'workflow'}, should_fail=True)
+        invoke('duplicate-compiler-target', [compiler, dict(compiler, archive='second')], should_fail=True)
         for label, altered in [('changed-kind', {'proof_kind': 'workflow'}),
                                ('changed-mode', {'mode': 'native'}),
                                ('changed-corpus', {'corpus': 'unexpected'}),

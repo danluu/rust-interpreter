@@ -58,6 +58,14 @@ rejected a start at 25.31 GiB free against the 25.99 GiB requirement. No benchma
 history was created. A second [reviewed public Ruff archive batch](results/aggregate-relocation-space-02/assessment.md)
 preserved 5.45 GB of payloads in 1.78 GB of archives. The fresh Nushell admission
 passed with 28.75 GiB free. No unrelated process or private cache was changed.
+Ruff has not started: its latest live admission still falls below 16.16 GiB,
+despite the [third completed public archive batch](results/aggregate-relocation-space-03/assessment.md).
+An explicit [compiler-comparison cache selector](results/compiler-cache-selector-03/assessment.md)
+now qualifies four actual targets, 25 selector rejections, a restore fixture,
+27 batch-routing rejections and 44 archive regressions. Its first two failed
+qualification histories are preserved. Next prepare and review the newly
+completed Nushell comparison caches under this distinct provenance kind;
+original assertions, source, measurements and artifact snapshots remain.
 
 Source `aa2f6ea` / tool `0e94d6d8` now completes the current runtime qualification.
 Our direct AArch64 JIT keeps checked dynamic/large copies inside resumable

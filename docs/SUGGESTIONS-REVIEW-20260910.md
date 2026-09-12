@@ -118,6 +118,15 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Item 9.2 now includes explicit provenance for completed public exporter-change
+  benchmarks. The [qualification](../results/compiler-cache-selector-03/assessment.md)
+  verifies four real cache identities, rejects 25 invalid selections/proofs,
+  and restores an owned fixture. Existing archive regressions and extended batch
+  routing pass. Artifact proof hashes explicitly match recorded execution hashes.
+  Two failed qualification attempts remain preserved; no real cache was changed
+  during qualification. The unchanged archive machinery will preserve the newly
+  completed Nushell caches to fund the remaining held-outs.
+
 - Aggregate relocation now passes broad native/TLS qualification and all 382
   original fre test bodies, with seven ignored and fresh native controls.
   The first [large-project held-out](../results/aggregate-relocation-heldout-01-nushell-type-relations/relocation-assessment.md)
