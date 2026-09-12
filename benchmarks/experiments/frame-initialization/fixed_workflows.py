@@ -24,6 +24,18 @@ CASES = ['folded-literal-trie', 'token-phrase', 'nushell-type-relations', 'ruff'
          'forward-anchored-tls', 'pgrust-sha1-inline8', 'pgrust', 'rg-aot']
 
 
+def acquire(lock):
+    deadline = time.monotonic() + 45
+    while True:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return
+        except BlockingIOError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(min(1, max(0, deadline - time.monotonic())))
+
+
 def tools_for():
     receipt_path = ROOT / '.work/fixed-frame-clear-01/installed-tools.json'
     receipt = read(receipt_path)
@@ -126,7 +138,7 @@ def main():
     write(work / 'status.json', status)
     try:
         with (ROOT / '.work/benchmark.lock').open('a') as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            acquire(lock)
             paths = [ROOT / 'results' / ('fixed-frame-clear-' + suffix) / 'summary.json'
                      for suffix in ['confirm-02', 'native-01', 'tls-01', 'fre-01', 'integration-02']]
             confirm, native, tls, fre, integration = [read(p) for p in paths]
@@ -172,7 +184,7 @@ def main():
         write(work / 'status.json', status)
         require(code == 0, 'workflow failed; preserve original evidence')
         with (ROOT / '.work/benchmark.lock').open('a') as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            acquire(lock)
             require(all(sha(ROOT / p) == h for p, h in frozen.items()), 'frozen workflow inputs changed')
             require(tools_for() == tools, 'installed VM changed')
             path = ROOT / 'results' / args.run_id / 'summary.json'
