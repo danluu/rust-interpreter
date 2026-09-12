@@ -114,7 +114,7 @@ def current_copy():
         profile_lines.append(f"- [{label} profile]({folder}/assessment.md): boundary self {sample['percentages'].get('native_boundary_self', 0):.2f}%; exact frame clearing {clearing:.2f}% of thread samples.")
         reports += [folder + '/summary.json', folder + '/generated-attribution.json']
     native, tls, fre = qualifications
-    lines = ['## Current custom-copy and native-call experiment', '',
+    lines = ['## Preceding custom-copy and native-call experiment', '',
         f"Source `{original['source_commit'][:7]}`, tool `{key[:8]}` passes {release['workspace_passed']} workspace tests",
         'in debug and release, one ignored diagnostic. Copies now stay inside checked',
         'resumable native regions. The host uses LLVM; guest execution uses our own',
@@ -171,6 +171,10 @@ def current_copy():
 
 def render():
     current_lines, current_entries = current_copy()
+    from status_compiler import render as compiler_status
+    compiler_lines, compiler_entries = compiler_status()
+    current_lines = compiler_lines + current_lines
+    current_entries = compiler_entries + current_entries
     corpus = json.loads((ROOT / CORPUS).read_text())
     previous = json.loads((ROOT / PREVIOUS).read_text())
     validation_counts = json.loads((ROOT / 'results/historical-validation-counts-01/summary.json').read_text())

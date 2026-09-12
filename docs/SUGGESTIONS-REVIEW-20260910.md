@@ -118,12 +118,24 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- The qualified aggregate compiler is now integrated as `5b2330c` / `9637b0ac`.
+  [Normal root builds](../results/aggregate-integration-root-01/assessment.md)
+  reproduce all three measured binaries and pass 289 debug/release tests, one
+  ignored. The ordinary launcher selects it; the source catalog reconstructs it.
+  This supersedes the intermediate isolation status below.
+- Item 3.3's x22 experiment is [parked](../results/budget-register-primary-01/assessment.md).
+  Both identical-tool controls and candidate workflows completed. Token wall
+  improves 1.01%, below 10% and inside 3.99% A/A variation; folded's 1.16% is
+  also inside its control envelope. Broad correctness passed but the fixed
+  performance gate failed. No tuning retries or budget held-outs are planned.
+  The next Call/Return investigation starts with profile-weighted slot facts.
+
 - Item 3.3's isolated x22 budget ABI now passes [293 debug/release workspace tests](../results/budget-register-build-02/assessment.md),
   one ignored. It preserves exact checking points, fault order, host ABI and
   all persistent register pairs. Native validation (47,004 commands), original-artifact smoke (20) and TLS
   qualification (245) now pass. Full fre replay also passes 382 bodies, seven
   ignored, with 382 identical artifacts and fresh native controls. Matched A/A
-  is running; real-edit candidate performance gates remain pending. The first build's
+  and candidate comparisons are complete; the fixed performance gate failed. The first build's
   test-message mismatch is preserved, with no runtime error change.
 
 - Aggregate relocation now passes all [seven fixed held-outs](../results/aggregate-relocation-heldout-recovery-01/assessment.md):
@@ -133,8 +145,8 @@ review are not commitments or evidence of feasibility.
   profiles verify. Item 3.3 now has a [field-level cursor census](../results/aggregate-relocation-cursor-census-02/assessment.md):
   instruction-budget accesses account for 10.06% token and 7.54% folded samples.
   The next bounded ABI experiment keeps budget in a native register while
-  preserving exact charges, fault order and all VM exits. It is planned, not
-  implemented or adopted. Production source integration remains separate.
+  preserving exact charges, fault order and all VM exits. It was implemented and parked after the fixed gate failed. The qualified
+  aggregate compiler source is now integrated; the budget ABI is not.
 
 
 - Item 9.2 now includes explicit provenance for completed public exporter-change

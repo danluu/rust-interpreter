@@ -8,7 +8,7 @@ import subprocess
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[1]
-COMMITS = ['32f5e2f', '6b2c61f', 'a2a0e04', '09de2a9', '26833c3', '059d818', 'd664bce', 'e1bec3e', '001065a', 'b54dc6e', '9bd66cd', 'aa2f6ea']
+COMMITS = ['32f5e2f', '6b2c61f', 'a2a0e04', '09de2a9', '26833c3', '059d818', 'd664bce', 'e1bec3e', '001065a', 'b54dc6e', '9bd66cd', 'aa2f6ea', '5b2330c']
 
 
 def index(ref):

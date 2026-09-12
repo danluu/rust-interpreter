@@ -17,7 +17,7 @@ unqualified.
 | Guest backend | Our bytecode interpreter and direct AArch64 emitter |
 | Native emitter platform | Apple Silicon macOS |
 | Benchmark projects | pgrust, fre, Nushell, Ruff, private rg-aot |
-| Broadest fresh replay (`0e94d6d8`, experimental resumable calls) | 382 fre bodies passed, 7 ignored, with explicit options; not libtest |
+| Broadest fresh replay (`9637b0ac`, explicit resumable calls) | 382 fre bodies passed, 7 ignored, with explicit options; not libtest |
 | Main gaps | Compute performance, native configuration qualification, reuse, real unwinding, threads/OS/FFI and complete test-harness semantics |
 
 ## Run a selected function or test
@@ -52,18 +52,17 @@ python3 -m unittest discover -s tests -p test_workflow_measurements.py
 python3 scripts/update_status.py
 ```
 
-Serialize task builds and benchmarks with `.work/benchmark.lock`. Current runtime
-source `aa2f6ea` / tool `0e94d6d8` passes 276 workspace tests in debug and release,
-with one ignored diagnostic. Its experimental resumable execution passes 47,004
-fresh native-differential validation commands, 245 TLS/destructor commands and
-382 fre body replays (seven ignored). Complete edited commands improve 21.82%
-on folded trie and 33.09% on token phrase against the original JIT baseline;
-both still lose to native Cargo. All seven held-out histories now verify
-588 commands and 294 artifacts, with no wall or CPU regression above 5%.
-The options remain explicit while whole-project compatibility stays unfinished.
-[Workspace validation](results/resumable-copy-release-01/assessment.md),
-[fresh replay](results/resumable-copy-fre-01/assessment.md),
-[performance decisions](results/resumable-copy-original-e2e-01/assessment.md),
+Serialize task builds and benchmarks with `.work/benchmark.lock`. Current source
+`5b2330c` / tool `9637b0ac` passes 289 debug and release workspace tests (one
+ignored). A normal build reproduces the exact qualified binaries. Aggregate-frame
+reuse improves folded-trie edited commands 12.77% over the preceding compiler;
+token regresses 3.70%, within its fixed 5% guard. All seven held-out workflows
+pass their separate wall/CPU guards. Broad qualification passes 47,004 native
+differential commands, 245 TLS/destructor commands and 382 fre bodies (seven
+ignored). Runtime options remain explicit; whole-project compatibility is open.
+[Integration](results/aggregate-integration-root-01/assessment.md),
+[compiler comparison](results/aggregate-relocation-e2e-01/assessment.md),
+[held-outs](results/aggregate-relocation-heldout-recovery-01/assessment.md),
 [current work](STATE.md).
 
 The benchmark harness replays actual source edits, preserves original tests,
