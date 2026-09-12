@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "label": "nushell-generic-list",
+  "project": "nushell",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "edit_class": "public-interface-generic",
+  "case": {
+    "package": "nu-protocol",
+    "file": "crates/nu-protocol/src/ty.rs",
+    "tests": [
+      "ty::tests::oneof::oneof_lhs",
+      "ty::tests::oneof::oneof_rhs",
+      "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+      "ty::tests::oneof_flattening::test_oneof_deduplicates",
+      "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+      "ty::tests::subtype_relation::table_list_oneof_covariance",
+      "ty::tests::subtype_relation::test_any_is_top_type",
+      "ty::tests::subtype_relation::test_list_covariance",
+      "ty::tests::subtype_relation::test_number_supertype",
+      "ty::tests::subtype_relation::test_reflexivity",
+      "ty::tests::widen_shortcuts::test_chain_shortcut",
+      "ty::tests::widen_shortcuts::test_glob_string_union",
+      "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+      "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+    ],
+    "negative": [
+      "reverse-top-type-relation",
+      "            (_, Type::Any) => Some(TypeRelation::Subtype),",
+      "            (_, Type::Any) => Some(TypeRelation::Supertype),"
+    ],
+    "workload": "Generalize the public Type::list constructor to Into<Type>. Existing constructor, covariance and OneOf assertions remain unchanged across all fourteen selected type-relation tests.",
+    "edits": [
+      [
+        "generalize-list-constructor-input",
+        "    pub fn list(inner: Type) -> Self {\n        Self::List(Box::new(inner))\n    }",
+        "    pub fn list(inner: impl Into<Type>) -> Self {\n        Self::List(Box::new(inner.into()))\n    }"
+      ]
+    ],
+    "selections": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    ]
+  }
+}

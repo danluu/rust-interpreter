@@ -24,10 +24,10 @@ fn cached_frame_observation_rebinds_callee_layout_and_preserves_byte_coverage() 
     let mut p = program(8, &[]);
     p.functions.push(program(16, &[]).functions.remove(0));
     let slot = Slot { offset: 0, size: 16 };
-    assert!(!original.writes[0].coverage.complete(slot, &p));
-    assert!(restored.writes[0].coverage.complete(slot, &p));
+    assert!(!original.writes[0].coverage.clone().complete(slot, &p));
+    assert!(restored.writes[0].coverage.clone().complete(slot, &p));
     p.functions[1].args.push(Slot { offset: 0, size: 8 });
-    assert!(!restored.writes[0].coverage.complete(slot, &p));
+    assert!(!restored.writes[0].coverage.clone().complete(slot, &p));
     assert!(cached_observation().rebind(7, &BTreeMap::new()).is_err());
 }
 
@@ -72,12 +72,101 @@ fn coverage_matches_independent_byte_cells_including_padding_and_partial_stores(
                 for i in at..at+size { cells[i] = true; }
             }
         }
-        assert_eq!(c.complete(slot, &p), !observed && cells[8..16].iter().all(|x| *x), "{c:?}");
+        assert_eq!(c.complete(slot, &p), !observed && cells[8..16].iter().all(|x| *x), "rng state {seed:x}");
     }
     let c = Coverage { straight: true, writes: vec![(8,1),(12,4)], ..Coverage::default() };
     assert!(!c.complete(slot, &p)); // holes cannot be borrowed from another lifetime
     let c = Coverage { straight: true, writes: vec![(usize::MAX,8)], ..Coverage::default() };
     assert!(!c.complete(slot, &p));
+}
+
+#[test]
+fn owned_coverage_preserves_range_read_and_zero_size_edge_decisions() {
+    let p = program(0, &[]);
+    let cases = [
+        ("adjacent unsorted", 8, 8, true, vec![(12,4),(8,4)], vec![], true),
+        ("duplicate", 8, 8, true, vec![(8,4),(8,4),(12,4)], vec![], true),
+        ("overlap", 8, 8, true, vec![(8,6),(12,4)], vec![], true),
+        ("hole", 8, 8, true, vec![(8,2),(12,4)], vec![], false),
+        ("initial gap", 8, 8, true, vec![(9,8)], vec![], false),
+        ("cover from before", 8, 8, true, vec![(0,16)], vec![], true),
+        ("read after write", 8, 8, true, vec![(8,8)], vec![(15,1)], false),
+        ("touching reads", 8, 8, true, vec![(8,8)], vec![(0,8),(16,1)], true),
+        ("empty read", 8, 8, true, vec![(8,8)], vec![(12,0)], true),
+        ("saturating read end", 8, 8, true, vec![(8,8)], vec![(7,usize::MAX)], false),
+        ("nonstraight", 8, 8, false, vec![(8,8)], vec![], false),
+        ("slot overflow", usize::MAX, 1, true, vec![], vec![], false),
+        ("write overflow", 8, 8, true, vec![(8,usize::MAX)], vec![], false),
+        ("overflow before gap check", 8, 8, true, vec![(usize::MAX,1)], vec![], false),
+        ("success before later overflow", 8, 8, true, vec![(usize::MAX,1),(8,8)], vec![], true),
+        ("empty slot", 8, 0, true, vec![], vec![], true),
+        ("read straddles empty slot", 8, 0, true, vec![], vec![(7,2)], false),
+        ("read starts at empty slot", 8, 0, true, vec![], vec![(8,1)], true),
+        ("empty slot with write gap", 8, 0, true, vec![(9,1)], vec![], true),
+        ("empty slot with overflowing write", 8, 0, true, vec![(usize::MAX,1)], vec![], false),
+    ];
+    for (label, offset, size, straight, writes, reads, expected) in cases {
+        let c = Coverage { straight, writes, reads, calls: vec![] };
+        assert_eq!(c.complete(Slot { offset, size }, &p), expected, "{label}");
+    }
+}
+
+#[test]
+fn owned_coverage_checks_deferred_calls_before_empty_or_already_covered_success() {
+    let p = program(8, &[8]);
+    for size in [0,8] {
+        for (label, calls) in [
+            ("missing callee", vec![(1,0,vec![None])]),
+            ("argument count", vec![(0,0,vec![])]),
+            ("later missing callee", vec![(0,0,vec![None]),(1,0,vec![None])]),
+        ] {
+            let c = Coverage { straight: true, writes: vec![(0,8)], calls, ..Coverage::default() };
+            assert!(!c.complete(Slot { offset: 0, size }, &p), "{label}, slot size {size}");
+        }
+    }
+}
+
+#[test]
+fn owned_and_serialized_coverage_match_byte_cells_with_final_callee_abi() {
+    let slot = Slot { offset: 8, size: 8 };
+    let mut seed = 0x57b230af_u64;
+    for _ in 0..1_000 {
+        let mut next = |n: usize| { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed as usize % n };
+        let mut p = program(0, &[0]);
+        let mut c = Coverage { straight: true, ..Coverage::default() };
+        for _ in 0..4 { c.writes.push((next(24),next(9))); }
+        for _ in 0..2 { c.reads.push((next(24),next(9))); }
+        for _ in 0..3 {
+            let offset = next(24);
+            let argument = if next(2)==0 { None } else { Some(next(24)) };
+            c.calls.push((0,offset,vec![argument]));
+        }
+        // Capture knows callee identities, not their final result/argument byte
+        // sizes. Resolve these only after the complete Program has been lowered.
+        p.functions[0].result.size = next(9);
+        p.functions[0].args[0].size = next(9);
+        let mut cells = [false;32];
+        let mut observed = false;
+        for &(at,size) in &c.writes {
+            for byte in at..at+size { cells[byte] = true; }
+        }
+        for &(at,size) in &c.reads {
+            observed |= (at..at+size).any(|byte| (8..16).contains(&byte));
+        }
+        for (callee,at,arguments) in &c.calls {
+            let f = &p.functions[*callee];
+            for byte in *at..*at+f.result.size { cells[byte] = true; }
+            for (argument,formal) in arguments.iter().zip(&f.args) {
+                if let Some(at) = argument {
+                    observed |= (*at..*at+formal.size).any(|byte| (8..16).contains(&byte));
+                }
+            }
+        }
+        let expected = !observed && cells[8..16].iter().all(|x| *x);
+        let restored: Coverage = bincode::deserialize(&bincode::serialize(&c).unwrap()).unwrap();
+        assert_eq!(c.complete(slot,&p),expected,"owned, rng state {seed:x}");
+        assert_eq!(restored.complete(slot,&p),expected,"serialized, rng state {seed:x}");
+    }
 }
 
 #[test]

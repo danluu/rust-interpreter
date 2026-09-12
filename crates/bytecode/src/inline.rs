@@ -274,6 +274,44 @@ fn relocated(
 /// Cold branches, ordered argument copies, function handles and checks remain.
 /// Selection is static and does not consume runtime profiles.
 pub fn transform(original: &Program, options: Options) -> Result<(Program, Value), String> {
+    let prepared = prepare(original, options)?;
+    prepared.apply(original.clone())
+}
+
+/// Reuse the export pipeline's owned program after all decisions have been
+/// made against its unchanged graph. Unmodified functions never need cloning.
+pub(crate) fn transform_owned(original: Program, options: Options) -> Result<(Program, Value), String> {
+    let prepared = prepare(&original, options)?;
+    prepared.apply(original)
+}
+
+struct Prepared {
+    replacements: Vec<(usize, Function)>,
+    sites: usize,
+    original_operations: usize,
+    growth: usize,
+    changed: Vec<Value>,
+    options: Options,
+    diagnostics: usize,
+}
+
+impl Prepared {
+    fn apply(self, mut result: Program) -> Result<(Program, Value), String> {
+        for (id, function) in self.replacements {
+            result.functions[id] = function;
+        }
+        crate::validate(&result)?;
+        let new_operations: usize = result.functions.iter().map(|f| f.code.len()).sum();
+        Ok((
+            result,
+            json!({"selected_sites":self.sites,"original_operations":self.original_operations,"new_operations":new_operations,
+            "added_operations_upper_bound":self.growth,"changed_callers":self.changed,"max_leaf_operations":self.options.leaf_operations,
+            "max_program_growth_percent":self.options.program_growth_percent,"cloned_diagnostic_bytes":self.diagnostics}),
+        ))
+    }
+}
+
+fn prepare(original: &Program, options: Options) -> Result<Prepared, String> {
     crate::validate(original)?;
     if options.leaf_operations > 192
         || options.program_growth_percent > 100
@@ -318,7 +356,7 @@ pub fn transform(original: &Program, options: Options) -> Result<(Program, Value
     let mut growth = 0usize;
     let mut sites = 0usize;
     let mut changed = vec![];
-    let mut result = original.clone();
+    let mut replacements = Vec::new();
     for (id, caller) in original.functions.iter().enumerate() {
         let bank_offset = (caller.frame_size + caller.frame_align - 1) & !(caller.frame_align - 1);
         let mut selected = Vec::new();
@@ -478,16 +516,20 @@ pub fn transform(original: &Program, options: Options) -> Result<(Program, Value
             }
         }
         let removed = crate::remove_fallthrough_jumps(&mut code)?;
-        let output = &mut result.functions[id];
-        output.frame_size = bank_offset + bank_frame;
-        output.registers = caller.registers + bank_registers + 3;
-        output.code = code;
+        let output = Function {
+            name: caller.name.clone(),
+            frame_size: bank_offset + bank_frame,
+            frame_align: caller.frame_align,
+            registers: caller.registers + bank_registers + 3,
+            args: caller.args.clone(),
+            result: caller.result,
+            code,
+        };
         // Reject an expansion that introduces whole-caller register clearing.
         // This is a performance guard, never a trusted semantic annotation.
         if !crate::registers::needs_initial_zeroes_for_inlining(caller)
-            && crate::registers::needs_initial_zeroes_for_inlining(output)
+            && crate::registers::needs_initial_zeroes_for_inlining(&output)
         {
-            *output = caller.clone();
             growth -= caller_growth;
             sites -= selected_count;
             diagnostics -= caller_diagnostics;
@@ -496,14 +538,8 @@ pub fn transform(original: &Program, options: Options) -> Result<(Program, Value
         changed.push(json!({"function":id,"name":caller.name,"sites":selected_count,
             "old_operations":caller.code.len(),"new_operations":output.code.len(),"removed_jumps":removed,
             "old_frame_size":caller.frame_size,"new_frame_size":output.frame_size,"old_registers":caller.registers,"new_registers":output.registers,
-            "needed_register_zeroes_before":crate::registers::needs_initial_zeroes_for_inlining(caller),"needed_register_zeroes_after":crate::registers::needs_initial_zeroes_for_inlining(output)}));
+            "needed_register_zeroes_before":crate::registers::needs_initial_zeroes_for_inlining(caller),"needed_register_zeroes_after":crate::registers::needs_initial_zeroes_for_inlining(&output)}));
+        replacements.push((id, output));
     }
-    crate::validate(&result)?;
-    let new_operations: usize = result.functions.iter().map(|f| f.code.len()).sum();
-    Ok((
-        result,
-        json!({"selected_sites":sites,"original_operations":original_operations,"new_operations":new_operations,
-        "added_operations_upper_bound":growth,"changed_callers":changed,"max_leaf_operations":options.leaf_operations,
-        "max_program_growth_percent":options.program_growth_percent,"cloned_diagnostic_bytes":diagnostics}),
-    ))
+    Ok(Prepared { replacements, sites, original_operations, growth, changed, options, diagnostics })
 }

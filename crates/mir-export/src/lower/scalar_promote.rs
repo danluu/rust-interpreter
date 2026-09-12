@@ -22,22 +22,32 @@ impl<'tcx> Visitor<'tcx> for Uses<'_> {
 fn exclude_operand(eligible:&mut [bool],op:&Operand<'_>) {
     if let Operand::Copy(p)|Operand::Move(p)=op {if p.projection.is_empty() {eligible[p.local.as_usize()]=false;}}
 }
-pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
-    let start=std::time::Instant::now();
-    if lower.locals.len()>4096 || lower.code.len()>100_000 {return Ok(());}
+fn visitor_eligibility(lower:&Lower<'_, '_>)->Vec<bool> {
     let mut eligible=vec![false;lower.locals.len()];
-    for (id,decl) in lower.body.local_decls.iter_enumerated() {
-        let id=id.as_usize();let ty=lower.mono(decl.ty);
+    for (id,_) in lower.body.local_decls.iter_enumerated() {
+        let ty=lower.local_ty(id);let id=id.as_usize();
         eligible[id]=id>lower.body.arg_count&&matches!(ty.kind(),ty::Int(_)|ty::Uint(_)|ty::Float(_)|ty::Bool|ty::Char);
     }
     for (bb,block) in lower.body.basic_blocks.iter_enumerated() {
         for (statement_index,statement) in block.statements.iter().enumerate() {
             Uses{eligible:&mut eligible}.visit_statement(statement,mir::Location{block:bb,statement_index});
+        }
+        Uses{eligible:&mut eligible}.visit_terminator(block.terminator(),mir::Location{block:bb,statement_index:block.statements.len()});
+    }
+    eligible
+}
+pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
+    let start=std::time::Instant::now();
+    if lower.locals.len()>4096 || lower.code.len()>100_000 {return Ok(());}
+    let mut eligible=lower.scalar_eligibility.take().unwrap_or_else(|| visitor_eligibility(lower));
+    // These direct-operand exclusions only clear eligibility, so they commute
+    // with either the saved packing visitor or the original fallback visitor.
+    for block in lower.body.basic_blocks.iter() {
+        for statement in &block.statements {
             if let StatementKind::Assign(assignment)=&statement.kind {
                 if let Rvalue::Aggregate(_,ops)=&assignment.1 {for op in ops {exclude_operand(&mut eligible,op);}}
             }
         }
-        Uses{eligible:&mut eligible}.visit_terminator(block.terminator(),mir::Location{block:bb,statement_index:block.statements.len()});
         if let TerminatorKind::Call{args,..}=&block.terminator().kind {for arg in args {exclude_operand(&mut eligible,&arg.node);}}
     }
     // Merge exact colored ranges, then reject overlaps with any other range.
@@ -65,3 +75,7 @@ pub(super) fn report() {
     eprintln!("rust-interp-scalar-promotion: slots={} removed_addresses={} rewritten={} seconds={:.6} removed_moves={}",
         SLOTS.load(Ordering::Relaxed),ADDRESSES.load(Ordering::Relaxed),REWRITTEN.load(Ordering::Relaxed),NANOS.load(Ordering::Relaxed) as f64/1e9,MOVES.load(Ordering::Relaxed));
 }
+
+#[cfg(test)]
+#[path="scalar_eligibility_tests.rs"]
+mod eligibility_tests;

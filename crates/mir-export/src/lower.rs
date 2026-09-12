@@ -817,6 +817,7 @@ struct Lower<'a, 'tcx> {
     instance: Instance<'tcx>,
     body: &'tcx mir::Body<'tcx>,
     locals: Vec<Slot>,
+    local_types: Vec<Ty<'tcx>>,
     frame_size: usize,
     frame_align: usize,
     registers: u32,
@@ -825,6 +826,8 @@ struct Lower<'a, 'tcx> {
     fixups: Vec<usize>,
     caller_location: Option<Slot>,
     byte_local_extent: usize,
+    scalar_layout: Option<scalar_frame::ChosenLayout>,
+    scalar_eligibility: Option<Vec<bool>>,
     byte_origins: BTreeMap<Reg,usize>,
     byte_origins_complete: bool,
     byte_spans: Vec<Vec<Option<(usize, usize)>>>,
@@ -890,8 +893,11 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         }
         let body = exporter.tcx.instance_mir(instance.def);
         let mut this = Self::empty(exporter, instance, body);
+        let mut shapes = Vec::new();
+        let retain_shapes = body.local_decls.len() <= scalar_frame::MAX_LOCALS;
         for local in body.local_decls.iter() {
-            let layout = this.layout(this.mono(local.ty))?;
+            let ty = this.mono(local.ty);
+            let layout = this.layout(ty)?;
             if !layout.is_sized() {
                 return Err("unsized frame local".into());
             }
@@ -906,8 +912,10 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 size: layout.size.bytes_usize(),
             });
             this.frame_size += layout.size.bytes_usize();
+            this.local_types.push(ty);
+            if retain_shapes { shapes.push((layout.size.bytes_usize(), align)); }
         }
-        scalar_frame::pack(&mut this)?;
+        scalar_frame::pack(&mut this, shapes)?;
         this.byte_local_extent = this.frame_size;
         if instance.def.requires_caller_location(this.tcx()) {
             this.frame_size = (this.frame_size + 7) & !7;
@@ -924,6 +932,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             instance,
             body,
             locals: vec![],
+            local_types: vec![],
             frame_size: 0,
             frame_align: 16,
             registers: 0,
@@ -932,6 +941,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             fixups: vec![],
             caller_location: None,
             byte_local_extent: 0,
+            scalar_layout: None,
+            scalar_eligibility: None,
             byte_origins: BTreeMap::new(),
             byte_origins_complete: true,
             pointer_bindings,
@@ -951,6 +962,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             env(),
             ty::EarlyBinder::bind(self.tcx(), value),
         )
+    }
+    fn local_ty(&self, local: mir::Local) -> Ty<'tcx> {
+        // Normal lowering filled this during frame initialization. Synthetic
+        // adapters built with empty keep the original on-demand normalization.
+        self.local_types.get(local.as_usize()).copied()
+            .unwrap_or_else(|| self.mono(self.body.local_decls[local].ty))
     }
     fn layout(&self, ty: Ty<'tcx>) -> Result<TyAndLayout<'tcx>> {
         self.tcx()
@@ -1090,12 +1107,15 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         self.local(at)
     }
     fn operand_ty(&self, op: &Operand<'tcx>) -> Ty<'tcx> {
+        if let Operand::Copy(place) | Operand::Move(place) = op {
+            if place.projection.is_empty() { return self.local_ty(place.local); }
+        }
         self.mono(op.ty(&self.body.local_decls, self.tcx()))
     }
     fn place(&mut self, place: Place<'tcx>) -> Result<Location<'tcx>> {
         let mut loc = Location {
             address: self.named_local(place.local),
-            ty: self.mono(self.body.local_decls[place.local].ty),
+            ty: self.local_ty(place.local),
             variant: None,
             metadata: None,
         };
@@ -2524,7 +2544,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         for local in self.body.args_iter() {
             let slot = self.locals[local.as_usize()];
             if Some(local) == self.body.spread_arg {
-                let ty = self.mono(self.body.local_decls[local].ty);
+                let ty = self.local_ty(local);
                 let ty::Tuple(fields) = ty.kind() else {
                     return Err("MIR spread argument must be a tuple".into());
                 };
