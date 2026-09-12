@@ -8,6 +8,18 @@ const MAX_WORDS: usize = 1_048_576; // 8 MiB for live-in bits, per analyzed func
 const MAX_EDGES: usize = 262_144;
 const MAX_OPERANDS: usize = 262_144;
 const MAX_WORK: usize = 32_000_000; // word/set operations before conservative decline
+const MAX_REMATERIALIZED: usize = 128;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Rematerialized {
+    Imm(u128),
+    Local(usize),
+}
+impl Rematerialized {
+    fn fact(self) -> Fact {
+        match self { Self::Imm(value) => Fact::Imm(value), Self::Local(offset) => Fact::Local(offset) }
+    }
+}
 
 pub(super) struct Liveness {
     bits: Vec<u64>,
@@ -27,17 +39,27 @@ impl Liveness {
 pub(super) struct Allocation {
     pub live: Liveness,
     pub registers: Vec<Reg>,
+    pub rematerialized: Vec<Option<Rematerialized>>,
 }
 impl Allocation {
     pub(super) fn pair(&self, reg: Reg) -> Option<u32> {
         self.registers.iter().position(|&r| r == reg).map(|i| 23 + i as u32 * 2)
+    }
+    pub(super) fn rematerialized(&self, reg: Reg) -> Option<Fact> {
+        self.rematerialized.get(reg as usize).copied().flatten().map(Rematerialized::fact)
     }
 }
 
 pub(super) fn analyze(f: &Function) -> Option<Allocation> {
     analyze_with_work(f, MAX_WORK)
 }
+pub(super) fn analyze_rematerialized(f: &Function) -> Option<Allocation> {
+    analyze_with_options(f, MAX_WORK, true)
+}
 fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
+    analyze_with_options(f, max_work, false)
+}
+fn analyze_with_options(f: &Function, max_work: usize, rematerialize: bool) -> Option<Allocation> {
     let n = f.code.len();
     if n == 0 || n > MAX_PCS || f.registers > MAX_REGISTERS { return None; }
     let stride = f.registers.div_ceil(64);
@@ -127,18 +149,59 @@ fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
             }
         }
     }
-    let mut registers: Vec<_> = scores.iter().enumerate().filter_map(|(r, &score)|
+    let mut ranked: Vec<_> = scores.iter().enumerate().filter_map(|(r, &score)|
         (score != 0 && frequency[r] >= 2).then_some((score * frequency[r], r as Reg))).collect();
-    registers.sort_unstable_by_key(|&(score, r)| (std::cmp::Reverse(score), r));
-    let registers = registers.into_iter().take(3).map(|(_, r)| r).collect();
-    Some(Allocation { live, registers })
+    ranked.sort_unstable_by_key(|&(score, r)| (std::cmp::Reverse(score), r));
+    let mut rematerialized = vec![];
+    if rematerialize {
+        // Uniform definitions alone are insufficient: the initial register
+        // value is zero. Entry may-liveness excludes every path that reads a
+        // value before a definition, including loop backedges. Check writers
+        // even in unreachable blocks; another writer always disqualifies it.
+        let mut uniform = vec![None; f.registers];
+        let mut blocked = vec![false; f.registers];
+        for (op, writes) in f.code.iter().zip(&defs) {
+            let value = match *op {
+                Op::Imm { value, .. } => Some(Rematerialized::Imm(value)),
+                Op::Local { offset, .. } => Some(Rematerialized::Local(offset)),
+                _ => None,
+            };
+            for &r in writes {
+                let r = r as usize;
+                if value.is_none() || uniform[r].is_some_and(|prior| Some(prior) != value) {
+                    blocked[r] = true;
+                }
+                uniform[r] = value;
+            }
+        }
+        rematerialized = vec![None; f.registers];
+        let mut retained = 0;
+        for &(_, reg) in &ranked {
+            let r = reg as usize;
+            if !blocked[r] && !live.at(0, reg) && uniform[r].is_some() {
+                rematerialized[r] = uniform[r];
+                retained += 1;
+                if retained == MAX_REMATERIALIZED { break; }
+            }
+        }
+    }
+    let registers = ranked.into_iter().filter_map(|(_, r)|
+        rematerialized.get(r as usize).is_none_or(Option::is_none).then_some(r)).take(3).collect();
+    Some(Allocation { live, registers, rematerialized })
 }
 
 #[cfg(test)]
 #[path = "values_tests.rs"]
 mod tests;
 
+#[cfg(test)]
+#[path = "rematerialize_tests.rs"]
+mod rematerialize_tests;
+
 impl Assembler<'_> {
+    pub(super) fn known_fact(&self, reg: Reg) -> Option<Fact> {
+        self.facts.get(&reg).copied().or_else(|| self.values.and_then(|v| v.rematerialized(reg)))
+    }
     pub(super) fn assigned_pair(&self, reg: Reg) -> Option<u32> {
         self.values.and_then(|v| v.pair(reg))
     }
@@ -203,6 +266,17 @@ impl Assembler<'_> {
             if values.live.at(pc, reg) {
                 let lo = 23 + index as u32 * 2;
                 self.raw_spill(reg, lo, lo + 1);
+            }
+        }
+        // The interpreter still consumes the original register array. This
+        // also publishes caller values before a native call whose callee may
+        // return through the VM. Liveness ensures a not-yet-defined value is
+        // never published merely because its definition occurs later.
+        for (reg, value) in values.rematerialized.iter().enumerate() {
+            if let Some(value) = value.filter(|_| values.live.at(pc, reg as Reg)) {
+                self.materialize(9, value.fact(), false);
+                self.materialize(10, value.fact(), true);
+                self.raw_spill(reg as Reg, 9, 10);
             }
         }
     }

@@ -11,8 +11,8 @@ pub(super) struct Value {
 
 impl Assembler<'_> {
     pub(super) fn local_range(&self, address: Reg, size: usize) -> Option<usize> {
-        match self.facts.get(&address) {
-            Some(Fact::Local(offset)) if offset.checked_add(size).is_some_and(|end| end <= self.frame_size) => Some(*offset),
+        match self.known_fact(address) {
+            Some(Fact::Local(offset)) if offset.checked_add(size).is_some_and(|end| end <= self.frame_size) => Some(offset),
             _ => None,
         }
     }

@@ -432,7 +432,9 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let reads = read_registers(f);
-        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
+        let values = self.persistent_registers.then(|| if resumable {
+            values::analyze_rematerialized(f)
+        } else { values::analyze(f) }).flatten();
         let fills = local_fills(f);
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
             || (resumable && transfers::supported(&f.code[pc]));
@@ -1158,7 +1160,7 @@ impl Assembler<'_> {
     }
     fn get(&mut self, rd: u32, reg: Reg, high: bool) {
         if !self.defined.contains(&reg) { self.live_in.insert(reg); }
-        if let Some(fact) = self.facts.get(&reg).copied() {
+        if let Some(fact) = self.known_fact(reg) {
             self.materialize(rd, fact, high);
             return;
         }
@@ -1276,6 +1278,7 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
+                if values.rematerialized(reg).is_some() { return None; }
                 return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
@@ -1289,7 +1292,7 @@ impl Assembler<'_> {
         }
     }
     fn address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) {
-        if let Some(Fact::Local(offset)) = self.facts.get(&reg).copied() {
+        if let Some(Fact::Local(offset)) = self.known_fact(reg) {
             if offset.checked_add(size).is_some_and(|end| end <= self.frame_size) {
                 // The VM has allocated the complete active frame above the
                 // read-only prefix. Supported regions cannot call or allocate,
@@ -1307,8 +1310,8 @@ impl Assembler<'_> {
             Op::Imm {dst, value} => self.remember(dst, Fact::Imm(value)),
             Op::Local {dst, offset} => self.remember(dst, Fact::Local(offset)),
             Op::Binary {dst, overflow, op, a, b, bits, signed} => {
-                let left = self.facts.get(&a).copied();
-                let right = self.facts.get(&b).copied();
+                let left = self.known_fact(a);
+                let right = self.known_fact(b);
                 let folded = match (left, right) {
                     (Some(Fact::Imm(a)), Some(Fact::Imm(b))) => {
                         crate::binary(op, a, b, bits, signed).ok().map(|(value, overflow)| (Fact::Imm(value), overflow))
