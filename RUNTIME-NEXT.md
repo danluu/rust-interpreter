@@ -4,16 +4,16 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Qualify the isolated Cargo test runner.** Prepared custom JIT code and
-   per-test guest isolation pass 320 tests per profile and the real token
-   assertion pilot. The launcher and native per-test process control pass 36
-   Python tests. Measure complete source-edit/build/suite commands on pgrust,
-   token and folded, preserving the wrong edit and restored-source rebuild.
-   Ordinary libtest shares globals; these controls use a separate process per
-   native test. Keep the option explicit and report all costs, including losses.
-   [Protocol](benchmarks/experiments/prepared-jit/WORKFLOWS.md).
-   Rematerialization and persistent exporter reuse remain parked/default-off
-   after their failed screens; do not retime them.
+1. **Make selected entries survive optimization.** The optional isolated runner
+   passes 96 real source-edit/check/restoration commands on pgrust/token/folded.
+   Prepared/fresh descriptive wall ratios are 1.0084/.9686/.8916; repeated
+   confirmation remains open. Nushell also passes its saved-artifact pilot.
+   Ruff's native and ordinary VM controls pass, but the optimized root fails the
+   legacy descriptor matcher. Export an explicit catalog bound to exact bytecode,
+   validate it before execution, and preserve test IDs through optimization.
+   Then qualify real exports and expand suite discovery/semantics. Keep native
+   process isolation explicit and preserve all failed attempts.
+   [Edited-workflow protocol](benchmarks/experiments/prepared-jit/WORKFLOWS.md).
 
 2. **Preserve the fixed-clear decision.** The fresh combined es8 confirmation
    improves complete commands by 7.39% wall and 7.61% CPU, missing the fixed 8%

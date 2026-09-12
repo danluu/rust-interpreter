@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Optional isolated Cargo runner passes 320 debug/release tests, 36 Python tests, the eight-command fre pilot and 32 real pgrust commands. Pgrust prepared/fresh edited commands tie (ratio1.0084); saved preparation is only milliseconds. Continue predeclared token and folded suites, reporting all outcomes and costs; no default-promotion or full-libtest claim.
+**Next:** Isolated source-edit qualifications pass96commands across pgrust/token/folded. Descriptive prepared/fresh wall ratios1.0084/.9686/.8916; no repeated-confirmation claim. Nushell saved pilot passes9commands. Ruff passes6native+2ordinaryVM commands but optimized root shape blocks isolation. Replace root-shape discovery with artifact-bound entry catalogs, qualify stale/malformed/optimized-root cases, then actual exports and broader suites.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

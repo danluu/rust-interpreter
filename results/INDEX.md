@@ -59,6 +59,10 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | prepared-jit | [prepared-jit-build-04/summary.json](prepared-jit-build-04/summary.json) |
 | prepared-suite | [prepared-suite-pilot-01/summary.json](prepared-suite-pilot-01/summary.json) |
 | prepared-pgrust | [prepared-suite-pgrust-01/isolated-assessment.json](prepared-suite-pgrust-01/isolated-assessment.json) |
+| prepared-token | [prepared-suite-token-01/isolated-assessment.json](prepared-suite-token-01/isolated-assessment.json) |
+| prepared-folded | [prepared-suite-folded-01/isolated-assessment.json](prepared-suite-folded-01/isolated-assessment.json) |
+| prepared-nushell | [prepared-suite-pilot-nushell-01/summary.json](prepared-suite-pilot-nushell-01/summary.json) |
+| prepared-ruff | [prepared-suite-pilot-ruff-01/summary.json](prepared-suite-pilot-ruff-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

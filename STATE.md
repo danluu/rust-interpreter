@@ -8,19 +8,25 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-Prepared custom JIT code now survives distinct test executions while each gets
-fresh guest state. The API and optional VM runner pass 320 debug and release
-tests (one ignored); the real fre token pilot passes three native tests and
-five custom commands, including exact fresh/prepared equality with recorded
-inputs. The Cargo launcher and separate-process native control pass 36 Python
-tests. Pgrust also passes all 32 real commands, including wrong-edit assertions and
-a restored-source rebuild. Prepared/fresh edited latency is tied (ratio 1.0084);
-execution saves only about 2 ms. Next qualify token and folded under
-[the fixed protocol](benchmarks/experiments/prepared-jit/WORKFLOWS.md).
-No end-to-end performance gain or full libtest compatibility is claimed.
-[Build](results/prepared-jit-build-04/summary.json),
-[pilot](results/prepared-suite-pilot-01/summary.json),
-[pgrust](results/prepared-suite-pgrust-01/assessment.md).
+The optional prepared JIT and isolated Cargo runner are published on main.
+All 320 Rust tests per profile (one ignored), 36 initial Python tests and 96 real
+source-edit/check/restoration commands pass. Across five distinct edits each,
+prepared/fresh wall ratios are 1.0084 for pgrust, 0.9686 for token and 0.8916 for
+folded. These are descriptive single-cycle results. The larger batch saves
+repeated preparation; token remains dominated by guest execution.
+[Pgrust](results/prepared-suite-pgrust-01/assessment.md),
+[token](results/prepared-suite-token-01/assessment.md),
+[folded](results/prepared-suite-folded-01/assessment.md).
+
+The Nushell saved-artifact pilot passes four separate native tests plus five VM
+commands. Ruff passes six native tests and the old/new ordinary VM comparison,
+then rejects its optimized batch root before isolated execution. The current
+entry discovery depends on root instruction shape. Next replace that dependency
+with explicit artifact-bound entry catalogs and qualify malformed/stale catalogs
+before expanding automatic suite discovery. Full ignore/should-panic/unwind/thread
+semantics remain open.
+[Nushell](results/prepared-suite-pilot-nushell-01/summary.json),
+[Ruff limitation](results/prepared-suite-pilot-ruff-01/summary.json).
 
 Cross-region rematerialization remains parked after its 0.78% wall/0.81% CPU
 runtime regression. No conditional promotion benchmarks will run.
