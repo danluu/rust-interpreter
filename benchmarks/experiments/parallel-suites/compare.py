@@ -76,7 +76,7 @@ def main():
         assert selected['vm_sha256'] == sha(vms['candidate']) and selected['exact_instructions_memory_and_entropy']
         paths.append(selected_path)
         if args.phase == 'screen':
-            serial_path = ROOT / 'results/parallel-suites-serial-01/summary.json'
+            serial_path = ROOT / 'results/parallel-suites-serial-02/summary.json'
             serial = json.loads(serial_path.read_text())
             assert serial['status'] == 'passed' and serial['commands'] == 9
             assert serial['binaries']['candidate'] == sha(vms['candidate'])
@@ -161,7 +161,10 @@ def main():
                     entropy_counts = {k: int(v) for k, v in re.findall(r'\b(entropy_calls|entropy_bytes)=(\d+)\b', stderr)}
                     assert observed == reference['expected'] and entropy_counts == reference['entropy']
                 elif case != 'token':
-                    assert reference['entropy'] == dict(entropy_calls=0, entropy_bytes=0)
+                    # Process-level entropy also includes host initialization.
+                    # These controls must keep exact guest counters across the
+                    # two independently recorded streams and normal OS input.
+                    assert item['streams'][0]['expected'] == item['streams'][1]['expected']
                     assert observed == reference['expected']
                 else:
                     assert [(t['name'], t['function']) for t in observed] == [(t['name'], t['function']) for t in reference['expected']]

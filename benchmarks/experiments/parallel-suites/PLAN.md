@@ -1,7 +1,9 @@
 # Concurrent isolated tests with one JIT owner per worker
 
-Native controls use concurrent libtest execution. Our prepared suite currently
-serializes independent test bodies, including the two dominant token tests.
+Ordinary libtest supports concurrent execution. The recent exact-name native
+control and our prepared suite both serialize independent test bodies, including
+the two dominant token tests. The actual-edit comparison must include a matched
+concurrent native control, in addition to the retained serial native control.
 Test a structural workflow change: explicit --suite-workers N (1..64), default1,
 for isolated fresh/prepared batches. Cap active workers by the selected count.
 Each host worker constructs, uses and drops its own JIT on its creating thread.
