@@ -80,10 +80,6 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
     let library = args
         .windows(2)
         .any(|a| a[0] == "--crate-type" && a[1].split(',').any(|t| t == "lib" || t == "rlib"));
-    if wrapper && library {
-        // Retain the qualified dependency MIR policy, including flag precedence.
-        args.push("-Zalways-encode-mir=yes".into());
-    }
     let wrong_package = env
         .export_package
         .as_ref()
@@ -103,6 +99,18 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
             || (env.export_package.is_some() && !env.export_test && !library)
             || wrong_manifest
             || (env.export_test && !test_compilation));
+    // With the launcher's explicit guest target, Cargo builds host dependencies
+    // separately and omits --target on those rustc invocations. They serve host
+    // build scripts/proc macros, not guest MIR lookup. Preserve their original
+    // flags, including any user-requested MIR encoding. Without that complete
+    // context, or for a selected export, retain the conservative old policy.
+    let host_only = !export
+        && env.std_sysroot.as_ref().is_some_and(|s| !s.is_empty())
+        && env.std_target.as_ref().is_some_and(|s| !s.is_empty())
+        && !args.iter().any(|arg| arg == "--target" || arg.starts_with("--target="));
+    if wrapper && library && !host_only {
+        args.push("-Zalways-encode-mir=yes".into());
+    }
     Ok(Route {
         args,
         wrapper,

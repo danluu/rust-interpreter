@@ -206,3 +206,67 @@ fn standalone_export_does_not_apply_cargo_transformations() {
     assert!(route.export);
     assert_eq!(route.args, args);
 }
+
+#[test]
+fn host_library_dependencies_preserve_the_complete_original_flag_sequence() {
+    let env = Environment { primary_package: false, ..std_env() };
+    for kind in ["lib", "rlib", "rlib,cdylib"] {
+        for mir in ["-Zalways-encode-mir=no", "-Zalways-encode-mir=yes"] {
+            let flags = ["--crate-type", kind, "--sysroot", "/host", mir, "--emit=dep-info,metadata,link"];
+            let route = invoke(&flags, &env).unwrap();
+            assert!(!route.export);
+            assert_eq!(&route.args[3..], flags);
+        }
+    }
+}
+
+#[test]
+fn guest_library_dependencies_still_force_mir_after_user_flags() {
+    let env = Environment { primary_package: false, ..std_env() };
+    for target in [&["--target", "aarch64-apple-darwin"][..], &["--target=aarch64-apple-darwin"]] {
+        let mut flags = vec!["--crate-type", "lib", "-Zalways-encode-mir=no"];
+        flags.extend(target);
+        let route = invoke(&flags, &env).unwrap();
+        assert!(!route.export);
+        assert!(route.args.ends_with(&["--sysroot".into(), "/MIR sysroot".into(), "-Zalways-encode-mir=yes".into()]));
+    }
+}
+
+#[test]
+fn missing_or_empty_guest_context_keeps_dependency_mir() {
+    for missing in ["sysroot", "target", "empty-sysroot", "empty-target"] {
+        let mut env = Environment { primary_package: false, ..std_env() };
+        match missing {
+            "sysroot" => env.std_sysroot = None,
+            "target" => env.std_target = None,
+            "empty-sysroot" => env.std_sysroot = Some(String::new()),
+            _ => env.std_target = Some(String::new()),
+        }
+        let route = invoke(&["--crate-type", "lib"], &env).unwrap();
+        assert!(!route.export);
+        assert_eq!(route.args.last().unwrap(), "-Zalways-encode-mir=yes", "{missing}");
+    }
+}
+
+#[test]
+fn selected_export_without_target_keeps_conservative_mir_policy() {
+    let route = invoke(&["--crate-type", "lib"], &std_env()).unwrap();
+    assert!(route.export);
+    assert_eq!(route.args.last().unwrap(), "-Zalways-encode-mir=yes");
+}
+
+#[test]
+fn host_dependency_classification_does_not_change_export_selection() {
+    let flags = ["--crate-type", "lib"];
+    for field in ["package", "manifest", "primary"] {
+        let mut env = std_env();
+        match field {
+            "package" => env.package = Some("dependency".into()),
+            "manifest" => env.manifest = Some("/dependency".into()),
+            _ => env.primary_package = false,
+        }
+        let route = invoke(&flags, &env).unwrap();
+        assert!(!route.export);
+        assert_eq!(&route.args[3..], flags);
+    }
+}

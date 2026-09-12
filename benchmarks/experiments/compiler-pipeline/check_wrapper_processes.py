@@ -27,10 +27,17 @@ def sha(path):
 
 
 def main():
+    global ROOT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--tool-key', required=True)
+    parser.add_argument('--workspace-root', type=Path, help='existing owning workspace for installed tools, lock and receipts')
+    parser.add_argument('--host-mir-candidate', action='store_true', help='also verify host-only library MIR omission')
     args = parser.parse_args()
+    if args.workspace_root is not None:
+        ROOT = args.workspace_root.resolve(strict=True)
+        require((ROOT / '.work/benchmark.lock').is_file(), 'owning workspace has no benchmark lock')
+        interpreter.ROOT = ROOT
     require(Path(args.run_id).name == args.run_id and args.run_id not in ['.', '..'], 'invalid run ID')
     lock = (ROOT / '.work/benchmark.lock').open('a')
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -61,7 +68,7 @@ sys.exit(int(os.environ.get('WRAPPER_TEST_EXIT', '0')))
         path.write_text('#!' + sys.executable + '\n' + fake)
         path.chmod(0o755)
     rows = []
-    source_paths = [Path(__file__), ROOT / 'scripts/interpreter.py', ROOT / 'scripts/workflow_io.py']
+    source_paths = [Path(__file__), Path(interpreter.__file__), ROOT / 'scripts/workflow_io.py']
     frozen = {str(p.relative_to(ROOT)): sha(p) for p in source_paths}
 
     def run(label, command, env, pass_fds=()):
@@ -116,6 +123,13 @@ sys.exit(int(os.environ.get('WRAPPER_TEST_EXIT', '0')))
         probe('unselected-target-sysroot', flags, dict(selected, **std, CARGO_PKG_NAME='dependency'),
             expected_flags=[*flags, '--sysroot', '/MIR sysroot', '-Zalways-encode-mir=yes'])
         probe('different-manifest', lib, dict(selected, CARGO_MANIFEST_DIR='/different'), expected_flags=[*lib, '-Zalways-encode-mir=yes'])
+        if args.host_mir_candidate:
+            host = dict(selected, **std, CARGO_PKG_NAME='dependency')
+            probe('host-library-no-forced-mir', lib, host, expected_flags=lib)
+            for value in ['yes', 'no']:
+                flags = [*lib, '-Zalways-encode-mir='+value, '--sysroot', '/host']
+                probe('host-library-explicit-mir-'+value, flags, host, expected_flags=flags)
+            probe('selected-host-library-original-argv', lib, dict(selected, **std), export=True)
         probe('ordinary-nonzero-exit', ['-vV'], dict(WRAPPER_TEST_EXIT='23'), code=23)
         for label, flags, changes, fragment in [
             ('target-conflict', ['--target=other'], std, 'target does not match'),
@@ -167,6 +181,7 @@ sys.exit(int(os.environ.get('WRAPPER_TEST_EXIT', '0')))
     require(all(sha(ROOT / p) == digest for p, digest in frozen.items()), 'driver source changed')
     out.mkdir()
     write_json(out / 'summary.json', dict(status='passed', tool_key=key, binaries=manifest,
+        host_mir_candidate=args.host_mir_candidate,
         commands=len(rows), process_probe_commands=len(rows)-1, manifest_checks=checks,
         raw=str(raw.relative_to(ROOT)), frozen=frozen, dylibs=dylibs['stdout'],
         fake_compilers=True, real_guest_execution=False,
