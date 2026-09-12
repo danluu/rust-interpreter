@@ -11,7 +11,7 @@ const MAX_EVENTS: usize = 32768;
 const MAX_WORK: usize = 4_000_000;
 
 type Set = BTreeSet<usize>;
-#[derive(Default, Clone)]
+#[derive(Default, Clone, serde::Serialize, serde::Deserialize)]
 struct Event { reads: Set, writes: Set }
 struct Uses<'a> { eligible: &'a mut [bool], event: Event }
 impl<'tcx> Visitor<'tcx> for Uses<'_> {

@@ -20,7 +20,7 @@ def verify_evidence(path, digest):
         return
     bindings = json.loads((ROOT / 'results/historical-source-bindings.json').read_text())
     source = bindings['sources'].get(path)
-    if path in {'scripts/verify_repeated_workflow.py', 'scripts/interpreter.py', 'scripts/workflow_io.py'} and source is not None and source['sha256'] == digest:
+    if path in {'scripts/verify_repeated_workflow.py', 'scripts/interpreter.py', 'scripts/workflow_io.py', 'scripts/bench_e2e_workflow.py'} and source is not None and source['sha256'] == digest:
         content = subprocess.check_output(['git', 'show', source['commit'] + ':' + path], cwd=ROOT)
         if hashlib.sha256(content).hexdigest() == digest:
             return

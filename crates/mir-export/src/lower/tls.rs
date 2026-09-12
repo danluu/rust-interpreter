@@ -25,7 +25,7 @@ impl<'tcx> Lower<'_, 'tcx> {
         let callee = self.scalar(&args[0].node)?;
         let data = self.operand(&args[1].node)?;
         let _ = self.operand(&args[2].node)?;
-        self.exporter.require_indirect_calls(CallShape { args: vec![8], result: 0 });
+        self.require_indirect_calls(CallShape { args: vec![8], result: 0 });
         self.code.push(Op::CallIndirect { callee, args: vec![data], arg_sizes: vec![8],
             destination: destination.address, result_size: 0 });
         // Only normal return reaches this store. Guest panic, unavailable calls,
@@ -61,7 +61,7 @@ impl<'tcx> Lower<'_, 'tcx> {
         }
         let callback = self.scalar(&args[0].node)?;
         let argument = self.scalar(&args[1].node)?;
-        self.exporter.require_indirect_calls(CallShape { args: vec![8], result: 0 });
+        self.require_indirect_calls(CallShape { args: vec![8], result: 0 });
         self.code.push(Op::RegisterTlsDestructor { callback, argument });
         Ok(true)
     }

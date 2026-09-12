@@ -31,12 +31,60 @@ python3 scripts/interpreter.py --manifest-path .work/sources/pgrust/Cargo.toml -
 ```
 
 For a library test body, add `--test-body` and pass its qualified name to `--entry`.
-For an integration target, also add `--test-target NAME`. Use native test names
-from `cargo test --test NAME -- --list` without a crate-name prefix. Integration
-targets share dependency metadata while each command selects its exact artifact.
+For an integration target, also add `--test-target NAME`. Use
+`--test-body --list-tests` in place of `--entry` to list checked test names and
+ignore/expected-panic attributes as JSON. Listing runs no test bodies and needs
+no native test executable. Integration targets share dependency metadata while
+each command selects its exact artifact.
 Repeat `--entry` to batch zero-argument bodies returning unit or `Result<(), E>`.
+For experimental test isolation, add `--engine jit --jit-resumable-calls
+--isolated-batch prepared --suite-report NEW_FILE.json` with at least two entries.
+To select tests automatically in that mode, replace the entries with
+`--test-filter PATTERN`; add `--test-exact` for one complete name. An empty pattern
+selects all ordinary nonignored tests in the chosen target. Matching happens in
+the checked compiler invocation that exports them. A selected expected-panic
+test, zero runnable matches or more than 256 matches produces an error before
+execution. A single filtered test is supported.
+
+Each test gets fresh guest memory, statics and TLS; compiled code is shared
+within a worker. Add `--suite-workers 2` for concurrent isolated tests. The
+default is one worker; each worker owns its JIT on its creating thread and has
+its own code budget. Reports remain in selection order. Two workers passed the
+[saved-suite runtime screen](results/parallel-suites-screen-01/assessment.md);
+complete source-edit measurements are still pending.
+All selected tests are attempted and reported, including after an assertion
+failure. `--isolated-batch fresh` constructs separate JIT code for comparison.
+Runtime limits apply to each test. This models independent executions;
+ordinary libtest can share mutable globals. Ignore/should-panic/unwind/thread
+semantics are not implemented by this mode.
+
 Use `--engine interpreter` for the reference engine. Some standard-library paths
 require `--std-mir`, which prepares a reusable metadata sysroot.
+
+Use `--workspace-cache-root EXISTING_DIRECTORY` to place project Cargo outputs
+and bytecode sidecars on an existing scratch disk. The launcher creates a
+marked namespace for this checkout, then separates tool builds and
+`--cache-namespace` selections within it. Installed tools and standard-library
+metadata stay in the repository. The default cache location remains
+`.work/interpreter-workspaces`. This option creates no volume and moves no files.
+
+For an individual saved test profile, invoke the VM with `--profile NEW.json
+--profile-test EXACT_NAME --suite-catalog PROGRAM.rbc.entries.json PROGRAM.rbc`
+and the desired engine/limits. Selection validates the original artifact and
+catalog, preserves the bytecode file, and starts fresh guest/JIT state. Stderr
+records the selection digests. This diagnostic does not model shared prepared
+code across a suite; guest failures do not produce a complete profile.
+
+Use `--select-test EXACT_NAME --suite-catalog PROGRAM.rbc.entries.json` to
+execute one saved test without instruction profiling. It uses the same catalog
+validation and fresh guest state. This also permits `--jit-code-dump DIRECTORY`
+to capture the uninstrumented code for a selected test.
+
+Engine differential tests include reproducible generated control-flow programs.
+For a larger campaign, set `RUST_INTERP_DIFF_SEED` and `RUST_INTERP_DIFF_CASES`
+(at most4096) when running `cargo test -p rust-interp-bytecode --test generated_cfg
+-- --nocapture`. Mismatches save a bytecode reproducer and settings under
+`.work/generated-cfg-failures`, or the explicit `RUST_INTERP_DIFF_OUTPUT` directory.
 
 `--trap-unsupported-calls` permits export past specific unavailable calls; reaching
 one still stops execution. `--run-try-callbacks` supports normal returns only,

@@ -8,28 +8,191 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-The user's current priority is build-time improvement. The in-flight runtime work is finished: integer helper inlining improves Ruff 5.8%, pgrust 3.0% and five additional workloads 2.8–7.5% relative to the scalar-inlining VM, with unchanged semantics and passing regression guards. All 297 debug/release tests and 588 comparison commands pass (one Rust test ignored). [Integer-inlining assessment](results/binary-inline-20260912/assessment.md). Next work measures compiler/export/cache build latency separately from execution; the unbounded optimization goal remains active.
+Explicit parallel isolated suites pass365Rust tests/profile and56Python tests.
+Six paired saved-suite comparisons show token41.8% faster wall time with3.8%
+more CPU; folded/pgrust guards pass. Fresh guest state and one creating-thread
+JIT owner per worker are preserved. One worker remains the default. Next run
+real edits with both serial and concurrent native controls; these results
+exclude checking/export. [Decision](results/parallel-suites-screen-01/assessment.md).
+
+Seeded valid-program differential coverage passes all362workspace tests in both
+profiles plus768additional seeds/profile. Programs cover loops, diamonds,
+calls, widths, heap/linear aliases, budgets, code declines and exact PC counts.
+The final VM build stopped on storage after both test profiles passed; runtime
+sources are unchanged, so this tests-only feature needs no new VM publication.
+The parallel worker follow-up is recorded above.
+[Coverage](results/generated-cfg-campaign-01/assessment.md).
+
+Split heap/linear native address checks are parked. All363host tests/profile
+and42saved-suite commands pass, but token regresses2.51% wall/2.50% CPU across
+six pairs and two recorded entropy streams. No real-edit promotion follows.
+The emitter remains off main. The seeded differential follow-up is complete
+above; the next workflow direction is independent test concurrency.
+[Decision](results/native-address-checks-screen-01/assessment.md).
+
+Exact saved-test selection now works independently of instruction profiling.
+The feature passes 360 host tests per profile and seven real selections with
+identical instructions, output, memory peaks and replayed entropy. Six native
+sampling windows show different hot paths in the two dominant token tests:
+regex determinization/hashing versus sorting, comparison and precondition
+checks. Generated code accounts for about 89% of both captures; bytecode-count
+reductions alone remain a poor guide. The subsequent arena-branch experiment
+is recorded above and stays parked.
+[Selection and native samples](results/selected-native-block-sample-01/assessment.md).
+
+Shared-call specialization is parked on
+`experiment/constant-call-specialization-20260912`. The final version passes386
+host tests/profile and all34saved real assertions, but its three-pair runtime
+medians are +1.57% token, −0.46% folded and −0.45% pgrust. CFG cleanup and proven
+unobserved frame-write removal reduce bytecode operations without useful native
+runtime gains. The compiler remains off main and no edited-command screen ran.
+The separate named-test selection and native sampling follow-up is complete
+above; this compiler candidate remains parked.
+[Decision](results/constant-specialize-replay-03/assessment.md).
+
+Catalog-bound single-test profiling passes 340 Rust tests/profile and fourteen
+real VM commands. Seven current token/folded/pgrust test profiles exactly match
+fresh retained-VM controls under replayed entropy. Their saved bytecode stays
+unchanged. The expanded token test emphasizes regex determinization; the original
+exhaustive test emphasizes bounds and copy preconditions. The subsequent private
+pointer promotion and shared-call candidates are parked; current native samples
+now guide further work. [Profiles](results/suite-profiling-real-01/assessment.md).
+
+The larger region-local cache is parked off main after 339 Rust tests/profile
+and exact real-suite correctness passed but its six-pair token runtime screen
+improved only 0.11% wall and 0.08% CPU, missing the fixed 10% gate. No retiming or
+conditional edit promotion follows. Next enable exact per-test profiles for the
+expanded suite and choose a structural direction from its dominant tests.
+[Decision](results/jit-region-cache-screen-01/assessment.md).
+
+The register-width feasibility diagnostic passes 337 Rust tests/profile and
+rejects the packing candidate before emission: only 7,628 additional token
+native reads out of 10.45 billion, and 900 out of 3.44 billion folded reads, on
+exact historical profiled artifacts. Current restored suite artifacts also pass
+the static census. Generated assignments remain unchanged. Next test a larger
+local cache using otherwise idle native registers, with a fixed 10% saved-runtime
+screen before real-edit promotion. [Decision](results/jit-register-width-weighted-01/assessment.md).
+
+The optional prepared JIT and isolated Cargo runner are published on main.
+All 320 Rust tests per profile (one ignored), 36 initial Python tests and 96 real
+source-edit/check/restoration commands pass. Across five distinct edits each,
+prepared/fresh wall ratios are 1.0084 for pgrust, 0.9686 for token and 0.8916 for
+folded. These are descriptive single-cycle results. The larger batch saves
+repeated preparation; token remains dominated by guest execution.
+[Pgrust](results/prepared-suite-pgrust-01/assessment.md),
+[token](results/prepared-suite-token-01/assessment.md),
+[folded](results/prepared-suite-folded-01/assessment.md).
+
+The Nushell saved-artifact pilot passes four separate native tests plus five VM
+commands. The artifact-bound catalog fix passes 322 Rust tests per profile,
+40 Python tests, a 16-command real Rust fixture, Ruff's actual export (12
+commands), and pgrust's full edit sequence (32 commands). Catalogs preserve
+explicit function IDs despite optimization and bind them to exact bytecode.
+
+Fre's corrected actual export passes eight commands, including three native
+assertions and exact fresh/prepared replay. The first controller omitted the
+reference's 150,000 allocation limit and used the default 100,000; this caused
+the recorded allocation trap. Recompilation at the correct limit produces the
+same bytecode and passes. The older/newer failing controls used that same wrong
+limit, so they did not establish a lowering defect. The correction is explicit
+and the failed evidence remains preserved. The catalog fix is published on main. Effective runtime limits now also pass
+323 Rust tests/profile, 41 Python tests, twelve controlled saved-suite commands
+and 32 actual pgrust edit/check/restoration commands. Checked test discovery now
+also passes 325 Rust tests/profile, 44 Python tests, 25 fixture commands and six
+real-project listing controls. All four pgrust hashfn and 389 fre-kernels names
+match native libtest, including seven ignored tests. Those names now feed the
+filtered runner qualified below. Full
+ignore/should-panic/unwind/thread execution semantics remain open.
+[Discovery qualification](results/test-discovery-qualification-01/assessment.md).
+
+Automatic filtered suites are now qualified by 329 Rust tests/profile, 48 Python
+tests, 44 fixture commands and 96 actual edit/build/test/check commands. Filtering
+uses the same checked compiler invocation as export. Single tests work; ignored
+tests are skipped; expected-panic, empty and oversized selections fail before
+execution. Across pgrust/folded/twelve-test token, edited automatic medians are
+0.533/1.726/8.267 s, versus native 0.673/1.711/3.059 s. All 24 paired source states
+produce identical automatic/explicit bytecode and match native test outcomes.
+These are one-cycle descriptive results. Token expands the old three-test
+subset; its first attempt stopped on disk admission before any valid edit, and
+the successful retry used fresh caches with more headroom. Next measure the
+feasibility of narrower persistent native-register assignments.
+[Filtered suite qualification](results/filtered-suites-qualification-01/assessment.md).
+[Ruff repair](results/prepared-catalog-ruff-01/summary.json),
+[pgrust catalogs](results/prepared-catalog-pgrust-02/assessment.md),
+[fre corrected qualification](results/prepared-catalog-token-corrected-02/summary.json),
+[original misconfigured run](results/prepared-catalog-token-01/summary.json).
+
+Cross-region rematerialization remains parked after its 0.78% wall/0.81% CPU
+runtime regression. No conditional promotion benchmarks will run.
+[Decision](results/jit-remat-screen-01/assessment.md).
+
+Persistent function reuse is correct but its first complete-command screen
+misses the fixed 8% gate: 5.30% paired edited wall improvement and 4.32% CPU.
+All 21 primary commands, 7 independent checks and 14 bytecode comparisons pass.
+The candidate stays opt-in and disabled by default; its conditional promotion
+holdouts are canceled. Do not retime it. Guest execution remains about 3.1 s
+of the 4.7 s command, versus native's 2.2 s complete command. The current-source JIT is now measured against the historical VM: effectively
+tied (0.18% median difference across six controlled runtime pairs). Fresh
+samples put 88.64% in generated code; the subsequent rematerialization screen
+failed as recorded above.
+[Decision](results/export-reuse-screen-token-01/assessment.md).
+
+Earlier runtime qualification: integer helper inlining improves Ruff 5.8%, pgrust 3.0% and five additional workloads 2.8–7.5% relative to the scalar-inlining VM, with unchanged semantics and passing regression guards. All 297 debug/release tests and 588 comparison commands pass (one Rust test ignored). [Integer-inlining assessment](results/binary-inline-20260912/assessment.md). These gains primarily concern interpretation. The new JIT diagnosis is in [its assessment](results/jit-merged-token-01/assessment.md); the unbounded whole-command optimization goal remains active.
 
 Inlining the complete checked scalar-memory path is now qualified: pgrust improves 6.7% and four Fre cases improve 2.1–5.0% relative to the frame-loop VM `f33b40d`. Other public cases stay within regression guards in both engines. All 297 workspace tests pass in debug and release (one ignored); all 588 comparison commands preserve outputs, instructions and peak guest memory. Only three inline attributes change; method bodies and checks remain intact. [Scalar-inlining assessment](results/complete-scalar-inline-20260912/assessment.md). These are saved-bytecode runtime measurements; full edit/build/test latency and unknown holdouts remain unmeasured.
 
-Fixed frame clearing is implemented on `experiment/fixed-frame-clear`, with
-runtime source `6f9e148` and candidate tool `fdbf713b`. It preserves all frame
-zeroing and specializes statically known extents up to 256 bytes. The
-[three-history es8 confirmation](results/fixed-frame-clear-confirm-02/assessment.md)
-passes the predeclared aggregate gate: 8.37% complete-command wall improvement,
-8.48% CPU, 15 real edited pairs; the initial pilot is excluded. Each history
-and all wrong-edit/restoration controls remain available. Candidate commands
-remain roughly 2.5 times native on this target.
+Fixed frame clearing is **parked** on `experiment/fixed-frame-clear`. The
+[fresh combined es8 confirmation](results/fixed-frame-clear-combined-confirm-01/summary.json)
+improves complete edit/build/test commands by 7.39% wall and 7.61% CPU across
+15 pairs, missing the predeclared 8% wall gate. All 96 commands, 48 artifacts
+and wrong-edit/restoration controls pass. The earlier isolated-source 8.37%
+confirmation and eight successful library regression gates remain historical
+evidence; they do not override the failed combined gate. Remaining comparisons
+are canceled and the runtime change stays off main. Broad combined correctness
+passes 300 debug/release tests (one ignored), 47,004 native differential
+commands, 245 TLS checks, 382 fre bodies (seven ignored), and 52 integration
+assertions. [Decision](results/fixed-frame-clear-combined-01/assessment.md).
 
-Broad qualification passes 47,004 native differential commands, 245 TLS checks,
-382 fre bodies with seven ignored, and all 52 integration assertions. The
-baseline and candidate share the exact exporter and wrapper. Three of the nine
-[library workflow gates](results/fixed-frame-clear-libraries-01/summary.json)
-pass: pgrust and folded fre have near-zero differences; token improves 3.43%
-wall and 3.32% CPU. The source branch includes the newer main interpreter loop,
-whose final composition with fixed clearing remains to be qualified. Keep this candidate
-separate from the historical full-workflow anchor below. Good tooling and
-evidence changes can be published independently of the experimental runtime.
+Exporter reuse now has a qualified cost observer (41 debug/release tests and
+104 original-fixture commands). The real token/folded histories each execute
+five edits, a wrong edit, an original anchor and a restored-source rebuild.
+Exactly repeated function outputs cover median 178ms/460ms on token and
+44ms/96ms on folded. Token restoration initially stopped on an incorrect
+cold-anchor expectation; its output exactly matches the retained exporter’s
+existing restored-state history, without a rerun. The source is restored.
+[Token census](results/export-reuse-token-01/assessment.md),
+[folded census](results/export-reuse-folded-01/assessment.md).
+
+Typed relocation observation is now qualified: 44 debug/release exporter tests
+and 179 original-fixture commands pass, including exclusion of eleven actual
+compiler TypeId allocations. The typed token/folded histories preserve all eight
+artifacts and expected assertion outcomes. Using prior unannotated weights,
+repeated templates cover median 454ms (99.02%) on token and 90ms (87.61%) on
+folded. [Token](results/export-reuse-token-02/assessment.md),
+[folded](results/export-reuse-folded-02/assessment.md). Every binding reconstructs
+the original bytes; no executable output is rewritten or reused.
+
+Compiler dependency observation now passes 229 small semantic-edit commands,
+179 complex-fixture commands and eight states each on token and folded. Every
+function was fully lowered; no green node changed its typed template. Green
+functions cover median 444ms/81ms of earlier work, with 22ms/16ms spent checking
+green status (excluding key construction). [Token](results/export-reuse-token-03/assessment.md),
+[folded](results/export-reuse-folded-04/assessment.md). Next implement binding
+recipes and actual reuse. The payload must retain frame-packing observations,
+replay graph interactions in order and preserve current allocation aliases.
+This is not yet a measured end-to-end saving.
+
+Current-MIR binding recipes now pass 47 exporter tests per profile, 231 complex
+fixture commands, 229 semantic-edit commands, and all eight states on token and
+folded. Encoded/decoded payloads reconstruct 5,203 token functions (172 declines)
+and 1,041 folded functions (four declines) in a second graph. Exact output,
+frame observations, scheduling, guest memory and alias classes match. The
+payloads are 61 MB/15 MB in the initial representation. [Token](results/export-reuse-token-04/assessment.md),
+[folded](results/export-reuse-folded-05/assessment.md). Next verify payloads from
+prior compiler sessions, using rustc's incremental directory transaction;
+original lowering still always executes today.
+The two-stream entropy diagnostic establishes exact token execution across both
+VMs and engines with identical inputs; it makes no performance claim.
 
 Keeping interpreter frame state across ordinary instructions is now qualified: an additional 26.8% saved-artifact runtime gain on pgrust and 28.1% on Ruff relative to the qualified arithmetic/scalar-memory VM. Five additional workloads improve 15.2–29.4%, with JIT within wall/CPU regression guards. All 297 workspace tests pass in debug and release (one ignored); all 588 comparison commands preserve results, instructions and peak guest memory. [Frame-loop assessment](results/same-frame-interpreter-20260912/assessment.md). Bounds checks remain; complete edit/build/test latency and unknown holdouts were not measured.
 

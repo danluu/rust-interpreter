@@ -1,0 +1,5 @@
+Fixed frame clearing is parked. Its fresh confirmation against the newer main runtime improved complete es8 edit/build/test commands by **7.39% wall** and **7.61% CPU**, missing the predeclared **8% wall** gate. All 96 commands, 15 edited pairs, 48 paired artifacts and wrong-edit/restoration controls passed. [Confirmation](../fixed-frame-clear-combined-confirm-01/summary.json).
+
+Broad correctness also passed: 300 workspace tests in debug and release (one ignored), 47,004 native differential commands, 245 TLS checks, 382 fre bodies (seven ignored), and 52 integration assertions. These results do not override the performance gate.
+
+The earlier isolated-source confirmation passed at 8.37% wall, and eight original library regression gates passed. The combined result governs integration. Remaining runtime comparisons, primary edit histories and the ninth original library gate are canceled. No retry will be used to cross the threshold. Runtime source and all evidence remain on `experiment/fixed-frame-clear`; the runtime change stays off main. Exporter reuse is the next direction.

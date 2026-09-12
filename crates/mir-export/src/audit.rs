@@ -1,6 +1,6 @@
 //! Lowering coverage after strict analysis. No guest body is executed.
 mod pack;
-mod metadata;
+use crate::test_metadata as metadata;
 
 use rustc_middle::ty::TyCtxt;
 use std::path::Path;
@@ -31,7 +31,7 @@ pub fn report(tcx: TyCtxt<'_>, entries: &[String], retain: Option<&Path>, inline
         // A fresh export owns its allocations and indirect-call graph. Only
         // rustc's checked queries are shared between candidates. An unsupported
         // candidate cannot leave partial functions in the next one's graph.
-        let result = super::lower::export(tcx, std::slice::from_ref(entry), false, true, inline_leaves, trap_unsupported_calls, run_try_callbacks, false)
+        let result = super::lower::export(tcx, std::slice::from_ref(entry), false, true, inline_leaves, trap_unsupported_calls, run_try_callbacks, false, false)
             .and_then(|exported| {
                 rust_interp_bytecode::validate(&exported.program)?;
                 Ok(exported)

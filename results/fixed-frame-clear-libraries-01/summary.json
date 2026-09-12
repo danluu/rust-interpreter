@@ -1,10 +1,10 @@
 {
-  "status": "in-progress",
+  "status": "parked",
   "retention_gates_passed": false,
-  "completed": 4,
+  "completed": 8,
   "required": 9,
-  "edited_pairs": 60,
-  "commands": 336,
+  "edited_pairs": 120,
+  "commands": 672,
   "cases": [
     {
       "label": "folded-literal-trie",
@@ -34,11 +34,21 @@
     },
     {
       "label": "nushell-type-relations",
-      "status": "pending"
+      "status": "canceled",
+      "reason": "Candidate parked after combined confirmation failure; no additional storage required for this candidate."
     },
     {
       "label": "ruff",
-      "status": "pending"
+      "status": "passed",
+      "assessment": "results/fixed-frame-clear-library-ruff-01/fixed-clear-assessment.json",
+      "assessment_sha256": "7e2a3bcb7f6b96c8b18ad5ea8dc7a441a7c989d47bca82b1edf0c8f107076f5a",
+      "wall_ratio": 1.009748323607504,
+      "cpu_ratio": 0.9961968600663389,
+      "median_seconds": {
+        "native": 5.598479375000011,
+        "baseline": 3.085736790999988,
+        "candidate": 3.0587489170000026
+      }
     },
     {
       "label": "nushell",
@@ -55,11 +65,29 @@
     },
     {
       "label": "forward-anchored-tls",
-      "status": "pending"
+      "status": "passed",
+      "assessment": "results/fixed-frame-clear-library-tls-01/fixed-clear-assessment.json",
+      "assessment_sha256": "9bb810e3e0beef8ddb9876e99e3ba0d317c11e4b51d567f3da00a6514444e835",
+      "wall_ratio": 1.0038748377011604,
+      "cpu_ratio": 1.00219796207387,
+      "median_seconds": {
+        "native": 1.3894439160000047,
+        "baseline": 0.9789035419999976,
+        "candidate": 0.989892832999999
+      }
     },
     {
       "label": "pgrust-sha1-inline8",
-      "status": "pending"
+      "status": "passed",
+      "assessment": "results/fixed-frame-clear-library-sha1-01/fixed-clear-assessment.json",
+      "assessment_sha256": "dce099aacd0f0dbefe21ca0db44b06428ebeabdb927d96143a5f015681031c10",
+      "wall_ratio": 0.9924503369039429,
+      "cpu_ratio": 0.9950981852155454,
+      "median_seconds": {
+        "native": 0.7518144579999984,
+        "baseline": 0.6514846250000019,
+        "candidate": 0.6487489580000059
+      }
     },
     {
       "label": "pgrust",
@@ -76,9 +104,20 @@
     },
     {
       "label": "rg-aot",
-      "status": "pending"
+      "status": "passed",
+      "assessment": "results/fixed-frame-clear-library-private-01/fixed-clear-assessment.json",
+      "assessment_sha256": "2207aa59b931e314b2a5df18395ec3ca400ad5ce616336e403373faf56017f5d",
+      "wall_ratio": 1.0010545971899314,
+      "cpu_ratio": 0.9969587935296227,
+      "median_seconds": {
+        "native": 0.533306458000002,
+        "baseline": 0.1796505830000008,
+        "candidate": 0.18124725000000197
+      }
     }
   ],
   "final_composition_qualified": false,
-  "scope": "Original library workflows with the frozen fixed-clear VM pair. Every case must pass independently before retention; composition with newer main remains separate."
+  "scope": "Original library workflows with the frozen fixed-clear VM pair. Every case must pass independently before retention; composition with newer main remains separate.",
+  "stop_reason": "Combined es8 confirmation missed the required 8% wall-time gate.",
+  "decision_report": "results/fixed-frame-clear-combined-confirm-01/summary.json"
 }

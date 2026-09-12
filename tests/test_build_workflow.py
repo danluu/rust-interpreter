@@ -179,6 +179,11 @@ class BuildWorkflowVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'not isolated'):
             self.verify()
 
+    def test_different_suite_preparation_is_not_an_aa_control(self):
+        self.report['compare_isolated_batches'] = True
+        with self.assertRaisesRegex(RuntimeError, 'identical paired jobs/settings'):
+            self.verify()
+
     def test_namespace_must_match_the_executed_command(self):
         row = next(r for r in self.rows if r['mode'] == 'candidate')
         row['calls'][0]['command'][-1] = 'control:baseline'

@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+"""Exercise compiler dependency observation across owned semantic edit histories."""
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import sys
+
+ROOT = Path(__file__).resolve().parents[3]
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / 'scripts'))
+from compare_saved_runtime import acquire_lock, sha
+from interpreter import installed_tools, TOOLCHAIN
+from std_mir import checked_std_mir
+from workflow_io import SourceEdit, capture, require_space, write_json as write
+from reuse_build import CONTROL
+from reuse_check import observation, reconstruction, persistent_cache, actual_cache
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-id', required=True)
+    parser.add_argument('--build', type=Path, default=ROOT / 'results/export-reuse-build-03/summary.json')
+    parser.add_argument('--binding-replay-qualification', type=Path)
+    parser.add_argument('--persistent-cache', action='store_true')
+    parser.add_argument('--function-reuse', action='store_true')
+    args = parser.parse_args()
+    assert re.fullmatch(r'export-dependency-fixture-\d{2}', args.run_id)
+    with (ROOT / '.work/benchmark.lock').open('a') as lock:
+        acquire_lock(lock, 45)
+        require_space(ROOT, 8)
+        build_path = args.build.resolve()
+        build = json.loads(build_path.read_text())
+        binding_replay = args.binding_replay_qualification is not None
+        assert not args.persistent_cache or binding_replay
+        assert not args.function_reuse or args.persistent_cache
+        test_counts = set(build['tests'].values())
+        assert build['status'] == 'passed' and len(test_counts) == 1
+        assert min(test_counts) >= (50 if args.persistent_cache else 47 if binding_replay else 44)
+        if binding_replay:
+            qualified = json.loads(args.binding_replay_qualification.read_text())
+            assert qualified['status'] == 'passed' and qualified['commands'] == (337 if qualified.get('function_reuse') else 231)
+            assert qualified['binding_replay'] and qualified['tool_key'] == build['tool_key']
+            assert not args.function_reuse or qualified['function_reuse']
+        tool, key = installed_tools(build['tool_key'])
+        baseline, _ = installed_tools(CONTROL)
+        sysroot, _, std_key, _ = checked_std_mir(TOOLCHAIN)
+        assert std_key == 'bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef'
+        work = ROOT / '.work' / args.run_id
+        work.mkdir(exist_ok=False)
+        source = work / 'source'
+        source.mkdir()
+        for name in ['main.rs', 'model.rs']:
+            shutil.copy2(HERE / 'dependency_fixture' / name, source / name)
+        write(source / '.rust-interp-owned.json', dict(owner=str(ROOT), run=args.run_id))
+        original = (source / 'model.rs').read_bytes()
+        text = original.decode()
+        states = [('original', text)]
+        changes = [
+            ('body', 'seed.wrapping_add(7)', 'seed.wrapping_add(3).wrapping_add(4)'),
+            ('layout', '#[repr(C)]', '#[repr(C, align(64))]'),
+            ('constant', 'pub const SCALE: u64 = 3;', 'pub const SCALE: u64 = 5;'),
+            ('signature', 'pub type Word = u64;', 'pub type Word = u32;'),
+            ('generic', 'pub type GenericWord = u64;', 'pub type GenericWord = u32;'),
+            ('data', 'pub const LABEL: &[u8] = b"abc";', 'pub const LABEL: &[u8] = b"xyz";'),
+        ]
+        for name, before, after in changes:
+            assert text.count(before) == 1
+            text = text.replace(before, after)
+            states.append((name, text))
+        states += [('restored', original.decode()),
+                   ('invalid-type', original.decode() + '\nfn unused() { let _: u64 = "wrong"; }\n')]
+        paths = [Path(__file__), HERE / 'reuse_check.py', HERE / 'DEPENDENCIES.md', build_path,
+                 HERE / 'dependency_fixture/main.rs', HERE / 'dependency_fixture/model.rs']
+        if binding_replay:
+            paths += [args.binding_replay_qualification.resolve(), HERE / 'BINDING-REPLAY.md']
+        if args.persistent_cache:
+            paths.append(HERE / 'PERSISTENT-REUSE.md')
+        paths += [p / name for p in [tool, baseline] for name in ['rust-interp-mir-export', 'rust-interp-vm', 'rust-interp-rustc-wrapper']]
+        frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
+        write(work / 'plan.json', dict(frozen=frozen, tool_key=key, source_commit=build['source_commit'],
+              std_mir_key=std_key, states=[name for name, _ in states] + ['restored-after-error'],
+              all_lowering_executed=True, performance_measurement=False))
+        env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
+               and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER', 'CARGO_INCREMENTAL']}
+        stages = {}
+        for mode in ['native', 'retained', 'off', 'on'] + (['reuse'] if args.function_reuse else []):
+            stage = work / mode
+            stage.mkdir()
+            stages[mode] = stage
+        records, observations, seen = [], [], {}
+        replay_reports = []
+        cache_reports = []
+        actual_reports = []
+        finalized_cache_files = {}
+        def cache_files(mode='on'):
+            return {str(p.relative_to(ROOT)): sha(p) for p in (stages[mode] / 'incremental').glob('*/s-*/rust-interp-functions-v1.bin')
+                    if not p.parent.name.endswith('-working')}
+        def invoke(label, command, selected=env, success=True):
+            require_space(ROOT, 8)
+            child, stdout, stderr = capture(list(map(str, command)), cwd=ROOT, env=selected,
+                receipt_path=work / 'active.json', receipt=dict(label=label))
+            row = dict(label=label, command=list(map(str, command)), pid=child.pid, returncode=child.returncode,
+                       source_sha256=sha(source / 'model.rs'))
+            for suffix, text in [('stdout', stdout), ('stderr', stderr)]:
+                path = work / (label + '.' + suffix)
+                path.write_text(text)
+                row[suffix] = str(path.relative_to(ROOT))
+                row[suffix + '_sha256'] = sha(path)
+            records.append(row)
+            write(work / 'records.json', records)
+            assert (child.returncode == 0) == success, label
+            return stdout, stderr
+        seeds = ['0', '7', str(2**64 - 1)]
+        def execute(name):
+            valid = name != 'invalid-type'
+            native = stages['native'] / 'program'
+            invoke(name + '-native-build', ['rustc', '+' + TOOLCHAIN, source / 'main.rs', '--crate-name',
+                'dependency_case', '--edition=2024', '-C', 'incremental=' + str(stages['native'] / 'incremental'),
+                '-o', native], success=valid)
+            expected = {}
+            if valid:
+                expected = {seed: invoke(name + '-native-' + seed, [native, seed])[0] for seed in seeds}
+                assert all(re.fullmatch(r'\d+\n', value) for value in expected.values())
+            hashes = []
+            for mode, compiler in [('retained', baseline), ('off', tool), ('on', tool)] + ([('reuse', tool)] if args.function_reuse else []):
+                stage = stages[mode]
+                artifact = stage / 'program.rbc'
+                selected = dict(env, RUST_INTERP_OUTPUT=str(artifact), RUST_INTERP_ENTRY='rust_interp_entry')
+                if mode in ['off', 'on']:
+                    selected.update(RUST_INTERP_FUNCTION_COSTS='1', RUST_INTERP_EXPORT_TIMINGS='1')
+                if mode == 'on':
+                    selected['RUST_INTERP_FUNCTION_DEPENDENCIES'] = '1'
+                    if binding_replay:
+                        selected['RUST_INTERP_BINDING_REPLAY'] = '1'
+                    if args.persistent_cache:
+                        selected['RUST_INTERP_FUNCTION_CACHE'] = 'verify'
+                reuse_before = cache_files('reuse') if mode == 'reuse' else {}
+                if mode == 'reuse':
+                    selected['RUST_INTERP_FUNCTION_CACHE'] = 'reuse'
+                _, stderr = invoke(name + '-export-' + mode, [compiler / 'rust-interp-mir-export', source / 'main.rs',
+                    '--crate-name', 'dependency_case', '--edition=2024', '--emit=metadata', '--sysroot', sysroot,
+                    '-C', 'incremental=' + str(stage / 'incremental'), '-o', stage / 'program.rmeta'], selected, success=valid)
+                if not valid:
+                    assert 'mismatched types' in stderr and not artifact.exists()
+                    if mode == 'on' and args.persistent_cache:
+                        after = cache_files()
+                        # rustc also collects old generations when loading an
+                        # incremental session, before source checking succeeds.
+                        # The newest successful generation must survive, and a
+                        # rejected session must add or change no finalized file.
+                        latest = max(finalized_cache_files, key=lambda p: (ROOT / p).parent.name)
+                        assert latest in after and all(finalized_cache_files.get(p) == h for p, h in after.items()), 'invalid source published or changed a finalized payload'
+                        write(work / 'invalid-type-finalized-cache-files.json', after)
+                    if mode == 'reuse':
+                        after = cache_files('reuse')
+                        latest = max(reuse_before, key=lambda p: (ROOT / p).parent.name)
+                        assert latest in after and all(reuse_before.get(p) == h for p, h in after.items())
+                        write(work / 'invalid-type-reuse-cache-files.json', after)
+                    continue
+                saved = work / (name + '-' + mode + '.rbc')
+                shutil.copy2(artifact, saved)
+                hashes.append(sha(saved))
+                if mode == 'reuse':
+                    cached = actual_cache(stderr)
+                    assert cached['skipped_functions'] == 0 if name == 'original' else cached['skipped_functions'] > 0
+                    after = cache_files('reuse')
+                    assert after and all(after[p] == h for p, h in reuse_before.items() if p in after)
+                    write(work / (name + '-reuse-cache-files.json'), after)
+                    actual_reports.append(dict(state=name, **cached))
+                if mode in ['off', 'on']:
+                    report, scopes = observation(stderr, saved)
+                    assert report['schema_version'] == (3 if mode == 'on' else 2)
+                    write(work / (name + '-' + mode + '.census.json'), report)
+                    if mode == 'on':
+                        if binding_replay:
+                            replay_reports.append(dict(state=name, **reconstruction(stderr, report)))
+                        if args.persistent_cache:
+                            cached = persistent_cache(stderr, report)
+                            cache_reports.append(dict(state=name, **cached))
+                            after = cache_files()
+                            assert after, 'successful compiler did not finalize the staged cache file'
+                            assert all(after[p] == h for p, h in finalized_cache_files.items() if p in after), 'prior hard-linked payload changed'
+                            finalized_cache_files.clear()
+                            finalized_cache_files.update(after)
+                            write(work / (name + '-finalized-cache-files.json'), after)
+                            if name == 'original':
+                                assert cached['loaded_entries'] == cached['previous_payload_uses'] == 0
+                            else:
+                                assert cached['loaded_entries'] > 0 and cached['previous_payload_uses'] > 0
+                        functions = report['functions']
+                        assert len({f['dependency']['node'] for f in functions}) == len(functions)
+                        green = [f for f in functions if f['dependency']['previous_green']]
+                        if name == 'original':
+                            assert not green, 'fresh compiler namespace reused prior mono-item nodes'
+                        unknown = [f for f in green if f['dependency']['node'] not in seen]
+                        mismatches = [dict(node=f['dependency']['node'], name=f['name'], index=f['index'],
+                            previous=seen[f['dependency']['node']]) for f in green
+                            if f['dependency']['node'] in seen and seen[f['dependency']['node']]['template'] != f['typed_template_sha256']]
+                        observations.append(dict(state=name, functions=len(functions), green=len(green),
+                            unknown_green=len(unknown), changed_green_templates=mismatches,
+                            green_check_seconds=sum(f['dependency']['green_check_seconds'] for f in functions)))
+                        seen.update({f['dependency']['node']: dict(state=name, name=f['name'], index=f['index'],
+                                     template=f['typed_template_sha256']) for f in functions})
+                        write(work / 'observations.json', observations)
+                for engine in ['interpreter', 'jit']:
+                    flags = ['--jit-resumable-calls', '--jit-persistent-registers'] if engine == 'jit' else []
+                    for seed in seeds:
+                        stdout, _ = invoke(name + '-' + mode + '-' + engine + '-' + seed,
+                            [tool / 'rust-interp-vm', '--engine', engine, *flags, saved, seed])
+                        assert stdout == expected[seed]
+            assert not valid or len(set(hashes)) == 1, 'dependency observation changed the artifact'
+            assert all(sha(ROOT / p) == digest for p, digest in frozen.items())
+            print('PASS', name, 'original assertions and artifacts' if valid else 'strict rejection', flush=True)
+        with SourceEdit(source / 'model.rs', original) as edit:
+            for name, text in states:
+                edit.replace(text.encode())
+                execute(name)
+        assert (source / 'model.rs').read_bytes() == original
+        execute('restored-after-error')
+        mismatches = sum(len(r['changed_green_templates']) for r in observations)
+        unknown = sum(r['unknown_green'] for r in observations)
+        green = sum(r['green'] for r in observations)
+        result = dict(status='completed diagnostic', performance_measurement=False, tool_key=key,
+              source_commit=build['source_commit'], commands=len(records), observations=observations,
+              all_artifact_hashes_identical=True, source_restored=True, original_assertions_unchanged=True,
+              strict_invalid_source_rejected=True, green_functions=green, changed_green_templates=mismatches,
+              unknown_green=unknown, candidate_dependency_boundary_supported=green > 0 and mismatches == unknown == 0,
+              all_lowering_executed=True, frozen=frozen, raw=str(work.relative_to(ROOT)),
+              binding_replay=binding_replay, reconstruction=replay_reports,
+              persistent_cache=args.persistent_cache, prior_payload_verification=cache_reports,
+              function_reuse=args.function_reuse, actual_reuse=actual_reports,
+              records_sha256=sha(work / 'records.json'), observations_sha256=sha(work / 'observations.json'),
+              scope='The observation modes fully lower and compare functions. The optional reuse mode actually skips green cached functions; all modes match retained bytecode and original assertions. This is not a performance measurement.')
+        out = ROOT / 'results' / args.run_id
+        out.mkdir(exist_ok=False)
+        write(out / 'summary.json', result)
+        print('COMPLETE', len(records), 'commands;', green, 'green;', mismatches, 'changed green templates;', unknown, 'unknown green')
+
+
+if __name__ == '__main__':
+    main()

@@ -7,10 +7,12 @@ Example: interpreter.py --manifest-path PROJECT/Cargo.toml --package hashfn
 Repeat --entry with --test-body to run several zero-argument functions returning
 unit or Result<(), E> in one command. Ordinary function inputs and output are integer bit
 patterns. This prototype provides a guest allocator, but no general Rust main
-or OS runtime. Test batches stop at the first failure.
+or OS runtime. Ordinary test batches stop at the first failure; optional isolated
+batches report every selected test with fresh guest state.
 Use --test-body --test-target NAME to select one Cargo integration-test target.
 """
 import argparse
+import contextlib
 import fcntl
 import hashlib
 import json
@@ -20,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import time
+from workspace_cache import workspace_cache_base, cache_subdirectory
 
 ROOT=Path(__file__).resolve().parents[1]
 TOOLCHAIN='nightly-2026-09-08'
@@ -102,6 +105,32 @@ def require_export_option(directory, key, option):
         raise RuntimeError('installed exporter does not support --'+option+': '+key) from error
 
 
+def entry_catalog_supported(directory, key):
+    path=directory/'capabilities.json'
+    if not path.exists():return False # Legacy immutable tool builds remain usable.
+    caps=json.loads(path.read_text())
+    if 'entry-catalog' not in caps.get('export_options',[]):return False
+    require_export_option(directory,key,'entry-catalog')
+    return True
+
+
+def selected_entry_catalog(artifact, requested):
+    path=Path(str(artifact)+'.entries.json')
+    if path.is_symlink() or not path.is_file() or path.stat().st_size>8*1024*1024:
+        raise RuntimeError('Cargo selected a missing or oversized entry catalog')
+    try:report=json.loads(path.read_bytes())
+    except (OSError,ValueError) as error:
+        raise RuntimeError('Cargo selected an unreadable entry catalog') from error
+    entries=report.get('entries') if isinstance(report,dict) else None
+    if (not isinstance(report,dict) or report.get('schema_version')!=1 or report.get('bytecode_version')!=5 or
+            not isinstance(entries,list) or not all(isinstance(entry,dict) for entry in entries) or
+            [entry.get('name') for entry in entries]!=requested):
+        raise RuntimeError('Cargo entry catalog does not match requested tests')
+    # The VM binds this catalog to the exact bytecode bytes it reads; the
+    # invocation lock keeps Cargo's selected sidecars fixed through execution.
+    return path
+
+
 def validate_audit_pack(report, work):
     """Verify immutable files named by Cargo's exact selected audit sidecar."""
     try:
@@ -165,6 +194,11 @@ def artifact_matches_target(event, test_body, test_target):
 
 
 def main():
+    with contextlib.ExitStack() as resources:
+        return _main(resources)
+
+
+def _main(resources):
     started=time.perf_counter()
     timings={}
     stats=os.environ.get('RUST_INTERP_LAUNCH_STATS')=='1'
@@ -174,6 +208,9 @@ def main():
     parser.add_argument('--jobs',type=int,default=4,help='Cargo build jobs (1..256)')
     selected=parser.add_mutually_exclusive_group(required=True)
     selected.add_argument('--entry',action='append',help='function to run; repeat for a batch of unit test bodies')
+    selected.add_argument('--test-filter',help='select ordinary nonignored libtest bodies by name substring in one checked compiler invocation')
+    parser.add_argument('--test-exact',action='store_true',help='match --test-filter against the complete test name')
+    selected.add_argument('--list-tests',action='store_true',help='list checked built-in test names and attributes without executing tests')
     selected.add_argument('--audit-entries',type=Path,help='JSON list of test body names to check for lowering support, without executing them')
     parser.add_argument('--retain-audit-bodies',action='store_true',help='retain bounded, hashed programs from a lowering audit for separate execution diagnostics')
     parser.add_argument('--allocation-trace',action='store_true',help='record bounded allocation origins and verify their binding to the selected bytecode before execution')
@@ -182,12 +219,16 @@ def main():
     parser.add_argument('--instruction-limit',type=int,help='maximum VM instructions (default: 100000000)')
     parser.add_argument('--allocation-limit',type=int,help='maximum live guest allocations, independent of byte memory (0..1000000; default: 100000)')
     parser.add_argument('--engine',choices=['interpreter','jit'],default='interpreter')
+    parser.add_argument('--isolated-batch',choices=['fresh','prepared'],help='experimental separate guest state per selected test; runtime limits apply to each test')
+    parser.add_argument('--suite-report',type=Path,help='new JSON result path for --isolated-batch')
+    parser.add_argument('--suite-workers',type=int,help='isolated test workers, each owning its JIT (1..64; default: 1)')
     parser.add_argument('--jit-native-call-stubs',action='store_true',help='experimental Calls linked with ordinary regions; requires --jit-native-calls')
     parser.add_argument('--jit-resumable-calls',action='store_true',help='experimental native Calls over guest frames; requires JIT, excludes tree/stub calls')
     parser.add_argument('--jit-persistent-registers',action='store_true',help='experimental full-width values retained across native block edges; requires --engine=jit')
     parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
+    parser.add_argument('--workspace-cache-root',type=Path,help='existing cache parent; create a separate namespace for this checkout (default: .work/interpreter-workspaces)')
     parser.add_argument('--inline-leaves',action='store_true',help='experimental bounded bytecode leaf inlining at export; intended for JIT comparisons')
     parser.add_argument('--trap-unsupported-calls',action='store_true',help='experimental: stop execution at unavailable direct foreign calls and catch_unwind intrinsics instead of rejecting their export')
     parser.add_argument('--run-try-callbacks',action='store_true',help='experimental: execute catch_unwind try callbacks; actual panic/unwinding still fails; requires --trap-unsupported-calls')
@@ -210,6 +251,36 @@ def main():
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     auditing=args.audit_entries is not None
+    listing=args.list_tests
+    filtered=args.test_filter is not None
+    if args.test_exact and not filtered:parser.error('--test-exact requires --test-filter')
+    if filtered:
+        if (not args.test_body or args.isolated_batch is None or args.arguments or
+                args.retain_audit_bodies or len(args.test_filter.encode())>4096 or
+                any(c in args.test_filter for c in '\x00\r\n')):
+            parser.error('--test-filter requires --test-body, isolated execution, and a pattern of at most 4096 bytes without line breaks')
+        args.entry=[]
+    if listing:
+        if (not args.test_body or args.arguments or args.engine!='interpreter' or
+                args.instruction_limit is not None or args.allocation_limit is not None or
+                args.isolated_batch is not None or args.suite_report is not None or args.jit_native_calls or
+                args.jit_native_call_stubs or args.jit_resumable_calls or args.jit_persistent_registers or
+                args.inline_leaves or args.trap_unsupported_calls or args.run_try_callbacks or
+                args.allocation_trace or args.retain_audit_bodies):
+            parser.error('--list-tests requires --test-body without execution or lowering options')
+        args.entry=[]
+    if (args.isolated_batch is None) != (args.suite_report is None):
+        parser.error('--isolated-batch and --suite-report must be supplied together')
+    if args.suite_workers is not None and (args.isolated_batch is None or not 1<=args.suite_workers<=64):
+        parser.error('--suite-workers requires an isolated batch and a count in 1..64')
+    if args.isolated_batch is not None:
+        if auditing or not args.test_body or (not filtered and len(args.entry or []) < 2) or args.arguments:
+            parser.error('--isolated-batch requires --test-filter or at least two --entry test bodies without audit or entry arguments')
+        if args.engine != 'jit' or not args.jit_resumable_calls or args.jit_native_calls or args.jit_native_call_stubs:
+            parser.error('--isolated-batch requires resumable JIT execution without tree/stub modes')
+        if args.suite_report.exists() or args.suite_report.is_symlink() or not args.suite_report.parent.is_dir():
+            parser.error('--suite-report requires a new file in an existing directory')
+        args.suite_report=args.suite_report.resolve()
     if args.allocation_trace and auditing:
         parser.error('--allocation-trace cannot be combined with --audit-entries')
     if args.retain_audit_bodies and not auditing:
@@ -229,13 +300,19 @@ def main():
     if args.instruction_limit is not None and args.instruction_limit <= 0:
         parser.error('--instruction-limit must be positive')
     maximum=4096 if auditing else 256
-    if not 1<=len(args.entry)<=maximum or len(set(args.entry))!=len(args.entry):
+    if not listing and not filtered and (not 1<=len(args.entry)<=maximum or len(set(args.entry))!=len(args.entry)):
         parser.error(f'select between 1 and {maximum} distinct entries')
     if len(args.entry)>1 and (not args.test_body or [v for v in args.arguments if v!='--']):
         parser.error('multiple entries require --test-body and no function arguments')
+    try:
+        cache_base=workspace_cache_base(ROOT,args.workspace_cache_root)
+    except (OSError,ValueError) as error:
+        parser.error('--workspace-cache-root: '+str(error))
     manifest=args.manifest_path.resolve()
     stage=time.perf_counter()
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
+    if listing:require_export_option(tools,key,'list-tests')
+    if filtered:require_export_option(tools,key,'filtered-tests')
     if args.inline_leaves:require_export_option(tools,key,'inline-leaves')
     if args.trap_unsupported_calls:require_export_option(tools,key,'trap-unsupported-calls')
     if args.run_try_callbacks:require_export_option(tools,key,'run-try-callbacks')
@@ -257,11 +334,18 @@ def main():
     if std:identity_input+='\0std-mir:'+std[2]
     if args.cache_namespace:identity_input+='\0'+args.cache_namespace
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
-    work=ROOT/'.work/interpreter-workspaces'/key/identity
-    work.mkdir(parents=True,exist_ok=True)
+    if args.workspace_cache_root is None:
+        work=cache_base/key/identity
+        work.mkdir(parents=True,exist_ok=True)
+    else:
+        work=cache_subdirectory(cache_base,key,identity)
+        for name in ['target','invocation.lock']:
+            if (work/name).is_symlink():
+                raise RuntimeError('cache workspace contains a replacement symlink: '+name)
+    if stats:timings['workspace_path']=str(work)
     # Keep the selected metadata sidecar stable through execution when two
     # launcher invocations select different entries in this target directory.
-    invocation_lock=(work/'invocation.lock').open('a')
+    invocation_lock=resources.enter_context((work/'invocation.lock').open('a'))
     fcntl.flock(invocation_lock,fcntl.LOCK_EX)
     env=os.environ.copy()
     # Preserve Cargo's feature/profile/rustflag behavior. Tool-specific outputs
@@ -273,7 +357,7 @@ def main():
     timings['compiler_wrapper']=dict(name=wrapper_name,sha256=tool_manifest[wrapper_name])
     env.update(RUSTC_WRAPPER=str(tools/wrapper_name),RUSTC_WORKSPACE_WRAPPER='',
                RUST_INTERP_EXPORT_PACKAGE=args.package,
-               RUST_INTERP_OUTPUT=str(work/('audit.json' if auditing else 'program.rbc')),RUST_INTERP_EXPORT_TEST='1' if args.test_body else '0',CARGO_TARGET_DIR=str(work/'target'))
+               RUST_INTERP_OUTPUT=str(work/('tests.json' if listing else 'audit.json' if auditing else 'program.rbc')),RUST_INTERP_EXPORT_TEST='1' if args.test_body else '0',CARGO_TARGET_DIR=str(work/'target'))
     if args.test_target is not None:
         # The existing compiler router also checks Cargo package/primary/test
         # identity. A same-package library or sibling test cannot export here.
@@ -282,7 +366,11 @@ def main():
     if args.trap_unsupported_calls:env['RUST_INTERP_TRAP_UNSUPPORTED_CALLS']='1'
     if args.run_try_callbacks:env['RUST_INTERP_RUN_TRY_CALLBACKS']='1'
     if args.allocation_trace:env['RUST_INTERP_ALLOCATION_TRACE']='1'
-    if auditing:
+    if listing:
+        env['RUST_INTERP_LIST_TESTS']='1'
+    elif filtered:
+        env['RUST_INTERP_TEST_FILTER']=json.dumps(dict(pattern=args.test_filter,exact=args.test_exact),separators=(',',':'))
+    elif auditing:
         # Snapshot the selection under the invocation lock. Its content-addressed
         # path is tracked by rustc, avoiding argv/environment limits for suites.
         contents=json.dumps(args.entry,separators=(',',':')).encode()
@@ -314,14 +402,25 @@ def main():
     timings['cargo_seconds']=time.perf_counter()-stage
     if result.returncode:return result.returncode
     artifacts=[]
-    suffix='.audit.json' if auditing else '.rbc'
+    suffix='.tests.json' if listing else '.audit.json' if auditing else '.rbc'
     for line in result.stdout.splitlines():
         try:
             event=json.loads(line)
             if artifact_matches_target(event,args.test_body,args.test_target):
                 artifacts.extend(Path(p+suffix) for p in event['filenames'] if p.endswith('.rmeta') and Path(p+suffix).is_file())
         except json.JSONDecodeError:pass
-    if len(artifacts)!=1 or not artifacts[0].is_file():raise RuntimeError('Cargo did not select a valid '+('audit report' if auditing else 'bytecode sidecar')+'; no program was run')
+    if len(artifacts)!=1 or not artifacts[0].is_file():raise RuntimeError('Cargo did not select a valid '+('test listing' if listing else 'audit report' if auditing else 'bytecode sidecar')+'; no program was run')
+    if listing:
+        from test_discovery import read_listing
+        report,digest=read_listing(artifacts[0])
+        report['tool_key']=key
+        report['discovery_provenance']=dict(path=str(artifacts[0].resolve()),sha256=digest,
+            exporter_sha256=tool_manifest['rust-interp-mir-export'])
+        print(json.dumps(report,indent=2))
+        timings.update(launcher_seconds=time.perf_counter()-started,executed=False,
+            mode='test-discovery',discovery_count=report['count'],discovery_sha256=digest)
+        if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
+        return 0
     if auditing:
         if artifacts[0].stat().st_size>64*1024*1024:raise RuntimeError('lowering audit report exceeds 64 MiB')
         audit_bytes=artifacts[0].read_bytes()
@@ -349,6 +448,15 @@ def main():
         timings['launcher_seconds']=time.perf_counter()-started
         if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
         return 0
+    if filtered:
+        from test_discovery import read_selection
+        stage=time.perf_counter()
+        selection_path=Path(str(artifacts[0])+'.selection.json')
+        report,digest=read_selection(selection_path,artifacts[0],args.test_filter,args.test_exact)
+        args.entry=report['selected']
+        timings.update(test_selection_path=str(selection_path),test_selection_sha256=digest,
+            test_selection=dict(filter=report['filter'],discovered=report['count'],selected=args.entry,
+                skipped_ignored=report['skipped_ignored']),test_selection_verify_seconds=time.perf_counter()-stage)
     if args.allocation_trace:
         from allocation_trace import selected_trace
         stage=time.perf_counter()
@@ -384,6 +492,17 @@ def main():
     if args.jit_native_call_stubs:vm_command.append('--jit-native-call-stubs')
     if args.instruction_limit is not None:vm_command+=['--instruction-limit',str(args.instruction_limit)]
     if args.allocation_limit is not None:vm_command+=['--allocation-limit',str(args.allocation_limit)]
+    if args.isolated_batch is not None:
+        vm_command+=['--isolated-batch',args.isolated_batch,'--suite-report',str(args.suite_report)]
+        if args.suite_workers is not None:vm_command+=['--suite-workers',str(args.suite_workers)]
+        if filtered or entry_catalog_supported(tools,key):
+            catalog=selected_entry_catalog(artifacts[0],args.entry)
+            vm_command+=['--suite-catalog',str(catalog)]
+            timings['entry_catalog_path']=str(catalog)
+            timings['entry_catalog_sha256']=hashlib.sha256(catalog.read_bytes()).hexdigest()
+        timings.update(isolated_batch=args.isolated_batch,suite_report_path=str(args.suite_report),
+                       suite_workers_requested=args.suite_workers or 1,
+                       runtime_limits_scope='each isolated test')
     if stats:timings['allocation_limit']=args.allocation_limit if args.allocation_limit is not None else 100_000
     if stats:
         # The invocation lock protects the selected sidecar through execution.
@@ -397,6 +516,15 @@ def main():
     stage=time.perf_counter()
     result=subprocess.run([*vm_command,str(artifacts[0]),*values],env=env)
     timings['execution_seconds']=time.perf_counter()-stage
+    if args.suite_report is not None and args.suite_report.is_file():
+        if args.suite_report.stat().st_size>16*1024*1024:
+            raise RuntimeError('suite report exceeds 16 MiB')
+        timings['suite_report_sha256']=hashlib.sha256(args.suite_report.read_bytes()).hexdigest()
+        from suite_reports import validate_runtime_limits
+        suite=json.loads(args.suite_report.read_bytes())
+        validate_runtime_limits(suite,args.instruction_limit,args.allocation_limit)
+        timings['suite_workers']=suite.get('workers',1)
+        if 'runtime_limits' in suite:timings['runtime_limits']=suite['runtime_limits']
     timings['launcher_seconds']=time.perf_counter()-started
     if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
     return result.returncode

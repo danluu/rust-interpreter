@@ -3,7 +3,7 @@ use super::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Fact { Local(usize), Immediate(u128) }
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 struct Coverage {
     writes: Vec<(usize, usize)>,
     reads: Vec<(usize, usize)>,
@@ -150,7 +150,10 @@ pub(crate) fn remember(lower: &mut Lower<'_, '_>, block: usize, event: usize, st
     }
 }
 
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct Write { block: usize, event: usize, local: usize, coverage: Coverage }
+type Reason = &'static str;
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Observation {
     id: usize,
     name: String,
@@ -160,12 +163,55 @@ pub(crate) struct Observation {
     extent: usize,
     slots: Vec<Slot>,
     shapes: Vec<(usize, usize)>,
-    reasons: Vec<Option<&'static str>>,
+    #[serde(deserialize_with = "owned_reasons")]
+    reasons: Vec<Option<Reason>>,
     events: Vec<Vec<Event>>,
     successors: Vec<Vec<usize>>,
     writes: Vec<Write>,
     baseline: bool,
-    decline: Option<&'static str>,
+    #[serde(deserialize_with = "owned_reason")]
+    decline: Option<Reason>,
+}
+
+// Cache decoding retains only this closed diagnostic vocabulary. It never
+// interns or leaks a string supplied by the payload.
+fn reason(value: Option<String>) -> std::result::Result<Option<&'static str>, String> {
+    match value.as_deref() {
+        None => Ok(None),
+        Some("abi") => Ok(Some("abi")),
+        Some("zero_size") => Ok(Some("zero_size")),
+        Some("address_or_unsupported_context") => Ok(Some("address_or_unsupported_context")),
+        Some("origin_bound") => Ok(Some("origin_bound")),
+        Some("input_bound") => Ok(Some("input_bound")),
+        _ => Err("unknown frame observation reason".into()),
+    }
+}
+fn owned_reason<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Option<&'static str>, D::Error> {
+    use serde::Deserialize;
+    reason(Option::<String>::deserialize(d)?).map_err(serde::de::Error::custom)
+}
+fn owned_reasons<'de, D: serde::Deserializer<'de>>(d: D) -> std::result::Result<Vec<Option<&'static str>>, D::Error> {
+    use serde::Deserialize;
+    Vec::<Option<String>>::deserialize(d)?.into_iter().map(reason).collect::<std::result::Result<_, _>>()
+        .map_err(serde::de::Error::custom)
+}
+
+impl Observation {
+    pub(crate) fn semantic_bytes(&self) -> Result<Vec<u8>> {
+        let mut copy = self.clone();
+        copy.capture_nanos = 0;
+        bincode::serialize(&copy).map_err(|e| e.to_string())
+    }
+    pub(crate) fn rebind(&mut self, index: usize, calls: &BTreeMap<usize, usize>) -> Result<()> {
+        self.id = index;
+        self.capture_nanos = 0; // Cached work must not be reported as executed.
+        for write in &mut self.writes {
+            for (function, _, _) in &mut write.coverage.calls {
+                *function = *calls.get(function).ok_or("unbound frame observation call")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 fn result_edge(events: &mut Vec<Vec<Event>>, successors: &mut Vec<Vec<usize>>, block: usize,

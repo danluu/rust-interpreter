@@ -10,8 +10,8 @@ const MAX_OPERANDS: usize = 262_144;
 const MAX_WORK: usize = 32_000_000; // word/set operations before conservative decline
 
 pub(super) struct Liveness {
-    bits: Vec<u64>,
-    stride: usize,
+    pub(super) bits: Vec<u64>,
+    pub(super) stride: usize,
     successors: Vec<Vec<usize>>,
 }
 impl Liveness {
@@ -38,6 +38,12 @@ pub(super) fn analyze(f: &Function) -> Option<Allocation> {
     analyze_with_work(f, MAX_WORK)
 }
 fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
+    let (live, ranked) = ranked(f, max_work)?;
+    let registers = ranked.into_iter().take(3).map(|(_, r)| r).collect();
+    Some(Allocation { live, registers })
+}
+
+pub(super) fn ranked(f: &Function, max_work: usize) -> Option<(Liveness, Vec<(u64, Reg)>)> {
     let n = f.code.len();
     if n == 0 || n > MAX_PCS || f.registers > MAX_REGISTERS { return None; }
     let stride = f.registers.div_ceil(64);
@@ -130,8 +136,7 @@ fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
     let mut registers: Vec<_> = scores.iter().enumerate().filter_map(|(r, &score)|
         (score != 0 && frequency[r] >= 2).then_some((score * frequency[r], r as Reg))).collect();
     registers.sort_unstable_by_key(|&(score, r)| (std::cmp::Reverse(score), r));
-    let registers = registers.into_iter().take(3).map(|(_, r)| r).collect();
-    Some(Allocation { live, registers })
+    Some((live, registers))
 }
 
 #[cfg(test)]
@@ -213,4 +218,84 @@ impl Assembler<'_> {
         self.stack_pair(false, 0, 1, 32);
         if !self.tree_caller_is_region { self.save_value_pairs(false, 64); }
     }
+}
+
+
+/// Static feasibility only; neither assignment nor generated code is changed.
+pub(super) fn width_census(program: &Program, profile_bytes: Option<&[u8]>) -> Result<serde_json::Value, String> {
+    crate::validate(program)?;
+    let profile = profile_bytes.map(|bytes| super::register_width_profile::parse(program, bytes)).transpose()?;
+    let mut rows = Vec::new();
+    for (id, f) in program.functions.iter().enumerate() {
+        let counts = profile.as_ref().map(|p| p.functions[id].native_counts(f)).transpose()?;
+        let mut row = serde_json::json!({"function":id,"name":f.name});
+        if let (Some(profile), Some(counts)) = (&profile, &counts) {
+            let mut reads = 0u128;
+            for (op, &count) in f.code.iter().zip(counts) {
+                crate::registers::visit_registers(op, |_| reads += u128::from(count), |_| {});
+            }
+            let narrow_count = |v:u128| u64::try_from(v).map_err(|_| "weighted census count overflow".to_string());
+            row["native_operation_executions"] = narrow_count(counts.iter().map(|&v|u128::from(v)).sum())?.into();
+            row["native_read_operands"] = narrow_count(reads)?.into();
+            row["interpreted_operation_executions"] = narrow_count(profile.functions[id].interpreted.iter().map(|&v|u128::from(v)).sum())?.into();
+        }
+        let Some((live, ranked)) = ranked(f, MAX_WORK) else {
+            row["declined"] = "liveness bounds".into(); rows.push(row);
+            continue;
+        };
+        let Some(narrow) = super::register_widths::prove(f) else {
+            row["declined"] = "width proof bounds".into(); rows.push(row);
+            continue;
+        };
+        let baseline: Vec<_> = ranked.iter().take(3).map(|&(_, r)| r).collect();
+        let mut packed = Vec::new();
+        let mut available = 6;
+        for &(_, r) in &ranked {
+            let cost = if narrow[r as usize] { 1 } else { 2 };
+            if cost <= available { packed.push(r); available -= cost; }
+            if available == 0 { break; }
+        }
+        let mut baseline_reads = 0u64;
+        let mut packed_reads = 0u64;
+        for op in &f.code {
+            crate::registers::visit_registers(op, |r| {
+                baseline_reads += u64::from(baseline.contains(&r));
+                packed_reads += u64::from(packed.contains(&r));
+            }, |_| {});
+        }
+        let assignments = |registers: &[Reg]| registers.iter().map(|&r| serde_json::json!({
+            "register":r,"upper_half_zero":narrow[r as usize]})).collect::<Vec<_>>();
+        if let (Some(profile), Some(counts)) = (&profile, &counts) {
+            let mut baseline_reads = 0u128;
+            let mut packed_reads = 0u128;
+            let mut baseline_live = 0u128;
+            let mut packed_live = 0u128;
+            for (pc, (op, &count)) in f.code.iter().zip(counts).enumerate() {
+                crate::registers::visit_registers(op, |r| {
+                    if baseline.contains(&r) { baseline_reads += u128::from(count); }
+                    if packed.contains(&r) { packed_reads += u128::from(count); }
+                }, |_| {});
+                let hits = u128::from(profile.functions[id].jit_blocks[pc]);
+                baseline_live += hits * baseline.iter().filter(|&&r| live.at(pc, r)).count() as u128;
+                packed_live += hits * packed.iter().filter(|&&r| live.at(pc, r)).count() as u128;
+            }
+            for (key,value) in [("baseline_native_read_operands",baseline_reads),
+                                ("packed_native_read_operands",packed_reads),
+                                ("baseline_live_native_block_entries",baseline_live),
+                                ("packed_live_native_block_entries",packed_live)] {
+                row[key] = u64::try_from(value).map_err(|_| "weighted census count overflow")?.into();
+            }
+        }
+        let static_fields = serde_json::json!({"registers":f.registers,
+            "proven_narrow":narrow.iter().filter(|&&v| v).count(),"eligible":ranked.len(),
+            "baseline":assignments(&baseline),"packed":assignments(&packed),
+            "packed_native_registers":6-available,
+            "baseline_static_reads":baseline_reads,"packed_static_reads":packed_reads});
+        row.as_object_mut().unwrap().extend(static_fields.as_object().unwrap().clone());
+        rows.push(row);
+    }
+    Ok(serde_json::json!({"kind":"register-width-census","schema_version":2,
+        "scope":"static definitions and current liveness ranking; optional verified native operand counts; no guest execution or generated-code change",
+        "limitations":"Operand counts do not model the existing intra-block cache. Live block-entry counts include internal native edges, not just actual spills. Neither is a speedup estimate.",
+        "functions":rows}))
 }

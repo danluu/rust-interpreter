@@ -1,5 +1,50 @@
 use super::*;
 
+fn cached_observation() -> Observation {
+    Observation {
+        id: 2, name: "caller".into(), origins: BTreeMap::from([(0, 1)]), abi_count: 1,
+        capture_nanos: 91, extent: 32, slots: vec![Slot { offset: 0, size: 16 }],
+        shapes: vec![(16, 8)], reasons: vec![None],
+        events: vec![vec![Event { reads: Set::new(), writes: Set::from([0]) }]],
+        successors: vec![vec![]], baseline: true, decline: None,
+        writes: vec![Write { block: 0, event: 0, local: 0,
+            coverage: Coverage { calls: vec![(0, 0, vec![])], straight: true, ..Coverage::default() } }],
+    }
+}
+
+#[test]
+fn cached_frame_observation_rebinds_callee_layout_and_preserves_byte_coverage() {
+    let original = cached_observation();
+    let bytes = bincode::serialize(&original).unwrap();
+    let mut restored: Observation = bincode::deserialize(&bytes).unwrap();
+    assert_eq!(restored.semantic_bytes().unwrap(), original.semantic_bytes().unwrap());
+    restored.rebind(7, &BTreeMap::from([(0, 1)])).unwrap();
+    assert_eq!(restored.id, 7);
+    assert_eq!(restored.capture_nanos, 0);
+    let mut p = program(8, &[]);
+    p.functions.push(program(16, &[]).functions.remove(0));
+    let slot = Slot { offset: 0, size: 16 };
+    assert!(!original.writes[0].coverage.complete(slot, &p));
+    assert!(restored.writes[0].coverage.complete(slot, &p));
+    p.functions[1].args.push(Slot { offset: 0, size: 8 });
+    assert!(!restored.writes[0].coverage.complete(slot, &p));
+    assert!(cached_observation().rebind(7, &BTreeMap::new()).is_err());
+}
+
+#[test]
+fn cached_frame_observation_retains_closed_decline_reasons_without_interning() {
+    let mut original = cached_observation();
+    original.reasons = vec![None, Some("abi"), Some("zero_size"), Some("address_or_unsupported_context")];
+    original.decline = Some("origin_bound");
+    let bytes = bincode::serialize(&original).unwrap();
+    let restored: Observation = bincode::deserialize(&bytes).unwrap();
+    assert_eq!(restored.reasons, original.reasons);
+    assert_eq!(restored.decline, original.decline);
+    let mut json = serde_json::to_value(&original).unwrap();
+    json["decline"] = serde_json::json!("unexpected cache-supplied label");
+    assert!(serde_json::from_value::<Observation>(json).is_err());
+}
+
 fn program(result: usize, args: &[usize]) -> Program {
     Program { version: VERSION, target: "diagnostic".into(), entry: 0, data: vec![], statics: vec![], thread_locals: vec![],
         functions: vec![Function { name: "callee".into(), frame_size: 128, frame_align: 16, registers: 0,

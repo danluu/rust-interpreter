@@ -16,17 +16,33 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         match source {
             Source::Inherited(slot) => Ok(self.local(slot.offset)),
             Source::Constant(span) => {
+                if self.binding_recorder.is_some() {
+                    let block = &self.body.basic_blocks.raw[self.binding_position.block];
+                    let terminator = block.terminator();
+                    let expected = match &terminator.kind {
+                        TerminatorKind::Call { fn_span, .. } => mir::SourceInfo { span: *fn_span, ..terminator.source_info },
+                        _ => terminator.source_info,
+                    };
+                    if source_info.span != expected.span || source_info.scope != expected.scope
+                        || self.binding_position.statement != block.statements.len()
+                    {
+                        self.binding_recorder.as_mut().unwrap().decline("caller source is not the current terminator");
+                    }
+                }
                 let value = self.tcx().span_as_caller_location(span);
                 let ConstValue::Scalar(Scalar::Ptr(pointer, _)) = value else {
                     return Err("caller location is not a constant pointer".into());
                 };
                 let origin = self.exporter.trace_event(|tcx| serde_json::json!({"kind": "caller-location-origin",
                     "source": tcx.sess.source_map().span_to_diagnostic_string(span)}))?;
-                let base = self.exporter.with_trace_parent(origin, |e| e.alloc(pointer.provenance.alloc_id()))?;
-                let pointer = (base as u64).checked_add(pointer.prov_and_relative_offset().1.bytes())
+                let allocation = pointer.provenance.alloc_id();
+                let addend = pointer.prov_and_relative_offset().1.bytes();
+                let base = self.exporter.with_trace_parent(origin, |e| e.alloc(allocation))?;
+                let pointer = (base as u64).checked_add(addend)
                     .ok_or("caller-location address overflow")?;
                 let address = self.temporary(8);
-                let value = self.imm(pointer as u128);
+                let value = self.imm_pointer(pointer as u128, addend, PointerKind::CallerLocation,
+                    || format!("allocation:{}", allocation.0.get()))?;
                 self.store(address, value, 8)?;
                 Ok(address)
             }
