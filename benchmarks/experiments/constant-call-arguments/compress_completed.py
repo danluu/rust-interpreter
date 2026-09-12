@@ -13,7 +13,7 @@ def properties(path):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--run-id',choices=['completed-evidence-compression-01','completed-evidence-compression-02'],default='completed-evidence-compression-01')
+    parser.add_argument('--run-id',choices=['completed-evidence-compression-01','completed-evidence-compression-02','completed-evidence-compression-03'],default='completed-evidence-compression-01')
     run=parser.parse_args().run_id
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,3)
@@ -27,7 +27,7 @@ def main():
                 report_path=ROOT/'results'/('constant-specialize-saved-'+number)/'summary.json';report=json.loads(report_path.read_text());assert report['status']=='passed';proofs.append(report_path)
                 item=next(c for c in report['cases'] if c['case']=='token')
                 inputs.append((ROOT/report['raw']/'0.rbc',item['candidate_artifact_sha256'],Path(report['raw']).name))
-        else:
+        elif run.endswith('02'):
             report_path=ROOT/'results/fixed-frame-clear-entropy-aa-01/summary.json';report=json.loads(report_path.read_text());assert report['status']=='passed';proofs.append(report_path)
             for index in [0,1]:
                 path=Path('.work/fixed-frame-clear-entropy-aa-01')/(str(index)+'.profile.json')
@@ -47,9 +47,31 @@ def main():
                     assert record['identity']['status']=='finished' and record['identity']['returncode']==0
                     for name in ['jit-code/code.bin','jit-code/map.json']:
                         inputs.append((record_path.parent/name,record['files'][name],sample_run))
+        else:
+            for run_name,field in [('budget-register-randomness-01','executions'),('resumable-bulk-token-transitions-01','evidence')]:
+                rp=ROOT/'results'/run_name/'summary.json';r=json.loads(rp.read_text());assert r['status']=='passed';proofs.append(rp)
+                path=Path('.work')/run_name/'profile.json'
+                digest=r[field][str(path)] if field=='evidence' else next(e['files'][str(path)] for e in r[field] if str(path) in e['files'])
+                inputs.append((ROOT/path,digest,run_name))
+            run_name='aggregate-reuse-collection-01';rp=ROOT/'results'/run_name/'summary.json';r=json.loads(rp.read_text())
+            assert r['status']=='passed';proofs.append(rp)
+            for case in r['cases']:inputs.append((ROOT/case['profile'],case['profile_sha256'],run_name))
+            for run_name in ['call-slot-smoke-01','whole-call-runtime-smoke-01','budget-register-smoke-04']:
+                rp=ROOT/'results'/run_name/'summary.json';r=json.loads(rp.read_text());proofs.append(rp)
+                cp=ROOT/'.work'/run_name/'commands.json';commands=json.loads(cp.read_text());proofs.append(cp)
+                if run_name=='budget-register-smoke-04':
+                    assert r['status']=='failed' and r['commands_completed']==14 and r['token_original_success_executions']==4
+                    assert sha(cp)==r['evidence'][str(cp.relative_to(ROOT))]
+                    assert r['cause']=='Token cross-process counters differ; original assertions pass. Original randomness is being investigated with an unchanged-VM repetition.'
+                else:assert r['status']=='passed' and r['commands']==commands
+                for index in [1,3,11,13]:
+                    path=Path('.work')/run_name/(str(index)+'-profile.json')
+                    rows=[row for row in commands if str(path) in row['files']];assert len(rows)==1 and rows[0]['returncode']==0
+                    inputs.append((ROOT/path,rows[0]['files'][str(path)],run_name))
         for run_name in sorted({run_name for _,_,run_name in inputs}):
             path=ROOT/'.work/experiments'/run_name/'status.json';s=json.loads(path.read_text())
-            assert s['owner']==s['cwd']==str(ROOT) and s['status']=='finished' and s['returncode']==0
+            expected_returncode=1 if run.endswith('03') and run_name=='budget-register-smoke-04' else 0
+            assert s['owner']==s['cwd']==str(ROOT) and s['status']=='finished' and s['returncode']==expected_returncode
             assert sha(path.with_name('plan.json'))==s['plan_sha256'] and sha(path.with_name('command.log'))==s['log_sha256'];proofs.append(path)
         frozen={str(p.relative_to(ROOT)):sha(p) for p in proofs}
         prepared=[]

@@ -28,3 +28,14 @@ Bind every file to its successful producer receipt and existing content digest.
 These are diagnostic outputs, never timed runtime inputs. Apply the same
 single-file staging, byte/metadata equality and3GiB reserve rules. This batch
 restores host-build headroom without lowering build admission or removing data.
+
+The third bounded batch preserves16 public diagnostic JSON profiles: the two
+aggregate-reuse collection profiles; budget-register randomness and token
+transition profiles; and profiles1/3/11/13 from call-slot-smoke-01,
+whole-call-runtime-smoke-01 and budget-register-smoke-04. Every file has an
+existing digest and terminal producer receipt. The last controller terminated
+with return1 because independent entropy caused cross-process counter mismatch;
+its individual profile commands all returned0. Verify that exact recorded
+failure and the report-bound commands file; preserve its failed classification.
+No private profiles, source, binaries, benchmark inputs or caches are included.
+All previous byte/metadata equality, single-copy staging and reserve rules apply.
