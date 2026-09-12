@@ -19,7 +19,7 @@ from workflow_cases import WORKFLOW_VARIANTS
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from workflow_measurements import source_states
 from bench_e2e_workflow import guest_test_failure
-from reuse_check import observation
+from reuse_check import observation, reconstruction
 
 REFERENCES = dict(token='fixed-frame-clear-library-token-02', folded='fixed-frame-clear-library-folded-01')
 
@@ -93,7 +93,8 @@ def main():
         build, qualification = [json.loads(p.read_text()) for p in [build_path, qualification_path]]
         assert build['status'] == qualification['status'] == 'passed'
         typed = qualification.get('typed_relocations', False)
-        assert qualification['commands'] == (179 if typed else 104) and qualification['all_artifact_hashes_identical']
+        binding_replay = qualification.get('binding_replay', False)
+        assert qualification['commands'] == (231 if binding_replay else 179 if typed else 104) and qualification['all_artifact_hashes_identical']
         assert typed == (args.weights_run is not None)
         assert qualification['tool_key'] == build['tool_key']
         dependencies = args.dependency_qualification is not None
@@ -102,6 +103,9 @@ def main():
             assert dep_check['tool_key'] == build['tool_key'] and dep_check['commands'] == 229
             assert dep_check['candidate_dependency_boundary_supported'] and dep_check['all_lowering_executed']
             assert typed
+            if binding_replay:
+                assert dep_check['binding_replay'] and len(dep_check['reconstruction']) == 9
+        assert not binding_replay or dependencies
         tool, key = installed_tools(build['tool_key'])
         reference_path = ROOT / 'results' / REFERENCES[args.case] / 'summary.json'
         reference = json.loads(reference_path.read_text())
@@ -162,6 +166,8 @@ def main():
                 paths.append(census)
         if dependencies:
             paths.extend([args.dependency_qualification.resolve(), HERE / 'DEPENDENCIES.md'])
+        if binding_replay:
+            paths.append(HERE / 'BINDING-REPLAY.md')
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'plan.json', dict(frozen=frozen, source_commit=build['source_commit'], tool_key=key,
               source_revision=marker['revision'], command=command, performance_measurement=False,
@@ -176,7 +182,10 @@ def main():
                    CARGO_PROFILE_DEV_BUILD_OVERRIDE_OPT_LEVEL='0', CARGO_PROFILE_TEST_BUILD_OVERRIDE_OPT_LEVEL='0')
         if dependencies:
             env['RUST_INTERP_FUNCTION_DEPENDENCIES'] = '1'
+        if binding_replay:
+            env['RUST_INTERP_BINDING_REPLAY'] = '1'
         records, censuses, transitions = [], [], []
+        replay_reports = []
         def execute(state):
             require_space(ROOT, 8)
             child, stdout, stderr = capture(command, cwd=ROOT, env=env,
@@ -198,6 +207,8 @@ def main():
             shutil.copy2(artifact, saved)
             row.update(artifact_sha256=sha(saved), artifact=str(saved.relative_to(ROOT)), launch=launch)
             report, scopes = observation(stderr, saved)
+            if binding_replay:
+                replay_reports.append(dict(state=state, **reconstruction(stderr, report)))
             assert report['schema_version'] == (3 if dependencies else 2 if typed else 1)
             if dependencies:
                 assert len({f['dependency']['node'] for f in report['functions']}) == len(report['functions'])
@@ -254,6 +265,9 @@ def main():
                 median_supported_green_seconds=statistics.median(r['supported_green_seconds'] for r in edited),
                 median_supported_green_cost_fraction=statistics.median(r['supported_green_cost_fraction'] for r in edited),
                 median_green_check_seconds=statistics.median(r['green_check_seconds'] for r in edited))
+        if binding_replay:
+            result.update(binding_replay=True, reconstruction=replay_reports,
+                replay_scope='Each current function/frame payload is encoded, decoded and bound from current MIR into a second graph. Both complete original lowering and graph verification execute; no persistent cache or performance claim.')
         write(out / 'summary.json', result)
 
 
