@@ -53,7 +53,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Measure conservative frame-initialization proof coverage on es8i before runtime changes; large native controls and export reuse remain open.
+**Next:** Test bounded constant-size frame clearing: the conservative elision proof covers only 3 of 1,135 clearing samples; large native controls and export reuse remain open.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

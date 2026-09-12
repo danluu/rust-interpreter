@@ -4,14 +4,16 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Test frame-initialization proof coverage.** Integration coverage now includes
+1. **Specialize small constant frame clears.** Integration coverage now includes
    all 52 fre assertions. The short end-greedy edit pilot gains 20.4%, but es8i
    costs 3.867s custom versus 1.449s native (2.678× paired). Native uses default
    threads; custom batches are sequential. Three owned es8i profiles place
-   98.33% of samples in generated code and 14.81% in clearing. Count eligible
-   clearing sites under a conservative stronger initialization proof before
-   implementing elision. The old argument-only idea stays parked. Preserve
-   caller-local source proofs, unknown-pointer aliases, padding and exact limits.
+   98.33% of samples in generated code and 14.81% in clearing. The conservative
+   [initialization proof](results/frame-initialization-proof-01/assessment.md)
+   covers only 3 of 1,135 clearing samples, so elision stays diagnostic. A bounded
+   sequence of stores for statically known extents up to 256 bytes covers 1,041
+   samples and preserves zero initialization. Test that candidate separately,
+   including alignment padding, arbitrary aliases and exact limits.
    Keep the native doc-test failure and incomplete libtest semantics visible.
 2. **Choose substantial export work from measured costs.** The retained observer
    produced seven byte-identical token artifacts. Graph lowering costs 691ms;

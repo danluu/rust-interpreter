@@ -1,5 +1,11 @@
 # Frame initialization census
 
+The stronger read-before-write proof is documented in [STRONGER.md](STRONGER.md).
+It is diagnostic only. Its [es8 coverage result](../../../results/frame-initialization-proof-01/assessment.md)
+is too small to pursue runtime elision. Run `proof_run.py --run-id
+frame-initialization-proof-NN`, then `proof_coverage.py --proof-run
+frame-initialization-proof-NN` to reproduce the test/census and saved-sample join.
+
 This standalone Rust analyzer uses typed bytecode and the retained local-call
 proof to count argument copies into newly zeroed frames. It makes no guest
 transformation. The Cargo workspace is separate from the production tool

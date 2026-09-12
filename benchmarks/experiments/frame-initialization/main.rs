@@ -8,6 +8,9 @@ use std::collections::BTreeMap;
 // inferring pointer roles from Debug strings. This does not change the VM.
 #[path = "../../../crates/bytecode/src/calls.rs"]
 mod calls;
+#[path = "../../../crates/bytecode/src/registers.rs"]
+mod registers;
+mod proof;
 
 #[derive(Deserialize)]
 struct Profile { functions: Vec<FunctionCounts> }
@@ -86,12 +89,31 @@ fn ranges(function: &Function) -> (Vec<(usize, usize)>, Vec<(usize, usize)>) {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args().skip(1).collect();
-    assert_eq!(args.len(), 2, "usage: frame-initialization-census PROGRAM PROFILE");
-    let bytes = std::fs::read(&args[0])?;
+    assert_eq!(args.len(), 2, "usage: frame-initialization-census PROGRAM PROFILE | --proof PROGRAM");
+    let proof_only = args[0] == "--proof";
+    let bytes = std::fs::read(&args[usize::from(proof_only)])?;
     assert!(bytes.len() <= 64 * 1024 * 1024);
     let program: Program = bincode::DefaultOptions::new().with_fixint_encoding()
         .with_limit(64 * 1024 * 1024).reject_trailing_bytes().deserialize(&bytes)?;
     validate(&program)?;
+    if proof_only {
+        let proven = calls::local_arguments(&program);
+        let proofs: Vec<_> = program.functions.iter().map(proof::analyze).collect();
+        let functions: Vec<_> = program.functions.iter().enumerate().map(|(id, f)| {
+            let calls: Vec<_> = f.code.iter().enumerate().filter_map(|(pc, op)| {
+                if let Op::Call { function: callee, .. } = op {
+                    Some(serde_json::json!({"pc": pc, "callee": callee,
+                        "local_arguments": proven[id][pc],
+                        "eligible": proven[id][pc] && proofs[*callee].eligible}))
+                } else { None }
+            }).collect();
+            serde_json::json!({"id": id, "name": f.name, "frame_size": f.frame_size,
+                "frame_align": f.frame_align, "registers": f.registers, "code_len": f.code.len(),
+                "needs_initial_zeroes": registers::needs_initial_zeroes(f), "proof": proofs[id], "calls": calls})
+        }).collect();
+        println!("{}", serde_json::to_string_pretty(&functions)?);
+        return Ok(());
+    }
     let profile: Profile = serde_json::from_reader(std::io::BufReader::new(std::fs::File::open(&args[1])?))?;
     assert_eq!(program.functions.len(), profile.functions.len());
     let proven = calls::local_arguments(&program);
