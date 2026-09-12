@@ -11,11 +11,11 @@ struct Coverage {
     straight: bool,
 }
 impl Coverage {
-    fn complete(&self, slot: Slot, program: &Program) -> bool {
+    fn complete(self, slot: Slot, program: &Program) -> bool {
         if !self.straight { return false; }
         let Some(end) = slot.offset.checked_add(slot.size) else { return false; };
-        let mut ranges = self.writes.clone();
-        let mut reads = self.reads.clone();
+        let mut ranges = self.writes;
+        let mut reads = self.reads;
         for (callee, offset, arguments) in &self.calls {
             let Some(f) = program.functions.get(*callee) else { return false; };
             if arguments.len() != f.args.len() { return false; }
@@ -243,30 +243,25 @@ pub(crate) fn capture(lower: &mut Lower<'_, '_>) -> Observation {
     if lower.locals.is_empty() || lower.locals.len() > MAX_LOCALS || count > MAX_EVENTS {
         observed.decline = Some("input_bound"); return observed;
     }
-    let mut old_eligible = vec![];
-    for (local, decl) in lower.body.local_decls.iter_enumerated() {
-        let ty = lower.mono(decl.ty);
-        let layout = lower.layout(ty).expect("previous local layout");
-        let size = layout.size.bytes_usize();
-        observed.shapes.push((size, layout.align.abi.bytes_usize()));
-        let abi = local.as_usize() <= lower.body.arg_count;
+    // pack already certified the scalar coloring. Verify that lowering kept
+    // those exact local slots, then reuse its shapes for aggregate analysis.
+    observed.shapes = lower.scalar_layout.take().expect("missing scalar layout certificate")
+        .into_shapes(&observed.slots, observed.extent);
+    observed.baseline = true;
+    for (local, &(size, _)) in observed.shapes.iter().enumerate() {
+        let abi = local <= lower.body.arg_count;
         observed.reasons.push(if abi { Some("abi") } else if size == 0 { Some("zero_size") } else { None });
-        old_eligible.push(!abi && matches!(ty.kind(), ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Bool | ty::Char));
     }
     let span = |bb: usize, event: usize| {
         lower.byte_spans.get(bb).and_then(|b| b.get(event)).copied().flatten()
             .map(|(start, end)| coverage(&lower.code[start..end], lower.registers as usize))
             .unwrap_or_default()
     };
-    let mut old_events = vec![];
     let mut normal = vec![];
     for (bb, block) in lower.body.basic_blocks.iter_enumerated() {
-        let mut old = vec![];
         let mut events = vec![];
         for (index, statement) in block.statements.iter().enumerate() {
             let location = mir::Location { block: bb, statement_index: index };
-            let mut a = Uses { eligible: &mut old_eligible, event: Event::default() };
-            a.visit_statement(statement, location); old.push(a.event);
             let mut b = ByteUses { reasons: &mut observed.reasons, event: Event::default() };
             b.visit_statement(statement, location);
             for &local in &b.event.writes {
@@ -276,8 +271,6 @@ pub(crate) fn capture(lower: &mut Lower<'_, '_>) -> Observation {
         }
         let index = block.statements.len();
         let location = mir::Location { block: bb, statement_index: index };
-        let mut a = Uses { eligible: &mut old_eligible, event: Event::default() };
-        a.visit_terminator(block.terminator(), location); old.push(a.event);
         let mut b = ByteUses { reasons: &mut observed.reasons, event: Event::default() };
         b.visit_terminator(block.terminator(), location);
         for &local in &b.event.writes {
@@ -291,16 +284,9 @@ pub(crate) fn capture(lower: &mut Lower<'_, '_>) -> Observation {
             }
         }
         events.push(b.event);
-        observed.events.push(events); old_events.push(old);
+        observed.events.push(events);
         observed.successors.push(block.terminator().successors().map(|b| b.as_usize()).collect());
     }
-    let mut end = 0;
-    let uncolored: Vec<_> = observed.shapes.iter().map(|&(n,a)| allocate(&mut end,n,a).unwrap()).collect();
-    let baseline = plan(&observed.shapes, old_eligible, old_events, &observed.successors)
-        .filter(|(_, size)| *size < end).unwrap_or((uncolored, end));
-    assert_eq!(baseline.1, observed.extent, "baseline local extent differs");
-    assert!(baseline.0.iter().zip(&observed.slots).all(|(a,b)| a.offset == b.offset && a.size == b.size), "baseline slots differ");
-    observed.baseline = true;
     for (block, target, local, partial, coverage, cleanup) in normal {
         let edge = result_edge(&mut observed.events, &mut observed.successors, block, target, local, partial, cleanup);
         observed.writes.push(Write { block: edge, event: 0, local, coverage });

@@ -1,0 +1,2810 @@
+[
+  {
+    "mode": "native",
+    "cycle": 0,
+    "state": 0,
+    "phase": "cold",
+    "label": "cold-original",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.9190093750075903,
+    "cpu_seconds": 0.63464,
+    "previous_source_sha256": null,
+    "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "calls": [
+      {
+        "pid": 58373,
+        "command": [
+          "cargo",
+          "+nightly-2026-09-08",
+          "test",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--lib",
+          "--locked",
+          "--offline",
+          "--jobs",
+          "18",
+          "--target-dir",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native",
+          "--",
+          "--exact",
+          "--test-threads=1",
+          "tests::uint32_paths_match_byte_path",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "tests::murmurhash32_inverse_roundtrips",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": null,
+        "seconds": 0.9189912499859929,
+        "encoded_rustflags": null,
+        "exporter_seconds": {},
+        "cpu": {
+          "user_seconds": 0.46875199999999995,
+          "system_seconds": 0.165888,
+          "total_seconds": 0.63464
+        },
+        "returncode": 0,
+        "stdout": "\nrunning 4 tests\ntest tests::dynahash_wrappers ... ok\ntest tests::extended_zero_seed_low_word_equals_hash_bytes ... ok\ntest tests::murmurhash32_inverse_roundtrips ... ok\ntest tests::uint32_paths_match_byte_path ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+        "stderr": "   Compiling hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.68s\n     Running unittests src/lib.rs (/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native/debug/build/hashfn/6dd11ef1f2a1586f/out/hashfn-6dd11ef1f2a1586f)\n"
+      }
+    ],
+    "load": [
+      10.23876953125,
+      10.51416015625,
+      7.90087890625
+    ],
+    "engine": null,
+    "tool_key": null,
+    "artifacts": []
+  },
+  {
+    "mode": "baseline",
+    "cycle": 0,
+    "state": 0,
+    "phase": "cold",
+    "label": "cold-original",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6348154579754919,
+    "cpu_seconds": 0.613262,
+    "previous_source_sha256": null,
+    "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "calls": [
+      {
+        "pid": 58427,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:baseline",
+          "--tool-key",
+          "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.6344677500019316,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000402,
+          "scalar-promotion": 0.000352,
+          "inline": 0.000235,
+          "cfg": 0.0003,
+          "frontend": 0.020765000000000002,
+          "lowering": 0.013592
+        },
+        "cpu": {
+          "user_seconds": 0.47599500000000006,
+          "system_seconds": 0.13726699999999997,
+          "total_seconds": 0.613262
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000661419,\"declines\":{},\"finalize_seconds\":0.000544041,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":2160}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2472 seconds=0.000402\nrust-interp-scalar-promotion: slots=49 removed_addresses=661 rewritten=633 seconds=0.000352 removed_moves=292\nrust-interp-inline: sites=9 operations=6462 seconds=0.000235\nrust-interp-cfg: before=6462 after=6415 seconds=0.000300\nrust-interp-export: frontend_ms=20.765 lowering_ms=13.592 functions=31 ops=6415 bytes=129558\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.50s\nrust-interp-unavailable: {\"artifact_sha256\":\"3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19806688 peak_guest_memory=2868\njit_bytes=134452 jit_operations=5725 jit_compile_ns=1697292 jit_instructions=19806668 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0022781250008847564, \"tool_key\": \"851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.04158766599721275, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.530832582997391, \"cargo_cpu\": {\"user_seconds\": 0.40982999999999997, \"system_seconds\": 0.107542, \"total_seconds\": 0.5173719999999999}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.00023645898909308016, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 129558, \"artifact_sha256\": \"3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614\", \"artifact_hash_seconds\": 0.00012429201160557568, \"build_to_ready_seconds\": 0.5827180419873912, \"build_to_ready_cpu\": {\"user_seconds\": 0.440179, \"system_seconds\": 0.126605, \"total_seconds\": 0.566784, \"self\": {\"user_seconds\": 0.009427000000000001, \"system_seconds\": 0.004713, \"total_seconds\": 0.014140000000000002}, \"children\": {\"user_seconds\": 0.43075199999999997, \"system_seconds\": 0.121892, \"total_seconds\": 0.5526439999999999}}, \"execution_seconds\": 0.010565374977886677, \"launcher_seconds\": 0.5932985419931356}\n",
+        "launch": {
+          "tools_seconds": 0.0022781250008847564,
+          "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.04158766599721275,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.530832582997391,
+          "cargo_cpu": {
+            "user_seconds": 0.40982999999999997,
+            "system_seconds": 0.107542,
+            "total_seconds": 0.5173719999999999
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.00023645898909308016,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 129558,
+          "artifact_sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+          "artifact_hash_seconds": 0.00012429201160557568,
+          "build_to_ready_seconds": 0.5827180419873912,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.440179,
+            "system_seconds": 0.126605,
+            "total_seconds": 0.566784,
+            "self": {
+              "user_seconds": 0.009427000000000001,
+              "system_seconds": 0.004713,
+              "total_seconds": 0.014140000000000002
+            },
+            "children": {
+              "user_seconds": 0.43075199999999997,
+              "system_seconds": 0.121892,
+              "total_seconds": 0.5526439999999999
+            }
+          },
+          "execution_seconds": 0.010565374977886677,
+          "launcher_seconds": 0.5932985419931356
+        }
+      }
+    ],
+    "load": [
+      10.23876953125,
+      10.51416015625,
+      7.90087890625
+    ],
+    "engine": "jit",
+    "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/baseline/0-0.rbc",
+        "sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+        "bytes": 129558
+      }
+    ],
+    "build_to_ready_seconds": 0.5827180419873912,
+    "build_to_ready_cpu_seconds": 0.566784,
+    "cargo_cpu_seconds": 0.5173719999999999
+  },
+  {
+    "mode": "candidate",
+    "cycle": 0,
+    "state": 0,
+    "phase": "cold",
+    "label": "cold-original",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6201440840086434,
+    "cpu_seconds": 0.6033399999999998,
+    "previous_source_sha256": null,
+    "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "calls": [
+      {
+        "pid": 58461,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:candidate",
+          "--tool-key",
+          "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.6200304999947548,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000375,
+          "scalar-promotion": 0.000331,
+          "inline": 0.000218,
+          "cfg": 0.00031,
+          "frontend": 0.01939,
+          "lowering": 0.012585
+        },
+        "cpu": {
+          "user_seconds": 0.46339799999999987,
+          "system_seconds": 0.13994199999999996,
+          "total_seconds": 0.6033399999999998
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000311415,\"declines\":{},\"finalize_seconds\":0.000538791,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":2160}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2472 seconds=0.000375\nrust-interp-scalar-promotion: slots=49 removed_addresses=661 rewritten=633 seconds=0.000331 removed_moves=292\nrust-interp-inline: sites=9 operations=6462 seconds=0.000218\nrust-interp-cfg: before=6462 after=6415 seconds=0.000310\nrust-interp-export: frontend_ms=19.390 lowering_ms=12.585 functions=31 ops=6415 bytes=129558\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.48s\nrust-interp-unavailable: {\"artifact_sha256\":\"3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19806688 peak_guest_memory=2868\njit_bytes=134452 jit_operations=5725 jit_compile_ns=2046418 jit_instructions=19806668 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.002316583995707333, \"tool_key\": \"423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.041691499995067716, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.5185674160020426, \"cargo_cpu\": {\"user_seconds\": 0.39791499999999996, \"system_seconds\": 0.10925399999999999, \"total_seconds\": 0.507169}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.00022649997845292091, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 129558, \"artifact_sha256\": \"3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614\", \"artifact_hash_seconds\": 0.0001258340198546648, \"build_to_ready_seconds\": 0.5701228750112932, \"build_to_ready_cpu\": {\"user_seconds\": 0.42766099999999996, \"system_seconds\": 0.128628, \"total_seconds\": 0.5562889999999999, \"self\": {\"user_seconds\": 0.009033999999999997, \"system_seconds\": 0.004856000000000001, \"total_seconds\": 0.013889999999999998}, \"children\": {\"user_seconds\": 0.41862699999999997, \"system_seconds\": 0.123772, \"total_seconds\": 0.542399}}, \"execution_seconds\": 0.011238042003242299, \"launcher_seconds\": 0.5813760000164621}\n",
+        "launch": {
+          "tools_seconds": 0.002316583995707333,
+          "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.041691499995067716,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.5185674160020426,
+          "cargo_cpu": {
+            "user_seconds": 0.39791499999999996,
+            "system_seconds": 0.10925399999999999,
+            "total_seconds": 0.507169
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.00022649997845292091,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 129558,
+          "artifact_sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+          "artifact_hash_seconds": 0.0001258340198546648,
+          "build_to_ready_seconds": 0.5701228750112932,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.42766099999999996,
+            "system_seconds": 0.128628,
+            "total_seconds": 0.5562889999999999,
+            "self": {
+              "user_seconds": 0.009033999999999997,
+              "system_seconds": 0.004856000000000001,
+              "total_seconds": 0.013889999999999998
+            },
+            "children": {
+              "user_seconds": 0.41862699999999997,
+              "system_seconds": 0.123772,
+              "total_seconds": 0.542399
+            }
+          },
+          "execution_seconds": 0.011238042003242299,
+          "launcher_seconds": 0.5813760000164621
+        }
+      }
+    ],
+    "load": [
+      10.23876953125,
+      10.51416015625,
+      7.90087890625
+    ],
+    "engine": "jit",
+    "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/candidate/0-0.rbc",
+        "sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+        "bytes": 129558
+      }
+    ],
+    "build_to_ready_seconds": 0.5701228750112932,
+    "build_to_ready_cpu_seconds": 0.5562889999999999,
+    "cargo_cpu_seconds": 0.507169
+  },
+  {
+    "mode": "candidate",
+    "cycle": 0,
+    "state": -1,
+    "phase": "wrong-edit",
+    "label": "break-hash-multiplier",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6428683339909185,
+    "cpu_seconds": 0.623791,
+    "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+    "calls": [
+      {
+        "pid": 58489,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:candidate",
+          "--tool-key",
+          "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.6427497919939924,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000381,
+          "scalar-promotion": 0.000353,
+          "inline": 0.000227,
+          "cfg": 0.000322,
+          "frontend": 0.019887000000000002,
+          "lowering": 0.01304
+        },
+        "cpu": {
+          "user_seconds": 0.485163,
+          "system_seconds": 0.13862799999999997,
+          "total_seconds": 0.623791
+        },
+        "returncode": 1,
+        "stdout": "",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000318955,\"declines\":{},\"finalize_seconds\":0.000550166,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":2160}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2472 seconds=0.000381\nrust-interp-scalar-promotion: slots=49 removed_addresses=661 rewritten=633 seconds=0.000353 removed_moves=292\nrust-interp-inline: sites=9 operations=6462 seconds=0.000227\nrust-interp-cfg: before=6462 after=6415 seconds=0.000322\nrust-interp-export: frontend_ms=19.887 lowering_ms=13.040 functions=31 ops=6415 bytes=129558\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.51s\nrust-interp-unavailable: {\"artifact_sha256\":\"1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\nrust-interp-vm: guest trap: core::panicking::assert_failed at crates/common/hashfn/src/lib.rs:281:13: 281:65 in tests::murmurhash32_inverse_roundtrips::check[]\nrust-interp-launch: {\"tools_seconds\": 0.0023759589821565896, \"tool_key\": \"423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.04582329202094115, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.5412427090050187, \"cargo_cpu\": {\"user_seconds\": 0.42075199999999996, \"system_seconds\": 0.108441, \"total_seconds\": 0.5291929999999999}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.00022062499192543328, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 129558, \"artifact_sha256\": \"1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79\", \"artifact_hash_seconds\": 0.0001226250024046749, \"build_to_ready_seconds\": 0.5974723749968689, \"build_to_ready_cpu\": {\"user_seconds\": 0.453744, \"system_seconds\": 0.127985, \"total_seconds\": 0.581729, \"self\": {\"user_seconds\": 0.009685000000000003, \"system_seconds\": 0.004872, \"total_seconds\": 0.014557000000000002}, \"children\": {\"user_seconds\": 0.444059, \"system_seconds\": 0.123113, \"total_seconds\": 0.567172}}, \"execution_seconds\": 0.005323417019098997, \"launcher_seconds\": 0.6028101659903768}\n",
+        "launch": {
+          "tools_seconds": 0.0023759589821565896,
+          "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.04582329202094115,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.5412427090050187,
+          "cargo_cpu": {
+            "user_seconds": 0.42075199999999996,
+            "system_seconds": 0.108441,
+            "total_seconds": 0.5291929999999999
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.00022062499192543328,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 129558,
+          "artifact_sha256": "1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79",
+          "artifact_hash_seconds": 0.0001226250024046749,
+          "build_to_ready_seconds": 0.5974723749968689,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.453744,
+            "system_seconds": 0.127985,
+            "total_seconds": 0.581729,
+            "self": {
+              "user_seconds": 0.009685000000000003,
+              "system_seconds": 0.004872,
+              "total_seconds": 0.014557000000000002
+            },
+            "children": {
+              "user_seconds": 0.444059,
+              "system_seconds": 0.123113,
+              "total_seconds": 0.567172
+            }
+          },
+          "execution_seconds": 0.005323417019098997,
+          "launcher_seconds": 0.6028101659903768
+        }
+      }
+    ],
+    "load": [
+      10.23876953125,
+      10.51416015625,
+      7.90087890625
+    ],
+    "engine": "jit",
+    "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/candidate/-1-0.rbc",
+        "sha256": "1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79",
+        "bytes": 129558
+      }
+    ],
+    "build_to_ready_seconds": 0.5974723749968689,
+    "build_to_ready_cpu_seconds": 0.581729,
+    "cargo_cpu_seconds": 0.5291929999999999
+  },
+  {
+    "mode": "baseline",
+    "cycle": 0,
+    "state": -1,
+    "phase": "wrong-edit",
+    "label": "break-hash-multiplier",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.7072465830133297,
+    "cpu_seconds": 0.6439710000000001,
+    "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+    "calls": [
+      {
+        "pid": 58499,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:baseline",
+          "--tool-key",
+          "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.7071057090070099,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000393,
+          "scalar-promotion": 0.000372,
+          "inline": 0.000226,
+          "cfg": 0.000327,
+          "frontend": 0.023309999999999997,
+          "lowering": 0.014218
+        },
+        "cpu": {
+          "user_seconds": 0.4942310000000001,
+          "system_seconds": 0.14973999999999998,
+          "total_seconds": 0.6439710000000001
+        },
+        "returncode": 1,
+        "stdout": "",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000634461,\"declines\":{},\"finalize_seconds\":0.000630917,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":2160}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2472 seconds=0.000393\nrust-interp-scalar-promotion: slots=49 removed_addresses=661 rewritten=633 seconds=0.000372 removed_moves=292\nrust-interp-inline: sites=9 operations=6462 seconds=0.000226\nrust-interp-cfg: before=6462 after=6415 seconds=0.000327\nrust-interp-export: frontend_ms=23.310 lowering_ms=14.218 functions=31 ops=6415 bytes=129558\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.57s\nrust-interp-unavailable: {\"artifact_sha256\":\"1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\nrust-interp-vm: guest trap: core::panicking::assert_failed at crates/common/hashfn/src/lib.rs:281:13: 281:65 in tests::murmurhash32_inverse_roundtrips::check[]\nrust-interp-launch: {\"tools_seconds\": 0.0023911249882075936, \"tool_key\": \"851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.042364415974589065, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.607878625014564, \"cargo_cpu\": {\"user_seconds\": 0.43094099999999996, \"system_seconds\": 0.12054199999999998, \"total_seconds\": 0.551483}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.0003006249899044633, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 129558, \"artifact_sha256\": \"1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79\", \"artifact_hash_seconds\": 0.00013387500075623393, \"build_to_ready_seconds\": 0.6606425840000156, \"build_to_ready_cpu\": {\"user_seconds\": 0.462431, \"system_seconds\": 0.13857999999999998, \"total_seconds\": 0.601011, \"self\": {\"user_seconds\": 0.009571, \"system_seconds\": 0.004520999999999999, \"total_seconds\": 0.014091999999999999}, \"children\": {\"user_seconds\": 0.45286, \"system_seconds\": 0.13405899999999998, \"total_seconds\": 0.586919}}, \"execution_seconds\": 0.005818292003823444, \"launcher_seconds\": 0.6664776250254363}\n",
+        "launch": {
+          "tools_seconds": 0.0023911249882075936,
+          "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.042364415974589065,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.607878625014564,
+          "cargo_cpu": {
+            "user_seconds": 0.43094099999999996,
+            "system_seconds": 0.12054199999999998,
+            "total_seconds": 0.551483
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.0003006249899044633,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 129558,
+          "artifact_sha256": "1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79",
+          "artifact_hash_seconds": 0.00013387500075623393,
+          "build_to_ready_seconds": 0.6606425840000156,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.462431,
+            "system_seconds": 0.13857999999999998,
+            "total_seconds": 0.601011,
+            "self": {
+              "user_seconds": 0.009571,
+              "system_seconds": 0.004520999999999999,
+              "total_seconds": 0.014091999999999999
+            },
+            "children": {
+              "user_seconds": 0.45286,
+              "system_seconds": 0.13405899999999998,
+              "total_seconds": 0.586919
+            }
+          },
+          "execution_seconds": 0.005818292003823444,
+          "launcher_seconds": 0.6664776250254363
+        }
+      }
+    ],
+    "load": [
+      10.23876953125,
+      10.51416015625,
+      7.90087890625
+    ],
+    "engine": "jit",
+    "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/baseline/-1-0.rbc",
+        "sha256": "1170051f4df52c9bc7815a6dfd02d6a5037a7bbf90f6ff0a6d21a532a559ba79",
+        "bytes": 129558
+      }
+    ],
+    "build_to_ready_seconds": 0.6606425840000156,
+    "build_to_ready_cpu_seconds": 0.601011,
+    "cargo_cpu_seconds": 0.551483
+  },
+  {
+    "mode": "native",
+    "cycle": 0,
+    "state": -1,
+    "phase": "wrong-edit",
+    "label": "break-hash-multiplier",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.7283558749768417,
+    "cpu_seconds": 0.5806830000000001,
+    "previous_source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+    "calls": [
+      {
+        "pid": 58523,
+        "command": [
+          "cargo",
+          "+nightly-2026-09-08",
+          "test",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--lib",
+          "--locked",
+          "--offline",
+          "--jobs",
+          "18",
+          "--target-dir",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native",
+          "--",
+          "--exact",
+          "--test-threads=1",
+          "tests::uint32_paths_match_byte_path",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "tests::murmurhash32_inverse_roundtrips",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": null,
+        "seconds": 0.7283250000036787,
+        "encoded_rustflags": null,
+        "exporter_seconds": {},
+        "cpu": {
+          "user_seconds": 0.44593499999999997,
+          "system_seconds": 0.1347480000000001,
+          "total_seconds": 0.5806830000000001
+        },
+        "returncode": 101,
+        "stdout": "\nrunning 4 tests\ntest tests::dynahash_wrappers ... ok\ntest tests::extended_zero_seed_low_word_equals_hash_bytes ... ok\ntest tests::murmurhash32_inverse_roundtrips ... FAILED\ntest tests::uint32_paths_match_byte_path ... ok\n\nfailures:\n\n---- tests::murmurhash32_inverse_roundtrips stdout ----\n\nthread 'tests::murmurhash32_inverse_roundtrips' (56151261) panicked at crates/common/hashfn/src/lib.rs:281:13:\nassertion `left == right` failed\n  left: 1513371530\n right: 1\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    tests::murmurhash32_inverse_roundtrips\n\ntest result: FAILED. 3 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+        "stderr": "   Compiling hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.49s\n     Running unittests src/lib.rs (/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native/debug/build/hashfn/6dd11ef1f2a1586f/out/hashfn-6dd11ef1f2a1586f)\nerror: test failed, to rerun pass `-p hashfn --lib`\n"
+      }
+    ],
+    "load": [
+      10.23876953125,
+      10.51416015625,
+      7.90087890625
+    ],
+    "engine": null,
+    "tool_key": null,
+    "artifacts": []
+  },
+  {
+    "mode": "native",
+    "cycle": 0,
+    "state": 1,
+    "phase": "edit",
+    "label": "name-inverse-xorshift-intermediate",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.7033288340026047,
+    "cpu_seconds": 0.5616249999999998,
+    "previous_source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+    "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+    "calls": [
+      {
+        "pid": 58544,
+        "command": [
+          "cargo",
+          "+nightly-2026-09-08",
+          "test",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--lib",
+          "--locked",
+          "--offline",
+          "--jobs",
+          "18",
+          "--target-dir",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native",
+          "--",
+          "--exact",
+          "--test-threads=1",
+          "tests::uint32_paths_match_byte_path",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "tests::murmurhash32_inverse_roundtrips",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": null,
+        "seconds": 0.7033067499869503,
+        "encoded_rustflags": null,
+        "exporter_seconds": {},
+        "cpu": {
+          "user_seconds": 0.43225599999999975,
+          "system_seconds": 0.12936900000000007,
+          "total_seconds": 0.5616249999999998
+        },
+        "returncode": 0,
+        "stdout": "\nrunning 4 tests\ntest tests::dynahash_wrappers ... ok\ntest tests::extended_zero_seed_low_word_equals_hash_bytes ... ok\ntest tests::murmurhash32_inverse_roundtrips ... ok\ntest tests::uint32_paths_match_byte_path ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+        "stderr": "   Compiling hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.47s\n     Running unittests src/lib.rs (/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native/debug/build/hashfn/6dd11ef1f2a1586f/out/hashfn-6dd11ef1f2a1586f)\n"
+      }
+    ],
+    "load": [
+      9.89892578125,
+      10.43896484375,
+      7.8896484375
+    ],
+    "engine": null,
+    "tool_key": null,
+    "artifacts": []
+  },
+  {
+    "mode": "baseline",
+    "cycle": 0,
+    "state": 1,
+    "phase": "edit",
+    "label": "name-inverse-xorshift-intermediate",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6051542499917559,
+    "cpu_seconds": 0.5879530000000004,
+    "previous_source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+    "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+    "calls": [
+      {
+        "pid": 58558,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:baseline",
+          "--tool-key",
+          "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.6050281249918044,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.00036,
+          "scalar-promotion": 0.000354,
+          "inline": 0.00021,
+          "cfg": 0.000295,
+          "frontend": 0.018815000000000002,
+          "lowering": 0.012896000000000001
+        },
+        "cpu": {
+          "user_seconds": 0.4576960000000003,
+          "system_seconds": 0.13025700000000007,
+          "total_seconds": 0.5879530000000004
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000584709,\"declines\":{},\"finalize_seconds\":0.000522541,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":2160}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2464 seconds=0.000360\nrust-interp-scalar-promotion: slots=49 removed_addresses=657 rewritten=631 seconds=0.000354 removed_moves=292\nrust-interp-inline: sites=9 operations=6460 seconds=0.000210\nrust-interp-cfg: before=6460 after=6413 seconds=0.000295\nrust-interp-export: frontend_ms=18.815 lowering_ms=12.896 functions=31 ops=6413 bytes=129528\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.47s\nrust-interp-unavailable: {\"artifact_sha256\":\"fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19606674 peak_guest_memory=2868\njit_bytes=134388 jit_operations=5723 jit_compile_ns=1710708 jit_instructions=19606654 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0023455409973394126, \"tool_key\": \"851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.042936166981235147, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.5027516660047695, \"cargo_cpu\": {\"user_seconds\": 0.39153899999999997, \"system_seconds\": 0.10061099999999999, \"total_seconds\": 0.49215}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.000213916995562613, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 129528, \"artifact_sha256\": \"fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02\", \"artifact_hash_seconds\": 0.00012158299796283245, \"build_to_ready_seconds\": 0.5554915410175454, \"build_to_ready_cpu\": {\"user_seconds\": 0.42219599999999996, \"system_seconds\": 0.11957399999999999, \"total_seconds\": 0.54177, \"self\": {\"user_seconds\": 0.009080999999999999, \"system_seconds\": 0.004699999999999999, \"total_seconds\": 0.013780999999999998}, \"children\": {\"user_seconds\": 0.41311499999999995, \"system_seconds\": 0.11487399999999999, \"total_seconds\": 0.5279889999999999}}, \"execution_seconds\": 0.010526291007408872, \"launcher_seconds\": 0.566032125003403}\n",
+        "launch": {
+          "tools_seconds": 0.0023455409973394126,
+          "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.042936166981235147,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.5027516660047695,
+          "cargo_cpu": {
+            "user_seconds": 0.39153899999999997,
+            "system_seconds": 0.10061099999999999,
+            "total_seconds": 0.49215
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.000213916995562613,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 129528,
+          "artifact_sha256": "fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02",
+          "artifact_hash_seconds": 0.00012158299796283245,
+          "build_to_ready_seconds": 0.5554915410175454,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.42219599999999996,
+            "system_seconds": 0.11957399999999999,
+            "total_seconds": 0.54177,
+            "self": {
+              "user_seconds": 0.009080999999999999,
+              "system_seconds": 0.004699999999999999,
+              "total_seconds": 0.013780999999999998
+            },
+            "children": {
+              "user_seconds": 0.41311499999999995,
+              "system_seconds": 0.11487399999999999,
+              "total_seconds": 0.5279889999999999
+            }
+          },
+          "execution_seconds": 0.010526291007408872,
+          "launcher_seconds": 0.566032125003403
+        }
+      }
+    ],
+    "load": [
+      9.89892578125,
+      10.43896484375,
+      7.8896484375
+    ],
+    "engine": "jit",
+    "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/baseline/1-0.rbc",
+        "sha256": "fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02",
+        "bytes": 129528
+      }
+    ],
+    "build_to_ready_seconds": 0.5554915410175454,
+    "build_to_ready_cpu_seconds": 0.54177,
+    "cargo_cpu_seconds": 0.49215
+  },
+  {
+    "mode": "candidate",
+    "cycle": 0,
+    "state": 1,
+    "phase": "edit",
+    "label": "name-inverse-xorshift-intermediate",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.609188542002812,
+    "cpu_seconds": 0.5928410000000002,
+    "previous_source_sha256": "a07ad69f4ce96fa458a5a57d340441e229ebc45d55ddd12e0a483ce354605e4c",
+    "source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+    "calls": [
+      {
+        "pid": 58662,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:candidate",
+          "--tool-key",
+          "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.6090532919915859,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000368,
+          "scalar-promotion": 0.000329,
+          "inline": 0.000223,
+          "cfg": 0.00031,
+          "frontend": 0.018913,
+          "lowering": 0.012493
+        },
+        "cpu": {
+          "user_seconds": 0.4684210000000002,
+          "system_seconds": 0.12441999999999998,
+          "total_seconds": 0.5928410000000002
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000296252,\"declines\":{},\"finalize_seconds\":0.000532166,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":2160}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2464 seconds=0.000368\nrust-interp-scalar-promotion: slots=49 removed_addresses=657 rewritten=631 seconds=0.000329 removed_moves=292\nrust-interp-inline: sites=9 operations=6460 seconds=0.000223\nrust-interp-cfg: before=6460 after=6413 seconds=0.000310\nrust-interp-export: frontend_ms=18.913 lowering_ms=12.493 functions=31 ops=6413 bytes=129528\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.48s\nrust-interp-unavailable: {\"artifact_sha256\":\"fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19606674 peak_guest_memory=2868\njit_bytes=134388 jit_operations=5723 jit_compile_ns=1838124 jit_instructions=19606654 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0025436659925617278, \"tool_key\": \"423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.040736124996328726, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.5077029580133967, \"cargo_cpu\": {\"user_seconds\": 0.40045, \"system_seconds\": 0.097018, \"total_seconds\": 0.49746799999999997}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.00022662500850856304, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 129528, \"artifact_sha256\": \"fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02\", \"artifact_hash_seconds\": 0.00012762498226948082, \"build_to_ready_seconds\": 0.5592643749841955, \"build_to_ready_cpu\": {\"user_seconds\": 0.43171499999999996, \"system_seconds\": 0.11440199999999999, \"total_seconds\": 0.546117, \"self\": {\"user_seconds\": 0.010071999999999998, \"system_seconds\": 0.004412, \"total_seconds\": 0.014483999999999997}, \"children\": {\"user_seconds\": 0.421643, \"system_seconds\": 0.10998999999999999, \"total_seconds\": 0.531633}}, \"execution_seconds\": 0.010789332998683676, \"launcher_seconds\": 0.5700715410057455}\n",
+        "launch": {
+          "tools_seconds": 0.0025436659925617278,
+          "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.040736124996328726,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.5077029580133967,
+          "cargo_cpu": {
+            "user_seconds": 0.40045,
+            "system_seconds": 0.097018,
+            "total_seconds": 0.49746799999999997
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.00022662500850856304,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 129528,
+          "artifact_sha256": "fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02",
+          "artifact_hash_seconds": 0.00012762498226948082,
+          "build_to_ready_seconds": 0.5592643749841955,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.43171499999999996,
+            "system_seconds": 0.11440199999999999,
+            "total_seconds": 0.546117,
+            "self": {
+              "user_seconds": 0.010071999999999998,
+              "system_seconds": 0.004412,
+              "total_seconds": 0.014483999999999997
+            },
+            "children": {
+              "user_seconds": 0.421643,
+              "system_seconds": 0.10998999999999999,
+              "total_seconds": 0.531633
+            }
+          },
+          "execution_seconds": 0.010789332998683676,
+          "launcher_seconds": 0.5700715410057455
+        }
+      }
+    ],
+    "load": [
+      9.89892578125,
+      10.43896484375,
+      7.8896484375
+    ],
+    "engine": "jit",
+    "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/candidate/1-0.rbc",
+        "sha256": "fd81abe6c62fd693b5176ba3802596b883ef280daa54c70be114c269c211fb02",
+        "bytes": 129528
+      }
+    ],
+    "build_to_ready_seconds": 0.5592643749841955,
+    "build_to_ready_cpu_seconds": 0.546117,
+    "cargo_cpu_seconds": 0.49746799999999997
+  },
+  {
+    "mode": "native",
+    "cycle": 0,
+    "state": 2,
+    "phase": "edit",
+    "label": "spell-out-four-byte-load",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.7759706669894513,
+    "cpu_seconds": 0.5960860000000001,
+    "previous_source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+    "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+    "calls": [
+      {
+        "pid": 58878,
+        "command": [
+          "cargo",
+          "+nightly-2026-09-08",
+          "test",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--lib",
+          "--locked",
+          "--offline",
+          "--jobs",
+          "18",
+          "--target-dir",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native",
+          "--",
+          "--exact",
+          "--test-threads=1",
+          "tests::uint32_paths_match_byte_path",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "tests::murmurhash32_inverse_roundtrips",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": null,
+        "seconds": 0.775945250003133,
+        "encoded_rustflags": null,
+        "exporter_seconds": {},
+        "cpu": {
+          "user_seconds": 0.466075,
+          "system_seconds": 0.1300110000000001,
+          "total_seconds": 0.5960860000000001
+        },
+        "returncode": 0,
+        "stdout": "\nrunning 4 tests\ntest tests::dynahash_wrappers ... ok\ntest tests::extended_zero_seed_low_word_equals_hash_bytes ... ok\ntest tests::murmurhash32_inverse_roundtrips ... ok\ntest tests::uint32_paths_match_byte_path ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+        "stderr": "   Compiling hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.50s\n     Running unittests src/lib.rs (/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native/debug/build/hashfn/6dd11ef1f2a1586f/out/hashfn-6dd11ef1f2a1586f)\n"
+      }
+    ],
+    "load": [
+      9.89892578125,
+      10.43896484375,
+      7.8896484375
+    ],
+    "engine": null,
+    "tool_key": null,
+    "artifacts": []
+  },
+  {
+    "mode": "candidate",
+    "cycle": 0,
+    "state": 2,
+    "phase": "edit",
+    "label": "spell-out-four-byte-load",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.5859287919884082,
+    "cpu_seconds": 0.5692190000000004,
+    "previous_source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+    "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+    "calls": [
+      {
+        "pid": 59013,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:candidate",
+          "--tool-key",
+          "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.5858112499990966,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000391,
+          "scalar-promotion": 0.000376,
+          "inline": 0.00022,
+          "cfg": 0.000338,
+          "frontend": 0.01759,
+          "lowering": 0.012185
+        },
+        "cpu": {
+          "user_seconds": 0.4491510000000005,
+          "system_seconds": 0.12006799999999984,
+          "total_seconds": 0.5692190000000004
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000312251,\"declines\":{},\"finalize_seconds\":0.000554792,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":1648}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2508 seconds=0.000391\nrust-interp-scalar-promotion: slots=48 removed_addresses=529 rewritten=503 seconds=0.000376 removed_moves=228\nrust-interp-inline: sites=9 operations=7590 seconds=0.000220\nrust-interp-cfg: before=7590 after=7530 seconds=0.000338\nrust-interp-export: frontend_ms=17.590 lowering_ms=12.185 functions=31 ops=7530 bytes=152979\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.45s\nrust-interp-unavailable: {\"artifact_sha256\":\"80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19634492 peak_guest_memory=2852\njit_bytes=139692 jit_operations=6856 jit_compile_ns=2145667 jit_instructions=19634472 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0022417920117732137, \"tool_key\": \"423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.041423457994824275, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.48488658299902454, \"cargo_cpu\": {\"user_seconds\": 0.38311599999999996, \"system_seconds\": 0.09187999999999999, \"total_seconds\": 0.474996}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.00021075000404380262, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 152979, \"artifact_sha256\": \"80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50\", \"artifact_hash_seconds\": 0.0001221249985974282, \"build_to_ready_seconds\": 0.5360597090038937, \"build_to_ready_cpu\": {\"user_seconds\": 0.413396, \"system_seconds\": 0.10918199999999999, \"total_seconds\": 0.522578, \"self\": {\"user_seconds\": 0.009094999999999995, \"system_seconds\": 0.004033, \"total_seconds\": 0.013127999999999996}, \"children\": {\"user_seconds\": 0.40430099999999997, \"system_seconds\": 0.10514899999999999, \"total_seconds\": 0.50945}}, \"execution_seconds\": 0.01116020799963735, \"launcher_seconds\": 0.5472362089785747}\n",
+        "launch": {
+          "tools_seconds": 0.0022417920117732137,
+          "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.041423457994824275,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.48488658299902454,
+          "cargo_cpu": {
+            "user_seconds": 0.38311599999999996,
+            "system_seconds": 0.09187999999999999,
+            "total_seconds": 0.474996
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.00021075000404380262,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 152979,
+          "artifact_sha256": "80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50",
+          "artifact_hash_seconds": 0.0001221249985974282,
+          "build_to_ready_seconds": 0.5360597090038937,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.413396,
+            "system_seconds": 0.10918199999999999,
+            "total_seconds": 0.522578,
+            "self": {
+              "user_seconds": 0.009094999999999995,
+              "system_seconds": 0.004033,
+              "total_seconds": 0.013127999999999996
+            },
+            "children": {
+              "user_seconds": 0.40430099999999997,
+              "system_seconds": 0.10514899999999999,
+              "total_seconds": 0.50945
+            }
+          },
+          "execution_seconds": 0.01116020799963735,
+          "launcher_seconds": 0.5472362089785747
+        }
+      }
+    ],
+    "load": [
+      9.89892578125,
+      10.43896484375,
+      7.8896484375
+    ],
+    "engine": "jit",
+    "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/candidate/2-0.rbc",
+        "sha256": "80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50",
+        "bytes": 152979
+      }
+    ],
+    "build_to_ready_seconds": 0.5360597090038937,
+    "build_to_ready_cpu_seconds": 0.522578,
+    "cargo_cpu_seconds": 0.474996
+  },
+  {
+    "mode": "baseline",
+    "cycle": 0,
+    "state": 2,
+    "phase": "edit",
+    "label": "spell-out-four-byte-load",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.5881066660222132,
+    "cpu_seconds": 0.5709389999999996,
+    "previous_source_sha256": "6e375681e5b08021216fc0db85993f46352097115982c47a1f2d65b9c67a4bf7",
+    "source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+    "calls": [
+      {
+        "pid": 59023,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:baseline",
+          "--tool-key",
+          "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.5879927909991238,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000411,
+          "scalar-promotion": 0.000452,
+          "inline": 0.000243,
+          "cfg": 0.000348,
+          "frontend": 0.018415,
+          "lowering": 0.012988
+        },
+        "cpu": {
+          "user_seconds": 0.4494939999999996,
+          "system_seconds": 0.12144500000000003,
+          "total_seconds": 0.5709389999999996
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000674789,\"declines\":{},\"finalize_seconds\":0.000582041,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":1648}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2508 seconds=0.000411\nrust-interp-scalar-promotion: slots=48 removed_addresses=529 rewritten=503 seconds=0.000452 removed_moves=228\nrust-interp-inline: sites=9 operations=7590 seconds=0.000243\nrust-interp-cfg: before=7590 after=7530 seconds=0.000348\nrust-interp-export: frontend_ms=18.415 lowering_ms=12.988 functions=31 ops=7530 bytes=152979\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s\nrust-interp-unavailable: {\"artifact_sha256\":\"80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19634492 peak_guest_memory=2852\njit_bytes=139692 jit_operations=6856 jit_compile_ns=2043457 jit_instructions=19634472 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0023625000030733645, \"tool_key\": \"851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.040520125010516495, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.4893320419942029, \"cargo_cpu\": {\"user_seconds\": 0.384723, \"system_seconds\": 0.094627, \"total_seconds\": 0.47935}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.0002457090013194829, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 152979, \"artifact_sha256\": \"80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50\", \"artifact_hash_seconds\": 0.0001337910071015358, \"build_to_ready_seconds\": 0.5394469579914585, \"build_to_ready_cpu\": {\"user_seconds\": 0.414382, \"system_seconds\": 0.111306, \"total_seconds\": 0.525688, \"self\": {\"user_seconds\": 0.008867999999999997, \"system_seconds\": 0.00397, \"total_seconds\": 0.012837999999999997}, \"children\": {\"user_seconds\": 0.405514, \"system_seconds\": 0.107336, \"total_seconds\": 0.51285}}, \"execution_seconds\": 0.011315541982185096, \"launcher_seconds\": 0.5507790829869919}\n",
+        "launch": {
+          "tools_seconds": 0.0023625000030733645,
+          "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.040520125010516495,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.4893320419942029,
+          "cargo_cpu": {
+            "user_seconds": 0.384723,
+            "system_seconds": 0.094627,
+            "total_seconds": 0.47935
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.0002457090013194829,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 152979,
+          "artifact_sha256": "80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50",
+          "artifact_hash_seconds": 0.0001337910071015358,
+          "build_to_ready_seconds": 0.5394469579914585,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.414382,
+            "system_seconds": 0.111306,
+            "total_seconds": 0.525688,
+            "self": {
+              "user_seconds": 0.008867999999999997,
+              "system_seconds": 0.00397,
+              "total_seconds": 0.012837999999999997
+            },
+            "children": {
+              "user_seconds": 0.405514,
+              "system_seconds": 0.107336,
+              "total_seconds": 0.51285
+            }
+          },
+          "execution_seconds": 0.011315541982185096,
+          "launcher_seconds": 0.5507790829869919
+        }
+      }
+    ],
+    "load": [
+      9.89892578125,
+      10.43896484375,
+      7.8896484375
+    ],
+    "engine": "jit",
+    "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/baseline/2-0.rbc",
+        "sha256": "80f519e17fa7285ca631b110afb7a807218833b70ac5c627d122d66a4d256e50",
+        "bytes": 152979
+      }
+    ],
+    "build_to_ready_seconds": 0.5394469579914585,
+    "build_to_ready_cpu_seconds": 0.525688,
+    "cargo_cpu_seconds": 0.47935
+  },
+  {
+    "mode": "baseline",
+    "cycle": 0,
+    "state": 3,
+    "phase": "edit",
+    "label": "combine-constant-hash-initializers",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.5895702079869807,
+    "cpu_seconds": 0.5735289999999997,
+    "previous_source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+    "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+    "calls": [
+      {
+        "pid": 59035,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:baseline",
+          "--tool-key",
+          "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.5894610419927631,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000389,
+          "scalar-promotion": 0.000396,
+          "inline": 0.000223,
+          "cfg": 0.000338,
+          "frontend": 0.017283,
+          "lowering": 0.012461
+        },
+        "cpu": {
+          "user_seconds": 0.44690799999999964,
+          "system_seconds": 0.1266210000000001,
+          "total_seconds": 0.5735289999999997
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.00061325,\"declines\":{},\"finalize_seconds\":0.000552166,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":1648}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2500 seconds=0.000389\nrust-interp-scalar-promotion: slots=48 removed_addresses=529 rewritten=503 seconds=0.000396 removed_moves=228\nrust-interp-inline: sites=9 operations=7578 seconds=0.000223\nrust-interp-cfg: before=7578 after=7518 seconds=0.000338\nrust-interp-export: frontend_ms=17.283 lowering_ms=12.461 functions=31 ops=7518 bytes=152763\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s\nrust-interp-unavailable: {\"artifact_sha256\":\"ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19633892 peak_guest_memory=2852\njit_bytes=139564 jit_operations=6844 jit_compile_ns=2070626 jit_instructions=19633872 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.002204707998316735, \"tool_key\": \"851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.04174233300727792, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.48985604199697264, \"cargo_cpu\": {\"user_seconds\": 0.38288, \"system_seconds\": 0.097269, \"total_seconds\": 0.480149}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.0002349170099478215, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 152763, \"artifact_sha256\": \"ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3\", \"artifact_hash_seconds\": 0.00012187499669380486, \"build_to_ready_seconds\": 0.5406591659993865, \"build_to_ready_cpu\": {\"user_seconds\": 0.411635, \"system_seconds\": 0.116115, \"total_seconds\": 0.5277499999999999, \"self\": {\"user_seconds\": 0.008448999999999998, \"system_seconds\": 0.004236, \"total_seconds\": 0.012684999999999998}, \"children\": {\"user_seconds\": 0.403186, \"system_seconds\": 0.11187899999999999, \"total_seconds\": 0.515065}}, \"execution_seconds\": 0.011137124995002523, \"launcher_seconds\": 0.551810833014315}\n",
+        "launch": {
+          "tools_seconds": 0.002204707998316735,
+          "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.04174233300727792,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.48985604199697264,
+          "cargo_cpu": {
+            "user_seconds": 0.38288,
+            "system_seconds": 0.097269,
+            "total_seconds": 0.480149
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.0002349170099478215,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 152763,
+          "artifact_sha256": "ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3",
+          "artifact_hash_seconds": 0.00012187499669380486,
+          "build_to_ready_seconds": 0.5406591659993865,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.411635,
+            "system_seconds": 0.116115,
+            "total_seconds": 0.5277499999999999,
+            "self": {
+              "user_seconds": 0.008448999999999998,
+              "system_seconds": 0.004236,
+              "total_seconds": 0.012684999999999998
+            },
+            "children": {
+              "user_seconds": 0.403186,
+              "system_seconds": 0.11187899999999999,
+              "total_seconds": 0.515065
+            }
+          },
+          "execution_seconds": 0.011137124995002523,
+          "launcher_seconds": 0.551810833014315
+        }
+      }
+    ],
+    "load": [
+      9.74658203125,
+      10.3984375,
+      7.89013671875
+    ],
+    "engine": "jit",
+    "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/baseline/3-0.rbc",
+        "sha256": "ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3",
+        "bytes": 152763
+      }
+    ],
+    "build_to_ready_seconds": 0.5406591659993865,
+    "build_to_ready_cpu_seconds": 0.5277499999999999,
+    "cargo_cpu_seconds": 0.480149
+  },
+  {
+    "mode": "native",
+    "cycle": 0,
+    "state": 3,
+    "phase": "edit",
+    "label": "combine-constant-hash-initializers",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6949780829891097,
+    "cpu_seconds": 0.5479909999999997,
+    "previous_source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+    "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+    "calls": [
+      {
+        "pid": 59045,
+        "command": [
+          "cargo",
+          "+nightly-2026-09-08",
+          "test",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--lib",
+          "--locked",
+          "--offline",
+          "--jobs",
+          "18",
+          "--target-dir",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native",
+          "--",
+          "--exact",
+          "--test-threads=1",
+          "tests::uint32_paths_match_byte_path",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "tests::murmurhash32_inverse_roundtrips",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": null,
+        "seconds": 0.6949588340066839,
+        "encoded_rustflags": null,
+        "exporter_seconds": {},
+        "cpu": {
+          "user_seconds": 0.42045200000000005,
+          "system_seconds": 0.12753899999999962,
+          "total_seconds": 0.5479909999999997
+        },
+        "returncode": 0,
+        "stdout": "\nrunning 4 tests\ntest tests::dynahash_wrappers ... ok\ntest tests::extended_zero_seed_low_word_equals_hash_bytes ... ok\ntest tests::murmurhash32_inverse_roundtrips ... ok\ntest tests::uint32_paths_match_byte_path ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+        "stderr": "   Compiling hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s\n     Running unittests src/lib.rs (/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native/debug/build/hashfn/6dd11ef1f2a1586f/out/hashfn-6dd11ef1f2a1586f)\n"
+      }
+    ],
+    "load": [
+      9.74658203125,
+      10.3984375,
+      7.89013671875
+    ],
+    "engine": null,
+    "tool_key": null,
+    "artifacts": []
+  },
+  {
+    "mode": "candidate",
+    "cycle": 0,
+    "state": 3,
+    "phase": "edit",
+    "label": "combine-constant-hash-initializers",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.5899503749969881,
+    "cpu_seconds": 0.5753830000000004,
+    "previous_source_sha256": "acbf2fcce8e5ff8c96457b95fc2a77f90d17592bf6bb53ce0b51214e90b5c6a3",
+    "source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+    "calls": [
+      {
+        "pid": 59058,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:candidate",
+          "--tool-key",
+          "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.5898390829970594,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000388,
+          "scalar-promotion": 0.000387,
+          "inline": 0.000216,
+          "cfg": 0.000332,
+          "frontend": 0.017424,
+          "lowering": 0.012201
+        },
+        "cpu": {
+          "user_seconds": 0.44679100000000016,
+          "system_seconds": 0.12859200000000026,
+          "total_seconds": 0.5753830000000004
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000325123,\"declines\":{},\"finalize_seconds\":0.000563375,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":1648}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2500 seconds=0.000388\nrust-interp-scalar-promotion: slots=48 removed_addresses=529 rewritten=503 seconds=0.000387 removed_moves=228\nrust-interp-inline: sites=9 operations=7578 seconds=0.000216\nrust-interp-cfg: before=7578 after=7518 seconds=0.000332\nrust-interp-export: frontend_ms=17.424 lowering_ms=12.201 functions=31 ops=7518 bytes=152763\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s\nrust-interp-unavailable: {\"artifact_sha256\":\"ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19633892 peak_guest_memory=2852\njit_bytes=139564 jit_operations=6844 jit_compile_ns=2179708 jit_instructions=19633872 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0021345000131987035, \"tool_key\": \"423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.04396262497175485, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.48831212500226684, \"cargo_cpu\": {\"user_seconds\": 0.382096, \"system_seconds\": 0.098471, \"total_seconds\": 0.48056699999999997}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.0002534159866627306, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 152763, \"artifact_sha256\": \"ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3\", \"artifact_hash_seconds\": 0.00012637500185519457, \"build_to_ready_seconds\": 0.5416923750017304, \"build_to_ready_cpu\": {\"user_seconds\": 0.41200099999999995, \"system_seconds\": 0.118121, \"total_seconds\": 0.530122, \"self\": {\"user_seconds\": 0.008827000000000002, \"system_seconds\": 0.004458, \"total_seconds\": 0.013285000000000002}, \"children\": {\"user_seconds\": 0.403174, \"system_seconds\": 0.113663, \"total_seconds\": 0.516837}}, \"execution_seconds\": 0.011471042002085596, \"launcher_seconds\": 0.5531772499962244}\n",
+        "launch": {
+          "tools_seconds": 0.0021345000131987035,
+          "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.04396262497175485,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.48831212500226684,
+          "cargo_cpu": {
+            "user_seconds": 0.382096,
+            "system_seconds": 0.098471,
+            "total_seconds": 0.48056699999999997
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.0002534159866627306,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 152763,
+          "artifact_sha256": "ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3",
+          "artifact_hash_seconds": 0.00012637500185519457,
+          "build_to_ready_seconds": 0.5416923750017304,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.41200099999999995,
+            "system_seconds": 0.118121,
+            "total_seconds": 0.530122,
+            "self": {
+              "user_seconds": 0.008827000000000002,
+              "system_seconds": 0.004458,
+              "total_seconds": 0.013285000000000002
+            },
+            "children": {
+              "user_seconds": 0.403174,
+              "system_seconds": 0.113663,
+              "total_seconds": 0.516837
+            }
+          },
+          "execution_seconds": 0.011471042002085596,
+          "launcher_seconds": 0.5531772499962244
+        }
+      }
+    ],
+    "load": [
+      9.74658203125,
+      10.3984375,
+      7.89013671875
+    ],
+    "engine": "jit",
+    "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/candidate/3-0.rbc",
+        "sha256": "ed0af8cb525f66639631ff4f3884d4519cd47cd28ba966ec993529516d92caa3",
+        "bytes": 152763
+      }
+    ],
+    "build_to_ready_seconds": 0.5416923750017304,
+    "build_to_ready_cpu_seconds": 0.530122,
+    "cargo_cpu_seconds": 0.48056699999999997
+  },
+  {
+    "mode": "candidate",
+    "cycle": 0,
+    "state": 4,
+    "phase": "edit",
+    "label": "name-string-hash-length-bound",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.58745712498785,
+    "cpu_seconds": 0.5711120000000003,
+    "previous_source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+    "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+    "calls": [
+      {
+        "pid": 59075,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:candidate",
+          "--tool-key",
+          "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.5873382500139996,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000378,
+          "scalar-promotion": 0.000367,
+          "inline": 0.00021,
+          "cfg": 0.000324,
+          "frontend": 0.017271,
+          "lowering": 0.011873
+        },
+        "cpu": {
+          "user_seconds": 0.448423,
+          "system_seconds": 0.12268900000000027,
+          "total_seconds": 0.5711120000000003
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.00031025,\"declines\":{},\"finalize_seconds\":0.0005475,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":1648}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2500 seconds=0.000378\nrust-interp-scalar-promotion: slots=48 removed_addresses=529 rewritten=503 seconds=0.000367 removed_moves=228\nrust-interp-inline: sites=9 operations=7578 seconds=0.000210\nrust-interp-cfg: before=7578 after=7518 seconds=0.000324\nrust-interp-export: frontend_ms=17.271 lowering_ms=11.873 functions=31 ops=7518 bytes=152763\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s\nrust-interp-unavailable: {\"artifact_sha256\":\"f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19633892 peak_guest_memory=2852\njit_bytes=139564 jit_operations=6844 jit_compile_ns=1960419 jit_instructions=19633872 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0020934170170221478, \"tool_key\": \"423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.041888417006703094, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.488986374984961, \"cargo_cpu\": {\"user_seconds\": 0.38535899999999995, \"system_seconds\": 0.094134, \"total_seconds\": 0.47949299999999995}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.00021995799033902586, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 152763, \"artifact_sha256\": \"f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7\", \"artifact_hash_seconds\": 0.00011687498772516847, \"build_to_ready_seconds\": 0.5400039590022061, \"build_to_ready_cpu\": {\"user_seconds\": 0.41447199999999995, \"system_seconds\": 0.11254600000000001, \"total_seconds\": 0.5270179999999999, \"self\": {\"user_seconds\": 0.008561, \"system_seconds\": 0.004406, \"total_seconds\": 0.012967}, \"children\": {\"user_seconds\": 0.40591099999999997, \"system_seconds\": 0.10814, \"total_seconds\": 0.5140509999999999}}, \"execution_seconds\": 0.010678791993996128, \"launcher_seconds\": 0.5506968749978114}\n",
+        "launch": {
+          "tools_seconds": 0.0020934170170221478,
+          "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.041888417006703094,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.488986374984961,
+          "cargo_cpu": {
+            "user_seconds": 0.38535899999999995,
+            "system_seconds": 0.094134,
+            "total_seconds": 0.47949299999999995
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.00021995799033902586,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 152763,
+          "artifact_sha256": "f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7",
+          "artifact_hash_seconds": 0.00011687498772516847,
+          "build_to_ready_seconds": 0.5400039590022061,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.41447199999999995,
+            "system_seconds": 0.11254600000000001,
+            "total_seconds": 0.5270179999999999,
+            "self": {
+              "user_seconds": 0.008561,
+              "system_seconds": 0.004406,
+              "total_seconds": 0.012967
+            },
+            "children": {
+              "user_seconds": 0.40591099999999997,
+              "system_seconds": 0.10814,
+              "total_seconds": 0.5140509999999999
+            }
+          },
+          "execution_seconds": 0.010678791993996128,
+          "launcher_seconds": 0.5506968749978114
+        }
+      }
+    ],
+    "load": [
+      9.74658203125,
+      10.3984375,
+      7.89013671875
+    ],
+    "engine": "jit",
+    "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/candidate/4-0.rbc",
+        "sha256": "f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7",
+        "bytes": 152763
+      }
+    ],
+    "build_to_ready_seconds": 0.5400039590022061,
+    "build_to_ready_cpu_seconds": 0.5270179999999999,
+    "cargo_cpu_seconds": 0.47949299999999995
+  },
+  {
+    "mode": "native",
+    "cycle": 0,
+    "state": 4,
+    "phase": "edit",
+    "label": "name-string-hash-length-bound",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.7121012090065051,
+    "cpu_seconds": 0.5451459999999999,
+    "previous_source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+    "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+    "calls": [
+      {
+        "pid": 59085,
+        "command": [
+          "cargo",
+          "+nightly-2026-09-08",
+          "test",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--lib",
+          "--locked",
+          "--offline",
+          "--jobs",
+          "18",
+          "--target-dir",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native",
+          "--",
+          "--exact",
+          "--test-threads=1",
+          "tests::uint32_paths_match_byte_path",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "tests::murmurhash32_inverse_roundtrips",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": null,
+        "seconds": 0.7120737080113031,
+        "encoded_rustflags": null,
+        "exporter_seconds": {},
+        "cpu": {
+          "user_seconds": 0.4159220000000001,
+          "system_seconds": 0.12922399999999978,
+          "total_seconds": 0.5451459999999999
+        },
+        "returncode": 0,
+        "stdout": "\nrunning 4 tests\ntest tests::dynahash_wrappers ... ok\ntest tests::extended_zero_seed_low_word_equals_hash_bytes ... ok\ntest tests::murmurhash32_inverse_roundtrips ... ok\ntest tests::uint32_paths_match_byte_path ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+        "stderr": "   Compiling hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s\n     Running unittests src/lib.rs (/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native/debug/build/hashfn/6dd11ef1f2a1586f/out/hashfn-6dd11ef1f2a1586f)\n"
+      }
+    ],
+    "load": [
+      9.74658203125,
+      10.3984375,
+      7.89013671875
+    ],
+    "engine": null,
+    "tool_key": null,
+    "artifacts": []
+  },
+  {
+    "mode": "baseline",
+    "cycle": 0,
+    "state": 4,
+    "phase": "edit",
+    "label": "name-string-hash-length-bound",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6147187090246007,
+    "cpu_seconds": 0.5959620000000001,
+    "previous_source_sha256": "30665c0ed6c471365b85c5efa3d914d9b6232cac42ec98f7205464790215db03",
+    "source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+    "calls": [
+      {
+        "pid": 59098,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:baseline",
+          "--tool-key",
+          "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.614587041985942,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000387,
+          "scalar-promotion": 0.000399,
+          "inline": 0.000222,
+          "cfg": 0.000318,
+          "frontend": 0.017834,
+          "lowering": 0.012416
+        },
+        "cpu": {
+          "user_seconds": 0.4638559999999998,
+          "system_seconds": 0.13210600000000028,
+          "total_seconds": 0.5959620000000001
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000613415,\"declines\":{},\"finalize_seconds\":0.0005575,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":1648}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2500 seconds=0.000387\nrust-interp-scalar-promotion: slots=48 removed_addresses=529 rewritten=503 seconds=0.000399 removed_moves=228\nrust-interp-inline: sites=9 operations=7578 seconds=0.000222\nrust-interp-cfg: before=7578 after=7518 seconds=0.000318\nrust-interp-export: frontend_ms=17.834 lowering_ms=12.416 functions=31 ops=7518 bytes=152763\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.47s\nrust-interp-unavailable: {\"artifact_sha256\":\"f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19633892 peak_guest_memory=2852\njit_bytes=139564 jit_operations=6844 jit_compile_ns=2247876 jit_instructions=19633872 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0023930000024847686, \"tool_key\": \"851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.045710875012446195, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.5077276670199353, \"cargo_cpu\": {\"user_seconds\": 0.395654, \"system_seconds\": 0.100407, \"total_seconds\": 0.496061}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.0002168749924749136, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 152763, \"artifact_sha256\": \"f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7\", \"artifact_hash_seconds\": 0.0001289999927394092, \"build_to_ready_seconds\": 0.5635146249842364, \"build_to_ready_cpu\": {\"user_seconds\": 0.427214, \"system_seconds\": 0.120898, \"total_seconds\": 0.5481119999999999, \"self\": {\"user_seconds\": 0.009491999999999997, \"system_seconds\": 0.0048070000000000005, \"total_seconds\": 0.014298999999999997}, \"children\": {\"user_seconds\": 0.417722, \"system_seconds\": 0.116091, \"total_seconds\": 0.533813}}, \"execution_seconds\": 0.01192991598509252, \"launcher_seconds\": 0.5754627919814084}\n",
+        "launch": {
+          "tools_seconds": 0.0023930000024847686,
+          "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.045710875012446195,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.5077276670199353,
+          "cargo_cpu": {
+            "user_seconds": 0.395654,
+            "system_seconds": 0.100407,
+            "total_seconds": 0.496061
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.0002168749924749136,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 152763,
+          "artifact_sha256": "f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7",
+          "artifact_hash_seconds": 0.0001289999927394092,
+          "build_to_ready_seconds": 0.5635146249842364,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.427214,
+            "system_seconds": 0.120898,
+            "total_seconds": 0.5481119999999999,
+            "self": {
+              "user_seconds": 0.009491999999999997,
+              "system_seconds": 0.0048070000000000005,
+              "total_seconds": 0.014298999999999997
+            },
+            "children": {
+              "user_seconds": 0.417722,
+              "system_seconds": 0.116091,
+              "total_seconds": 0.533813
+            }
+          },
+          "execution_seconds": 0.01192991598509252,
+          "launcher_seconds": 0.5754627919814084
+        }
+      }
+    ],
+    "load": [
+      9.74658203125,
+      10.3984375,
+      7.89013671875
+    ],
+    "engine": "jit",
+    "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/baseline/4-0.rbc",
+        "sha256": "f88949a9585019e128f75e25aecd33f978af2cf306bbcc7642756cc624c368e7",
+        "bytes": 152763
+      }
+    ],
+    "build_to_ready_seconds": 0.5635146249842364,
+    "build_to_ready_cpu_seconds": 0.5481119999999999,
+    "cargo_cpu_seconds": 0.496061
+  },
+  {
+    "mode": "baseline",
+    "cycle": 0,
+    "state": 5,
+    "phase": "edit",
+    "label": "use-immutable-hash-stages",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6924131249834318,
+    "cpu_seconds": 0.6488870000000002,
+    "previous_source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+    "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+    "calls": [
+      {
+        "pid": 59126,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:baseline",
+          "--tool-key",
+          "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.6922455829917453,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.00051,
+          "scalar-promotion": 0.000493,
+          "inline": 0.000267,
+          "cfg": 0.000359,
+          "frontend": 0.030251999999999998,
+          "lowering": 0.019035
+        },
+        "cpu": {
+          "user_seconds": 0.4863280000000003,
+          "system_seconds": 0.1625589999999999,
+          "total_seconds": 0.6488870000000002
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000828454,\"declines\":{},\"finalize_seconds\":0.000630292,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":1648}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2492 seconds=0.000510\nrust-interp-scalar-promotion: slots=48 removed_addresses=504 rewritten=488 seconds=0.000493 removed_moves=226\nrust-interp-inline: sites=9 operations=7569 seconds=0.000267\nrust-interp-cfg: before=7569 after=7509 seconds=0.000359\nrust-interp-export: frontend_ms=30.252 lowering_ms=19.035 functions=31 ops=7509 bytes=152627\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.55s\nrust-interp-unavailable: {\"artifact_sha256\":\"6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=18733829 peak_guest_memory=2852\njit_bytes=139236 jit_operations=6835 jit_compile_ns=3203416 jit_instructions=18733809 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.002129500004230067, \"tool_key\": \"851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.039508832996943966, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.5856817919993773, \"cargo_cpu\": {\"user_seconds\": 0.41957199999999994, \"system_seconds\": 0.13220300000000001, \"total_seconds\": 0.5517749999999999}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.0005777910118922591, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 152627, \"artifact_sha256\": \"6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090\", \"artifact_hash_seconds\": 0.00016758398851379752, \"build_to_ready_seconds\": 0.6351973749988247, \"build_to_ready_cpu\": {\"user_seconds\": 0.44769, \"system_seconds\": 0.149817, \"total_seconds\": 0.597507, \"self\": {\"user_seconds\": 0.008753, \"system_seconds\": 0.004772, \"total_seconds\": 0.013525}, \"children\": {\"user_seconds\": 0.43893699999999997, \"system_seconds\": 0.145045, \"total_seconds\": 0.583982}}, \"execution_seconds\": 0.016271417000098154, \"launcher_seconds\": 0.6514881250041071}\n",
+        "launch": {
+          "tools_seconds": 0.002129500004230067,
+          "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.039508832996943966,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.5856817919993773,
+          "cargo_cpu": {
+            "user_seconds": 0.41957199999999994,
+            "system_seconds": 0.13220300000000001,
+            "total_seconds": 0.5517749999999999
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.0005777910118922591,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 152627,
+          "artifact_sha256": "6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090",
+          "artifact_hash_seconds": 0.00016758398851379752,
+          "build_to_ready_seconds": 0.6351973749988247,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.44769,
+            "system_seconds": 0.149817,
+            "total_seconds": 0.597507,
+            "self": {
+              "user_seconds": 0.008753,
+              "system_seconds": 0.004772,
+              "total_seconds": 0.013525
+            },
+            "children": {
+              "user_seconds": 0.43893699999999997,
+              "system_seconds": 0.145045,
+              "total_seconds": 0.583982
+            }
+          },
+          "execution_seconds": 0.016271417000098154,
+          "launcher_seconds": 0.6514881250041071
+        }
+      }
+    ],
+    "load": [
+      9.9267578125,
+      10.4248046875,
+      7.9140625
+    ],
+    "engine": "jit",
+    "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/baseline/5-0.rbc",
+        "sha256": "6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090",
+        "bytes": 152627
+      }
+    ],
+    "build_to_ready_seconds": 0.6351973749988247,
+    "build_to_ready_cpu_seconds": 0.597507,
+    "cargo_cpu_seconds": 0.5517749999999999
+  },
+  {
+    "mode": "candidate",
+    "cycle": 0,
+    "state": 5,
+    "phase": "edit",
+    "label": "use-immutable-hash-stages",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.9222891250101384,
+    "cpu_seconds": 0.8835299999999999,
+    "previous_source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+    "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+    "calls": [
+      {
+        "pid": 59144,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:candidate",
+          "--tool-key",
+          "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.9221473329816945,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000532,
+          "scalar-promotion": 0.000584,
+          "inline": 0.000306,
+          "cfg": 0.000477,
+          "frontend": 0.023684999999999998,
+          "lowering": 0.017329
+        },
+        "cpu": {
+          "user_seconds": 0.5555409999999998,
+          "system_seconds": 0.3279890000000001,
+          "total_seconds": 0.8835299999999999
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000445749,\"declines\":{},\"finalize_seconds\":0.000773833,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":1648}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2492 seconds=0.000532\nrust-interp-scalar-promotion: slots=48 removed_addresses=504 rewritten=488 seconds=0.000584 removed_moves=226\nrust-interp-inline: sites=9 operations=7569 seconds=0.000306\nrust-interp-cfg: before=7569 after=7509 seconds=0.000477\nrust-interp-export: frontend_ms=23.685 lowering_ms=17.329 functions=31 ops=7509 bytes=152627\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.74s\nrust-interp-unavailable: {\"artifact_sha256\":\"6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=18733829 peak_guest_memory=2852\njit_bytes=139236 jit_operations=6835 jit_compile_ns=2809790 jit_instructions=18733809 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0029130830080248415, \"tool_key\": \"423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.05511004198342562, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.7795704170130193, \"cargo_cpu\": {\"user_seconds\": 0.478083, \"system_seconds\": 0.274847, \"total_seconds\": 0.75293}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.000309124996419996, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 152627, \"artifact_sha256\": \"6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090\", \"artifact_hash_seconds\": 0.00017416701302863657, \"build_to_ready_seconds\": 0.8481502080103382, \"build_to_ready_cpu\": {\"user_seconds\": 0.511713, \"system_seconds\": 0.30452999999999997, \"total_seconds\": 0.816243, \"self\": {\"user_seconds\": 0.010169000000000001, \"system_seconds\": 0.008799999999999999, \"total_seconds\": 0.018969}, \"children\": {\"user_seconds\": 0.501544, \"system_seconds\": 0.29573, \"total_seconds\": 0.797274}}, \"execution_seconds\": 0.01377745799254626, \"launcher_seconds\": 0.8619492080179043}\n",
+        "launch": {
+          "tools_seconds": 0.0029130830080248415,
+          "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.05511004198342562,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.7795704170130193,
+          "cargo_cpu": {
+            "user_seconds": 0.478083,
+            "system_seconds": 0.274847,
+            "total_seconds": 0.75293
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.000309124996419996,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 152627,
+          "artifact_sha256": "6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090",
+          "artifact_hash_seconds": 0.00017416701302863657,
+          "build_to_ready_seconds": 0.8481502080103382,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.511713,
+            "system_seconds": 0.30452999999999997,
+            "total_seconds": 0.816243,
+            "self": {
+              "user_seconds": 0.010169000000000001,
+              "system_seconds": 0.008799999999999999,
+              "total_seconds": 0.018969
+            },
+            "children": {
+              "user_seconds": 0.501544,
+              "system_seconds": 0.29573,
+              "total_seconds": 0.797274
+            }
+          },
+          "execution_seconds": 0.01377745799254626,
+          "launcher_seconds": 0.8619492080179043
+        }
+      }
+    ],
+    "load": [
+      9.9267578125,
+      10.4248046875,
+      7.9140625
+    ],
+    "engine": "jit",
+    "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/candidate/5-0.rbc",
+        "sha256": "6ee32fe7b3cd808a380f68297ae46a3825ab8e411adb41f9b776b1c66c198090",
+        "bytes": 152627
+      }
+    ],
+    "build_to_ready_seconds": 0.8481502080103382,
+    "build_to_ready_cpu_seconds": 0.816243,
+    "cargo_cpu_seconds": 0.75293
+  },
+  {
+    "mode": "native",
+    "cycle": 0,
+    "state": 5,
+    "phase": "edit",
+    "label": "use-immutable-hash-stages",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.7561269580037333,
+    "cpu_seconds": 0.5967119999999988,
+    "previous_source_sha256": "bbc1139faac47e0322e064a1a26148166ac8483bcae811eef3264c1ac1e132d9",
+    "source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+    "calls": [
+      {
+        "pid": 59156,
+        "command": [
+          "cargo",
+          "+nightly-2026-09-08",
+          "test",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--lib",
+          "--locked",
+          "--offline",
+          "--jobs",
+          "18",
+          "--target-dir",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native",
+          "--",
+          "--exact",
+          "--test-threads=1",
+          "tests::uint32_paths_match_byte_path",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "tests::murmurhash32_inverse_roundtrips",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": null,
+        "seconds": 0.7561060409934726,
+        "encoded_rustflags": null,
+        "exporter_seconds": {},
+        "cpu": {
+          "user_seconds": 0.45929999999999893,
+          "system_seconds": 0.13741199999999987,
+          "total_seconds": 0.5967119999999988
+        },
+        "returncode": 0,
+        "stdout": "\nrunning 4 tests\ntest tests::dynahash_wrappers ... ok\ntest tests::extended_zero_seed_low_word_equals_hash_bytes ... ok\ntest tests::murmurhash32_inverse_roundtrips ... ok\ntest tests::uint32_paths_match_byte_path ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+        "stderr": "   Compiling hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.51s\n     Running unittests src/lib.rs (/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native/debug/build/hashfn/6dd11ef1f2a1586f/out/hashfn-6dd11ef1f2a1586f)\n"
+      }
+    ],
+    "load": [
+      9.9267578125,
+      10.4248046875,
+      7.9140625
+    ],
+    "engine": null,
+    "tool_key": null,
+    "artifacts": []
+  },
+  {
+    "mode": "baseline",
+    "cycle": 1,
+    "state": -2,
+    "phase": "restored-original",
+    "label": "restored-original",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6289306250109803,
+    "cpu_seconds": 0.6091839999999986,
+    "previous_source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+    "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "calls": [
+      {
+        "pid": 59385,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:baseline",
+          "--tool-key",
+          "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.6288028749986552,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.0004,
+          "scalar-promotion": 0.000359,
+          "inline": 0.000228,
+          "cfg": 0.000311,
+          "frontend": 0.019408,
+          "lowering": 0.013462
+        },
+        "cpu": {
+          "user_seconds": 0.4732049999999983,
+          "system_seconds": 0.1359790000000003,
+          "total_seconds": 0.6091839999999986
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.0006135,\"declines\":{},\"finalize_seconds\":0.000557792,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":2160}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2472 seconds=0.000400\nrust-interp-scalar-promotion: slots=49 removed_addresses=661 rewritten=633 seconds=0.000359 removed_moves=292\nrust-interp-inline: sites=9 operations=6462 seconds=0.000228\nrust-interp-cfg: before=6462 after=6415 seconds=0.000311\nrust-interp-export: frontend_ms=19.408 lowering_ms=13.462 functions=31 ops=6415 bytes=129558\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.49s\nrust-interp-unavailable: {\"artifact_sha256\":\"3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19806688 peak_guest_memory=2868\njit_bytes=134452 jit_operations=5725 jit_compile_ns=1780124 jit_instructions=19806668 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0023939579841680825, \"tool_key\": \"851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.04360233398620039, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.5238877079973463, \"cargo_cpu\": {\"user_seconds\": 0.405141, \"system_seconds\": 0.10558699999999999, \"total_seconds\": 0.510728}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.00021674999152310193, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 129558, \"artifact_sha256\": \"3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614\", \"artifact_hash_seconds\": 0.00011979101691395044, \"build_to_ready_seconds\": 0.5776385829958599, \"build_to_ready_cpu\": {\"user_seconds\": 0.436638, \"system_seconds\": 0.12487699999999999, \"total_seconds\": 0.561515, \"self\": {\"user_seconds\": 0.009435000000000002, \"system_seconds\": 0.004772, \"total_seconds\": 0.014207000000000003}, \"children\": {\"user_seconds\": 0.427203, \"system_seconds\": 0.12010499999999999, \"total_seconds\": 0.547308}}, \"execution_seconds\": 0.010852083010831848, \"launcher_seconds\": 0.58850887499284}\n",
+        "launch": {
+          "tools_seconds": 0.0023939579841680825,
+          "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.04360233398620039,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.5238877079973463,
+          "cargo_cpu": {
+            "user_seconds": 0.405141,
+            "system_seconds": 0.10558699999999999,
+            "total_seconds": 0.510728
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.00021674999152310193,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527/434b05e86c059b311ef086c6/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 129558,
+          "artifact_sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+          "artifact_hash_seconds": 0.00011979101691395044,
+          "build_to_ready_seconds": 0.5776385829958599,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.436638,
+            "system_seconds": 0.12487699999999999,
+            "total_seconds": 0.561515,
+            "self": {
+              "user_seconds": 0.009435000000000002,
+              "system_seconds": 0.004772,
+              "total_seconds": 0.014207000000000003
+            },
+            "children": {
+              "user_seconds": 0.427203,
+              "system_seconds": 0.12010499999999999,
+              "total_seconds": 0.547308
+            }
+          },
+          "execution_seconds": 0.010852083010831848,
+          "launcher_seconds": 0.58850887499284
+        }
+      }
+    ],
+    "load": [
+      9.9267578125,
+      10.4248046875,
+      7.9140625
+    ],
+    "engine": "jit",
+    "tool_key": "851ddd5f33e18954b586ec081af021778407efddf843afdaae88ec1f6647c527",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/baseline/-2-0.rbc",
+        "sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+        "bytes": 129558
+      }
+    ],
+    "build_to_ready_seconds": 0.5776385829958599,
+    "build_to_ready_cpu_seconds": 0.561515,
+    "cargo_cpu_seconds": 0.510728
+  },
+  {
+    "mode": "candidate",
+    "cycle": 1,
+    "state": -2,
+    "phase": "restored-original",
+    "label": "restored-original",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6045358330011368,
+    "cpu_seconds": 0.5872210000000009,
+    "previous_source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+    "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "calls": [
+      {
+        "pid": 59480,
+        "command": [
+          "/opt/homebrew/opt/python@3.14/bin/python3.14",
+          "/Users/danluu/dev/rust-interp-perf-20260912/scripts/interpreter.py",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--jobs",
+          "18",
+          "--test-body",
+          "--engine",
+          "jit",
+          "--instruction-limit",
+          "100000000000",
+          "--cache-namespace",
+          "local-analysis-pgrust-20260912-01:candidate",
+          "--tool-key",
+          "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "--allocation-limit",
+          "150000",
+          "--inline-leaves",
+          "--jit-resumable-calls",
+          "--jit-persistent-registers",
+          "--trap-unsupported-calls",
+          "--run-try-callbacks",
+          "--std-mir",
+          "--entry",
+          "tests::uint32_paths_match_byte_path",
+          "--entry",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "--entry",
+          "tests::murmurhash32_inverse_roundtrips",
+          "--entry",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": "-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240",
+        "seconds": 0.6044053339865059,
+        "encoded_rustflags": null,
+        "exporter_seconds": {
+          "scalar-frames": 0.000359,
+          "scalar-promotion": 0.000319,
+          "inline": 0.000205,
+          "cfg": 0.000342,
+          "frontend": 0.01838,
+          "lowering": 0.011965
+        },
+        "cpu": {
+          "user_seconds": 0.46061700000000094,
+          "system_seconds": 0.12660399999999994,
+          "total_seconds": 0.5872210000000009
+        },
+        "returncode": 0,
+        "stdout": "0\n",
+        "stderr": "    Checking hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\nrust-interp-aggregate-frames: {\"capture_seconds\":0.000286666,\"declines\":{},\"finalize_seconds\":0.000502959,\"functions\":18,\"initialization_unchanged\":true,\"static_bytes_saved\":2160}\nrust-interp-scalar-frames: functions=19 static_bytes_saved=2472 seconds=0.000359\nrust-interp-scalar-promotion: slots=49 removed_addresses=661 rewritten=633 seconds=0.000319 removed_moves=292\nrust-interp-inline: sites=9 operations=6462 seconds=0.000205\nrust-interp-cfg: before=6462 after=6415 seconds=0.000342\nrust-interp-export: frontend_ms=18.380 lowering_ms=11.965 functions=31 ops=6415 bytes=129558\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.47s\nrust-interp-unavailable: {\"artifact_sha256\":\"3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614\",\"kind\":\"unavailable-calls\",\"run_try_callbacks\":true,\"schema_version\":1,\"strict_frontend\":true,\"trap_unsupported_calls\":true,\"unavailable_calls\":[]}\ninstructions=19806688 peak_guest_memory=2868\njit_bytes=134452 jit_operations=5725 jit_compile_ns=1696586 jit_instructions=19806668 jit_entries=20 jit_compiled_functions=16 jit_declined_functions=0\njit_resumable_calls=100209 jit_resumable_returns=100224\njit_tree_entries=0 jit_tree_calls=0 jit_tree_instructions=0 jit_tree_bytes=0 jit_tree_operations=0 jit_tree_compiled_functions=0 jit_tree_declined_functions=0 jit_tree_compile_ns=0\njit_call_stubs=0 jit_stub_calls=0\njit_register_functions=5 jit_register_pairs=6 jit_liveness_declines=0\nrust-interp-launch: {\"tools_seconds\": 0.0022457499871961772, \"tool_key\": \"423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6\", \"engine\": \"jit\", \"jit_persistent_registers\": true, \"jit_resumable_calls\": true, \"jit_native_calls\": false, \"jit_native_call_stubs\": false, \"inline_leaves\": true, \"trap_unsupported_calls\": true, \"run_try_callbacks\": true, \"std_mir_seconds\": 0.04148516699206084, \"workspace_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc\", \"compiler_wrapper\": {\"name\": \"rust-interp-rustc-wrapper\", \"sha256\": \"56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3\"}, \"cargo_seconds\": 0.5049424999742769, \"cargo_cpu\": {\"user_seconds\": 0.395344, \"system_seconds\": 0.098253, \"total_seconds\": 0.49359699999999995}, \"unavailable_calls\": [], \"call_report_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json\", \"call_report_verify_seconds\": 0.00023508298909291625, \"allocation_limit\": 150000, \"artifact_path\": \"/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc\", \"artifact_bytes\": 129558, \"artifact_sha256\": \"3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614\", \"artifact_hash_seconds\": 0.00011904200073331594, \"build_to_ready_seconds\": 0.5563024170114659, \"build_to_ready_cpu\": {\"user_seconds\": 0.425511, \"system_seconds\": 0.11642899999999999, \"total_seconds\": 0.54194, \"self\": {\"user_seconds\": 0.009277, \"system_seconds\": 0.004411000000000001, \"total_seconds\": 0.013688000000000002}, \"children\": {\"user_seconds\": 0.416234, \"system_seconds\": 0.11201799999999999, \"total_seconds\": 0.5282519999999999}}, \"execution_seconds\": 0.01052412501303479, \"launcher_seconds\": 0.5668431250087451}\n",
+        "launch": {
+          "tools_seconds": 0.0022457499871961772,
+          "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+          "engine": "jit",
+          "jit_persistent_registers": true,
+          "jit_resumable_calls": true,
+          "jit_native_calls": false,
+          "jit_native_call_stubs": false,
+          "inline_leaves": true,
+          "trap_unsupported_calls": true,
+          "run_try_callbacks": true,
+          "std_mir_seconds": 0.04148516699206084,
+          "workspace_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc",
+          "compiler_wrapper": {
+            "name": "rust-interp-rustc-wrapper",
+            "sha256": "56fec5a315571ba8308f5c2b637aff8b8be200ba84cde1ba7c606f61e47606d3"
+          },
+          "cargo_seconds": 0.5049424999742769,
+          "cargo_cpu": {
+            "user_seconds": 0.395344,
+            "system_seconds": 0.098253,
+            "total_seconds": 0.49359699999999995
+          },
+          "unavailable_calls": [],
+          "call_report_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc.calls.json",
+          "call_report_verify_seconds": 0.00023508298909291625,
+          "allocation_limit": 150000,
+          "artifact_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/interpreter-workspaces/423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6/13b5e8a291ba953e30e7c8dc/target/aarch64-apple-darwin/debug/build/hashfn/947a7be878f7b517/out/libhashfn-947a7be878f7b517.rmeta.rbc",
+          "artifact_bytes": 129558,
+          "artifact_sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+          "artifact_hash_seconds": 0.00011904200073331594,
+          "build_to_ready_seconds": 0.5563024170114659,
+          "build_to_ready_cpu": {
+            "user_seconds": 0.425511,
+            "system_seconds": 0.11642899999999999,
+            "total_seconds": 0.54194,
+            "self": {
+              "user_seconds": 0.009277,
+              "system_seconds": 0.004411000000000001,
+              "total_seconds": 0.013688000000000002
+            },
+            "children": {
+              "user_seconds": 0.416234,
+              "system_seconds": 0.11201799999999999,
+              "total_seconds": 0.5282519999999999
+            }
+          },
+          "execution_seconds": 0.01052412501303479,
+          "launcher_seconds": 0.5668431250087451
+        }
+      }
+    ],
+    "load": [
+      9.9267578125,
+      10.4248046875,
+      7.9140625
+    ],
+    "engine": "jit",
+    "tool_key": "423050a867d1879ba878a6881270a02079824a7be8af683c66d46104a430ebc6",
+    "artifacts": [
+      {
+        "path": ".work/runs/local-analysis-pgrust-20260912-01/artifacts/candidate/-2-0.rbc",
+        "sha256": "3f9658e74ed3948bd46ffa557164f9789917e9d6ec9c0aa1bfa7176b5cb4b614",
+        "bytes": 129558
+      }
+    ],
+    "build_to_ready_seconds": 0.5563024170114659,
+    "build_to_ready_cpu_seconds": 0.54194,
+    "cargo_cpu_seconds": 0.49359699999999995
+  },
+  {
+    "mode": "native",
+    "cycle": 1,
+    "state": -2,
+    "phase": "restored-original",
+    "label": "restored-original",
+    "tests": [
+      "tests::uint32_paths_match_byte_path",
+      "tests::extended_zero_seed_low_word_equals_hash_bytes",
+      "tests::murmurhash32_inverse_roundtrips",
+      "tests::dynahash_wrappers"
+    ],
+    "seconds": 0.6414807910041418,
+    "cpu_seconds": 0.5406440000000003,
+    "previous_source_sha256": "df65af197ea12c9ac765e2ec2effd033a8e2501f9dd78abfda9f810aa054a24b",
+    "source_sha256": "01c2d5b96b834dba7d08bba49f4ae002b54c83f79e268030f4210e859249a4f0",
+    "calls": [
+      {
+        "pid": 59528,
+        "command": [
+          "cargo",
+          "+nightly-2026-09-08",
+          "test",
+          "--manifest-path",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/Cargo.toml",
+          "--package",
+          "hashfn",
+          "--lib",
+          "--locked",
+          "--offline",
+          "--jobs",
+          "18",
+          "--target-dir",
+          "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native",
+          "--",
+          "--exact",
+          "--test-threads=1",
+          "tests::uint32_paths_match_byte_path",
+          "tests::extended_zero_seed_low_word_equals_hash_bytes",
+          "tests::murmurhash32_inverse_roundtrips",
+          "tests::dynahash_wrappers"
+        ],
+        "rustflags": null,
+        "seconds": 0.641459374979604,
+        "encoded_rustflags": null,
+        "exporter_seconds": {},
+        "cpu": {
+          "user_seconds": 0.4187790000000007,
+          "system_seconds": 0.12186499999999967,
+          "total_seconds": 0.5406440000000003
+        },
+        "returncode": 0,
+        "stdout": "\nrunning 4 tests\ntest tests::dynahash_wrappers ... ok\ntest tests::extended_zero_seed_low_word_equals_hash_bytes ... ok\ntest tests::murmurhash32_inverse_roundtrips ... ok\ntest tests::uint32_paths_match_byte_path ... ok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n",
+        "stderr": "   Compiling hashfn v0.1.0 (/Users/danluu/dev/rust-interp-perf-20260912/.work/sources/pgrust/crates/common/hashfn)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.47s\n     Running unittests src/lib.rs (/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-analysis-pgrust-20260912-01/native/debug/build/hashfn/6dd11ef1f2a1586f/out/hashfn-6dd11ef1f2a1586f)\n"
+      }
+    ],
+    "load": [
+      9.9267578125,
+      10.4248046875,
+      7.9140625
+    ],
+    "engine": null,
+    "tool_key": null,
+    "artifacts": []
+  }
+]

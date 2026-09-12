@@ -75,6 +75,14 @@ def main():
     for seed, want in zip(seeds, popcount_expected):
         assert evaluate(seed) == want
 
+    local_layout_source = ROOT / 'tests/local_layout_fixture.rs'
+    export(local_layout_source)
+    run(['rustc', '+' + TOOLCHAIN, local_layout_source, '--edition=2024', '-o', work / 'local-layout-native'])
+    local_layout_expected = run([work / 'local-layout-native', *seeds]).splitlines()
+    assert len(local_layout_expected) == len(seeds)
+    for seed, want in zip(seeds, local_layout_expected):
+        assert evaluate(seed) == want
+
     constructor_dependency=ROOT/'tests/constructor_dependency.rs'
     constructor_source=ROOT/'tests/constructor_fixture.rs'
     dependency=work/'libconstructor_dependency.rlib'
@@ -530,7 +538,7 @@ def main():
                    caller_location_native_inputs_per_mode=len(seeds),
                    caller_location_modes=['ordinary','mir-inline']+[mode for mode,_ in mir_inline_modes],
                    mir_inlining_configurations={mode:flags for mode,flags in mir_inline_modes},
-                   inputs_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [source,popcount_source,constructor_dependency,constructor_source,result_source,heap_source,simd_source,dynamic_source,dst_source,pointer_mask_source,checked_arithmetic_source,division_source,scalar_constant_source,type_id_source,carrying_source,coercion_source,closure_pointer_source,float_source,atomic_source,static_source,tls_source,tls_batch_source,uninhabited_source,caller_source,integer_panic_source,Path(__file__),BUILD/'rust-interp-vm',BUILD/'rust-interp-mir-export']})
+                   inputs_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [source,popcount_source,local_layout_source,constructor_dependency,constructor_source,result_source,heap_source,simd_source,dynamic_source,dst_source,pointer_mask_source,checked_arithmetic_source,division_source,scalar_constant_source,type_id_source,carrying_source,coercion_source,closure_pointer_source,float_source,atomic_source,static_source,tls_source,tls_batch_source,uninhabited_source,caller_source,integer_panic_source,Path(__file__),BUILD/'rust-interp-vm',BUILD/'rust-interp-mir-export']})
     checkpoint()
     atexit.unregister(checkpoint)
     summary.update(completed_commands=len(records), elapsed_seconds=time.perf_counter()-started,

@@ -8,6 +8,22 @@ fn options() -> inline::Options {
     }
 }
 
+// Run the owned result through the existing semantic fixtures, while checking
+// exact output and diagnostics against the borrowed API on every input.
+fn checked_transform(p: &Program, options: inline::Options) -> Result<(Program, serde_json::Value), String> {
+    let borrowed = inline::transform(p, options);
+    let owned = inline::transform_owned(p.clone(), options);
+    match (&borrowed, &owned) {
+        (Ok((before, report)), Ok((after, actual))) => {
+            assert_eq!(bincode::serialize(before).unwrap(), bincode::serialize(after).unwrap());
+            assert_eq!(report, actual);
+        }
+        (Err(before), Err(after)) => assert_eq!(before, after),
+        _ => panic!("borrowed and owned inlining disagree: {borrowed:?}, {owned:?}"),
+    }
+    owned
+}
+
 #[test]
 fn diagnostics_and_options_are_bounded() {
     let f = leaf(
@@ -24,7 +40,7 @@ fn diagnostics_and_options_are_bounded() {
         ],
     );
     let p = root(f, &[], 0);
-    let (_, report) = inline::transform(&p, options()).unwrap();
+    let (_, report) = checked_transform(&p, options()).unwrap();
     assert_eq!(report["selected_sites"], 0);
     for opts in [
         inline::Options {
@@ -41,7 +57,7 @@ fn diagnostics_and_options_are_bounded() {
         },
     ] {
         assert!(
-            inline::transform(&p, opts)
+            checked_transform(&p, opts)
                 .unwrap_err()
                 .contains("bounded limits")
         );
@@ -79,7 +95,7 @@ fn expansion_with_proven_cross_block_values_avoids_whole_caller_clearing() {
     );
     p.functions[0].result.size = 8;
     assert!(!crate::registers::needs_initial_zeroes(&p.functions[0]));
-    let (q, report) = inline::transform(&p, options()).unwrap();
+    let (q, report) = checked_transform(&p, options()).unwrap();
     assert_eq!(report["selected_sites"], 1);
     assert!(!crate::registers::needs_initial_zeroes(&q.functions[0]));
     for engine in [Engine::Interpreter, Engine::Jit] {
@@ -164,7 +180,7 @@ fn leaf(
     }
 }
 fn equivalent(p: &Program, args: &[u128], expected: u128) -> Program {
-    let (q, stats) = inline::transform(p, options()).unwrap();
+    let (q, stats) = checked_transform(p, options()).unwrap();
     assert!(stats["selected_sites"].as_u64().unwrap() > 0);
     assert_eq!(q.functions.len(), p.functions.len());
     assert_eq!(
@@ -504,7 +520,7 @@ fn branch_returns_and_cold_failures_keep_original_diagnostic_identity() {
     let p = root(f, &[8], 32);
     equivalent(&p, &[0], 0);
     equivalent(&p, &[1], 0);
-    let (q, stats) = inline::transform(&p, options()).unwrap();
+    let (q, stats) = checked_transform(&p, options()).unwrap();
     assert_eq!(stats["selected_sites"], 1);
     for engine in [Engine::Interpreter, Engine::Jit] {
         let old = execute_with_engine(&p, &[2], Limits::default(), engine).unwrap_err();
@@ -527,7 +543,7 @@ fn branch_returns_and_cold_failures_keep_original_diagnostic_identity() {
         },
         Op::Return,
     ];
-    let (q, _) = inline::transform(&p, options()).unwrap();
+    let (q, _) = checked_transform(&p, options()).unwrap();
     for engine in [Engine::Interpreter, Engine::Jit] {
         let e = execute_with_engine(&q, &[0], Limits::default(), engine).unwrap_err();
         assert!(e.contains("leaf condition") && e.contains("inlined from branch-leaf"));
@@ -575,14 +591,14 @@ fn unproven_storage_initial_values_alignment_and_growth_are_excluded() {
             5 => p.functions[1].code.push(Op::Imm { dst: 1, value: 0 }),
             _ => unreachable!(),
         }
-        let (q, s) = inline::transform(&p, opts).unwrap();
+        let (q, s) = checked_transform(&p, opts).unwrap();
         assert_eq!(s["selected_sites"], 0, "variant {variant}");
         assert_eq!(format!("{q:?}"), format!("{p:?}"));
     }
     let mut bad = original;
     bad.functions[1].code[0] = Op::Jump { target: 99 };
     assert!(
-        inline::transform(&bad, options())
+        checked_transform(&bad, options())
             .unwrap_err()
             .contains("invalid branch")
     );
@@ -684,3 +700,4 @@ fn rematerialization_uses_latest_proven_argument_and_result_offsets() {
 }
 
 mod medium_copy_tests;
+mod owned_tests;

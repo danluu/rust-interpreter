@@ -1,0 +1,1414 @@
+diff --git a/crates/bytecode/src/inline.rs b/crates/bytecode/src/inline.rs
+index 5742a16..fe0617c 100644
+--- a/crates/bytecode/src/inline.rs
++++ b/crates/bytecode/src/inline.rs
+@@ -274,6 +274,44 @@ fn relocated(
+ /// Cold branches, ordered argument copies, function handles and checks remain.
+ /// Selection is static and does not consume runtime profiles.
+ pub fn transform(original: &Program, options: Options) -> Result<(Program, Value), String> {
++    let prepared = prepare(original, options)?;
++    prepared.apply(original.clone())
++}
++
++/// Reuse the export pipeline's owned program after all decisions have been
++/// made against its unchanged graph. Unmodified functions never need cloning.
++pub(crate) fn transform_owned(original: Program, options: Options) -> Result<(Program, Value), String> {
++    let prepared = prepare(&original, options)?;
++    prepared.apply(original)
++}
++
++struct Prepared {
++    replacements: Vec<(usize, Function)>,
++    sites: usize,
++    original_operations: usize,
++    growth: usize,
++    changed: Vec<Value>,
++    options: Options,
++    diagnostics: usize,
++}
++
++impl Prepared {
++    fn apply(self, mut result: Program) -> Result<(Program, Value), String> {
++        for (id, function) in self.replacements {
++            result.functions[id] = function;
++        }
++        crate::validate(&result)?;
++        let new_operations: usize = result.functions.iter().map(|f| f.code.len()).sum();
++        Ok((
++            result,
++            json!({"selected_sites":self.sites,"original_operations":self.original_operations,"new_operations":new_operations,
++            "added_operations_upper_bound":self.growth,"changed_callers":self.changed,"max_leaf_operations":self.options.leaf_operations,
++            "max_program_growth_percent":self.options.program_growth_percent,"cloned_diagnostic_bytes":self.diagnostics}),
++        ))
++    }
++}
++
++fn prepare(original: &Program, options: Options) -> Result<Prepared, String> {
+     crate::validate(original)?;
+     if options.leaf_operations > 192
+         || options.program_growth_percent > 100
+@@ -318,7 +356,7 @@ pub fn transform(original: &Program, options: Options) -> Result<(Program, Value
+     let mut growth = 0usize;
+     let mut sites = 0usize;
+     let mut changed = vec![];
+-    let mut result = original.clone();
++    let mut replacements = Vec::new();
+     for (id, caller) in original.functions.iter().enumerate() {
+         let bank_offset = (caller.frame_size + caller.frame_align - 1) & !(caller.frame_align - 1);
+         let mut selected = Vec::new();
+@@ -478,16 +516,20 @@ pub fn transform(original: &Program, options: Options) -> Result<(Program, Value
+             }
+         }
+         let removed = crate::remove_fallthrough_jumps(&mut code)?;
+-        let output = &mut result.functions[id];
+-        output.frame_size = bank_offset + bank_frame;
+-        output.registers = caller.registers + bank_registers + 3;
+-        output.code = code;
++        let output = Function {
++            name: caller.name.clone(),
++            frame_size: bank_offset + bank_frame,
++            frame_align: caller.frame_align,
++            registers: caller.registers + bank_registers + 3,
++            args: caller.args.clone(),
++            result: caller.result,
++            code,
++        };
+         // Reject an expansion that introduces whole-caller register clearing.
+         // This is a performance guard, never a trusted semantic annotation.
+         if !crate::registers::needs_initial_zeroes_for_inlining(caller)
+-            && crate::registers::needs_initial_zeroes_for_inlining(output)
++            && crate::registers::needs_initial_zeroes_for_inlining(&output)
+         {
+-            *output = caller.clone();
+             growth -= caller_growth;
+             sites -= selected_count;
+             diagnostics -= caller_diagnostics;
+@@ -496,14 +538,8 @@ pub fn transform(original: &Program, options: Options) -> Result<(Program, Value
+         changed.push(json!({"function":id,"name":caller.name,"sites":selected_count,
+             "old_operations":caller.code.len(),"new_operations":output.code.len(),"removed_jumps":removed,
+             "old_frame_size":caller.frame_size,"new_frame_size":output.frame_size,"old_registers":caller.registers,"new_registers":output.registers,
+-            "needed_register_zeroes_before":crate::registers::needs_initial_zeroes_for_inlining(caller),"needed_register_zeroes_after":crate::registers::needs_initial_zeroes_for_inlining(output)}));
++            "needed_register_zeroes_before":crate::registers::needs_initial_zeroes_for_inlining(caller),"needed_register_zeroes_after":crate::registers::needs_initial_zeroes_for_inlining(&output)}));
++        replacements.push((id, output));
+     }
+-    crate::validate(&result)?;
+-    let new_operations: usize = result.functions.iter().map(|f| f.code.len()).sum();
+-    Ok((
+-        result,
+-        json!({"selected_sites":sites,"original_operations":original_operations,"new_operations":new_operations,
+-        "added_operations_upper_bound":growth,"changed_callers":changed,"max_leaf_operations":options.leaf_operations,
+-        "max_program_growth_percent":options.program_growth_percent,"cloned_diagnostic_bytes":diagnostics}),
+-    ))
++    Ok(Prepared { replacements, sites, original_operations, growth, changed, options, diagnostics })
+ }
+diff --git a/crates/bytecode/src/inline_tests.rs b/crates/bytecode/src/inline_tests.rs
+index 3a1c345..784e428 100644
+--- a/crates/bytecode/src/inline_tests.rs
++++ b/crates/bytecode/src/inline_tests.rs
+@@ -8,6 +8,22 @@ fn options() -> inline::Options {
+     }
+ }
+ 
++// Run the owned result through the existing semantic fixtures, while checking
++// exact output and diagnostics against the borrowed API on every input.
++fn checked_transform(p: &Program, options: inline::Options) -> Result<(Program, serde_json::Value), String> {
++    let borrowed = inline::transform(p, options);
++    let owned = inline::transform_owned(p.clone(), options);
++    match (&borrowed, &owned) {
++        (Ok((before, report)), Ok((after, actual))) => {
++            assert_eq!(bincode::serialize(before).unwrap(), bincode::serialize(after).unwrap());
++            assert_eq!(report, actual);
++        }
++        (Err(before), Err(after)) => assert_eq!(before, after),
++        _ => panic!("borrowed and owned inlining disagree: {borrowed:?}, {owned:?}"),
++    }
++    owned
++}
++
+ #[test]
+ fn diagnostics_and_options_are_bounded() {
+     let f = leaf(
+@@ -24,7 +40,7 @@ fn diagnostics_and_options_are_bounded() {
+         ],
+     );
+     let p = root(f, &[], 0);
+-    let (_, report) = inline::transform(&p, options()).unwrap();
++    let (_, report) = checked_transform(&p, options()).unwrap();
+     assert_eq!(report["selected_sites"], 0);
+     for opts in [
+         inline::Options {
+@@ -41,7 +57,7 @@ fn diagnostics_and_options_are_bounded() {
+         },
+     ] {
+         assert!(
+-            inline::transform(&p, opts)
++            checked_transform(&p, opts)
+                 .unwrap_err()
+                 .contains("bounded limits")
+         );
+@@ -78,7 +94,7 @@ fn expansion_cannot_introduce_whole_caller_register_clearing() {
+         },
+     );
+     assert!(!crate::registers::needs_initial_zeroes_for_inlining(&p.functions[0]));
+-    let (q, report) = inline::transform(&p, options()).unwrap();
++    let (q, report) = checked_transform(&p, options()).unwrap();
+     assert_eq!(report["selected_sites"], 0);
+     assert_eq!(format!("{p:?}"), format!("{q:?}"));
+ }
+@@ -159,7 +175,7 @@ fn leaf(
+     }
+ }
+ fn equivalent(p: &Program, args: &[u128], expected: u128) -> Program {
+-    let (q, stats) = inline::transform(p, options()).unwrap();
++    let (q, stats) = checked_transform(p, options()).unwrap();
+     assert!(stats["selected_sites"].as_u64().unwrap() > 0);
+     assert_eq!(q.functions.len(), p.functions.len());
+     assert_eq!(
+@@ -499,7 +515,7 @@ fn branch_returns_and_cold_failures_keep_original_diagnostic_identity() {
+     let p = root(f, &[8], 32);
+     equivalent(&p, &[0], 0);
+     equivalent(&p, &[1], 0);
+-    let (q, stats) = inline::transform(&p, options()).unwrap();
++    let (q, stats) = checked_transform(&p, options()).unwrap();
+     assert_eq!(stats["selected_sites"], 1);
+     for engine in [Engine::Interpreter, Engine::Jit] {
+         let old = execute_with_engine(&p, &[2], Limits::default(), engine).unwrap_err();
+@@ -522,7 +538,7 @@ fn branch_returns_and_cold_failures_keep_original_diagnostic_identity() {
+         },
+         Op::Return,
+     ];
+-    let (q, _) = inline::transform(&p, options()).unwrap();
++    let (q, _) = checked_transform(&p, options()).unwrap();
+     for engine in [Engine::Interpreter, Engine::Jit] {
+         let e = execute_with_engine(&q, &[0], Limits::default(), engine).unwrap_err();
+         assert!(e.contains("leaf condition") && e.contains("inlined from branch-leaf"));
+@@ -570,14 +586,14 @@ fn unproven_storage_initial_values_alignment_and_growth_are_excluded() {
+             5 => p.functions[1].code.push(Op::Imm { dst: 1, value: 0 }),
+             _ => unreachable!(),
+         }
+-        let (q, s) = inline::transform(&p, opts).unwrap();
++        let (q, s) = checked_transform(&p, opts).unwrap();
+         assert_eq!(s["selected_sites"], 0, "variant {variant}");
+         assert_eq!(format!("{q:?}"), format!("{p:?}"));
+     }
+     let mut bad = original;
+     bad.functions[1].code[0] = Op::Jump { target: 99 };
+     assert!(
+-        inline::transform(&bad, options())
++        checked_transform(&bad, options())
+             .unwrap_err()
+             .contains("invalid branch")
+     );
+@@ -679,3 +695,4 @@ fn rematerialization_uses_latest_proven_argument_and_result_offsets() {
+ }
+ 
+ mod medium_copy_tests;
++mod owned_tests;
+diff --git a/crates/bytecode/src/inline_tests/medium_copy_tests.rs b/crates/bytecode/src/inline_tests/medium_copy_tests.rs
+index d1eea58..e294256 100644
+--- a/crates/bytecode/src/inline_tests/medium_copy_tests.rs
++++ b/crates/bytecode/src/inline_tests/medium_copy_tests.rs
+@@ -68,7 +68,7 @@ fn medium_argument_and_result_copies_preserve_all_aliases() {
+             for destination in [24, 32, 33, 216, 224, 225, 512] {
+                 for overlap in [None, Some(1), Some(size / 2)] {
+                     let p = aggregate_program(size, second_source, destination, overlap, false);
+-                    let (q, stats) = inline::transform(&p, options()).unwrap();
++                    let (q, stats) = checked_transform(&p, options()).unwrap();
+                     assert_eq!(stats["selected_sites"], 1);
+                     for engine in [Engine::Interpreter, Engine::Jit] {
+                         assert_eq!(execute_with_engine(&p, &[], Limits::default(), engine).unwrap().value, 0);
+@@ -98,7 +98,7 @@ fn medium_leaf_preserves_cold_failure_and_exact_budgets() {
+         // Cross-block register reads still fail the unchanged conservative
+         // eligibility proof. MIR lowering restates these addresses per block.
+         assert!(crate::registers::needs_initial_zeroes_for_inlining(&p.functions[1]));
+-        assert_eq!(inline::transform(&p, options()).unwrap().1["selected_sites"], 0);
++        assert_eq!(checked_transform(&p, options()).unwrap().1["selected_sites"], 0);
+         let offset = p.functions[1].args[0].offset;
+         p.functions[1].code.splice(4..4, [
+             Op::Local { dst: 0, offset: 0 },
+@@ -107,7 +107,7 @@ fn medium_leaf_preserves_cold_failure_and_exact_budgets() {
+         let Op::Switch { cases, .. } = &mut p.functions[1].code[3] else { unreachable!() };
+         cases[0].1 = 8;
+         assert!(!crate::registers::needs_initial_zeroes_for_inlining(&p.functions[1]));
+-        let (q, stats) = inline::transform(&p, options()).unwrap();
++        let (q, stats) = checked_transform(&p, options()).unwrap();
+         assert_eq!(stats["selected_sites"], 1);
+         if cold {
+             for program in [&p, &q] {
+@@ -138,7 +138,7 @@ fn medium_leaf_preserves_cold_failure_and_exact_budgets() {
+ #[test]
+ fn medium_leaf_keeps_copy_abi_and_frame_limits() {
+     let p = aggregate_program(128, 224, 512, None, false);
+-    assert_eq!(inline::transform(&p, options()).unwrap().1["selected_sites"], 1);
++    assert_eq!(checked_transform(&p, options()).unwrap().1["selected_sites"], 1);
+     for limit in ["copy", "argument", "result", "frame"] {
+         let mut rejected = p.clone();
+         let f = &mut rejected.functions[1];
+@@ -152,11 +152,11 @@ fn medium_leaf_keeps_copy_abi_and_frame_limits() {
+             "frame" => f.frame_size = 513,
+             _ => unreachable!(),
+         }
+-        let (unchanged, stats) = inline::transform(&rejected, options()).unwrap();
++        let (unchanged, stats) = checked_transform(&rejected, options()).unwrap();
+         assert_eq!(stats["selected_sites"], 0, "{limit}");
+         assert_eq!(bincode::serialize(&unchanged).unwrap(), bincode::serialize(&rejected).unwrap());
+     }
+-    assert_eq!(inline::transform(&p, inline::Options { caller_growth: 1, ..options() }).unwrap().1["selected_sites"], 0);
++    assert_eq!(checked_transform(&p, inline::Options { caller_growth: 1, ..options() }).unwrap().1["selected_sites"], 0);
+ }
+ 
+ 
+@@ -166,7 +166,7 @@ fn medium_leaf_frame_growth_includes_alignment_and_exact_boundary() {
+         let mut p = aggregate_program(80, 224, 32, None, false);
+         p.functions[0].frame_size = caller_frame;
+         assert_eq!(p.functions[1].frame_size, 240);
+-        let (q, stats) = inline::transform(&p, options()).unwrap();
++        let (q, stats) = checked_transform(&p, options()).unwrap();
+         assert_eq!(stats["selected_sites"], selected, "frame {caller_frame}");
+         if selected == 0 {
+             assert_eq!(bincode::serialize(&p).unwrap(), bincode::serialize(&q).unwrap());
+@@ -198,7 +198,7 @@ fn medium_frame_guard_covers_body_and_abi_but_preserves_small_leaves() {
+             "result" => leaf.result.size = 33,
+             _ => unreachable!(),
+         }
+-        let (q, stats) = inline::transform(&p, options()).unwrap();
++        let (q, stats) = checked_transform(&p, options()).unwrap();
+         assert_eq!(stats["selected_sites"], if kind == "small" { 1 } else { 0 }, "{kind}");
+         if kind != "small" {
+             assert_eq!(bincode::serialize(&p).unwrap(), bincode::serialize(&q).unwrap());
+diff --git a/crates/bytecode/src/inline_tests/owned_tests.rs b/crates/bytecode/src/inline_tests/owned_tests.rs
+new file mode 100644
+index 0000000..e48b7dc
+--- /dev/null
++++ b/crates/bytecode/src/inline_tests/owned_tests.rs
+@@ -0,0 +1,141 @@
++use super::*;
++
++fn identity_program() -> Program {
++    root(leaf("identity", 16, 2, vec![Slot { offset: 0, size: 8 }],
++        Slot { offset: 0, size: 8 }, vec![
++            Op::Local { dst: 0, offset: 0 },
++            Op::Load { dst: 1, address: 0, size: 8 },
++            Op::Return,
++        ]), &[8], 32)
++}
++
++#[test]
++fn owned_storage_survives_both_no_selection_and_successful_expansion() {
++    for caller_growth in [0, 4096] {
++        let mut p = identity_program();
++        p.data.extend(0u8..=255);
++        p.statics = vec![17; 32];
++        p.thread_locals = vec![Slot { offset: 16, size: 16 }];
++        let options = inline::Options { caller_growth, ..options() };
++        let (expected, expected_report) = inline::transform(&p, options).unwrap();
++        let storage = (p.functions.as_ptr(), p.data.as_ptr(), p.statics.as_ptr(),
++            p.thread_locals.as_ptr(), p.target.as_ptr());
++        let unchanged = (&p.functions[1].name, &p.functions[1].args, &p.functions[1].code);
++        let unchanged = (unchanged.0.as_ptr(), unchanged.1.as_ptr(), unchanged.2.as_ptr());
++        let caller_code = p.functions[0].code.as_ptr();
++        let (q, report) = inline::transform_owned(p, options).unwrap();
++        assert_eq!(bincode::serialize(&q).unwrap(), bincode::serialize(&expected).unwrap());
++        assert_eq!(report, expected_report);
++        assert_eq!(report["selected_sites"], usize::from(caller_growth != 0));
++        assert_eq!(storage, (q.functions.as_ptr(), q.data.as_ptr(), q.statics.as_ptr(),
++            q.thread_locals.as_ptr(), q.target.as_ptr()));
++        assert_eq!(unchanged, (q.functions[1].name.as_ptr(), q.functions[1].args.as_ptr(),
++            q.functions[1].code.as_ptr()));
++        if caller_growth == 0 {
++            assert_eq!(caller_code, q.functions[0].code.as_ptr());
++        }
++    }
++}
++
++#[test]
++fn validation_still_precedes_option_errors() {
++    let mut p = identity_program();
++    let invalid_options = inline::Options { caller_growth: 4097, ..options() };
++    assert_eq!(checked_transform(&p, invalid_options).unwrap_err(),
++        "leaf inlining options exceed bounded limits");
++    p.functions[0].code[0] = Op::Jump { target: usize::MAX };
++    let validation_error = crate::validate(&p).unwrap_err();
++    assert!(validation_error.contains("invalid branch"));
++    assert_eq!(checked_transform(&p, invalid_options).unwrap_err(), validation_error);
++}
++
++#[test]
++fn later_callers_keep_edges_to_original_nonleaf_functions() {
++    let mut p = identity_program();
++    let mut later = p.functions[0].clone();
++    later.name = "later caller".into();
++    // Function 0 expands first. Function 2 still calls that original nonleaf,
++    // then independently expands its own direct edge to leaf 1.
++    later.code.insert(2, Op::Call { function: 0, args: vec![0], destination: 1 });
++    p.functions.push(later);
++    p.entry = 2;
++    let original_leaf = bincode::serialize(&p.functions[1]).unwrap();
++    let (q, report) = checked_transform(&p, options()).unwrap();
++    assert_eq!(report["selected_sites"], 2);
++    assert_eq!(report["added_operations_upper_bound"], 24);
++    let changed: Vec<_> = report["changed_callers"].as_array().unwrap().iter()
++        .map(|caller| caller["function"].as_u64().unwrap()).collect();
++    assert_eq!(changed, [0, 2]);
++    assert_eq!(bincode::serialize(&q.functions[1]).unwrap(), original_leaf);
++    let direct: Vec<_> = q.functions[2].code.iter().filter_map(|op| match op {
++        Op::Call { function, .. } => Some(*function), _ => None,
++    }).collect();
++    assert_eq!(direct, [0]);
++    for value in [0, 7, u64::MAX as u128] {
++        assert_eq!(execute_with_engine(&p, &[value], Limits::default(), Engine::Interpreter).unwrap().value, value);
++        assert_eq!(execute_with_engine(&q, &[value], Limits::default(), Engine::Interpreter).unwrap().value, value);
++    }
++}
++
++#[test]
++fn rejected_caller_restores_budget_before_later_admission() {
++    let branch = leaf("branch", 16, 1, vec![], Slot { offset: 0, size: 0 }, vec![
++        Op::Imm { dst: 0, value: 1 },
++        Op::Assert { value: 0, expected: true, message: "check".into() },
++        Op::Switch { value: 0, cases: vec![(1, 3)], otherwise: 4 },
++        Op::Return,
++        Op::Return,
++    ]);
++    let mut p = root(branch, &[], 0);
++    let mut later = p.functions[0].clone();
++    later.name = "later admitted".into();
++    p.functions.push(later);
++    p.functions[0].code.insert(0, Op::Imm { dst: 3, value: 43 });
++    p.functions[0].code.insert(3, Op::Store { address: 0, src: 3, size: 8 });
++    let rejected = bincode::serialize(&p.functions[0]).unwrap();
++    // Original size is 29 operations; the 14-operation growth allowance can
++    // admit either 11-operation expansion, but not both without rollback.
++    // Diagnostic accounting must also undo the rejected copy of "check".
++    let (q, report) = checked_transform(&p,
++        inline::Options { program_growth_percent: 50, ..options() }).unwrap();
++    assert_eq!(bincode::serialize(&q.functions[0]).unwrap(), rejected);
++    assert_eq!(report, serde_json::json!({
++        "selected_sites": 1, "original_operations": 29, "new_operations": 38,
++        "added_operations_upper_bound": 11, "max_leaf_operations": 192,
++        "max_program_growth_percent": 50, "cloned_diagnostic_bytes": 27,
++        "changed_callers": [{"function": 2, "name": "later admitted", "sites": 1,
++            "old_operations": 11, "new_operations": 20, "removed_jumps": 2,
++            "old_frame_size": 64, "new_frame_size": 80,
++            "old_registers": 4, "new_registers": 8,
++            "needed_register_zeroes_before": false, "needed_register_zeroes_after": false}],
++    }));
++}
++
++#[test]
++fn owned_pipeline_matches_borrowed_pass_order_and_retains_data() {
++    let mut p = identity_program();
++    p.functions.push(leaf("forwarder", 16, 2,
++        vec![Slot { offset: 0, size: 8 }], Slot { offset: 8, size: 8 }, vec![
++            Op::Local { dst: 0, offset: 0 },
++            Op::Local { dst: 1, offset: 8 },
++            Op::Call { function: 1, args: vec![0], destination: 1 },
++            Op::Return,
++        ]));
++    if let Op::Call { function, .. } = &mut p.functions[0].code[2] {
++        *function = 2;
++    } else {
++        panic!("expected fixture call");
++    }
++    let mut reference = p.clone();
++    let first = crate::eliminate_direct_forwarders(&mut reference).unwrap();
++    assert_eq!(first.retargeted_calls, 1);
++    let (mut reference, details) = inline::transform(&reference, options()).unwrap();
++    let last = crate::eliminate_direct_forwarders(&mut reference).unwrap();
++    let data = p.data.as_ptr();
++    let (q, report) = crate::optimize_calls(p, Some(options())).unwrap();
++    assert_eq!(bincode::serialize(&q).unwrap(), bincode::serialize(&reference).unwrap());
++    assert_eq!(report.forwarding_before_inline, Some(first));
++    assert_eq!(report.inlining, Some(details));
++    assert_eq!(report.final_forwarding, last);
++    assert_eq!(q.data.as_ptr(), data);
++}
+diff --git a/crates/bytecode/src/optimize.rs b/crates/bytecode/src/optimize.rs
+index 13d0a65..f93f2c3 100644
+--- a/crates/bytecode/src/optimize.rs
++++ b/crates/bytecode/src/optimize.rs
+@@ -27,7 +27,7 @@ pub fn optimize_calls(
+     if let Some(options) = inline {
+         report.forwarding_before_inline = Some(crate::eliminate_direct_forwarders(&mut program)?);
+         let started = std::time::Instant::now();
+-        let (expanded, details) = crate::inline_leaves(&program, options)?;
++        let (expanded, details) = crate::inline::transform_owned(program, options)?;
+         report.inline_time = started.elapsed();
+         report.inlining = Some(details);
+         program = expanded;
+diff --git a/crates/mir-export/src/lower.rs b/crates/mir-export/src/lower.rs
+index 6d48d6e..2345f35 100644
+--- a/crates/mir-export/src/lower.rs
++++ b/crates/mir-export/src/lower.rs
+@@ -817,6 +817,7 @@ struct Lower<'a, 'tcx> {
+     instance: Instance<'tcx>,
+     body: &'tcx mir::Body<'tcx>,
+     locals: Vec<Slot>,
++    local_types: Vec<Ty<'tcx>>,
+     frame_size: usize,
+     frame_align: usize,
+     registers: u32,
+@@ -825,6 +826,8 @@ struct Lower<'a, 'tcx> {
+     fixups: Vec<usize>,
+     caller_location: Option<Slot>,
+     byte_local_extent: usize,
++    scalar_layout: Option<scalar_frame::ChosenLayout>,
++    scalar_eligibility: Option<Vec<bool>>,
+     byte_origins: BTreeMap<Reg,usize>,
+     byte_origins_complete: bool,
+     byte_spans: Vec<Vec<Option<(usize, usize)>>>,
+@@ -890,8 +893,11 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+         }
+         let body = exporter.tcx.instance_mir(instance.def);
+         let mut this = Self::empty(exporter, instance, body);
++        let mut shapes = Vec::new();
++        let retain_shapes = body.local_decls.len() <= scalar_frame::MAX_LOCALS;
+         for local in body.local_decls.iter() {
+-            let layout = this.layout(this.mono(local.ty))?;
++            let ty = this.mono(local.ty);
++            let layout = this.layout(ty)?;
+             if !layout.is_sized() {
+                 return Err("unsized frame local".into());
+             }
+@@ -906,8 +912,10 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+                 size: layout.size.bytes_usize(),
+             });
+             this.frame_size += layout.size.bytes_usize();
++            this.local_types.push(ty);
++            if retain_shapes { shapes.push((layout.size.bytes_usize(), align)); }
+         }
+-        scalar_frame::pack(&mut this)?;
++        scalar_frame::pack(&mut this, shapes)?;
+         this.byte_local_extent = this.frame_size;
+         if instance.def.requires_caller_location(this.tcx()) {
+             this.frame_size = (this.frame_size + 7) & !7;
+@@ -924,6 +932,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+             instance,
+             body,
+             locals: vec![],
++            local_types: vec![],
+             frame_size: 0,
+             frame_align: 16,
+             registers: 0,
+@@ -932,6 +941,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+             fixups: vec![],
+             caller_location: None,
+             byte_local_extent: 0,
++            scalar_layout: None,
++            scalar_eligibility: None,
+             byte_origins: BTreeMap::new(),
+             byte_origins_complete: true,
+             pointer_bindings,
+@@ -952,6 +963,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+             ty::EarlyBinder::bind(self.tcx(), value),
+         )
+     }
++    fn local_ty(&self, local: mir::Local) -> Ty<'tcx> {
++        // Normal lowering filled this during frame initialization. Synthetic
++        // adapters built with empty keep the original on-demand normalization.
++        self.local_types.get(local.as_usize()).copied()
++            .unwrap_or_else(|| self.mono(self.body.local_decls[local].ty))
++    }
+     fn layout(&self, ty: Ty<'tcx>) -> Result<TyAndLayout<'tcx>> {
+         self.tcx()
+             .layout_of(env().as_query_input(ty))
+@@ -1090,12 +1107,15 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+         self.local(at)
+     }
+     fn operand_ty(&self, op: &Operand<'tcx>) -> Ty<'tcx> {
++        if let Operand::Copy(place) | Operand::Move(place) = op {
++            if place.projection.is_empty() { return self.local_ty(place.local); }
++        }
+         self.mono(op.ty(&self.body.local_decls, self.tcx()))
+     }
+     fn place(&mut self, place: Place<'tcx>) -> Result<Location<'tcx>> {
+         let mut loc = Location {
+             address: self.named_local(place.local),
+-            ty: self.mono(self.body.local_decls[place.local].ty),
++            ty: self.local_ty(place.local),
+             variant: None,
+             metadata: None,
+         };
+@@ -2524,7 +2544,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+         for local in self.body.args_iter() {
+             let slot = self.locals[local.as_usize()];
+             if Some(local) == self.body.spread_arg {
+-                let ty = self.mono(self.body.local_decls[local].ty);
++                let ty = self.local_ty(local);
+                 let ty::Tuple(fields) = ty.kind() else {
+                     return Err("MIR spread argument must be a tuple".into());
+                 };
+diff --git a/crates/mir-export/src/lower/aggregate_relocation.rs b/crates/mir-export/src/lower/aggregate_relocation.rs
+index 88abf5d..43107d1 100644
+--- a/crates/mir-export/src/lower/aggregate_relocation.rs
++++ b/crates/mir-export/src/lower/aggregate_relocation.rs
+@@ -97,7 +97,7 @@ pub(super) fn transform(observations: Vec<Observation>, program: &mut Program) {
+         assert_eq!(f.name,o.name,"function identity differs at relocation");
+         if let Some(reason)=o.decline { *declines.entry(reason).or_default()+=1; continue; }
+         assert!(o.baseline,"missing original scalar-layout certificate");
+-        for w in &o.writes {
++        for w in o.writes {
+             if !w.coverage.complete(o.slots[w.local],program) {
+                 o.events[w.block][w.event].reads.insert(w.local);
+             }
+diff --git a/crates/mir-export/src/lower/byte_writes.rs b/crates/mir-export/src/lower/byte_writes.rs
+index 104cb03..b724aee 100644
+--- a/crates/mir-export/src/lower/byte_writes.rs
++++ b/crates/mir-export/src/lower/byte_writes.rs
+@@ -11,11 +11,11 @@ struct Coverage {
+     straight: bool,
+ }
+ impl Coverage {
+-    fn complete(&self, slot: Slot, program: &Program) -> bool {
++    fn complete(self, slot: Slot, program: &Program) -> bool {
+         if !self.straight { return false; }
+         let Some(end) = slot.offset.checked_add(slot.size) else { return false; };
+-        let mut ranges = self.writes.clone();
+-        let mut reads = self.reads.clone();
++        let mut ranges = self.writes;
++        let mut reads = self.reads;
+         for (callee, offset, arguments) in &self.calls {
+             let Some(f) = program.functions.get(*callee) else { return false; };
+             if arguments.len() != f.args.len() { return false; }
+@@ -243,30 +243,25 @@ pub(crate) fn capture(lower: &mut Lower<'_, '_>) -> Observation {
+     if lower.locals.is_empty() || lower.locals.len() > MAX_LOCALS || count > MAX_EVENTS {
+         observed.decline = Some("input_bound"); return observed;
+     }
+-    let mut old_eligible = vec![];
+-    for (local, decl) in lower.body.local_decls.iter_enumerated() {
+-        let ty = lower.mono(decl.ty);
+-        let layout = lower.layout(ty).expect("previous local layout");
+-        let size = layout.size.bytes_usize();
+-        observed.shapes.push((size, layout.align.abi.bytes_usize()));
+-        let abi = local.as_usize() <= lower.body.arg_count;
++    // pack already certified the scalar coloring. Verify that lowering kept
++    // those exact local slots, then reuse its shapes for aggregate analysis.
++    observed.shapes = lower.scalar_layout.take().expect("missing scalar layout certificate")
++        .into_shapes(&observed.slots, observed.extent);
++    observed.baseline = true;
++    for (local, &(size, _)) in observed.shapes.iter().enumerate() {
++        let abi = local <= lower.body.arg_count;
+         observed.reasons.push(if abi { Some("abi") } else if size == 0 { Some("zero_size") } else { None });
+-        old_eligible.push(!abi && matches!(ty.kind(), ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Bool | ty::Char));
+     }
+     let span = |bb: usize, event: usize| {
+         lower.byte_spans.get(bb).and_then(|b| b.get(event)).copied().flatten()
+             .map(|(start, end)| coverage(&lower.code[start..end], lower.registers as usize))
+             .unwrap_or_default()
+     };
+-    let mut old_events = vec![];
+     let mut normal = vec![];
+     for (bb, block) in lower.body.basic_blocks.iter_enumerated() {
+-        let mut old = vec![];
+         let mut events = vec![];
+         for (index, statement) in block.statements.iter().enumerate() {
+             let location = mir::Location { block: bb, statement_index: index };
+-            let mut a = Uses { eligible: &mut old_eligible, event: Event::default() };
+-            a.visit_statement(statement, location); old.push(a.event);
+             let mut b = ByteUses { reasons: &mut observed.reasons, event: Event::default() };
+             b.visit_statement(statement, location);
+             for &local in &b.event.writes {
+@@ -276,8 +271,6 @@ pub(crate) fn capture(lower: &mut Lower<'_, '_>) -> Observation {
+         }
+         let index = block.statements.len();
+         let location = mir::Location { block: bb, statement_index: index };
+-        let mut a = Uses { eligible: &mut old_eligible, event: Event::default() };
+-        a.visit_terminator(block.terminator(), location); old.push(a.event);
+         let mut b = ByteUses { reasons: &mut observed.reasons, event: Event::default() };
+         b.visit_terminator(block.terminator(), location);
+         for &local in &b.event.writes {
+@@ -291,16 +284,9 @@ pub(crate) fn capture(lower: &mut Lower<'_, '_>) -> Observation {
+             }
+         }
+         events.push(b.event);
+-        observed.events.push(events); old_events.push(old);
++        observed.events.push(events);
+         observed.successors.push(block.terminator().successors().map(|b| b.as_usize()).collect());
+     }
+-    let mut end = 0;
+-    let uncolored: Vec<_> = observed.shapes.iter().map(|&(n,a)| allocate(&mut end,n,a).unwrap()).collect();
+-    let baseline = plan(&observed.shapes, old_eligible, old_events, &observed.successors)
+-        .filter(|(_, size)| *size < end).unwrap_or((uncolored, end));
+-    assert_eq!(baseline.1, observed.extent, "baseline local extent differs");
+-    assert!(baseline.0.iter().zip(&observed.slots).all(|(a,b)| a.offset == b.offset && a.size == b.size), "baseline slots differ");
+-    observed.baseline = true;
+     for (block, target, local, partial, coverage, cleanup) in normal {
+         let edge = result_edge(&mut observed.events, &mut observed.successors, block, target, local, partial, cleanup);
+         observed.writes.push(Write { block: edge, event: 0, local, coverage });
+diff --git a/crates/mir-export/src/lower/byte_writes_tests.rs b/crates/mir-export/src/lower/byte_writes_tests.rs
+index d5c8208..58611f6 100644
+--- a/crates/mir-export/src/lower/byte_writes_tests.rs
++++ b/crates/mir-export/src/lower/byte_writes_tests.rs
+@@ -24,10 +24,10 @@ fn cached_frame_observation_rebinds_callee_layout_and_preserves_byte_coverage()
+     let mut p = program(8, &[]);
+     p.functions.push(program(16, &[]).functions.remove(0));
+     let slot = Slot { offset: 0, size: 16 };
+-    assert!(!original.writes[0].coverage.complete(slot, &p));
+-    assert!(restored.writes[0].coverage.complete(slot, &p));
++    assert!(!original.writes[0].coverage.clone().complete(slot, &p));
++    assert!(restored.writes[0].coverage.clone().complete(slot, &p));
+     p.functions[1].args.push(Slot { offset: 0, size: 8 });
+-    assert!(!restored.writes[0].coverage.complete(slot, &p));
++    assert!(!restored.writes[0].coverage.clone().complete(slot, &p));
+     assert!(cached_observation().rebind(7, &BTreeMap::new()).is_err());
+ }
+ 
+@@ -72,7 +72,7 @@ fn coverage_matches_independent_byte_cells_including_padding_and_partial_stores(
+                 for i in at..at+size { cells[i] = true; }
+             }
+         }
+-        assert_eq!(c.complete(slot, &p), !observed && cells[8..16].iter().all(|x| *x), "{c:?}");
++        assert_eq!(c.complete(slot, &p), !observed && cells[8..16].iter().all(|x| *x), "rng state {seed:x}");
+     }
+     let c = Coverage { straight: true, writes: vec![(8,1),(12,4)], ..Coverage::default() };
+     assert!(!c.complete(slot, &p)); // holes cannot be borrowed from another lifetime
+@@ -80,6 +80,95 @@ fn coverage_matches_independent_byte_cells_including_padding_and_partial_stores(
+     assert!(!c.complete(slot, &p));
+ }
+ 
++#[test]
++fn owned_coverage_preserves_range_read_and_zero_size_edge_decisions() {
++    let p = program(0, &[]);
++    let cases = [
++        ("adjacent unsorted", 8, 8, true, vec![(12,4),(8,4)], vec![], true),
++        ("duplicate", 8, 8, true, vec![(8,4),(8,4),(12,4)], vec![], true),
++        ("overlap", 8, 8, true, vec![(8,6),(12,4)], vec![], true),
++        ("hole", 8, 8, true, vec![(8,2),(12,4)], vec![], false),
++        ("initial gap", 8, 8, true, vec![(9,8)], vec![], false),
++        ("cover from before", 8, 8, true, vec![(0,16)], vec![], true),
++        ("read after write", 8, 8, true, vec![(8,8)], vec![(15,1)], false),
++        ("touching reads", 8, 8, true, vec![(8,8)], vec![(0,8),(16,1)], true),
++        ("empty read", 8, 8, true, vec![(8,8)], vec![(12,0)], true),
++        ("saturating read end", 8, 8, true, vec![(8,8)], vec![(7,usize::MAX)], false),
++        ("nonstraight", 8, 8, false, vec![(8,8)], vec![], false),
++        ("slot overflow", usize::MAX, 1, true, vec![], vec![], false),
++        ("write overflow", 8, 8, true, vec![(8,usize::MAX)], vec![], false),
++        ("overflow before gap check", 8, 8, true, vec![(usize::MAX,1)], vec![], false),
++        ("success before later overflow", 8, 8, true, vec![(usize::MAX,1),(8,8)], vec![], true),
++        ("empty slot", 8, 0, true, vec![], vec![], true),
++        ("read straddles empty slot", 8, 0, true, vec![], vec![(7,2)], false),
++        ("read starts at empty slot", 8, 0, true, vec![], vec![(8,1)], true),
++        ("empty slot with write gap", 8, 0, true, vec![(9,1)], vec![], true),
++        ("empty slot with overflowing write", 8, 0, true, vec![(usize::MAX,1)], vec![], false),
++    ];
++    for (label, offset, size, straight, writes, reads, expected) in cases {
++        let c = Coverage { straight, writes, reads, calls: vec![] };
++        assert_eq!(c.complete(Slot { offset, size }, &p), expected, "{label}");
++    }
++}
++
++#[test]
++fn owned_coverage_checks_deferred_calls_before_empty_or_already_covered_success() {
++    let p = program(8, &[8]);
++    for size in [0,8] {
++        for (label, calls) in [
++            ("missing callee", vec![(1,0,vec![None])]),
++            ("argument count", vec![(0,0,vec![])]),
++            ("later missing callee", vec![(0,0,vec![None]),(1,0,vec![None])]),
++        ] {
++            let c = Coverage { straight: true, writes: vec![(0,8)], calls, ..Coverage::default() };
++            assert!(!c.complete(Slot { offset: 0, size }, &p), "{label}, slot size {size}");
++        }
++    }
++}
++
++#[test]
++fn owned_and_serialized_coverage_match_byte_cells_with_final_callee_abi() {
++    let slot = Slot { offset: 8, size: 8 };
++    let mut seed = 0x57b230af_u64;
++    for _ in 0..1_000 {
++        let mut next = |n: usize| { seed ^= seed << 13; seed ^= seed >> 7; seed ^= seed << 17; seed as usize % n };
++        let mut p = program(0, &[0]);
++        let mut c = Coverage { straight: true, ..Coverage::default() };
++        for _ in 0..4 { c.writes.push((next(24),next(9))); }
++        for _ in 0..2 { c.reads.push((next(24),next(9))); }
++        for _ in 0..3 {
++            let offset = next(24);
++            let argument = if next(2)==0 { None } else { Some(next(24)) };
++            c.calls.push((0,offset,vec![argument]));
++        }
++        // Capture knows callee identities, not their final result/argument byte
++        // sizes. Resolve these only after the complete Program has been lowered.
++        p.functions[0].result.size = next(9);
++        p.functions[0].args[0].size = next(9);
++        let mut cells = [false;32];
++        let mut observed = false;
++        for &(at,size) in &c.writes {
++            for byte in at..at+size { cells[byte] = true; }
++        }
++        for &(at,size) in &c.reads {
++            observed |= (at..at+size).any(|byte| (8..16).contains(&byte));
++        }
++        for (callee,at,arguments) in &c.calls {
++            let f = &p.functions[*callee];
++            for byte in *at..*at+f.result.size { cells[byte] = true; }
++            for (argument,formal) in arguments.iter().zip(&f.args) {
++                if let Some(at) = argument {
++                    observed |= (*at..*at+formal.size).any(|byte| (8..16).contains(&byte));
++                }
++            }
++        }
++        let expected = !observed && cells[8..16].iter().all(|x| *x);
++        let restored: Coverage = bincode::deserialize(&bincode::serialize(&c).unwrap()).unwrap();
++        assert_eq!(c.complete(slot,&p),expected,"owned, rng state {seed:x}");
++        assert_eq!(restored.complete(slot,&p),expected,"serialized, rng state {seed:x}");
++    }
++}
++
+ #[test]
+ fn emitted_copy_and_store_coverage_use_derived_local_addresses() {
+     let p = program(0,&[]); let slot = Slot { offset: 16, size: 16 };
+diff --git a/crates/mir-export/src/lower/scalar_eligibility_tests.rs b/crates/mir-export/src/lower/scalar_eligibility_tests.rs
+new file mode 100644
+index 0000000..3645d51
+--- /dev/null
++++ b/crates/mir-export/src/lower/scalar_eligibility_tests.rs
+@@ -0,0 +1,76 @@
++use super::*;
++use rustc_middle::mir::visit::NonUseContext;
++
++fn contexts() -> Vec<(PlaceContext, bool)> {
++    let mut contexts = vec![];
++    for context in [NonUseContext::StorageLive, NonUseContext::StorageDead,
++        NonUseContext::AscribeUserTy(ty::Variance::Covariant),
++        NonUseContext::AscribeUserTy(ty::Variance::Contravariant),
++        NonUseContext::AscribeUserTy(ty::Variance::Invariant),
++        NonUseContext::AscribeUserTy(ty::Variance::Bivariant),
++        NonUseContext::VarDebugInfo, NonUseContext::BackwardIncompatibleDropHint]
++    {
++        contexts.push((PlaceContext::NonUse(context), true));
++    }
++    for (context, preserves) in [(NonMutatingUseContext::Copy, true),
++        (NonMutatingUseContext::Move, true), (NonMutatingUseContext::Inspect, false),
++        (NonMutatingUseContext::SharedBorrow, false), (NonMutatingUseContext::FakeBorrow, false),
++        (NonMutatingUseContext::RawBorrow, false), (NonMutatingUseContext::PlaceMention, false),
++        (NonMutatingUseContext::Projection, false)]
++    {
++        contexts.push((PlaceContext::NonMutatingUse(context), preserves));
++    }
++    for (context, preserves) in [(MutatingUseContext::Store, true),
++        (MutatingUseContext::SetDiscriminant, false), (MutatingUseContext::AsmOutput, false),
++        (MutatingUseContext::Call, false), (MutatingUseContext::Yield, false),
++        (MutatingUseContext::Drop, false), (MutatingUseContext::Borrow, false),
++        (MutatingUseContext::RawBorrow, false), (MutatingUseContext::Projection, false)]
++    {
++        contexts.push((PlaceContext::MutatingUse(context), preserves));
++    }
++    contexts
++}
++
++fn fallback_context(eligible: &mut [bool], local: mir::Local, context: PlaceContext) {
++    Uses { eligible }.visit_local(local, context,
++        mir::Location { block: mir::START_BLOCK, statement_index: 0 });
++}
++
++#[test]
++fn packing_and_fallback_visitors_match_every_pinned_context_policy() {
++    let local = mir::Local::from_usize(1);
++    for (context, preserves) in contexts() {
++        for initially_eligible in [false, true] {
++            let mut packed = [true, initially_eligible, false];
++            let mut fallback = packed;
++            scalar_frame::visit_eligibility_context(&mut packed, local, context);
++            fallback_context(&mut fallback, local, context);
++            assert_eq!(packed, [true, initially_eligible && preserves, false], "{context:?}");
++            assert_eq!(packed, fallback, "{context:?}");
++        }
++    }
++}
++
++#[test]
++fn direct_operand_exclusions_commute_with_packing_and_fallback_visitors() {
++    let first = mir::Local::from_usize(0);
++    let second = mir::Local::from_usize(1);
++    for (before, _) in contexts() {
++        for (after, _) in contexts() {
++            for operand in [Operand::Copy(Place::from(first)), Operand::Move(Place::from(first))] {
++                let mut interleaved = [true; 3];
++                fallback_context(&mut interleaved, first, before);
++                exclude_operand(&mut interleaved, &operand);
++                fallback_context(&mut interleaved, second, after);
++
++                let mut reused = [true; 3];
++                scalar_frame::visit_eligibility_context(&mut reused, first, before);
++                scalar_frame::visit_eligibility_context(&mut reused, second, after);
++                exclude_operand(&mut reused, &operand);
++                assert_eq!(reused, interleaved, "before={before:?} after={after:?}");
++                assert!(!reused[0]);
++                assert!(reused[2]); // unrelated private scalar remains eligible
++            }
++        }
++    }
++}
+diff --git a/crates/mir-export/src/lower/scalar_frame.rs b/crates/mir-export/src/lower/scalar_frame.rs
+index a8126b9..37deb18 100644
+--- a/crates/mir-export/src/lower/scalar_frame.rs
++++ b/crates/mir-export/src/lower/scalar_frame.rs
+@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
+ static NANOS: AtomicU64 = AtomicU64::new(0);
+ static SAVED: AtomicU64 = AtomicU64::new(0);
+ static CHANGED: AtomicU64 = AtomicU64::new(0);
+-const MAX_LOCALS: usize = 4096;
++pub(super) const MAX_LOCALS: usize = 4096;
+ const MAX_EVENTS: usize = 32768;
+ const MAX_WORK: usize = 4_000_000;
+ 
+@@ -32,6 +32,39 @@ fn allocate(end: &mut usize, size: usize, align: usize) -> Option<Slot> {
+     Some(Slot { offset: at, size })
+ }
+ 
++// Retain only the chosen local layout, not the MIR events or interference graph.
++// A planned layout has passed plan's independent coloring certificate. Dedicated
++// slots are reconstructed only when capture consumes this, after its bounds.
++pub(super) struct ChosenLayout {
++    slots: Option<Vec<Slot>>,
++    shapes: Vec<(usize, usize)>,
++    extent: usize,
++}
++impl ChosenLayout {
++    fn choose(shapes: Vec<(usize, usize)>, planned: Option<(Vec<Slot>, usize)>, original_extent: usize) -> Self {
++        let (slots, extent) = match planned.filter(|(_, end)| *end < original_extent) {
++            Some((slots, end)) => (Some(slots), end),
++            None => (None, original_extent),
++        };
++        Self { slots, shapes, extent }
++    }
++
++    fn into_shapes(self, slots: &[Slot], local_extent: usize) -> Vec<(usize, usize)> {
++        // Preserve capture's checked reconstruction, including its overflow
++        // behavior, even when scalar packing selected a smaller layout.
++        let mut end = 0;
++        let uncolored = self.shapes.iter().map(|&(size, align)| allocate(&mut end, size, align).unwrap()).collect();
++        let (expected, extent) = match self.slots {
++            Some(planned) => (planned, self.extent),
++            None => (uncolored, end),
++        };
++        assert_eq!(extent, local_extent, "baseline local extent differs");
++        assert!(expected.len() == slots.len() && expected.iter().zip(slots)
++            .all(|(a, b)| a.offset == b.offset && a.size == b.size), "baseline slots differ");
++        self.shapes
++    }
++}
++
+ #[derive(Clone, PartialEq, Eq)]
+ struct Dense { words: Vec<u64>, count: usize }
+ impl Dense {
+@@ -71,6 +104,14 @@ impl Dense {
+ fn plan(shapes: &[(usize, usize)], eligible: Vec<bool>, events: Vec<Vec<Event>>, successors: &[Vec<usize>]) -> Option<(Vec<Slot>, usize)> {
+     plan_with_eligibility(shapes, eligible, events, successors, None)
+ }
++fn plan_for_promotion(shapes: &[(usize, usize)], eligible: Vec<bool>, events: Vec<Vec<Event>>, successors: &[Vec<usize>])
++    -> (Vec<bool>, Option<(Vec<Slot>, usize)>)
++{
++    // Entry-zero liveness can change the planner's copy, even before a later
++    // work-bound decline. Promotion needs the original visitor eligibility.
++    let planned = plan(shapes, eligible.clone(), events, successors);
++    (eligible, planned)
++}
+ fn plan_with_eligibility(shapes: &[(usize, usize)], mut eligible: Vec<bool>, mut events: Vec<Vec<Event>>, successors: &[Vec<usize>], eligibility: Option<&mut Vec<bool>>) -> Option<(Vec<Slot>, usize)> {
+     let n = shapes.len();
+     if n == 0 || n > MAX_LOCALS || events.is_empty() || events.iter().map(Vec::len).sum::<usize>() > MAX_EVENTS { return None; }
+@@ -81,12 +122,25 @@ fn plan_with_eligibility(shapes: &[(usize, usize)], mut eligible: Vec<bool>, mut
+     let mut out = Dense::new(n);
+     let mut live = Dense::new(n);
+     let mut output = input.clone();
++    // Existing input/output rows describe the last transfer. None distinguishes
++    // an unevaluated block from a transfer whose logical work charge is zero.
++    let mut transfer_work = vec![None; events.len()];
+     let mut work = 0;
+     loop {
+         let mut changed = false;
+         for b in (0..events.len()).rev() {
+             out.clear();
+             for &s in &successors[b] { out.union_with(&input[s]); }
++            if let Some(charge) = transfer_work[b] {
++                if out == output[b] {
++                    // Reapply the original event-work charge even when the
++                    // transfer is reused, preserving every work-bound decline.
++                    work += charge;
++                    if work > MAX_WORK { return None; }
++                    continue;
++                }
++            }
++            let previous_work = work;
+             live.copy_from(&out);
+             for e in events[b].iter().rev() {
+                 work += 1 + live.len() + e.reads.len();
+@@ -94,6 +148,7 @@ fn plan_with_eligibility(shapes: &[(usize, usize)], mut eligible: Vec<bool>, mut
+                 for &i in &e.writes { live.remove(i); }
+                 for &i in &e.reads { live.insert(i); }
+             }
++            transfer_work[b] = Some(work - previous_work);
+             changed |= live != input[b];
+             input[b].copy_from(&live); output[b].copy_from(&out);
+         }
+@@ -151,15 +206,13 @@ fn plan_with_eligibility(shapes: &[(usize, usize)], mut eligible: Vec<bool>, mut
+     Some((slots, end))
+ }
+ 
+-pub(super) fn pack(lower: &mut Lower<'_, '_>) -> Result<()> {
++pub(super) fn pack(lower: &mut Lower<'_, '_>, shapes: Vec<(usize, usize)>) -> Result<()> {
+     let start = std::time::Instant::now();
+     let n = lower.locals.len();
+     if n > MAX_LOCALS { return Ok(()); }
+-    let mut shapes = Vec::new();
+     let mut eligible = Vec::new();
+-    for (id, local) in lower.body.local_decls.iter_enumerated() {
+-        let ty = lower.mono(local.ty); let layout = lower.layout(ty)?;
+-        shapes.push((layout.size.bytes_usize(), layout.align.abi.bytes() as usize));
++    for (id, _) in lower.body.local_decls.iter_enumerated() {
++        let ty = lower.local_ty(id);
+         eligible.push(id.as_usize() > lower.body.arg_count && matches!(ty.kind(), ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Bool | ty::Char));
+     }
+     let mut events = vec![]; let mut successors = vec![];
+@@ -174,10 +227,17 @@ pub(super) fn pack(lower: &mut Lower<'_, '_>) -> Result<()> {
+         events.push(es); successors.push(block.terminator().successors().map(|b| b.as_usize()).collect());
+     }
+     let old = lower.frame_size;
+-    if let Some((slots, end)) = plan(&shapes, eligible, events, &successors).filter(|(_, end)| *end < old) {
+-        lower.locals = slots; lower.frame_size = end;
+-        CHANGED.fetch_add(1, Ordering::Relaxed); SAVED.fetch_add((old-end) as u64, Ordering::Relaxed);
++    let (eligible, planned) = plan_for_promotion(&shapes, eligible, events, &successors);
++    // Keep this independent of ChosenLayout, which capture consumes first.
++    lower.scalar_eligibility = Some(eligible);
++    let chosen = ChosenLayout::choose(shapes, planned, old);
++    if let Some(slots) = &chosen.slots {
++        lower.locals = slots.clone(); lower.frame_size = chosen.extent;
++        CHANGED.fetch_add(1, Ordering::Relaxed); SAVED.fetch_add((old-chosen.extent) as u64, Ordering::Relaxed);
+     }
++    // Capture compares this original-local extent, before caller-location and
++    // anonymous temporary storage are appended to the frame.
++    lower.scalar_layout = Some(chosen);
+     NANOS.fetch_add(start.elapsed().as_nanos() as u64, Ordering::Relaxed);
+     Ok(())
+ }
+@@ -185,6 +245,12 @@ pub(super) fn report() {
+     eprintln!("rust-interp-scalar-frames: functions={} static_bytes_saved={} seconds={:.6}", CHANGED.load(Ordering::Relaxed), SAVED.load(Ordering::Relaxed), NANOS.load(Ordering::Relaxed) as f64 / 1e9);
+ }
+ 
++#[cfg(test)]
++pub(super) fn visit_eligibility_context(eligible: &mut [bool], local: mir::Local, context: PlaceContext) {
++    Uses { eligible, event: Event::default() }.visit_local(local, context,
++        mir::Location { block: mir::START_BLOCK, statement_index: 0 });
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+@@ -209,7 +275,132 @@ mod tests {
+         let slots = simple(vec![vec![],vec![event(&[], &[1])],vec![event(&[], &[2])],vec![event(&[1,2], &[])]],vec![vec![1,2],vec![3],vec![3],vec![]]);
+         assert_ne!(slots[1].offset, slots[2].offset);
+     }
++
++    #[test]
++    fn promotion_retains_visitor_eligibility_before_entry_zero_liveness() {
++        let initial = vec![false, true];
++        let events = vec![vec![event(&[1], &[])]];
++        let (preserved, planned) = plan_for_promotion(&[(8, 8); 2], initial.clone(), events.clone(), &[vec![]]);
++        assert_eq!(preserved, [false, true]);
++        assert_eq!(planned.unwrap().1, 16); // no frame saving is required
++        let mut after_liveness = vec![];
++        plan_with_eligibility(&[(8, 8); 2], initial, events, &[vec![]], Some(&mut after_liveness)).unwrap();
++        assert_eq!(after_liveness, [false, false]);
++    }
++
++    #[test]
++    fn promotion_snapshot_survives_input_and_late_work_bound_declines() {
++        let initial = vec![false, true];
++        let (preserved, planned) = plan_for_promotion(&[(8, 8); 2], initial.clone(),
++            vec![vec![Event::default(); MAX_EVENTS + 1]], &[vec![]]);
++        assert!(planned.is_none());
++        assert_eq!(preserved, initial);
++
++        let count = 2049;
++        let mut initial = vec![true; count];
++        initial[0] = false;
++        let active: Vec<_> = (2..count).collect();
++        // Local 1 loses coloring eligibility before the simultaneous live set
++        // exceeds the work bound. Promotion must still receive the old bit.
++        let events = vec![vec![event(&[1], &[]), event(&[], &active), event(&active, &[])]];
++        let (preserved, planned) = plan_for_promotion(&vec![(8, 8); count], initial.clone(), events, &[vec![]]);
++        assert!(planned.is_none());
++        assert_eq!(preserved, initial);
++    }
++
++    #[test]
++    fn chosen_layout_retains_the_certified_coloring() {
++        let shapes = vec![(8, 8); 3];
++        let planned = plan(&shapes, vec![false, true, true],
++            vec![vec![event(&[], &[1]), event(&[1], &[]), event(&[], &[2]), event(&[2], &[])]], &[vec![]]);
++        let chosen = ChosenLayout::choose(shapes.clone(), planned, 24);
++        // The ABI local is dedicated; the two disjoint scalar lifetimes share.
++        let expected = [Slot { offset: 0, size: 8 }, Slot { offset: 8, size: 8 }, Slot { offset: 8, size: 8 }];
++        assert_eq!(chosen.extent, 16);
++        assert_eq!(chosen.into_shapes(&expected, 16), shapes);
++    }
++
++    #[test]
++    fn non_improving_and_input_bounded_plans_keep_the_original_layout() {
++        let shapes = vec![(8, 8); 3];
++        // This valid plan moves local 1 after local 2 without shrinking storage.
++        let non_improving = plan(&shapes, vec![false, true, false],
++            vec![vec![event(&[], &[1]), event(&[1], &[])]], &[vec![]]).unwrap();
++        assert_eq!(non_improving.0[1].offset, 16);
++        assert_eq!(non_improving.1, 24);
++        let bounded = plan(&shapes, vec![false, true, true],
++            vec![vec![Event::default(); MAX_EVENTS + 1]], &[vec![]]);
++        assert!(bounded.is_none());
++        let expected = [Slot { offset: 0, size: 8 }, Slot { offset: 8, size: 8 }, Slot { offset: 16, size: 8 }];
++        for planned in [Some(non_improving), bounded] {
++            let chosen = ChosenLayout::choose(shapes.clone(), planned, 24);
++            assert_eq!(chosen.into_shapes(&expected, 24), shapes);
++        }
++    }
++
++    #[test]
++    fn work_bounded_plan_keeps_dedicated_storage() {
++        let count = 2048;
++        let shapes = vec![(8, 8); count];
++        let active: Vec<_> = (1..count).collect();
++        let mut eligible = vec![true; count];
++        eligible[0] = false;
++        // Simultaneous live scalars exceed the unchanged quadratic work bound.
++        let planned = plan(&shapes, eligible,
++            vec![vec![event(&[], &active), event(&active, &[])]], &[vec![]]);
++        assert!(planned.is_none());
++        let expected: Vec<_> = (0..count).map(|i| Slot { offset: i * 8, size: 8 }).collect();
++        let chosen = ChosenLayout::choose(shapes.clone(), planned, count * 8);
++        assert_eq!(chosen.into_shapes(&expected, count * 8), shapes);
++    }
++
++    #[test]
++    fn fallback_preserves_alignment_gaps_and_zero_sized_locals() {
++        let shapes = vec![(0, 16), (3, 1), (8, 8), (0, 32), (1, 1)];
++        let expected = [Slot { offset: 0, size: 0 }, Slot { offset: 0, size: 3 },
++            Slot { offset: 8, size: 8 }, Slot { offset: 32, size: 0 }, Slot { offset: 32, size: 1 }];
++        let chosen = ChosenLayout::choose(shapes.clone(), None, 33);
++        assert_eq!(chosen.into_shapes(&expected, 33), shapes);
++    }
++
++    #[test]
++    fn checked_dedicated_extent_is_deferred_until_capture() {
++        // Capture may decline a body before reconstructing dedicated storage.
++        // Merely retaining a plan must not move a checked-overflow panic ahead
++        // of those origin/input guards, even if the colored plan would fit.
++        for planned in [None, Some((vec![Slot { offset: 0, size: 1 }], 1))] {
++            // Match a colored plan exactly so only the checked dedicated
++            // reconstruction can fail, not a stale slot or extent assertion.
++            let (actual, extent) = planned.clone().unwrap_or((vec![], 2));
++            let chosen = ChosenLayout::choose(vec![(usize::MAX, 1), (1, 1)], planned, 2);
++            assert!(std::panic::catch_unwind(|| chosen.into_shapes(&actual, extent)).is_err());
++        }
++    }
++
++    #[test]
++    fn stale_slot_and_extent_certificates_are_rejected() {
++        for mutation in 0..5 {
++            let chosen = ChosenLayout::choose(vec![(8, 8); 2], None, 16);
++            let mut actual = vec![Slot { offset: 0, size: 8 }, Slot { offset: 8, size: 8 }];
++            let mut extent = 16;
++            match mutation {
++                0 => actual[1].offset = 0,
++                1 => actual[1].size = 7,
++                2 => { actual.pop(); }
++                3 => actual.push(Slot { offset: 16, size: 0 }),
++                // Caller-location/scratch storage must not replace local extent.
++                4 => extent = 32,
++                _ => unreachable!(),
++            }
++            assert!(std::panic::catch_unwind(|| chosen.into_shapes(&actual, extent)).is_err(),
++                "accepted stale layout mutation {mutation}");
++        }
++    }
+ }
+ 
+ #[path="byte_writes.rs"]
+ pub(super) mod byte_writes;
++
++#[cfg(test)]
++#[path = "scalar_frame_liveness_tests.rs"]
++mod liveness_tests;
+diff --git a/crates/mir-export/src/lower/scalar_frame_liveness_tests.rs b/crates/mir-export/src/lower/scalar_frame_liveness_tests.rs
+new file mode 100644
+index 0000000..c1e849a
+--- /dev/null
++++ b/crates/mir-export/src/lower/scalar_frame_liveness_tests.rs
+@@ -0,0 +1,227 @@
++//! Retained uncached planner oracle for transient liveness-transfer reuse.
++//! The function below is copied from b767335's scalar_frame.rs, with only its
++//! name changed. Keep it uncached and separate from the production planner.
++use super::*;
++
++fn retained_plan(shapes: &[(usize, usize)], mut eligible: Vec<bool>, mut events: Vec<Vec<Event>>, successors: &[Vec<usize>], eligibility: Option<&mut Vec<bool>>) -> Option<(Vec<Slot>, usize)> {
++    let n = shapes.len();
++    if n == 0 || n > MAX_LOCALS || events.is_empty() || events.iter().map(Vec::len).sum::<usize>() > MAX_EVENTS { return None; }
++    for es in &mut events {
++        for e in es { e.reads.retain(|&i| eligible[i]); e.writes.retain(|&i| eligible[i]); }
++    }
++    let mut input = vec![Dense::new(n); events.len()];
++    let mut out = Dense::new(n);
++    let mut live = Dense::new(n);
++    let mut output = input.clone();
++    let mut work = 0;
++    loop {
++        let mut changed = false;
++        for b in (0..events.len()).rev() {
++            out.clear();
++            for &s in &successors[b] { out.union_with(&input[s]); }
++            live.copy_from(&out);
++            for e in events[b].iter().rev() {
++                work += 1 + live.len() + e.reads.len();
++                if work > MAX_WORK { return None; }
++                for &i in &e.writes { live.remove(i); }
++                for &i in &e.reads { live.insert(i); }
++            }
++            changed |= live != input[b];
++            input[b].copy_from(&live); output[b].copy_from(&out);
++        }
++        if !changed { break; }
++    }
++    // Preserve every local whose original entry zero can reach a read.
++    for i in input[0].iter() { eligible[i] = false; }
++    let mut mask = Dense::new(n);
++    for i in 0..n { if eligible[i] { mask.insert(i); } }
++    let mut simultaneous = Dense::new(n);
++    let mut edges = vec![Dense::new(n); n];
++    for (b, es) in events.iter().enumerate() {
++        live.copy_from(&output[b]);
++        for e in es.iter().rev() {
++            simultaneous.copy_from(&live);
++            for &i in e.reads.iter().chain(&e.writes) { simultaneous.insert(i); }
++            simultaneous.intersect_with(&mask);
++            work += simultaneous.len().checked_mul(simultaneous.len())?;
++            if work > MAX_WORK { return None; }
++            // Dead stores must interfere too; sharing them with a live value
++            // would clobber that value even though the store itself is unused.
++            for a in simultaneous.iter() {
++                edges[a].union_with(&simultaneous); edges[a].remove(a);
++            }
++            for &i in &e.writes { live.remove(i); }
++            for &i in &e.reads { live.insert(i); }
++        }
++        if live != input[b] { return None; }
++    }
++    let mut order: Vec<_> = (0..n).filter(|&i| eligible[i]).collect();
++    order.sort_by_key(|&i| (std::cmp::Reverse(edges[i].len()), std::cmp::Reverse(shapes[i].0), i));
++    let mut groups: Vec<Vec<usize>> = vec![];
++    let mut group_of = vec![None; n];
++    for i in order {
++        let g = groups.iter().position(|g| shapes[g[0]] == shapes[i] && g.iter().all(|j| !edges[i].contains(*j)));
++        let g = g.unwrap_or_else(|| { groups.push(vec![]); groups.len()-1 });
++        groups[g].push(i); group_of[i] = Some(g);
++    }
++    let mut slots = vec![Slot { offset: 0, size: 0 }; n];
++    let mut end = 0;
++    for i in 0..n {
++        if !eligible[i] { slots[i] = allocate(&mut end, shapes[i].0, shapes[i].1)?; }
++    }
++    for group in groups {
++        let shape = shapes[group[0]];
++        let slot = allocate(&mut end, shape.0, shape.1)?;
++        for i in group { slots[i] = slot; }
++    }
++    // Certify the coloring independently of the greedy group selection.
++    for i in 0..n {
++        if slots[i].size != shapes[i].0 || slots[i].offset % shapes[i].1 != 0 { return None; }
++        if eligible[i] && edges[i].iter().any(|j| group_of[i] == group_of[j]) { return None; }
++    }
++    if let Some(out) = eligibility { *out = eligible; }
++    Some((slots, end))
++}
++
++fn event(reads: &[usize], writes: &[usize]) -> Event {
++    Event { reads: reads.iter().copied().collect(), writes: writes.iter().copied().collect() }
++}
++
++type Layout = Option<(Vec<(usize, usize)>, usize)>;
++fn describe(plan: Option<(Vec<Slot>, usize)>) -> Layout {
++    plan.map(|(slots, extent)| (slots.iter().map(|s| (s.offset, s.size)).collect(), extent))
++}
++
++fn compare(
++    shapes: &[(usize, usize)], eligible: Vec<bool>, events: Vec<Vec<Event>>,
++    successors: &[Vec<usize>], label: &str,
++) -> (Layout, Vec<bool>) {
++    // A decline must leave the caller's eligibility output untouched, even
++    // when internal entry-zero liveness already changed the planner's copy.
++    let mut expected_eligibility = vec![true, false, true];
++    let mut actual_eligibility = expected_eligibility.clone();
++    let expected = describe(retained_plan(shapes, eligible.clone(), events.clone(), successors,
++        Some(&mut expected_eligibility)));
++    let actual = describe(plan_with_eligibility(shapes, eligible, events, successors,
++        Some(&mut actual_eligibility)));
++    assert_eq!(actual, expected, "layout: {label}");
++    assert_eq!(actual_eligibility, expected_eligibility, "eligibility: {label}");
++    (actual, actual_eligibility)
++}
++
++#[test]
++fn empty_inputs_still_evaluate_reads_and_empty_transfers() {
++    let (layout, eligible) = compare(&[(8, 8); 2], vec![true; 2],
++        vec![vec![event(&[1], &[])]], &[vec![]], "entry read with empty output");
++    assert_eq!(layout, Some((vec![(8, 8), (0, 8)], 16)));
++    assert_eq!(eligible, [true, false]);
++
++    // The reverse sweep needs several rounds to carry the entry read through
++    // the empty blocks. A completed empty transfer has a valid zero charge.
++    compare(&[(8, 8); 3], vec![true; 3],
++        vec![vec![event(&[2], &[])], vec![], vec![]],
++        &[vec![], vec![0], vec![1]], "empty transfers with delayed propagation");
++    compare(&[(0, 16), (8, 8)], vec![false, true],
++        vec![vec![], vec![]], &[vec![1], vec![0]], "empty cycle");
++}
++
++#[test]
++fn loops_joins_dead_stores_and_same_event_reads_match_original_planner() {
++    let shapes = [(8, 8), (8, 8), (8, 8), (16, 16), (0, 32)];
++    let events = vec![
++        vec![event(&[], &[1]), event(&[1], &[1, 2])],
++        vec![event(&[2], &[3]), event(&[], &[1])],
++        vec![event(&[1, 3], &[])],
++        vec![event(&[4], &[4])],
++    ];
++    compare(&shapes, vec![false, true, true, true, true], events,
++        &[vec![1, 2], vec![1, 2], vec![], vec![3]], "join, loop, unreachable self-loop");
++}
++
++fn next(seed: &mut u64) -> usize {
++    *seed ^= *seed << 13;
++    *seed ^= *seed >> 7;
++    *seed ^= *seed << 17;
++    *seed as usize
++}
++
++#[test]
++fn deterministic_cfgs_match_uncached_layouts_and_eligibility() {
++    let mut seed = 0x5b91_a2d8_670c_4e3fu64;
++    for case in 0..512 {
++        let before = seed;
++        let n = match case % 16 {
++            0 => 65,
++            1 => 129,
++            _ => 1 + next(&mut seed) % 16,
++        };
++        let blocks = 1 + next(&mut seed) % 8;
++        let shapes: Vec<_> = (0..n).map(|_| {
++            let align = 1 << (next(&mut seed) % 6);
++            let size = [0, 1, 3, 8, 16][next(&mut seed) % 5];
++            (size, align)
++        }).collect();
++        let eligible: Vec<_> = (0..n).map(|_| next(&mut seed) % 4 != 0).collect();
++        let mut events = Vec::new();
++        let mut successors = Vec::new();
++        for _ in 0..blocks {
++            let mut block = Vec::new();
++            for _ in 0..next(&mut seed) % 7 {
++                let mut e = Event::default();
++                for i in 0..n {
++                    if next(&mut seed) % 9 == 0 { e.reads.insert(i); }
++                    if next(&mut seed) % 9 == 0 { e.writes.insert(i); }
++                }
++                block.push(e);
++            }
++            events.push(block);
++            successors.push((0..blocks).filter(|_| next(&mut seed) % 4 == 0).collect());
++        }
++        compare(&shapes, eligible, events, &successors,
++            &format!("case {case}, seed {before:016x}"));
++    }
++}
++
++#[test]
++fn cached_transfers_preserve_exact_work_boundary_and_late_declines() {
++    // 999 locals are live after the last event. There are 1,999 events, with
++    // `redundant_reads` extra reads of an already-live local. Each of the two
++    // sweeps costs 1,999 * 1,000 + redundant_reads. The second sweep has the
++    // same empty output as the first. Entry-zero preservation then excludes
++    // those 999 locals; an optional dead write of local 999 adds exactly one
++    // interference-work unit. Other events contribute no interference work.
++    for (redundant_reads, dead_write, expected_work, accepted) in [
++        (999, true, MAX_WORK - 1, true),
++        (1000, false, MAX_WORK, true),
++        (1000, true, MAX_WORK + 1, false),
++        (1001, false, MAX_WORK + 2, false),
++    ] {
++        assert_eq!(2 * (1999 * 1000 + redundant_reads) + usize::from(dead_write), expected_work);
++        let mut events = vec![Event::default(); 1999];
++        for e in &mut events[..redundant_reads] { e.reads.insert(0); }
++        events.last_mut().unwrap().reads.extend(0..999);
++        if dead_write { events[1500].writes.insert(999); }
++        let (layout, eligible) = compare(&vec![(8, 8); 1000], vec![true; 1000],
++            vec![events], &[vec![]], &format!("logical work {expected_work}"));
++        assert_eq!(layout.is_some(), accepted, "logical work {expected_work}");
++        if accepted {
++            assert_eq!(layout.unwrap().1, 8000);
++            assert_eq!(eligible.iter().filter(|&&yes| yes).count(), 1);
++            assert!(eligible[999]);
++        } else {
++            assert_eq!(eligible, [true, false, true]);
++        }
++    }
++}
++
++#[test]
++fn input_bounds_and_checked_extent_fallbacks_match_original_planner() {
++    compare(&[], vec![], vec![vec![]], &[vec![]], "zero locals");
++    compare(&vec![(8, 8); MAX_LOCALS + 1], vec![true; MAX_LOCALS + 1],
++        vec![vec![]], &[vec![]], "local bound");
++    compare(&[(8, 8)], vec![true], vec![], &[], "no blocks");
++    compare(&[(8, 8)], vec![true], vec![vec![Event::default(); MAX_EVENTS + 1]],
++        &[vec![]], "event bound");
++    compare(&[(usize::MAX, 1), (1, 1)], vec![false; 2], vec![vec![]],
++        &[vec![]], "checked dedicated extent");
++}
+diff --git a/crates/mir-export/src/lower/scalar_promote.rs b/crates/mir-export/src/lower/scalar_promote.rs
+index 164a7ac..7581776 100644
+--- a/crates/mir-export/src/lower/scalar_promote.rs
++++ b/crates/mir-export/src/lower/scalar_promote.rs
+@@ -22,22 +22,32 @@ impl<'tcx> Visitor<'tcx> for Uses<'_> {
+ fn exclude_operand(eligible:&mut [bool],op:&Operand<'_>) {
+     if let Operand::Copy(p)|Operand::Move(p)=op {if p.projection.is_empty() {eligible[p.local.as_usize()]=false;}}
+ }
+-pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
+-    let start=std::time::Instant::now();
+-    if lower.locals.len()>4096 || lower.code.len()>100_000 {return Ok(());}
++fn visitor_eligibility(lower:&Lower<'_, '_>)->Vec<bool> {
+     let mut eligible=vec![false;lower.locals.len()];
+-    for (id,decl) in lower.body.local_decls.iter_enumerated() {
+-        let id=id.as_usize();let ty=lower.mono(decl.ty);
++    for (id,_) in lower.body.local_decls.iter_enumerated() {
++        let ty=lower.local_ty(id);let id=id.as_usize();
+         eligible[id]=id>lower.body.arg_count&&matches!(ty.kind(),ty::Int(_)|ty::Uint(_)|ty::Float(_)|ty::Bool|ty::Char);
+     }
+     for (bb,block) in lower.body.basic_blocks.iter_enumerated() {
+         for (statement_index,statement) in block.statements.iter().enumerate() {
+             Uses{eligible:&mut eligible}.visit_statement(statement,mir::Location{block:bb,statement_index});
++        }
++        Uses{eligible:&mut eligible}.visit_terminator(block.terminator(),mir::Location{block:bb,statement_index:block.statements.len()});
++    }
++    eligible
++}
++pub(super) fn apply(lower:&mut Lower<'_, '_>)->Result<()> {
++    let start=std::time::Instant::now();
++    if lower.locals.len()>4096 || lower.code.len()>100_000 {return Ok(());}
++    let mut eligible=lower.scalar_eligibility.take().unwrap_or_else(|| visitor_eligibility(lower));
++    // These direct-operand exclusions only clear eligibility, so they commute
++    // with either the saved packing visitor or the original fallback visitor.
++    for block in lower.body.basic_blocks.iter() {
++        for statement in &block.statements {
+             if let StatementKind::Assign(assignment)=&statement.kind {
+                 if let Rvalue::Aggregate(_,ops)=&assignment.1 {for op in ops {exclude_operand(&mut eligible,op);}}
+             }
+         }
+-        Uses{eligible:&mut eligible}.visit_terminator(block.terminator(),mir::Location{block:bb,statement_index:block.statements.len()});
+         if let TerminatorKind::Call{args,..}=&block.terminator().kind {for arg in args {exclude_operand(&mut eligible,&arg.node);}}
+     }
+     // Merge exact colored ranges, then reject overlaps with any other range.
+@@ -65,3 +75,7 @@ pub(super) fn report() {
+     eprintln!("rust-interp-scalar-promotion: slots={} removed_addresses={} rewritten={} seconds={:.6} removed_moves={}",
+         SLOTS.load(Ordering::Relaxed),ADDRESSES.load(Ordering::Relaxed),REWRITTEN.load(Ordering::Relaxed),NANOS.load(Ordering::Relaxed) as f64/1e9,MOVES.load(Ordering::Relaxed));
+ }
++
++#[cfg(test)]
++#[path="scalar_eligibility_tests.rs"]
++mod eligibility_tests;

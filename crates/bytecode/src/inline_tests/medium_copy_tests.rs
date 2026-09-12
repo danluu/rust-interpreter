@@ -68,7 +68,7 @@ fn medium_argument_and_result_copies_preserve_all_aliases() {
             for destination in [24, 32, 33, 216, 224, 225, 512] {
                 for overlap in [None, Some(1), Some(size / 2)] {
                     let p = aggregate_program(size, second_source, destination, overlap, false);
-                    let (q, stats) = inline::transform(&p, options()).unwrap();
+                    let (q, stats) = checked_transform(&p, options()).unwrap();
                     assert_eq!(stats["selected_sites"], 1);
                     for engine in [Engine::Interpreter, Engine::Jit] {
                         assert_eq!(execute_with_engine(&p, &[], Limits::default(), engine).unwrap().value, 0);
@@ -99,7 +99,7 @@ fn medium_leaf_preserves_cold_failure_and_exact_budgets() {
         // before retaining the original restated-address variant below.
         assert!(crate::registers::needs_initial_zeroes_for_inlining(&p.functions[1]));
         assert!(!crate::registers::needs_initial_zeroes(&p.functions[1]));
-        let (cross_block, report) = inline::transform(&p, options()).unwrap();
+        let (cross_block, report) = checked_transform(&p, options()).unwrap();
         assert_eq!(report["selected_sites"], 1);
         for engine in [Engine::Interpreter, Engine::Jit] {
             let result = execute_with_engine(&cross_block, &[], Limits::default(), engine);
@@ -114,7 +114,7 @@ fn medium_leaf_preserves_cold_failure_and_exact_budgets() {
         let Op::Switch { cases, .. } = &mut p.functions[1].code[3] else { unreachable!() };
         cases[0].1 = 8;
         assert!(!crate::registers::needs_initial_zeroes_for_inlining(&p.functions[1]));
-        let (q, stats) = inline::transform(&p, options()).unwrap();
+        let (q, stats) = checked_transform(&p, options()).unwrap();
         assert_eq!(stats["selected_sites"], 1);
         if cold {
             for program in [&p, &q] {
@@ -145,7 +145,7 @@ fn medium_leaf_preserves_cold_failure_and_exact_budgets() {
 #[test]
 fn medium_leaf_keeps_copy_abi_and_frame_limits() {
     let p = aggregate_program(128, 224, 512, None, false);
-    assert_eq!(inline::transform(&p, options()).unwrap().1["selected_sites"], 1);
+    assert_eq!(checked_transform(&p, options()).unwrap().1["selected_sites"], 1);
     for limit in ["copy", "argument", "result", "frame"] {
         let mut rejected = p.clone();
         let f = &mut rejected.functions[1];
@@ -159,11 +159,11 @@ fn medium_leaf_keeps_copy_abi_and_frame_limits() {
             "frame" => f.frame_size = 513,
             _ => unreachable!(),
         }
-        let (unchanged, stats) = inline::transform(&rejected, options()).unwrap();
+        let (unchanged, stats) = checked_transform(&rejected, options()).unwrap();
         assert_eq!(stats["selected_sites"], 0, "{limit}");
         assert_eq!(bincode::serialize(&unchanged).unwrap(), bincode::serialize(&rejected).unwrap());
     }
-    assert_eq!(inline::transform(&p, inline::Options { caller_growth: 1, ..options() }).unwrap().1["selected_sites"], 0);
+    assert_eq!(checked_transform(&p, inline::Options { caller_growth: 1, ..options() }).unwrap().1["selected_sites"], 0);
 }
 
 
@@ -173,7 +173,7 @@ fn medium_leaf_frame_growth_includes_alignment_and_exact_boundary() {
         let mut p = aggregate_program(80, 224, 32, None, false);
         p.functions[0].frame_size = caller_frame;
         assert_eq!(p.functions[1].frame_size, 240);
-        let (q, stats) = inline::transform(&p, options()).unwrap();
+        let (q, stats) = checked_transform(&p, options()).unwrap();
         assert_eq!(stats["selected_sites"], selected, "frame {caller_frame}");
         if selected == 0 {
             assert_eq!(bincode::serialize(&p).unwrap(), bincode::serialize(&q).unwrap());
@@ -205,7 +205,7 @@ fn medium_frame_guard_covers_body_and_abi_but_preserves_small_leaves() {
             "result" => leaf.result.size = 33,
             _ => unreachable!(),
         }
-        let (q, stats) = inline::transform(&p, options()).unwrap();
+        let (q, stats) = checked_transform(&p, options()).unwrap();
         assert_eq!(stats["selected_sites"], if kind == "small" { 1 } else { 0 }, "{kind}");
         if kind != "small" {
             assert_eq!(bincode::serialize(&p).unwrap(), bincode::serialize(&q).unwrap());
