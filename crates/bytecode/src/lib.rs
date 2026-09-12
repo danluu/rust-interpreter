@@ -269,11 +269,9 @@ pub fn binary(
     let m = mask(bits);
     let a = a & m;
     let b_value = b & m;
-    let sa = signed(a, bits);
-    let sb = signed(b_value, bits);
-    let shift = (b % u128::from(bits)) as u32;
-    let less = if is_signed { sa < sb } else { a < b_value };
-    let greater = if is_signed { sa > sb } else { a > b_value };
+    // Validated integer widths are powers of two. Mask the full shift operand
+    // instead of performing a software 128-bit remainder on narrower hosts.
+    let shift = (b & u128::from(bits - 1)) as u32;
     let (v, overflow) = match op {
         Binary::Add | Binary::Sub | Binary::Mul => {
             let (v, unsigned_overflow) = match op {
@@ -282,6 +280,8 @@ pub fn binary(
                 _ => a.overflowing_mul(b_value),
             };
             let overflow = if is_signed {
+                let sa = signed(a, bits);
+                let sb = signed(b_value, bits);
                 let (n, overflow128) = match op {
                     Binary::Add => sa.overflowing_add(sb),
                     Binary::Sub => sa.overflowing_sub(sb),
@@ -298,6 +298,8 @@ pub fn binary(
                 return Err("integer division by zero".into());
             }
             if is_signed {
+                let sa = signed(a, bits);
+                let sb = signed(b_value, bits);
                 if sa == signed(1u128 << (bits - 1), bits) && sb == -1 {
                     return Err("signed division overflow".into());
                 }
@@ -326,7 +328,7 @@ pub fn binary(
         Binary::Shl => (a << shift, false),
         Binary::Shr => (
             if is_signed {
-                (sa >> shift) as u128
+                (signed(a, bits) >> shift) as u128
             } else {
                 a >> shift
             },
@@ -334,11 +336,26 @@ pub fn binary(
         ),
         Binary::Eq => (u128::from(a == b_value), false),
         Binary::Ne => (u128::from(a != b_value), false),
-        Binary::Lt => (u128::from(less), false),
-        Binary::Le => (u128::from(!greater), false),
-        Binary::Gt => (u128::from(greater), false),
-        Binary::Ge => (u128::from(!less), false),
-        Binary::Cmp => (if less { 255 } else { u128::from(greater) }, false),
+        Binary::Lt | Binary::Le | Binary::Gt | Binary::Ge | Binary::Cmp => {
+            // Keep comparison and sign-extension work off arithmetic and
+            // bitwise paths, where these values are never consumed.
+            let (less, greater) = if is_signed {
+                let sa = signed(a, bits);
+                let sb = signed(b_value, bits);
+                (sa < sb, sa > sb)
+            } else {
+                (a < b_value, a > b_value)
+            };
+            let value = match op {
+                Binary::Lt => u128::from(less),
+                Binary::Le => u128::from(!greater),
+                Binary::Gt => u128::from(greater),
+                Binary::Ge => u128::from(!less),
+                Binary::Cmp => if less { 255 } else { u128::from(greater) },
+                _ => unreachable!(),
+            };
+            (value, false)
+        }
         Binary::RotateLeft => (
             if shift == 0 {
                 a
@@ -512,9 +529,21 @@ impl Memory {
         if size > 16 {
             return Err("scalar exceeds 128 bits".into());
         }
-        let mut value = [0u8; 16];
-        value[..size].copy_from_slice(self.read(address, size)?);
-        Ok(u128::from_le_bytes(value))
+        let source = self.read(address, size)?;
+        // Constant-width copies lower to unaligned scalar loads. Keep the
+        // byte-assembly fallback for the other supported aggregate widths.
+        Ok(match size {
+            1 => u128::from(source[0]),
+            2 => u128::from(u16::from_le_bytes(source.try_into().unwrap())),
+            4 => u128::from(u32::from_le_bytes(source.try_into().unwrap())),
+            8 => u128::from(u64::from_le_bytes(source.try_into().unwrap())),
+            16 => u128::from_le_bytes(source.try_into().unwrap()),
+            _ => {
+                let mut value = [0u8; 16];
+                value[..size].copy_from_slice(source);
+                u128::from_le_bytes(value)
+            }
+        })
     }
     fn store(&mut self, address: usize, size: usize, value: u128) -> Result<(), String> {
         if size > 16 {
@@ -529,7 +558,14 @@ impl Memory {
         } else {
             &mut self.bytes[range]
         };
-        destination.copy_from_slice(&value.to_le_bytes()[..size]);
+        match size {
+            1 => destination[0] = value as u8,
+            2 => destination.copy_from_slice(&(value as u16).to_le_bytes()),
+            4 => destination.copy_from_slice(&(value as u32).to_le_bytes()),
+            8 => destination.copy_from_slice(&(value as u64).to_le_bytes()),
+            16 => destination.copy_from_slice(&value.to_le_bytes()),
+            _ => destination.copy_from_slice(&value.to_le_bytes()[..size]),
+        }
         Ok(())
     }
     fn copy(&mut self, src: usize, dst: usize, size: usize) -> Result<(), String> {

@@ -19,6 +19,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | source-restore | [source-restore-after-01/summary.json](source-restore-after-01/summary.json) |
 | integration-compute | [fre-integration-es8-edit-01/summary.json](fre-integration-es8-edit-01/summary.json) |
 | integration-profile | [fre-integration-es8-sample-01/summary.json](fre-integration-es8-sample-01/summary.json) |
+| interpreter-runtime | [general-interpreter-20260912/summary.json](general-interpreter-20260912/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

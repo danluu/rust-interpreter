@@ -20,6 +20,8 @@ Times below come from each row’s own three-cycle, five-edit history. Native us
 
 Custom cold commands are slower on 4 of 9 rows. Cargo check executes no tests; custom/check is a descriptive overhead comparison, not a causal subtraction. Paired changes establish version comparisons; cross-session absolute medians do not.
 
+Current source also includes [general interpreter arithmetic and scalar-memory improvements](results/general-interpreter-20260912/assessment.md): 297 debug/release tests pass (one ignored), and 308 saved-artifact comparisons preserve outputs, instruction counts and peak memory. Those runtime measurements exclude export/build costs; the complete-workflow anchor above remains separate.
+
 Retained qualification: 289 debug/release tests (one ignored), 47,004 broad validation commands, 245 TLS/destructor commands and 382 fre body passes (seven ignored). Seven held-out histories passed separate 5% wall/CPU regression guards. Private results expose aggregates only.
 
 The lightweight wrapper is in the retained build despite failing its standalone cold-performance gate. Budget-register, call-slot and whole-call candidates remain parked. A new 18-custom-worker latency preset is on the development branch; it does not alter the measurements above.

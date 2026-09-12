@@ -55,9 +55,9 @@ python3 -m unittest discover -s tests
 python3 scripts/update_status.py
 ```
 
-Serialize task builds and benchmarks with `.work/benchmark.lock`. Compiler/runtime source
-`5b2330c` / tool `9637b0ac` passes 289 debug and release workspace tests (one
-ignored). A normal build reproduces the exact qualified binaries. Aggregate-frame
+Serialize task builds and benchmarks with `.work/benchmark.lock`. The complete-workflow
+anchor `5b2330c` / tool `9637b0ac` passed 289 debug and release tests (one ignored).
+Current source also includes the separately qualified interpreter changes below. Aggregate-frame
 reuse improves folded-trie edited commands 12.77% over the preceding compiler;
 token regresses 3.70%, within its fixed 5% guard. All seven held-out workflows
 pass their separate wall/CPU guards. Broad qualification passes 47,004 native
@@ -80,6 +80,12 @@ takes 3.867s custom versus 1.449s native (2.678× paired). Execution remains the
 main gap; the short batch does not establish a general speedup.
 [Protocol](BENCHMARKING.md), [token reproducer](benchmarks/TOKEN-PHRASE.md),
 [repeated-run assessment](results/paired-repeated-token-01/assessment.md).
+
+General arithmetic and scalar-memory changes improve saved-artifact interpreter
+execution about 12.7% on pgrust/Ruff and 14.6–20.5% on four additional Fre cases.
+All 297 workspace tests pass in debug and release (one ignored), with JIT within
+the regression guards. These runtime measurements exclude export/build costs.
+[Runtime comparison](results/general-interpreter-20260912/assessment.md).
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for mechanisms and limits,
 [RUNTIME-NEXT.md](RUNTIME-NEXT.md) for the next experiments,
