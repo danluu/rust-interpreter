@@ -46,6 +46,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | function-dependencies-folded | [export-reuse-folded-04/summary.json](export-reuse-folded-04/summary.json) |
 | binding-replay-token | [export-reuse-token-04/summary.json](export-reuse-token-04/summary.json) |
 | binding-replay-folded | [export-reuse-folded-05/summary.json](export-reuse-folded-05/summary.json) |
+| persistent-cache-token | [export-reuse-token-05/summary.json](export-reuse-token-05/summary.json) |
+| persistent-cache-controls | [export-cache-fixture-01/summary.json](export-cache-fixture-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

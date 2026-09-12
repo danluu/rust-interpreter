@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Verify prior-session function payloads using rustc incremental session publication, then qualify actual skipped lowering and edited end-to-end commands. Current-MIR recipes pass fixtures and token/folded histories; their payloads are 61MB/15MB. Fixed frame clearing remains parked.
+**Next:** Qualify actual skipped lowering and separate persistent-cache representation costs before an edited end-to-end screen. Persistent verification passes token, semantic edits and fault/publication controls. Fixed frame clearing stays parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
