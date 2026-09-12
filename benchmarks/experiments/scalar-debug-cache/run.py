@@ -56,12 +56,16 @@ def sources():
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--action',choices=['prepare','apply','verify'],required=True)
-    action=parser.parse_args().action
-    work=ROOT/'.work/scalar-debug-cache-01'/action;work.mkdir(parents=True,exist_ok=False)
+    parser.add_argument('--attempt',required=True)
+    args=parser.parse_args();action=args.action;attempt=driver.identifier(args.attempt)
+    work=ROOT/'.work/scalar-debug-cache-01'/(action+'-'+attempt);work.mkdir(parents=True,exist_ok=False)
     status=dict(status='starting',pid=os.getpid(),parent_pid=os.getppid(),started_at=time.time(),action=action)
     driver.write_json(work/'status.json',status)
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BaseException as error:
+            status.update(status='failed before archive preparation',error=repr(error),finished_at=time.time())
+            driver.write_json(work/'status.json',status);raise
         driver.evidence=evidence;driver.sources=sources
         records=[]
         try:
