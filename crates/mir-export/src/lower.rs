@@ -553,6 +553,12 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     eprintln!("rust-interp-cfg: before={} after={} seconds={:.6}",
         cfg.old_operations, cfg.new_operations, started.elapsed().as_secs_f64());
     timings.checkpoint("control_flow_optimization");
+    let started = std::time::Instant::now();
+    let (program, registers) = rust_interp_bytecode::allocate_register_slots(program)?;
+    eprintln!("rust-interp-register-lifetimes: before={} after={} functions={} declines={} seconds={:.6}",
+        registers["before"], registers["after"], registers["changed_functions"],
+        registers["declined_functions"], started.elapsed().as_secs_f64());
+    timings.checkpoint("register_lifetime_allocation");
     timings.finish();
     Ok(Exported { program, selected_entries, unavailable_calls: exporter.unavailable_calls,
         allocation_trace: exporter.trace, function_costs })

@@ -1,4 +1,4 @@
-//! Offline lifetime allocation. No VM or exporter path applies this mapping.
+//! Bounded lifetime allocation for the exporter and its offline diagnostic.
 use crate::{Function, Op, Program, Reg};
 use std::collections::BTreeSet;
 
@@ -114,6 +114,26 @@ fn remap(f: &Function, plan: &Plan) -> Function {
     result
 }
 
+pub(super) fn allocate(mut program: Program) -> Result<(Program, serde_json::Value), String> {
+    crate::validate(&program)?;
+    let mut before = 0usize;
+    let mut after = 0usize;
+    let mut changed = 0usize;
+    let mut declined = 0usize;
+    for f in &mut program.functions {
+        before = before.checked_add(f.registers).ok_or("register slot total overflow")?;
+        if let Some(plan) = plan(f, MAX_WORK) {
+            changed += usize::from(plan.slots != f.registers);
+            *f = remap(f, &plan);
+        } else { declined += 1; }
+        after = after.checked_add(f.registers).ok_or("register slot total overflow")?;
+    }
+    crate::validate(&program)?;
+    Ok((program, serde_json::json!({"before":before,"after":after,"changed_functions":changed,
+        "declined_functions":declined,"liveness_work_bound":MAX_WORK,"interval_scan_work_bound":MAX_WORK,
+        "liveness_words_bound":1_048_576,"interval_sort_and_certificate_register_bound":65_536})))
+}
+
 pub(super) fn census(program: &Program, profile_bytes: Option<&[u8]>) -> Result<serde_json::Value, String> {
     crate::validate(program)?;
     let profile = profile_bytes.map(|bytes| super::register_width_profile::parse(program, bytes)).transpose()?;
@@ -211,3 +231,7 @@ mod tests {
         assert!(plan(&function(vec![Op::Return],65_537),MAX_WORK).is_none());
     }
 }
+
+#[cfg(test)]
+#[path = "register_lifetimes_execution_tests.rs"]
+mod execution_tests;

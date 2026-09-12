@@ -1926,6 +1926,11 @@ pub fn register_lifetime_census(program: &Program, profile: Option<&[u8]>) -> Re
     register_lifetimes::census(program, profile)
 }
 
+/// Explicit export-time allocation; guest execution never applies it implicitly.
+pub fn allocate_register_slots(program: Program) -> Result<(Program, serde_json::Value), String> {
+    register_lifetimes::allocate(program)
+}
+
 /// Inspect a possible narrower register assignment without running guest code.
 pub fn register_width_census(program: &Program) -> Result<serde_json::Value, String> {
     values::width_census(program, None)
