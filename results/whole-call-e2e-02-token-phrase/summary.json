@@ -1,0 +1,3489 @@
+{
+  "schema_version": 2,
+  "project": "fre",
+  "workflow": "token-phrase-allocation",
+  "revision": "e0df0b010b156b030a02f073588d28703f4267f3",
+  "cycles": 3,
+  "initial_mode_order": [
+    "native",
+    "baseline",
+    "candidate"
+  ],
+  "minimum_free_gib": 8,
+  "tests": [
+    "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+    "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+    "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+  ],
+  "edits": [
+    "name-literal-finder-result",
+    "reuse-short-count-input-length",
+    "reuse-short-span-input-length",
+    "orient-short-route-width-comparison",
+    "match-short-route-event-bound"
+  ],
+  "workload": "The original exhaustive token-phrase byte-semantics test plus directed restart and route-boundary tests. The custom VM uses an explicit150000 live-allocation budget; native Cargo has its normal allocator. Five production-body refactors leave every original test unchanged.",
+  "case_sha256": "ea7908ccd09784d147ca8060e5c353e69a35c1dbddd4a9942c9673cc1aa0356c",
+  "test_source_unchanged": true,
+  "batch": true,
+  "cargo_timings": false,
+  "vary_selection": false,
+  "raw": ".work/runs/whole-call-e2e-02-token-phrase",
+  "build_tool_opt_level": 0,
+  "build_jobs": 4,
+  "custom_build_jobs": {
+    "baseline": 4,
+    "candidate": 4
+  },
+  "native_control": {
+    "profile": "o0-incremental",
+    "jobs": 18,
+    "test_threads": "default",
+    "rustflags": []
+  },
+  "instruction_limit": 100000000000,
+  "allocation_limit": 150000,
+  "inline_leaves": true,
+  "baseline_inline_leaves": true,
+  "candidate_jit_persistent_registers": true,
+  "candidate_jit_resumable_calls": true,
+  "candidate_jit_native_calls": false,
+  "candidate_jit_native_call_stubs": false,
+  "baseline_jit_resumable_calls": true,
+  "baseline_jit_persistent_registers": true,
+  "trap_unsupported_calls": true,
+  "run_try_callbacks": true,
+  "guest_mir_opt_level": 3,
+  "baseline_guest_mir_opt_level": null,
+  "baseline_guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "guest_mir_inline_scale": 8,
+  "guest_mir_inline_thresholds": {
+    "inline-mir-threshold": 400,
+    "inline-mir-hint-threshold": 800,
+    "inline-mir-forwarder-threshold": 240
+  },
+  "guest_rustflags": [
+    "-Zmir-opt-level=3",
+    "-Zinline-mir-threshold=400",
+    "-Zinline-mir-hint-threshold=800",
+    "-Zinline-mir-forwarder-threshold=240"
+  ],
+  "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+  "candidate_tool_key_requested": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+  "wrong_production_edit_rejected": true,
+  "median_seconds": {
+    "native": 1.9994288749999782,
+    "baseline": 4.462452291999995,
+    "candidate": 4.239566583999988
+  },
+  "median_cpu_seconds": {
+    "native": 2.5573369999999986,
+    "baseline": 4.404440000000001,
+    "candidate": 4.180801999999996
+  },
+  "cpu_accounting": "RUSAGE_CHILDREN deltas around one waited-for child tree at a time; user plus system CPU; excludes harness CPU",
+  "std_mir": {
+    "key": "bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef",
+    "setup_seconds": 10.997064583,
+    "build_seconds": 9.184569667,
+    "metadata_bytes": 112958025
+  },
+  "cold_success_seconds": {
+    "native": 6.634612125,
+    "baseline": 8.716938416999998,
+    "candidate": 8.446578875
+  },
+  "cycle_anchor_seconds": [
+    {
+      "cycle": 1,
+      "seconds": {
+        "baseline": 4.409256208000002,
+        "candidate": 4.33819016599999,
+        "native": 2.1342256669999955
+      }
+    },
+    {
+      "cycle": 2,
+      "seconds": {
+        "candidate": 4.256704624999998,
+        "native": 2.0499107079999987,
+        "baseline": 4.444536583000001
+      }
+    }
+  ],
+  "source_transitions": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "content_changed": false,
+      "previous_mode_sources": {
+        "native": null,
+        "baseline": null,
+        "candidate": null
+      }
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "baseline": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "candidate": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "baseline": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "candidate": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "baseline": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "candidate": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "baseline": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "candidate": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "baseline": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "candidate": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94"
+      }
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "baseline": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "candidate": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "baseline": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "candidate": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "baseline": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "candidate": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "baseline": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "candidate": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "baseline": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "candidate": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "baseline": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "candidate": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "baseline": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "candidate": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94"
+      }
+    },
+    {
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "baseline": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "candidate": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "baseline": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "candidate": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "baseline": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "candidate": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "baseline": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "candidate": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "baseline": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "candidate": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "baseline": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "candidate": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "baseline": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "candidate": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94"
+      }
+    },
+    {
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "content_changed": true,
+      "previous_mode_sources": {
+        "native": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "baseline": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "candidate": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234"
+      }
+    }
+  ],
+  "scripts_sha256": {
+    "scripts/bench_e2e_workflow.py": "14b4ce01da0c377692c0bce7b04979b3edc9f7617e4a3c7ac39e86ed88dfd961",
+    "scripts/interpreter.py": "bb7abab2614f27090a1a0d4f647ac31a1de5973a563ae0134b4f53d12667497b",
+    "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+    "scripts/workflow_case_file.py": "4a138ac3b497b9871b3d0781b0272f68da886ef118a26b8795cb7c59141588d7",
+    "scripts/workflow_measurements.py": "b9bc94c21422e1ffa52dd9e9b3d504e4d79e169ca37fb77f7b268a31a8a78132",
+    "scripts/workflow_controls.py": "d050cbbc2568bcea69aadd8319c56c64e86249f55d98f37ee3ec3b78ae22e06a",
+    "scripts/workflow_io.py": "29e006c3397fb762743783d13bfe3a2fca1d45091bfb2110380fe083108a4119",
+    "scripts/std_mir.py": "b407dc22770963a57ec8bc024a583098f0c1650ff85198d5ce6aca4cf09a47c9",
+    "scripts/workflow_jobs.py": "15e877b9cc790cd51d55afea6fc57c68d03e2e75daafb6f3e97963b0dc600cd5"
+  },
+  "tool_builds": {
+    "baseline": {
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "21d1e163a603aaf9d6f3238fd1057293c73afc41d17b5f73779b2d3188169ca9",
+      "exporter_sha256": "556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095"
+    },
+    "candidate": {
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "jit_persistent_registers": true,
+      "jit_resumable_calls": true,
+      "inline_leaves": true,
+      "jit_native_calls": false,
+      "jit_native_call_stubs": false,
+      "trap_unsupported_calls": true,
+      "run_try_callbacks": true,
+      "guest_rustflags": [
+        "-Zmir-opt-level=3",
+        "-Zinline-mir-threshold=400",
+        "-Zinline-mir-hint-threshold=800",
+        "-Zinline-mir-forwarder-threshold=240"
+      ],
+      "vm_sha256": "8d016bfc5ea4a0ca8607cf782bea6faa4e3583653bc9fcd7cbc89a0e1491f557",
+      "exporter_sha256": "668e79347a3fd23f44ee02b1952f01e8cba5631a70d7eb29c33d87d067ff9268"
+    }
+  },
+  "mode_orders": [
+    {
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "modes": [
+        "native",
+        "candidate",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "native",
+        "baseline"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "native",
+        "candidate"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "modes": [
+        "candidate",
+        "baseline",
+        "native"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "modes": [
+        "baseline",
+        "candidate",
+        "native"
+      ]
+    },
+    {
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "modes": [
+        "native",
+        "baseline",
+        "candidate"
+      ]
+    }
+  ],
+  "vm_sha256": "8d016bfc5ea4a0ca8607cf782bea6faa4e3583653bc9fcd7cbc89a0e1491f557",
+  "exporter_sha256": "668e79347a3fd23f44ee02b1952f01e8cba5631a70d7eb29c33d87d067ff9268",
+  "samples": [
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 6.634612125,
+      "cpu_seconds": 13.356905000000001,
+      "previous_source_sha256": null,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        4.40380859375,
+        3.48876953125,
+        3.81884765625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 8.716938416999998,
+      "cpu_seconds": 10.660344,
+      "previous_source_sha256": null,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        3.95361328125,
+        3.4228515625,
+        3.79150390625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-0/0-0.rbc",
+          "sha256": "d4e1314465a7bbf8ff8b74caefb1a6dc1ea87a310e6f2c716b02e7b6e5f38096",
+          "bytes": 28810437
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 0,
+      "phase": "cold",
+      "label": "cold-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 8.446578875,
+      "cpu_seconds": 10.397285,
+      "previous_source_sha256": null,
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        3.796875,
+        3.39892578125,
+        3.78076171875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-0/0-0.rbc",
+          "sha256": "6f1b1c921d3d00c8fe05c8abebe39b18c53d93a5ce34a889d138b9f497fdc643",
+          "bytes": 32575974
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.0294217910000008,
+      "cpu_seconds": 1.9821530000000012,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        3.57275390625,
+        3.35888671875,
+        3.76416015625
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-0/-1-0.rbc",
+          "sha256": "034e75fddab909c3620ccda843da1fd20d677d4f550b1cd57f041d0e10dcddd3",
+          "bytes": 32576246
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.111258792000001,
+      "cpu_seconds": 1.976518000000004,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        3.52685546875,
+        3.3525390625,
+        3.75927734375
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-0/-1-0.rbc",
+          "sha256": "7060e19277a9265fc057b29d47cc8721ca9d9845bb7e5a44f9669d36ac2e26c2",
+          "bytes": 28810709
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.545799749999997,
+      "cpu_seconds": 1.9647040000000002,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        3.52685546875,
+        3.3525390625,
+        3.75927734375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9679765830000022,
+      "cpu_seconds": 2.6367890000000003,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.32421875,
+        3.3134765625,
+        3.74267578125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.457422375,
+      "cpu_seconds": 4.406107999999997,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.3779296875,
+        3.32470703125,
+        3.744140625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-0/1-0.rbc",
+          "sha256": "6e30e32766212f899dbcaa4e887bf44deaf74414db2c14148ea0f2cdc2ef0518",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.278640875000001,
+      "cpu_seconds": 4.177519999999999,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.3779296875,
+        3.32470703125,
+        3.744140625
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-0/1-0.rbc",
+          "sha256": "574e09439ca1e0da272e0ffeb6481823e39d8e3158e6724c533dff23f8c849b2",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.037365875000006,
+      "cpu_seconds": 2.5573369999999986,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.1875,
+        3.28564453125,
+        3.72802734375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.241870124999998,
+      "cpu_seconds": 4.184936999999998,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.17236328125,
+        3.28076171875,
+        3.7236328125
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-0/2-0.rbc",
+          "sha256": "b22270183da5c7398f1f08170a188e9d21944904347a560f25f6e989c6f888f7",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.526441166999994,
+      "cpu_seconds": 4.404440000000001,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.078125,
+        3.25927734375,
+        3.71337890625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-0/2-0.rbc",
+          "sha256": "b6dce9988524ca2dddbb5935023e731e32464cfa1ad4e039179802e8fc5bb4dd",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.430289166000001,
+      "cpu_seconds": 4.396487000000002,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        2.99169921875,
+        3.23828125,
+        3.703125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-0/3-0.rbc",
+          "sha256": "3882e42658eb253bf757c499c2237a09de39ecb80e638547bb85a87666326cde",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.1497049999999973,
+      "cpu_seconds": 2.584452000000004,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        2.99169921875,
+        3.23828125,
+        3.703125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.4180929579999955,
+      "cpu_seconds": 4.218129999999999,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        2.9921875,
+        3.23388671875,
+        3.69873046875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-0/3-0.rbc",
+          "sha256": "073b2c87cc972d26974da06b9faf7ca7b8b49d6451d72faac9f92925272ac6a6",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.194927957999994,
+      "cpu_seconds": 4.163520999999989,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.15283203125,
+        3.26318359375,
+        3.7060546875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-0/4-0.rbc",
+          "sha256": "529cab5121a702d774fa17168d78508e2b895f56085e3ce8381653a3f008d601",
+          "bytes": 32576422
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.915333457999992,
+      "cpu_seconds": 2.3563060000000124,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.15283203125,
+        3.26318359375,
+        3.7060546875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.472152124999994,
+      "cpu_seconds": 4.361877,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.06005859375,
+        3.2421875,
+        3.69580078125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-0/4-0.rbc",
+          "sha256": "7ac9dfd31bcd6ea73ad967e4202bfa3b37ff66563025380639799fe09c87553b",
+          "bytes": 28810885
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.425715625000009,
+      "cpu_seconds": 4.395396999999994,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        2.97509765625,
+        3.22119140625,
+        3.685546875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-0/5-0.rbc",
+          "sha256": "9a7929f5b61e8da843645ea1bfadbfb5e706cb5133e4d0f37dd1bfdd2d827df4",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.322912165999995,
+      "cpu_seconds": 4.180801999999996,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        3.05712890625,
+        3.23388671875,
+        3.68701171875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-0/5-0.rbc",
+          "sha256": "b836783fe26b7fbcc5f7f1dde6924ccbde8d8b52c4b3bba75c40dfb0fac126a0",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 0,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.212339,
+      "cpu_seconds": 2.5275550000000067,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        3.13232421875,
+        3.24658203125,
+        3.6884765625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.409256208000002,
+      "cpu_seconds": 4.3689240000000105,
+      "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        2.96142578125,
+        3.208984375,
+        3.67236328125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-1/0-0.rbc",
+          "sha256": "eaad159dda6398abf19ca0d28e1169742758e313569687914002e9a0e52c9441",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.33819016599999,
+      "cpu_seconds": 4.197891999999989,
+      "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        2.96435546875,
+        3.205078125,
+        3.66796875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-1/0-0.rbc",
+          "sha256": "4dabd5ff9c16d63c0f13e8db8c8d23ae627a3d8b1e8273cec89387c1d3b07131",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.1342256669999955,
+      "cpu_seconds": 2.584859000000007,
+      "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        2.96435546875,
+        3.205078125,
+        3.66796875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9977230410000004,
+      "cpu_seconds": 1.9542180000000098,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        2.96435546875,
+        3.205078125,
+        3.66796875
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-1/-1-0.rbc",
+          "sha256": "2a1cfb625e20a9d16f0166b4134a24b13bd93077b7f09f4bf678dfabe46ddff2",
+          "bytes": 28810709
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.3814141250000063,
+      "cpu_seconds": 1.9566600000000012,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        2.966796875,
+        3.20166015625,
+        3.66357421875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.1122814169999913,
+      "cpu_seconds": 1.9973769999999984,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        2.966796875,
+        3.20166015625,
+        3.66357421875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-1/-1-0.rbc",
+          "sha256": "af9b81c6853fc43bf0f4c6bcd6efa606db1d71a0792d7a4346776b4ae2eed7c7",
+          "bytes": 32576246
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.476535124999998,
+      "cpu_seconds": 4.431315999999992,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.04931640625,
+        3.21484375,
+        3.66552734375
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-1/1-0.rbc",
+          "sha256": "2ff64d44b40db74b8dfa18e76654a742946c0bd3d16fe60b99a61bdd4ee93e5b",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.242541790999994,
+      "cpu_seconds": 4.2141750000000044,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        2.96484375,
+        3.1943359375,
+        3.65576171875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-1/1-0.rbc",
+          "sha256": "9e677e2fd88c20e33df6b0846087a5fdd7a105f2a440c923e08e6983a798eb6a",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.18944587499999,
+      "cpu_seconds": 2.5242400000000043,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.20751953125,
+        3.24072265625,
+        3.66943359375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.198699250000004,
+      "cpu_seconds": 4.1764710000000065,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.20751953125,
+        3.24072265625,
+        3.66943359375
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-1/2-0.rbc",
+          "sha256": "d242bbad20accbaf387f56fdf1b8791b9ba9ef5a45c4187a8459b81940d78d32",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.538067792000007,
+      "cpu_seconds": 4.40584599999999,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.0302734375,
+        3.203125,
+        3.6533203125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-1/2-0.rbc",
+          "sha256": "d7cb091f2ddc271a8d250419ac4ae5873a92f184a9856c62d3a62f1eec55e2f7",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.038012750000007,
+      "cpu_seconds": 2.548291000000013,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.02783203125,
+        3.19970703125,
+        3.6494140625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.963247999999993,
+      "cpu_seconds": 2.611739999999994,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.02783203125,
+        3.19970703125,
+        3.6494140625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.21984441699999,
+      "cpu_seconds": 4.185699,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        2.865234375,
+        3.1630859375,
+        3.6337890625
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-1/3-0.rbc",
+          "sha256": "f78b48d68d384a8312624c483c8a2a3be8eb8ba0e9d52c84eae00aede14af98b",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.571016374999999,
+      "cpu_seconds": 4.452953999999991,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.0361328125,
+        3.193359375,
+        3.6416015625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-1/3-0.rbc",
+          "sha256": "a6f835a68d1109f85dbff7d4eff993f7364c9f1632513cbcfead28aaa82e56e9",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9353760420000015,
+      "cpu_seconds": 2.552585999999984,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        2.873046875,
+        3.15673828125,
+        3.6259765625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.362718583000003,
+      "cpu_seconds": 4.332819000000018,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        2.873046875,
+        3.15673828125,
+        3.6259765625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-1/4-0.rbc",
+          "sha256": "18060427ff73f8eae1197c1963a74ee1f99fb95d7084534951c32efa7e6a1d76",
+          "bytes": 28810885
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.184541250000024,
+      "cpu_seconds": 4.108703999999985,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        4.724609375,
+        3.53564453125,
+        3.7568359375
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-1/4-0.rbc",
+          "sha256": "6322079fbdaab730b9a296c4653d17a2de63b6c54832bbbc1d213fe8d683aa9a",
+          "bytes": 32576422
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.203046792000009,
+      "cpu_seconds": 4.170774000000005,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        4.50634765625,
+        3.509765625,
+        3.74609375
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-1/5-0.rbc",
+          "sha256": "b836783fe26b7fbcc5f7f1dde6924ccbde8d8b52c4b3bba75c40dfb0fac126a0",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.0949703339999814,
+      "cpu_seconds": 2.56531799999998,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        4.62548828125,
+        3.55078125,
+        3.75927734375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 1,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.4337733750000154,
+      "cpu_seconds": 4.390981000000014,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        4.4150390625,
+        3.52490234375,
+        3.74853515625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-1/5-0.rbc",
+          "sha256": "9a7929f5b61e8da843645ea1bfadbfb5e706cb5133e4d0f37dd1bfdd2d827df4",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.256704624999998,
+      "cpu_seconds": 4.21165899999998,
+      "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        4.46142578125,
+        3.54931640625,
+        3.755859375
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-2/0-0.rbc",
+          "sha256": "4dabd5ff9c16d63c0f13e8db8c8d23ae627a3d8b1e8273cec89387c1d3b07131",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.0499107079999987,
+      "cpu_seconds": 2.6462010000000262,
+      "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        4.46142578125,
+        3.54931640625,
+        3.755859375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 0,
+      "phase": "anchor",
+      "label": "cycle-original",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.444536583000001,
+      "cpu_seconds": 4.384917999999981,
+      "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "load": [
+        4.34423828125,
+        3.5400390625,
+        3.7509765625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-2/0-0.rbc",
+          "sha256": "eaad159dda6398abf19ca0d28e1169742758e313569687914002e9a0e52c9441",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.3984141660000091,
+      "cpu_seconds": 1.81691399999999,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        4.34423828125,
+        3.5400390625,
+        3.7509765625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.061600083000002,
+      "cpu_seconds": 2.0210170000000076,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        4.236328125,
+        3.53076171875,
+        3.74609375
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-2/-1-0.rbc",
+          "sha256": "af9b81c6853fc43bf0f4c6bcd6efa606db1d71a0792d7a4346776b4ae2eed7c7",
+          "bytes": 32576246
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": -1,
+      "phase": "wrong-edit",
+      "label": "corrupt-short-input-count",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9905481250000037,
+      "cpu_seconds": 1.9431739999999849,
+      "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+      "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "load": [
+        4.236328125,
+        3.53076171875,
+        3.74609375
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-2/-1-0.rbc",
+          "sha256": "2a1cfb625e20a9d16f0166b4134a24b13bd93077b7f09f4bf678dfabe46ddff2",
+          "bytes": 28810709
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.218779249999983,
+      "cpu_seconds": 4.179390999999995,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.97705078125,
+        3.48828125,
+        3.72998046875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-2/1-0.rbc",
+          "sha256": "9e677e2fd88c20e33df6b0846087a5fdd7a105f2a440c923e08e6983a798eb6a",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 2.140103499999981,
+      "cpu_seconds": 2.521457999999985,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.818359375,
+        3.46337890625,
+        3.7197265625
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 1,
+      "phase": "edit",
+      "label": "name-literal-finder-result",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.4741666669999915,
+      "cpu_seconds": 4.431355000000014,
+      "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+      "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "load": [
+        3.818359375,
+        3.46337890625,
+        3.7197265625
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-2/1-0.rbc",
+          "sha256": "2ff64d44b40db74b8dfa18e76654a742946c0bd3d16fe60b99a61bdd4ee93e5b",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.454325124999997,
+      "cpu_seconds": 4.407491999999994,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.59228515625,
+        3.42236328125,
+        3.70361328125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-2/2-0.rbc",
+          "sha256": "d7cb091f2ddc271a8d250419ac4ae5873a92f184a9856c62d3a62f1eec55e2f7",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9994288749999782,
+      "cpu_seconds": 2.6673799999999908,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.70458984375,
+        3.4482421875,
+        3.7109375
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 2,
+      "phase": "edit",
+      "label": "reuse-short-count-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.335311833999981,
+      "cpu_seconds": 4.200066000000003,
+      "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+      "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "load": [
+        3.72802734375,
+        3.45703125,
+        3.71240234375
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-2/2-0.rbc",
+          "sha256": "d242bbad20accbaf387f56fdf1b8791b9ba9ef5a45c4187a8459b81940d78d32",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.239566583999988,
+      "cpu_seconds": 4.19805100000001,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.50927734375,
+        3.416015625,
+        3.6962890625
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-2/3-0.rbc",
+          "sha256": "f78b48d68d384a8312624c483c8a2a3be8eb8ba0e9d52c84eae00aede14af98b",
+          "bytes": 32576166
+        }
+      ]
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.490936792000014,
+      "cpu_seconds": 4.39866899999998,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.30810546875,
+        3.37548828125,
+        3.68017578125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-2/3-0.rbc",
+          "sha256": "a6f835a68d1109f85dbff7d4eff993f7364c9f1632513cbcfead28aaa82e56e9",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 3,
+      "phase": "edit",
+      "label": "reuse-short-span-input-length",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9938720829999852,
+      "cpu_seconds": 2.636234000000009,
+      "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+      "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "load": [
+        3.30810546875,
+        3.37548828125,
+        3.68017578125
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.41933070799999,
+      "cpu_seconds": 4.382086999999988,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.283203125,
+        3.369140625,
+        3.67578125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-2/4-0.rbc",
+          "sha256": "18060427ff73f8eae1197c1963a74ee1f99fb95d7084534951c32efa7e6a1d76",
+          "bytes": 28810885
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.187774791999999,
+      "cpu_seconds": 4.113985000000021,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.26025390625,
+        3.36279296875,
+        3.67138671875
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-2/4-0.rbc",
+          "sha256": "6322079fbdaab730b9a296c4653d17a2de63b6c54832bbbc1d213fe8d683aa9a",
+          "bytes": 32576422
+        }
+      ]
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 4,
+      "phase": "edit",
+      "label": "orient-short-route-width-comparison",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9624219999999752,
+      "cpu_seconds": 2.5233419999999995,
+      "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+      "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "load": [
+        3.26025390625,
+        3.36279296875,
+        3.67138671875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "native",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 1.9695741250000083,
+      "cpu_seconds": 2.604359000000027,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        3.2392578125,
+        3.3564453125,
+        3.6669921875
+      ],
+      "engine": null,
+      "tool_key": null,
+      "artifacts": []
+    },
+    {
+      "mode": "baseline",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.462452291999995,
+      "cpu_seconds": 4.406032999999979,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        3.1396484375,
+        3.33349609375,
+        3.65673828125
+      ],
+      "engine": "jit",
+      "tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/baseline/cycle-2/5-0.rbc",
+          "sha256": "9a7929f5b61e8da843645ea1bfadbfb5e706cb5133e4d0f37dd1bfdd2d827df4",
+          "bytes": 28810629
+        }
+      ]
+    },
+    {
+      "mode": "candidate",
+      "cycle": 2,
+      "state": 5,
+      "phase": "edit",
+      "label": "match-short-route-event-bound",
+      "tests": [
+        "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex",
+        "token_phrase::tests::maximal_tokens_preserve_restart_greediness_and_nonoverlap",
+        "token_phrase::tests::route_threshold_127_128_129_preserves_exact_semantics"
+      ],
+      "seconds": 4.370228334000018,
+      "cpu_seconds": 4.195478000000023,
+      "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+      "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+      "load": [
+        2.96826171875,
+        3.29443359375,
+        3.64111328125
+      ],
+      "engine": "jit",
+      "tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+      "artifacts": [
+        {
+          "path": ".work/runs/whole-call-e2e-02-token-phrase/artifacts/candidate/cycle-2/5-0.rbc",
+          "sha256": "b836783fe26b7fbcc5f7f1dde6924ccbde8d8b52c4b3bba75c40dfb0fac126a0",
+          "bytes": 32576166
+        }
+      ]
+    }
+  ],
+  "exporter_seconds": {
+    "baseline": {
+      "frontend": 0.539259,
+      "lowering": 0.7532949999999999,
+      "scalar-frames": 0.049631,
+      "scalar-promotion": 0.055502,
+      "inline": 0.046111,
+      "cfg": 0.05412
+    },
+    "candidate": {
+      "frontend": 0.53058,
+      "lowering": 0.822003,
+      "scalar-frames": 0.049329,
+      "scalar-promotion": 0.055521,
+      "inline": 0.08091,
+      "cfg": 0.077132
+    }
+  },
+  "check_floor": {
+    "interpretation": "Independent library-test Cargo-check control; executes no tests, including the wrong runtime edit; not a strict lower bound or subtractive attribution",
+    "timing_position": "after each primary mode triplet; separate target/cache history; no Cargo timing-report generation",
+    "median_seconds": 0.6507140829999969,
+    "median_cpu_seconds": 0.6354319999999944,
+    "samples": [
+      {
+        "cycle": 0,
+        "state": 0,
+        "phase": "cold",
+        "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "previous_source_sha256": null,
+        "seconds": 3.606129000000003,
+        "cpu_seconds": 5.520416999999997,
+        "cpu": {
+          "user_seconds": 4.973916999999997,
+          "system_seconds": 0.5465,
+          "total_seconds": 5.520416999999997
+        },
+        "returncode": 0,
+        "load": [
+          3.57275390625,
+          3.35888671875,
+          3.76416015625
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "seconds": 0.5865791659999999,
+        "cpu_seconds": 0.5801780000000001,
+        "cpu": {
+          "user_seconds": 0.49892499999999984,
+          "system_seconds": 0.08125300000000024,
+          "total_seconds": 0.5801780000000001
+        },
+        "returncode": 0,
+        "load": [
+          3.52685546875,
+          3.3525390625,
+          3.75927734375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "seconds": 0.7337306670000032,
+        "cpu_seconds": 0.6493180000000018,
+        "cpu": {
+          "user_seconds": 0.5546700000000016,
+          "system_seconds": 0.09464800000000029,
+          "total_seconds": 0.6493180000000018
+        },
+        "returncode": 0,
+        "load": [
+          3.1875,
+          3.28564453125,
+          3.72802734375
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "seconds": 0.728318999999999,
+        "cpu_seconds": 0.6418200000000001,
+        "cpu": {
+          "user_seconds": 0.5491209999999995,
+          "system_seconds": 0.09269900000000053,
+          "total_seconds": 0.6418200000000001
+        },
+        "returncode": 0,
+        "load": [
+          3.078125,
+          3.25927734375,
+          3.71337890625
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "seconds": 0.7262178329999927,
+        "cpu_seconds": 0.6414010000000019,
+        "cpu": {
+          "user_seconds": 0.547499000000002,
+          "system_seconds": 0.09390199999999993,
+          "total_seconds": 0.6414010000000019
+        },
+        "returncode": 0,
+        "load": [
+          2.9921875,
+          3.23388671875,
+          3.69873046875
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "seconds": 0.6937532500000003,
+        "cpu_seconds": 0.6118969999999972,
+        "cpu": {
+          "user_seconds": 0.5221159999999969,
+          "system_seconds": 0.08978100000000033,
+          "total_seconds": 0.6118969999999972
+        },
+        "returncode": 0,
+        "load": [
+          3.06005859375,
+          3.2421875,
+          3.69580078125
+        ]
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "seconds": 0.6363900000000058,
+        "cpu_seconds": 0.6296199999999939,
+        "cpu": {
+          "user_seconds": 0.5443499999999943,
+          "system_seconds": 0.08526999999999951,
+          "total_seconds": 0.6296199999999939
+        },
+        "returncode": 0,
+        "load": [
+          3.13232421875,
+          3.24658203125,
+          3.6884765625
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 0,
+        "phase": "anchor",
+        "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "seconds": 0.656033750000006,
+        "cpu_seconds": 0.6449349999999932,
+        "cpu": {
+          "user_seconds": 0.5599589999999921,
+          "system_seconds": 0.08497600000000105,
+          "total_seconds": 0.6449349999999932
+        },
+        "returncode": 0,
+        "load": [
+          2.96435546875,
+          3.205078125,
+          3.66796875
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "seconds": 0.6326249580000081,
+        "cpu_seconds": 0.5928049999999985,
+        "cpu": {
+          "user_seconds": 0.5059499999999986,
+          "system_seconds": 0.0868549999999999,
+          "total_seconds": 0.5928049999999985
+        },
+        "returncode": 0,
+        "load": [
+          2.966796875,
+          3.20166015625,
+          3.66357421875
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "seconds": 0.641623249999995,
+        "cpu_seconds": 0.6348169999999982,
+        "cpu": {
+          "user_seconds": 0.5508489999999995,
+          "system_seconds": 0.08396799999999871,
+          "total_seconds": 0.6348169999999982
+        },
+        "returncode": 0,
+        "load": [
+          3.20751953125,
+          3.24072265625,
+          3.66943359375
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "seconds": 0.6448800839999933,
+        "cpu_seconds": 0.6354319999999944,
+        "cpu": {
+          "user_seconds": 0.549837999999994,
+          "system_seconds": 0.08559400000000039,
+          "total_seconds": 0.6354319999999944
+        },
+        "returncode": 0,
+        "load": [
+          3.02783203125,
+          3.19970703125,
+          3.6494140625
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "seconds": 0.727506166000012,
+        "cpu_seconds": 0.6440770000000207,
+        "cpu": {
+          "user_seconds": 0.5501990000000205,
+          "system_seconds": 0.09387800000000013,
+          "total_seconds": 0.6440770000000207
+        },
+        "returncode": 0,
+        "load": [
+          3.0361328125,
+          3.193359375,
+          3.6416015625
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "seconds": 0.6079275840000093,
+        "cpu_seconds": 0.5805660000000081,
+        "cpu": {
+          "user_seconds": 0.49454900000000634,
+          "system_seconds": 0.08601700000000179,
+          "total_seconds": 0.5805660000000081
+        },
+        "returncode": 0,
+        "load": [
+          4.724609375,
+          3.53564453125,
+          3.7568359375
+        ]
+      },
+      {
+        "cycle": 1,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "seconds": 0.7465844590000188,
+        "cpu_seconds": 0.6506660000000011,
+        "cpu": {
+          "user_seconds": 0.5488119999999981,
+          "system_seconds": 0.101854000000003,
+          "total_seconds": 0.6506660000000011
+        },
+        "returncode": 0,
+        "load": [
+          4.4150390625,
+          3.52490234375,
+          3.74853515625
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 0,
+        "phase": "anchor",
+        "source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "previous_source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "seconds": 0.6903683750000198,
+        "cpu_seconds": 0.6355560000000224,
+        "cpu": {
+          "user_seconds": 0.543861000000021,
+          "system_seconds": 0.09169500000000141,
+          "total_seconds": 0.6355560000000224
+        },
+        "returncode": 0,
+        "load": [
+          4.34423828125,
+          3.5400390625,
+          3.7509765625
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": -1,
+        "phase": "wrong-edit",
+        "source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "previous_source_sha256": "993d76954f4e5f324b137e7d5f9e349dbfb69ef0da9e91ea04ebc9545be3f984",
+        "seconds": 0.6012794170000006,
+        "cpu_seconds": 0.581932000000009,
+        "cpu": {
+          "user_seconds": 0.4950100000000077,
+          "system_seconds": 0.08692200000000128,
+          "total_seconds": 0.581932000000009
+        },
+        "returncode": 0,
+        "load": [
+          4.236328125,
+          3.53076171875,
+          3.74609375
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 1,
+        "phase": "edit",
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "previous_source_sha256": "9ea9936264b022c6a7c8c2aa895bc45b9a7956c0e1614e263d6983082bae3598",
+        "seconds": 0.7395487080000009,
+        "cpu_seconds": 0.6505340000000146,
+        "cpu": {
+          "user_seconds": 0.5494470000000149,
+          "system_seconds": 0.1010869999999997,
+          "total_seconds": 0.6505340000000146
+        },
+        "returncode": 0,
+        "load": [
+          3.59228515625,
+          3.42236328125,
+          3.70361328125
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 2,
+        "phase": "edit",
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "previous_source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "seconds": 0.6425192920000029,
+        "cpu_seconds": 0.6334919999999968,
+        "cpu": {
+          "user_seconds": 0.5447259999999972,
+          "system_seconds": 0.08876599999999968,
+          "total_seconds": 0.6334919999999968
+        },
+        "returncode": 0,
+        "load": [
+          3.72802734375,
+          3.45703125,
+          3.71240234375
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 3,
+        "phase": "edit",
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "previous_source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "seconds": 0.6507140829999969,
+        "cpu_seconds": 0.6335610000000038,
+        "cpu": {
+          "user_seconds": 0.5453190000000063,
+          "system_seconds": 0.08824199999999749,
+          "total_seconds": 0.6335610000000038
+        },
+        "returncode": 0,
+        "load": [
+          3.30810546875,
+          3.37548828125,
+          3.68017578125
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 4,
+        "phase": "edit",
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "previous_source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "seconds": 0.6018623340000033,
+        "cpu_seconds": 0.5960009999999727,
+        "cpu": {
+          "user_seconds": 0.5139809999999727,
+          "system_seconds": 0.08201999999999998,
+          "total_seconds": 0.5960009999999727
+        },
+        "returncode": 0,
+        "load": [
+          3.26025390625,
+          3.36279296875,
+          3.67138671875
+        ]
+      },
+      {
+        "cycle": 2,
+        "state": 5,
+        "phase": "edit",
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "previous_source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "seconds": 0.6504503339999985,
+        "cpu_seconds": 0.6385169999999931,
+        "cpu": {
+          "user_seconds": 0.5512099999999975,
+          "system_seconds": 0.08730699999999558,
+          "total_seconds": 0.6385169999999931
+        },
+        "returncode": 0,
+        "load": [
+          2.96826171875,
+          3.29443359375,
+          3.64111328125
+        ]
+      }
+    ]
+  },
+  "comparison": {
+    "engine": "jit",
+    "baseline_tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+    "candidate_tool_key": "46b8332de08d0cbb5d1777d57b95f055f5d1bb8edbc84074e2efad6e94f390e0",
+    "identical_bytecode_required": false,
+    "pairs": [
+      {
+        "cycle": 0,
+        "state": 1,
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "baseline_seconds": 4.457422375,
+        "candidate_seconds": 4.278640875000001,
+        "native_seconds": 1.9679765830000022,
+        "native_cpu_seconds": 2.6367890000000003,
+        "baseline_cpu_seconds": 4.406107999999997,
+        "candidate_cpu_seconds": 4.177519999999999,
+        "cpu_difference_seconds": -0.22858799999999846,
+        "difference_seconds": -0.17878149999999948,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.4720500410000001,
+            "execution_seconds": 2.899935458,
+            "artifact_hash_seconds": 0.009999499999999939,
+            "launcher_seconds": 4.431480333
+          },
+          "candidate": {
+            "cargo_seconds": 1.596607334,
+            "execution_seconds": 2.594333583,
+            "artifact_hash_seconds": 0.011306250000000073,
+            "launcher_seconds": 4.253023874999999
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 0,
+        "state": 2,
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "baseline_seconds": 4.526441166999994,
+        "candidate_seconds": 4.241870124999998,
+        "native_seconds": 2.037365875000006,
+        "native_cpu_seconds": 2.5573369999999986,
+        "baseline_cpu_seconds": 4.404440000000001,
+        "candidate_cpu_seconds": 4.184936999999998,
+        "cpu_difference_seconds": -0.2195030000000031,
+        "difference_seconds": -0.28457104199999605,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.55542025,
+            "execution_seconds": 2.8853989159999998,
+            "artifact_hash_seconds": 0.009951166999999872,
+            "launcher_seconds": 4.499944875
+          },
+          "candidate": {
+            "cargo_seconds": 1.5567385,
+            "execution_seconds": 2.5974487920000002,
+            "artifact_hash_seconds": 0.011619874999999835,
+            "launcher_seconds": 4.216276375
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 0,
+        "state": 3,
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "baseline_seconds": 4.430289166000001,
+        "candidate_seconds": 4.4180929579999955,
+        "native_seconds": 2.1497049999999973,
+        "native_cpu_seconds": 2.584452000000004,
+        "baseline_cpu_seconds": 4.396487000000002,
+        "candidate_cpu_seconds": 4.218129999999999,
+        "cpu_difference_seconds": -0.17835700000000365,
+        "difference_seconds": -0.012196208000005981,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.45413875,
+            "execution_seconds": 2.891561209,
+            "artifact_hash_seconds": 0.00992687499999989,
+            "launcher_seconds": 4.404583917
+          },
+          "candidate": {
+            "cargo_seconds": 1.7447662499999999,
+            "execution_seconds": 2.5863865829999995,
+            "artifact_hash_seconds": 0.011448625000000101,
+            "launcher_seconds": 4.392132125
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 0,
+        "state": 4,
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "baseline_seconds": 4.472152124999994,
+        "candidate_seconds": 4.194927957999994,
+        "native_seconds": 1.915333457999992,
+        "native_cpu_seconds": 2.3563060000000124,
+        "baseline_cpu_seconds": 4.361877,
+        "candidate_cpu_seconds": 4.163520999999989,
+        "cpu_difference_seconds": -0.19835600000001108,
+        "difference_seconds": -0.27722416699999997,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.4990160000000001,
+            "execution_seconds": 2.8872848750000006,
+            "artifact_hash_seconds": 0.010023874999999904,
+            "launcher_seconds": 4.446470833
+          },
+          "candidate": {
+            "cargo_seconds": 1.504493625,
+            "execution_seconds": 2.602325166,
+            "artifact_hash_seconds": 0.01161224999999999,
+            "launcher_seconds": 4.168726667
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 0,
+        "state": 5,
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "baseline_seconds": 4.425715625000009,
+        "candidate_seconds": 4.322912165999995,
+        "native_seconds": 2.212339,
+        "native_cpu_seconds": 2.5275550000000067,
+        "baseline_cpu_seconds": 4.395396999999994,
+        "candidate_cpu_seconds": 4.180801999999996,
+        "cpu_difference_seconds": -0.21459499999999743,
+        "difference_seconds": -0.10280345900001464,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.460222917,
+            "execution_seconds": 2.88029575,
+            "artifact_hash_seconds": 0.010128958999999993,
+            "launcher_seconds": 4.399955709
+          },
+          "candidate": {
+            "cargo_seconds": 1.6433584589999999,
+            "execution_seconds": 2.591683166,
+            "artifact_hash_seconds": 0.011284083000000056,
+            "launcher_seconds": 4.2970158750000005
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 1,
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "baseline_seconds": 4.476535124999998,
+        "candidate_seconds": 4.242541790999994,
+        "native_seconds": 2.18944587499999,
+        "native_cpu_seconds": 2.5242400000000043,
+        "baseline_cpu_seconds": 4.431315999999992,
+        "candidate_cpu_seconds": 4.2141750000000044,
+        "cpu_difference_seconds": -0.21714099999998737,
+        "difference_seconds": -0.23399333400000444,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.506593042,
+            "execution_seconds": 2.8835925830000004,
+            "artifact_hash_seconds": 0.010110582999999895,
+            "launcher_seconds": 4.45047625
+          },
+          "candidate": {
+            "cargo_seconds": 1.558459417,
+            "execution_seconds": 2.594877708,
+            "artifact_hash_seconds": 0.01155141599999987,
+            "launcher_seconds": 4.216165042
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 2,
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "baseline_seconds": 4.538067792000007,
+        "candidate_seconds": 4.198699250000004,
+        "native_seconds": 2.038012750000007,
+        "native_cpu_seconds": 2.548291000000013,
+        "baseline_cpu_seconds": 4.40584599999999,
+        "candidate_cpu_seconds": 4.1764710000000065,
+        "cpu_difference_seconds": -0.22937499999998323,
+        "difference_seconds": -0.33936854200000255,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.562424625,
+            "execution_seconds": 2.8905839170000007,
+            "artifact_hash_seconds": 0.010124916999999956,
+            "launcher_seconds": 4.512082458
+          },
+          "candidate": {
+            "cargo_seconds": 1.5179331669999998,
+            "execution_seconds": 2.5923547499999997,
+            "artifact_hash_seconds": 0.011441291999999992,
+            "launcher_seconds": 4.172363959
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 3,
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "baseline_seconds": 4.571016374999999,
+        "candidate_seconds": 4.21984441699999,
+        "native_seconds": 1.963247999999993,
+        "native_cpu_seconds": 2.611739999999994,
+        "baseline_cpu_seconds": 4.452953999999991,
+        "candidate_cpu_seconds": 4.185699,
+        "cpu_difference_seconds": -0.2672549999999916,
+        "difference_seconds": -0.351171958000009,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.6007567919999999,
+            "execution_seconds": 2.880675959,
+            "artifact_hash_seconds": 0.01025558400000004,
+            "launcher_seconds": 4.541183125
+          },
+          "candidate": {
+            "cargo_seconds": 1.536777333,
+            "execution_seconds": 2.595108834,
+            "artifact_hash_seconds": 0.011521208000000005,
+            "launcher_seconds": 4.1938137499999995
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 4,
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "baseline_seconds": 4.362718583000003,
+        "candidate_seconds": 4.184541250000024,
+        "native_seconds": 1.9353760420000015,
+        "native_cpu_seconds": 2.552585999999984,
+        "baseline_cpu_seconds": 4.332819000000018,
+        "candidate_cpu_seconds": 4.108703999999985,
+        "cpu_difference_seconds": -0.22411500000003315,
+        "difference_seconds": -0.1781773329999794,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.380333375,
+            "execution_seconds": 2.89736775,
+            "artifact_hash_seconds": 0.010085416999999985,
+            "launcher_seconds": 4.337059291999999
+          },
+          "candidate": {
+            "cargo_seconds": 1.513662792,
+            "execution_seconds": 2.583968167,
+            "artifact_hash_seconds": 0.011289042000000027,
+            "launcher_seconds": 4.159187375
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 1,
+        "state": 5,
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "baseline_seconds": 4.4337733750000154,
+        "candidate_seconds": 4.203046792000009,
+        "native_seconds": 2.0949703339999814,
+        "native_cpu_seconds": 2.56531799999998,
+        "baseline_cpu_seconds": 4.390981000000014,
+        "candidate_cpu_seconds": 4.170774000000005,
+        "cpu_difference_seconds": -0.22020700000000915,
+        "difference_seconds": -0.23072658300000626,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.458249041,
+            "execution_seconds": 2.8901129999999995,
+            "artifact_hash_seconds": 0.009966957999999915,
+            "launcher_seconds": 4.408016458
+          },
+          "candidate": {
+            "cargo_seconds": 1.5175410420000002,
+            "execution_seconds": 2.598514625,
+            "artifact_hash_seconds": 0.011274707999999967,
+            "launcher_seconds": 4.177221542
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 1,
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "baseline_seconds": 4.4741666669999915,
+        "candidate_seconds": 4.218779249999983,
+        "native_seconds": 2.140103499999981,
+        "native_cpu_seconds": 2.521457999999985,
+        "baseline_cpu_seconds": 4.431355000000014,
+        "candidate_cpu_seconds": 4.179390999999995,
+        "cpu_difference_seconds": -0.25196400000001873,
+        "difference_seconds": -0.25538741700000855,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.464485917,
+            "execution_seconds": 2.924074666,
+            "artifact_hash_seconds": 0.010183540999999963,
+            "launcher_seconds": 4.448602042
+          },
+          "candidate": {
+            "cargo_seconds": 1.538467542,
+            "execution_seconds": 2.5923100000000003,
+            "artifact_hash_seconds": 0.011371749999999903,
+            "launcher_seconds": 4.192894833
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 2,
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "baseline_seconds": 4.454325124999997,
+        "candidate_seconds": 4.335311833999981,
+        "native_seconds": 1.9994288749999782,
+        "native_cpu_seconds": 2.6673799999999908,
+        "baseline_cpu_seconds": 4.407491999999994,
+        "candidate_cpu_seconds": 4.200066000000003,
+        "cpu_difference_seconds": -0.207425999999991,
+        "difference_seconds": -0.1190132910000159,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.461504417,
+            "execution_seconds": 2.9072428330000006,
+            "artifact_hash_seconds": 0.010004166999999953,
+            "launcher_seconds": 4.428026
+          },
+          "candidate": {
+            "cargo_seconds": 1.6414397079999998,
+            "execution_seconds": 2.6061943749999994,
+            "artifact_hash_seconds": 0.011317041999999944,
+            "launcher_seconds": 4.30953025
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 3,
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "baseline_seconds": 4.490936792000014,
+        "candidate_seconds": 4.239566583999988,
+        "native_seconds": 1.9938720829999852,
+        "native_cpu_seconds": 2.636234000000009,
+        "baseline_cpu_seconds": 4.39866899999998,
+        "candidate_cpu_seconds": 4.19805100000001,
+        "cpu_difference_seconds": -0.2006179999999702,
+        "difference_seconds": -0.25137020800002574,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.515243625,
+            "execution_seconds": 2.8898072080000006,
+            "artifact_hash_seconds": 0.010085249999999935,
+            "launcher_seconds": 4.4646215830000004
+          },
+          "candidate": {
+            "cargo_seconds": 1.5492665,
+            "execution_seconds": 2.602792083,
+            "artifact_hash_seconds": 0.011557625000000016,
+            "launcher_seconds": 4.213542292
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 4,
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "baseline_seconds": 4.41933070799999,
+        "candidate_seconds": 4.187774791999999,
+        "native_seconds": 1.9624219999999752,
+        "native_cpu_seconds": 2.5233419999999995,
+        "baseline_cpu_seconds": 4.382086999999988,
+        "candidate_cpu_seconds": 4.113985000000021,
+        "cpu_difference_seconds": -0.268101999999967,
+        "difference_seconds": -0.2315559159999907,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.438209083,
+            "execution_seconds": 2.893626959,
+            "artifact_hash_seconds": 0.010280958000000062,
+            "launcher_seconds": 4.392830334
+          },
+          "candidate": {
+            "cargo_seconds": 1.5009049589999999,
+            "execution_seconds": 2.598281875,
+            "artifact_hash_seconds": 0.01144450000000008,
+            "launcher_seconds": 4.1619345
+          }
+        },
+        "identical_bytecode": false
+      },
+      {
+        "cycle": 2,
+        "state": 5,
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "baseline_seconds": 4.462452291999995,
+        "candidate_seconds": 4.370228334000018,
+        "native_seconds": 1.9695741250000083,
+        "native_cpu_seconds": 2.604359000000027,
+        "baseline_cpu_seconds": 4.406032999999979,
+        "candidate_cpu_seconds": 4.195478000000023,
+        "cpu_difference_seconds": -0.21055499999995675,
+        "difference_seconds": -0.09222395799997685,
+        "stage_seconds": {
+          "baseline": {
+            "cargo_seconds": 1.4883351249999999,
+            "execution_seconds": 2.888828792,
+            "artifact_hash_seconds": 0.009964416999999948,
+            "launcher_seconds": 4.436447417
+          },
+          "candidate": {
+            "cargo_seconds": 1.6842640420000001,
+            "execution_seconds": 2.596932333,
+            "artifact_hash_seconds": 0.01118412499999999,
+            "launcher_seconds": 4.343032708
+          }
+        },
+        "identical_bytecode": false
+      }
+    ],
+    "candidate_pair_wins": 15,
+    "median_paired_difference_seconds": -0.2315559159999907,
+    "median_paired_cpu_difference_seconds": -0.2195030000000031,
+    "per_edit": [
+      {
+        "state": 1,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "74f87d3c5af3dc74e7cbfe9d6a4bd4c1158aeea89df76216205a18fb09c906f3",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 4.457422375,
+            "median": 4.4741666669999915,
+            "max": 4.476535124999998
+          },
+          "candidate_seconds": {
+            "min": 4.218779249999983,
+            "median": 4.242541790999994,
+            "max": 4.278640875000001
+          },
+          "native_seconds": {
+            "min": 1.9679765830000022,
+            "median": 2.140103499999981,
+            "max": 2.18944587499999
+          },
+          "difference_seconds": {
+            "min": -0.25538741700000855,
+            "median": -0.23399333400000444,
+            "max": -0.17878149999999948
+          },
+          "cpu_difference_seconds": {
+            "min": -0.25196400000001873,
+            "median": -0.22858799999999846,
+            "max": -0.21714099999998737
+          }
+        }
+      },
+      {
+        "state": 2,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "0d803437732a0c659d425b09956ad6c0d69a68ba026203ea1a5a5a2429c3b5d5",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 4.454325124999997,
+            "median": 4.526441166999994,
+            "max": 4.538067792000007
+          },
+          "candidate_seconds": {
+            "min": 4.198699250000004,
+            "median": 4.241870124999998,
+            "max": 4.335311833999981
+          },
+          "native_seconds": {
+            "min": 1.9994288749999782,
+            "median": 2.037365875000006,
+            "max": 2.038012750000007
+          },
+          "difference_seconds": {
+            "min": -0.33936854200000255,
+            "median": -0.28457104199999605,
+            "max": -0.1190132910000159
+          },
+          "cpu_difference_seconds": {
+            "min": -0.22937499999998323,
+            "median": -0.2195030000000031,
+            "max": -0.207425999999991
+          }
+        }
+      },
+      {
+        "state": 3,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "26c738f2eee727d2ceb9f168c957c0edfb38e2fc70cb5bdf1b50543975974c94",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 4.430289166000001,
+            "median": 4.490936792000014,
+            "max": 4.571016374999999
+          },
+          "candidate_seconds": {
+            "min": 4.21984441699999,
+            "median": 4.239566583999988,
+            "max": 4.4180929579999955
+          },
+          "native_seconds": {
+            "min": 1.963247999999993,
+            "median": 1.9938720829999852,
+            "max": 2.1497049999999973
+          },
+          "difference_seconds": {
+            "min": -0.351171958000009,
+            "median": -0.25137020800002574,
+            "max": -0.012196208000005981
+          },
+          "cpu_difference_seconds": {
+            "min": -0.2672549999999916,
+            "median": -0.2006179999999702,
+            "max": -0.17835700000000365
+          }
+        }
+      },
+      {
+        "state": 4,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "2e9247dd756ca51a5f95ce35ead76288a4718ebbeaa9a3e0b8c36eb53447f234",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 4.362718583000003,
+            "median": 4.41933070799999,
+            "max": 4.472152124999994
+          },
+          "candidate_seconds": {
+            "min": 4.184541250000024,
+            "median": 4.187774791999999,
+            "max": 4.194927957999994
+          },
+          "native_seconds": {
+            "min": 1.915333457999992,
+            "median": 1.9353760420000015,
+            "max": 1.9624219999999752
+          },
+          "difference_seconds": {
+            "min": -0.27722416699999997,
+            "median": -0.2315559159999907,
+            "max": -0.1781773329999794
+          },
+          "cpu_difference_seconds": {
+            "min": -0.268101999999967,
+            "median": -0.22411500000003315,
+            "max": -0.19835600000001108
+          }
+        }
+      },
+      {
+        "state": 5,
+        "cycles": [
+          0,
+          1,
+          2
+        ],
+        "source_sha256": "7038a9f6bbedbae9da10469fa7577aceebc3df6addcc88e3c9c68d5257a70587",
+        "samples": 3,
+        "spread": {
+          "baseline_seconds": {
+            "min": 4.425715625000009,
+            "median": 4.4337733750000154,
+            "max": 4.462452291999995
+          },
+          "candidate_seconds": {
+            "min": 4.203046792000009,
+            "median": 4.322912165999995,
+            "max": 4.370228334000018
+          },
+          "native_seconds": {
+            "min": 1.9695741250000083,
+            "median": 2.0949703339999814,
+            "max": 2.212339
+          },
+          "difference_seconds": {
+            "min": -0.23072658300000626,
+            "median": -0.10280345900001464,
+            "max": -0.09222395799997685
+          },
+          "cpu_difference_seconds": {
+            "min": -0.22020700000000915,
+            "median": -0.21459499999999743,
+            "max": -0.21055499999995675
+          }
+        }
+      }
+    ]
+  }
+}
