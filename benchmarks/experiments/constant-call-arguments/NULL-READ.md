@@ -20,6 +20,8 @@ one library test executable, fetches nothing, creates no project/dependency
 benchmark cache and publishes no tool. Record command, source hashes, outcome
 and free space; retain the expected failing run. Full tool publication and the
 actual-edit screen remain separate qualifications with their declared rules.
+After the two individual regressions pass, run all 18 constant-analysis tests
+in debug and release using the same dependency cache and resource reserve.
 
 Until the fix is qualified, the existing folder binaries are disqualified for
 adoption even though all 34 selected real tests passed. Preserve those results
