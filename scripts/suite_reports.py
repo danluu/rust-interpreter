@@ -8,6 +8,8 @@ from native_suite import test_status
 def guest_test_failure(stderr):
     prefix = 'rust-interp-vm: guest trap: '
     for line in stderr.splitlines():
+        if line.startswith('rust-interp-vm: guest assertion: ') and line.removeprefix('rust-interp-vm: guest assertion: '):
+            return True
         if not line.startswith(prefix):
             continue
         message = line.removeprefix(prefix)

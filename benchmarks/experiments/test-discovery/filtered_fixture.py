@@ -12,7 +12,7 @@ from workflow_io import capture,require_space,write_json as write,SourceEdit
 
 
 def main():
-    run='filtered-suites-fixture-01'
+    run='filtered-suites-fixture-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,8)
         build_path=ROOT/'results/filtered-suites-build-02/summary.json';build=json.loads(build_path.read_text())

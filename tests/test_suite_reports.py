@@ -67,6 +67,15 @@ class SuiteReportTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(RuntimeError): validate_report(dict(report,**{key:value}),['one','two'],'prepared',False)
         with self.assertRaises(RuntimeError): validate_report(report,['two','one'],'prepared',False)
 
+    def test_result_adapter_assertion_is_a_test_failure_but_resource_errors_are_not(self):
+        report=dict(schema_version=1,mode='prepared',status='failed',passed=0,failed=1,
+                    tests=[dict(name='result',status='failed',error='guest assertion: test result returned Err in Result test adapter: result')])
+        self.assertEqual(validate_report(report,['result'],'prepared',False),[('result','failed')])
+        for error in ['guest assertion: ', 'instruction limit exceeded', 'guest trap: allocation limit exceeded',
+                      'compiler error: guest assertion: test result returned Err']:
+            changed=copy.deepcopy(report);changed['tests'][0]['error']=error
+            with self.subTest(error=error),self.assertRaises(RuntimeError):validate_report(changed,['result'],'prepared',False)
+
     def test_changed_or_redirected_report_cannot_reuse_old_hash(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'suite.json';path.write_text('{"status":"passed"}')
