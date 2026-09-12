@@ -1942,3 +1942,11 @@ mod constant_arguments;
 pub fn constant_call_argument_census(program: &Program, profile: Option<&[u8]>) -> Result<serde_json::Value, String> {
     constant_arguments::census(program, profile)
 }
+
+mod constant_fold_facts;
+mod constant_fold;
+
+/// Experimental compiler transform. Guest execution never applies it implicitly.
+pub fn fold_constants(program: Program) -> Result<(Program, serde_json::Value), String> {
+    constant_fold::fold(program)
+}

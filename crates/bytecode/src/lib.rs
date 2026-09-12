@@ -29,7 +29,7 @@ mod memory_tests;
 pub use float::{FloatBinary, FloatUnary, FloatConversion};
 pub use profile::{ExecutionProfile, FunctionProfile};
 pub use prepared::PreparedJit;
-pub use jit::{register_width_census, register_width_profile_census, register_lifetime_census, constant_call_argument_census};
+pub use jit::{register_width_census, register_width_profile_census, register_lifetime_census, constant_call_argument_census, fold_constants};
 pub use entry_catalog::{EntryCatalog, SelectedEntry};
 pub use optimize::{remove_fallthrough_jumps, optimize_calls, CallOptimizationReport};
 pub use control_flow::{optimize_control_flow, ControlFlowReport, FunctionControlFlowReport};
