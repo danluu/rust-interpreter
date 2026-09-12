@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Shared-call specialization passes 34 saved real tests and 377 host tests/profile, but initial runtime gains are only 0.69% token and 2.38% folded. Keep the compiler off main. A reproduced ordering limitation rejects clones because unreachable branches are checked before CFG cleanup; qualify that fix, then replay changed artifacts before considering real edit gates. Global folding and lifetime allocation remain parked.
+**Next:** Shared-call specialization is parked: 386 host tests/profile and 34 real assertions pass, but final saved runtime is +1.57% token and -0.46% folded. Its compiler passes remain off main; no real-edit screen ran. Next add uninstrumented named-test selection, then sample exact generated native code in the two dominant token tests before choosing another runtime change.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
