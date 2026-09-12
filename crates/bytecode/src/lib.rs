@@ -256,6 +256,7 @@ fn signed(value: u128, bits: u8) -> i128 {
 }
 
 /// Integer semantics are explicit in the bytecode, including overflow results.
+#[inline(always)]
 pub fn binary(
     op: Binary,
     a: u128,
