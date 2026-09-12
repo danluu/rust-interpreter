@@ -121,8 +121,10 @@ review are not commitments or evidence of feasibility.
 - Item 3.1's next [typed Call-slot census](../results/call-slot-census-02/assessment.md)
   verifies eight focused tests and both original profile totals. Caller-frame
   arguments cover 99.49% of token native checks and 98.08% folded. No speedup is
-  inferred. The next isolated VM will guard actual addresses before using these
-  slots and keep the existing checked path on mismatch, with fixed real-edit gates.
+  inferred. Isolated VM `ac38fa59` now guards actual addresses before using these
+  slots and keeps the existing checked path on mismatch. [Workspace checks](../results/call-slot-build-01/assessment.md)
+  pass 297 tests in debug/release, one ignored; [original-artifact smoke](../results/call-slot-smoke-01/assessment.md)
+  passes 20 commands. Fresh A/A controls and fixed real-edit gates are in progress.
 
 - The qualified aggregate compiler is now integrated as `5b2330c` / `9637b0ac`.
   [Normal root builds](../results/aggregate-integration-root-01/assessment.md)
