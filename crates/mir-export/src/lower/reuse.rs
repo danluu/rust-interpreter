@@ -4,6 +4,19 @@ use rustc_middle::mir::visit::Visitor;
 use serde::{Deserialize, Serialize};
 use bincode::Options;
 
+fn allocation_correspondence<K: Eq + std::hash::Hash>(left: &HashMap<K, usize>, right: &HashMap<K, usize>) -> bool {
+    // The caller-location hook allocates fresh compiler IDs on every call.
+    // Shared IDs must retain their address, and all address alias classes must
+    // retain their cardinality. Guest bytes/pointers are compared separately.
+    if left.iter().any(|(id, address)| right.get(id).is_some_and(|other| other != address)) { return false; }
+    let classes = |map: &HashMap<K, usize>| {
+        let mut counts = BTreeMap::new();
+        for &address in map.values() { *counts.entry(address).or_insert(0usize) += 1; }
+        counts
+    };
+    classes(left) == classes(right)
+}
+
 #[derive(Serialize, Deserialize)]
 pub(super) struct Template {
     pub function: Function,
@@ -54,7 +67,10 @@ impl<'tcx> Exporter<'tcx> {
             };
         }
         compare!(instances); compare!(ids); compare!(needs_body); compare!(pending);
-        compare!(pointer_shapes); compare!(indirect_shapes); compare!(allocations);
+        compare!(pointer_shapes); compare!(indirect_shapes);
+        if !allocation_correspondence(&self.allocations, &replay.allocations) {
+            return Err("binding replay allocation addresses or alias classes differ from full lowering".into());
+        }
         compare!(tls_addresses); compare!(runtime_errno); compare!(data); compare!(statics);
         compare!(unavailable_calls);
         if self.thread_locals.len() != replay.thread_locals.len()
@@ -292,4 +308,17 @@ pub(super) fn replay<'tcx>(exporter: &mut Exporter<'tcx>, instance: Instance<'tc
     observed.rebind(index, &calls)?;
     exporter.byte_writes.push(observed);
     Ok(function)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn fresh_ids_preserve_alias_classes_and_shared_ids_keep_their_addresses() {
+        let original = HashMap::from([(1, 100), (2, 100), (3, 200)]);
+        assert!(allocation_correspondence(&original, &HashMap::from([(1, 100), (4, 100), (5, 200)])));
+        assert!(!allocation_correspondence(&original, &HashMap::from([(1, 100), (4, 200)])));
+        assert!(!allocation_correspondence(&original, &HashMap::from([(1, 200), (4, 100), (5, 100)])));
+        assert!(!allocation_correspondence(&original, &HashMap::from([(1, 100), (4, 200), (5, 200)])));
+    }
 }

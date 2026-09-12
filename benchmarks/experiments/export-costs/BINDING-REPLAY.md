@@ -18,8 +18,11 @@ and its event tape. Replay supported tapes in a second exporter seeded with the
 same entries. Resolve all compiler constants and instances from the current MIR
 and replay recursive allocation materialization normally. Patch only recorded
 immediate registers and typed direct-call fields, including calls retained in
-frame observations. Keep graph scheduling, allocations, TLS, statics, alias
-identity and diagnostics identical. Compare every reconstructed function and
+frame observations. Keep graph scheduling, allocation addresses, TLS, statics,
+alias classes and diagnostics identical. The compiler's caller-location hook
+creates fresh IDs when called again: compare addresses for shared IDs and the
+cardinality of every guest-address alias class, not numeric compiler-ID equality.
+This never merges allocations by equal contents. Compare every reconstructed function and
 frame observation against full lowering, then compare exporter graph state.
 
 The opt-in flag requires ordinary strict checking and function-cost observation.

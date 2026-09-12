@@ -92,7 +92,7 @@ def main():
         require_space(ROOT, 8)
         build = json.loads(args.build.read_text())
         assert not args.binding_replay or args.typed_relocations
-        expected_tests = 46 if args.binding_replay else (44 if args.typed_relocations else 41)
+        expected_tests = 47 if args.binding_replay else (44 if args.typed_relocations else 41)
         assert build['status'] == 'passed' and set(build['tests'].values()) == {expected_tests}
         tool, key = installed_tools(build['tool_key'])
         baseline, _ = installed_tools(CONTROL)
