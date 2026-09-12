@@ -1337,6 +1337,10 @@ impl Assembler<'_> {
             self.mov(address, 2);
             return;
         }
+        if self.heap && self.resumable {
+            self.split_checked_address(address, size, write);
+            return;
+        }
         if self.heap {
             self.imm(14, crate::heap::TAG as u64);
             self.cmp(address, 14);
@@ -1378,6 +1382,44 @@ impl Assembler<'_> {
             self.fail(3);
         }
         self.three(0x8b000000, address, 2, address);
+    }
+    // A region cannot move or resize either backing allocation. Choose its
+    // arena once, then validate against that arena's existing live bounds.
+    // The unsigned comparison deliberately includes malformed high pointers;
+    // testing only the heap-tag bit would change their classification.
+    fn split_checked_address(&mut self, address: u32, size: usize, write: bool) {
+        debug_assert!(size != 0);
+        self.imm(14, crate::heap::TAG as u64);
+        self.cmp(address, 14);
+        let heap = self.words.len();
+        self.emit(0x54000002); // b.hs heap
+        self.arena_checked_address(address, size, write, false);
+        let done = self.words.len();
+        self.emit(0x14000000);
+        self.patch_conditional(heap, self.words.len()).expect("bounded arena-selection branch");
+        self.three(0xcb000000, address, address, 14);
+        self.arena_checked_address(address, size, write, true);
+        // Both local skips span at most one fixed check sequence, including
+        // at most four words for a full-width size constant. No guest-sized
+        // unrolling occurs here. The forward target is the next emitted word.
+        self.words[done] |= branch_displacement(done, self.words.len(), 26, CodegenLimit::Jump)
+            .expect("bounded arena-selection join");
+    }
+    fn arena_checked_address(&mut self, address: u32, size: usize, write: bool, heap: bool) {
+        let (base, length) = if heap { (7, 8) } else { (2, 3) };
+        self.cmp(address, 31);
+        self.fail(0);
+        self.cmp(address, length);
+        self.fail(8);
+        self.three(0xcb000000, 15, length, address);
+        self.imm(13, size as u64);
+        self.cmp(15, 13);
+        self.fail(3);
+        if write && !heap {
+            self.cmp(address, 4);
+            self.fail(3);
+        }
+        self.three(0x8b000000, address, base, address);
     }
     // Count is nonzero here. Check a complete read range without forming
     // address+count, which may overflow. Scratch x13/x14/x15/x17 leaves both
@@ -1915,6 +1957,9 @@ mod local_memory;
 #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
 #[path="jit/local_memory_tests.rs"]
 mod local_memory_tests;
+
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod address_tests;
 
 
 mod register_widths;

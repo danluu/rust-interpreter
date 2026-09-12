@@ -20,3 +20,11 @@ for inspection. Report physical allocation savings separately from host free
 space, which unrelated work can change. Compression changes I/O representation;
 this is maintenance, not a latency measurement or a source of benchmark gains.
 The parked candidate artifacts are not scheduled for further timing.
+
+The second bounded batch contains the two completed entropy-AA diagnostic JSON
+profiles, budget-register-smoke-05 profiles1/3/11/13, and code.bin/map.json from
+each of the six completed selected-native block/exhaustive sample processes.
+Bind every file to its successful producer receipt and existing content digest.
+These are diagnostic outputs, never timed runtime inputs. Apply the same
+single-file staging, byte/metadata equality and3GiB reserve rules. This batch
+restores host-build headroom without lowering build admission or removing data.
