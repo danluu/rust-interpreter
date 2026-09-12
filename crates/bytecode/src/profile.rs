@@ -27,17 +27,21 @@ pub struct FunctionProfile {
 impl ExecutionProfile {
     pub(crate) fn new(program: &Program) -> Self {
         Self {
-            functions: program.functions.iter().map(|f| FunctionProfile {
-                name: f.name.clone(),
-                frame_size: f.frame_size,
-                registers: f.registers,
-                operations: f.code.iter().map(|op| format!("{op:?}")).collect(),
-                interpreted: vec![0; f.code.len()],
-                jit_blocks: vec![0; f.code.len()],
-                jit_block_ends: vec![0; f.code.len()],
-                jit_tree_blocks: vec![0; f.code.len()],
-                jit_tree_block_ends: vec![0; f.code.len()],
-            }).collect(),
+            functions: program
+                .functions
+                .iter()
+                .map(|f| FunctionProfile {
+                    name: f.name.clone(),
+                    frame_size: f.frame_size,
+                    registers: f.registers,
+                    operations: f.code.iter().map(|op| format!("{op:?}")).collect(),
+                    interpreted: vec![0; f.code.len()],
+                    jit_blocks: vec![0; f.code.len()],
+                    jit_block_ends: vec![0; f.code.len()],
+                    jit_tree_blocks: vec![0; f.code.len()],
+                    jit_tree_block_ends: vec![0; f.code.len()],
+                })
+                .collect(),
         }
     }
 }

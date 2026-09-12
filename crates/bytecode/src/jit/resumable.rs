@@ -1,10 +1,10 @@
 //! Direct Calls and Returns over initialized guest frames, with VM exits.
 use super::*;
-use crate::{CallArgument, CallDestination, scalar_calls::Arguments};
 use crate::frames::{Frame, Frames, layout as frame};
 use crate::native_continuation::{
     self as continuation, Boundary, Capacity, Exit, Run, State, Status,
 };
+use crate::{CallArgument, CallDestination, scalar_calls::Arguments};
 use crate::{Limits, Memory};
 
 const MAX_ENTRY_BYTES: usize = 16 * 1024 * 1024;
@@ -89,11 +89,17 @@ impl<'a> Jit<'a> {
         assert_eq!(abi.len(), self.program.functions.len());
         self.scalar_abi = Some(abi);
         if let Some(entries) = &mut self.resumable {
-            entries.zeroes = self.program.functions.iter().zip(abi).map(|(f, a)| {
-                let mut inputs: Vec<_> = a.arguments.iter().filter_map(|r| *r).collect();
-                inputs.extend(a.result);
-                crate::registers::needs_initial_zeroes_with_inputs(f, &inputs)
-            }).collect();
+            entries.zeroes = self
+                .program
+                .functions
+                .iter()
+                .zip(abi)
+                .map(|(f, a)| {
+                    let mut inputs: Vec<_> = a.arguments.iter().filter_map(|r| *r).collect();
+                    inputs.extend(a.result);
+                    crate::registers::needs_initial_zeroes_with_inputs(f, &inputs)
+                })
+                .collect();
         }
     }
 
@@ -293,12 +299,32 @@ impl<'a> Jit<'a> {
                     &mut declines,
                 )?;
             }
-            Op::CallValue { function, args, destination } => {
-                a.resumable_call(f, pc, *function, &self.program.functions[*function],
-                    self.scalar_abi.map(|table| &table[*function]), Arguments::Mixed(args), *destination,
-                    self.resumable.as_ref().unwrap().zeroes[*function], self.profiled, &mut declines)?;
+            Op::CallValue {
+                function,
+                args,
+                destination,
+            } => {
+                a.resumable_call(
+                    f,
+                    pc,
+                    *function,
+                    &self.program.functions[*function],
+                    self.scalar_abi.map(|table| &table[*function]),
+                    Arguments::Mixed(args),
+                    *destination,
+                    self.resumable.as_ref().unwrap().zeroes[*function],
+                    self.profiled,
+                    &mut declines,
+                )?;
             }
-            Op::Return => a.resumable_return(f, pc, result, self.scalar_abi.is_some(), self.profiled, &mut declines)?,
+            Op::Return => a.resumable_return(
+                f,
+                pc,
+                result,
+                self.scalar_abi.is_some(),
+                self.profiled,
+                &mut declines,
+            )?,
             _ => return Err(EmitError::InvalidRelocation("invalid resumable transition")),
         }
         let failures = std::mem::take(&mut a.failures);
@@ -547,12 +573,15 @@ impl Assembler<'_> {
             match input {
                 CallArgument::Address(source) => self.address(11, source, slot.size, false),
                 CallArgument::Value(source) => {
-                    self.get(9, source, false); self.get(10, source, true);
+                    self.get(9, source, false);
+                    self.get(10, source, true);
                     self.scalar_call_clip(9, 10, slot.size);
                 }
             }
             if let Some(reg) = abi.and_then(|a| a.arguments[index]) {
-                if matches!(input, CallArgument::Address(_)) { self.load_mem(9, 10, 11, slot.size); }
+                if matches!(input, CallArgument::Address(_)) {
+                    self.load_mem(9, 10, 11, slot.size);
+                }
                 self.imm(12, u64::from(reg) * 16);
                 self.three(0x8b000000, 12, 22, 12);
                 self.store_mem(9, 10, 12, 16);
@@ -560,8 +589,11 @@ impl Assembler<'_> {
                 self.imm(12, slot.offset as u64);
                 self.three(0x8b000000, 12, 21, 12);
                 self.three(0x8b000000, 12, 2, 12);
-                if matches!(input, CallArgument::Value(_)) { self.store_mem(9, 10, 12, slot.size); }
-                else { self.abi_copy(slot.size)?; }
+                if matches!(input, CallArgument::Value(_)) {
+                    self.store_mem(9, 10, 12, slot.size);
+                } else {
+                    self.abi_copy(slot.size)?;
+                }
             }
         }
         if abi.is_none() {
@@ -589,7 +621,12 @@ impl Assembler<'_> {
         self.store64(9, 20, frame::REGISTER_BASE);
         self.store64(15, 20, frame::RETURN_ADDRESS);
         self.emit(0x39000000 | ((frame::TLS_CALLBACK as u32) << 10) | (20 << 5) | 31);
-        let tag = if matches!(destination, CallDestination::Value(_)) { self.imm(13, 1); 13 } else { 31 };
+        let tag = if matches!(destination, CallDestination::Value(_)) {
+            self.imm(13, 1);
+            13
+        } else {
+            31
+        };
         self.emit(0x39000000 | ((frame::RETURN_VALUE as u32) << 10) | (20 << 5) | tag);
         self.imm(10, callee.registers as u64);
         self.three(0x8b000000, 9, 9, 10);
@@ -610,7 +647,9 @@ impl Assembler<'_> {
             self.imm(13, (1u64 << (size * 8)) - 1);
             self.three(0x8a000000, lo, lo, 13);
         }
-        if size < 16 { self.mov(hi, 31); }
+        if size < 16 {
+            self.mov(hi, 31);
+        }
     }
 
     fn resumable_return(
@@ -637,8 +676,12 @@ impl Assembler<'_> {
         let value_branch = if value_calls && crate::scalar_calls::scalar_width(f.result.size) {
             self.emit(0x39400000 | ((frame::RETURN_VALUE as u32) << 10) | (20 << 5) | 9);
             self.cmp(9, 31);
-            let at = self.words.len(); self.emit(0x54000000 | Cond::Ne as u32); Some(at)
-        } else { None };
+            let at = self.words.len();
+            self.emit(0x54000000 | Cond::Ne as u32);
+            Some(at)
+        } else {
+            None
+        };
         if let Some(reg) = result {
             self.load64(12, 20, frame::RETURN_ADDRESS);
             self.checked_address(12, f.result.size, true);
@@ -654,10 +697,12 @@ impl Assembler<'_> {
             self.abi_copy(f.result.size)?;
         }
         let value_skip = if let Some(at) = value_branch {
-            let skip = self.words.len(); self.emit(0x14000000);
+            let skip = self.words.len();
+            self.emit(0x14000000);
             self.patch_conditional(at, self.words.len())?;
             if let Some(reg) = result {
-                self.get(9, reg, false); self.get(10, reg, true);
+                self.get(9, reg, false);
+                self.get(10, reg, true);
                 self.scalar_call_clip(9, 10, f.result.size);
             } else {
                 self.imm(11, f.result.offset as u64);
@@ -674,10 +719,14 @@ impl Assembler<'_> {
             self.three(0x8b000000, 12, 12, 11);
             self.store_mem(9, 10, 12, 16);
             Some(skip)
-        } else { None };
+        } else {
+            None
+        };
         let value_join = self.words.len();
         self.mov(3, 21);
-        if let Some(skip) = value_skip { patch_jump(&mut self.words, skip, value_join)?; }
+        if let Some(skip) = value_skip {
+            patch_jump(&mut self.words, skip, value_join)?;
+        }
         self.store64(22, 19, state::REGISTER_LEN);
         self.load64(9, 19, state::FRAME_LEN);
         self.sub_imm(9, 9, 1);

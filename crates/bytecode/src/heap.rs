@@ -25,7 +25,12 @@ impl Default for Heap {
 
 impl Heap {
     pub fn with_statics(bytes: &[u8], allocation_limit: usize) -> Self {
-        Self { bytes: bytes.to_vec(), static_len: bytes.len(), allocation_limit, ..Self::default() }
+        Self {
+            bytes: bytes.to_vec(),
+            static_len: bytes.len(),
+            allocation_limit,
+            ..Self::default()
+        }
     }
     pub(super) fn owned_layout(&self, offset: usize) -> Option<(usize, usize)> {
         self.allocations.get(&offset).copied()
@@ -250,53 +255,71 @@ mod allocation_budget_tests {
 
     #[test]
     fn exact_live_limit_preserves_failure_state_then_allows_zeroed_reuse() {
-        let mut h=Heap::with_statics(&[0x39;16],2);
-        let a=h.allocate(16,16,128,false).unwrap();
-        let b=h.allocate(16,16,128,false).unwrap();
-        h.bytes[a-TAG..a-TAG+16].fill(0xa5);
-        let old=h.bytes.clone();let allocations=h.allocations.clone();let free=h.free.clone();
-        assert_eq!(h.allocate(1,1,128,false).unwrap(),0);
-        assert_eq!(h.bytes,old);assert_eq!(h.allocations,allocations);assert_eq!(h.free,free);
-        h.deallocate(a,16,16).unwrap();
-        let c=h.allocate(16,16,128,true).unwrap();assert_eq!(c,a);
-        assert_eq!(&h.bytes[c-TAG..c-TAG+16],&[0;16]);
-        h.deallocate(b,16,16).unwrap();h.deallocate(c,16,16).unwrap();
-        assert_eq!(h.bytes,vec![0x39;16]);
-        let mut zero=Heap::with_statics(&[0x39;16],0);
-        assert_eq!(zero.allocate(1,1,128,false).unwrap(),0);
-        assert_eq!(zero.bytes,vec![0x39;16]);
+        let mut h = Heap::with_statics(&[0x39; 16], 2);
+        let a = h.allocate(16, 16, 128, false).unwrap();
+        let b = h.allocate(16, 16, 128, false).unwrap();
+        h.bytes[a - TAG..a - TAG + 16].fill(0xa5);
+        let old = h.bytes.clone();
+        let allocations = h.allocations.clone();
+        let free = h.free.clone();
+        assert_eq!(h.allocate(1, 1, 128, false).unwrap(), 0);
+        assert_eq!(h.bytes, old);
+        assert_eq!(h.allocations, allocations);
+        assert_eq!(h.free, free);
+        h.deallocate(a, 16, 16).unwrap();
+        let c = h.allocate(16, 16, 128, true).unwrap();
+        assert_eq!(c, a);
+        assert_eq!(&h.bytes[c - TAG..c - TAG + 16], &[0; 16]);
+        h.deallocate(b, 16, 16).unwrap();
+        h.deallocate(c, 16, 16).unwrap();
+        assert_eq!(h.bytes, vec![0x39; 16]);
+        let mut zero = Heap::with_statics(&[0x39; 16], 0);
+        assert_eq!(zero.allocate(1, 1, 128, false).unwrap(), 0);
+        assert_eq!(zero.bytes, vec![0x39; 16]);
     }
 
     #[test]
     fn realloc_counts_temporary_replacement_and_keeps_original_on_failure() {
-        let mut h=Heap::with_statics(&[],3);
-        let a=h.allocate(16,16,256,false).unwrap();
-        let b=h.allocate(16,16,256,false).unwrap();
-        let c=h.allocate(16,16,256,false).unwrap();
-        h.bytes[a-TAG..a-TAG+16].fill(0xa5);
+        let mut h = Heap::with_statics(&[], 3);
+        let a = h.allocate(16, 16, 256, false).unwrap();
+        let b = h.allocate(16, 16, 256, false).unwrap();
+        let c = h.allocate(16, 16, 256, false).unwrap();
+        h.bytes[a - TAG..a - TAG + 16].fill(0xa5);
         // In-place growth/shrink requires no extra count slot.
-        assert_eq!(h.reallocate(c,16,16,32,256).unwrap(),c);
-        assert_eq!(h.reallocate(c,32,16,16,256).unwrap(),c);
-        let before=h.bytes.clone();
-        assert_eq!(h.reallocate(a,16,16,32,256).unwrap(),0);
-        assert_eq!(h.bytes,before);assert_eq!(h.allocations.len(),3);
-        assert_eq!(h.owned_layout(a-TAG),Some((16,16)));
-        h.deallocate(c,16,16).unwrap();
-        let moved=h.reallocate(a,16,16,32,256).unwrap();
-        assert_ne!(moved,0);assert_ne!(moved,a);assert_eq!(h.allocations.len(),2);
-        assert_eq!(&h.bytes[moved-TAG..moved-TAG+16],&[0xa5;16]);
-        h.deallocate(b,16,16).unwrap();h.deallocate(moved,32,16).unwrap();
-        assert!(h.allocations.is_empty());assert!(h.bytes.is_empty());
+        assert_eq!(h.reallocate(c, 16, 16, 32, 256).unwrap(), c);
+        assert_eq!(h.reallocate(c, 32, 16, 16, 256).unwrap(), c);
+        let before = h.bytes.clone();
+        assert_eq!(h.reallocate(a, 16, 16, 32, 256).unwrap(), 0);
+        assert_eq!(h.bytes, before);
+        assert_eq!(h.allocations.len(), 3);
+        assert_eq!(h.owned_layout(a - TAG), Some((16, 16)));
+        h.deallocate(c, 16, 16).unwrap();
+        let moved = h.reallocate(a, 16, 16, 32, 256).unwrap();
+        assert_ne!(moved, 0);
+        assert_ne!(moved, a);
+        assert_eq!(h.allocations.len(), 2);
+        assert_eq!(&h.bytes[moved - TAG..moved - TAG + 16], &[0xa5; 16]);
+        h.deallocate(b, 16, 16).unwrap();
+        h.deallocate(moved, 32, 16).unwrap();
+        assert!(h.allocations.is_empty());
+        assert!(h.bytes.is_empty());
     }
 
     #[test]
     fn explicit_count_budget_above_old_default_is_effective() {
-        let limit=crate::DEFAULT_ALLOCATION_LIMIT+1;
-        let mut h=Heap::with_statics(&[],limit);
-        let pointers:Vec<_>=(0..limit).map(|_|h.allocate(1,1,limit+16,false).unwrap()).collect();
-        assert!(pointers.iter().all(|&p|p!=0));assert_eq!(h.allocations.len(),limit);
-        assert_eq!(h.allocate(1,1,limit+16,false).unwrap(),0);
-        for p in pointers {h.deallocate(p,1,1).unwrap();}
-        assert!(h.bytes.is_empty());assert!(h.allocations.is_empty());assert!(h.free.is_empty());
+        let limit = crate::DEFAULT_ALLOCATION_LIMIT + 1;
+        let mut h = Heap::with_statics(&[], limit);
+        let pointers: Vec<_> = (0..limit)
+            .map(|_| h.allocate(1, 1, limit + 16, false).unwrap())
+            .collect();
+        assert!(pointers.iter().all(|&p| p != 0));
+        assert_eq!(h.allocations.len(), limit);
+        assert_eq!(h.allocate(1, 1, limit + 16, false).unwrap(), 0);
+        for p in pointers {
+            h.deallocate(p, 1, 1).unwrap();
+        }
+        assert!(h.bytes.is_empty());
+        assert!(h.allocations.is_empty());
+        assert!(h.free.is_empty());
     }
 }

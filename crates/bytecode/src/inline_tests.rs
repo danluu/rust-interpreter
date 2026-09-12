@@ -77,7 +77,9 @@ fn expansion_cannot_introduce_whole_caller_register_clearing() {
             size: 8,
         },
     );
-    assert!(!crate::registers::needs_initial_zeroes_for_inlining(&p.functions[0]));
+    assert!(!crate::registers::needs_initial_zeroes_for_inlining(
+        &p.functions[0]
+    ));
     let (q, report) = inline::transform(&p, options()).unwrap();
     assert_eq!(report["selected_sites"], 0);
     assert_eq!(format!("{p:?}"), format!("{q:?}"));

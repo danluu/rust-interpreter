@@ -13,7 +13,10 @@ pub(crate) struct LinearMemory {
 
 impl From<Vec<u8>> for LinearMemory {
     fn from(initialized: Vec<u8>) -> Self {
-        Self { active: initialized.len(), initialized }
+        Self {
+            active: initialized.len(),
+            initialized,
+        }
     }
 }
 
@@ -72,11 +75,15 @@ impl LinearMemory {
         Ok(())
     }
 
-    pub(crate) fn initialized_len(&self) -> usize { self.initialized.len() }
+    pub(crate) fn initialized_len(&self) -> usize {
+        self.initialized.len()
+    }
 
     /// Raw access to initialized backing, including retained non-live bytes.
     /// A native caller must still enforce its separate guest live extent.
-    pub(crate) fn prepared_mut_ptr(&mut self) -> *mut u8 { self.initialized.as_mut_ptr() }
+    pub(crate) fn prepared_mut_ptr(&mut self) -> *mut u8 {
+        self.initialized.as_mut_ptr()
+    }
 
     /// Commit a native call tree's final prefix after checking its cursor.
     /// All elements are initialized, but callers must separately establish the
@@ -96,8 +103,14 @@ mod tests {
     use crate::{Memory, heap};
 
     fn memory(limit: usize) -> Memory {
-        Memory { bytes: vec![0x57; 17].into(), heap: heap::Heap::default(),
-            limit, readonly_end: 16, peak: 17, auxiliary_bytes: 0 }
+        Memory {
+            bytes: vec![0x57; 17].into(),
+            heap: heap::Heap::default(),
+            limit,
+            readonly_end: 16,
+            peak: 17,
+            auxiliary_bytes: 0,
+        }
     }
 
     #[test]
@@ -150,7 +163,10 @@ mod tests {
     fn prepared_capacity_does_not_bypass_frame_limit_or_publish_a_bad_native_cursor() {
         let mut m = memory(63);
         m.bytes.prepare(4096).unwrap();
-        assert_eq!(m.reserve_frame(1, 64).unwrap_err(), "interpreter memory limit exceeded");
+        assert_eq!(
+            m.reserve_frame(1, 64).unwrap_err(),
+            "interpreter memory limit exceeded"
+        );
         assert_eq!(m.bytes.len(), 17);
         assert_eq!(m.peak, 17);
         assert!(m.bytes.commit_native_len(4097).is_err());
@@ -164,8 +180,15 @@ mod tests {
     fn active_resize_matches_vector_semantics_through_growth_shrink_and_reuse() {
         let mut reference = vec![7; 5];
         let mut actual: LinearMemory = reference.clone().into();
-        for (end, byte, prepare) in [(100, 9, 200), (3, 1, 0), (50, 8, 500),
-            (0, 2, 0), (17, 3, 20), (900, 4, 0), (901, 5, 2048)] {
+        for (end, byte, prepare) in [
+            (100, 9, 200),
+            (3, 1, 0),
+            (50, 8, 500),
+            (0, 2, 0),
+            (17, 3, 20),
+            (900, 4, 0),
+            (901, 5, 2048),
+        ] {
             actual.prepare(prepare).unwrap();
             actual.resize(end, byte);
             reference.resize(end, byte);

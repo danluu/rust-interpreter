@@ -29,21 +29,27 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             // is immutable and the machine has no architectural configuration
             // changes to synchronize, so the barrier has no runtime effect.
             let dest = self.place(destination)?;
-            if args.len()!=1 || self.layout(dest.ty)?.size.bytes()!=0 ||
-               self.integer(self.operand_ty(&args[0].node))? != (32,true) {
+            if args.len() != 1
+                || self.layout(dest.ty)?.size.bytes() != 0
+                || self.integer(self.operand_ty(&args[0].node))? != (32, true)
+            {
                 return Err("unsupported instruction barrier signature".into());
             }
             let argument = self.scalar(&args[0].node)?;
             let sy = self.imm(15);
             let valid = self.bin(Binary::Eq, argument, sy, 32, false).0;
-            self.code.push(Op::Assert { value: valid, expected: true,
-                message: "unsupported instruction barrier argument".into() });
+            self.code.push(Op::Assert {
+                value: valid,
+                expected: true,
+                message: "unsupported instruction barrier argument".into(),
+            });
             return Ok(true);
         }
         if symbol == "llvm.aarch64.neon.tbl1.v16i8" {
             let dest = self.place(destination)?;
             let shape = self.vector_shape(dest.ty)?;
-            if args.len() != 2 || (shape.0, shape.1) != (16, 8)
+            if args.len() != 2
+                || (shape.0, shape.1) != (16, 8)
                 || self.vector_shape(self.operand_ty(&args[0].node))? != shape
                 || self.vector_shape(self.operand_ty(&args[1].node))? != (16, 8, false)
             {
@@ -60,15 +66,23 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 let index = self.vector_lane(indices, lane, 8)?;
                 let valid = self.bin(Binary::Lt, index, limit, 8, false).0;
                 let safe_index = self.reg();
-                self.code.push(Op::Select { dst: safe_index, condition: valid,
-                    yes: index, no: zero });
+                self.code.push(Op::Select {
+                    dst: safe_index,
+                    condition: valid,
+                    yes: index,
+                    no: zero,
+                });
                 // Out-of-range lanes still perform a valid one-byte read,
                 // then select zero. Never form an out-of-table load address.
                 let address = self.bin(Binary::Add, table, safe_index, 64, false).0;
                 let value = self.load(address, 1)?;
                 let result = self.reg();
-                self.code.push(Op::Select { dst: result, condition: valid,
-                    yes: value, no: zero });
+                self.code.push(Op::Select {
+                    dst: result,
+                    condition: valid,
+                    yes: value,
+                    no: zero,
+                });
                 self.store_lane(dest.address, lane, 8, result)?;
             }
             return Ok(true);

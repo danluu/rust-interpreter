@@ -277,7 +277,9 @@ fn transform_code(
             let mut op = code[pc].clone();
             match &mut op {
                 Op::Jump { target } => *target = resolve(*target),
-                Op::Switch { cases, otherwise, .. } => {
+                Op::Switch {
+                    cases, otherwise, ..
+                } => {
                     *otherwise = resolve(*otherwise);
                     for (_, target) in cases {
                         *target = resolve(*target);

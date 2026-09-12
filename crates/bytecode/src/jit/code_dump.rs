@@ -36,31 +36,55 @@ impl Jit<'_> {
     /// failures preserve any partial evidence and never replace existing files.
     pub(crate) fn dump_code(&self, path: &Path) -> Result<(), String> {
         let (arena_base, bytes) = self.code.as_ref().map_or((0, &[][..]), |c| c.published());
-        if bytes.len() != self.bytes { return Err("native code dump length mismatch".into()); }
+        if bytes.len() != self.bytes {
+            return Err("native code dump length mismatch".into());
+        }
         let mut ranges = vec![];
         for (function, blocks) in self.blocks.iter().enumerate() {
             for (pc, block) in blocks.iter().enumerate() {
-                let Some(block) = block else { continue; };
-                ranges.push(Range { offset: block.offset, end: 0, function,
+                let Some(block) = block else {
+                    continue;
+                };
+                ranges.push(Range {
+                    offset: block.offset,
+                    end: 0,
+                    function,
                     name: &self.program.functions[function].name,
                     kind: if self.resumable.is_some() {
                         match self.program.functions[function].code[pc] {
-                            Op::Call { .. } => "resumable_call", Op::Return => "resumable_return", _ => "resumable_region",
+                            Op::Call { .. } => "resumable_call",
+                            Op::Return => "resumable_return",
+                            _ => "resumable_region",
                         }
-                    } else if matches!(self.program.functions[function].code[pc], Op::Call { .. }) { "call_stub" } else { "ordinary_region" },
-                    pc: Some(pc), pc_end: Some(block.end) });
+                    } else if matches!(self.program.functions[function].code[pc], Op::Call { .. }) {
+                        "call_stub"
+                    } else {
+                        "ordinary_region"
+                    },
+                    pc: Some(pc),
+                    pc_end: Some(block.end),
+                });
             }
         }
         if let Some(trees) = &self.trees {
             for (function, entry) in trees.entries.iter().enumerate() {
-                let Some(entry) = entry else { continue; };
-                ranges.push(Range { offset: entry.wrapper, end: 0, function,
-                    name: &self.program.functions[function].name, kind: "native_tree",
-                    pc: None, pc_end: None });
+                let Some(entry) = entry else {
+                    continue;
+                };
+                ranges.push(Range {
+                    offset: entry.wrapper,
+                    end: 0,
+                    function,
+                    name: &self.program.functions[function].name,
+                    kind: "native_tree",
+                    pc: None,
+                    pc_end: None,
+                });
             }
         }
         ranges.sort_by_key(|r| r.offset);
-        if ranges.first().is_some_and(|r| r.offset != 0) || (ranges.is_empty() != bytes.is_empty()) {
+        if ranges.first().is_some_and(|r| r.offset != 0) || (ranges.is_empty() != bytes.is_empty())
+        {
             return Err("native code dump has an unclassified prefix".into());
         }
         let mut end = bytes.len();
@@ -71,16 +95,31 @@ impl Jit<'_> {
             range.end = end;
             end = range.offset;
         }
-        let dump = Dump { schema_version: 1, pid: std::process::id(),
-            architecture: "aarch64", byte_order: "little", arena_base, code_bytes: bytes.len(),
-            profiled: self.profiled, native_call_stubs: self.native_call_stubs,
-            persistent_registers: self.persistent_registers, resumable_calls: self.resumable.is_some(), ranges,
-            note: "Published code from this process after successful execution. Entry ranges include wrappers, failure tails and fallbacks. Native-tree ranges cover whole functions, not individual bytecode operations. Diagnostic I/O is not benchmark evidence." };
+        let dump = Dump {
+            schema_version: 1,
+            pid: std::process::id(),
+            architecture: "aarch64",
+            byte_order: "little",
+            arena_base,
+            code_bytes: bytes.len(),
+            profiled: self.profiled,
+            native_call_stubs: self.native_call_stubs,
+            persistent_registers: self.persistent_registers,
+            resumable_calls: self.resumable.is_some(),
+            ranges,
+            note: "Published code from this process after successful execution. Entry ranges include wrappers, failure tails and fallbacks. Native-tree ranges cover whole functions, not individual bytecode operations. Diagnostic I/O is not benchmark evidence.",
+        };
         let write = || -> Result<(), Box<dyn std::error::Error>> {
             std::fs::create_dir(path)?;
-            let mut code = std::fs::OpenOptions::new().write(true).create_new(true).open(path.join("code.bin"))?;
+            let mut code = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path.join("code.bin"))?;
             code.write_all(bytes)?;
-            let file = std::fs::OpenOptions::new().write(true).create_new(true).open(path.join("map.json"))?;
+            let file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path.join("map.json"))?;
             let mut writer = std::io::BufWriter::new(file);
             serde_json::to_writer(&mut writer, &dump)?;
             writer.flush()?;

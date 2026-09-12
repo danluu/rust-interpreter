@@ -11,15 +11,15 @@ use std::collections::{BTreeMap, BTreeSet};
 
 // The bounded-call experiment is staged independently of ordinary regions.
 // Its metadata becomes live when the opt-in native transition is connected.
-#[allow(dead_code)]
-mod trees;
+mod code_dump;
 #[allow(dead_code)]
 mod native_calls;
 mod native_regions;
 mod resumable;
-mod code_dump;
-mod values;
 mod transfers;
+#[allow(dead_code)]
+mod trees;
+mod values;
 
 #[cfg(test)]
 mod limit_tests;
@@ -43,7 +43,8 @@ mod platform {
     use std::ffi::c_void;
 
     #[cfg(test)]
-    std::arch::global_asm!(r#"
+    std::arch::global_asm!(
+        r#"
         .text
         .p2align 2
         .globl _rust_interp_jit_abi_probe
@@ -113,12 +114,21 @@ mod platform {
         ldp x29, x30, [sp, #80]
         add sp, sp, #112
         ret
-    "#);
+    "#
+    );
 
     #[cfg(test)]
     unsafe extern "C" {
-        fn rust_interp_jit_abi_probe(entry: *mut c_void, arguments: *const usize, output: *mut usize);
-        fn rust_interp_tree_abi_probe(entry: *mut c_void, arguments: *const usize, output: *mut usize);
+        fn rust_interp_jit_abi_probe(
+            entry: *mut c_void,
+            arguments: *const usize,
+            output: *mut usize,
+        );
+        fn rust_interp_tree_abi_probe(
+            entry: *mut c_void,
+            arguments: *const usize,
+            output: *mut usize,
+        );
     }
 
     unsafe extern "C" {
@@ -145,27 +155,37 @@ mod platform {
             // SAFETY: append initializes exactly [ptr, ptr+used), used <= len.
             // The mapping is readable in execution mode, remains owned by
             // self, and cannot be unmapped or appended through this borrow.
-            (self.ptr as usize, unsafe { std::slice::from_raw_parts(self.ptr.cast(), self.used) })
+            (self.ptr as usize, unsafe {
+                std::slice::from_raw_parts(self.ptr.cast(), self.used)
+            })
         }
         #[cfg(test)]
-        pub unsafe fn tree_abi_probe(&self, offset: usize, arguments: [usize;8]) -> [usize;13] {
+        pub unsafe fn tree_abi_probe(&self, offset: usize, arguments: [usize; 8]) -> [usize; 13] {
             assert!(offset < self.used);
-            let mut output = [0;13];
+            let mut output = [0; 13];
             // Same exclusive storage contract as call(); the wrapper verifies
             // x19–x28 plus SP/LR, including persistent register pairs.
             unsafe {
-                rust_interp_tree_abi_probe(self.ptr.cast::<u8>().add(offset).cast(), arguments.as_ptr(), output.as_mut_ptr());
+                rust_interp_tree_abi_probe(
+                    self.ptr.cast::<u8>().add(offset).cast(),
+                    arguments.as_ptr(),
+                    output.as_mut_ptr(),
+                );
             }
             output
         }
         #[cfg(test)]
-        pub unsafe fn abi_probe(&self, offset: usize, arguments: [usize;8]) -> [usize;4] {
+        pub unsafe fn abi_probe(&self, offset: usize, arguments: [usize; 8]) -> [usize; 4] {
             assert!(offset < self.used);
-            let mut output = [0;4];
+            let mut output = [0; 4];
             // Test callers supply the same live storage and cursor as call().
             // The assembly wrapper checks the native callee's x19 and SP.
             unsafe {
-                rust_interp_jit_abi_probe(self.ptr.cast::<u8>().add(offset).cast(), arguments.as_ptr(), output.as_mut_ptr());
+                rust_interp_jit_abi_probe(
+                    self.ptr.cast::<u8>().add(offset).cast(),
+                    arguments.as_ptr(),
+                    output.as_mut_ptr(),
+                );
             }
             output
         }
@@ -177,13 +197,19 @@ mod platform {
             // This VM is single-threaded; no guest code is running during writes.
             let ptr = unsafe { mmap(std::ptr::null_mut(), len, 7, 0x1802, -1, 0) };
             if ptr as isize == -1 {
-                return Err(format!("allocate JIT code: {}", std::io::Error::last_os_error()));
+                return Err(format!(
+                    "allocate JIT code: {}",
+                    std::io::Error::last_os_error()
+                ));
             }
             Ok(Self { ptr, len, used: 0 })
         }
         pub fn append(&mut self, words: &[u32]) -> Result<usize, String> {
             let bytes = words.len().checked_mul(4).ok_or("JIT code size overflow")?;
-            let end = self.used.checked_add(bytes).filter(|end| *end <= self.len)
+            let end = self
+                .used
+                .checked_add(bytes)
+                .filter(|end| *end <= self.len)
                 .ok_or("JIT arena capacity exceeded")?;
             let offset = self.used;
             if bytes != 0 {
@@ -226,7 +252,11 @@ mod platform {
             // lives through the call and all storage pointers cover the
             // validated machine's current allocations.
             let function: Entry = unsafe { std::mem::transmute(self.ptr.cast::<u8>().add(offset)) };
-            unsafe { function(registers, base, memory, len, readonly, heap, heap_len, cursor) }
+            unsafe {
+                function(
+                    registers, base, memory, len, readonly, heap, heap_len, cursor,
+                )
+            }
         }
     }
     impl Drop for Code {
@@ -242,11 +272,15 @@ mod platform {
 mod platform {
     pub struct Code;
     impl Code {
-        pub fn published(&self) -> (usize, &[u8]) { unreachable!() }
+        pub fn published(&self) -> (usize, &[u8]) {
+            unreachable!()
+        }
         pub fn reserve(_: usize) -> Result<Self, String> {
             Err("the custom JIT currently requires Apple Silicon macOS".into())
         }
-        pub fn append(&mut self, _: &[u32]) -> Result<usize, String> { unreachable!() }
+        pub fn append(&mut self, _: &[u32]) -> Result<usize, String> {
+            unreachable!()
+        }
         pub unsafe fn call(
             &self,
             _: usize,
@@ -276,7 +310,10 @@ struct Assertion<'a> {
     kind: FaultKind,
 }
 
-enum FaultKind { Assertion, Trap }
+enum FaultKind {
+    Assertion,
+    Trap,
+}
 
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
@@ -325,32 +362,76 @@ impl<'a> Jit<'a> {
         Self::new_with_call_stubs(program, profiled, capacity, false)
     }
 
-    pub(crate) fn new_with_call_stubs(program: &'a Program, profiled: bool, capacity: usize,
-        native_call_stubs: bool) -> Result<Self, String> {
+    pub(crate) fn new_with_call_stubs(
+        program: &'a Program,
+        profiled: bool,
+        capacity: usize,
+        native_call_stubs: bool,
+    ) -> Result<Self, String> {
         Self::new_with_options(program, profiled, capacity, native_call_stubs, false)
     }
 
-    pub(crate) fn new_with_options(program: &'a Program, profiled: bool, capacity: usize,
-        native_call_stubs: bool, persistent_registers: bool) -> Result<Self, String> {
-        if capacity > MAX_CODE_BYTES { return Err("JIT code budget exceeds supported range".into()); }
-        let uses_heap = !program.statics.is_empty() || program.functions.iter().flat_map(|f| &f.code).any(|op| {
-            matches!(op, Op::Allocate { .. } | Op::Deallocate { .. } | Op::Reallocate { .. }
-                | Op::CAllocate { .. } | Op::CReallocate { .. } | Op::CAlignedAllocate { .. })
-        });
-        Ok(Self { _thread_bound: std::marker::PhantomData, program, scalar_abi: None, profiled, uses_heap, capacity, code: None,
+    pub(crate) fn new_with_options(
+        program: &'a Program,
+        profiled: bool,
+        capacity: usize,
+        native_call_stubs: bool,
+        persistent_registers: bool,
+    ) -> Result<Self, String> {
+        if capacity > MAX_CODE_BYTES {
+            return Err("JIT code budget exceeds supported range".into());
+        }
+        let uses_heap = !program.statics.is_empty()
+            || program.functions.iter().flat_map(|f| &f.code).any(|op| {
+                matches!(
+                    op,
+                    Op::Allocate { .. }
+                        | Op::Deallocate { .. }
+                        | Op::Reallocate { .. }
+                        | Op::CAllocate { .. }
+                        | Op::CReallocate { .. }
+                        | Op::CAlignedAllocate { .. }
+                )
+            });
+        Ok(Self {
+            _thread_bound: std::marker::PhantomData,
+            program,
+            scalar_abi: None,
+            profiled,
+            uses_heap,
+            capacity,
+            code: None,
             prepared: vec![false; program.functions.len()],
-            blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
-            compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
-            persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
-            region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
+            blocks: vec![vec![]; program.functions.len()],
+            bytes: 0,
+            operations: 0,
+            compiled_functions: 0,
+            declined_functions: 0,
+            compile_nanos: 0,
+            assertions: vec![],
+            trees: None,
+            native_call_stubs,
+            call_stubs: 0,
+            resumable: None,
+            persistent_registers,
+            register_functions: 0,
+            register_pairs: 0,
+            liveness_declines: 0,
+            region_plans: if native_call_stubs {
+                vec![native_regions::RegionPlan::default(); program.functions.len()]
+            } else {
+                vec![]
+            },
+        })
     }
 
     /// Called at guest function entry, including TLS callbacks, never in the
     /// instruction dispatch loop. Failed/declined staging publishes no entries.
     #[inline(always)]
     pub fn ensure_function(&mut self, id: usize) -> Result<bool, String> {
-        if self.prepared[id] { return Ok(false); }
+        if self.prepared[id] {
+            return Ok(false);
+        }
         self.compile_function(id)
     }
 
@@ -367,14 +448,23 @@ impl<'a> Jit<'a> {
         result
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
-        if self.native_call_stubs { self.prepare_region_calls(id)?; }
+        if self.native_call_stubs {
+            self.prepare_region_calls(id)?;
+        }
         let remaining = (self.capacity - self.bytes) / 4;
-        let staged = self.emit_function_with_abi(&self.program.functions[id], remaining,
-            self.scalar_abi.map(|table| &table[id]));
+        let staged = self.emit_function_with_abi(
+            &self.program.functions[id],
+            remaining,
+            self.scalar_abi.map(|table| &table[id]),
+        );
         self.finish_preparation(id, staged)
     }
 
-    fn finish_preparation(&mut self, id: usize, staged: Result<Option<CompiledFunction<'a>>, EmitError>) -> Result<bool, String> {
+    fn finish_preparation(
+        &mut self,
+        id: usize,
+        staged: Result<Option<CompiledFunction<'a>>, EmitError>,
+    ) -> Result<bool, String> {
         let mut staged = match staged {
             Ok(Some(staged)) => staged,
             Ok(None) | Err(EmitError::Limit(_)) => {
@@ -396,18 +486,25 @@ impl<'a> Jit<'a> {
         }
         resumes.resize(staged.resumes.len(), 0usize);
         if !staged.words.is_empty() {
-            self.assertions.try_reserve(staged.assertions.len())
+            self.assertions
+                .try_reserve(staged.assertions.len())
                 .map_err(|_| "JIT assertion table allocation failed")?;
-            if self.code.is_none() { self.code = Some(platform::Code::reserve(self.capacity)?); }
+            if self.code.is_none() {
+                self.code = Some(platform::Code::reserve(self.capacity)?);
+            }
             let offset = self.code.as_mut().unwrap().append(&staged.words)?;
             if let Some(tables) = &mut self.resumable {
                 let arena = self.code.as_ref().unwrap().published().0;
                 for (out, entry) in resumes.iter_mut().zip(&staged.resumes) {
-                    if let Some(entry) = entry { *out = arena + offset + entry * 4; }
+                    if let Some(entry) = entry {
+                        *out = arena + offset + entry * 4;
+                    }
                 }
                 tables.publish(id, resumes);
             }
-            for entry in staged.entries.iter_mut().flatten() { entry.offset += offset; }
+            for entry in staged.entries.iter_mut().flatten() {
+                entry.offset += offset;
+            }
             self.bytes += staged.words.len() * 4;
             self.compiled_functions += 1;
             self.register_functions += usize::from(staged.register_pairs != 0);
@@ -416,8 +513,15 @@ impl<'a> Jit<'a> {
         self.operations += staged.operations;
         self.liveness_declines += usize::from(staged.liveness_declined);
         if self.native_call_stubs {
-            self.call_stubs += staged.entries.iter().enumerate().filter(|(pc, entry)|
-                entry.is_some() && matches!(self.program.functions[id].code[*pc], Op::Call { .. })).count();
+            self.call_stubs += staged
+                .entries
+                .iter()
+                .enumerate()
+                .filter(|(pc, entry)| {
+                    entry.is_some()
+                        && matches!(self.program.functions[id].code[*pc], Op::Call { .. })
+                })
+                .count();
         }
         self.assertions.extend(staged.assertions);
         self.blocks[id] = staged.entries;
@@ -426,14 +530,28 @@ impl<'a> Jit<'a> {
     }
 
     #[cfg(test)]
-    fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+    fn emit_function(
+        &self,
+        f: &'a Function,
+        word_budget: usize,
+    ) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         self.emit_function_with_abi(f, word_budget, None)
     }
 
-    fn emit_function_with_abi(&self, f: &'a Function, word_budget: usize,
-        abi: Option<&crate::scalar_abi::FunctionAbi>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+    fn emit_function_with_abi(
+        &self,
+        f: &'a Function,
+        word_budget: usize,
+        abi: Option<&crate::scalar_abi::FunctionAbi>,
+    ) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         let resumable = self.resumable.is_some();
-        if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) { return Ok(None); }
+        if self
+            .resumable
+            .as_ref()
+            .is_some_and(|tables| !tables.fits(f.code.len()))
+        {
+            return Ok(None);
+        }
         let mut words = vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
@@ -441,14 +559,24 @@ impl<'a> Jit<'a> {
         let mut operations = 0;
         let result = abi.and_then(|a| a.result);
         let reads = read_registers_with_result(f, result);
-        let values = self.persistent_registers.then(|| values::analyze_with_result(f, result)).flatten();
+        let values = self
+            .persistent_registers
+            .then(|| values::analyze_with_result(f, result))
+            .flatten();
         let fills = local_fills(f);
-        let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
-            || (resumable && transfers::supported(&f.code[pc]));
+        let native = |pc: usize| {
+            supported(&f.code[pc])
+                || fills.contains_key(&pc)
+                || (resumable && transfers::supported(&f.code[pc]))
+        };
         let mut entries = vec![None; f.code.len()];
         let mut internal_entries = vec![None; f.code.len()];
         // The extra null entry handles a caller's one-past-code continuation.
-        let mut resumes = if resumable { vec![None; f.code.len() + 1] } else { vec![] };
+        let mut resumes = if resumable {
+            vec![None; f.code.len() + 1]
+        } else {
+            vec![]
+        };
         let mut links = vec![];
         let mut starts = vec![false; f.code.len()];
         starts[0] = true;
@@ -497,7 +625,9 @@ impl<'a> Jit<'a> {
                 // External entries preserve the C ABI. Native successors
                 // enter after this prologue and keep the same live storage.
                 let resume = a.external_entry();
-                if resumable { resumes[start] = Some(words.len() + resume); }
+                if resumable {
+                    resumes[start] = Some(words.len() + resume);
+                }
                 internal_entries[start] = Some(words.len() + a.words.len());
                 // Every native cycle consumes virtual instructions. When
                 // the next block does not fit, let the VM execute its tail
@@ -519,13 +649,22 @@ impl<'a> Jit<'a> {
                     a.emit(0x9100056b); // add x11, x11, #1
                     a.emit(0xf900014b); // str x11, [x10]
                 }
-                let terminal = branch(&f.code[pc-1]).then_some(&f.code[pc-1]);
-                let body_end = pc-usize::from(terminal.is_some());
+                let terminal = branch(&f.code[pc - 1]).then_some(&f.code[pc - 1]);
+                let body_end = pc - usize::from(terminal.is_some());
                 for (index, op) in f.code[start..body_end].iter().enumerate() {
                     a.current_pc = start + index;
-                    if let Op::Assert { value, expected, message } = op {
+                    if let Op::Assert {
+                        value,
+                        expected,
+                        message,
+                    } = op
+                    {
                         let code = assertion_code(self.assertions.len(), assertions.len())?;
-                        assertions.push(Assertion { message, function: &f.name, kind: FaultKind::Assertion });
+                        assertions.push(Assertion {
+                            message,
+                            function: &f.name,
+                            kind: FaultKind::Assertion,
+                        });
                         a.assertion(*value, *expected, code);
                     } else if let Some(fill) = fills.get(&(start + index)) {
                         a.local_fill(*fill);
@@ -538,7 +677,11 @@ impl<'a> Jit<'a> {
                 a.flush_facts(start, pc);
                 a.exit(terminal, pc)?;
                 let failures = std::mem::take(&mut a.failures);
-                for kind in [Failure::Memory, Failure::DivisionZero, Failure::DivisionOverflow] {
+                for kind in [
+                    Failure::Memory,
+                    Failure::DivisionZero,
+                    Failure::DivisionOverflow,
+                ] {
                     // Retain the existing memory tail. Add arithmetic tails
                     // only to regions that can actually take those exits.
                     if kind != Failure::Memory && !failures.iter().any(|(_, k)| *k == kind) {
@@ -548,7 +691,9 @@ impl<'a> Jit<'a> {
                     a.imm(0, kind as u64);
                     a.return_to_vm();
                     for &(at, failure) in &failures {
-                        if failure == kind { a.patch_conditional(at, target)?; }
+                        if failure == kind {
+                            a.patch_conditional(at, target)?;
+                        }
                     }
                 }
                 // Assertion identities belong to this immutable program.
@@ -581,29 +726,61 @@ impl<'a> Jit<'a> {
                 operations += pc - start;
             }
             if pc == start {
-                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::CallValue { .. } | Op::Return) {
+                if resumable
+                    && matches!(
+                        f.code[pc],
+                        Op::Call { .. } | Op::CallValue { .. } | Op::Return
+                    )
+                {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), result)?;
-                    if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
+                    let (a, resume, internal) =
+                        self.emit_resumable_transition(f, pc, &reads, values.as_ref(), result)?;
+                    if a.words.len() > word_budget.saturating_sub(words.len()) {
+                        return Ok(None);
+                    }
                     resumes[pc] = Some(words.len() + resume);
                     internal_entries[pc] = Some(words.len() + internal);
-                    entries[pc] = Some(Block { offset, end: pc + 1 });
+                    entries[pc] = Some(Block {
+                        offset,
+                        end: pc + 1,
+                    });
                     operations += 1;
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
-                    if let Op::Call { function, args, destination } = &f.code[pc] {
+                    if let Op::Call {
+                        function,
+                        args,
+                        destination,
+                    } = &f.code[pc]
+                    {
                         if let Some((plan, target)) = self.ready_tree(*function) {
                             let offset = words.len() * 4;
-                            let (a, internal, fallback) = self.emit_call_stub(f, pc, *function, args, *destination,
-                                plan, target, self.bytes / 4 + words.len(), &reads, values.as_ref())?;
-                            if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
+                            let (a, internal, fallback) = self.emit_call_stub(
+                                f,
+                                pc,
+                                *function,
+                                args,
+                                *destination,
+                                plan,
+                                target,
+                                self.bytes / 4 + words.len(),
+                                &reads,
+                                values.as_ref(),
+                            )?;
+                            if a.words.len() > word_budget.saturating_sub(words.len()) {
+                                return Ok(None);
+                            }
                             internal_entries[pc] = Some(words.len() + internal);
                             // The stub already supplies a safe VM successor;
                             // successful edges are linked exactly like regions.
-                            links.extend(a.links.iter().map(|&(at, successor)|
-                                (words.len() + at, successor, words.len() + fallback)));
-                            entries[pc] = Some(Block { offset, end: pc + 1 });
+                            links.extend(a.links.iter().map(|&(at, successor)| {
+                                (words.len() + at, successor, words.len() + fallback)
+                            }));
+                            entries[pc] = Some(Block {
+                                offset,
+                                end: pc + 1,
+                            });
                             operations += 1;
                             words.extend(a.words);
                         }
@@ -613,13 +790,24 @@ impl<'a> Jit<'a> {
             }
         }
         for (at, successor, fallback) in links {
-            let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
+            let target = internal_entries
+                .get(successor)
+                .copied()
+                .flatten()
+                .unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
-        Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+        Ok(Some(CompiledFunction {
+            words,
+            entries,
+            resumes,
+            operations,
+            assertions,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
-            #[cfg(test)] local_forwarding }))
+            #[cfg(test)]
+            local_forwarding,
+        }))
     }
     /// Execute a region and any linked successors in the same guest function.
     ///
@@ -655,7 +843,10 @@ impl<'a> Jit<'a> {
         heap: *mut u8,
         heap_len: usize,
     ) -> Result<(usize, u64), String> {
-        let mut cursor = Cursor { remaining: budget, profile_hits };
+        let mut cursor = Cursor {
+            remaining: budget,
+            profile_hits,
+        };
         let result = unsafe {
             self.code.as_ref().ok_or("missing JIT code")?.call(
                 block.offset,
@@ -675,26 +866,38 @@ impl<'a> Jit<'a> {
             // Only emitted constants become PCs. Permit code_len itself so a
             // missing terminator retains the VM's budget-before-invalid-PC
             // ordering; internal edges never branch outside the function.
-            if result > code_len as u64 { return Err("JIT returned an invalid continuation".into()); }
-            let executed = budget.checked_sub(cursor.remaining)
-                .filter(|count| *count != 0).ok_or("JIT made no instruction progress")?;
+            if result > code_len as u64 {
+                return Err("JIT returned an invalid continuation".into());
+            }
+            let executed = budget
+                .checked_sub(cursor.remaining)
+                .filter(|count| *count != 0)
+                .ok_or("JIT made no instruction progress")?;
             Ok((result as usize, executed))
         }
     }
 
     fn fault_message(&self, result: u64) -> Result<String, String> {
         let message = if result == Failure::Memory as u64 {
-                "JIT guest memory access failed"
-            } else if result == Failure::DivisionZero as u64 {
-                "integer division by zero"
-            } else if result == Failure::DivisionOverflow as u64 {
-                "signed division overflow"
-            } else {
-                let assertion = self.assertions.get((ASSERTION_FAILURE_BASE - result) as usize)
-                    .ok_or("JIT returned an invalid assertion identity")?;
-                let kind = match assertion.kind { FaultKind::Assertion => "assertion", FaultKind::Trap => "trap" };
-                return Ok(format!("guest {kind}: {} in {}", assertion.message, assertion.function));
+            "JIT guest memory access failed"
+        } else if result == Failure::DivisionZero as u64 {
+            "integer division by zero"
+        } else if result == Failure::DivisionOverflow as u64 {
+            "signed division overflow"
+        } else {
+            let assertion = self
+                .assertions
+                .get((ASSERTION_FAILURE_BASE - result) as usize)
+                .ok_or("JIT returned an invalid assertion identity")?;
+            let kind = match assertion.kind {
+                FaultKind::Assertion => "assertion",
+                FaultKind::Trap => "trap",
             };
+            return Ok(format!(
+                "guest {kind}: {} in {}",
+                assertion.message, assertion.function
+            ));
+        };
         Ok(message.into())
     }
 }
@@ -713,7 +916,8 @@ enum EmitError {
 }
 
 fn assertion_code(published: usize, staged: usize) -> Result<u64, EmitError> {
-    published.checked_add(staged)
+    published
+        .checked_add(staged)
         .and_then(|index| u64::try_from(index).ok())
         .and_then(|index| ASSERTION_FAILURE_BASE.checked_sub(index))
         .filter(|code| *code >= FAILURE_MIN)
@@ -722,10 +926,17 @@ fn assertion_code(published: usize, staged: usize) -> Result<u64, EmitError> {
 
 // AArch64 displacements count four-byte instructions and are signed. Widen
 // before subtraction so very large staging offsets cannot wrap into range.
-fn branch_displacement(at: usize, target: usize, bits: u8, limit: CodegenLimit) -> Result<u32, EmitError> {
+fn branch_displacement(
+    at: usize,
+    target: usize,
+    bits: u8,
+    limit: CodegenLimit,
+) -> Result<u32, EmitError> {
     let delta = target as i128 - at as i128;
     let range = 1i128 << (bits - 1);
-    if !(-range..range).contains(&delta) { return Err(EmitError::Limit(limit)); }
+    if !(-range..range).contains(&delta) {
+        return Err(EmitError::Limit(limit));
+    }
     Ok((delta as u32) & ((1u32 << bits) - 1))
 }
 
@@ -745,33 +956,129 @@ mod link_tests {
     #[test]
     fn every_linked_exit_preserves_the_native_abi_and_cursor() {
         for (left, right, terminal, expected) in [
-            (0,1,Op::Imm {dst:0,value:2},6),
-            (0,1,Op::Load {dst:2,address:0,size:8},Failure::Memory as u64),
-            (0,1,Op::Binary {dst:2,overflow:3,op:Binary::Div,a:1,b:0,bits:64,signed:false},Failure::DivisionZero as u64),
-            (1u128<<63,u64::MAX as u128,Op::Binary {dst:2,overflow:3,op:Binary::Div,a:0,b:1,bits:64,signed:true},Failure::DivisionOverflow as u64),
-            (0,1,Op::Assert {value:0,expected:true,message:"ABI fault".into()},ASSERTION_FAILURE_BASE),
+            (0, 1, Op::Imm { dst: 0, value: 2 }, 6),
+            (
+                0,
+                1,
+                Op::Load {
+                    dst: 2,
+                    address: 0,
+                    size: 8,
+                },
+                Failure::Memory as u64,
+            ),
+            (
+                0,
+                1,
+                Op::Binary {
+                    dst: 2,
+                    overflow: 3,
+                    op: Binary::Div,
+                    a: 1,
+                    b: 0,
+                    bits: 64,
+                    signed: false,
+                },
+                Failure::DivisionZero as u64,
+            ),
+            (
+                1u128 << 63,
+                u64::MAX as u128,
+                Op::Binary {
+                    dst: 2,
+                    overflow: 3,
+                    op: Binary::Div,
+                    a: 0,
+                    b: 1,
+                    bits: 64,
+                    signed: true,
+                },
+                Failure::DivisionOverflow as u64,
+            ),
+            (
+                0,
+                1,
+                Op::Assert {
+                    value: 0,
+                    expected: true,
+                    message: "ABI fault".into(),
+                },
+                ASSERTION_FAILURE_BASE,
+            ),
         ] {
-            let program=Program {version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,
-                data:vec![0;16],statics:vec![],thread_locals:vec![],
-                functions:vec![Function {name:"abi".into(),frame_size:64,frame_align:16,registers:4,
-                    args:vec![],result:Slot {offset:0,size:8},code:vec![
-                        Op::Imm {dst:0,value:left},Op::Imm {dst:1,value:right},Op::Jump {target:3},
-                        terminal,Op::Imm {dst:2,value:2},Op::Jump {target:6},Op::Return]}]};
+            let program = Program {
+                version: VERSION,
+                target: "aarch64-apple-darwin".into(),
+                entry: 0,
+                data: vec![0; 16],
+                statics: vec![],
+                thread_locals: vec![],
+                functions: vec![Function {
+                    name: "abi".into(),
+                    frame_size: 64,
+                    frame_align: 16,
+                    registers: 4,
+                    args: vec![],
+                    result: Slot { offset: 0, size: 8 },
+                    code: vec![
+                        Op::Imm {
+                            dst: 0,
+                            value: left,
+                        },
+                        Op::Imm {
+                            dst: 1,
+                            value: right,
+                        },
+                        Op::Jump { target: 3 },
+                        terminal,
+                        Op::Imm { dst: 2, value: 2 },
+                        Op::Jump { target: 6 },
+                        Op::Return,
+                    ],
+                }],
+            };
             crate::validate(&program).unwrap();
-            for profiled in [false,true] {
+            for profiled in [false, true] {
                 let mut jit = Jit::new(&program, profiled, MAX_CODE_BYTES).unwrap();
                 jit.ensure_function(0).unwrap();
-                for budget in [4,100] {
-                    let mut registers=vec![0u128;4];let mut memory=vec![0u8;80];let mut hits=vec![0u64;7];
-                    let mut cursor=Cursor {remaining:budget,profile_hits:if profiled {hits.as_mut_ptr()} else {std::ptr::null_mut()}};
-                    let arguments=[registers.as_mut_ptr() as usize,16,memory.as_mut_ptr() as usize,memory.len(),16,
-                        0,0,(&mut cursor as *mut Cursor) as usize];
-                    let output=unsafe {jit.code.as_ref().unwrap().abi_probe(jit.blocks[0][0].unwrap().offset,arguments)};
-                    assert_eq!(output[0] as u64,if budget==4 {3} else {expected});
-                    assert_eq!(output[1],0x1357);assert_eq!(output[2],output[3]);
-                    assert_eq!(cursor.remaining,if budget==4 {1} else {94});
-                    if profiled {assert_eq!(hits[0],1);assert_eq!(hits[3],u64::from(budget!=4));}
-                    else {assert_eq!(hits,vec![0;7]);}
+                for budget in [4, 100] {
+                    let mut registers = vec![0u128; 4];
+                    let mut memory = vec![0u8; 80];
+                    let mut hits = vec![0u64; 7];
+                    let mut cursor = Cursor {
+                        remaining: budget,
+                        profile_hits: if profiled {
+                            hits.as_mut_ptr()
+                        } else {
+                            std::ptr::null_mut()
+                        },
+                    };
+                    let arguments = [
+                        registers.as_mut_ptr() as usize,
+                        16,
+                        memory.as_mut_ptr() as usize,
+                        memory.len(),
+                        16,
+                        0,
+                        0,
+                        (&mut cursor as *mut Cursor) as usize,
+                    ];
+                    let output = unsafe {
+                        jit.code
+                            .as_ref()
+                            .unwrap()
+                            .abi_probe(jit.blocks[0][0].unwrap().offset, arguments)
+                    };
+                    assert_eq!(output[0] as u64, if budget == 4 { 3 } else { expected });
+                    assert_eq!(output[1], 0x1357);
+                    assert_eq!(output[2], output[3]);
+                    assert_eq!(cursor.remaining, if budget == 4 { 1 } else { 94 });
+                    if profiled {
+                        assert_eq!(hits[0], 1);
+                        assert_eq!(hits[3], u64::from(budget != 4));
+                    } else {
+                        assert_eq!(hits, vec![0; 7]);
+                    }
                 }
             }
         }
@@ -779,12 +1086,14 @@ mod link_tests {
 
     #[test]
     fn link_relocations_accept_only_bounded_branch_placeholders() {
-        let mut words=vec![0x14000000;5];
-        patch_jump(&mut words,0,4).unwrap();assert_eq!(words[0],0x14000004);
-        patch_jump(&mut words,4,0).unwrap();assert_eq!(words[4],0x17fffffc);
-        assert!(patch_jump(&mut words,0,4).is_err());
-        assert!(patch_jump(&mut words,5,0).is_err());
-        assert!(patch_jump(&mut words,1,5).is_err());
+        let mut words = vec![0x14000000; 5];
+        patch_jump(&mut words, 0, 4).unwrap();
+        assert_eq!(words[0], 0x14000004);
+        patch_jump(&mut words, 4, 0).unwrap();
+        assert_eq!(words[4], 0x17fffffc);
+        assert!(patch_jump(&mut words, 0, 4).is_err());
+        assert!(patch_jump(&mut words, 5, 0).is_err());
+        assert!(patch_jump(&mut words, 1, 5).is_err());
     }
 }
 
@@ -800,12 +1109,16 @@ fn read_registers_with_result(f: &Function, result: Option<Reg>) -> Vec<Option<(
         };
         crate::registers::visit_registers(op, &mut mark, |_| {});
         // Return's value comes from metadata, so it is an implicit operand.
-        if matches!(op, Op::Return) { if let Some(r) = result { mark(r); } }
+        if matches!(op, Op::Return) {
+            if let Some(r) = result {
+                mark(r);
+            }
+        }
     }
     used
 }
 fn branch(op: &Op) -> bool {
-    matches!(op, Op::Jump {..} | Op::Switch {..})
+    matches!(op, Op::Jump { .. } | Op::Switch { .. })
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct LocalFill {
@@ -823,26 +1136,72 @@ fn local_fills(function: &Function) -> BTreeMap<usize, LocalFill> {
     for op in &function.code {
         match op {
             Op::Jump { target } => entries[*target] = true,
-            Op::Switch { cases, otherwise, .. } => {
+            Op::Switch {
+                cases, otherwise, ..
+            } => {
                 entries[*otherwise] = true;
-                for (_, target) in cases { entries[*target] = true; }
+                for (_, target) in cases {
+                    entries[*target] = true;
+                }
             }
             _ => {}
         }
     }
     let mut fills = BTreeMap::new();
     for pc in 3..function.code.len() {
-        let Op::FillBytes { address, value, size } = &function.code[pc] else { continue; };
-        let Op::Local { dst: address_reg, offset } = &function.code[pc-3] else { continue; };
-        let Op::Imm { dst: value_reg, value: byte } = &function.code[pc-2] else { continue; };
-        let Op::Imm { dst: size_reg, value: length } = &function.code[pc-1] else { continue; };
-        if address != address_reg || value != value_reg || size != size_reg
-            || address == value || address == size || value == size
-            || entries[pc-2..=pc].iter().any(|entry| *entry)
-            || *length > 512 { continue; }
+        let Op::FillBytes {
+            address,
+            value,
+            size,
+        } = &function.code[pc]
+        else {
+            continue;
+        };
+        let Op::Local {
+            dst: address_reg,
+            offset,
+        } = &function.code[pc - 3]
+        else {
+            continue;
+        };
+        let Op::Imm {
+            dst: value_reg,
+            value: byte,
+        } = &function.code[pc - 2]
+        else {
+            continue;
+        };
+        let Op::Imm {
+            dst: size_reg,
+            value: length,
+        } = &function.code[pc - 1]
+        else {
+            continue;
+        };
+        if address != address_reg
+            || value != value_reg
+            || size != size_reg
+            || address == value
+            || address == size
+            || value == size
+            || entries[pc - 2..=pc].iter().any(|entry| *entry)
+            || *length > 512
+        {
+            continue;
+        }
         let length = *length as usize;
-        if offset.checked_add(length).is_some_and(|end| end <= function.frame_size) {
-            fills.insert(pc, LocalFill { offset: *offset, size: length, byte: *byte as u8 });
+        if offset
+            .checked_add(length)
+            .is_some_and(|end| end <= function.frame_size)
+        {
+            fills.insert(
+                pc,
+                LocalFill {
+                    offset: *offset,
+                    size: length,
+                    byte: *byte as u8,
+                },
+            );
         }
     }
     fills
@@ -861,11 +1220,23 @@ fn supported(op: &Op) -> bool {
         | Op::Jump { .. } => true,
         // Keep code size and conditional-branch displacements bounded. Larger
         // switches retain the interpreter's complete u128 matching behavior.
-        Op::Switch {cases,..} => cases.len() <= 16,
+        Op::Switch { cases, .. } => cases.len() <= 16,
         Op::Copy { size, .. } => *size <= 128,
-        Op::Binary { bits, op, .. } => *bits <= 64 || (*bits == 128 && matches!(op,
-            Binary::Sub | Binary::Eq | Binary::Ne | Binary::Lt | Binary::Le
-                | Binary::Gt | Binary::Ge | Binary::Cmp)),
+        Op::Binary { bits, op, .. } => {
+            *bits <= 64
+                || (*bits == 128
+                    && matches!(
+                        op,
+                        Binary::Sub
+                            | Binary::Eq
+                            | Binary::Ne
+                            | Binary::Lt
+                            | Binary::Le
+                            | Binary::Gt
+                            | Binary::Ge
+                            | Binary::Cmp
+                    ))
+        }
         Op::Unary { bits, .. } => *bits <= 64,
         _ => false,
     }
@@ -931,7 +1302,9 @@ impl Assembler<'_> {
         self.emit(if expected { 0x54000000 } else { 0x54000001 }); // b.eq / b.ne failure
     }
     fn return_to_vm(&mut self) {
-        if self.resumable { self.resumable_save_memory(); }
+        if self.resumable {
+            self.resumable_save_memory();
+        }
         self.restore_external_values();
         self.emit(0xd65f03c0);
     }
@@ -940,7 +1313,9 @@ impl Assembler<'_> {
         if self.resumable {
             self.resumable_save_pc(pc);
             self.mov(0, 31);
-        } else { self.imm(0, pc as u64); }
+        } else {
+            self.imm(0, pc as u64);
+        }
         self.return_to_vm();
     }
     fn successor(&mut self, pc: usize) {
@@ -950,43 +1325,55 @@ impl Assembler<'_> {
     fn patch_conditional(&mut self, at: usize, target: usize) -> Result<(), EmitError> {
         // Forward local labels may be the next word to append. Only accept an
         // unpatched B.cond; bad indices/opcodes are emitter bugs, not declines.
-        if at >= self.words.len() || target > self.words.len()
-            || self.words[at] & !0xf != 0x54000000 {
-            return Err(EmitError::InvalidRelocation("invalid JIT conditional relocation"));
+        if at >= self.words.len()
+            || target > self.words.len()
+            || self.words[at] & !0xf != 0x54000000
+        {
+            return Err(EmitError::InvalidRelocation(
+                "invalid JIT conditional relocation",
+            ));
         }
-        self.words[at] |= branch_displacement(at, target, 19, CodegenLimit::ConditionalBranch)? << 5;
+        self.words[at] |=
+            branch_displacement(at, target, 19, CodegenLimit::ConditionalBranch)? << 5;
         Ok(())
     }
     fn exit(&mut self, terminal: Option<&Op>, fallthrough: usize) -> Result<(), EmitError> {
         match terminal {
-            Some(Op::Jump {target}) => {
+            Some(Op::Jump { target }) => {
                 self.successor(*target);
                 Ok(())
             }
-            Some(Op::Switch {value,cases,otherwise}) => {
-                if let Some(Fact::Imm(value))=self.facts.get(value) {
-                    let target=cases.iter().find(|(case,_)| case==value).map_or(*otherwise,|(_,target)| *target);
+            Some(Op::Switch {
+                value,
+                cases,
+                otherwise,
+            }) => {
+                if let Some(Fact::Imm(value)) = self.facts.get(value) {
+                    let target = cases
+                        .iter()
+                        .find(|(case, _)| case == value)
+                        .map_or(*otherwise, |(_, target)| *target);
                     self.successor(target);
                     return Ok(());
                 }
                 if !cases.is_empty() {
-                    self.get(9,*value,false);
-                    self.get(10,*value,true);
+                    self.get(9, *value, false);
+                    self.get(10, *value, true);
                     // Compare both halves and retain first-match ordering,
                     // including when cases contain duplicate values.
-                    for (case,target) in cases {
-                        self.imm(11,*case as u64);
-                        self.cmp(9,11);
-                        let low=self.words.len();
+                    for (case, target) in cases {
+                        self.imm(11, *case as u64);
+                        self.cmp(9, 11);
+                        let low = self.words.len();
                         self.emit(0x54000001); // b.ne next_case
-                        self.imm(11,(*case>>64) as u64);
-                        self.cmp(10,11);
-                        let high=self.words.len();
+                        self.imm(11, (*case >> 64) as u64);
+                        self.cmp(10, 11);
+                        let high = self.words.len();
                         self.emit(0x54000001);
                         self.successor(*target);
-                        let next=self.words.len();
-                        self.patch_conditional(low,next)?;
-                        self.patch_conditional(high,next)?;
+                        let next = self.words.len();
+                        self.patch_conditional(low, next)?;
+                        self.patch_conditional(high, next)?;
                     }
                 }
                 self.successor(*otherwise);
@@ -1038,13 +1425,20 @@ impl Assembler<'_> {
             return;
         }
         if bits < 64 {
-            if signed { self.sign(9, bits); self.sign(10, bits); }
+            if signed {
+                self.sign(9, bits);
+                self.sign(10, bits);
+            }
             // Two <=32-bit operands have an exact signed/unsigned product in
             // 64 bits. Unsigned subtraction may wrap 64 bits; its high set bits
             // still distinguish a borrow from a representable guest result.
             self.three(plain, 9, 9, 10);
             self.mov(11, 9);
-            if signed { self.sign(11, bits); } else { self.mask(11, bits); }
+            if signed {
+                self.sign(11, bits);
+            } else {
+                self.mask(11, bits);
+            }
             self.cmp(9, 11);
             self.cset(13, 1); // NE: narrowing changed the result
         } else if matches!(op, Binary::Mul) {
@@ -1053,12 +1447,23 @@ impl Assembler<'_> {
             if signed {
                 self.emit(0x9340fc00 | (63 << 16) | (9 << 5) | 12); // ASR x12,x9,#63
                 self.cmp(11, 12); // high half must equal sign extension of low
-            } else { self.cmp(11, 31); }
+            } else {
+                self.cmp(11, 31);
+            }
             self.cset(13, 1);
         } else {
             let add = matches!(op, Binary::Add);
             self.three(if add { 0xab000000 } else { 0xeb000000 }, 9, 9, 10); // ADDS/SUBS
-            self.cset(13, if signed { 6 } else if add { 2 } else { 3 }); // VS/carry/borrow
+            self.cset(
+                13,
+                if signed {
+                    6
+                } else if add {
+                    2
+                } else {
+                    3
+                },
+            ); // VS/carry/borrow
         }
     }
     fn division(&mut self, op: Binary, bits: u8, signed: bool) {
@@ -1100,7 +1505,9 @@ impl Assembler<'_> {
             Binary::Sub => {
                 self.three(0xeb000000, 9, 9, 10); // SUBS low half, setting no-borrow
                 self.three(if observed { 0xfa000000 } else { 0xda000000 }, 11, 11, 12); // SBCS/SBC high
-                if observed { self.cset(13, if signed { 6 } else { 3 }); } // VS / borrow
+                if observed {
+                    self.cset(13, if signed { 6 } else { 3 });
+                } // VS / borrow
                 self.put(dst, 9, 11);
             }
             Binary::Eq | Binary::Ne => {
@@ -1115,10 +1522,34 @@ impl Assembler<'_> {
                 // Lexicographic comparison: only the high half is signed. If
                 // it ties, use the unsigned low comparison, including for i128.
                 let condition = |signed| match op {
-                    Binary::Lt => if signed { 11 } else { 3 },
-                    Binary::Le => if signed { 13 } else { 9 },
-                    Binary::Gt | Binary::Cmp => if signed { 12 } else { 8 },
-                    Binary::Ge => if signed { 10 } else { 2 },
+                    Binary::Lt => {
+                        if signed {
+                            11
+                        } else {
+                            3
+                        }
+                    }
+                    Binary::Le => {
+                        if signed {
+                            13
+                        } else {
+                            9
+                        }
+                    }
+                    Binary::Gt | Binary::Cmp => {
+                        if signed {
+                            12
+                        } else {
+                            8
+                        }
+                    }
+                    Binary::Ge => {
+                        if signed {
+                            10
+                        } else {
+                            2
+                        }
+                    }
                     _ => unreachable!(),
                 };
                 self.cmp(9, 10);
@@ -1135,7 +1566,9 @@ impl Assembler<'_> {
                 }
                 // CSET and non-flag-setting SUB preserve the high-half flags.
                 self.emit(0x9a800000 | (9 << 16) | (13 << 5) | 9); // CSEL x9,x13,x9,EQ
-                if matches!(op, Binary::Cmp) { self.mask(9, 8); }
+                if matches!(op, Binary::Cmp) {
+                    self.mask(9, 8);
+                }
                 self.put(dst, 9, 31);
             }
             _ => unreachable!("unsupported wide binary operation"),
@@ -1171,7 +1604,9 @@ impl Assembler<'_> {
         }
     }
     fn get(&mut self, rd: u32, reg: Reg, high: bool) {
-        if !self.defined.contains(&reg) { self.live_in.insert(reg); }
+        if !self.defined.contains(&reg) {
+            self.live_in.insert(reg);
+        }
         if let Some(fact) = self.facts.get(&reg).copied() {
             self.materialize(rd, fact, high);
             return;
@@ -1188,7 +1623,9 @@ impl Assembler<'_> {
         self.defined.insert(reg);
         self.facts.remove(&reg);
         self.forget_cached(reg);
-        if self.reads[reg as usize].is_none() { return; }
+        if self.reads[reg as usize].is_none() {
+            return;
+        }
         if let Some(physical) = self.assigned_pair(reg) {
             self.mov(physical, lo);
             self.mov(physical + 1, hi);
@@ -1213,19 +1650,29 @@ impl Assembler<'_> {
         };
         let physical = 5 + slot as u32;
         self.mov(physical, lo);
-        self.facts.insert(reg, Fact::Cached { lo: physical, high_zero: hi == 31 });
+        self.facts.insert(
+            reg,
+            Fact::Cached {
+                lo: physical,
+                high_zero: hi == 31,
+            },
+        );
         self.cached[slot] = Some(reg);
         self.cache_recent = slot;
     }
     fn forget_cached(&mut self, reg: Reg) {
         self.forget_local_register(reg);
         for owner in &mut self.cached {
-            if *owner == Some(reg) { *owner = None; }
+            if *owner == Some(reg) {
+                *owner = None;
+            }
         }
     }
     fn evict_cached(&mut self, before_operands: bool) {
         for slot in 0..2 {
-            if let Some(reg) = self.cached[slot] { self.evict_cached_reg(reg, before_operands); }
+            if let Some(reg) = self.cached[slot] {
+                self.evict_cached_reg(reg, before_operands);
+            }
         }
     }
     fn evict_cached_reg(&mut self, reg: Reg, before_operands: bool) {
@@ -1236,17 +1683,27 @@ impl Assembler<'_> {
         let (first, last) = self.reads[reg as usize].expect("cached value is read");
         // A value may be used on another path, or at the next iteration's
         // entry. The same conservative bounds protect constant facts.
-        let outside = first < self.region_start || last >= self.region_end || self.live_in.contains(&reg);
+        let outside =
+            first < self.region_start || last >= self.region_end || self.live_in.contains(&reg);
         let later = last > self.current_pc || (before_operands && last == self.current_pc);
-        let needed = self.values.map_or(outside || later, |v|
-            if before_operands { v.live.at(self.current_pc, reg) } else { v.live.after(self.current_pc, reg) });
-        if needed { self.spill(reg, lo, if high_zero { 31 } else { 6 }); }
+        let needed = self.values.map_or(outside || later, |v| {
+            if before_operands {
+                v.live.at(self.current_pc, reg)
+            } else {
+                v.live.after(self.current_pc, reg)
+            }
+        });
+        if needed {
+            self.spill(reg, lo, if high_zero { 31 } else { 6 });
+        }
     }
     fn spill(&mut self, reg: Reg, lo: u32, hi: u32) {
         if let Some(physical) = self.assigned_pair(reg) {
             self.mov(physical, lo);
             self.mov(physical + 1, hi);
-        } else { self.raw_spill(reg, lo, hi); }
+        } else {
+            self.raw_spill(reg, lo, hi);
+        }
     }
     fn raw_spill(&mut self, reg: Reg, lo: u32, hi: u32) {
         for (high, rs) in [(false, lo), (true, hi)] {
@@ -1267,9 +1724,23 @@ impl Assembler<'_> {
             Fact::Physical { lo } => self.mov(rd, lo + u32::from(high)),
             Fact::Cached { lo, high_zero } => {
                 self.cache_recent = (lo - 5) as usize;
-                self.mov(rd, if high { if high_zero { 31 } else { 6 } } else { lo });
-            },
-            Fact::Imm(value) => self.imm(rd, if high { (value >> 64) as u64 } else { value as u64 }),
+                self.mov(
+                    rd,
+                    if high {
+                        if high_zero { 31 } else { 6 }
+                    } else {
+                        lo
+                    },
+                );
+            }
+            Fact::Imm(value) => self.imm(
+                rd,
+                if high {
+                    (value >> 64) as u64
+                } else {
+                    value as u64
+                },
+            ),
             Fact::Local(_) if high => self.mov(rd, 31),
             Fact::Local(offset) => {
                 if offset < 4096 {
@@ -1287,15 +1758,27 @@ impl Assembler<'_> {
         // value read elsewhere. Also retain values read before their first
         // definition in this region: a backedge may re-enter this same region
         // and read its previous execution's final value.
-        let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
-            if matches!(fact, Fact::Physical { .. }) { return None; }
-            if let Some(values) = self.values {
-                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
-            }
-            self.reads[reg as usize]
-                .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))
-                .map(|_| (reg, fact))
-        }).collect();
+        let live: Vec<_> = self
+            .facts
+            .iter()
+            .filter_map(|(&reg, &fact)| {
+                if matches!(fact, Fact::Physical { .. }) {
+                    return None;
+                }
+                if let Some(values) = self.values {
+                    return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg))
+                        .then_some((reg, fact));
+                }
+                self.reads[reg as usize]
+                    .filter(|&(first, last)| {
+                        matches!(fact, Fact::Cached { .. })
+                            || first < start
+                            || last >= end
+                            || self.live_in.contains(&reg)
+                    })
+                    .map(|_| (reg, fact))
+            })
+            .collect();
         for (reg, fact) in live {
             self.materialize(9, fact, false);
             self.materialize(10, fact, true);
@@ -1304,7 +1787,10 @@ impl Assembler<'_> {
     }
     fn address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) {
         if let Some(Fact::Local(offset)) = self.facts.get(&reg).copied() {
-            if offset.checked_add(size).is_some_and(|end| end <= self.frame_size) {
+            if offset
+                .checked_add(size)
+                .is_some_and(|end| end <= self.frame_size)
+            {
                 // The VM has allocated the complete active frame above the
                 // read-only prefix. Supported regions cannot call or allocate,
                 // so their frame storage cannot move or shrink during entry.
@@ -1318,26 +1804,40 @@ impl Assembler<'_> {
     }
     fn fold(&mut self, op: &Op) -> bool {
         match *op {
-            Op::Imm {dst, value} => self.remember(dst, Fact::Imm(value)),
-            Op::Local {dst, offset} => self.remember(dst, Fact::Local(offset)),
-            Op::Binary {dst, overflow, op, a, b, bits, signed} => {
+            Op::Imm { dst, value } => self.remember(dst, Fact::Imm(value)),
+            Op::Local { dst, offset } => self.remember(dst, Fact::Local(offset)),
+            Op::Binary {
+                dst,
+                overflow,
+                op,
+                a,
+                b,
+                bits,
+                signed,
+            } => {
                 let left = self.facts.get(&a).copied();
                 let right = self.facts.get(&b).copied();
                 let folded = match (left, right) {
                     (Some(Fact::Imm(a)), Some(Fact::Imm(b))) => {
-                        crate::binary(op, a, b, bits, signed).ok().map(|(value, overflow)| (Fact::Imm(value), overflow))
+                        crate::binary(op, a, b, bits, signed)
+                            .ok()
+                            .map(|(value, overflow)| (Fact::Imm(value), overflow))
                     }
                     (Some(Fact::Local(offset)), Some(Fact::Imm(add)))
                     | (Some(Fact::Imm(add)), Some(Fact::Local(offset)))
-                        if matches!(op, Binary::Add) && bits == 64 && !signed => {
+                        if matches!(op, Binary::Add) && bits == 64 && !signed =>
+                    {
                         // The bytecode masks integer operands to their width.
-                        offset.checked_add(add as u64 as usize)
+                        offset
+                            .checked_add(add as u64 as usize)
                             .filter(|&end| end <= self.frame_size)
                             .map(|end| (Fact::Local(end), false))
                     }
                     _ => None,
                 };
-                let Some((value, flag)) = folded else { return false; };
+                let Some((value, flag)) = folded else {
+                    return false;
+                };
                 self.remember(dst, value);
                 self.remember(overflow, Fact::Imm(flag as u128));
             }
@@ -1493,7 +1993,9 @@ impl Assembler<'_> {
         let wide_order = self.words.len();
         // Native words are little-endian: reverse before unsigned ordering so
         // the earliest differing byte determines the sign.
-        for value in [9, 13] { self.emit(0xdac00c00 | (value << 5) | value); }
+        for value in [9, 13] {
+            self.emit(0xdac00c00 | (value << 5) | value);
+        }
         self.cmp(9, 13);
         let ordered = self.words.len();
         self.cset(9, 8); // HI
@@ -1501,10 +2003,17 @@ impl Assembler<'_> {
         self.three(0xcb000000, 9, 9, 13);
         self.mask(9, 32); // VM encodes Less as u32::MAX, not u128::MAX
         let publish = self.words.len();
-        for (at, target) in [(empty, equal), (short, tail), (wide_difference, wide_order),
-            (more_wide, wide_loop), (exhausted, equal), (byte_difference, ordered),
-            (more_bytes, byte_loop)] {
-            self.patch_conditional(at, target).expect("bounded byte-compare branch");
+        for (at, target) in [
+            (empty, equal),
+            (short, tail),
+            (wide_difference, wide_order),
+            (more_wide, wide_loop),
+            (exhausted, equal),
+            (byte_difference, ordered),
+            (more_bytes, byte_loop),
+        ] {
+            self.patch_conditional(at, target)
+                .expect("bounded byte-compare branch");
         }
         // The publication sequence starts at the current end of the buffer;
         // the function-link helper requires an already emitted target. This
@@ -1567,10 +2076,14 @@ impl Assembler<'_> {
         // The entire writable range is within the allocated active frame.
         // No native operation can move its storage. These are plain byte
         // writes, matching FillBytes even for unaligned starts and short tails.
-        if fill.size == 0 { return; }
+        if fill.size == 0 {
+            return;
+        }
         self.materialize(11, Fact::Local(fill.offset), false);
         self.three(0x8b000000, 11, 2, 11);
-        let value = if fill.byte == 0 { 31 } else {
+        let value = if fill.byte == 0 {
+            31
+        } else {
             self.imm(9, u64::from(fill.byte) * 0x0101_0101_0101_0101);
             9
         };
@@ -1578,11 +2091,15 @@ impl Assembler<'_> {
         while fill.size - offset >= 16 {
             // stp value,value,[x11,#offset]; <=512 bytes keeps the signed
             // scaled displacement nonnegative and within its seven bits.
-            self.emit(0xa9000000 | ((offset as u32 / 8) << 15)
-                | (value << 10) | (11 << 5) | value);
+            self.emit(0xa9000000 | ((offset as u32 / 8) << 15) | (value << 10) | (11 << 5) | value);
             offset += 16;
         }
-        for (width, opcode) in [(8,0xf9000000),(4,0xb9000000),(2,0x79000000),(1,0x39000000)] {
+        for (width, opcode) in [
+            (8, 0xf9000000),
+            (4, 0xb9000000),
+            (2, 0x79000000),
+            (1, 0x39000000),
+        ] {
             if fill.size - offset >= width {
                 self.emit(opcode | ((offset as u32 / width as u32) << 10) | (11 << 5) | value);
                 offset += width;
@@ -1593,7 +2110,9 @@ impl Assembler<'_> {
 
     fn lower(&mut self, op: &Op) {
         self.review_local_memory_effect(op);
-        if self.fold(op) { return; }
+        if self.fold(op) {
+            return;
+        }
         match *op {
             Op::Imm { dst, value } => {
                 self.imm(9, value as u64);
@@ -1625,15 +2144,24 @@ impl Assembler<'_> {
                 self.invalidate_local_memory(local, size as usize);
                 self.remember_local_memory(local, size as usize, src);
             }
-            Op::CompareBytes { dst, left, right, size } => {
+            Op::CompareBytes {
+                dst,
+                left,
+                right,
+                size,
+            } => {
                 self.compare_bytes(dst, left, right, size);
             }
             Op::Copy { dst, src, size } => {
-                if (17..=32).contains(&size) { self.evict_cached(true); }
+                if (17..=32).contains(&size) {
+                    self.evict_cached(true);
+                }
                 let source_local = self.local_range(src, size);
                 let destination_local = self.local_range(dst, size);
                 let forwarded = self.local_value(source_local, size);
-                if forwarded.is_none() { self.address(11, src, size, false); }
+                if forwarded.is_none() {
+                    self.address(11, src, size, false);
+                }
                 self.address(12, dst, size, true);
                 // Read all bytes before writing so even overlapping copies
                 // preserve the interpreter's memmove behavior.
@@ -1717,7 +2245,9 @@ impl Assembler<'_> {
                 let overflow_observed = matches!(op, Binary::Add | Binary::Sub | Binary::Mul)
                     && self.reads[overflow as usize].is_some();
                 match op {
-                    Binary::Add | Binary::Sub | Binary::Mul => self.arithmetic(op, bits, signed, overflow_observed),
+                    Binary::Add | Binary::Sub | Binary::Mul => {
+                        self.arithmetic(op, bits, signed, overflow_observed)
+                    }
                     Binary::Div | Binary::Rem => self.division(op, bits, signed),
                     Binary::And => self.three(0x8a000000, 9, 9, 10),
                     Binary::Or => self.three(0xaa000000, 9, 9, 10),
@@ -1924,8 +2454,8 @@ mod register_cache_tests;
 #[path = "jit/compare_bytes_tests.rs"]
 mod compare_bytes_tests;
 
-#[path="jit/local_memory.rs"]
+#[path = "jit/local_memory.rs"]
 mod local_memory;
-#[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-#[path="jit/local_memory_tests.rs"]
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+#[path = "jit/local_memory_tests.rs"]
 mod local_memory_tests;

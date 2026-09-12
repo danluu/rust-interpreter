@@ -8,7 +8,8 @@ fn memory() -> Memory {
         heap,
         limit: 4096,
         readonly_end: 16,
-        peak: 384, auxiliary_bytes: 0,
+        peak: 384,
+        auxiliary_bytes: 0,
     }
 }
 
@@ -22,8 +23,12 @@ fn copies_match_snapshots_for_all_widths_arenas_and_overlaps() {
                         let mut m = memory();
                         let mut expected_stack = m.bytes.to_vec();
                         let mut expected_heap = m.heap.bytes.clone();
-                        let snapshot = if source_heap { &m.heap.bytes[..] } else { &m.bytes[..] }
-                            [source..source + size].to_vec();
+                        let snapshot = if source_heap {
+                            &m.heap.bytes[..]
+                        } else {
+                            &m.bytes[..]
+                        }[source..source + size]
+                            .to_vec();
                         let expected = if destination_heap {
                             &mut expected_heap
                         } else {
@@ -33,7 +38,11 @@ fn copies_match_snapshots_for_all_widths_arenas_and_overlaps() {
                         let src = source + if source_heap { heap::TAG } else { 0 };
                         let dst = destination + if destination_heap { heap::TAG } else { 0 };
                         m.copy(src, dst, size).unwrap();
-                        assert_eq!(&*m.bytes, expected_stack.as_slice(), "stack: {src} {dst} {size}");
+                        assert_eq!(
+                            &*m.bytes,
+                            expected_stack.as_slice(),
+                            "stack: {src} {dst} {size}"
+                        );
                         assert_eq!(m.heap.bytes, expected_heap, "heap: {src} {dst} {size}");
                     }
                 }
@@ -46,7 +55,12 @@ fn copies_match_snapshots_for_all_widths_arenas_and_overlaps() {
 fn rejected_copies_leave_both_arenas_unchanged() {
     for size in [1, 2, 3, 4, 8, 15, 16, 17, 64, 65, usize::MAX] {
         for invalid in [0, 192, 193, heap::TAG, heap::TAG + 192, usize::MAX] {
-            for (src, dst) in [(invalid, 32), (32, invalid), (invalid, heap::TAG + 32), (heap::TAG + 32, invalid)] {
+            for (src, dst) in [
+                (invalid, 32),
+                (32, invalid),
+                (invalid, heap::TAG + 32),
+                (heap::TAG + 32, invalid),
+            ] {
                 let mut m = memory();
                 let stack = m.bytes.to_vec();
                 let heap = m.heap.bytes.clone();

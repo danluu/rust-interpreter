@@ -151,7 +151,8 @@ mod tests {
             base: 32 + 64 * id,
             register_base: 7 * id,
             return_address: 16 + id,
-            return_value: false, tls_callback: callback,
+            return_value: false,
+            tls_callback: callback,
         }
     }
 

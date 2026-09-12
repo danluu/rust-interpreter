@@ -42,17 +42,27 @@ pub fn optimize_calls(
 /// instructions in the resulting artifact, which may now contain fewer steps.
 /// Hand-constructed VM programs are never implicitly transformed on execution.
 pub fn remove_fallthrough_jumps(code: &mut Vec<Op>) -> Result<usize, String> {
-    if code.is_empty() { return Err("cannot optimize empty bytecode".into()); }
+    if code.is_empty() {
+        return Err("cannot optimize empty bytecode".into());
+    }
     let check = |target: usize| {
-        if target < code.len() { Ok(()) } else { Err("invalid branch during optimization".to_owned()) }
+        if target < code.len() {
+            Ok(())
+        } else {
+            Err("invalid branch during optimization".to_owned())
+        }
     };
     // Validate first so an invalid target cannot leave a partially changed body.
     for op in code.iter() {
         match op {
-            Op::Jump {target} => check(*target)?,
-            Op::Switch {cases,otherwise,..} => {
+            Op::Jump { target } => check(*target)?,
+            Op::Switch {
+                cases, otherwise, ..
+            } => {
                 check(*otherwise)?;
-                for (_,target) in cases { check(*target)?; }
+                for (_, target) in cases {
+                    check(*target)?;
+                }
             }
             _ => {}
         }
@@ -60,35 +70,43 @@ pub fn remove_fallthrough_jumps(code: &mut Vec<Op>) -> Result<usize, String> {
     // Walk backwards so chains disappear in one linear pass. A forward jump
     // can become fall-through after the instructions it skips were removed.
     // Backedges and self-loops always remain.
-    let mut remap = vec![0;code.len()+1];
-    remap[code.len()]=code.len();
-    let mut remove = vec![false;code.len()];
+    let mut remap = vec![0; code.len() + 1];
+    remap[code.len()] = code.len();
+    let mut remove = vec![false; code.len()];
     for pc in (0..code.len()).rev() {
-        remove[pc]=matches!(&code[pc],Op::Jump {target}
+        remove[pc] = matches!(&code[pc],Op::Jump {target}
             if *target>pc && remap[*target]==remap[pc+1]);
-        remap[pc]=if remove[pc] {remap[pc+1]} else {pc};
+        remap[pc] = if remove[pc] { remap[pc + 1] } else { pc };
     }
     let mut removed = 0;
     for pc in 0..code.len() {
-        remap[pc]=pc-removed;
-        removed+=usize::from(remove[pc]);
+        remap[pc] = pc - removed;
+        removed += usize::from(remove[pc]);
     }
-    if removed == 0 { return Ok(0); }
+    if removed == 0 {
+        return Ok(0);
+    }
     // A valid final instruction cannot be a jump to its nonexistent successor.
     // Consequently every removed chain maps to an instruction that remains.
-    let mut kept = Vec::with_capacity(code.len()-removed);
-    for (pc,mut op) in code.drain(..).enumerate() {
-        if remove[pc] { continue; }
+    let mut kept = Vec::with_capacity(code.len() - removed);
+    for (pc, mut op) in code.drain(..).enumerate() {
+        if remove[pc] {
+            continue;
+        }
         match &mut op {
-            Op::Jump {target} => *target=remap[*target],
-            Op::Switch {cases,otherwise,..} => {
-                *otherwise=remap[*otherwise];
-                for (_,target) in cases { *target=remap[*target]; }
+            Op::Jump { target } => *target = remap[*target],
+            Op::Switch {
+                cases, otherwise, ..
+            } => {
+                *otherwise = remap[*otherwise];
+                for (_, target) in cases {
+                    *target = remap[*target];
+                }
             }
             _ => {}
         }
         kept.push(op);
     }
-    *code=kept;
+    *code = kept;
     Ok(removed)
 }

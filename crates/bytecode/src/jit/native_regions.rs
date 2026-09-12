@@ -1,6 +1,6 @@
 //! Optional direct Call stubs linked with ordinary generated regions.
-use super::*;
 use super::native_calls::TreeCursor;
+use super::*;
 
 #[derive(Clone, Copy, Default, Debug)]
 pub(crate) struct RegionPlan {
@@ -21,8 +21,11 @@ impl RegionPlan {
     pub fn requirements(self, memory: usize, registers: usize) -> Option<(usize, usize, usize)> {
         let align = self.child_align.max(1);
         let live_ceiling = memory.checked_add(align - 1)? & !(align - 1);
-        Some((live_ceiling.checked_add(self.child_span)?,
-            registers.checked_add(self.child_registers)?, live_ceiling))
+        Some((
+            live_ceiling.checked_add(self.child_span)?,
+            registers.checked_add(self.child_registers)?,
+            live_ceiling,
+        ))
     }
 }
 
@@ -38,24 +41,48 @@ pub(crate) struct RegionRun {
 
 impl<'a> Jit<'a> {
     pub(super) fn prepare_region_calls(&mut self, id: usize) -> Result<(), String> {
-        let callees: BTreeSet<_> = self.program.functions[id].code.iter().filter_map(|op| match op {
-            Op::Call { function, .. } => Some(*function), _ => None,
-        }).collect();
+        let callees: BTreeSet<_> = self.program.functions[id]
+            .code
+            .iter()
+            .filter_map(|op| match op {
+                Op::Call { function, .. } => Some(*function),
+                _ => None,
+            })
+            .collect();
         let mut plan = RegionPlan::default();
         for callee in callees {
-            if let Some(child) = self.ensure_tree(callee)? { plan.add(child); }
+            if let Some(child) = self.ensure_tree(callee)? {
+                plan.add(child);
+            }
         }
         self.region_plans[id] = plan;
         Ok(())
     }
 
-    pub(super) fn emit_call_stub<'b>(&self, caller: &Function, pc: usize, callee_id: usize,
-        args: &[Reg], destination: Reg, plan: trees::Plan, target: usize, global_start: usize,
-        reads: &'b [Option<(usize, usize)>], values: Option<&'b values::Allocation>,
+    pub(super) fn emit_call_stub<'b>(
+        &self,
+        caller: &Function,
+        pc: usize,
+        callee_id: usize,
+        args: &[Reg],
+        destination: Reg,
+        plan: trees::Plan,
+        target: usize,
+        global_start: usize,
+        reads: &'b [Option<(usize, usize)>],
+        values: Option<&'b values::Allocation>,
     ) -> Result<(Assembler<'b>, usize, usize), EmitError> {
-        let mut a = Assembler { heap: self.uses_heap, reads, values, frame_size: caller.frame_size,
-            region_start: pc, region_end: pc + 1, current_pc: pc, tree_caller_is_region: true,
-            ..Assembler::default() };
+        let mut a = Assembler {
+            heap: self.uses_heap,
+            reads,
+            values,
+            frame_size: caller.frame_size,
+            region_start: pc,
+            region_end: pc + 1,
+            current_pc: pc,
+            tree_caller_is_region: true,
+            ..Assembler::default()
+        };
         a.external_entry();
         let internal = a.words.len();
         a.emit(0xf9402269); // ldr x9,[x19,#64]: whole-caller storage readiness
@@ -80,8 +107,16 @@ impl<'a> Jit<'a> {
             a.emit(0x9100056b);
             a.emit(0xf900014b);
         }
-        a.tree_call(caller, &self.program.functions[callee_id], callee_id, args, destination,
-            self.profiled, global_start, target / 4)?;
+        a.tree_call(
+            caller,
+            &self.program.functions[callee_id],
+            callee_id,
+            args,
+            destination,
+            self.profiled,
+            global_start,
+            target / 4,
+        )?;
         // tree_call has restored caller x0/x1 and profile pointer. Count only
         // descendant instructions here; the outer Call is in ordinary blocks.
         a.emit(0xf9401fe9); // before-child remaining budget
@@ -96,12 +131,22 @@ impl<'a> Jit<'a> {
         a.tree_restore_host_frame();
         a.successor(pc + 1); // ordinary entry frame and assigned pairs stay live
         let failures = std::mem::take(&mut a.failures);
-        for kind in [Failure::Memory, Failure::DivisionZero, Failure::DivisionOverflow] {
-            if !failures.iter().any(|(_, k)| *k == kind) { continue; }
+        for kind in [
+            Failure::Memory,
+            Failure::DivisionZero,
+            Failure::DivisionOverflow,
+        ] {
+            if !failures.iter().any(|(_, k)| *k == kind) {
+                continue;
+            }
             let target = a.words.len();
             a.imm(0, kind as u64);
             a.tree_epilogue(); // pop the internal AND ordinary wrapper frames
-            for &(at, k) in &failures { if k == kind { a.patch_conditional(at, target)?; } }
+            for &(at, k) in &failures {
+                if k == kind {
+                    a.patch_conditional(at, target)?;
+                }
+            }
         }
         let decline = a.words.len();
         a.return_pc(pc);
@@ -122,32 +167,84 @@ impl<'a> Jit<'a> {
     /// All storage, including per-function tree-profile arrays/table, is stable
     /// and exclusive. When unready, generated stubs decline before dereferencing
     /// descendant storage. No allocation/publication occurs during this call.
-    pub(crate) unsafe fn run_regions(&self, block: Block, pc: usize, code_len: usize,
-        budget: u64, ready: bool, prepared_end: usize, profile_hits: *mut u64,
-        profile_table: *const *mut u64, registers: *mut u128, base: usize,
-        memory: *mut u8, len: usize, readonly: usize, heap: *mut u8, heap_len: usize,
+    pub(crate) unsafe fn run_regions(
+        &self,
+        block: Block,
+        pc: usize,
+        code_len: usize,
+        budget: u64,
+        ready: bool,
+        prepared_end: usize,
+        profile_hits: *mut u64,
+        profile_table: *const *mut u64,
+        registers: *mut u128,
+        base: usize,
+        memory: *mut u8,
+        len: usize,
+        readonly: usize,
+        heap: *mut u8,
+        heap_len: usize,
     ) -> Result<RegionRun, String> {
         debug_assert!(self.native_call_stubs);
-        let mut cursor = TreeCursor { base: Cursor { remaining: budget, profile_hits },
-            memory_len: len, peak_linear: len, return_address: 0, profile_table, calls: 0,
-            tree_instructions: 0, regions_ready: u64::from(ready), stub_calls: 0 };
-        let status = unsafe { self.code.as_ref().ok_or("missing native region code")?.call(block.offset,
-            registers, base, memory, len, readonly, heap, heap_len,
-            std::ptr::addr_of_mut!(cursor).cast::<Cursor>()) };
-        if status >= FAILURE_MIN { return Err(self.fault_message(status)?); }
-        let executed = budget.checked_sub(cursor.base.remaining).ok_or("native region budget increased")?;
+        let mut cursor = TreeCursor {
+            base: Cursor {
+                remaining: budget,
+                profile_hits,
+            },
+            memory_len: len,
+            peak_linear: len,
+            return_address: 0,
+            profile_table,
+            calls: 0,
+            tree_instructions: 0,
+            regions_ready: u64::from(ready),
+            stub_calls: 0,
+        };
+        let status = unsafe {
+            self.code
+                .as_ref()
+                .ok_or("missing native region code")?
+                .call(
+                    block.offset,
+                    registers,
+                    base,
+                    memory,
+                    len,
+                    readonly,
+                    heap,
+                    heap_len,
+                    std::ptr::addr_of_mut!(cursor).cast::<Cursor>(),
+                )
+        };
+        if status >= FAILURE_MIN {
+            return Err(self.fault_message(status)?);
+        }
+        let executed = budget
+            .checked_sub(cursor.base.remaining)
+            .ok_or("native region budget increased")?;
         if status > code_len as u64 || (executed == 0 && status != pc as u64) {
             return Err("native region returned an invalid continuation".into());
         }
-        if cursor.memory_len < len || cursor.memory_len > cursor.peak_linear || cursor.peak_linear > prepared_end {
+        if cursor.memory_len < len
+            || cursor.memory_len > cursor.peak_linear
+            || cursor.peak_linear > prepared_end
+        {
             return Err("native region returned an invalid memory extent".into());
         }
-        if cursor.tree_instructions > executed || (!ready && (cursor.calls != 0 || cursor.stub_calls != 0)) {
+        if cursor.tree_instructions > executed
+            || (!ready && (cursor.calls != 0 || cursor.stub_calls != 0))
+        {
             return Err("native region returned invalid call accounting".into());
         }
-        Ok(RegionRun { next: status as usize, instructions: executed, memory_len: cursor.memory_len,
-            peak_linear: cursor.peak_linear, tree_instructions: cursor.tree_instructions,
-            calls: cursor.calls, stub_calls: cursor.stub_calls })
+        Ok(RegionRun {
+            next: status as usize,
+            instructions: executed,
+            memory_len: cursor.memory_len,
+            peak_linear: cursor.peak_linear,
+            tree_instructions: cursor.tree_instructions,
+            calls: cursor.calls,
+            stub_calls: cursor.stub_calls,
+        })
     }
 }
 

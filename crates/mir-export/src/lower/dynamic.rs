@@ -9,8 +9,10 @@ impl<'tcx> Exporter<'tcx> {
     ) -> Result<usize> {
         let principal = principal.map(|p| self.tcx.instantiate_bound_regions_with_erased(p));
         let allocation = self.tcx.vtable_allocation((concrete, principal));
-        let origin = self.trace_event(|_| serde_json::json!({"kind": "vtable-origin",
-            "concrete": format!("{concrete:?}"), "principal": format!("{principal:?}")}))?;
+        let origin = self.trace_event(|_| {
+            serde_json::json!({"kind": "vtable-origin",
+            "concrete": format!("{concrete:?}"), "principal": format!("{principal:?}")})
+        })?;
         self.with_trace_parent(origin, |e| e.alloc(allocation))
     }
 }
@@ -19,7 +21,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
     fn layout_sum(&mut self, left: Reg, right: Reg) -> Reg {
         let (value, overflow) = self.bin(Binary::Add, left, right, 64, false);
         self.code.push(Op::Assert {
-            value: overflow, expected: false, message: "dynamic size overflow".into(),
+            value: overflow,
+            expected: false,
+            message: "dynamic size overflow".into(),
         });
         value
     }
@@ -41,7 +45,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             let cap = self.imm(packed.bytes() as u128);
             let smaller = self.bin(Binary::Lt, align, cap, 64, false).0;
             let dst = self.reg();
-            self.code.push(Op::Select { dst, condition: smaller, yes: align, no: cap });
+            self.code.push(Op::Select {
+                dst,
+                condition: smaller,
+                yes: align,
+                no: cap,
+            });
             dst
         } else {
             align
@@ -50,10 +59,17 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
 
     /// Match the pinned compiler's size_of_val and field-projection rules.
     /// Metadata belongs to the final unsized tail, even through nested ADTs.
-    pub(super) fn dynamic_layout(&mut self, ty: Ty<'tcx>, metadata: Option<Reg>) -> Result<(Reg, Reg)> {
+    pub(super) fn dynamic_layout(
+        &mut self,
+        ty: Ty<'tcx>,
+        metadata: Option<Reg>,
+    ) -> Result<(Reg, Reg)> {
         let layout = self.layout(ty)?;
         if layout.is_sized() {
-            return Ok((self.imm(layout.size.bytes() as u128), self.imm(layout.align.abi.bytes() as u128)));
+            return Ok((
+                self.imm(layout.size.bytes() as u128),
+                self.imm(layout.align.abi.bytes() as u128),
+            ));
         }
         match ty.kind() {
             ty::Dynamic(..) => {
@@ -64,11 +80,19 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 let align = self.load(align_at, 8)?;
                 let zero = self.imm(0);
                 let nonzero = self.bin(Binary::Ne, align, zero, 64, false).0;
-                self.code.push(Op::Assert { value: nonzero, expected: true, message: "zero dynamic alignment".into() });
+                self.code.push(Op::Assert {
+                    value: nonzero,
+                    expected: true,
+                    message: "zero dynamic alignment".into(),
+                });
                 let one = self.imm(1);
                 let lower_bits = self.bin(Binary::Sub, align, one, 64, false).0;
                 let extra_bits = self.bin(Binary::And, align, lower_bits, 64, false).0;
-                self.code.push(Op::Assert { value: extra_bits, expected: false, message: "dynamic alignment is not a power of two".into() });
+                self.code.push(Op::Assert {
+                    value: extra_bits,
+                    expected: false,
+                    message: "dynamic alignment is not a power of two".into(),
+                });
                 Ok((size, align))
             }
             ty::Slice(_) | ty::Str => {
@@ -82,18 +106,31 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 let length = metadata.ok_or("dynamic layout has no length")?;
                 let scale = self.imm(unit as u128);
                 let (size, overflow) = self.bin(Binary::Mul, length, scale, 64, false);
-                self.code.push(Op::Assert { value: overflow, expected: false, message: "dynamic size overflow".into() });
+                self.code.push(Op::Assert {
+                    value: overflow,
+                    expected: false,
+                    message: "dynamic size overflow".into(),
+                });
                 Ok((size, self.imm(align as u128)))
             }
             ty::Adt(..) | ty::Tuple(..) => {
-                let last = layout.fields.count().checked_sub(1).ok_or("unsized aggregate has no tail")?;
+                let last = layout
+                    .fields
+                    .count()
+                    .checked_sub(1)
+                    .ok_or("unsized aggregate has no tail")?;
                 let tail = layout.field(&LayoutCx::new(self.tcx(), env()), last).ty;
                 let (tail_size, tail_align) = self.dynamic_layout(tail, metadata)?;
                 let tail_align = self.packed_alignment(ty, tail_align);
                 let prefix_align = self.imm(layout.align.abi.bytes() as u128);
                 let stronger = self.bin(Binary::Gt, prefix_align, tail_align, 64, false).0;
                 let full_align = self.reg();
-                self.code.push(Op::Select { dst: full_align, condition: stronger, yes: prefix_align, no: tail_align });
+                self.code.push(Op::Select {
+                    dst: full_align,
+                    condition: stronger,
+                    yes: prefix_align,
+                    no: tail_align,
+                });
                 let offset = self.imm(self.field_offset(layout, last)? as u128);
                 let size = self.layout_sum(offset, tail_size);
                 // Tail size is already a multiple of tail alignment. Rounding
@@ -130,18 +167,34 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         // A wide destination can have different field offsets and can overlap
         // the source. Snapshot all source fields before the first write.
         let snapshot = self.temporary_aligned(source_layout.size.bytes_usize(), align);
-        self.code.push(Op::Copy { src: address, dst: snapshot, size: source_layout.size.bytes_usize() });
-        self.coerce_unsized_value(Location {
-            address: snapshot, ty: source_ty, variant: None, metadata: None,
-        }, dest)
+        self.code.push(Op::Copy {
+            src: address,
+            dst: snapshot,
+            size: source_layout.size.bytes_usize(),
+        });
+        self.coerce_unsized_value(
+            Location {
+                address: snapshot,
+                ty: source_ty,
+                variant: None,
+                metadata: None,
+            },
+            dest,
+        )
     }
 
     fn coerce_unsized_value(&mut self, source: Location<'tcx>, dest: Location<'tcx>) -> Result<()> {
         match (*source.ty.kind(), *dest.ty.kind()) {
             (ty::Pat(from, from_pattern), ty::Pat(to, to_pattern))
-                if matches!((*from_pattern, *to_pattern), (ty::PatternKind::NotNull, ty::PatternKind::NotNull)) =>
+                if matches!(
+                    (*from_pattern, *to_pattern),
+                    (ty::PatternKind::NotNull, ty::PatternKind::NotNull)
+                ) =>
             {
-                self.coerce_unsized_value(Location { ty: from, ..source }, Location { ty: to, ..dest })
+                self.coerce_unsized_value(
+                    Location { ty: from, ..source },
+                    Location { ty: to, ..dest },
+                )
             }
             (ty::Ref(..), ty::Ref(..) | ty::RawPtr(..)) | (ty::RawPtr(..), ty::RawPtr(..)) => {
                 self.unsize_pointer_at(source.address, source.ty, dest)
@@ -153,28 +206,52 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 for index in 0..from.non_enum_variant().fields.len() {
                     let source_field = source_layout.field(&cx, index);
                     let dest_field = dest_layout.field(&cx, index);
-                    if dest_field.is_zst() { continue; }
+                    if dest_field.is_zst() {
+                        continue;
+                    }
                     let src = self.add(source.address, self.field_offset(source_layout, index)?);
                     let dst = self.add(dest.address, self.field_offset(dest_layout, index)?);
                     if source_field.ty == dest_field.ty {
                         if source_field.size != dest_field.size {
                             return Err("equal coercion field types have different sizes".into());
                         }
-                        self.code.push(Op::Copy { src, dst, size: source_field.size.bytes_usize() });
+                        self.code.push(Op::Copy {
+                            src,
+                            dst,
+                            size: source_field.size.bytes_usize(),
+                        });
                     } else {
                         self.coerce_unsized_value(
-                            Location { address: src, ty: source_field.ty, variant: None, metadata: None },
-                            Location { address: dst, ty: dest_field.ty, variant: None, metadata: None },
+                            Location {
+                                address: src,
+                                ty: source_field.ty,
+                                variant: None,
+                                metadata: None,
+                            },
+                            Location {
+                                address: dst,
+                                ty: dest_field.ty,
+                                variant: None,
+                                metadata: None,
+                            },
                         )?;
                     }
                 }
                 Ok(())
             }
-            _ => Err(format!("unsupported structural coercion {} to {}", source.ty, dest.ty)),
+            _ => Err(format!(
+                "unsupported structural coercion {} to {}",
+                source.ty, dest.ty
+            )),
         }
     }
 
-    fn unsize_pointer_at(&mut self, address: Reg, source_ty: Ty<'tcx>, dest: Location<'tcx>) -> Result<()> {
+    fn unsize_pointer_at(
+        &mut self,
+        address: Reg,
+        source_ty: Ty<'tcx>,
+        dest: Location<'tcx>,
+    ) -> Result<()> {
         let source = source_ty.builtin_deref(true).ok_or("unsize pointer")?;
         let target = dest.ty.builtin_deref(true).ok_or("unsize destination")?;
         let (tail, target_tail) =
@@ -208,9 +285,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             }
             (_, ty::Dynamic(predicates, ..)) => {
                 if !self.layout(tail)?.is_sized() {
-                    return Err(
-                        "concrete trait-object tail is not sized".into(),
-                    );
+                    return Err("concrete trait-object tail is not sized".into());
                 }
                 let table = self.exporter.vtable(tail, predicates.principal())?;
                 self.imm(table as u128)

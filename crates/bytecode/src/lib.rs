@@ -3,37 +3,37 @@
 use serde::{Deserialize, Serialize};
 #[cfg(test)]
 extern crate self as rust_interp_bytecode;
+mod frames;
 mod heap;
 mod linear_memory;
-mod frames;
 pub mod scalar_abi;
 mod scalar_calls;
 pub use scalar_calls::{CallArgument, CallDestination};
-mod native_execution;
-mod native_continuation;
-mod jit;
-mod float;
-mod profile;
-mod optimize;
+mod c_allocator;
+mod calls;
 mod control_flow;
+mod cpu;
+mod float;
+mod forwarding;
 mod inline;
 #[cfg(test)]
 mod inline_tests;
-mod registers;
-mod calls;
-mod cpu;
-mod c_allocator;
-mod tls;
-mod forwarding;
+mod jit;
 #[cfg(test)]
 mod memory_tests;
-pub use float::{FloatBinary, FloatUnary, FloatConversion};
-pub use profile::{ExecutionProfile, FunctionProfile};
-pub use optimize::{remove_fallthrough_jumps, optimize_calls, CallOptimizationReport};
-pub use control_flow::{optimize_control_flow, ControlFlowReport, FunctionControlFlowReport};
-pub use inline::{transform as inline_leaves, Options as LeafInlineOptions};
-pub use forwarding::{eliminate_direct_forwarders, ForwardingReport};
+mod native_continuation;
+mod native_execution;
+mod optimize;
+mod profile;
+mod registers;
+mod tls;
+pub use control_flow::{ControlFlowReport, FunctionControlFlowReport, optimize_control_flow};
+pub use float::{FloatBinary, FloatConversion, FloatUnary};
+pub use forwarding::{ForwardingReport, eliminate_direct_forwarders};
 use frames::{Frame, Frames};
+pub use inline::{Options as LeafInlineOptions, transform as inline_leaves};
+pub use optimize::{CallOptimizationReport, optimize_calls, remove_fallthrough_jumps};
+pub use profile::{ExecutionProfile, FunctionProfile};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Engine {
@@ -231,22 +231,75 @@ pub enum Op {
         value: Reg,
         size: Reg,
     },
-    FloatBinary { dst: Reg, op: FloatBinary, a: Reg, b: Reg, bits: u8 },
-    FloatUnary { dst: Reg, op: FloatUnary, src: Reg, bits: u8 },
-    FloatConvert { dst: Reg, kind: FloatConversion, src: Reg, from: u8, to: u8 },
+    FloatBinary {
+        dst: Reg,
+        op: FloatBinary,
+        a: Reg,
+        b: Reg,
+        bits: u8,
+    },
+    FloatUnary {
+        dst: Reg,
+        op: FloatUnary,
+        src: Reg,
+        bits: u8,
+    },
+    FloatConvert {
+        dst: Reg,
+        kind: FloatConversion,
+        src: Reg,
+        from: u8,
+        to: u8,
+    },
     ResetThreadLocals,
-    RandomBytes { dst: Reg, address: Reg, size: Reg },
+    RandomBytes {
+        dst: Reg,
+        address: Reg,
+        size: Reg,
+    },
     // Append new variants to preserve existing V5 opcode discriminants. Older
     // VMs reject this variant while existing programs keep their exact encoding.
-    CpuFeatureQuery { dst: Reg, name: Reg, output: Reg, output_len: Reg, new_data: Reg, new_len: Reg },
+    CpuFeatureQuery {
+        dst: Reg,
+        name: Reg,
+        output: Reg,
+        output_len: Reg,
+        new_data: Reg,
+        new_len: Reg,
+    },
     /// Darwin C allocation contracts. errno is a writable four-byte guest TLS slot.
-    CAllocate { dst: Reg, count: Reg, size: Reg, errno: Reg, zeroed: bool },
-    CDeallocate { pointer: Reg },
-    CReallocate { dst: Reg, pointer: Reg, size: Reg, errno: Reg },
-    CAlignedAllocate { dst: Reg, output: Reg, align: Reg, size: Reg },
-    RegisterTlsDestructor { callback: Reg, argument: Reg },
+    CAllocate {
+        dst: Reg,
+        count: Reg,
+        size: Reg,
+        errno: Reg,
+        zeroed: bool,
+    },
+    CDeallocate {
+        pointer: Reg,
+    },
+    CReallocate {
+        dst: Reg,
+        pointer: Reg,
+        size: Reg,
+        errno: Reg,
+    },
+    CAlignedAllocate {
+        dst: Reg,
+        output: Reg,
+        align: Reg,
+        size: Reg,
+    },
+    RegisterTlsDestructor {
+        callback: Reg,
+        argument: Reg,
+    },
     /// Version 6 only. Explicit values coexist with address/aggregate operands.
-    CallValue { function: usize, args: Vec<CallArgument>, destination: CallDestination },
+    CallValue {
+        function: usize,
+        args: Vec<CallArgument>,
+        destination: CallDestination,
+    },
 }
 
 fn mask(bits: u8) -> u128 {
@@ -568,7 +621,11 @@ impl Memory {
         if !is_heap && size != 0 && address < self.readonly_end {
             return Err("write to read-only guest memory".into());
         }
-        let destination = if is_heap { &mut self.heap.bytes[range] } else { &mut self.bytes[range] };
+        let destination = if is_heap {
+            &mut self.heap.bytes[range]
+        } else {
+            &mut self.bytes[range]
+        };
         #[cfg(target_os = "macos")]
         {
             unsafe extern "C" {
@@ -576,7 +633,9 @@ impl Memory {
             }
             // The entire guest range has been validated. Only a borrowed host
             // slice reaches CommonCrypto; it neither escapes nor resizes here.
-            let status = unsafe { CCRandomGenerateBytes(destination.as_mut_ptr().cast(), destination.len()) };
+            let status = unsafe {
+                CCRandomGenerateBytes(destination.as_mut_ptr().cast(), destination.len())
+            };
             Ok(status as u32 as u128)
         }
         #[cfg(not(target_os = "macos"))]
@@ -612,7 +671,8 @@ pub fn execute_profiled(
 ) -> Result<(Execution, ExecutionProfile), String> {
     validate(program)?;
     let mut profile = ExecutionProfile::new(program);
-    let execution = execute_observed::<true>(program, arguments, limits, engine, Some(&mut profile))?;
+    let execution =
+        execute_observed::<true>(program, arguments, limits, engine, Some(&mut profile))?;
     Ok((execution, profile))
 }
 
@@ -635,28 +695,64 @@ fn execute_observed<const PROFILE: bool>(
         return Err("persistent registers require the JIT engine".into());
     }
     if limits.jit_resumable_calls {
-        if engine != Engine::Jit { return Err("resumable calls require the JIT engine".into()); }
+        if engine != Engine::Jit {
+            return Err("resumable calls require the JIT engine".into());
+        }
         if limits.jit_native_calls || limits.jit_native_call_stubs {
             return Err("resumable calls cannot be combined with native tree/stub calls".into());
         }
-        return execute_impl::<PROFILE, true, false, false, true>(program, arguments, limits, profile);
+        return execute_impl::<PROFILE, true, false, false, true>(
+            program, arguments, limits, profile,
+        );
     }
     match engine {
-        Engine::Interpreter if limits.jit_native_calls => Err("native calls require the JIT engine".into()),
-        Engine::Interpreter => execute_impl::<PROFILE, false, false, false, false>(program, arguments, limits, profile),
-        Engine::Jit if limits.jit_native_call_stubs => execute_impl::<PROFILE, true, true, true, false>(program, arguments, limits, profile),
-        Engine::Jit if limits.jit_native_calls => execute_impl::<PROFILE, true, true, false, false>(program, arguments, limits, profile),
-        Engine::Jit => execute_impl::<PROFILE, true, false, false, false>(program, arguments, limits, profile),
+        Engine::Interpreter if limits.jit_native_calls => {
+            Err("native calls require the JIT engine".into())
+        }
+        Engine::Interpreter => {
+            execute_impl::<PROFILE, false, false, false, false>(program, arguments, limits, profile)
+        }
+        Engine::Jit if limits.jit_native_call_stubs => {
+            execute_impl::<PROFILE, true, true, true, false>(program, arguments, limits, profile)
+        }
+        Engine::Jit if limits.jit_native_calls => {
+            execute_impl::<PROFILE, true, true, false, false>(program, arguments, limits, profile)
+        }
+        Engine::Jit => {
+            execute_impl::<PROFILE, true, false, false, false>(program, arguments, limits, profile)
+        }
     }
 }
 
-fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool, const CALL_STUBS: bool, const RESUMABLE: bool>(
-    program: &Program, arguments: &[u128], limits: Limits, profile: Option<&mut ExecutionProfile>,
+fn execute_impl<
+    const PROFILE: bool,
+    const USE_JIT: bool,
+    const NATIVE_CALLS: bool,
+    const CALL_STUBS: bool,
+    const RESUMABLE: bool,
+>(
+    program: &Program,
+    arguments: &[u128],
+    limits: Limits,
+    profile: Option<&mut ExecutionProfile>,
 ) -> Result<Execution, String> {
-    execute_core::<PROFILE, USE_JIT, NATIVE_CALLS, CALL_STUBS, RESUMABLE, false>(program, arguments, limits, profile, &[])
+    execute_core::<PROFILE, USE_JIT, NATIVE_CALLS, CALL_STUBS, RESUMABLE, false>(
+        program,
+        arguments,
+        limits,
+        profile,
+        &[],
+    )
 }
 
-fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool, const CALL_STUBS: bool, const RESUMABLE: bool, const SCALAR: bool>(
+fn execute_core<
+    const PROFILE: bool,
+    const USE_JIT: bool,
+    const NATIVE_CALLS: bool,
+    const CALL_STUBS: bool,
+    const RESUMABLE: bool,
+    const SCALAR: bool,
+>(
     program: &Program,
     arguments: &[u128],
     limits: Limits,
@@ -665,15 +761,28 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
 ) -> Result<Execution, String> {
     // Scalar callers are private Artifact methods that already validated the
     // entire program and ABI. Legacy callers keep their original validation.
-    if !SCALAR { validate(program)?; }
-    debug_assert!(!SCALAR || (program.version == scalar_abi::SCALAR_VERSION && scalar_abi.len() == program.functions.len()));
+    if !SCALAR {
+        validate(program)?;
+    }
+    debug_assert!(
+        !SCALAR
+            || (program.version == scalar_abi::SCALAR_VERSION
+                && scalar_abi.len() == program.functions.len())
+    );
     if limits.allocations > MAX_ALLOCATION_LIMIT {
-        return Err(format!("live allocation limit exceeds supported maximum of {MAX_ALLOCATION_LIMIT}"));
+        return Err(format!(
+            "live allocation limit exceeds supported maximum of {MAX_ALLOCATION_LIMIT}"
+        ));
     }
     let started = std::time::Instant::now();
     let mut jit = if USE_JIT {
         Some(if RESUMABLE {
-            jit::Jit::new_resumable(program, PROFILE, limits.jit_code_bytes, limits.jit_persistent_registers)?
+            jit::Jit::new_resumable(
+                program,
+                PROFILE,
+                limits.jit_code_bytes,
+                limits.jit_persistent_registers,
+            )?
         } else if limits.jit_persistent_registers {
             jit::Jit::new_with_options(program, PROFILE, limits.jit_code_bytes, CALL_STUBS, true)?
         } else if CALL_STUBS {
@@ -681,9 +790,13 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         } else {
             jit::Jit::new(program, PROFILE, limits.jit_code_bytes)?
         })
-    } else { None };
+    } else {
+        None
+    };
     if let Some(jit) = &mut jit {
-        if SCALAR { jit.set_scalar_abi(scalar_abi); }
+        if SCALAR {
+            jit.set_scalar_abi(scalar_abi);
+        }
         jit.compile_nanos = started.elapsed().as_nanos();
     }
     let mut jit_instructions = 0;
@@ -691,13 +804,29 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     let mut resumable_calls = 0;
     let mut resumable_returns = 0;
     let resumable_profiles: Vec<_> = if RESUMABLE && PROFILE {
-        profile.as_deref_mut().unwrap().functions.iter_mut().map(|f| f.jit_blocks.as_mut_ptr()).collect()
-    } else { vec![] };
-    let mut native = if NATIVE_CALLS { Some(native_execution::Context::new(profile.as_deref_mut())) } else { None };
+        profile
+            .as_deref_mut()
+            .unwrap()
+            .functions
+            .iter_mut()
+            .map(|f| f.jit_blocks.as_mut_ptr())
+            .collect()
+    } else {
+        vec![]
+    };
+    let mut native = if NATIVE_CALLS {
+        Some(native_execution::Context::new(profile.as_deref_mut()))
+    } else {
+        None
+    };
     if limits.frames == 0 {
         return Err("interpreter call-depth limit exceeded".into());
     }
-    let expected_version = if SCALAR { scalar_abi::SCALAR_VERSION } else { VERSION };
+    let expected_version = if SCALAR {
+        scalar_abi::SCALAR_VERSION
+    } else {
+        VERSION
+    };
     if program.version & !PARTIAL_VALIDATION != expected_version {
         return Err("bytecode version mismatch".into());
     }
@@ -708,7 +837,12 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     if arguments.len() != entry.args.len() {
         return Err("wrong entry argument count".into());
     }
-    if program.data.len().checked_add(program.statics.len()).is_none_or(|n| n > limits.memory) {
+    if program
+        .data
+        .len()
+        .checked_add(program.statics.len())
+        .is_none_or(|n| n > limits.memory)
+    {
         return Err("initial guest data exceeds memory limit".into());
     }
     let mut memory = Memory {
@@ -745,19 +879,32 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     // overwrite every register before reading it need no repeated clearing.
     // Other functions retain the bytecode's initial-zero semantics.
     let needs_register_zeroes: Vec<_> = if SCALAR {
-        program.functions.iter().zip(scalar_abi).map(|(f, abi)| {
-            let mut initialized: Vec<_> = abi.arguments.iter().filter_map(|r| *r).collect();
-            initialized.extend(abi.result);
-            registers::needs_initial_zeroes_with_inputs(f, &initialized)
-        }).collect()
+        program
+            .functions
+            .iter()
+            .zip(scalar_abi)
+            .map(|(f, abi)| {
+                let mut initialized: Vec<_> = abi.arguments.iter().filter_map(|r| *r).collect();
+                initialized.extend(abi.result);
+                registers::needs_initial_zeroes_with_inputs(f, &initialized)
+            })
+            .collect()
     } else if RESUMABLE {
         jit.as_ref().unwrap().resumable_register_zeroes().to_vec()
-    } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() };
+    } else {
+        program
+            .functions
+            .iter()
+            .map(registers::needs_initial_zeroes)
+            .collect()
+    };
     let local_call_arguments = calls::local_arguments(program);
     let mut registers = vec![0; entry.registers];
     if SCALAR {
         for (register, value) in scalar_abi[program.entry].arguments.iter().zip(arguments) {
-            if let Some(register) = register { registers[*register as usize] = *value; }
+            if let Some(register) = register {
+                registers[*register as usize] = *value;
+            }
         }
     }
     let mut frames = Frames::from(Frame {
@@ -766,7 +913,8 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         base,
         register_base: 0,
         return_address: 0,
-        return_value: false, tls_callback: false,
+        return_value: false,
+        tls_callback: false,
     });
     prepare_jit::<PROFILE>(&mut jit, program.entry, &mut profile)?;
     let mut steps = 0;
@@ -784,73 +932,102 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     // descriptors, profile arrays and native metadata are owned
                     // exclusively by this synchronous VM. No borrowed top Frame
                     // survives the call; descendants may become the new top.
-                    let run = unsafe { jit.run_resumable(block, limits.instructions - steps,
-                        &limits, &mut memory, &mut registers, &mut frames, &mut register_bytes,
-                        &resumable_profiles) }?;
+                    let run = unsafe {
+                        jit.run_resumable(
+                            block,
+                            limits.instructions - steps,
+                            &limits,
+                            &mut memory,
+                            &mut registers,
+                            &mut frames,
+                            &mut register_bytes,
+                            &resumable_profiles,
+                        )
+                    }?;
                     steps += run.instructions;
                     jit_instructions += run.instructions;
                     jit_entries += 1;
                     resumable_calls += run.calls;
                     resumable_returns += run.returns;
-                    if steps >= limits.instructions { return Err("interpreter instruction limit exceeded".into()); }
-                }
-            }
-        }
-        let active_frames = frames.len();
-        let frame = frames.last_mut().ok_or("missing frame")?;
-        if !RESUMABLE { if let Some(jit) = &mut jit {
-            if let Some(block) = jit.blocks[frame.function].get(frame.pc).copied().flatten() {
-                let count = (block.end - frame.pc) as u64;
-                // Interpret the tail when the budget is smaller than a block,
-                // preserving exactly which instruction may execute next.
-                if count <= limits.instructions - steps {
-                    let profile_hits = if PROFILE {
-                        profile.as_deref_mut().unwrap().functions[frame.function].jit_blocks.as_mut_ptr()
-                    } else {
-                        std::ptr::null_mut()
-                    };
-                    // SAFETY: the validated current function owns this emitted
-                    // entry and register/frame ranges. Guest arenas, registers
-                    // and optional profile counters remain live and exclusive;
-                    // no VM allocation, frame change or code append occurs
-                    // while generated code runs. Jit is confined to this thread.
-                    let (next, executed) = if CALL_STUBS && jit.region_plans[frame.function].depth != 0 {
-                        native.as_mut().unwrap().run_regions::<PROFILE>(jit, block,
-                            frame.function, frame.pc, frame.base, frame.register_base,
-                            register_bytes / 16, active_frames, limits.instructions - steps,
-                            &limits, &mut memory, &mut registers, &mut profile)?
-                    } else { unsafe {
-                        jit.run(
-                            block,
-                            jit.blocks[frame.function].len(),
-                            limits.instructions - steps,
-                            profile_hits,
-                            registers[frame.register_base..].as_mut_ptr(),
-                            frame.base,
-                            memory.bytes.as_mut_ptr(),
-                            memory.bytes.len(),
-                            memory.readonly_end,
-                            memory.heap.bytes.as_mut_ptr(),
-                            memory.heap.bytes.len(),
-                        )
-                    }? };
-                    frame.pc = next;
-                    steps += executed;
-                    jit_instructions += executed;
-                    jit_entries += 1;
-                    // Compiled successors are linked inside generated code.
-                    // A successful return therefore leaves an unsupported or
-                    // short region, or a block that cannot fit the remaining
-                    // budget. An unready Call stub can also return its own PC
-                    // with zero progress. Dispatch that operation once, without
-                    // repeating the loop header and JIT-eligibility lookup.
-                    // Exhaustion must still win over a following return/fault.
                     if steps >= limits.instructions {
                         return Err("interpreter instruction limit exceeded".into());
                     }
                 }
             }
-        } }
+        }
+        let active_frames = frames.len();
+        let frame = frames.last_mut().ok_or("missing frame")?;
+        if !RESUMABLE {
+            if let Some(jit) = &mut jit {
+                if let Some(block) = jit.blocks[frame.function].get(frame.pc).copied().flatten() {
+                    let count = (block.end - frame.pc) as u64;
+                    // Interpret the tail when the budget is smaller than a block,
+                    // preserving exactly which instruction may execute next.
+                    if count <= limits.instructions - steps {
+                        let profile_hits = if PROFILE {
+                            profile.as_deref_mut().unwrap().functions[frame.function]
+                                .jit_blocks
+                                .as_mut_ptr()
+                        } else {
+                            std::ptr::null_mut()
+                        };
+                        // SAFETY: the validated current function owns this emitted
+                        // entry and register/frame ranges. Guest arenas, registers
+                        // and optional profile counters remain live and exclusive;
+                        // no VM allocation, frame change or code append occurs
+                        // while generated code runs. Jit is confined to this thread.
+                        let (next, executed) =
+                            if CALL_STUBS && jit.region_plans[frame.function].depth != 0 {
+                                native.as_mut().unwrap().run_regions::<PROFILE>(
+                                    jit,
+                                    block,
+                                    frame.function,
+                                    frame.pc,
+                                    frame.base,
+                                    frame.register_base,
+                                    register_bytes / 16,
+                                    active_frames,
+                                    limits.instructions - steps,
+                                    &limits,
+                                    &mut memory,
+                                    &mut registers,
+                                    &mut profile,
+                                )?
+                            } else {
+                                unsafe {
+                                    jit.run(
+                                        block,
+                                        jit.blocks[frame.function].len(),
+                                        limits.instructions - steps,
+                                        profile_hits,
+                                        registers[frame.register_base..].as_mut_ptr(),
+                                        frame.base,
+                                        memory.bytes.as_mut_ptr(),
+                                        memory.bytes.len(),
+                                        memory.readonly_end,
+                                        memory.heap.bytes.as_mut_ptr(),
+                                        memory.heap.bytes.len(),
+                                    )
+                                }?
+                            };
+                        frame.pc = next;
+                        steps += executed;
+                        jit_instructions += executed;
+                        jit_entries += 1;
+                        // Compiled successors are linked inside generated code.
+                        // A successful return therefore leaves an unsupported or
+                        // short region, or a block that cannot fit the remaining
+                        // budget. An unready Call stub can also return its own PC
+                        // with zero progress. Dispatch that operation once, without
+                        // repeating the loop header and JIT-eligibility lookup.
+                        // Exhaustion must still win over a following return/fault.
+                        if steps >= limits.instructions {
+                            return Err("interpreter instruction limit exceeded".into());
+                        }
+                    }
+                }
+            }
+        }
         steps += 1;
         let function = &program.functions[frame.function];
         let instruction = function.code.get(frame.pc).ok_or("invalid bytecode PC")?;
@@ -866,34 +1043,90 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     return Err("thread-local reset requires the root frame".into());
                 }
                 tls.completion = Some(tls::Completion::Reset);
-                tls.advance(program, &mut memory, &mut frames, &mut registers,
-                    &mut register_bytes, &needs_register_zeroes, &limits, if SCALAR { Some(scalar_abi) } else { None })?;
-                if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                tls.advance(
+                    program,
+                    &mut memory,
+                    &mut frames,
+                    &mut registers,
+                    &mut register_bytes,
+                    &needs_register_zeroes,
+                    &limits,
+                    if SCALAR { Some(scalar_abi) } else { None },
+                )?;
+                if let Some(frame) = frames.last() {
+                    prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?;
+                }
             }
             Op::RegisterTlsDestructor { callback, argument } => {
-                tls.register(program, &mut memory, register_bytes,
-                    r[*callback as usize], r[*argument as usize])?;
+                tls.register(
+                    program,
+                    &mut memory,
+                    register_bytes,
+                    r[*callback as usize],
+                    r[*argument as usize],
+                )?;
             }
             Op::RandomBytes { dst, address, size } => {
-                r[*dst as usize] = memory.random_bytes(r[*address as usize] as usize, r[*size as usize] as usize)?;
+                r[*dst as usize] = memory
+                    .random_bytes(r[*address as usize] as usize, r[*size as usize] as usize)?;
             }
-            Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
-                r[*dst as usize] = memory.cpu_feature_query(r[*name as usize] as usize,
-                    r[*output as usize] as usize, r[*output_len as usize] as usize,
-                    r[*new_data as usize] as usize, r[*new_len as usize] as usize)?;
+            Op::CpuFeatureQuery {
+                dst,
+                name,
+                output,
+                output_len,
+                new_data,
+                new_len,
+            } => {
+                r[*dst as usize] = memory.cpu_feature_query(
+                    r[*name as usize] as usize,
+                    r[*output as usize] as usize,
+                    r[*output_len as usize] as usize,
+                    r[*new_data as usize] as usize,
+                    r[*new_len as usize] as usize,
+                )?;
             }
-            Op::CAllocate { dst, count, size, errno, zeroed } => {
-                r[*dst as usize] = memory.c_allocate(r[*count as usize], r[*size as usize],
-                    r[*errno as usize], *zeroed, register_bytes)?;
+            Op::CAllocate {
+                dst,
+                count,
+                size,
+                errno,
+                zeroed,
+            } => {
+                r[*dst as usize] = memory.c_allocate(
+                    r[*count as usize],
+                    r[*size as usize],
+                    r[*errno as usize],
+                    *zeroed,
+                    register_bytes,
+                )?;
             }
             Op::CDeallocate { pointer } => memory.c_deallocate(r[*pointer as usize])?,
-            Op::CReallocate { dst, pointer, size, errno } => {
-                r[*dst as usize] = memory.c_reallocate(r[*pointer as usize], r[*size as usize],
-                    r[*errno as usize], register_bytes)?;
+            Op::CReallocate {
+                dst,
+                pointer,
+                size,
+                errno,
+            } => {
+                r[*dst as usize] = memory.c_reallocate(
+                    r[*pointer as usize],
+                    r[*size as usize],
+                    r[*errno as usize],
+                    register_bytes,
+                )?;
             }
-            Op::CAlignedAllocate { dst, output, align, size } => {
-                r[*dst as usize] = memory.c_aligned_allocate(r[*output as usize], r[*align as usize],
-                    r[*size as usize], register_bytes)?;
+            Op::CAlignedAllocate {
+                dst,
+                output,
+                align,
+                size,
+            } => {
+                r[*dst as usize] = memory.c_aligned_allocate(
+                    r[*output as usize],
+                    r[*align as usize],
+                    r[*size as usize],
+                    register_bytes,
+                )?;
             }
             Op::Imm { dst, value } => r[*dst as usize] = *value,
             Op::Local { dst, offset } => r[*dst as usize] = (frame.base + offset) as u128,
@@ -940,13 +1173,25 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     std::cmp::Ordering::Greater => 1,
                 };
             }
-            Op::FloatBinary { dst, op, a, b, bits } => {
+            Op::FloatBinary {
+                dst,
+                op,
+                a,
+                b,
+                bits,
+            } => {
                 r[*dst as usize] = float::binary(*op, r[*a as usize], r[*b as usize], *bits)?;
             }
             Op::FloatUnary { dst, op, src, bits } => {
                 r[*dst as usize] = float::unary(*op, r[*src as usize], *bits)?;
             }
-            Op::FloatConvert { dst, kind, src, from, to } => {
+            Op::FloatConvert {
+                dst,
+                kind,
+                src,
+                from,
+                to,
+            } => {
                 r[*dst as usize] = float::convert(*kind, r[*src as usize], *from, *to)?;
             }
             Op::Allocate {
@@ -1069,9 +1314,18 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
             }
             Op::Call { .. } | Op::CallIndirect { .. } | Op::CallValue { .. } => {
                 let (args, destination) = match instruction {
-                    Op::Call { args, destination, .. } | Op::CallIndirect { args, destination, .. } =>
-                        (scalar_calls::Arguments::Addresses(args), CallDestination::Address(*destination)),
-                    Op::CallValue { args, destination, .. } => (scalar_calls::Arguments::Mixed(args), *destination),
+                    Op::Call {
+                        args, destination, ..
+                    }
+                    | Op::CallIndirect {
+                        args, destination, ..
+                    } => (
+                        scalar_calls::Arguments::Addresses(args),
+                        CallDestination::Address(*destination),
+                    ),
+                    Op::CallValue {
+                        args, destination, ..
+                    } => (scalar_calls::Arguments::Mixed(args), *destination),
                     _ => unreachable!(),
                 };
                 let callee_id = match instruction {
@@ -1131,23 +1385,42 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     let caller_register_base = frame.register_base;
                     let callee_register_base = register_bytes / 16 - callee.registers;
                     let register_end = register_bytes / 16;
-                    if register_end > registers.len() { registers.resize(register_end, 0); }
-                    if needs_register_zeroes[callee_id] { registers[callee_register_base..register_end].fill(0); }
+                    if register_end > registers.len() {
+                        registers.resize(register_end, 0);
+                    }
+                    if needs_register_zeroes[callee_id] {
+                        registers[callee_register_base..register_end].fill(0);
+                    }
                     if let Some(result) = scalar_abi[callee_id].result {
                         registers[callee_register_base + result as usize] = 0;
                     }
                     // The old caller slice is no longer used in this branch;
                     // resizing backing above cannot invalidate a retained borrow.
-                    for (index, (slot, register)) in callee.args.iter().zip(&scalar_abi[callee_id].arguments).enumerate() {
+                    for (index, (slot, register)) in callee
+                        .args
+                        .iter()
+                        .zip(&scalar_abi[callee_id].arguments)
+                        .enumerate()
+                    {
                         let operand = args.at(index);
                         let input = registers[caller_register_base + operand.register() as usize];
                         match (operand, register) {
-                            (CallArgument::Address(_), Some(reg)) =>
-                                registers[callee_register_base + *reg as usize] = memory.load(input as usize, slot.size)?,
-                            (CallArgument::Value(_), Some(reg)) =>
-                                registers[callee_register_base + *reg as usize] = scalar_abi::truncate(input, slot.size),
-                            (CallArgument::Address(_), None) => memory.copy(input as usize, base + slot.offset, slot.size)?,
-                            (CallArgument::Value(_), None) => memory.store(base + slot.offset, slot.size, scalar_abi::truncate(input, slot.size))?,
+                            (CallArgument::Address(_), Some(reg)) => {
+                                registers[callee_register_base + *reg as usize] =
+                                    memory.load(input as usize, slot.size)?
+                            }
+                            (CallArgument::Value(_), Some(reg)) => {
+                                registers[callee_register_base + *reg as usize] =
+                                    scalar_abi::truncate(input, slot.size)
+                            }
+                            (CallArgument::Address(_), None) => {
+                                memory.copy(input as usize, base + slot.offset, slot.size)?
+                            }
+                            (CallArgument::Value(_), None) => memory.store(
+                                base + slot.offset,
+                                slot.size,
+                                scalar_abi::truncate(input, slot.size),
+                            )?,
                         }
                     }
                 } else if local_call_arguments[frame.function][frame.pc - 1] {
@@ -1157,7 +1430,9 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     // order even when callee slots overlap.
                     for (src, slot) in args.addresses().iter().zip(&callee.args) {
                         let source = r[*src as usize] as usize;
-                        memory.bytes.copy_within(source..source + slot.size, base + slot.offset);
+                        memory
+                            .bytes
+                            .copy_within(source..source + slot.size, base + slot.offset);
                     }
                 } else {
                     for (src, slot) in args.addresses().iter().zip(&callee.args) {
@@ -1183,9 +1458,18 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     // its frame, copied arguments and checked depth in VM order.
                     // A declined tree continues through the existing push path.
                     if let Some(run) = native.as_mut().unwrap().run::<PROFILE>(
-                        jit.as_mut().unwrap(), callee_id, return_address, base, register_base,
-                        frames.len(), limits.instructions - steps, &limits,
-                        &mut memory, &mut registers, &mut profile)? {
+                        jit.as_mut().unwrap(),
+                        callee_id,
+                        return_address,
+                        base,
+                        register_base,
+                        frames.len(),
+                        limits.instructions - steps,
+                        &limits,
+                        &mut memory,
+                        &mut registers,
+                        &mut profile,
+                    )? {
                         steps += run;
                         jit_instructions += run;
                         jit_entries += 1;
@@ -1199,7 +1483,8 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     base,
                     register_base,
                     return_address,
-                    return_value: matches!(destination, CallDestination::Value(_)), tls_callback: false,
+                    return_value: matches!(destination, CallDestination::Value(_)),
+                    tls_callback: false,
                 });
                 prepare_jit::<PROFILE>(&mut jit, callee_id, &mut profile)?;
             }
@@ -1208,18 +1493,38 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                 let source = frame.base + result.offset;
                 let callback = frame.tls_callback;
                 let scalar_value = if SCALAR {
-                    scalar_abi[frame.function].result.map(|reg| scalar_abi::truncate(r[reg as usize], result.size))
-                } else { None };
+                    scalar_abi[frame.function]
+                        .result
+                        .map(|reg| scalar_abi::truncate(r[reg as usize], result.size))
+                } else {
+                    None
+                };
                 if frames.len() == 1 && !callback {
-                    let value = if let Some(value) = scalar_value { value } else { memory.load(source, result.size)? };
-                    if tls.is_empty() { break value; }
+                    let value = if let Some(value) = scalar_value {
+                        value
+                    } else {
+                        memory.load(source, result.size)?
+                    };
+                    if tls.is_empty() {
+                        break value;
+                    }
                     tls.completion = Some(tls::Completion::Entry(value));
                     let frame = frames.pop().ok_or("missing entry frame")?;
                     register_bytes = 0;
                     memory.bytes.truncate(frame.base);
-                    tls.advance(program, &mut memory, &mut frames, &mut registers,
-                        &mut register_bytes, &needs_register_zeroes, &limits, if SCALAR { Some(scalar_abi) } else { None })?;
-                    if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                    tls.advance(
+                        program,
+                        &mut memory,
+                        &mut frames,
+                        &mut registers,
+                        &mut register_bytes,
+                        &needs_register_zeroes,
+                        &limits,
+                        if SCALAR { Some(scalar_abi) } else { None },
+                    )?;
+                    if let Some(frame) = frames.last() {
+                        prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?;
+                    }
                     continue;
                 }
                 let frame = frames.pop().ok_or("missing return frame")?;
@@ -1229,48 +1534,80 @@ fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                 register_bytes = frame.register_base * 16;
                 if !callback {
                     if frame.return_value {
-                        let value = match scalar_value { Some(value) => value, None => memory.load(source, result.size)? };
+                        let value = match scalar_value {
+                            Some(value) => value,
+                            None => memory.load(source, result.size)?,
+                        };
                         let caller = frames.last().ok_or("missing value-return caller")?;
                         registers[caller.register_base + frame.return_address] = value;
-                    } else if let Some(value) = scalar_value { memory.store(frame.return_address, result.size, value)?; }
-                    else { memory.copy(source, frame.return_address, result.size)?; }
+                    } else if let Some(value) = scalar_value {
+                        memory.store(frame.return_address, result.size, value)?;
+                    } else {
+                        memory.copy(source, frame.return_address, result.size)?;
+                    }
                 }
                 memory.bytes.truncate(frame.base);
                 if callback {
-                    if let Some(value) = tls.advance(program, &mut memory, &mut frames, &mut registers,
-                        &mut register_bytes, &needs_register_zeroes, &limits, if SCALAR { Some(scalar_abi) } else { None })? { break value; }
-                    if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
+                    if let Some(value) = tls.advance(
+                        program,
+                        &mut memory,
+                        &mut frames,
+                        &mut registers,
+                        &mut register_bytes,
+                        &needs_register_zeroes,
+                        &limits,
+                        if SCALAR { Some(scalar_abi) } else { None },
+                    )? {
+                        break value;
+                    }
+                    if let Some(frame) = frames.last() {
+                        prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?;
+                    }
                 }
             }
         }
     };
     if let Some(path) = &limits.jit_code_dump {
-        jit.as_ref().ok_or("missing JIT for native code dump")?.dump_code(path)?;
+        jit.as_ref()
+            .ok_or("missing JIT for native code dump")?
+            .dump_code(path)?;
     }
     let tree_stats = jit.as_ref().map_or((0, 0, 0, 0, 0), |j| j.tree_stats());
-    Ok(Execution { value, instructions: steps, peak_memory: memory.peak,
+    Ok(Execution {
+        value,
+        instructions: steps,
+        peak_memory: memory.peak,
         jit_bytes: jit.as_ref().map_or(0, |j| j.bytes),
         jit_operations: jit.as_ref().map_or(0, |j| j.operations),
         jit_compiled_functions: jit.as_ref().map_or(0, |j| j.compiled_functions),
         jit_declined_functions: jit.as_ref().map_or(0, |j| j.declined_functions),
-        jit_compile_nanos: jit.as_ref().map_or(0, |j| j.compile_nanos), jit_instructions, jit_entries,
+        jit_compile_nanos: jit.as_ref().map_or(0, |j| j.compile_nanos),
+        jit_instructions,
+        jit_entries,
         jit_tree_entries: native.as_ref().map_or(0, |n| n.entries),
         jit_tree_calls: native.as_ref().map_or(0, |n| n.calls),
         jit_tree_instructions: native.as_ref().map_or(0, |n| n.instructions),
-        jit_tree_bytes: tree_stats.0, jit_tree_operations: tree_stats.1,
-        jit_tree_compiled_functions: tree_stats.2, jit_tree_declined_functions: tree_stats.3,
+        jit_tree_bytes: tree_stats.0,
+        jit_tree_operations: tree_stats.1,
+        jit_tree_compiled_functions: tree_stats.2,
+        jit_tree_declined_functions: tree_stats.3,
         jit_tree_compile_nanos: tree_stats.4,
         jit_call_stubs: jit.as_ref().map_or(0, |j| j.call_stubs),
         jit_stub_calls: native.as_ref().map_or(0, |n| n.stub_calls),
         jit_register_functions: jit.as_ref().map_or(0, |j| j.register_functions),
         jit_register_pairs: jit.as_ref().map_or(0, |j| j.register_pairs),
         jit_liveness_declines: jit.as_ref().map_or(0, |j| j.liveness_declines),
-        jit_resumable_calls: resumable_calls, jit_resumable_returns: resumable_returns })
+        jit_resumable_calls: resumable_calls,
+        jit_resumable_returns: resumable_returns,
+    })
 }
 
 #[inline(always)]
-fn prepare_jit<const PROFILE: bool>(jit: &mut Option<jit::Jit<'_>>, function: usize,
-    profile: &mut Option<&mut ExecutionProfile>) -> Result<(), String> {
+fn prepare_jit<const PROFILE: bool>(
+    jit: &mut Option<jit::Jit<'_>>,
+    function: usize,
+    profile: &mut Option<&mut ExecutionProfile>,
+) -> Result<(), String> {
     if let Some(jit) = jit {
         if jit.ensure_function(function)? && PROFILE {
             let row = &mut profile.as_deref_mut().unwrap().functions[function];
@@ -1306,7 +1643,10 @@ pub(crate) fn validate_structure(program: &Program) -> Result<(), String> {
         if slot.size == 0 || slot.offset < end {
             return Err("invalid or overlapping thread-local initializer".into());
         }
-        end = slot.offset.checked_add(slot.size).ok_or("thread-local range overflow")?;
+        end = slot
+            .offset
+            .checked_add(slot.size)
+            .ok_or("thread-local range overflow")?;
         if end > program.statics.len() {
             return Err("thread-local initializer outside static storage".into());
         }
@@ -1351,31 +1691,74 @@ pub(crate) fn validate_structure(program: &Program) -> Result<(), String> {
             }
         };
         for op in &f.code {
-            if matches!(op, Op::CAllocate { .. } | Op::CDeallocate { .. }
-                | Op::CReallocate { .. } | Op::CAlignedAllocate { .. })
-                && program.target != "aarch64-apple-darwin" {
+            if matches!(
+                op,
+                Op::CAllocate { .. }
+                    | Op::CDeallocate { .. }
+                    | Op::CReallocate { .. }
+                    | Op::CAlignedAllocate { .. }
+            ) && program.target != "aarch64-apple-darwin"
+            {
                 return Err("C allocator operations require the Darwin guest contract".into());
             }
             match op {
                 Op::RegisterTlsDestructor { callback, argument } => {
                     if program.target != "aarch64-apple-darwin" {
-                        return Err("TLS destructor registration requires the Darwin guest contract".into());
+                        return Err(
+                            "TLS destructor registration requires the Darwin guest contract".into(),
+                        );
                     }
-                    reg(*callback)?; reg(*argument)?;
+                    reg(*callback)?;
+                    reg(*argument)?;
                 }
-                Op::CAllocate { dst, count, size, errno, .. } => {
-                    for r in [dst, count, size, errno] { reg(*r)?; }
+                Op::CAllocate {
+                    dst,
+                    count,
+                    size,
+                    errno,
+                    ..
+                } => {
+                    for r in [dst, count, size, errno] {
+                        reg(*r)?;
+                    }
                 }
                 Op::CDeallocate { pointer } => reg(*pointer)?,
-                Op::CReallocate { dst, pointer, size, errno } => {
-                    for r in [dst, pointer, size, errno] { reg(*r)?; }
+                Op::CReallocate {
+                    dst,
+                    pointer,
+                    size,
+                    errno,
+                } => {
+                    for r in [dst, pointer, size, errno] {
+                        reg(*r)?;
+                    }
                 }
-                Op::CAlignedAllocate { dst, output, align, size } => {
-                    for r in [dst, output, align, size] { reg(*r)?; }
+                Op::CAlignedAllocate {
+                    dst,
+                    output,
+                    align,
+                    size,
+                } => {
+                    for r in [dst, output, align, size] {
+                        reg(*r)?;
+                    }
                 }
-                Op::RandomBytes { dst, address, size } => { reg(*dst)?; reg(*address)?; reg(*size)?; }
-                Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
-                    for r in [dst, name, output, output_len, new_data, new_len] { reg(*r)?; }
+                Op::RandomBytes { dst, address, size } => {
+                    reg(*dst)?;
+                    reg(*address)?;
+                    reg(*size)?;
+                }
+                Op::CpuFeatureQuery {
+                    dst,
+                    name,
+                    output,
+                    output_len,
+                    new_data,
+                    new_len,
+                } => {
+                    for r in [dst, name, output, output_len, new_data, new_len] {
+                        reg(*r)?;
+                    }
                 }
                 Op::ResetThreadLocals => {}
                 Op::Imm { dst, .. } => reg(*dst)?,
@@ -1487,14 +1870,29 @@ pub(crate) fn validate_structure(program: &Program) -> Result<(), String> {
                     reg(*b)?;
                     width(*bits)?;
                 }
-                Op::FloatBinary { dst, a, b, bits, .. } => {
-                    reg(*dst)?; reg(*a)?; reg(*b)?; float::width(*bits)?;
+                Op::FloatBinary {
+                    dst, a, b, bits, ..
+                } => {
+                    reg(*dst)?;
+                    reg(*a)?;
+                    reg(*b)?;
+                    float::width(*bits)?;
                 }
                 Op::FloatUnary { dst, src, bits, .. } => {
-                    reg(*dst)?; reg(*src)?; float::width(*bits)?;
+                    reg(*dst)?;
+                    reg(*src)?;
+                    float::width(*bits)?;
                 }
-                Op::FloatConvert { dst, kind, src, from, to } => {
-                    reg(*dst)?; reg(*src)?; float::conversion_widths(*kind, *from, *to)?;
+                Op::FloatConvert {
+                    dst,
+                    kind,
+                    src,
+                    from,
+                    to,
+                } => {
+                    reg(*dst)?;
+                    reg(*src)?;
+                    float::conversion_widths(*kind, *from, *to)?;
                 }
                 Op::Unary { dst, src, bits, .. } => {
                     reg(*dst)?;
@@ -1543,15 +1941,21 @@ pub(crate) fn validate_structure(program: &Program) -> Result<(), String> {
                     if args.len() != callee.args.len() {
                         return Err(format!(
                             "invalid call arity: {} calls {} with {} arguments, expected {}",
-                            f.name, callee.name, args.len(), callee.args.len()
+                            f.name,
+                            callee.name,
+                            args.len(),
+                            callee.args.len()
                         ));
                     }
                     for r in args {
                         reg(*r)?;
                     }
                 }
-                Op::CallValue { function, args, destination } =>
-                    scalar_calls::validate_call(program, f, *function, args, *destination)?,
+                Op::CallValue {
+                    function,
+                    args,
+                    destination,
+                } => scalar_calls::validate_call(program, f, *function, args, *destination)?,
                 Op::Return | Op::Trap { .. } => {}
             }
         }
@@ -1560,4 +1964,6 @@ pub(crate) fn validate_structure(program: &Program) -> Result<(), String> {
 }
 
 /// Diagnostic snapshot only; share the retained exhaustive operand visitor.
-pub fn diagnostic_visit_registers(op: &Op, read: impl FnMut(Reg), write: impl FnMut(Reg)) { registers::visit_registers(op, read, write); }
+pub fn diagnostic_visit_registers(op: &Op, read: impl FnMut(Reg), write: impl FnMut(Reg)) {
+    registers::visit_registers(op, read, write);
+}

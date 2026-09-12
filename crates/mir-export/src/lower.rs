@@ -14,20 +14,20 @@ use rustc_middle::ty::{self, Instance, Ty, TyCtxt, TypeFoldable};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 
 type Result<T> = std::result::Result<T, String>;
-mod simd;
+mod allocation;
+mod atomic;
+mod c_allocator;
+mod caller;
+mod dynamic;
+mod entry;
+mod float;
+mod reachability;
 mod scalar_frame;
 mod scalar_promote;
 pub(crate) mod scalar_values;
-mod dynamic;
-mod float;
-mod atomic;
-mod entry;
-mod caller;
+mod simd;
 mod system;
-mod c_allocator;
 mod tls;
-mod reachability;
-mod allocation;
 fn env<'tcx>() -> ty::TypingEnv<'tcx> {
     ty::TypingEnv::fully_monomorphized()
 }
@@ -41,8 +41,8 @@ fn panic_function(tcx: TyCtxt<'_>, def: rustc_hir::def_id::DefId) -> Option<Stri
     let alloc = tcx.lang_items().owned_box().map(|id| id.krate);
     // The pinned installed sysroot omits this non-generic MIR. Its entire
     // body is panic!("Arc counter overflow"); keep the panic-as-trap contract.
-    let arc_overflow = Some(def.krate) == alloc
-        && tcx.def_path_str(def) == "alloc::sync::panic_arc_overflow";
+    let arc_overflow =
+        Some(def.krate) == alloc && tcx.def_path_str(def) == "alloc::sync::panic_arc_overflow";
     if Some(def.krate) != core && Some(def.krate) != std && !arc_overflow {
         return None;
     }
@@ -58,16 +58,29 @@ fn panic_function(tcx: TyCtxt<'_>, def: rustc_hir::def_id::DefId) -> Option<Stri
     let name = tcx.def_path_str(def);
     // Installed std omits this non-generic MIR; the pinned body is only a
     // panic reporting LocalKey access after destruction.
-    let tls_access_panic = Some(def.krate) == std
-        && name == "std::thread::local::panic_access_error";
+    let tls_access_panic =
+        Some(def.krate) == std && name == "std::thread::local::panic_access_error";
     // These pinned-core helpers contain only panic!, but the installed
     // metadata omits their non-generic MIR. Preserve the same panic-as-trap
     // contract as core::panicking, including strict integer operations.
     let integer_panic = Some(def.krate) == core
         && (name == "core::num::imp::int_log10::panic_for_nonpositive_argument"
-        || name.strip_prefix("core::num::imp::overflow_panic::").is_some_and(|name| {
-            matches!(name, "add" | "sub" | "mul" | "rem" | "neg" | "shr" | "shl" | "pow" | "cast_integer")
-        }));
+            || name
+                .strip_prefix("core::num::imp::overflow_panic::")
+                .is_some_and(|name| {
+                    matches!(
+                        name,
+                        "add"
+                            | "sub"
+                            | "mul"
+                            | "rem"
+                            | "neg"
+                            | "shr"
+                            | "shl"
+                            | "pow"
+                            | "cast_integer"
+                    )
+                }));
     if tcx.lang_items().panic_fmt() == Some(def)
         || tls_access_panic
         || arc_overflow
@@ -124,10 +137,16 @@ fn panic_preparation(statement: &mir::Statement<'_>) -> bool {
 /// Unavailable direct calls retained only by the explicit reachability option.
 /// Sorted symbol/caller pairs make diagnostics independent of hash iteration.
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
-enum UnavailableCallKind { Foreign, Intrinsic }
+enum UnavailableCallKind {
+    Foreign,
+    Intrinsic,
+}
 impl UnavailableCallKind {
     fn name(&self) -> &'static str {
-        match self { Self::Foreign => "foreign", Self::Intrinsic => "intrinsic" }
+        match self {
+            Self::Foreign => "foreign",
+            Self::Intrinsic => "intrinsic",
+        }
     }
 }
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -138,7 +157,12 @@ pub struct UnavailableCall {
 }
 impl UnavailableCall {
     fn message(&self) -> String {
-        format!("unavailable {} call: {:?} in {}", self.kind.name(), self.name, self.caller)
+        format!(
+            "unavailable {} call: {:?} in {}",
+            self.kind.name(),
+            self.name,
+            self.caller
+        )
     }
     fn json(&self) -> serde_json::Value {
         serde_json::json!({"kind":self.kind.name(),"name":self.name,"caller":self.caller,"trap_message":self.message()})
@@ -152,15 +176,27 @@ pub struct Exported {
 }
 impl Exported {
     pub fn unavailable_calls(&self) -> Vec<serde_json::Value> {
-        self.unavailable_calls.iter().map(UnavailableCall::json).collect()
+        self.unavailable_calls
+            .iter()
+            .map(UnavailableCall::json)
+            .collect()
     }
 }
 
-pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bool,
-              inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool,
-              allocation_trace: bool) -> Result<Exported> {
-    let scalar_values_enabled=scalar_values::enabled();
-    if scalar_values_enabled && demand {return Err("scalar values require strict frontend checking".into());}
+pub fn export(
+    tcx: TyCtxt<'_>,
+    requested: &[String],
+    demand: bool,
+    test_body: bool,
+    inline_leaves: bool,
+    trap_unsupported_calls: bool,
+    run_try_callbacks: bool,
+    allocation_trace: bool,
+) -> Result<Exported> {
+    let scalar_values_enabled = scalar_values::enabled();
+    if scalar_values_enabled && demand {
+        return Err("scalar values require strict frontend checking".into());
+    }
     if allocation_trace && demand {
         return Err("allocation tracing requires ordinary strict frontend checking".into());
     }
@@ -196,7 +232,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         let signature = tcx.normalize_erasing_regions(env(), tcx.fn_sig(id).instantiate_identity());
         let signature = tcx.instantiate_bound_regions_with_erased(signature);
         let output = signature.output();
-        let test_result = test_body && matches!(output.kind(), ty::Adt(def, args)
+        let test_result = test_body
+            && matches!(output.kind(), ty::Adt(def, args)
             if tcx.is_diagnostic_item(rustc_span::sym::Result, def.did()) && args.type_at(0).is_unit());
         if test_result && !signature.inputs().is_empty() {
             return Err("Result test entries must have no arguments".into());
@@ -204,9 +241,12 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         if selected.contains(&id) {
             return Err(format!("entry {entry:?} selects a function more than once"));
         }
-        if requested.len() > 1 && (!signature.inputs().is_empty() || (!output.is_unit() && !test_result))
+        if requested.len() > 1
+            && (!signature.inputs().is_empty() || (!output.is_unit() && !test_result))
         {
-            return Err("batch entries must have no arguments and return unit or Result<(), E>".into());
+            return Err(
+                "batch entries must have no arguments and return unit or Result<(), E>".into(),
+            );
         }
         if signature
             .inputs()
@@ -221,7 +261,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         if !matches!(
             output.kind(),
             ty::Int(_) | ty::Uint(_) | ty::Bool | ty::Char
-        ) && !output.is_unit() && !test_result
+        ) && !output.is_unit()
+            && !test_result
         {
             return Err("CLI entry result must be an integer, bool, char, or unit".into());
         }
@@ -252,13 +293,15 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         byte_writes: vec![],
         scalar_values: scalar_values::Collector::new(scalar_values_enabled),
     };
-    exporter.trace_event(|_| serde_json::json!({"kind": "allocation-trace", "schema_version": 1,
+    exporter.trace_event(|_| {
+        serde_json::json!({"kind": "allocation-trace", "schema_version": 1,
         "target": tcx.sess.opts.target_triple.to_string(), "strict_frontend": !demand,
         "compiler_allocation_ids": "session-local, not stable cache keys",
         "function_indices": "lowering graph before bytecode optimization",
         "max_events": crate::allocation_trace::MAX_EVENTS,
         "max_bytes": crate::allocation_trace::MAX_BYTES,
-        "max_allocation_bytes": crate::allocation_trace::MAX_ALLOCATION_BYTES}))?;
+        "max_allocation_bytes": crate::allocation_trace::MAX_ALLOCATION_BYTES})
+    })?;
     let mut entry_ids = Vec::new();
     for id in selected {
         let mut instance = Instance::mono(tcx, id);
@@ -279,10 +322,12 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         let instance = exporter.instances[index];
         let name = tcx.def_path_str(instance.def_id());
         exporter.trace_function = Some(index);
-        exporter.trace_event(|tcx| serde_json::json!({"kind": "function", "index": index,
+        exporter.trace_event(|tcx| {
+            serde_json::json!({"kind": "function", "index": index,
             "definition": tcx.def_path_str(instance.def_id()),
             "instance_kind": format!("{:?}", instance.def),
-            "generic_arguments": format!("{:?}", instance.args)}))?;
+            "generic_arguments": format!("{:?}", instance.args)})
+        })?;
         let f = Lower::new(&mut exporter, instance)
             .and_then(|lower| lower.lower())
             .map_err(|e| format!("{name}: {e}"))?;
@@ -375,31 +420,48 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         statics: exporter.statics,
         thread_locals: exporter.thread_locals,
     };
-    scalar_frame::byte_writes::report(exporter.byte_writes, &mut program, &mut exporter.scalar_values)?;
+    scalar_frame::byte_writes::report(
+        exporter.byte_writes,
+        &mut program,
+        &mut exporter.scalar_values,
+    )?;
     scalar_frame::report();
     scalar_promote::report();
-    let (mut program, calls) = rust_interp_bytecode::optimize_calls(
-        program, inline_leaves.then(Default::default))?;
+    let (mut program, calls) =
+        rust_interp_bytecode::optimize_calls(program, inline_leaves.then(Default::default))?;
     if let Some(report) = &calls.inlining {
-        eprintln!("rust-interp-inline: sites={} operations={} seconds={:.6}",
-            report["selected_sites"], report["new_operations"], calls.inline_time.as_secs_f64());
+        eprintln!(
+            "rust-interp-inline: sites={} operations={} seconds={:.6}",
+            report["selected_sites"],
+            report["new_operations"],
+            calls.inline_time.as_secs_f64()
+        );
     }
     for (stage, forwarding) in [
         ("before-inline", calls.forwarding_before_inline.as_ref()),
         ("final", Some(&calls.final_forwarding)),
     ] {
         if let Some(forwarding) = forwarding.filter(|r| r.retargeted_calls != 0) {
-            eprintln!("rust-interp-forwarding: wrappers={} calls={} longest_chain={} stage={stage}",
-                forwarding.wrappers, forwarding.retargeted_calls, forwarding.longest_chain);
+            eprintln!(
+                "rust-interp-forwarding: wrappers={} calls={} longest_chain={} stage={stage}",
+                forwarding.wrappers, forwarding.retargeted_calls, forwarding.longest_chain
+            );
         }
     }
     let started = std::time::Instant::now();
     let cfg = rust_interp_bytecode::optimize_control_flow(&mut program)?;
-    eprintln!("rust-interp-cfg: before={} after={} seconds={:.6}",
-        cfg.old_operations, cfg.new_operations, started.elapsed().as_secs_f64());
-    let artifact=exporter.scalar_values.finish(program)?;
-    Ok(Exported { artifact, unavailable_calls: exporter.unavailable_calls,
-        allocation_trace: exporter.trace })
+    eprintln!(
+        "rust-interp-cfg: before={} after={} seconds={:.6}",
+        cfg.old_operations,
+        cfg.new_operations,
+        started.elapsed().as_secs_f64()
+    );
+    let artifact = exporter.scalar_values.finish(program)?;
+    Ok(Exported {
+        artifact,
+        unavailable_calls: exporter.unavailable_calls,
+        allocation_trace: exporter.trace,
+    })
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -468,7 +530,10 @@ impl<'tcx> Exporter<'tcx> {
     }
     fn pointer_shape(&self, instance: Instance<'tcx>) -> Option<CallShape> {
         if !matches!(instance.def, ty::InstanceKind::Item(_))
-            || !matches!(self.tcx.def_kind(instance.def_id()), DefKind::Fn | DefKind::AssocFn)
+            || !matches!(
+                self.tcx.def_kind(instance.def_id()),
+                DefKind::Fn | DefKind::AssocFn
+            )
         {
             // A closure can have InstanceKind::Item but has no fn_sig query.
             // Retain its body conservatively, like other unknown shim layouts;
@@ -495,13 +560,15 @@ impl<'tcx> Exporter<'tcx> {
                 .map(|l| l.size.bytes_usize())
         };
         let mut args = inputs
-                .iter()
-                .map(|&t| size(t))
-                .collect::<Option<Vec<_>>>()?;
+            .iter()
+            .map(|&t| size(t))
+            .collect::<Option<Vec<_>>>()?;
         // Match call_arguments and the exported callee slots. Rust closure
         // function pointers rely on omitting the zero-byte FnOnce environment.
         args.retain(|&size| size != 0);
-        if instance.def.requires_caller_location(self.tcx) { args.push(8); }
+        if instance.def.requires_caller_location(self.tcx) {
+            args.push(8);
+        }
         Some(CallShape {
             args,
             result: size(sig.output())?,
@@ -523,12 +590,16 @@ impl<'tcx> Exporter<'tcx> {
             return self.alloc_inner(id);
         }
         let cached = self.allocations.get(&id).copied();
-        let request = self.trace_event(|_| serde_json::json!({"kind": "allocation-request",
+        let request = self.trace_event(|_| {
+            serde_json::json!({"kind": "allocation-request",
             "allocation_id": id.0.get().to_string(), "cache_hit": cached.is_some(),
-            "cached_pointer": cached}))?;
+            "cached_pointer": cached})
+        })?;
         let result = self.with_trace_parent(request, |this| this.alloc_inner(id))?;
-        self.trace_event(|_| serde_json::json!({"kind": "allocation-resolved", "parent": request,
-            "allocation_id": id.0.get().to_string(), "pointer": result}))?;
+        self.trace_event(|_| {
+            serde_json::json!({"kind": "allocation-resolved", "parent": request,
+            "allocation_id": id.0.get().to_string(), "pointer": result})
+        })?;
         Ok(result)
     }
     fn alloc_inner(&mut self, id: AllocId) -> Result<usize> {
@@ -537,7 +608,9 @@ impl<'tcx> Exporter<'tcx> {
         }
         let alloc = match self.tcx.global_alloc(id) {
             GlobalAlloc::Memory(a) => {
-                self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "memory"}))?;
+                self.trace_event(
+                    |_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "memory"}),
+                )?;
                 a
             }
             GlobalAlloc::Function { instance } => {
@@ -548,25 +621,35 @@ impl<'tcx> Exporter<'tcx> {
                 self.allocations.insert(id, pointer);
                 return Ok(pointer);
             }
-            GlobalAlloc::VTable(ty,predicates) => {
-                self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "vtable",
-                    "type": format!("{ty:?}"), "predicates": format!("{predicates:?}")}))?;
-                let pointer=self.vtable(ty,predicates.principal())?;
-                self.allocations.insert(id,pointer);
+            GlobalAlloc::VTable(ty, predicates) => {
+                self.trace_event(|_| {
+                    serde_json::json!({"kind": "allocation-kind", "allocation_kind": "vtable",
+                    "type": format!("{ty:?}"), "predicates": format!("{predicates:?}")})
+                })?;
+                let pointer = self.vtable(ty, predicates.principal())?;
+                self.allocations.insert(id, pointer);
                 return Ok(pointer);
             }
             GlobalAlloc::Static(def) => {
-                self.trace_event(|tcx| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "static",
-                    "definition": tcx.def_path_str(def), "definition_id": format!("{def:?}")}))?;
+                self.trace_event(|tcx| {
+                    serde_json::json!({"kind": "allocation-kind", "allocation_kind": "static",
+                    "definition": tcx.def_path_str(def), "definition_id": format!("{def:?}")})
+                })?;
                 if self.tcx.is_thread_local_static(def) || self.tcx.is_foreign_item(def) {
-                    return Err(format!("thread-local or foreign static unsupported: {}", self.tcx.def_path_str(def)));
+                    return Err(format!(
+                        "thread-local or foreign static unsupported: {}",
+                        self.tcx.def_path_str(def)
+                    ));
                 }
-                self.tcx.eval_static_initializer(def)
+                self.tcx
+                    .eval_static_initializer(def)
                     .map_err(|e| format!("static initializer: {e:?}"))?
             }
             GlobalAlloc::TypeId { ty } => {
-                self.trace_event(|_| serde_json::json!({"kind": "allocation-kind", "allocation_kind": "type-id",
-                    "type": format!("{ty:?}")}))?;
+                self.trace_event(|_| {
+                    serde_json::json!({"kind": "allocation-kind", "allocation_kind": "type-id",
+                    "type": format!("{ty:?}")})
+                })?;
                 // These provenances decorate the numeric pieces of a TypeId.
                 // Each relative offset already contains its compiler-provided
                 // hash bits; no guest allocation or address rebasing is needed.
@@ -581,23 +664,36 @@ impl<'tcx> Exporter<'tcx> {
             return self.thread_local_inner(def);
         }
         let cached = self.tls_addresses.get(&def).copied();
-        let request = self.trace_event(|tcx| serde_json::json!({"kind": "tls-request",
+        let request = self.trace_event(|tcx| {
+            serde_json::json!({"kind": "tls-request",
             "definition": tcx.def_path_str(def), "definition_id": format!("{def:?}"),
-            "cache_hit": cached.is_some(), "cached_pointer": cached}))?;
+            "cache_hit": cached.is_some(), "cached_pointer": cached})
+        })?;
         let pointer = self.with_trace_parent(request, |this| this.thread_local_inner(def))?;
-        self.trace_event(|_| serde_json::json!({"kind": "tls-resolved", "parent": request, "pointer": pointer}))?;
+        self.trace_event(
+            |_| serde_json::json!({"kind": "tls-resolved", "parent": request, "pointer": pointer}),
+        )?;
         Ok(pointer)
     }
     fn thread_local_inner(&mut self, def: rustc_hir::def_id::DefId) -> Result<usize> {
-        if let Some(&address) = self.tls_addresses.get(&def) { return Ok(address); }
+        if let Some(&address) = self.tls_addresses.get(&def) {
+            return Ok(address);
+        }
         if !self.tcx.is_thread_local_static(def) || self.tcx.is_foreign_item(def) {
             return Err("foreign or invalid thread-local static".into());
         }
-        let alloc = self.tcx.eval_static_initializer(def)
+        let alloc = self
+            .tcx
+            .eval_static_initializer(def)
             .map_err(|e| format!("thread-local initializer: {e:?}"))?;
         self.materialize(alloc, None, Some(def))
     }
-    fn materialize(&mut self, alloc: ConstAllocation<'tcx>, id: Option<AllocId>, tls: Option<rustc_hir::def_id::DefId>) -> Result<usize> {
+    fn materialize(
+        &mut self,
+        alloc: ConstAllocation<'tcx>,
+        id: Option<AllocId>,
+        tls: Option<rustc_hir::def_id::DefId>,
+    ) -> Result<usize> {
         let a = alloc.inner();
         // rustc marks both static mut and UnsafeCell-containing initializers
         // mutable, including anonymous allocations reached by their pointers.
@@ -607,19 +703,36 @@ impl<'tcx> Exporter<'tcx> {
         if align > rust_interp_bytecode::MAX_ALIGNMENT {
             return Err("constant alignment exceeds the engine limit".into());
         }
-        let length = if writable { self.statics.len() } else { self.data.len() };
+        let length = if writable {
+            self.statics.len()
+        } else {
+            self.data.len()
+        };
         let offset = (length.max(16) + align - 1) & !(align - 1);
-        let pointer = offset + if writable { rust_interp_bytecode::HEAP_POINTER_TAG as usize } else { 0 };
+        let pointer = offset
+            + if writable {
+                rust_interp_bytecode::HEAP_POINTER_TAG as usize
+            } else {
+                0
+            };
         let materialization = self.trace_materialization(alloc, id, tls, pointer, align)?;
-        let bytes = if writable { &mut self.statics } else { &mut self.data };
+        let bytes = if writable {
+            &mut self.statics
+        } else {
+            &mut self.data
+        };
         bytes.resize(offset, 0);
-        bytes
-            .extend_from_slice(a.inspect_with_uninit_and_ptr_outside_interpreter(0..a.len()));
-        if let Some(id) = id { self.allocations.insert(id, pointer); }
+        bytes.extend_from_slice(a.inspect_with_uninit_and_ptr_outside_interpreter(0..a.len()));
+        if let Some(id) = id {
+            self.allocations.insert(id, pointer);
+        }
         if let Some(def) = tls {
             self.tls_addresses.insert(def, pointer);
             if writable && a.len() != 0 {
-                self.thread_locals.push(Slot { offset, size: a.len() });
+                self.thread_locals.push(Slot {
+                    offset,
+                    size: a.len(),
+                });
             }
         }
         for &(at, provenance) in a.provenance().ptrs().iter() {
@@ -630,15 +743,21 @@ impl<'tcx> Exporter<'tcx> {
                     .try_into()
                     .map_err(|_| "constant pointer")?,
             );
-            let edge = self.trace_event(|_| serde_json::json!({"kind": "relocation", "parent": materialization,
+            let edge = self.trace_event(|_| {
+                serde_json::json!({"kind": "relocation", "parent": materialization,
                 "byte_offset": at.bytes(), "relative_value": original,
-                "target_allocation_id": provenance.alloc_id().0.get().to_string()}))?;
+                "target_allocation_id": provenance.alloc_id().0.get().to_string()})
+            })?;
             let base = self.with_trace_parent(edge, |this| this.alloc(provenance.alloc_id()))?;
             // Relocations store a target-width relative pointer offset. Rust
             // permits wrapping pointer values outside their allocation; guest
             // accesses still go through the VM's ordinary memory checks.
             let rebased = original.wrapping_add(base as u64);
-            let bytes = if writable { &mut self.statics } else { &mut self.data };
+            let bytes = if writable {
+                &mut self.statics
+            } else {
+                &mut self.data
+            };
             bytes[address..address + 8].copy_from_slice(&rebased.to_le_bytes());
         }
         Ok(pointer)
@@ -658,7 +777,7 @@ struct Lower<'a, 'tcx> {
     fixups: Vec<usize>,
     caller_location: Option<Slot>,
     byte_local_extent: usize,
-    byte_origins: BTreeMap<Reg,usize>,
+    byte_origins: BTreeMap<Reg, usize>,
     byte_origins_complete: bool,
     byte_spans: Vec<Vec<Option<(usize, usize)>>>,
 }
@@ -673,10 +792,17 @@ struct Location<'tcx> {
 impl<'a, 'tcx> Lower<'a, 'tcx> {
     fn trap_unavailable_call(&mut self, kind: UnavailableCallKind, name: String) {
         let unavailable = UnavailableCall {
-            kind, name,
-            caller: format!("{}{:?}", self.tcx().def_path_str(self.instance.def_id()), self.instance.args),
+            kind,
+            name,
+            caller: format!(
+                "{}{:?}",
+                self.tcx().def_path_str(self.instance.def_id()),
+                self.instance.args
+            ),
         };
-        self.code.push(Op::Trap { message: unavailable.message() });
+        self.code.push(Op::Trap {
+            message: unavailable.message(),
+        });
         self.exporter.unavailable_calls.insert(unavailable);
     }
 
@@ -740,12 +866,19 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         this.byte_local_extent = this.frame_size;
         if instance.def.requires_caller_location(this.tcx()) {
             this.frame_size = (this.frame_size + 7) & !7;
-            this.caller_location = Some(Slot { offset: this.frame_size, size: 8 });
+            this.caller_location = Some(Slot {
+                offset: this.frame_size,
+                size: 8,
+            });
             this.frame_size += 8;
         }
         Ok(this)
     }
-    fn empty(exporter: &'a mut Exporter<'tcx>, instance: Instance<'tcx>, body: &'tcx mir::Body<'tcx>) -> Self {
+    fn empty(
+        exporter: &'a mut Exporter<'tcx>,
+        instance: Instance<'tcx>,
+        body: &'tcx mir::Body<'tcx>,
+    ) -> Self {
         Self {
             exporter,
             instance,
@@ -761,9 +894,21 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             byte_local_extent: 0,
             byte_origins: BTreeMap::new(),
             byte_origins_complete: true,
-            byte_spans: if body.local_decls.len() <= 4096 && body.basic_blocks.iter().map(|b| b.statements.len()+1).sum::<usize>() <= 32768 {
-                body.basic_blocks.iter().map(|b| vec![None; b.statements.len()+1]).collect()
-            } else { vec![] },
+            byte_spans: if body.local_decls.len() <= 4096
+                && body
+                    .basic_blocks
+                    .iter()
+                    .map(|b| b.statements.len() + 1)
+                    .sum::<usize>()
+                    <= 32768
+            {
+                body.basic_blocks
+                    .iter()
+                    .map(|b| vec![None; b.statements.len() + 1])
+                    .collect()
+            } else {
+                vec![]
+            },
         }
     }
     fn tcx(&self) -> TyCtxt<'tcx> {
@@ -801,10 +946,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         dst
     }
     fn named_local(&mut self, local: mir::Local) -> Reg {
-        let dst=self.local(self.locals[local.as_usize()].offset);
-        if self.byte_origins.len()<100_000 {
-            self.byte_origins.insert(dst,local.as_usize());
-        } else { self.byte_origins_complete=false; }
+        let dst = self.local(self.locals[local.as_usize()].offset);
+        if self.byte_origins.len() < 100_000 {
+            self.byte_origins.insert(dst, local.as_usize());
+        } else {
+            self.byte_origins_complete = false;
+        }
         dst
     }
     fn local(&mut self, offset: usize) -> Reg {
@@ -902,7 +1049,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     let field_ty = self.mono(ty);
                     let field_layout = self.layout(field_ty)?;
                     let offset = self.field_offset(layout, index.as_usize())?;
-                    if !field_layout.is_sized() && offset != 0
+                    if !field_layout.is_sized()
+                        && offset != 0
                         && !matches!(field_ty.kind(), ty::Slice(..) | ty::Str)
                     {
                         let (_, align) = self.dynamic_layout(field_ty, loc.metadata)?;
@@ -1047,19 +1195,30 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         let value = cv
             .eval(self.tcx(), env(), c.span)
             .map_err(|e| format!("constant evaluation: {e:?}"))?;
-        let origin = if matches!(&value, ConstValue::Scalar(Scalar::Ptr(..))
-            | ConstValue::Indirect { .. } | ConstValue::Slice { .. }) {
-            self.exporter.trace_event(|tcx| serde_json::json!({"kind": "constant-origin",
+        let origin = if matches!(
+            &value,
+            ConstValue::Scalar(Scalar::Ptr(..))
+                | ConstValue::Indirect { .. }
+                | ConstValue::Slice { .. }
+        ) {
+            self.exporter.trace_event(|tcx| {
+                serde_json::json!({"kind": "constant-origin",
                 "operand": format!("{cv:?}"), "evaluated": format!("{value:?}"),
                 "source": tcx.sess.source_map().span_to_diagnostic_string(c.span),
-                "size": size, "as_scalar": as_scalar}))?
-        } else { None };
+                "size": size, "as_scalar": as_scalar})
+            })?
+        } else {
+            None
+        };
         let address = match value {
             ConstValue::Scalar(s) => {
                 let bits = match s {
                     Scalar::Int(i) => i.to_bits(i.size()),
                     Scalar::Ptr(p, _) => {
-                        (self.exporter.with_trace_parent(origin, |e| e.alloc(p.provenance.alloc_id()))? as u128)
+                        (self
+                            .exporter
+                            .with_trace_parent(origin, |e| e.alloc(p.provenance.alloc_id()))?
+                            as u128)
                             + p.prov_and_relative_offset().1.bytes() as u128
                     }
                 };
@@ -1069,7 +1228,11 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     }
                     // Match the old store/load truncation, including constant
                     // pointers whose relative offset wraps the target width.
-                    let mask = if size == 16 { u128::MAX } else { (1u128 << (size * 8)) - 1 };
+                    let mask = if size == 16 {
+                        u128::MAX
+                    } else {
+                        (1u128 << (size * 8)) - 1
+                    };
                     return Ok(self.imm(bits & mask));
                 }
                 // Calls and other address consumers still receive storage.
@@ -1079,11 +1242,16 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 address
             }
             ConstValue::Indirect { alloc_id, offset } => {
-                let at = self.exporter.with_trace_parent(origin, |e| e.alloc(alloc_id))? + offset.bytes_usize();
+                let at = self
+                    .exporter
+                    .with_trace_parent(origin, |e| e.alloc(alloc_id))?
+                    + offset.bytes_usize();
                 self.imm(at as u128)
             }
             ConstValue::Slice { alloc_id, meta } => {
-                let at = self.exporter.with_trace_parent(origin, |e| e.alloc(alloc_id))?;
+                let at = self
+                    .exporter
+                    .with_trace_parent(origin, |e| e.alloc(alloc_id))?;
                 let bits = (at as u128) | ((meta as u128) << 64);
                 let src = self.imm(bits);
                 let address = self.temporary(16);
@@ -1092,7 +1260,11 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             }
             other => return Err(format!("unsupported constant {other:?}")),
         };
-        if as_scalar { self.load(address, size) } else { Ok(address) }
+        if as_scalar {
+            self.load(address, size)
+        } else {
+            Ok(address)
+        }
     }
     fn integer(&self, ty: Ty<'tcx>) -> Result<(u8, bool)> {
         match ty.kind() {
@@ -1333,7 +1505,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 }
             }
             Rvalue::UnaryOp(op, operand) => {
-                if matches!(op, UnOp::Neg) && matches!(self.operand_ty(operand).kind(), ty::Float(_)) {
+                if matches!(op, UnOp::Neg)
+                    && matches!(self.operand_ty(operand).kind(), ty::Float(_))
+                {
                     return self.float_negate(operand, dest);
                 }
                 let result = if matches!(op, UnOp::PtrMetadata) {
@@ -1392,7 +1566,10 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     self.store(dest.address, value, size)?;
                 } else if matches!(
                     kind,
-                    CastKind::PointerCoercion(ty::adjustment::PointerCoercion::ClosureFnPointer(_), _)
+                    CastKind::PointerCoercion(
+                        ty::adjustment::PointerCoercion::ClosureFnPointer(_),
+                        _
+                    )
                 ) {
                     let ty::Closure(def, args) = *ty.kind() else {
                         return Err("closure function pointer source is not a closure".into());
@@ -1406,9 +1583,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     // Preserve operand evaluation even though its closure
                     // environment occupies no bytes in the call ABI.
                     let _ = self.operand(operand)?;
-                    let instance = Instance::resolve_closure(self.tcx(), def, args, ty::ClosureKind::FnOnce);
+                    let instance =
+                        Instance::resolve_closure(self.tcx(), def, args, ty::ClosureKind::FnOnce);
                     if instance.def.requires_caller_location(self.tcx()) {
-                        return Err("tracked closure function pointer requires a reification shim".into());
+                        return Err(
+                            "tracked closure function pointer requires a reification shim".into(),
+                        );
                     }
                     let pointer = self.exporter.function_pointer(instance);
                     let value = self.imm(pointer as u128);
@@ -1417,7 +1597,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     kind,
                     CastKind::PointerCoercion(ty::adjustment::PointerCoercion::Unsize, _)
                 ) {
-                    self.unsize_pointer(operand,dest)?;
+                    self.unsize_pointer(operand, dest)?;
                 } else if matches!(kind, CastKind::IntToInt) {
                     let (from, signed) = self.integer(ty)?;
                     let (to, _) = self.integer(dest.ty)?;
@@ -1431,7 +1611,10 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                         signed,
                     });
                     self.store(dest.address, dst, size)?;
-                } else if matches!(kind, CastKind::IntToFloat | CastKind::FloatToInt | CastKind::FloatToFloat) {
+                } else if matches!(
+                    kind,
+                    CastKind::IntToFloat | CastKind::FloatToInt | CastKind::FloatToFloat
+                ) {
                     self.float_cast(*kind, operand, dest)?;
                 } else if matches!(
                     kind,
@@ -1478,15 +1661,27 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     if data_size != 8 || !matches!((size, metadata_size), (8, 0) | (16, 8)) {
                         return Err("unsupported raw pointer aggregate layout".into());
                     }
-                    let data_at = if size == 8 { 0 } else { self.field_offset(layout, 0)? };
+                    let data_at = if size == 8 {
+                        0
+                    } else {
+                        self.field_offset(layout, 0)?
+                    };
                     let dst = self.add(dest.address, data_at);
                     let src = self.operand(data)?;
-                    self.code.push(Op::Copy { dst, src, size: data_size });
+                    self.code.push(Op::Copy {
+                        dst,
+                        src,
+                        size: data_size,
+                    });
                     if metadata_size != 0 {
                         let offset = self.field_offset(layout, 1)?;
                         let dst = self.add(dest.address, offset);
                         let src = self.operand(metadata)?;
-                        self.code.push(Op::Copy { dst, src, size: metadata_size });
+                        self.code.push(Op::Copy {
+                            dst,
+                            src,
+                            size: metadata_size,
+                        });
                     }
                     return Ok(());
                 }
@@ -1663,7 +1858,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             if args.len() != 3 || !dest.ty.is_bool() || size != 1 {
                 return Err("invalid catch_unwind signature".into());
             }
-            for arg in args { let _ = self.operand(&arg.node)?; }
+            for arg in args {
+                let _ = self.operand(&arg.node)?;
+            }
             self.trap_unavailable_call(UnavailableCallKind::Intrinsic, name.to_owned());
             return Ok(true);
         }
@@ -1672,7 +1869,11 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 return Err("invalid caller_location signature".into());
             }
             let src = self.caller_argument(source_info)?;
-            self.code.push(Op::Copy { dst: dest.address, src, size: 8 });
+            self.code.push(Op::Copy {
+                dst: dest.address,
+                src,
+                size: 8,
+            });
             return Ok(true);
         }
         if name.starts_with("simd_") {
@@ -1763,7 +1964,8 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             "ptr_mask" => {
                 // The pinned intrinsic takes a thin pointer. Public .mask()
                 // methods preserve any fat-pointer metadata in their Rust MIR.
-                if args.len() != 2 || size != 8
+                if args.len() != 2
+                    || size != 8
                     || self.layout(self.operand_ty(&args[0].node))?.size.bytes() != 8
                     || self.layout(self.operand_ty(&args[1].node))?.size.bytes() != 8
                 {
@@ -1801,14 +2003,18 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     Some(self.load(metadata_at, 8)?)
                 };
                 let (dynamic_size, dynamic_align) = self.dynamic_layout(ty, metadata)?;
-                let value = if name == "size_of_val" { dynamic_size } else { dynamic_align };
+                let value = if name == "size_of_val" {
+                    dynamic_size
+                } else {
+                    dynamic_align
+                };
                 self.store(dest.address, value, size)?;
             }
             "vtable_size" | "vtable_align" => {
-                let table=self.scalar(&args[0].node)?;
-                let field=self.add(table,if name=="vtable_size" {8} else {16});
-                let value=self.load(field,8)?;
-                self.store(dest.address,value,size)?;
+                let table = self.scalar(&args[0].node)?;
+                let field = self.add(table, if name == "vtable_size" { 8 } else { 16 });
+                let value = self.load(field, 8)?;
+                self.store(dest.address, value, size)?;
             }
             "compare_bytes" | "raw_eq" => {
                 let left = self.scalar(&args[0].node)?;
@@ -1928,20 +2134,43 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 let yes = self.operand(&args[1].node)?;
                 let no = self.operand(&args[2].node)?;
                 let selected = self.reg();
-                self.code.push(Op::Select { dst: selected, condition, yes, no });
-                self.code.push(Op::Copy { dst: dest.address, src: selected, size });
+                self.code.push(Op::Select {
+                    dst: selected,
+                    condition,
+                    yes,
+                    no,
+                });
+                self.code.push(Op::Copy {
+                    dst: dest.address,
+                    src: selected,
+                    size,
+                });
             }
             "typed_swap_nonoverlapping" => {
                 let left = self.scalar(&args[0].node)?;
                 let right = self.scalar(&args[1].node)?;
                 let bytes = self.layout(instance.args.type_at(0))?.size.bytes_usize();
                 let saved = self.temporary(bytes);
-                self.code.push(Op::Copy { dst: saved, src: left, size: bytes });
-                self.code.push(Op::Copy { dst: left, src: right, size: bytes });
-                self.code.push(Op::Copy { dst: right, src: saved, size: bytes });
+                self.code.push(Op::Copy {
+                    dst: saved,
+                    src: left,
+                    size: bytes,
+                });
+                self.code.push(Op::Copy {
+                    dst: left,
+                    src: right,
+                    size: bytes,
+                });
+                self.code.push(Op::Copy {
+                    dst: right,
+                    src: saved,
+                    size: bytes,
+                });
             }
             "abort" => {
-                self.code.push(Op::Trap { message: "guest process aborted".into() });
+                self.code.push(Op::Trap {
+                    message: "guest process aborted".into(),
+                });
             }
             "is_val_statically_known" => {
                 // This optimization hint explicitly permits either answer.
@@ -2014,7 +2243,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             if !reachable[bb.as_usize()] {
                 // Keep branch fixups total, including invalid discriminants.
                 // No valid execution under panic-as-trap can enter this block.
-                self.code.push(Op::Trap { message: "unreachable MIR block".into() });
+                self.code.push(Op::Trap {
+                    message: "unreachable MIR block".into(),
+                });
                 continue;
             }
             if let TerminatorKind::Call { func, .. } = &block.terminator().kind {
@@ -2081,7 +2312,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     | StatementKind::Coverage(..) => {}
                     other => return Err(format!("unsupported statement {other:?}")),
                 }
-                scalar_frame::byte_writes::remember(&mut self, bb.as_usize(), statement_index, emitted_start);
+                scalar_frame::byte_writes::remember(
+                    &mut self,
+                    bb.as_usize(),
+                    statement_index,
+                    emitted_start,
+                );
             }
             let emitted_start = self.code.len();
             match &block.terminator().kind {
@@ -2124,7 +2360,10 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 } => {
                     // For method syntax rustc points at the method name, not
                     // the receiver expression covered by the terminator span.
-                    let source_info = mir::SourceInfo { span: *fn_span, ..block.terminator().source_info };
+                    let source_info = mir::SourceInfo {
+                        span: *fn_span,
+                        ..block.terminator().source_info
+                    };
                     if matches!(self.operand_ty(func).kind(), ty::FnPtr(..)) {
                         let callee = self.scalar(func)?;
                         let (arguments, arg_sizes) = self.call_arguments(func, args)?;
@@ -2161,11 +2400,21 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     )
                     .map_err(|e| format!("resolve: {e:?}"))?
                     .ok_or("unresolved function instance")?;
-                    if let ty::InstanceKind::Virtual(_,slot)=instance.def {
-                        self.virtual_call(slot,func,args,*destination,
-                            instance.def.requires_caller_location(self.tcx()), source_info)?;
-                        if let Some(target)=target {self.jump(*target);} else {
-                            self.code.push(Op::Trap{message:"diverging virtual call returned".into()});
+                    if let ty::InstanceKind::Virtual(_, slot) = instance.def {
+                        self.virtual_call(
+                            slot,
+                            func,
+                            args,
+                            *destination,
+                            instance.def.requires_caller_location(self.tcx()),
+                            source_info,
+                        )?;
+                        if let Some(target) = target {
+                            self.jump(*target);
+                        } else {
+                            self.code.push(Op::Trap {
+                                message: "diverging virtual call returned".into(),
+                            });
                         }
                         continue;
                     }
@@ -2181,24 +2430,39 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                             && !self.allocation_function(instance, args, *destination)?
                             && !self.intrinsic(instance, args, *destination, source_info)?
                         {
-                            if self.exporter.trap_unsupported_calls && self.tcx().is_foreign_item(instance.def_id()) {
+                            if self.exporter.trap_unsupported_calls
+                                && self.tcx().is_foreign_item(instance.def_id())
+                            {
                                 // MIR has already evaluated argument expressions. Preserve
                                 // their place materialization, then stop before the foreign
                                 // boundary. Never fabricate a return value or host call.
                                 let _ = self.call_arguments(func, args)?;
-                                self.trap_unavailable_call(UnavailableCallKind::Foreign,
-                                    self.tcx().symbol_name(instance).name.to_owned());
+                                self.trap_unavailable_call(
+                                    UnavailableCallKind::Foreign,
+                                    self.tcx().symbol_name(instance).name.to_owned(),
+                                );
                                 continue;
                             }
                             let instance = if let ty::InstanceKind::Intrinsic(def) = instance.def {
-                                let intrinsic = self.tcx().intrinsic(def).ok_or("missing intrinsic definition")?;
+                                let intrinsic = self
+                                    .tcx()
+                                    .intrinsic(def)
+                                    .ok_or("missing intrinsic definition")?;
                                 if intrinsic.must_be_overridden {
-                                    return Err(format!("intrinsic {} requires a runtime shim", intrinsic.name));
+                                    return Err(format!(
+                                        "intrinsic {} requires a runtime shim",
+                                        intrinsic.name
+                                    ));
                                 }
                                 // instance_mir(Intrinsic) has no body. Item
                                 // requests the compiler-provided Rust body.
-                                Instance { def: ty::InstanceKind::Item(def), args: instance.args }
-                            } else { instance };
+                                Instance {
+                                    def: ty::InstanceKind::Item(def),
+                                    args: instance.args,
+                                }
+                            } else {
+                                instance
+                            };
                             let function = self.exporter.register(instance);
                             let (mut arguments, _) = self.call_arguments(func, args)?;
                             if instance.def.requires_caller_location(self.tcx()) {
@@ -2224,18 +2488,18 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                     let ty = self.mono(place.ty(&self.body.local_decls, self.tcx()).ty);
                     if ty.needs_drop(self.tcx(), env()) {
                         let loc = self.place(*place)?;
-                        if matches!(ty.kind(),ty::Dynamic(..)) {
+                        if matches!(ty.kind(), ty::Dynamic(..)) {
                             self.drop_dynamic(loc)?;
                             self.jump(*target);
                             continue;
                         }
                         let instance = Instance::resolve_drop_glue(self.tcx(), ty);
                         let function = self.exporter.register(instance);
-                        let pointer = self.temporary(if loc.metadata.is_some() {16} else {8});
+                        let pointer = self.temporary(if loc.metadata.is_some() { 16 } else { 8 });
                         self.store(pointer, loc.address, 8)?;
-                        if let Some(metadata)=loc.metadata {
-                            let at=self.add(pointer,8);
-                            self.store(at,metadata,8)?;
+                        if let Some(metadata) = loc.metadata {
+                            let at = self.add(pointer, 8);
+                            self.store(at, metadata, 8)?;
                         }
                         let destination = self.imm(0);
                         let mut arguments = vec![pointer];
@@ -2257,7 +2521,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 }
                 other => return Err(format!("unsupported terminator {other:?}")),
             }
-            scalar_frame::byte_writes::remember(&mut self, bb.as_usize(), block.statements.len(), emitted_start);
+            scalar_frame::byte_writes::remember(
+                &mut self,
+                bb.as_usize(),
+                block.statements.len(),
+                emitted_start,
+            );
         }
         for &index in &self.fixups {
             match &mut self.code[index] {
@@ -2297,9 +2566,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 arguments.push(slot);
             }
         }
-        if let Some(caller) = self.caller_location { arguments.push(caller); }
+        if let Some(caller) = self.caller_location {
+            arguments.push(caller);
+        }
         if self.exporter.scalar_values.enabled {
-            let binding=scalar_values::capture(&self,&arguments,self.exporter.scalar_values.remaining())?;
+            let binding =
+                scalar_values::capture(&self, &arguments, self.exporter.scalar_values.remaining())?;
             self.exporter.scalar_values.push(binding)?;
         }
         let observed = scalar_frame::byte_writes::capture(&mut self);

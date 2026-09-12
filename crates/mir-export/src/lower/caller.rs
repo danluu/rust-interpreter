@@ -11,7 +11,10 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         // This compiler helper also handles MIR-inlined source scopes: an
         // untracked inlined function ends propagation just like a real frame.
         let source = self.body.caller_location_span(
-            source_info, self.caller_location.map(Source::Inherited), self.tcx(), Source::Constant,
+            source_info,
+            self.caller_location.map(Source::Inherited),
+            self.tcx(),
+            Source::Constant,
         );
         match source {
             Source::Inherited(slot) => Ok(self.local(slot.offset)),
@@ -20,10 +23,15 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 let ConstValue::Scalar(Scalar::Ptr(pointer, _)) = value else {
                     return Err("caller location is not a constant pointer".into());
                 };
-                let origin = self.exporter.trace_event(|tcx| serde_json::json!({"kind": "caller-location-origin",
-                    "source": tcx.sess.source_map().span_to_diagnostic_string(span)}))?;
-                let base = self.exporter.with_trace_parent(origin, |e| e.alloc(pointer.provenance.alloc_id()))?;
-                let pointer = (base as u64).checked_add(pointer.prov_and_relative_offset().1.bytes())
+                let origin = self.exporter.trace_event(|tcx| {
+                    serde_json::json!({"kind": "caller-location-origin",
+                    "source": tcx.sess.source_map().span_to_diagnostic_string(span)})
+                })?;
+                let base = self
+                    .exporter
+                    .with_trace_parent(origin, |e| e.alloc(pointer.provenance.alloc_id()))?;
+                let pointer = (base as u64)
+                    .checked_add(pointer.prov_and_relative_offset().1.bytes())
                     .ok_or("caller-location address overflow")?;
                 let address = self.temporary(8);
                 let value = self.imm(pointer as u128);

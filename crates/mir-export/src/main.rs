@@ -9,9 +9,9 @@ extern crate rustc_middle;
 extern crate rustc_session;
 extern crate rustc_span;
 
-mod lower;
 mod allocation_trace;
 mod audit;
+mod lower;
 mod wrapper_route;
 
 use rustc_driver::{Callbacks, Compilation};
@@ -38,14 +38,22 @@ impl Export {
     fn publish(&self, tcx: TyCtxt<'_>, bytes: &[u8], suffix: &str) -> Result<(), String> {
         self.publish_to(tcx, bytes, suffix, &self.output)
     }
-    fn publish_to(&self, tcx: TyCtxt<'_>, bytes: &[u8], suffix: &str, output: &Path) -> Result<(), String> {
+    fn publish_to(
+        &self,
+        tcx: TyCtxt<'_>,
+        bytes: &[u8],
+        suffix: &str,
+        output: &Path,
+    ) -> Result<(), String> {
         let temp = output.with_extension(format!("tmp-{}", std::process::id()));
         std::fs::write(&temp, bytes).map_err(|e| e.to_string())?;
         std::fs::rename(&temp, output).map_err(|e| e.to_string())?;
         if !self.demand {
             if let rustc_session::config::OutFileName::Real(metadata) =
-                rustc_session::output::filename_for_metadata(tcx.sess, tcx.output_filenames(())) {
-                let mut sidecar = metadata.into_os_string(); sidecar.push(suffix);
+                rustc_session::output::filename_for_metadata(tcx.sess, tcx.output_filenames(()))
+            {
+                let mut sidecar = metadata.into_os_string();
+                sidecar.push(suffix);
                 let sidecar = PathBuf::from(sidecar);
                 let temp = sidecar.with_extension(format!("tmp-{}", std::process::id()));
                 std::fs::write(&temp, bytes).map_err(|e| e.to_string())?;
@@ -57,12 +65,22 @@ impl Export {
     fn emit<'tcx>(&mut self, tcx: TyCtxt<'tcx>) -> Compilation {
         let checked = Instant::now();
         if self.audit_selection.is_some() {
-            let report = audit::report(tcx, &self.entries,
-                self.retain_audit_bodies.then_some(self.output.as_path()), self.inline_leaves, self.trap_unsupported_calls, self.run_try_callbacks)
-                .unwrap_or_else(|error| tcx.dcx().fatal(format!("cannot retain lowering audit: {error}")));
+            let report = audit::report(
+                tcx,
+                &self.entries,
+                self.retain_audit_bodies.then_some(self.output.as_path()),
+                self.inline_leaves,
+                self.trap_unsupported_calls,
+                self.run_try_callbacks,
+            )
+            .unwrap_or_else(|error| {
+                tcx.dcx()
+                    .fatal(format!("cannot retain lowering audit: {error}"))
+            });
             let bytes = serde_json::to_vec(&report).expect("serialize lowering audit");
             if let Err(error) = self.publish(tcx, &bytes, ".audit.json") {
-                tcx.dcx().fatal(format!("cannot publish lowering audit: {error}"));
+                tcx.dcx()
+                    .fatal(format!("cannot publish lowering audit: {error}"));
             }
             return Compilation::Continue;
         }
@@ -118,14 +136,30 @@ impl Callbacks for Export {
             // execution graph changes, even if its Rust source is unchanged.
             // Library dependencies delegated to ordinary rustc do not record
             // these inputs, so their checked artifacts can be shared.
-            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_SCALAR_VALUES"] {
+            for key in [
+                "RUST_INTERP_ENTRY",
+                "RUST_INTERP_ENTRIES",
+                "RUST_INTERP_AUDIT_SELECTION",
+                "RUST_INTERP_RETAIN_AUDIT_BODIES",
+                "RUST_INTERP_EXPORT_TEST",
+                "RUST_INTERP_INLINE_LEAVES",
+                "RUST_INTERP_TRAP_UNSUPPORTED_CALLS",
+                "RUST_INTERP_RUN_TRY_CALLBACKS",
+                "RUST_INTERP_ALLOCATION_TRACE",
+                "RUST_INTERP_SCALAR_VALUES",
+            ] {
                 sess.env_depinfo.borrow_mut().insert((
                     rustc_span::Symbol::intern(key),
-                    std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
+                    std::env::var(key)
+                        .ok()
+                        .as_deref()
+                        .map(rustc_span::Symbol::intern),
                 ));
             }
             if let Some(path) = &audit_selection {
-                sess.file_depinfo.borrow_mut().insert(rustc_span::Symbol::intern(&path.to_string_lossy()));
+                sess.file_depinfo
+                    .borrow_mut()
+                    .insert(rustc_span::Symbol::intern(&path.to_string_lossy()));
             }
         }));
     }
@@ -191,8 +225,11 @@ fn allocation_trace_path(output: &Path) -> PathBuf {
 fn main() {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
-        println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
-            "artifact_versions":[5,6],"export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","scalar-values"]}));
+        println!(
+            "{}",
+            serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
+            "artifact_versions":[5,6],"export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","scalar-values"]})
+        );
         return;
     }
     let environment = wrapper_route::Environment::read();
@@ -212,24 +249,30 @@ fn main() {
     }
     let audit_selection = std::env::var_os("RUST_INTERP_AUDIT_SELECTION").map(PathBuf::from);
     let entries = if let Some(path) = &audit_selection {
-        if std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some() {
+        if std::env::var_os("RUST_INTERP_ENTRY").is_some()
+            || std::env::var_os("RUST_INTERP_ENTRIES").is_some()
+        {
             eprintln!("audit selection cannot be combined with execution entries");
             std::process::exit(2);
         }
         audit::read_entries(path).unwrap_or_else(|error| {
-            eprintln!("invalid audit selection: {error}"); std::process::exit(2);
+            eprintln!("invalid audit selection: {error}");
+            std::process::exit(2);
         })
-    } else { match std::env::var("RUST_INTERP_ENTRIES") {
-        Ok(value) => match serde_json::from_str::<Vec<String>>(&value) {
-            Ok(entries) => entries,
-            Err(error) => {
-                eprintln!("RUST_INTERP_ENTRIES must be a JSON array of entry names: {error}");
-                std::process::exit(2);
-            }
-        },
-        Err(_) => vec![std::env::var("RUST_INTERP_ENTRY")
-            .unwrap_or_else(|_| "rust_interp_entry".into())],
-    }};
+    } else {
+        match std::env::var("RUST_INTERP_ENTRIES") {
+            Ok(value) => match serde_json::from_str::<Vec<String>>(&value) {
+                Ok(entries) => entries,
+                Err(error) => {
+                    eprintln!("RUST_INTERP_ENTRIES must be a JSON array of entry names: {error}");
+                    std::process::exit(2);
+                }
+            },
+            Err(_) => vec![
+                std::env::var("RUST_INTERP_ENTRY").unwrap_or_else(|_| "rust_interp_entry".into()),
+            ],
+        }
+    };
     if !args
         .iter()
         .any(|a| a == "--sysroot" || a.starts_with("--sysroot="))
@@ -287,7 +330,9 @@ fn main() {
         }
     };
     if run_try_callbacks && !trap_unsupported_calls {
-        eprintln!("running try callbacks requires explicit unavailable-call trapping; unwinding remains unsupported");
+        eprintln!(
+            "running try callbacks requires explicit unavailable-call trapping; unwinding remains unsupported"
+        );
         std::process::exit(2);
     }
     let demand = std::env::var("RUST_INTERP_DEMAND_BODIES").is_ok_and(|s| s == "1");
@@ -301,7 +346,9 @@ fn main() {
     };
     if allocation_trace {
         if demand || audit_selection.is_some() {
-            eprintln!("allocation tracing requires strict checking of one selected execution graph");
+            eprintln!(
+                "allocation tracing requires strict checking of one selected execution graph"
+            );
             std::process::exit(2);
         }
     }

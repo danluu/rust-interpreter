@@ -117,9 +117,11 @@ fn local_sites(program: &Program, caller: &Function) -> Vec<Site> {
         }
         match op {
             Op::CallValue { destination, .. } => {
-                    if let crate::CallDestination::Value(dst) = destination { locals[*dst as usize].0 = 0; }
-                },
-                Op::Local { dst, offset } => locals[*dst as usize] = (epoch, *offset),
+                if let crate::CallDestination::Value(dst) = destination {
+                    locals[*dst as usize].0 = 0;
+                }
+            }
+            Op::Local { dst, offset } => locals[*dst as usize] = (epoch, *offset),
             Op::Binary { dst, overflow, .. } => {
                 locals[*dst as usize].0 = 0;
                 locals[*overflow as usize].0 = 0;
@@ -134,7 +136,9 @@ fn local_sites(program: &Program, caller: &Function) -> Vec<Site> {
             | Op::Reallocate { dst, .. }
             | Op::RandomBytes { dst, .. }
             | Op::CpuFeatureQuery { dst, .. }
-            | Op::CAllocate { dst, .. } | Op::CReallocate { dst, .. } | Op::CAlignedAllocate { dst, .. }
+            | Op::CAllocate { dst, .. }
+            | Op::CReallocate { dst, .. }
+            | Op::CAlignedAllocate { dst, .. }
             | Op::FloatBinary { dst, .. }
             | Op::FloatUnary { dst, .. }
             | Op::FloatConvert { dst, .. } => {
@@ -151,7 +155,8 @@ fn local_sites(program: &Program, caller: &Function) -> Vec<Site> {
             | Op::Return
             | Op::Trap { .. }
             | Op::Deallocate { .. }
-            | Op::CDeallocate { .. } | Op::RegisterTlsDestructor { .. }
+            | Op::CDeallocate { .. }
+            | Op::RegisterTlsDestructor { .. }
             | Op::FillBytes { .. }
             | Op::ResetThreadLocals => {}
         }

@@ -21,7 +21,9 @@ impl<'tcx> Lower<'_, 'tcx> {
         let mut reachable = vec![false; self.body.basic_blocks.len()];
         let mut pending = vec![mir::START_BLOCK];
         while let Some(bb) = pending.pop() {
-            if reachable[bb.as_usize()] { continue; }
+            if reachable[bb.as_usize()] {
+                continue;
+            }
             reachable[bb.as_usize()] = true;
             let block = &self.body.basic_blocks[bb];
             match &block.terminator().kind {
@@ -31,18 +33,29 @@ impl<'tcx> Lower<'_, 'tcx> {
                         if place.projection.is_empty() && !exposed.contains(&place.local) {
                             for statement in block.statements.iter().rev() {
                                 if let StatementKind::Assign(pair) = &statement.kind {
-                                    if pair.0.local != place.local { continue; }
+                                    if pair.0.local != place.local {
+                                        continue;
+                                    }
                                     if pair.0.projection.is_empty() {
                                         if let Rvalue::Discriminant(value) = &pair.1 {
-                                            let ty = self.mono(value.ty(&self.body.local_decls, self.tcx()).ty);
+                                            let ty = self.mono(
+                                                value.ty(&self.body.local_decls, self.tcx()).ty,
+                                            );
                                             if let ty::Adt(adt, _) = ty.kind() {
                                                 if adt.is_enum() {
                                                     let layout = self.layout(ty)?;
-                                                    let bits = self.layout(self.operand_ty(discr))?.size.bits();
+                                                    let bits = self
+                                                        .layout(self.operand_ty(discr))?
+                                                        .size
+                                                        .bits();
                                                     let mask = u128::MAX >> (128 - bits);
-                                                    let values = adt.discriminants(self.tcx())
-                                                        .filter(|(variant, _)| !layout.is_variant_uninhabited(*variant))
-                                                        .map(|(_, value)| value.val & mask).collect::<HashSet<_>>();
+                                                    let values = adt
+                                                        .discriminants(self.tcx())
+                                                        .filter(|(variant, _)| {
+                                                            !layout.is_variant_uninhabited(*variant)
+                                                        })
+                                                        .map(|(_, value)| value.val & mask)
+                                                        .collect::<HashSet<_>>();
                                                     domain = Some(values);
                                                 }
                                             }
@@ -55,15 +68,23 @@ impl<'tcx> Lower<'_, 'tcx> {
                     }
                     if let Some(mut values) = domain {
                         for (value, target) in targets.iter() {
-                            if values.remove(&value) { pending.push(target); }
+                            if values.remove(&value) {
+                                pending.push(target);
+                            }
                         }
-                        if !values.is_empty() { pending.push(targets.otherwise()); }
-                    } else { pending.extend(targets.all_targets()); }
+                        if !values.is_empty() {
+                            pending.push(targets.otherwise());
+                        }
+                    } else {
+                        pending.extend(targets.all_targets());
+                    }
                 }
                 // Unwinding never occurs in this engine: a panic terminates
                 // execution. Do not expand cleanup-only calls or destructors.
                 TerminatorKind::Call { target, .. } => pending.extend(target),
-                TerminatorKind::Drop { target, .. } | TerminatorKind::Assert { target, .. } => pending.push(*target),
+                TerminatorKind::Drop { target, .. } | TerminatorKind::Assert { target, .. } => {
+                    pending.push(*target)
+                }
                 other => pending.extend(other.successors()),
             }
         }

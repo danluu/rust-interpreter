@@ -3,14 +3,34 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum FloatBinary {
-    Add, Sub, Mul, Div, Rem,
-    Eq, Ne, Lt, Le, Gt, Ge,
-    MinNumber, MaxNumber, PowI, CopySign,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    Eq,
+    Ne,
+    Lt,
+    Le,
+    Gt,
+    Ge,
+    MinNumber,
+    MaxNumber,
+    PowI,
+    CopySign,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum FloatUnary {
-    Neg, Abs, Round, RoundTiesEven, Ceil, Floor, Trunc, Sqrt, Log10,
+    Neg,
+    Abs,
+    Round,
+    RoundTiesEven,
+    Ceil,
+    Floor,
+    Trunc,
+    Sqrt,
+    Log10,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -21,17 +41,34 @@ pub enum FloatConversion {
 }
 
 pub(crate) fn width(bits: u8) -> Result<(), String> {
-    if matches!(bits, 32 | 64) { Ok(()) } else { Err("invalid floating-point width".into()) }
+    if matches!(bits, 32 | 64) {
+        Ok(())
+    } else {
+        Err("invalid floating-point width".into())
+    }
 }
 
 pub(crate) fn conversion_widths(kind: FloatConversion, from: u8, to: u8) -> Result<(), String> {
-    let int_width = |bits| if matches!(bits, 8 | 16 | 32 | 64 | 128) {
-        Ok(())
-    } else { Err("invalid integer conversion width".to_string()) };
+    let int_width = |bits| {
+        if matches!(bits, 8 | 16 | 32 | 64 | 128) {
+            Ok(())
+        } else {
+            Err("invalid integer conversion width".to_string())
+        }
+    };
     match kind {
-        FloatConversion::IntToFloat { .. } => { int_width(from)?; width(to) }
-        FloatConversion::FloatToInt { .. } => { width(from)?; int_width(to) }
-        FloatConversion::FloatToFloat => { width(from)?; width(to) }
+        FloatConversion::IntToFloat { .. } => {
+            int_width(from)?;
+            width(to)
+        }
+        FloatConversion::FloatToInt { .. } => {
+            width(from)?;
+            int_width(to)
+        }
+        FloatConversion::FloatToFloat => {
+            width(from)?;
+            width(to)
+        }
     }
 }
 
@@ -65,7 +102,11 @@ pub(crate) fn binary(op: FloatBinary, a: u128, b: u128, bits: u8) -> Result<u128
             value.to_bits() as u128
         }};
     }
-    Ok(if bits == 32 { calculate!(f32, u32) } else { calculate!(f64, u64) })
+    Ok(if bits == 32 {
+        calculate!(f32, u32)
+    } else {
+        calculate!(f64, u64)
+    })
 }
 
 pub(crate) fn unary(op: FloatUnary, raw: u128, bits: u8) -> Result<u128, String> {
@@ -92,7 +133,11 @@ pub(crate) fn unary(op: FloatUnary, raw: u128, bits: u8) -> Result<u128, String>
             value.to_bits() as u128
         }};
     }
-    Ok(if bits == 32 { calculate!(f32, u32) } else { calculate!(f64, u64) })
+    Ok(if bits == 32 {
+        calculate!(f32, u32)
+    } else {
+        calculate!(f64, u64)
+    })
 }
 
 pub(crate) fn convert(kind: FloatConversion, raw: u128, from: u8, to: u8) -> Result<u128, String> {
@@ -104,23 +149,44 @@ pub(crate) fn convert(kind: FloatConversion, raw: u128, from: u8, to: u8) -> Res
             let raw = raw & super::mask(from);
             if signed {
                 let x = super::signed(raw, from);
-                if to == 32 { (x as f32).to_bits() as u128 } else { (x as f64).to_bits() as u128 }
-            } else if to == 32 { (raw as f32).to_bits() as u128 } else { (raw as f64).to_bits() as u128 }
+                if to == 32 {
+                    (x as f32).to_bits() as u128
+                } else {
+                    (x as f64).to_bits() as u128
+                }
+            } else if to == 32 {
+                (raw as f32).to_bits() as u128
+            } else {
+                (raw as f64).to_bits() as u128
+            }
         }
         FloatConversion::FloatToInt { signed } => {
             // f32 is represented exactly by f64. Rust's host casts perform
             // truncation and NaN/overflow saturation; clamp to the guest width.
-            let x = if from == 32 { f32::from_bits(raw as u32) as f64 } else { f64::from_bits(raw as u64) };
+            let x = if from == 32 {
+                f32::from_bits(raw as u32) as f64
+            } else {
+                f64::from_bits(raw as u64)
+            };
             if signed {
-                let (low, high) = if to == 128 { (i128::MIN, i128::MAX) }
-                    else { (-(1i128 << (to - 1)), (1i128 << (to - 1)) - 1) };
+                let (low, high) = if to == 128 {
+                    (i128::MIN, i128::MAX)
+                } else {
+                    (-(1i128 << (to - 1)), (1i128 << (to - 1)) - 1)
+                };
                 (x as i128).clamp(low, high) as u128 & super::mask(to)
-            } else { (x as u128).min(super::mask(to)) }
+            } else {
+                (x as u128).min(super::mask(to))
+            }
         }
         FloatConversion::FloatToFloat => {
-            if from == to { raw & super::mask(to) }
-            else if from == 32 { (f32::from_bits(raw as u32) as f64).to_bits() as u128 }
-            else { (f64::from_bits(raw as u64) as f32).to_bits() as u128 }
+            if from == to {
+                raw & super::mask(to)
+            } else if from == 32 {
+                (f32::from_bits(raw as u32) as f64).to_bits() as u128
+            } else {
+                (f64::from_bits(raw as u64) as f32).to_bits() as u128
+            }
         }
     })
 }

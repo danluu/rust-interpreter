@@ -6,7 +6,8 @@ fn fixture(code: Vec<Op>) -> Program {
         target: "aarch64-apple-darwin".into(),
         entry: 0,
         data: vec![0; 16],
-        statics: vec![], thread_locals: vec![],
+        statics: vec![],
+        thread_locals: vec![],
         functions: vec![Function {
             name: "entry".into(),
             frame_size: 8,

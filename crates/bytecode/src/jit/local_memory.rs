@@ -12,7 +12,13 @@ pub(super) struct Value {
 impl Assembler<'_> {
     pub(super) fn local_range(&self, address: Reg, size: usize) -> Option<usize> {
         match self.facts.get(&address) {
-            Some(Fact::Local(offset)) if offset.checked_add(size).is_some_and(|end| end <= self.frame_size) => Some(*offset),
+            Some(Fact::Local(offset))
+                if offset
+                    .checked_add(size)
+                    .is_some_and(|end| end <= self.frame_size) =>
+            {
+                Some(*offset)
+            }
             _ => None,
         }
     }
@@ -22,27 +28,57 @@ impl Assembler<'_> {
     }
 
     pub(super) fn invalidate_local_memory(&mut self, offset: Option<usize>, size: usize) {
-        if size == 0 { return; }
-        let Some(offset) = offset else { self.local_values.clear(); return; };
+        if size == 0 {
+            return;
+        }
+        let Some(offset) = offset else {
+            self.local_values.clear();
+            return;
+        };
         let end = offset.checked_add(size).expect("proved local extent");
-        self.local_values.retain(|value| value.offset >= end || offset >= value.offset + value.size);
+        self.local_values
+            .retain(|value| value.offset >= end || offset >= value.offset + value.size);
     }
 
     pub(super) fn local_value(&self, offset: Option<usize>, size: usize) -> Option<(Reg, Fact)> {
-        if ![1,2,4,8].contains(&size) { return None; }
+        if ![1, 2, 4, 8].contains(&size) {
+            return None;
+        }
         let offset = offset?;
-        let value = self.local_values.iter().find(|value| value.offset == offset && value.size == size)?;
+        let value = self
+            .local_values
+            .iter()
+            .find(|value| value.offset == offset && value.size == size)?;
         // Eviction may discard a dead value without spilling it. Never fall
         // back to reading that register's array slot for a forwarded access.
-        self.facts.get(&value.source).copied().map(|fact| (value.source, fact))
+        self.facts
+            .get(&value.source)
+            .copied()
+            .map(|fact| (value.source, fact))
     }
 
-    pub(super) fn remember_local_memory(&mut self, offset: Option<usize>, size: usize, source: Reg) {
-        if ![1,2,4,8].contains(&size) || !self.facts.contains_key(&source) { return; }
-        let Some(offset) = offset else { return; };
-        self.local_values.retain(|value| value.offset != offset || value.size != size);
-        if self.local_values.len() == MAX_VALUES { self.local_values.remove(0); }
-        self.local_values.push(Value { offset, size, source });
+    pub(super) fn remember_local_memory(
+        &mut self,
+        offset: Option<usize>,
+        size: usize,
+        source: Reg,
+    ) {
+        if ![1, 2, 4, 8].contains(&size) || !self.facts.contains_key(&source) {
+            return;
+        }
+        let Some(offset) = offset else {
+            return;
+        };
+        self.local_values
+            .retain(|value| value.offset != offset || value.size != size);
+        if self.local_values.len() == MAX_VALUES {
+            self.local_values.remove(0);
+        }
+        self.local_values.push(Value {
+            offset,
+            size,
+            source,
+        });
     }
 
     pub(super) fn forward_local_value(&mut self, fact: Fact, size: usize, _kind: &'static str) {
@@ -61,14 +97,39 @@ impl Assembler<'_> {
         // Other effects are conservative, even if currently interpreted. A new
         // opcode requires an explicit review instead of inheriting a wildcard.
         match op {
-            Op::Imm {..} | Op::Local {..} | Op::Load {..} | Op::Store {..} | Op::Copy {..}
-            | Op::Binary {..} | Op::Unary {..} | Op::Cast {..} | Op::Select {..}
-            | Op::Jump {..} | Op::Switch {..} | Op::Assert {..} | Op::Return | Op::Trap {..}
-            | Op::CompareBytes {..} | Op::FloatBinary {..} | Op::FloatUnary {..} | Op::FloatConvert {..} => {},
-            Op::Call {..} | Op::CallIndirect {..} | Op::CallValue {..} | Op::CopyDynamic {..} | Op::FillBytes {..}
-            | Op::Allocate {..} | Op::Deallocate {..} | Op::Reallocate {..} | Op::RandomBytes {..}
-            | Op::CpuFeatureQuery {..} | Op::CAllocate {..} | Op::CDeallocate {..}
-            | Op::CReallocate {..} | Op::CAlignedAllocate {..} | Op::RegisterTlsDestructor {..}
+            Op::Imm { .. }
+            | Op::Local { .. }
+            | Op::Load { .. }
+            | Op::Store { .. }
+            | Op::Copy { .. }
+            | Op::Binary { .. }
+            | Op::Unary { .. }
+            | Op::Cast { .. }
+            | Op::Select { .. }
+            | Op::Jump { .. }
+            | Op::Switch { .. }
+            | Op::Assert { .. }
+            | Op::Return
+            | Op::Trap { .. }
+            | Op::CompareBytes { .. }
+            | Op::FloatBinary { .. }
+            | Op::FloatUnary { .. }
+            | Op::FloatConvert { .. } => {}
+            Op::Call { .. }
+            | Op::CallIndirect { .. }
+            | Op::CallValue { .. }
+            | Op::CopyDynamic { .. }
+            | Op::FillBytes { .. }
+            | Op::Allocate { .. }
+            | Op::Deallocate { .. }
+            | Op::Reallocate { .. }
+            | Op::RandomBytes { .. }
+            | Op::CpuFeatureQuery { .. }
+            | Op::CAllocate { .. }
+            | Op::CDeallocate { .. }
+            | Op::CReallocate { .. }
+            | Op::CAlignedAllocate { .. }
+            | Op::RegisterTlsDestructor { .. }
             | Op::ResetThreadLocals => self.local_values.clear(),
         }
     }
