@@ -147,8 +147,9 @@ fn catalog(program: &Program) -> rust_interp_bytecode::EntryCatalog {
 
 fn profile_command(artifact: &Path, catalog: &Path, output: &Path, engine: &str, name: &str) -> Command {
     let mut command=Command::new(env!("CARGO_BIN_EXE_rust-interp-vm"));
-    command.args(["--engine",engine,"--jit-resumable-calls","--jit-persistent-registers",
-        "--profile-test",name,"--suite-catalog"]).arg(catalog).arg("--profile").arg(output).arg(artifact);
+    command.args(["--engine",engine]);
+    if engine=="jit" {command.args(["--jit-resumable-calls","--jit-persistent-registers"]);}
+    command.args(["--profile-test",name,"--suite-catalog"]).arg(catalog).arg("--profile").arg(output).arg(artifact);
     command
 }
 
