@@ -161,7 +161,7 @@ impl Exported {
 
 pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bool,
               inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool,
-              allocation_trace: bool) -> Result<Exported> {
+              allocation_trace: bool, force_batch: bool) -> Result<Exported> {
     let mut timings = crate::export_timings::Timings::new("lower");
     use crate::function_cache::Mode;
     let cache_mode = crate::function_cache::mode()?;
@@ -193,6 +193,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     {
         return Err("the prototype requires a little-endian 64-bit target".into());
     }
+    if force_batch && (!test_body || demand) { return Err("automatic suites require fully checked test bodies".into()); }
     if requested.is_empty() || requested.len() > 256 {
         return Err("select between 1 and 256 entries".into());
     }
@@ -225,7 +226,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         if selected.contains(&id) {
             return Err(format!("entry {entry:?} selects a function more than once"));
         }
-        if requested.len() > 1 && (!signature.inputs().is_empty() || (!output.is_unit() && !test_result))
+        if (requested.len() > 1 || force_batch) && (!signature.inputs().is_empty() || (!output.is_unit() && !test_result))
         {
             return Err("batch entries must have no arguments and return unit or Result<(), E>".into());
         }
@@ -473,10 +474,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     }
     // Function IDs remain stable through call/leaf/CFG optimization. Keep this
     // identity independently of the synthetic caller's eventual instructions.
-    let selected_entries = if test_body && !demand && entry_ids.len() > 1 {
+    let selected_entries = if test_body && !demand && (entry_ids.len() > 1 || force_batch) {
         requested.iter().cloned().zip(entry_ids.iter().copied()).collect()
     } else { Vec::new() };
-    let entry = if entry_ids.len() == 1 {
+    let entry = if entry_ids.len() == 1 && !force_batch {
         entry_ids[0]
     } else {
         // One machine, with a shared lowered call graph. Each selected test is

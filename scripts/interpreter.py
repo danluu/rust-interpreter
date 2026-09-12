@@ -201,6 +201,8 @@ def main():
     parser.add_argument('--jobs',type=int,default=4,help='Cargo build jobs (1..256)')
     selected=parser.add_mutually_exclusive_group(required=True)
     selected.add_argument('--entry',action='append',help='function to run; repeat for a batch of unit test bodies')
+    selected.add_argument('--test-filter',help='select ordinary nonignored libtest bodies by name substring in one checked compiler invocation')
+    parser.add_argument('--test-exact',action='store_true',help='match --test-filter against the complete test name')
     selected.add_argument('--list-tests',action='store_true',help='list checked built-in test names and attributes without executing tests')
     selected.add_argument('--audit-entries',type=Path,help='JSON list of test body names to check for lowering support, without executing them')
     parser.add_argument('--retain-audit-bodies',action='store_true',help='retain bounded, hashed programs from a lowering audit for separate execution diagnostics')
@@ -241,6 +243,14 @@ def main():
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     auditing=args.audit_entries is not None
     listing=args.list_tests
+    filtered=args.test_filter is not None
+    if args.test_exact and not filtered:parser.error('--test-exact requires --test-filter')
+    if filtered:
+        if (not args.test_body or args.isolated_batch is None or args.arguments or
+                args.retain_audit_bodies or len(args.test_filter.encode())>4096 or
+                any(c in args.test_filter for c in '\x00\r\n')):
+            parser.error('--test-filter requires --test-body, isolated execution, and a pattern of at most 4096 bytes without line breaks')
+        args.entry=[]
     if listing:
         if (not args.test_body or args.arguments or args.engine!='interpreter' or
                 args.instruction_limit is not None or args.allocation_limit is not None or
@@ -253,8 +263,8 @@ def main():
     if (args.isolated_batch is None) != (args.suite_report is None):
         parser.error('--isolated-batch and --suite-report must be supplied together')
     if args.isolated_batch is not None:
-        if auditing or not args.test_body or len(args.entry or []) < 2 or args.arguments:
-            parser.error('--isolated-batch requires at least two --entry test bodies without audit or entry arguments')
+        if auditing or not args.test_body or (not filtered and len(args.entry or []) < 2) or args.arguments:
+            parser.error('--isolated-batch requires --test-filter or at least two --entry test bodies without audit or entry arguments')
         if args.engine != 'jit' or not args.jit_resumable_calls or args.jit_native_calls or args.jit_native_call_stubs:
             parser.error('--isolated-batch requires resumable JIT execution without tree/stub modes')
         if args.suite_report.exists() or args.suite_report.is_symlink() or not args.suite_report.parent.is_dir():
@@ -279,7 +289,7 @@ def main():
     if args.instruction_limit is not None and args.instruction_limit <= 0:
         parser.error('--instruction-limit must be positive')
     maximum=4096 if auditing else 256
-    if not listing and (not 1<=len(args.entry)<=maximum or len(set(args.entry))!=len(args.entry)):
+    if not listing and not filtered and (not 1<=len(args.entry)<=maximum or len(set(args.entry))!=len(args.entry)):
         parser.error(f'select between 1 and {maximum} distinct entries')
     if len(args.entry)>1 and (not args.test_body or [v for v in args.arguments if v!='--']):
         parser.error('multiple entries require --test-body and no function arguments')
@@ -287,6 +297,7 @@ def main():
     stage=time.perf_counter()
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
     if listing:require_export_option(tools,key,'list-tests')
+    if filtered:require_export_option(tools,key,'filtered-tests')
     if args.inline_leaves:require_export_option(tools,key,'inline-leaves')
     if args.trap_unsupported_calls:require_export_option(tools,key,'trap-unsupported-calls')
     if args.run_try_callbacks:require_export_option(tools,key,'run-try-callbacks')
@@ -335,6 +346,8 @@ def main():
     if args.allocation_trace:env['RUST_INTERP_ALLOCATION_TRACE']='1'
     if listing:
         env['RUST_INTERP_LIST_TESTS']='1'
+    elif filtered:
+        env['RUST_INTERP_TEST_FILTER']=json.dumps(dict(pattern=args.test_filter,exact=args.test_exact),separators=(',',':'))
     elif auditing:
         # Snapshot the selection under the invocation lock. Its content-addressed
         # path is tracked by rustc, avoiding argv/environment limits for suites.
@@ -413,6 +426,15 @@ def main():
         timings['launcher_seconds']=time.perf_counter()-started
         if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
         return 0
+    if filtered:
+        from test_discovery import read_selection
+        stage=time.perf_counter()
+        selection_path=Path(str(artifacts[0])+'.selection.json')
+        report,digest=read_selection(selection_path,artifacts[0],args.test_filter,args.test_exact)
+        args.entry=report['selected']
+        timings.update(test_selection_path=str(selection_path),test_selection_sha256=digest,
+            test_selection=dict(filter=report['filter'],discovered=report['count'],selected=args.entry,
+                skipped_ignored=report['skipped_ignored']),test_selection_verify_seconds=time.perf_counter()-stage)
     if args.allocation_trace:
         from allocation_trace import selected_trace
         stage=time.perf_counter()
@@ -450,7 +472,7 @@ def main():
     if args.allocation_limit is not None:vm_command+=['--allocation-limit',str(args.allocation_limit)]
     if args.isolated_batch is not None:
         vm_command+=['--isolated-batch',args.isolated_batch,'--suite-report',str(args.suite_report)]
-        if entry_catalog_supported(tools,key):
+        if filtered or entry_catalog_supported(tools,key):
             catalog=selected_entry_catalog(artifacts[0],args.entry)
             vm_command+=['--suite-catalog',str(catalog)]
             timings['entry_catalog_path']=str(catalog)

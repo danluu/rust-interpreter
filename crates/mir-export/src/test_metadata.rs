@@ -100,3 +100,96 @@ impl<'tcx> Index<'tcx> {
             "ordinary_test":!ignored && !should_panic})
     }
 }
+
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Filter {
+    pub pattern: String,
+    pub exact: bool,
+}
+
+impl Filter {
+    pub fn parse(value: &str) -> Result<Self, String> {
+        if value.len() > 32 * 1024 { return Err("test filter exceeds 32 KiB".into()); }
+        let filter: Self = serde_json::from_str(value).map_err(|e| format!("invalid test filter: {e}"))?;
+        if filter.pattern.len() > 4096 || filter.pattern.chars().any(|c| matches!(c, '\0' | '\r' | '\n')) {
+            return Err("test filter must be at most 4096 bytes without NUL or line breaks".into());
+        }
+        Ok(filter)
+    }
+
+    /// Accept only a listing produced from this invocation's checked context.
+    pub fn select(&self, mut listing: serde_json::Value) -> Result<(Vec<String>, serde_json::Value), String> {
+        let tests = listing["tests"].as_array().ok_or("missing checked test list")?;
+        let mut selected = Vec::new();
+        let mut skipped = Vec::new();
+        let mut unsupported = Vec::new();
+        for test in tests {
+            let name = test["name"].as_str().ok_or("missing checked test name")?;
+            if !(if self.exact { name == self.pattern } else { name.contains(&self.pattern) }) { continue; }
+            if test["ignored"] == true { skipped.push(name.to_owned()); }
+            else if test["should_panic"] == true { unsupported.push(name.to_owned()); }
+            else if test["ordinary_test"] == true { selected.push(name.to_owned()); }
+            else { return Err(format!("unclassified test selected by filter: {name}")); }
+        }
+        if !unsupported.is_empty() {
+            return Err(format!("test filter selects {} unsupported should_panic tests (first: {}); no tests executed",
+                unsupported.len(), unsupported[0]));
+        }
+        if selected.is_empty() {
+            return Err(format!("test filter selects no runnable tests ({} ignored matches); no tests executed", skipped.len()));
+        }
+        if selected.len() > 256 {
+            return Err(format!("test filter selects {} runnable tests, exceeding the 256-entry limit; narrow the filter", selected.len()));
+        }
+        listing["kind"] = serde_json::json!("test-selection");
+        listing["filter"] = serde_json::to_value(self).map_err(|e| e.to_string())?;
+        listing["selected"] = serde_json::json!(selected);
+        listing["skipped_ignored"] = serde_json::json!(skipped);
+        Ok((selected, listing))
+    }
+}
+
+#[cfg(test)]
+mod filter_tests {
+    use super::Filter;
+    use serde_json::json;
+
+    fn listing() -> serde_json::Value {
+        json!({"tests":[
+            {"name":"case", "ignored":false, "should_panic":false, "ordinary_test":true},
+            {"name":"nested::case", "ignored":false, "should_panic":false, "ordinary_test":true},
+            {"name":"nested::ignored", "ignored":true, "should_panic":true, "ordinary_test":false},
+            {"name":"panic", "ignored":false, "should_panic":true, "ordinary_test":false}]})
+    }
+    #[test]
+    fn filter_distinguishes_exact_and_substring_and_skips_ignored_panic() {
+        let filter = Filter { pattern:"case".into(), exact:false };
+        assert_eq!(filter.select(listing()).unwrap().0, ["case", "nested::case"]);
+        let filter = Filter { pattern:"case".into(), exact:true };
+        assert_eq!(filter.select(listing()).unwrap().0, ["case"]);
+        let filter = Filter { pattern:"nested::".into(), exact:false };
+        let (names, report) = filter.select(listing()).unwrap();
+        assert_eq!(names, ["nested::case"]);
+        assert_eq!(report["skipped_ignored"], json!(["nested::ignored"]));
+    }
+    #[test]
+    fn filter_rejects_empty_unsupported_and_oversized_suites_before_execution() {
+        for pattern in ["", "panic", "absent", "nested::ignored"] {
+            assert!(Filter { pattern:pattern.into(), exact:false }.select(listing()).is_err());
+        }
+        let mut large = listing();
+        large["tests"] = json!((0..257).map(|i| json!({"name":format!("case_{i}"),
+            "ignored":false,"should_panic":false,"ordinary_test":true})).collect::<Vec<_>>());
+        assert!(Filter { pattern:"case".into(), exact:false }.select(large).unwrap_err().contains("256-entry"));
+    }
+    #[test]
+    fn filter_configuration_is_bounded_and_explicit() {
+        assert!(Filter::parse(r#"{"pattern":"","exact":false}"#).is_ok());
+        for value in ["{}", r#"{"pattern":"case","exact":1}"#, r#"{"pattern":"case","exact":false,"extra":0}"#,
+                      r#"{"pattern":"line\n","exact":true}"#] {
+            assert!(Filter::parse(value).is_err());
+        }
+        assert!(Filter::parse(&json!({"pattern":"x".repeat(4097),"exact":false}).to_string()).is_err());
+    }
+}

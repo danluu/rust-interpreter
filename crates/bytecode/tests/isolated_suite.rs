@@ -213,3 +213,24 @@ fn bad_catalogs_reject_before_report_creation_or_guest_execution() {
             .validated_entries(&invalid, &bincode::serialize(&invalid).unwrap()).is_err());
     }
 }
+
+#[test]
+fn single_entry_catalog_executes_only_its_selected_body() {
+    let files = Files::new(); let program = fixture(true); let artifact = files.program(&program);
+    for selected in [0, 1] {
+        let mut single = catalog(&program);
+        single.entries = vec![single.entries[selected].clone()];
+        let path = files.0.join(format!("single-{selected}.json"));
+        std::fs::write(&path, serde_json::to_vec(&single).unwrap()).unwrap();
+        for mode in ["fresh", "prepared"] {
+            let report = files.0.join(format!("single-{selected}-{mode}.json"));
+            let run = command(&artifact, mode, &report, &["--suite-catalog", path.to_str().unwrap()]);
+            assert_eq!(run.status.success(), selected == 1, "{}", String::from_utf8_lossy(&run.stderr));
+            let report: Value = serde_json::from_slice(&std::fs::read(report).unwrap()).unwrap();
+            assert_eq!(report["tests"].as_array().unwrap().len(), 1);
+            assert_eq!(report["tests"][0]["name"], ["first", "second"][selected]);
+            assert_eq!(report["passed"], usize::from(selected == 1));
+            assert_eq!(report["failed"], usize::from(selected == 0));
+        }
+    }
+}

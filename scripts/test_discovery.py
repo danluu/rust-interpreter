@@ -3,12 +3,17 @@ import hashlib
 import json
 
 
-def read_listing(path):
+def _read(path):
     if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 8*1024*1024:
         raise RuntimeError('missing or oversized test discovery report')
     payload=path.read_bytes()
+    try:report=json.loads(payload)
+    except ValueError as error:raise RuntimeError("invalid test metadata JSON") from error
+    return report,hashlib.sha256(payload).hexdigest()
+
+
+def validate_listing(report):
     try:
-        report=json.loads(payload)
         tests=report['tests']
         if (report['kind']!='test-discovery' or report['schema_version']!=1 or
                 report['strict_frontend'] is not True or report['executed'] is not False or
@@ -30,4 +35,32 @@ def read_listing(path):
             raise ValueError('test names are unsorted or repeated')
     except (ValueError,KeyError,TypeError,AttributeError) as error:
         raise RuntimeError('Cargo selected an invalid test discovery report: '+str(error)) from error
-    return report,hashlib.sha256(payload).hexdigest()
+    return report
+
+
+def read_listing(path):
+    report,digest=_read(path)
+    return validate_listing(report),digest
+
+
+def read_selection(path,artifact,pattern,exact):
+    report,digest=_read(path)
+    try:
+        if (not isinstance(report,dict) or report.get('kind')!='test-selection' or
+                report.get('filter')!={'pattern':pattern,'exact':exact} or
+                type(report['filter']['exact']) is not bool):
+            raise ValueError('filter configuration differs')
+        validate_listing(dict(report,kind='test-discovery'))
+        matches=[t for t in report['tests'] if (t['name']==pattern if exact else pattern in t['name'])]
+        runnable=[t for t in matches if not t['ignored']]
+        selected=[t['name'] for t in runnable]
+        skipped=[t['name'] for t in matches if t['ignored']]
+        if (not 1<=len(selected)<=256 or any(not t['ordinary_test'] for t in runnable) or
+                report.get('selected')!=selected or report.get('skipped_ignored')!=skipped):
+            raise ValueError('selected tests differ or require unsupported harness semantics')
+        if (artifact.is_symlink() or not artifact.is_file() or not 0<artifact.stat().st_size<=64*1024*1024 or
+                report.get('artifact_sha256')!=hashlib.sha256(artifact.read_bytes()).hexdigest()):
+            raise ValueError('selected bytecode digest differs')
+    except (ValueError,KeyError,TypeError,AttributeError) as error:
+        raise RuntimeError('Cargo selected invalid filtered test metadata: '+str(error)) from error
+    return report,digest

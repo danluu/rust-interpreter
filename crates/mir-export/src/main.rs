@@ -36,6 +36,7 @@ struct Export {
     demand_cache: bool,
     audit_selection: Option<PathBuf>,
     list_tests: bool,
+    test_filter: Option<test_metadata::Filter>,
     retain_audit_bodies: bool,
     test_body: bool,
     inline_leaves: bool,
@@ -88,8 +89,16 @@ impl Export {
             }
             return Compilation::Continue;
         }
+        let mut selection = self.test_filter.as_ref().map(|filter| {
+            let listing = test_metadata::Index::new(tcx).list()
+                .unwrap_or_else(|error| tcx.dcx().fatal(format!("cannot select tests: {error}")));
+            let (entries, report) = filter.select(listing)
+                .unwrap_or_else(|error| tcx.dcx().fatal(error));
+            self.entries = entries;
+            report
+        });
         match lower::export(tcx, &self.entries, self.demand, self.test_body, self.inline_leaves,
-                            self.trap_unsupported_calls, self.run_try_callbacks, self.allocation_trace).and_then(|mut exported| {
+                            self.trap_unsupported_calls, self.run_try_callbacks, self.allocation_trace, self.test_filter.is_some()).and_then(|mut exported| {
             timings.checkpoint("lower_graph");
             let program = &exported.program;
             rust_interp_bytecode::validate(&program)?;
@@ -127,6 +136,14 @@ impl Export {
                     ".rbc.entries.json", Path::new(&output))?;
             }
             timings.checkpoint("entry_catalog_publication");
+            if let Some(report) = &mut selection {
+                report["artifact_sha256"] = serde_json::json!(artifact_sha256.as_ref().ok_or("missing selection digest")?);
+                let bytes = serde_json::to_vec(report).map_err(|e| e.to_string())?;
+                if bytes.len() > 8 * 1024 * 1024 { return Err("test selection report exceeds 8 MiB".into()); }
+                let mut output = self.output.as_os_str().to_owned(); output.push(".selection.json");
+                self.publish_to(tcx, &bytes, ".rbc.selection.json", Path::new(&output))?;
+            }
+            timings.checkpoint("test_selection_publication");
             if self.trap_unsupported_calls {
                 timings.checkpoint("call_report_setup");
                 let report = serde_json::json!({"kind":"unavailable-calls","schema_version":1,
@@ -173,7 +190,7 @@ impl Callbacks for Export {
             // execution graph changes, even if its Rust source is unchanged.
             // Library dependencies delegated to ordinary rustc do not record
             // these inputs, so their checked artifacts can be shared.
-            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_LIST_TESTS", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES", "RUST_INTERP_BINDING_REPLAY", "RUST_INTERP_FUNCTION_CACHE"] {
+            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_LIST_TESTS", "RUST_INTERP_TEST_FILTER", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_FUNCTION_COSTS", "RUST_INTERP_FUNCTION_DEPENDENCIES", "RUST_INTERP_BINDING_REPLAY", "RUST_INTERP_FUNCTION_CACHE"] {
                 sess.env_depinfo.borrow_mut().insert((
                     rustc_span::Symbol::intern(key),
                     std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
@@ -247,7 +264,7 @@ fn main() {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests"]}));
         return;
     }
     let environment = wrapper_route::Environment::read();
@@ -271,12 +288,21 @@ fn main() {
         Some(value) if value == "1" => true,
         Some(_) => { eprintln!("RUST_INTERP_LIST_TESTS must be 1 when set"); std::process::exit(2); }
     };
+    let test_filter = std::env::var_os("RUST_INTERP_TEST_FILTER").map(|value| {
+        value.to_str().ok_or("test filter must be UTF-8".into()).and_then(test_metadata::Filter::parse)
+            .unwrap_or_else(|error: String| { eprintln!("{error}"); std::process::exit(2); })
+    });
+    if test_filter.is_some() && (list_tests || !wants_test || audit_selection.is_some() ||
+        std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some()) {
+        eprintln!("test filtering requires a test target without discovery, execution or audit entries");
+        std::process::exit(2);
+    }
     if list_tests && (!wants_test || audit_selection.is_some() ||
         std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some()) {
         eprintln!("test discovery requires a test target without execution or audit entries");
         std::process::exit(2);
     }
-    let entries = if list_tests { vec![] } else if let Some(path) = &audit_selection {
+    let entries = if list_tests || test_filter.is_some() { vec![] } else if let Some(path) = &audit_selection {
         if std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some() {
             eprintln!("audit selection cannot be combined with execution entries");
             std::process::exit(2);
@@ -418,6 +444,10 @@ fn main() {
         eprintln!("test discovery requires strict checking without execution-graph options");
         std::process::exit(2);
     }
+    if test_filter.is_some() && demand {
+        eprintln!("test filtering requires ordinary strict frontend checking");
+        std::process::exit(2);
+    }
     if audit_selection.is_some() && demand {
         eprintln!("lowering audits require ordinary strict frontend checking");
         std::process::exit(2);
@@ -482,6 +512,7 @@ fn main() {
         demand_cache,
         audit_selection,
         list_tests,
+        test_filter,
         retain_audit_bodies,
         test_body: wants_test,
         inline_leaves,

@@ -53,7 +53,7 @@ impl EntryCatalog {
                 .artifact_sha256
                 .bytes()
                 .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
-            || !(2..=256).contains(&self.entries.len())
+            || !(1..=256).contains(&self.entries.len())
         {
             return Err("entry catalog header differs from checked bytecode".into());
         }

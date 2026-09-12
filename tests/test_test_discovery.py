@@ -51,5 +51,54 @@ class TestDiscoveryControls(unittest.TestCase):
                 interpreter.main()
             self.assertEqual(error.exception.code,2);tools.assert_not_called()
 
+class FilteredSelectionControls(unittest.TestCase):
+    def test_filtered_selection_binds_exact_names_skips_and_bytecode(self):
+        import hashlib
+        from test_discovery import read_selection
+        with tempfile.TemporaryDirectory() as directory:
+            artifact=Path(directory)/'program.rbc';artifact.write_bytes(b'checked fixture')
+            path=Path(str(artifact)+'.selection.json')
+            tests=[entry('case'),entry('nested::case'),entry('nested::ignored',ignored=True,should_panic=True)]
+            for pattern,exact,names,skipped in [('case',False,['case','nested::case'],[]),
+                    ('case',True,['case'],[]),('nested::',False,['nested::case'],['nested::ignored'])]:
+                selection=dict(report(tests),kind='test-selection',filter=dict(pattern=pattern,exact=exact),
+                    selected=names,skipped_ignored=skipped,artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest())
+                path.write_text(json.dumps(selection))
+                actual,digest=read_selection(path,artifact,pattern,exact)
+                self.assertEqual(actual,selection);self.assertEqual(len(digest),64)
+
+    def test_stale_filter_unsupported_semantics_and_changed_artifacts_are_rejected(self):
+        import hashlib
+        from test_discovery import read_selection
+        with tempfile.TemporaryDirectory() as directory:
+            artifact=Path(directory)/'program.rbc';artifact.write_bytes(b'checked fixture')
+            path=Path(str(artifact)+'.selection.json')
+            valid=dict(report([entry('case'),entry('ignored',ignored=True)]),kind='test-selection',
+                filter=dict(pattern='',exact=False),selected=['case'],skipped_ignored=['ignored'],
+                artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest())
+            bad=[dict(valid,selected=[]),dict(valid,selected=['case','ignored']),dict(valid,skipped_ignored=[]),
+                 dict(valid,artifact_sha256='0'*64),dict(valid,filter=dict(pattern='case',exact=False)),
+                 dict(valid,filter=dict(pattern='',exact=0)),dict(valid,executed=True)]
+            panic=copy.deepcopy(valid);panic['tests'][0]=entry('case',should_panic=True);bad.append(panic)
+            empty=dict(valid,tests=[],count=0,selected=[],skipped_ignored=[]);bad.append(empty)
+            large=dict(valid,tests=[entry(f'case_{i:03}') for i in range(257)],count=257,
+                       selected=[f'case_{i:03}' for i in range(257)],skipped_ignored=[]);bad.append(large)
+            for value in bad:
+                path.write_text(json.dumps(value))
+                with self.subTest(value=str(value)[:150]),self.assertRaises(RuntimeError):read_selection(path,artifact,'',False)
+            path.write_text(json.dumps(valid));artifact.write_bytes(b'changed fixture')
+            with self.assertRaises(RuntimeError):read_selection(path,artifact,'',False)
+
+    def test_filter_requires_isolated_test_mode_and_bounded_pattern_before_tools(self):
+        invalid=[['--test-filter','case'],['--test-filter','case','--test-body'],
+                 ['--entry','case','--test-exact'],['--list-tests','--test-body','--test-exact'],
+                 ['--test-filter','line\n','--test-body','--isolated-batch','prepared','--suite-report','unused.json'],
+                 ['--test-filter','x'*4097,'--test-body','--isolated-batch','prepared','--suite-report','unused.json']]
+        for extra in invalid:
+            with self.subTest(extra=str(extra)[:120]),patch.object(sys,'argv',['interpreter.py','--package','fixture',*extra]), \
+                    patch.object(interpreter,'checked_tools') as tools,contextlib.redirect_stderr(io.StringIO()),self.assertRaises(SystemExit) as error:
+                interpreter.main()
+            self.assertEqual(error.exception.code,2);tools.assert_not_called()
+
 
 if __name__=='__main__':unittest.main()
