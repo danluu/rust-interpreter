@@ -60,9 +60,16 @@ fn distinct_selected_tests_share_only_prepared_code_and_report_each_outcome() {
         assert_eq!(report["tests"][1]["jit_compiled_functions"], if mode == "fresh" {2} else {3});
         reports.push(report);
     }
-    for index in 0..2 { for field in ["instructions", "peak_guest_memory", "jit_instructions"] {
+    for index in 0..2 { for field in ["instructions", "peak_guest_memory"] {
         assert_eq!(reports[0]["tests"][index][field], reports[1]["tests"][index][field]);
     } }
+    // A callee compiled by the preceding test lets a later Call enter native
+    // code immediately. Backend coverage may increase; logical guest steps
+    // and memory must still be identical to fresh execution.
+    for index in 0..2 {
+        assert!(reports[1]["tests"][index]["jit_instructions"].as_u64().unwrap()
+            >= reports[0]["tests"][index]["jit_instructions"].as_u64().unwrap());
+    }
 }
 
 #[test]
