@@ -65,6 +65,10 @@ fn later_callers_keep_edges_to_original_nonleaf_functions() {
         caller.code.splice(3..3, [Op::Local { dst: 0, offset: 0 },
                                  Op::Local { dst: 1, offset: 32 }]);
     }
+    // Three 12-operation expansions must fit the original program's 100%
+    // growth bound; preserve the fixture's otherwise unused-register padding.
+    let end = p.functions[0].code.len() - 1;
+    p.functions[0].code.splice(end..end, (0..4).map(|_| Op::Imm { dst: 3, value: 0 }));
     p.functions.push(later);
     p.entry = 2;
     let original_leaf = bincode::serialize(&p.functions[1]).unwrap();
