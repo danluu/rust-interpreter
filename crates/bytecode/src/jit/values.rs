@@ -35,9 +35,16 @@ impl Allocation {
 }
 
 pub(super) fn analyze(f: &Function) -> Option<Allocation> {
-    analyze_with_work(f, MAX_WORK)
+    analyze_with_result(f, None)
 }
+pub(super) fn analyze_with_result(f: &Function, result: Option<Reg>) -> Option<Allocation> {
+    analyze_with_result_and_work(f, result, MAX_WORK)
+}
+#[cfg(test)]
 fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
+    analyze_with_result_and_work(f, None, max_work)
+}
+fn analyze_with_result_and_work(f: &Function, result: Option<Reg>, max_work: usize) -> Option<Allocation> {
     let n = f.code.len();
     if n == 0 || n > MAX_PCS || f.registers > MAX_REGISTERS { return None; }
     let stride = f.registers.div_ceil(64);
@@ -77,6 +84,13 @@ fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
             uses[pc].push(r); operands += 1;
             frequency[r as usize] += 1;
         }, |r| { defs[pc].push(r); });
+        if matches!(op, Op::Return) {
+            if let Some(r) = result {
+                if r as usize >= f.registers || operands >= MAX_OPERANDS { return None; }
+                uses[pc].push(r); operands += 1;
+                frequency[r as usize] += 1;
+            }
+        }
         if !valid || defs[pc].iter().any(|&r| r as usize >= f.registers) { return None; }
     }
     // All blocks participate, including currently unreachable code. This is

@@ -297,6 +297,7 @@ pub(crate) struct Jit<'a> {
     // including on platforms whose placeholder Code type contains no pointer.
     _thread_bound: std::marker::PhantomData<std::rc::Rc<()>>,
     program: &'a Program,
+    scalar_abi: Option<&'a [crate::scalar_abi::FunctionAbi]>,
     profiled: bool,
     uses_heap: bool,
     prepared: Vec<bool>,
@@ -336,7 +337,7 @@ impl<'a> Jit<'a> {
             matches!(op, Op::Allocate { .. } | Op::Deallocate { .. } | Op::Reallocate { .. }
                 | Op::CAllocate { .. } | Op::CReallocate { .. } | Op::CAlignedAllocate { .. })
         });
-        Ok(Self { _thread_bound: std::marker::PhantomData, program, profiled, uses_heap, capacity, code: None,
+        Ok(Self { _thread_bound: std::marker::PhantomData, program, scalar_abi: None, profiled, uses_heap, capacity, code: None,
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
@@ -368,7 +369,8 @@ impl<'a> Jit<'a> {
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
         let remaining = (self.capacity - self.bytes) / 4;
-        let staged = self.emit_function(&self.program.functions[id], remaining);
+        let staged = self.emit_function_with_abi(&self.program.functions[id], remaining,
+            self.scalar_abi.map(|table| &table[id]));
         self.finish_preparation(id, staged)
     }
 
@@ -423,7 +425,13 @@ impl<'a> Jit<'a> {
         Ok(true)
     }
 
+    #[cfg(test)]
     fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        self.emit_function_with_abi(f, word_budget, None)
+    }
+
+    fn emit_function_with_abi(&self, f: &'a Function, word_budget: usize,
+        abi: Option<&crate::scalar_abi::FunctionAbi>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         let resumable = self.resumable.is_some();
         if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) { return Ok(None); }
         let mut words = vec![];
@@ -431,8 +439,9 @@ impl<'a> Jit<'a> {
         let mut local_forwarding = vec![];
         let mut assertions = vec![];
         let mut operations = 0;
-        let reads = read_registers(f);
-        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
+        let result = abi.and_then(|a| a.result);
+        let reads = read_registers_with_result(f, result);
+        let values = self.persistent_registers.then(|| values::analyze_with_result(f, result)).flatten();
         let fills = local_fills(f);
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
             || (resumable && transfers::supported(&f.code[pc]));
@@ -572,9 +581,9 @@ impl<'a> Jit<'a> {
                 operations += pc - start;
             }
             if pc == start {
-                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
+                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::CallValue { .. } | Op::Return) {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref())?;
+                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), result)?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
                     resumes[pc] = Some(words.len() + resume);
                     internal_entries[pc] = Some(words.len() + internal);
@@ -780,6 +789,9 @@ mod link_tests {
 }
 
 fn read_registers(f: &Function) -> Vec<Option<(usize, usize)>> {
+    read_registers_with_result(f, None)
+}
+fn read_registers_with_result(f: &Function, result: Option<Reg>) -> Vec<Option<(usize, usize)>> {
     let mut used: Vec<Option<(usize, usize)>> = vec![None; f.registers];
     for (pc, op) in f.code.iter().enumerate() {
         let mut mark = |r: Reg| {
@@ -787,6 +799,8 @@ fn read_registers(f: &Function) -> Vec<Option<(usize, usize)>> {
             range.1 = pc;
         };
         crate::registers::visit_registers(op, &mut mark, |_| {});
+        // Return's value comes from metadata, so it is an implicit operand.
+        if matches!(op, Op::Return) { if let Some(r) = result { mark(r); } }
     }
     used
 }

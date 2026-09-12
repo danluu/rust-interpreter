@@ -554,7 +554,7 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 base: 16,
                                 register_base: 0,
                                 return_address: 0,
-                                tls_callback: false,
+                                return_value: false, tls_callback: false,
                             };
                             let canary = Frame {
                                 function: 987,
@@ -562,7 +562,7 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 base: 123,
                                 register_base: 789,
                                 return_address: 321,
-                                tls_callback: true,
+                                return_value: false, tls_callback: true,
                             };
                             let mut frames = [root, Frame::default(), Frame::default(), canary];
                             let mut hits: Vec<_> = p

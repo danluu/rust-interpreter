@@ -33,12 +33,12 @@ pub fn report(tcx: TyCtxt<'_>, entries: &[String], retain: Option<&Path>, inline
         // candidate cannot leave partial functions in the next one's graph.
         let result = super::lower::export(tcx, std::slice::from_ref(entry), false, true, inline_leaves, trap_unsupported_calls, run_try_callbacks, false)
             .and_then(|exported| {
-                rust_interp_bytecode::validate(&exported.program)?;
+                exported.artifact.validate()?;
                 Ok(exported)
             });
         let mut record = match result {
             Ok(exported) => {
-                let program = &exported.program;
+                let program = &exported.artifact.program;
                 lowered += 1;
                 let mut record = serde_json::json!({"entry":entry,"status":"lowered",
                     "functions":program.functions.len(),
@@ -51,7 +51,7 @@ pub fn report(tcx: TyCtxt<'_>, entries: &[String], retain: Option<&Path>, inline
                 }
                 if let Some(pack) = &mut pack {
                     let storing = Instant::now();
-                    record["artifact"] = pack.store(index, &program)?;
+                    record["artifact"] = pack.store(index, &exported.artifact)?;
                     retention_seconds += storing.elapsed().as_secs_f64();
                 }
                 record
@@ -68,7 +68,8 @@ pub fn report(tcx: TyCtxt<'_>, entries: &[String], retain: Option<&Path>, inline
         }
     }
     let mut report = serde_json::json!({"kind":"lowering-audit","schema_version":1,
-        "bytecode_version":rust_interp_bytecode::VERSION,
+        "bytecode_version":if super::lower::scalar_values::enabled(){6}else{5},
+        "scalar_values":super::lower::scalar_values::enabled(),
         "target":tcx.sess.opts.target_triple.to_string(),
         "strict_frontend":true,"executed":false,"requested":entries.len(),
         "lowered":lowered,"blocked":entries.len()-lowered,

@@ -14,6 +14,10 @@ fn rewrite_reads(op:&mut Op,mut map:impl FnMut(&mut Reg)) {
         Op::Select{condition,yes,no,..}=>{map(condition);map(yes);map(no);},
         Op::Switch{value,..}|Op::Assert{value,..}=>map(value),
         Op::Call{args,destination,..}=>{map(destination);for r in args {map(r);}},
+        Op::CallValue{args,destination,..}=>{
+            if let rust_interp_bytecode::CallDestination::Address(r)=destination {map(r);}
+            for arg in args {match arg {rust_interp_bytecode::CallArgument::Address(r)|rust_interp_bytecode::CallArgument::Value(r)=>map(r)}}
+        },
         Op::CallIndirect{callee,args,destination,..}=>{map(callee);map(destination);for r in args {map(r);}},
         Op::CompareBytes{left,right,size,..}=>{map(left);map(right);map(size);},
         Op::Allocate{size,align,..}=>{map(size);map(align);},

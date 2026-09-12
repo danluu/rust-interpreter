@@ -2,7 +2,7 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
-use rust_interp_bytecode::Program;
+use rust_interp_bytecode::scalar_abi::Artifact;
 
 const MAX_BODY_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_PACK_BYTES: u64 = 1024 * 1024 * 1024;
@@ -26,15 +26,16 @@ impl Pack {
         Ok(Self { directory, bytes: 0, files: 0 })
     }
 
-    pub fn store(&mut self, index: usize, program: &Program) -> Result<serde_json::Value, String> {
+    pub fn store(&mut self, index: usize, artifact: &Artifact) -> Result<serde_json::Value, String> {
         if index >= 4096 || self.files >= 4096 { return Err("audit body count exceeds 4096".into()); }
         // The caller has validated the program. Bound serialization before
         // allocating its buffer; loading a body uses the VM's existing limits.
-        let expected = bincode::serialized_size(program).map_err(|e| e.to_string())?;
+        let expected = if artifact.program.version==6 {bincode::serialized_size(artifact)}
+            else {bincode::serialized_size(&artifact.program)}.map_err(|e|e.to_string())?;
         if expected == 0 || expected > MAX_BODY_BYTES { return Err("audit body exceeds 64 MiB".into()); }
         let total = self.bytes.checked_add(expected).ok_or("audit pack size overflow")?;
         if total > MAX_PACK_BYTES { return Err("audit body pack exceeds 1 GiB; use a smaller selection".into()); }
-        let bytes = bincode::serialize(program).map_err(|e| e.to_string())?;
+        let bytes = artifact.encode()?;
         if bytes.len() as u64 != expected { return Err("audit serialized size mismatch".into()); }
         let digest = format!("{:x}", Sha256::digest(&bytes));
         let filename = format!("{index:04}.rbc");

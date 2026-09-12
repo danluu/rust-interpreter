@@ -6,6 +6,9 @@ extern crate self as rust_interp_bytecode;
 mod heap;
 mod linear_memory;
 mod frames;
+pub mod scalar_abi;
+mod scalar_calls;
+pub use scalar_calls::{CallArgument, CallDestination};
 mod native_execution;
 mod native_continuation;
 mod jit;
@@ -242,6 +245,8 @@ pub enum Op {
     CReallocate { dst: Reg, pointer: Reg, size: Reg, errno: Reg },
     CAlignedAllocate { dst: Reg, output: Reg, align: Reg, size: Reg },
     RegisterTlsDestructor { callback: Reg, argument: Reg },
+    /// Version 6 only. Explicit values coexist with address/aggregate operands.
+    CallValue { function: usize, args: Vec<CallArgument>, destination: CallDestination },
 }
 
 fn mask(bits: u8) -> u128 {
@@ -646,12 +651,22 @@ fn execute_observed<const PROFILE: bool>(
 }
 
 fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool, const CALL_STUBS: bool, const RESUMABLE: bool>(
+    program: &Program, arguments: &[u128], limits: Limits, profile: Option<&mut ExecutionProfile>,
+) -> Result<Execution, String> {
+    execute_core::<PROFILE, USE_JIT, NATIVE_CALLS, CALL_STUBS, RESUMABLE, false>(program, arguments, limits, profile, &[])
+}
+
+fn execute_core<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bool, const CALL_STUBS: bool, const RESUMABLE: bool, const SCALAR: bool>(
     program: &Program,
     arguments: &[u128],
     limits: Limits,
     mut profile: Option<&mut ExecutionProfile>,
+    scalar_abi: &[scalar_abi::FunctionAbi],
 ) -> Result<Execution, String> {
-    validate(program)?;
+    // Scalar callers are private Artifact methods that already validated the
+    // entire program and ABI. Legacy callers keep their original validation.
+    if !SCALAR { validate(program)?; }
+    debug_assert!(!SCALAR || (program.version == scalar_abi::SCALAR_VERSION && scalar_abi.len() == program.functions.len()));
     if limits.allocations > MAX_ALLOCATION_LIMIT {
         return Err(format!("live allocation limit exceeds supported maximum of {MAX_ALLOCATION_LIMIT}"));
     }
@@ -667,7 +682,10 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
             jit::Jit::new(program, PROFILE, limits.jit_code_bytes)?
         })
     } else { None };
-    if let Some(jit) = &mut jit { jit.compile_nanos = started.elapsed().as_nanos(); }
+    if let Some(jit) = &mut jit {
+        if SCALAR { jit.set_scalar_abi(scalar_abi); }
+        jit.compile_nanos = started.elapsed().as_nanos();
+    }
     let mut jit_instructions = 0;
     let mut jit_entries = 0;
     let mut resumable_calls = 0;
@@ -679,7 +697,8 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     if limits.frames == 0 {
         return Err("interpreter call-depth limit exceeded".into());
     }
-    if program.version & !PARTIAL_VALIDATION != VERSION {
+    let expected_version = if SCALAR { scalar_abi::SCALAR_VERSION } else { VERSION };
+    if program.version & !PARTIAL_VALIDATION != expected_version {
         return Err("bytecode version mismatch".into());
     }
     let entry = program
@@ -712,29 +731,42 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
     {
         return Err("interpreter working-memory limit exceeded".into());
     }
-    for (slot, value) in entry.args.iter().zip(arguments) {
+    for (index, (slot, value)) in entry.args.iter().zip(arguments).enumerate() {
         if slot.size < 16 && *value >> (slot.size * 8) != 0 {
             return Err("entry argument exceeds its integer width".into());
         }
-        memory.store(base + slot.offset, slot.size, *value)?;
+        if !SCALAR || scalar_abi[program.entry].arguments[index].is_none() {
+            memory.store(base + slot.offset, slot.size, *value)?;
+        }
     }
     // One reusable stack avoids allocating/freeing a register vector at every
     // guest call. Registers remain separate from addressable guest memory.
     // Host elements always stay initialized. On reuse, functions proven to
     // overwrite every register before reading it need no repeated clearing.
     // Other functions retain the bytecode's initial-zero semantics.
-    let needs_register_zeroes: Vec<_> = if RESUMABLE {
+    let needs_register_zeroes: Vec<_> = if SCALAR {
+        program.functions.iter().zip(scalar_abi).map(|(f, abi)| {
+            let mut initialized: Vec<_> = abi.arguments.iter().filter_map(|r| *r).collect();
+            initialized.extend(abi.result);
+            registers::needs_initial_zeroes_with_inputs(f, &initialized)
+        }).collect()
+    } else if RESUMABLE {
         jit.as_ref().unwrap().resumable_register_zeroes().to_vec()
     } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() };
     let local_call_arguments = calls::local_arguments(program);
     let mut registers = vec![0; entry.registers];
+    if SCALAR {
+        for (register, value) in scalar_abi[program.entry].arguments.iter().zip(arguments) {
+            if let Some(register) = register { registers[*register as usize] = *value; }
+        }
+    }
     let mut frames = Frames::from(Frame {
         function: program.entry,
         pc: 0,
         base,
         register_base: 0,
         return_address: 0,
-        tls_callback: false,
+        return_value: false, tls_callback: false,
     });
     prepare_jit::<PROFILE>(&mut jit, program.entry, &mut profile)?;
     let mut steps = 0;
@@ -835,7 +867,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                 }
                 tls.completion = Some(tls::Completion::Reset);
                 tls.advance(program, &mut memory, &mut frames, &mut registers,
-                    &mut register_bytes, &needs_register_zeroes, &limits)?;
+                    &mut register_bytes, &needs_register_zeroes, &limits, if SCALAR { Some(scalar_abi) } else { None })?;
                 if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
             }
             Op::RegisterTlsDestructor { callback, argument } => {
@@ -1035,14 +1067,15 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
             Op::Trap { message } => {
                 return Err(format!("guest trap: {message} in {}", function.name));
             }
-            Op::Call {
-                args, destination, ..
-            }
-            | Op::CallIndirect {
-                args, destination, ..
-            } => {
+            Op::Call { .. } | Op::CallIndirect { .. } | Op::CallValue { .. } => {
+                let (args, destination) = match instruction {
+                    Op::Call { args, destination, .. } | Op::CallIndirect { args, destination, .. } =>
+                        (scalar_calls::Arguments::Addresses(args), CallDestination::Address(*destination)),
+                    Op::CallValue { args, destination, .. } => (scalar_calls::Arguments::Mixed(args), *destination),
+                    _ => unreachable!(),
+                };
                 let callee_id = match instruction {
-                    Op::Call { function, .. } => *function,
+                    Op::Call { function, .. } | Op::CallValue { function, .. } => *function,
                     Op::CallIndirect {
                         callee,
                         arg_sizes,
@@ -1076,7 +1109,10 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     _ => unreachable!(),
                 };
                 let callee = &program.functions[callee_id];
-                let return_address = r[*destination as usize] as usize;
+                let return_address = match destination {
+                    CallDestination::Address(reg) => r[reg as usize] as usize,
+                    CallDestination::Value(reg) => reg as usize,
+                };
                 let base = memory.reserve_frame(callee.frame_size, callee.frame_align)?;
                 let added = callee
                     .registers
@@ -1091,17 +1127,40 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                 {
                     return Err("interpreter working-memory limit exceeded".into());
                 }
-                if local_call_arguments[frame.function][frame.pc - 1] {
+                if SCALAR {
+                    let caller_register_base = frame.register_base;
+                    let callee_register_base = register_bytes / 16 - callee.registers;
+                    let register_end = register_bytes / 16;
+                    if register_end > registers.len() { registers.resize(register_end, 0); }
+                    if needs_register_zeroes[callee_id] { registers[callee_register_base..register_end].fill(0); }
+                    if let Some(result) = scalar_abi[callee_id].result {
+                        registers[callee_register_base + result as usize] = 0;
+                    }
+                    // The old caller slice is no longer used in this branch;
+                    // resizing backing above cannot invalidate a retained borrow.
+                    for (index, (slot, register)) in callee.args.iter().zip(&scalar_abi[callee_id].arguments).enumerate() {
+                        let operand = args.at(index);
+                        let input = registers[caller_register_base + operand.register() as usize];
+                        match (operand, register) {
+                            (CallArgument::Address(_), Some(reg)) =>
+                                registers[callee_register_base + *reg as usize] = memory.load(input as usize, slot.size)?,
+                            (CallArgument::Value(_), Some(reg)) =>
+                                registers[callee_register_base + *reg as usize] = scalar_abi::truncate(input, slot.size),
+                            (CallArgument::Address(_), None) => memory.copy(input as usize, base + slot.offset, slot.size)?,
+                            (CallArgument::Value(_), None) => memory.store(base + slot.offset, slot.size, scalar_abi::truncate(input, slot.size))?,
+                        }
+                    }
+                } else if local_call_arguments[frame.function][frame.pc - 1] {
                     // Validation and the per-block proof establish that these
                     // sources lie inside the live caller frame. Callee slots
                     // lie inside the frame just reserved above. Keep argument
                     // order even when callee slots overlap.
-                    for (src, slot) in args.iter().zip(&callee.args) {
+                    for (src, slot) in args.addresses().iter().zip(&callee.args) {
                         let source = r[*src as usize] as usize;
                         memory.bytes.copy_within(source..source + slot.size, base + slot.offset);
                     }
                 } else {
-                    for (src, slot) in args.iter().zip(&callee.args) {
+                    for (src, slot) in args.addresses().iter().zip(&callee.args) {
                         memory.copy(r[*src as usize] as usize, base + slot.offset, slot.size)?;
                     }
                 }
@@ -1116,7 +1175,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                 if register_end > registers.len() {
                     registers.resize(register_end, 0);
                 }
-                if needs_register_zeroes[callee_id] {
+                if !SCALAR && needs_register_zeroes[callee_id] {
                     registers[register_base..register_end].fill(0);
                 }
                 if NATIVE_CALLS {
@@ -1140,7 +1199,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                     base,
                     register_base,
                     return_address,
-                    tls_callback: false,
+                    return_value: matches!(destination, CallDestination::Value(_)), tls_callback: false,
                 });
                 prepare_jit::<PROFILE>(&mut jit, callee_id, &mut profile)?;
             }
@@ -1148,15 +1207,18 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                 let result = function.result;
                 let source = frame.base + result.offset;
                 let callback = frame.tls_callback;
+                let scalar_value = if SCALAR {
+                    scalar_abi[frame.function].result.map(|reg| scalar_abi::truncate(r[reg as usize], result.size))
+                } else { None };
                 if frames.len() == 1 && !callback {
-                    let value = memory.load(source, result.size)?;
+                    let value = if let Some(value) = scalar_value { value } else { memory.load(source, result.size)? };
                     if tls.is_empty() { break value; }
                     tls.completion = Some(tls::Completion::Entry(value));
                     let frame = frames.pop().ok_or("missing entry frame")?;
                     register_bytes = 0;
                     memory.bytes.truncate(frame.base);
                     tls.advance(program, &mut memory, &mut frames, &mut registers,
-                        &mut register_bytes, &needs_register_zeroes, &limits)?;
+                        &mut register_bytes, &needs_register_zeroes, &limits, if SCALAR { Some(scalar_abi) } else { None })?;
                     if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
                     continue;
                 }
@@ -1165,11 +1227,18 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
                 // The active prefix, rather than retained length/capacity,
                 // remains subject to the live working-memory budget.
                 register_bytes = frame.register_base * 16;
-                if !callback { memory.copy(source, frame.return_address, result.size)?; }
+                if !callback {
+                    if frame.return_value {
+                        let value = match scalar_value { Some(value) => value, None => memory.load(source, result.size)? };
+                        let caller = frames.last().ok_or("missing value-return caller")?;
+                        registers[caller.register_base + frame.return_address] = value;
+                    } else if let Some(value) = scalar_value { memory.store(frame.return_address, result.size, value)?; }
+                    else { memory.copy(source, frame.return_address, result.size)?; }
+                }
                 memory.bytes.truncate(frame.base);
                 if callback {
                     if let Some(value) = tls.advance(program, &mut memory, &mut frames, &mut registers,
-                        &mut register_bytes, &needs_register_zeroes, &limits)? { break value; }
+                        &mut register_bytes, &needs_register_zeroes, &limits, if SCALAR { Some(scalar_abi) } else { None })? { break value; }
                     if let Some(frame) = frames.last() { prepare_jit::<PROFILE>(&mut jit, frame.function, &mut profile)?; }
                 }
             }
@@ -1216,8 +1285,14 @@ fn prepare_jit<const PROFILE: bool>(jit: &mut Option<jit::Jit<'_>>, function: us
 /// Artifacts are local build products, but malformed files must be errors, not
 /// arbitrary indexing panics or allocations. This is not a hostile-code sandbox.
 pub fn validate(program: &Program) -> Result<(), String> {
-    if program.version & !PARTIAL_VALIDATION != VERSION
-        || program.functions.len() > 100_000
+    if program.version & !PARTIAL_VALIDATION != VERSION {
+        return Err("invalid bytecode header".into());
+    }
+    validate_structure(program)
+}
+
+pub(crate) fn validate_structure(program: &Program) -> Result<(), String> {
+    if program.functions.len() > 100_000
         || program.thread_locals.len() > 100_000
         || program.entry >= program.functions.len()
         || (!program.statics.is_empty() && program.statics.len() < 16)
@@ -1475,6 +1550,8 @@ pub fn validate(program: &Program) -> Result<(), String> {
                         reg(*r)?;
                     }
                 }
+                Op::CallValue { function, args, destination } =>
+                    scalar_calls::validate_call(program, f, *function, args, *destination)?,
                 Op::Return | Op::Trap { .. } => {}
             }
         }

@@ -1,6 +1,8 @@
 use bincode::Options;
 use rust_interp_bytecode::{Engine, Limits, Program, execute_profiled, execute_with_engine};
 use std::io::Write;
+use rust_interp_bytecode::scalar_abi::Artifact;
+enum InputArtifact { Legacy(Program), Scalar(Artifact) }
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
@@ -55,14 +57,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             .ok_or("truncated bytecode header")?
             .try_into()?,
     );
-    if version & !rust_interp_bytecode::PARTIAL_VALIDATION != rust_interp_bytecode::VERSION {
+    if version & !rust_interp_bytecode::PARTIAL_VALIDATION != rust_interp_bytecode::VERSION
+        && version != rust_interp_bytecode::scalar_abi::SCALAR_VERSION {
         return Err("bytecode version mismatch; re-export with the matching engine".into());
     }
-    let program: Program = bincode::DefaultOptions::new()
-        .with_fixint_encoding()
-        .with_limit(64 * 1024 * 1024)
-        .reject_trailing_bytes()
-        .deserialize(&bytes)?;
+    let artifact = if version == rust_interp_bytecode::scalar_abi::SCALAR_VERSION {
+        InputArtifact::Scalar(Artifact::decode(&bytes)?)
+    } else {
+        InputArtifact::Legacy(bincode::DefaultOptions::new()
+            .with_fixint_encoding().with_limit(64 * 1024 * 1024)
+            .reject_trailing_bytes().deserialize(&bytes)?)
+    };
+    let program = match &artifact { InputArtifact::Legacy(p) => p, InputArtifact::Scalar(a) => &a.program };
     if program.version & rust_interp_bytecode::PARTIAL_VALIDATION != 0 {
         eprintln!(
             "rust-interp-vm: PARTIAL validation; unselected bodies may contain compile errors"
@@ -73,13 +79,19 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .collect::<Result<Vec<_>, _>>()?;
     let result = if let Some(path) = profile_path {
         let file = std::fs::OpenOptions::new().write(true).create_new(true).open(path)?;
-        let (result, profile) = execute_profiled(&program, &args, limits, engine)?;
+        let (result, profile) = match &artifact {
+            InputArtifact::Legacy(p) => execute_profiled(p, &args, limits, engine)?,
+            InputArtifact::Scalar(a) => a.execute_profiled(&args, limits, engine)?,
+        };
         let mut writer = std::io::BufWriter::new(file);
         serde_json::to_writer(&mut writer, &profile)?;
         writer.flush()?;
         result
     } else {
-        execute_with_engine(&program, &args, limits, engine)?
+        match &artifact {
+            InputArtifact::Legacy(p) => execute_with_engine(p, &args, limits, engine)?,
+            InputArtifact::Scalar(a) => a.execute_with_engine(&args, limits, engine)?,
+        }
     };
     println!("{}", result.value);
     if std::env::var_os("RUST_INTERP_VM_STATS").is_some() {

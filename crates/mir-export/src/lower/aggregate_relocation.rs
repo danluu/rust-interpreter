@@ -87,7 +87,8 @@ fn apply(f: &mut Function, r: Relocation) {
     f.args=r.args; f.result=r.result; f.frame_size=r.frame_size;
 }
 
-pub(super) fn transform(observations: Vec<Observation>, program: &mut Program) {
+pub(super) fn transform(observations: Vec<Observation>, program: &mut Program,
+    values:&mut crate::lower::scalar_values::Collector)->Result<()> {
     let start=std::time::Instant::now();
     let (mut functions,mut saved,mut capture_nanos)=(0usize,0usize,0u128);
     let mut declines=BTreeMap::<&str,usize>::new();
@@ -112,11 +113,13 @@ pub(super) fn transform(observations: Vec<Observation>, program: &mut Program) {
             *declines.entry("relocation_certificate").or_default()+=1; continue;
         };
         saved+=f.frame_size-r.frame_size; functions+=1;
+        values.relocate(o.id,&o.slots,&slots)?;
         apply(&mut program.functions[o.id],r);
     }
     eprintln!("rust-interp-aggregate-frames: {}",serde_json::json!({"functions":functions,"static_bytes_saved":saved,
         "declines":declines,"finalize_seconds":start.elapsed().as_secs_f64(),"capture_seconds":capture_nanos as f64/1e9,
         "initialization_unchanged":true}));
+    Ok(())
 }
 
 #[cfg(test)]

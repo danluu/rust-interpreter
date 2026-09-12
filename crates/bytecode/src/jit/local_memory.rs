@@ -65,7 +65,7 @@ impl Assembler<'_> {
             | Op::Binary {..} | Op::Unary {..} | Op::Cast {..} | Op::Select {..}
             | Op::Jump {..} | Op::Switch {..} | Op::Assert {..} | Op::Return | Op::Trap {..}
             | Op::CompareBytes {..} | Op::FloatBinary {..} | Op::FloatUnary {..} | Op::FloatConvert {..} => {},
-            Op::Call {..} | Op::CallIndirect {..} | Op::CopyDynamic {..} | Op::FillBytes {..}
+            Op::Call {..} | Op::CallIndirect {..} | Op::CallValue {..} | Op::CopyDynamic {..} | Op::FillBytes {..}
             | Op::Allocate {..} | Op::Deallocate {..} | Op::Reallocate {..} | Op::RandomBytes {..}
             | Op::CpuFeatureQuery {..} | Op::CAllocate {..} | Op::CDeallocate {..}
             | Op::CReallocate {..} | Op::CAlignedAllocate {..} | Op::RegisterTlsDestructor {..}

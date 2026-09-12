@@ -40,6 +40,9 @@ pub(crate) fn local_arguments(program: &Program) -> Vec<Vec<bool>> {
             // Copy destinations and call destinations are memory addresses, not
             // register writes; calls cannot access their caller's register arena.
             match op {
+                Op::CallValue { destination, .. } => {
+                    if let crate::CallDestination::Value(dst) = destination { locals[*dst as usize].0 = 0; }
+                },
                 Op::Local { dst, offset } => locals[*dst as usize] = (epoch, *offset),
                 Op::Binary { dst, overflow, .. } => {
                     locals[*dst as usize].0 = 0;

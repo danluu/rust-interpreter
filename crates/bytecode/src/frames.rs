@@ -14,8 +14,10 @@ pub(crate) struct Frame {
     pub pc: usize,
     pub base: usize,
     pub register_base: usize,
+    /// Address, or caller register index when return_value is true.
     pub return_address: usize,
     pub tls_callback: bool,
+    pub return_value: bool,
 }
 
 // Keep native host-layout offsets beside the checked VM backing.
@@ -28,6 +30,7 @@ pub(crate) mod layout {
     pub const REGISTER_BASE: usize = std::mem::offset_of!(Frame, register_base);
     pub const RETURN_ADDRESS: usize = std::mem::offset_of!(Frame, return_address);
     pub const TLS_CALLBACK: usize = std::mem::offset_of!(Frame, tls_callback);
+    pub const RETURN_VALUE: usize = std::mem::offset_of!(Frame, return_value);
     pub const SIZE: usize = std::mem::size_of::<Frame>();
     pub const ALIGN: usize = std::mem::align_of::<Frame>();
 
@@ -35,7 +38,7 @@ pub(crate) mod layout {
     const _: () = {
         assert!(FUNCTION == 0 && PC == 8 && BASE == 16);
         assert!(REGISTER_BASE == 24 && RETURN_ADDRESS == 32 && TLS_CALLBACK == 40);
-        assert!(SIZE == 48 && ALIGN == 8);
+        assert!(RETURN_VALUE == 41 && SIZE == 48 && ALIGN == 8);
     };
 }
 
@@ -148,7 +151,7 @@ mod tests {
             base: 32 + 64 * id,
             register_base: 7 * id,
             return_address: 16 + id,
-            tls_callback: callback,
+            return_value: false, tls_callback: callback,
         }
     }
 

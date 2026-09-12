@@ -45,7 +45,7 @@ impl Tls {
     /// transitions, without replaying a consumed Return or Reset instruction.
     pub fn advance(&mut self, program: &Program, memory: &mut Memory,
         frames: &mut Frames, registers: &mut Vec<u128>, register_bytes: &mut usize,
-        needs_zeroes: &[bool], limits: &Limits) -> Result<Option<u128>, String> {
+        needs_zeroes: &[bool], limits: &Limits, scalar_abi: Option<&[crate::scalar_abi::FunctionAbi]>) -> Result<Option<u128>, String> {
         if let Some(callback) = self.callbacks.pop() {
             memory.auxiliary_bytes -= std::mem::size_of::<Callback>();
             if frames.len() >= limits.frames {
@@ -62,9 +62,11 @@ impl Tls {
             let end = *register_bytes / 16;
             if end > registers.len() { registers.resize(end, 0); }
             if needs_zeroes[callback.function] { registers[register_base..end].fill(0); }
-            memory.store(base + function.args[0].offset, 8, callback.argument as u128)?;
+            if let Some(register) = scalar_abi.and_then(|abi| abi[callback.function].arguments[0]) {
+                registers[register_base + register as usize] = callback.argument as u128;
+            } else { memory.store(base + function.args[0].offset, 8, callback.argument as u128)?; }
             frames.push(Frame { function: callback.function, pc: 0, base, register_base,
-                return_address: 0, tls_callback: true });
+                return_address: 0, return_value: false, tls_callback: true });
             return Ok(None);
         }
         match self.completion.take().ok_or("missing guest TLS completion")? {

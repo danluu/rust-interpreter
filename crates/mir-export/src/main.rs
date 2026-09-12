@@ -68,9 +68,8 @@ impl Export {
         }
         match lower::export(tcx, &self.entries, self.demand, self.test_body, self.inline_leaves,
                             self.trap_unsupported_calls, self.run_try_callbacks, self.allocation_trace).and_then(|mut exported| {
-            let program = &exported.program;
-            rust_interp_bytecode::validate(&program)?;
-            let bytes = bincode::serialize(&program).map_err(|e| e.to_string())?;
+            let program = &exported.artifact.program;
+            let bytes = exported.artifact.encode()?;
             // Finish the bounded trace before publishing any successful output.
             let trace = match exported.allocation_trace.take() {
                 Some(trace) => {
@@ -119,7 +118,7 @@ impl Callbacks for Export {
             // execution graph changes, even if its Rust source is unchanged.
             // Library dependencies delegated to ordinary rustc do not record
             // these inputs, so their checked artifacts can be shared.
-            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE"] {
+            for key in ["RUST_INTERP_ENTRY", "RUST_INTERP_ENTRIES", "RUST_INTERP_AUDIT_SELECTION", "RUST_INTERP_RETAIN_AUDIT_BODIES", "RUST_INTERP_EXPORT_TEST", "RUST_INTERP_INLINE_LEAVES", "RUST_INTERP_TRAP_UNSUPPORTED_CALLS", "RUST_INTERP_RUN_TRY_CALLBACKS", "RUST_INTERP_ALLOCATION_TRACE", "RUST_INTERP_SCALAR_VALUES"] {
                 sess.env_depinfo.borrow_mut().insert((
                     rustc_span::Symbol::intern(key),
                     std::env::var(key).ok().as_deref().map(rustc_span::Symbol::intern),
@@ -193,7 +192,7 @@ fn main() {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace"]}));
+            "artifact_versions":[5,6],"export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","scalar-values"]}));
         return;
     }
     let environment = wrapper_route::Environment::read();

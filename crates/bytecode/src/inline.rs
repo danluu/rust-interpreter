@@ -116,7 +116,10 @@ fn local_sites(program: &Program, caller: &Function) -> Vec<Site> {
             }
         }
         match op {
-            Op::Local { dst, offset } => locals[*dst as usize] = (epoch, *offset),
+            Op::CallValue { destination, .. } => {
+                    if let crate::CallDestination::Value(dst) = destination { locals[*dst as usize].0 = 0; }
+                },
+                Op::Local { dst, offset } => locals[*dst as usize] = (epoch, *offset),
             Op::Binary { dst, overflow, .. } => {
                 locals[*dst as usize].0 = 0;
                 locals[*overflow as usize].0 = 0;

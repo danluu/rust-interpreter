@@ -141,6 +141,10 @@ pub(crate) fn visit_registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnM
         Op::Select{condition,yes,no,..}=>{read(*condition);read(*yes);read(*no);},
         Op::Switch{value,..}|Op::Assert{value,..}=>read(*value),
         Op::Call{args,destination,..}=>{read(*destination);for &r in args {read(r);}},
+        Op::CallValue{args,destination,..}=>{
+            if let crate::CallDestination::Address(r)=destination {read(*r);}
+            for arg in args {read(arg.register());}
+        },
         Op::CallIndirect{callee,args,destination,..}=>{read(*callee);read(*destination);for &r in args {read(r);}},
         Op::CompareBytes{left,right,size,..}=>{read(*left);read(*right);read(*size);},
         Op::Allocate{size,align,..}=>{read(*size);read(*align);},
@@ -156,6 +160,7 @@ pub(crate) fn visit_registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnM
         Op::CAlignedAllocate{output,align,size,..}=>{for r in [output,align,size] {read(*r);}},
     }
     match op {
+        Op::CallValue{destination,..}=>{if let crate::CallDestination::Value(r)=destination {write(*r);}},
         Op::Binary{dst,overflow,..}=>{write(*dst);write(*overflow);},
         Op::Imm{dst,..}|Op::Local{dst,..}|Op::Load{dst,..}|Op::Unary{dst,..}|Op::Cast{dst,..}|Op::Select{dst,..}
         |Op::CompareBytes{dst,..}|Op::Allocate{dst,..}|Op::Reallocate{dst,..}|Op::RandomBytes{dst,..}|Op::CpuFeatureQuery{dst,..}
@@ -170,3 +175,22 @@ pub(crate) fn visit_registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnM
 #[cfg(test)]
 #[path="entry_register_zero_tests.rs"]
 mod entry_register_zero_tests;
+
+// A supplied argument and the explicitly initialized result register are valid
+// on entry and every continuation. Retain the existing proof for other locals.
+pub(crate) fn needs_initial_zeroes_with_inputs(function: &Function, inputs: &[crate::Reg]) -> bool {
+    let mut entry = vec![false; function.registers];
+    for &reg in inputs { entry[reg as usize] = true; }
+    if !block_needs_initial_zeroes(function, &entry) { return false; }
+    for op in &function.code {
+        let mut needed = false;
+        let mut written = [0; 2]; let mut len = 0;
+        visit_registers(op, |r| needed |= !entry[r as usize], |r| {
+            written[len] = r; len += 1;
+        });
+        if needed { return true; }
+        for &r in &written[..len] { entry[r as usize] = true; }
+        if matches!(op, Op::Jump {..} | Op::Switch {..} | Op::Return | Op::Trap {..}) { break; }
+    }
+    block_needs_initial_zeroes(function, &entry)
+}

@@ -206,6 +206,17 @@ impl Boundary {
         {
             return Err("native continuation returned an invalid top frame".into());
         }
+        if frame.return_value {
+            let caller = state.frame_len.checked_sub(2).and_then(|i| frames.prepared_frame(i))
+                .ok_or("native value return has no caller")?;
+            let caller_function = program.functions.get(caller.function).ok_or("native value return has invalid caller")?;
+            if program.version != crate::scalar_abi::SCALAR_VERSION || frame.tls_callback
+                || !crate::scalar_calls::scalar_width(function.result.size)
+                || frame.return_address >= caller_function.registers
+                || caller.register_base.checked_add(caller_function.registers) != Some(frame.register_base) {
+                return Err("native continuation returned an invalid value destination".into());
+            }
+        }
         Ok(frame)
     }
 

@@ -8,42 +8,8 @@ use std::collections::BTreeMap;
 pub(super) struct Report { pub slots:usize, pub removed_addresses:usize, pub rewritten:usize, pub removed_moves:usize }
 
 // Explicit matches force review when the bytecode gains a register operand.
-fn registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnMut(Reg)) {
-    match op {
-        Op::Imm{..}|Op::Local{..}|Op::Jump{..}|Op::Return|Op::Trap{..}|Op::ResetThreadLocals=>{},
-        Op::Load{address,..}=>read(*address),
-        Op::Store{address,src,..}=>{read(*address);read(*src);},
-        Op::Copy{dst,src,..}=>{read(*dst);read(*src);},
-        Op::CopyDynamic{dst,src,size}=>{read(*dst);read(*src);read(*size);},
-        Op::Binary{a,b,..}|Op::FloatBinary{a,b,..}=>{read(*a);read(*b);},
-        Op::Unary{src,..}|Op::Cast{src,..}|Op::FloatUnary{src,..}|Op::FloatConvert{src,..}=>read(*src),
-        Op::Select{condition,yes,no,..}=>{read(*condition);read(*yes);read(*no);},
-        Op::Switch{value,..}|Op::Assert{value,..}=>read(*value),
-        Op::Call{args,destination,..}=>{read(*destination);for &r in args {read(r);}},
-        Op::CallIndirect{callee,args,destination,..}=>{read(*callee);read(*destination);for &r in args {read(r);}},
-        Op::CompareBytes{left,right,size,..}=>{read(*left);read(*right);read(*size);},
-        Op::Allocate{size,align,..}=>{read(*size);read(*align);},
-        Op::Deallocate{pointer,size,align}=>{read(*pointer);read(*size);read(*align);},
-        Op::Reallocate{pointer,old_size,align,new_size,..}=>{read(*pointer);read(*old_size);read(*align);read(*new_size);},
-        Op::FillBytes{address,value,size}=>{read(*address);read(*value);read(*size);},
-        Op::RandomBytes{address,size,..}=>{read(*address);read(*size);},
-        Op::CpuFeatureQuery{name,output,output_len,new_data,new_len,..}=>{for r in [name,output,output_len,new_data,new_len] {read(*r);}},
-        Op::CAllocate{count,size,errno,..}=>{for r in [count,size,errno] {read(*r);}},
-        Op::CDeallocate{pointer}=>read(*pointer),
-        Op::RegisterTlsDestructor{callback,argument}=>{read(*callback);read(*argument);},
-        Op::CReallocate{pointer,size,errno,..}=>{for r in [pointer,size,errno] {read(*r);}},
-        Op::CAlignedAllocate{output,align,size,..}=>{for r in [output,align,size] {read(*r);}},
-    }
-    match op {
-        Op::Binary{dst,overflow,..}=>{write(*dst);write(*overflow);},
-        Op::Imm{dst,..}|Op::Local{dst,..}|Op::Load{dst,..}|Op::Unary{dst,..}|Op::Cast{dst,..}|Op::Select{dst,..}
-        |Op::CompareBytes{dst,..}|Op::Allocate{dst,..}|Op::Reallocate{dst,..}|Op::RandomBytes{dst,..}|Op::CpuFeatureQuery{dst,..}
-        |Op::CAllocate{dst,..}|Op::CReallocate{dst,..}|Op::CAlignedAllocate{dst,..}
-        |Op::FloatBinary{dst,..}|Op::FloatUnary{dst,..}|Op::FloatConvert{dst,..}=>write(*dst),
-        Op::Store{..}|Op::Copy{..}|Op::CopyDynamic{..}|Op::Jump{..}|Op::Switch{..}|Op::Assert{..}
-        |Op::Call{..}|Op::CallIndirect{..}|Op::Return|Op::Trap{..}|Op::Deallocate{..}|Op::CDeallocate{..}
-        |Op::RegisterTlsDestructor{..}|Op::FillBytes{..}|Op::ResetThreadLocals=>{},
-    }
+fn registers(op:&Op,read:impl FnMut(Reg),write:impl FnMut(Reg)) {
+    rust_interp_bytecode::diagnostic_visit_registers(op,read,write);
 }
 
 fn starts(code:&[Op])->Vec<bool> {

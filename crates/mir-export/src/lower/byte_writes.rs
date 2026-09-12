@@ -265,8 +265,9 @@ pub(crate) fn capture(lower: &mut Lower<'_, '_>) -> Observation {
 
 #[path="aggregate_relocation.rs"]
 mod relocation;
-pub(crate) fn report(observations: Vec<Observation>, program: &mut Program) {
-    relocation::transform(observations,program);
+pub(crate) fn report(observations: Vec<Observation>, program: &mut Program,
+    values:&mut crate::lower::scalar_values::Collector)->Result<()> {
+    relocation::transform(observations,program,values)
 }
 
 #[cfg(test)]

@@ -17,6 +17,7 @@ type Result<T> = std::result::Result<T, String>;
 mod simd;
 mod scalar_frame;
 mod scalar_promote;
+pub(crate) mod scalar_values;
 mod dynamic;
 mod float;
 mod atomic;
@@ -145,7 +146,7 @@ impl UnavailableCall {
 }
 
 pub struct Exported {
-    pub program: Program,
+    pub artifact: rust_interp_bytecode::scalar_abi::Artifact,
     unavailable_calls: BTreeSet<UnavailableCall>,
     pub(crate) allocation_trace: Option<crate::allocation_trace::Trace>,
 }
@@ -158,6 +159,8 @@ impl Exported {
 pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bool,
               inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool,
               allocation_trace: bool) -> Result<Exported> {
+    let scalar_values_enabled=scalar_values::enabled();
+    if scalar_values_enabled && demand {return Err("scalar values require strict frontend checking".into());}
     if allocation_trace && demand {
         return Err("allocation tracing requires ordinary strict frontend checking".into());
     }
@@ -247,6 +250,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         trace_parent: None,
         trace_function: None,
         byte_writes: vec![],
+        scalar_values: scalar_values::Collector::new(scalar_values_enabled),
     };
     exporter.trace_event(|_| serde_json::json!({"kind": "allocation-trace", "schema_version": 1,
         "target": tcx.sess.opts.target_triple.to_string(), "strict_frontend": !demand,
@@ -371,7 +375,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         statics: exporter.statics,
         thread_locals: exporter.thread_locals,
     };
-    scalar_frame::byte_writes::report(exporter.byte_writes, &mut program);
+    scalar_frame::byte_writes::report(exporter.byte_writes, &mut program, &mut exporter.scalar_values)?;
     scalar_frame::report();
     scalar_promote::report();
     let (mut program, calls) = rust_interp_bytecode::optimize_calls(
@@ -393,7 +397,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     let cfg = rust_interp_bytecode::optimize_control_flow(&mut program)?;
     eprintln!("rust-interp-cfg: before={} after={} seconds={:.6}",
         cfg.old_operations, cfg.new_operations, started.elapsed().as_secs_f64());
-    Ok(Exported { program, unavailable_calls: exporter.unavailable_calls,
+    let artifact=exporter.scalar_values.finish(program)?;
+    Ok(Exported { artifact, unavailable_calls: exporter.unavailable_calls,
         allocation_trace: exporter.trace })
 }
 
@@ -428,6 +433,7 @@ struct Exporter<'tcx> {
     trace_parent: Option<usize>,
     trace_function: Option<usize>,
     byte_writes: Vec<scalar_frame::byte_writes::Observation>,
+    scalar_values: scalar_values::Collector,
 }
 impl<'tcx> Exporter<'tcx> {
     fn register(&mut self, instance: Instance<'tcx>) -> usize {
@@ -2292,6 +2298,10 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
             }
         }
         if let Some(caller) = self.caller_location { arguments.push(caller); }
+        if self.exporter.scalar_values.enabled {
+            let binding=scalar_values::capture(&self,&arguments,self.exporter.scalar_values.remaining())?;
+            self.exporter.scalar_values.push(binding)?;
+        }
         let observed = scalar_frame::byte_writes::capture(&mut self);
         self.exporter.byte_writes.push(observed);
         scalar_promote::apply(&mut self)?;
