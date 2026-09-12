@@ -52,7 +52,11 @@ def main():
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--composed-candidate', action='store_true',
                         help='qualify the composed runtime; no standalone speed screen')
+    parser.add_argument('--selection-qualification', type=Path,
+                        help='exact saved-test qualification for a rebuilt composed VM')
     args = parser.parse_args()
+    if args.composed_candidate and args.selection_qualification is None:
+        parser.error('--composed-candidate requires --selection-qualification')
     prefix = 'composed-development' if args.composed_candidate else 'parallel-suites'
     assert not args.composed_candidate or args.phase == 'serial'
     assert re.fullmatch(prefix + '-' + args.phase + r'-\d{2}', args.run_id)
@@ -78,7 +82,9 @@ def main():
             vms[mode] = directory / 'rust-interp-vm'
             assert sha(vms[mode]) == build['binaries']['rust-interp-vm']
             paths += [path, vms[mode]]
-        selected_path = ROOT / 'results' / (prefix + '-qualification-01') / 'summary.json'
+        selected_path = (args.selection_qualification.resolve(strict=True)
+                         if args.selection_qualification is not None else
+                         ROOT / 'results' / (prefix + '-qualification-01') / 'summary.json')
         selected = json.loads(selected_path.read_text())
         assert selected['status'] == 'passed' and selected['commands'] == 7
         assert selected['vm_sha256'] == sha(vms['candidate']) and selected['exact_instructions_memory_and_entropy']
