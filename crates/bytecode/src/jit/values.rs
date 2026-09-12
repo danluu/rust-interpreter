@@ -190,6 +190,7 @@ impl Assembler<'_> {
         if self.resumable {
             self.resumable_current_frame();
             self.resumable_load_budget();
+            self.mov(resumable::CALL_CREDIT_REGISTER, 31);
         }
         // Native callees inherit x22; only external Rust entries load memory.
         let resume = self.words.len();

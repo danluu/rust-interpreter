@@ -10,6 +10,15 @@ use crate::{Limits, Memory};
 // the host value; every VM exit publishes the guest budget before restoring it.
 // Guest persistent pairs remain x23/x24, x25/x26 and x27/x28.
 pub(super) const BUDGET_REGISTER: u32 = 22;
+// Private capacity allowance between external entry and VM exit. The host LR
+// is already saved in the resumable host frame; internal edges use B/BR.
+pub(super) const CALL_CREDIT_REGISTER: u32 = 30;
+
+fn call_capacity_cost(callee: &Function) -> Option<usize> {
+    callee.frame_size.max(1)
+        .checked_add(callee.frame_align.checked_sub(1)?)?
+        .checked_add(callee.registers.checked_mul(16)?)
+}
 
 const MAX_ENTRY_BYTES: usize = 16 * 1024 * 1024;
 const SPARE_MEMORY: usize = 1024 * 1024;
@@ -531,6 +540,75 @@ impl Assembler<'_> {
         Ok(())
     }
 
+    fn minimize_call_credit(&mut self, other: u32) {
+        self.cmp(CALL_CREDIT_REGISTER, other);
+        // csel credit,credit,other,lo: unsigned minimum of proven slacks.
+        self.emit(0x9a800000 | (other << 16) | ((Cond::Lo as u32) << 12)
+            | (CALL_CREDIT_REGISTER << 5) | CALL_CREDIT_REGISTER);
+    }
+
+    fn resumable_call_capacity(&mut self, callee: &Function, declines: &mut Vec<usize>) -> Result<(), EmitError> {
+        // Credit is bounded by each current memory/register/working slack.
+        // Cost bounds actual padding+frame bytes, register bytes and their sum.
+        // Subtraction proves all three capacities and alignment/add overflow.
+        // Underflow takes the original checked path before any guest effect.
+        let done = if let Some(cost) = call_capacity_cost(callee) {
+            self.imm(10, cost as u64);
+            self.three(0xeb000000, CALL_CREDIT_REGISTER, CALL_CREDIT_REGISTER, 10); // subs
+            let slow = self.words.len();
+            self.emit(0x54000000 | Cond::Lo as u32);
+            self.imm(10, callee.frame_align as u64 - 1);
+            self.three(0x8b000000, 21, 3, 10);
+            self.imm(10, !(callee.frame_align as u64 - 1));
+            self.three(0x8a000000, 21, 21, 10);
+            let done = self.words.len();
+            self.emit(0x14000000);
+            self.patch_conditional(slow, self.words.len())?;
+            Some(done)
+        } else { None };
+
+        self.imm(10, callee.frame_align as u64 - 1);
+        self.three(0xab000000, 21, 3, 10); // adds; carry means alignment overflow
+        self.decline(Cond::Hs, declines);
+        self.imm(10, !(callee.frame_align as u64 - 1));
+        self.three(0x8a000000, 21, 21, 10);
+        self.imm(10, callee.frame_size.max(1) as u64);
+        self.three(0xab000000, 11, 21, 10);
+        self.decline(Cond::Hs, declines);
+        self.load64(10, 19, MEMORY_END);
+        self.cmp(11, 10);
+        self.decline(Cond::Hi, declines);
+        self.three(0xcb000000, CALL_CREDIT_REGISTER, 10, 11);
+        self.load64(12, 19, state::REGISTER_LEN);
+        self.imm(10, callee.registers as u64);
+        self.three(0xab000000, 17, 12, 10);
+        self.decline(Cond::Hs, declines);
+        self.load64(10, 19, REGISTER_END);
+        self.cmp(17, 10);
+        self.decline(Cond::Hi, declines);
+        self.three(0xcb000000, 9, 10, 17);
+        self.lsl_imm(9, 9, 4);
+        self.minimize_call_credit(9);
+        // The register bound is the length of an initialized Vec<u128>, so
+        // multiplying a bounded slot count by 16 cannot overflow.
+        self.lsl_imm(13, 17, 4);
+        self.three(0xab000000, 13, 13, 11);
+        self.decline(Cond::Hs, declines);
+        self.load64(10, 19, WORKING_BUDGET);
+        self.cmp(13, 10);
+        self.decline(Cond::Hi, declines);
+        self.three(0xcb000000, 9, 10, 13);
+        self.minimize_call_credit(9);
+
+        if let Some(at) = done {
+            // This owned forward label names the next instruction the caller
+            // appends. Generic inter-region links require an existing target.
+            let displacement = branch_displacement(at, self.words.len(), 26, CodegenLimit::Jump)?;
+            self.words[at] |= displacement;
+        }
+        Ok(())
+    }
+
     fn resumable_call(
         &mut self,
         caller: &Function,
@@ -549,32 +627,7 @@ impl Assembler<'_> {
         self.load64(10, 19, FRAME_END);
         self.cmp(9, 10);
         self.decline(Cond::Hs, declines);
-        self.imm(10, callee.frame_align as u64 - 1);
-        self.three(0xab000000, 21, 3, 10); // adds; carry means alignment overflow
-        self.decline(Cond::Hs, declines);
-        self.imm(10, !(callee.frame_align as u64 - 1));
-        self.three(0x8a000000, 21, 21, 10);
-        self.imm(10, callee.frame_size.max(1) as u64);
-        self.three(0xab000000, 11, 21, 10);
-        self.decline(Cond::Hs, declines);
-        self.load64(10, 19, MEMORY_END);
-        self.cmp(11, 10);
-        self.decline(Cond::Hi, declines);
-        self.load64(12, 19, state::REGISTER_LEN);
-        self.imm(10, callee.registers as u64);
-        self.three(0xab000000, 17, 12, 10);
-        self.decline(Cond::Hs, declines);
-        self.load64(10, 19, REGISTER_END);
-        self.cmp(17, 10);
-        self.decline(Cond::Hi, declines);
-        // The register bound is the length of an initialized Vec<u128>, so
-        // multiplying a bounded slot count by 16 cannot overflow.
-        self.lsl_imm(13, 17, 4);
-        self.three(0xab000000, 13, 13, 11);
-        self.decline(Cond::Hs, declines);
-        self.load64(10, 19, WORKING_BUDGET);
-        self.cmp(13, 10);
-        self.decline(Cond::Hi, declines);
+        self.resumable_call_capacity(callee, declines)?;
 
         self.charge_transition(pc, profiled);
         self.spill_values_at(pc + 1);
@@ -653,6 +706,8 @@ impl Assembler<'_> {
         self.checked_address(12, f.result.size, true);
         self.abi_copy(f.result.size)?;
         self.mov(3, 21);
+        // Return shrinks both extents. No credit refund: retained pre-frame
+        // padding cannot invalidate an allowance that only underestimates slack.
         // The checked result copy can clobber x17. Frame metadata is private
         // host storage and unchanged by that copy; read it only after success.
         self.load64(17, 20, frame::REGISTER_BASE);
