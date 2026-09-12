@@ -135,6 +135,39 @@ pub(crate) fn capture(lower: &Lower<'_, '_>, arguments: &[Slot], remaining: usiz
     Ok(out)
 }
 
+// The qualified relocation certificate preserves argument order/width and
+// dedicated ABI storage, but can move its offsets. Bind at that exact boundary,
+// then require all subsequent optimizer stages to preserve the new slots.
+fn relocate(value: &mut Observation, f: &Function) -> Result<()> {
+    if !value.args.iter().map(|s| s.size).eq(f.args.iter().map(|s| s.size)) || value.result.size != f.result.size {
+        return Err("scalar boundary ABI shape changed during relocation".into());
+    }
+    for row in &mut value.rows {
+        row["captured_slot"] = row["slot"].clone();
+        if row["role"] == "result" {
+            row["slot"] = json!(f.result);
+        } else if row["abi_binding"] == true {
+            let indices = row["abi_argument_indices"].as_array().ok_or("missing argument indices")?;
+            if indices.len() != 1 { return Err("ambiguous relocated argument".into()); }
+            let index = indices[0].as_u64().ok_or("invalid argument index")? as usize;
+            row["slot"] = json!(f.args.get(index).ok_or("relocated argument out of range")?);
+        } else {
+            // Zero-sized and spread arguments have no single final ABI slot.
+            row["slot"] = Value::Null;
+        }
+    }
+    value.args = f.args.clone();
+    value.result = f.result;
+    Ok(())
+}
+
+pub(crate) fn after_relocation(collector: &mut Collector, program: &Program) -> Result<()> {
+    for value in &mut collector.functions {
+        relocate(value, program.functions.get(value.id).ok_or("relocation function ID out of range")?)?;
+    }
+    Ok(())
+}
+
 fn bind(value: Observation, functions: &[Function]) -> Result<Value> {
     let f = functions.get(value.id).ok_or("scalar boundary function ID out of range")?;
     if !f.args.iter().map(slot_key).eq(value.args.iter().map(slot_key)) || slot_key(&f.result) != slot_key(&value.result) {

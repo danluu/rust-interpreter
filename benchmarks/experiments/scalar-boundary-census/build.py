@@ -108,7 +108,7 @@ def main():
                 write(work/'commands.json',records);require(code==0,'diagnostic '+action+' failed')
             tests=(work/'test.log').read_text()
             names=re.findall(r'^test (\S*boundary::tests::\S+) \.\.\. ok$',tests,re.M)
-            require(len(names)==5 and len(set(names))==5,'missing observer tests')
+            require(len(names)==6 and len(set(names))==6,'missing observer tests')
             counts=re.findall(r'test result: ok\. (\d+) passed; (\d+) failed;',tests)
             require(counts and all(f=='0' for _,f in counts),'exporter tests incomplete')
             verify()

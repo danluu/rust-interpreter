@@ -29,7 +29,7 @@ def main():
             build_path=ROOT/'results'/args.build_run/'summary.json'
             build=read(build_path);proof=read(build_work/'provenance.json')
             require(read(build_work/'status.json')['status']=='finished' and build['status']=='passed' and
-                    len(build['observer_tests'])==5 and build['exporter_test_count']==44 and not build['production_change'],'candidate build not qualified')
+                    len(build['observer_tests'])==6 and build['exporter_test_count']==45 and not build['production_change'],'candidate build not qualified')
             require(build['parent_tool_key']==CONTROL and sha(build_work/'provenance.json')==build['provenance_sha256'],
                     'candidate build provenance differs')
             directory,_=installed_tools(build['tool_key']);parent,_=installed_tools(CONTROL)

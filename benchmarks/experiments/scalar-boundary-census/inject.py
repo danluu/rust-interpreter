@@ -31,3 +31,6 @@ def inject(source):
     replace(lower, '    Ok(Exported { program, unavailable_calls: exporter.unavailable_calls,',
         '''    scalar_promote::boundary::report(exporter.scalar_boundaries, &program)?;
     Ok(Exported { program, unavailable_calls: exporter.unavailable_calls,''')
+    replace(lower, '    scalar_frame::byte_writes::report(exporter.byte_writes, &mut program);',
+        '''    scalar_frame::byte_writes::report(exporter.byte_writes, &mut program);
+    scalar_promote::boundary::after_relocation(&mut exporter.scalar_boundaries, &program)?;''')

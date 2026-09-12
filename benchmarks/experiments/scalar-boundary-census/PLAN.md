@@ -9,6 +9,11 @@ promoter's use-context visitor and call/aggregate operand exclusions. Record
 primitive type and rustc `BackendRepr::Scalar` classifications separately.
 Reject overlapping storage, unsupported widths, spread arguments and ambiguous
 ABI bindings. Synthetic caller-location slots remain explicitly uncovered.
+The first smoke caught a wrong assumption: dedicated ABI storage can move during
+aggregate relocation. Rebind at that exact pass boundary by preserved ABI
+argument order/width and result width, then require unchanged slots through all
+later passes. Keep captured offsets separately; unbound spread/zero arguments
+have no final slot. The failed export ran no guest code and remains recorded.
 Ordinary private primitive counts are descriptive; their offsets can move in
 the subsequent aggregate relocation and must not be matched to final PCs.
 

@@ -56,3 +56,22 @@ fn collector_exhaustion_is_rejected() {
     assert!(c.push(b).is_err());
     assert_eq!(c.remaining(), 0);
 }
+
+#[test]
+fn relocation_uses_abi_positions_and_rejects_shape_changes() {
+    let mut o = observation(0);
+    o.args.push(Slot { offset: 128, size: 8 });
+    o.result = Slot { offset: 64, size: 8 };
+    o.rows = vec![json!({"role":"argument", "slot":o.args[0], "abi_binding":true,"abi_argument_indices":[0]}),
+        json!({"role":"argument", "slot":{"offset":99,"size":0}, "abi_binding":false}),
+        json!({"role":"result", "slot":o.result, "abi_binding":true})];
+    let f = Function { name:"moved".into(), frame_size:16, frame_align:8, registers:0,
+        args:vec![Slot{offset:8,size:8}],result:Slot{offset:0,size:8},code:vec![Op::Return] };
+    relocate(&mut o, &f).unwrap();
+    assert_eq!(o.rows[0]["slot"]["offset"], 8);
+    assert_eq!(o.rows[0]["captured_slot"]["offset"], 128);
+    assert!(o.rows[1]["slot"].is_null());
+    assert_eq!(o.rows[2]["slot"]["offset"], 0);
+    assert!(bind(o, &[f.clone()]).is_ok());
+    assert!(relocate(&mut observation(0), &f).is_err());
+}
