@@ -49,3 +49,14 @@ and all fourteen artifacts total 2.5 MiB; admit this small correctness sequence
 at 8.125 GiB, retaining the 8 GiB check before every child. This is a catalog
 correctness follow-up, not a repetition to promote the earlier performance
 result. Freeze this plan with the controller and tools.
+
+Pgrust's 32-command follow-up passes, including sixteen retained artifact/catalog
+pairs and the restored source. The first attempt stopped at its initial disk
+admission check before starting any child; retain that receipt. Finish with a
+fresh fre folded-trie export at the exact final edited source of its retained
+native oracle. Reuse the real-export controller, run all eighteen native tests,
+then ordinary/fresh/prepared custom execution with controlled entropy. The
+completed fre cache inventory is 43.8 MiB excluding incremental state; admit one
+nonincremental export at 8.25 GiB and keep the 8 GiB per-child floor. This check
+uses one real edited source and a retained native executable; it is not a new
+edit-loop performance measurement or a replacement for the full pgrust sequence.
