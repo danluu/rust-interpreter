@@ -79,6 +79,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | register-lifetimes | [register-lifetimes-census-01/summary.json](register-lifetimes-census-01/summary.json) |
 | register-allocation | [register-allocation-screen-token-01/summary.json](register-allocation-screen-token-01/summary.json) |
 | constant-arguments | [constant-call-arguments-census-01/summary.json](constant-call-arguments-census-01/summary.json) |
+| constant-folding | [constant-fold-fixture-01/summary.json](constant-fold-fixture-01/summary.json) |
+| constant-fold-coverage | [constant-fold-saved-02/summary.json](constant-fold-saved-02/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

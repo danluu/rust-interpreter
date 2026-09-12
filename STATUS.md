@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Constant-call census qualifies357Rust tests/profile and four current retained profiles. Constant argument bytes occur on12.44%/18.87% token calls,23.96%folded,14.28%pgrust; no analysis declines. Next bounded constant propagation/specialization prototype, independent correctness then fixed actual-edit gate; coverage is not predicted savings. Lifetime allocation remains parked after4.64%wall regression.
+**Next:** The constant folder remains off main on experiment/constant-call-arguments-20260912. It qualifies366Rust tests/profile, six saved-artifact diagnostics and eighteen standalone native/custom fixture commands. Real edited-source token screen is frozen (10% wall improvement/no CPU regression), awaiting9.5GiB fresh-cache disk admission; current free about7.2GiB. No performance claim. Lifetime allocation remains parked.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
