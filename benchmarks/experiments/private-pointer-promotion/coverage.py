@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Check real exports and profile pointer-promotion coverage before any timing screen."""
-import importlib.util,json,os,re,subprocess,sys
+import argparse,collections,importlib.util,json,os,re,subprocess,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
@@ -13,7 +13,8 @@ profile_real=importlib.util.module_from_spec(spec);spec.loader.exec_module(profi
 CASES=[('pgrust','pgrust','filtered-workflow-pgrust-01'),('folded','fre','filtered-workflow-folded-01'),('token','fre','filtered-workflow-token-02')]
 
 def main():
-    run='private-pointer-promotion-coverage-01'
+    parser=argparse.ArgumentParser();parser.add_argument('--resume-01',action='store_true');args=parser.parse_args()
+    run='private-pointer-promotion-coverage-02' if args.resume_01 else 'private-pointer-promotion-coverage-03'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,8)
         build_path=ROOT/'results/private-pointer-promotion-build-01/summary.json'
@@ -32,6 +33,17 @@ def main():
         frozen_paths=[Path(__file__),Path(__file__).with_name('PLAN.md'),Path(profile_real.__file__),build_path,fixture_path,profile_path,baseline_build,entropy_path,library]
         frozen_paths += [tool/n for n in ['rust-interp-vm','rust-interp-mir-export','rust-interp-rustc-wrapper']]
         frozen_paths += [ROOT/'scripts'/n for n in ['interpreter.py','suite_reports.py','workflow_io.py','profile_vm_transitions.py','workflow_cases.py']]
+        resumed=[]
+        if args.resume_01:
+            stopped_path=ROOT/'results/private-pointer-promotion-coverage-01/summary.json';stopped=json.loads(stopped_path.read_text())
+            assert stopped['status']=='analysis-failed' and stopped['completed_commands']==4
+            assert all(sha(ROOT/p)==h for p,h in stopped['evidence'].items())
+            frozen_paths += [stopped_path,*[ROOT/p for p in stopped['evidence']]]
+            prior_plan=json.loads((ROOT/'.work/private-pointer-promotion-coverage-01/plan.json').read_text())
+            assert all(sha(ROOT/p)==h for p,h in prior_plan['frozen'].items() if p!=str(Path(__file__).relative_to(ROOT)))
+            resumed=json.loads((ROOT/'.work/private-pointer-promotion-coverage-01/records.json').read_text())
+            assert [r['label'] for r in resumed]==['pgrust-export','folded-export','token-export','token-profile-0']
+            assert all(r['returncode']==0 for r in resumed)
         inputs=[]
         for case,project,reference in CASES:
             summary_path=ROOT/'results'/reference/'summary.json';summary=json.loads(summary_path.read_text())
@@ -63,6 +75,9 @@ def main():
         env.update(CARGO_TERM_COLOR='never',RUST_INTERP_LAUNCH_STATS='1')
         records=[];exports={};comparisons=[]
         def execute(label,command,cwd,child_env):
+            if any(r['label']==label for r in resumed):
+                row=next(r for r in resumed if r['label']==label).copy();row['reused_from']='private-pointer-promotion-coverage-01'
+                records.append(row);write(work/'records.json',records);return row
             require_space(ROOT,8)
             child,stdout,stderr=capture(command,cwd=cwd,env=child_env,receipt_path=work/'active.json',receipt=dict(label=label))
             row=dict(label=label,command=command,pid=child.pid,returncode=child.returncode,stdout=stdout,stderr=stderr)
@@ -70,6 +85,7 @@ def main():
             print(label,'PASS',flush=True);return row
         for item in inputs:
             case=item['case'];suite_path=work/(case+'-suite.json')
+            if args.resume_01:suite_path=ROOT/'.work/private-pointer-promotion-coverage-01'/(case+'-suite.json')
             command=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',str(Path(item['source'])/'Cargo.toml'),
                 '--package',item['package'],'--jobs','2','--tool-key',key,'--cache-namespace',run+':'+case,'--test-body','--std-mir',
                 '--test-filter',item['filter'],'--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
@@ -98,6 +114,7 @@ def main():
         for p in selected:
             case=p['case'];artifact=ROOT/exports[case]['artifact'];catalog=Path(str(artifact)+'.entries.json')
             output=work/f"{p['index']}-profile.json";tape=ROOT/profiles['raw']/f"{p['index']}.tape"
+            if args.resume_01 and p['index']==0:output=ROOT/'.work/private-pointer-promotion-coverage-01/0-profile.json'
             command=[str(tool/'rust-interp-vm'),'--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
                 '--instruction-limit',str(p['limits']['instructions']),'--allocation-limit',str(p['limits']['allocations']),
                 '--profile',str(output),'--profile-test',p['name'],'--suite-catalog',str(catalog),str(artifact)]
@@ -105,24 +122,33 @@ def main():
             row=execute(case+'-profile-'+str(p['index']),command,ROOT,child_env)
             assert row['stdout']=='0\n'
             stats={k:int(v) for k,v in re.findall(r'\b([a-z_]+)=(\d+)\b',row['stderr'])}
+            selection=[json.loads(line.removeprefix('rust-interp-profile-selection: ')) for line in row['stderr'].splitlines() if line.startswith('rust-interp-profile-selection: ')]
+            assert len(selection)==1 and selection[0]['name']==p['name'] and selection[0]['artifact_sha256']==sha(artifact) and selection[0]['catalog_sha256']==sha(catalog)
             assert stats['jit_declined_functions']==0
             assert all(stats[k]==p['statistics'][k] for k in ['entropy_calls','entropy_bytes'])
             assert output.stat().st_size<=256*1024**2
             current=json.loads(output.read_text());diagnostic=profile_real.distribution(current,stats)
             prior=json.loads((ROOT/profiles['raw']/f"{p['index']}-profile.json").read_text())
-            old={f['name']:f for f in prior['functions']};new={f['name']:f for f in current['functions']}
-            assert len(old)==len(prior['functions']) and len(new)==len(current['functions'])
+            old_names=collections.Counter(f['name'] for f in prior['functions']);new_names=collections.Counter(f['name'] for f in current['functions'])
+            # Rendered names are diagnostic labels, not complete Instance IDs.
+            # Do not pair duplicate closure/shim labels arbitrarily. Full-run
+            # counters still include every function; body comparisons disclose
+            # their narrower unambiguous subset.
+            unambiguous={n for n in old_names.keys()&new_names.keys() if old_names[n]==new_names[n]==1}
+            old={f['name']:f for f in prior['functions'] if f['name'] in unambiguous}
+            new={f['name']:f for f in current['functions'] if f['name'] in unambiguous}
             changed=[name for name in old.keys()&new.keys() if old[name]['operations']!=new[name]['operations']]
             hot_changed=[dict(name_prefix=f['name_prefix'],function=f['function'],native_operations=f['native_operations'])
                 for f in p['distribution']['top_native_functions'] if prior['functions'][f['function']]['name'] in changed]
             comparison=dict(index=p['index'],case=case,name=p['name'],baseline_instructions=p['statistics']['instructions'],candidate_instructions=stats['instructions'],
-                logical_reduction=1-stats['instructions']/p['statistics']['instructions'],baseline_functions=len(old),candidate_functions=len(new),
+                logical_reduction=1-stats['instructions']/p['statistics']['instructions'],baseline_functions=len(prior['functions']),candidate_functions=len(current['functions']),
+                ambiguous_or_unmatched_baseline_functions=len(prior['functions'])-len(old),ambiguous_or_unmatched_candidate_functions=len(current['functions'])-len(new),
                 common_functions=len(old.keys()&new.keys()),changed_common_function_bodies=len(changed),changed_baseline_hot_functions=hot_changed,
                 statistics=stats,distribution=diagnostic,profile_sha256=sha(output),baseline_profile_sha256=p['profile_sha256'],tape_sha256=sha(tape))
             comparisons.append(comparison);row.update(statistics=stats,profile_sha256=sha(output));write(work/'records.json',records);write(work/'comparisons.json',comparisons)
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
         result=ROOT/'results'/run;result.mkdir(exist_ok=False)
-        write(result/'summary.json',dict(status='passed',commands=len(records),tool_key=key,exports=exports,profiles=comparisons,
+        write(result/'summary.json',dict(status='passed',commands=len(records),new_commands=len(records)-len(resumed),reused_commands=len(resumed),tool_key=key,exports=exports,profiles=comparisons,
             source_unchanged=True,retained_native_outcomes_match=True,entropy_replay_complete=True,vm_bytes_identical=True,performance_measurement=False,
             raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json')))
 
