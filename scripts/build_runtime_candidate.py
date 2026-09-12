@@ -31,11 +31,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--expected-tests', type=int, required=True)
+    parser.add_argument('--minimum-free-gib', type=int, choices=[7, 8], default=8,
+        help='host-only qualification admission; 7 requires an explicit justification in the frozen plan, default 8')
     parser.add_argument('--plan', type=Path, required=True)
     parser.add_argument('--build-exporter', action='store_true', help='also qualify and install the current exporter/wrapper')
     parser.add_argument('--exporter-key', default=CONTROL, help='immutable exporter/wrapper composition retained by a runtime-only build')
     parser.add_argument('--reuse-tests', type=Path, help='reuse both passed profiles from a build stopped before binary publication; Rust inputs must be identical')
     args = parser.parse_args()
+    if args.minimum_free_gib == 7:
+        assert 'Host qualification floor: 7 GiB' in args.plan.read_text(), 'lower host floor must be explicit in the frozen plan'
     control = args.exporter_key
     assert re.fullmatch(r'[a-z][a-z0-9-]*-build-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -83,7 +87,7 @@ def main():
         write(work / 'plan.json', dict(source_commit=source, frozen=frozen, target=str(TARGET), control=control,
             expected_tests=args.expected_tests, build_exporter=args.build_exporter,
             tests_reused_from=str(args.reuse_tests) if args.reuse_tests is not None else None,
-            jobs=2, minimum_free_gib=8, performance_measurement=False))
+            jobs=2, minimum_free_gib=args.minimum_free_gib, performance_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
                              'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET']}
@@ -93,7 +97,7 @@ def main():
         for label, action, profile in [('test-debug', 'test', []), ('test-release', 'test', ['--release']),
                                        ('build-release', 'build', ['--release'])]:
             if label in reused_counts: continue
-            require_space(ROOT, 8)
+            require_space(ROOT, args.minimum_free_gib)
             command = ['cargo', '+nightly-2026-09-08', action, *profile, '--locked', '--offline', '--jobs', '2',
                        '--target-dir', str(TARGET)]
             command += (['--workspace'] if action == 'test' else

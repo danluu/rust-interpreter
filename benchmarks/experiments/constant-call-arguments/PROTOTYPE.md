@@ -39,3 +39,12 @@ code growth, and avoid specializing merely on unique caller-location constants.
 Do not bundle unmeasured cloning with the initial folder. Use the fixed complete
 edited-source token screen (10% wall improvement/no CPU regression), then guards
 and broader real projects only after a pass. Failed stages stay parked.
+
+Host qualification floor: 7 GiB. The first build stopped before Cargo at the
+8 GiB admission check. After retiring exact terminal metadata with preserved
+evidence, the host has about 7.5 GiB free. This nonperformance workspace build
+reuses the existing target, uses two workers, disables incremental output and
+fetches no dependencies. Admit each host child only above 7 GiB and record that
+choice explicitly. This exception does not lower any guest-project export,
+execution or actual-source-edit benchmark's 8 GiB floor. Do not retire more
+historical caches merely to meet the former blanket host threshold.
