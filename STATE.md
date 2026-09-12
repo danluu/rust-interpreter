@@ -44,35 +44,33 @@ other pass effects and shared-host noise; the components do not prove causation.
 
 ## Immediate continuation
 
-Ruff stopped at its pre-command 8 GiB disk guard after one complete cycle.
-The [stop audit](results/aggregate-relocation-ruff-stop-01/assessment.md) verifies
-21 primary commands, seven checks, five edit pairs and 14 artifacts, with source
-restored. These partial pairs are excluded from performance gates. The original
-failure and the first assessor's schema error are preserved. The single fresh retry is now running under
-`aggregate-relocation-heldout-01-ruff-retry-01` (supervisor 52822).
+The [complete Ruff retry](results/aggregate-relocation-heldout-01-ruff-retry-01/relocation-assessment.md)
+passes both guards: paired wall −0.28%, CPU −0.27%. All 84 commands, 15 pairs and
+42 artifacts verify. The original disk-guard stop retains its separate
+[audit](results/aggregate-relocation-ruff-stop-01/assessment.md); its five partial
+pairs are excluded. The declared retry had 24.33 GiB admission and a minimum
+observed 19.0 GiB free over 78 samples. No source/assertion/gate changes.
 
-The [declared retry](benchmarks/experiments/aggregate-byte-writes/HELDOUT-RETRY-NEXT.md)
-keeps all three cycles, tools, assertions and gates. Its separate coordinator and
-receipt adapter pass two original command-template checks, 30 rejection fixtures
-and two monitor lifecycle/error checks. The first flag-suffix qualification
-failure is preserved. Admission passed at 24.33 GiB against 24.16 GiB required;
-five-second read-only space logging is active.
-The failed history and frozen original verifier sources remain unchanged.
+[Recovery coordination](results/aggregate-relocation-recovery-controls-02/assessment.md)
+passes two original command-template checks, 30 rejection fixtures and two
+monitor lifecycle/error checks. Its first flag-suffix qualification failure is
+preserved. Frozen original verifier sources remain unchanged.
 
-The [fourth batch](results/aggregate-relocation-space-04/assessment.md) archived
-the completed new Nushell comparison: 13,455,530,886 unique bytes preserved in
-4,355,839,039 archive bytes. All four terminal receipts and 99 external hashes
-verify. Source, reports, tool installations and executed snapshots remain.
+Nushell is running as `aggregate-relocation-heldout-01-nushell` through the
+qualified recovery runner (supervisor 79498), following the completed Ruff retry.
+Admission passed at 18.97 GiB against 12.65 GiB required.
 
-1. Wait for the Ruff retry controller and supervisor to finish; preserve failures.
-2. Reverify through `report_heldout_recovery.collect_recovered`, then admit Nushell
-   and launch `run_heldout_recovery.py --case nushell`.
-3. Complete Nushell and the remaining fixed cases. Reverify all seven complete
-   histories with the explicit retry mapping before any adoption decision.
+1. Wait for Nushell controller and supervisor terminal; verify it through
+   `report_heldout_recovery.collect_recovered`.
+2. Admit and run fre forward/TLS, pgrust SHA-1, pgrust and private rg-aot in order
+   using the original `run_heldout.py --case LABEL` runner.
+3. Reverify all seven complete histories using `report_heldout_recovery.py`.
+   No candidate adoption before every fixed guard passes.
 
-The fifth archive batch preserves a completed debug-check cache: 781,927,676
-unique bytes in 237,598,021 archive bytes, with 135 external hashes verified.
-No installed tool or source was retired.
+Five committed archive batches preserve completed public Cargo caches.
+The newest preserves a debug-check target: 781,927,676 unique bytes in
+237,598,021 archive bytes, with 135 external hashes verified. No installed tool,
+source, result or executed artifact snapshot was retired.
 
 Exact process identities, full tool hashes and current receipts are in
 `.work/continuation-state.json`; inspect live receipts after a restart.
