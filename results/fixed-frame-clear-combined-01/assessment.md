@@ -1,0 +1,3 @@
+The combined runtime passes its full correctness checks: 300 workspace tests in debug and release (one ignored), 47,004 native differential commands, 245 TLS checks, 382 fre bodies (seven ignored), and all 52 integration assertions. The exporter, wrapper, source assertions and preserved body artifacts are unchanged.
+
+Performance integration remains pending under [the predeclared plan](../../benchmarks/experiments/frame-initialization/FIXED-INTEGRATION.md). Eight of the original nine library edit comparisons pass; Nushell type relations still needs storage. The fixed-clear runtime remains off main.

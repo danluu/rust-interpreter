@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Eight fixed-clear library gates pass; Nushell type relations awaits sufficient storage. Qualify the combination with current main while preserving this remaining gate.
+**Next:** Combined runtime passes full correctness checks. Run saved-runtime, fresh es8 and primary edit comparisons; the original Nushell type-relations gate still awaits storage.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
