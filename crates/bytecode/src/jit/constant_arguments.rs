@@ -1,4 +1,4 @@
-//! Offline, basic-block argument-byte facts. No compiler or VM uses this analysis.
+//! Basic-block argument-byte facts for the offline census and experimental specializer.
 use crate::{Function, Op, Program, Reg};
 use serde::Serialize;
 use std::collections::BTreeMap;

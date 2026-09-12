@@ -128,4 +128,23 @@ fn shape_and_code_growth_declines_preserve_program_bytes() {
     let mut p=program(&[7,7]);p.functions[1].code=vec![Op::Return];
     let (q,r)=specialize(p.clone()).unwrap();assert!(r["clones"].as_array().unwrap().is_empty());
     assert_eq!(bincode::serialize(&p).unwrap(),bincode::serialize(&q).unwrap());
+    let mut p=program(&[7,7]);
+    for _ in 0..32 {p.functions[1].code.insert(4,Op::Store{address:0,src:1,size:8});}
+    let (q,r)=specialize(p.clone()).unwrap();assert!(r["clones"].as_array().unwrap().is_empty());
+    assert!(r["attempts"].as_array().unwrap().iter().any(|a|a["reason"]=="code growth limit"));
+    assert_eq!(bincode::serialize(&p).unwrap(),bincode::serialize(&q).unwrap());
+}
+
+#[test]
+fn a_backedge_to_entry_discards_argument_facts_changed_by_the_loop() {
+    let mut p=program(&[3;8]);
+    let mut code=vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8},Op::Imm{dst:2,value:0},
+        Op::Binary{dst:3,overflow:4,op:Binary::Eq,a:1,b:2,bits:64,signed:false},Op::Switch{value:3,cases:vec![(1,0)],otherwise:5}];
+    padding(&mut code);
+    code.extend([Op::Imm{dst:6,value:1},Op::Binary{dst:7,overflow:8,op:Binary::Sub,a:1,b:6,bits:64,signed:false},
+        Op::Store{address:0,src:7,size:8},Op::Jump{target:0}]);
+    let exit=code.len();if let Op::Switch{cases,..}=&mut code[4] {cases[0].1=exit;}
+    code.extend([Op::Local{dst:9,offset:8},Op::Load{dst:11,address:9,size:8},Op::Local{dst:10,offset:32},
+        Op::Store{address:10,src:11,size:8},Op::Return]);
+    p.functions[1].code=code;check(&p,&[0,255],true);
 }

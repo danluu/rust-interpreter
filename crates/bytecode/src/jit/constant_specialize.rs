@@ -18,7 +18,15 @@ struct Report {
     original_functions:usize,original_operations:usize,new_operations:usize,
     scanned_sites:usize,declined_functions:usize,signature_work:usize,signatures:usize,
     fold_work:usize,rewritten_calls:usize,added_operations:usize,
-    clones:Vec<serde_json::Value>,decline:Option<&'static str>,
+    clones:Vec<serde_json::Value>,attempts:Vec<serde_json::Value>,omitted_attempts:usize,decline:Option<&'static str>,
+}
+impl Report {
+    fn attempt(&mut self,callee:usize,known:&[Constant],sites:usize,reason:&str,old:usize,new:Option<usize>) {
+        if self.attempts.len()==256 {self.omitted_attempts+=1;return;}
+        self.attempts.push(serde_json::json!({"callee":callee,"direct_sites":sites,"reason":reason,
+            "old_operations":old,"new_operations":new,
+            "known_arguments":known.iter().map(|&(index,bytes,value)|serde_json::json!({"index":index,"bytes":bytes,"value":format!("0x{value:x}")})).collect::<Vec<_>>()}));
+    }
 }
 fn done(program:Program,report:Report)->Result<(Program,serde_json::Value),String> {
     crate::validate(&program)?;
@@ -95,11 +103,18 @@ pub(super) fn specialize(mut program:Program)->Result<(Program,serde_json::Value
             if members.len()<2 {continue;}
             attempted+=1;
             let original=&program.functions[callee];
-            let Some((mut body,fold))=super::constant_fold::seeded_function(&program,original,&known,&mut global) else {continue;};
+            let Some((mut body,fold))=super::constant_fold::seeded_function(&program,original,&known,&mut global) else {
+                report.attempt(callee,&known,members.len(),"fold proof or work limit",original.code.len(),None);continue;
+            };
             crate::control_flow::optimize_function(&mut body,true)?;
             let removed=original.code.len().saturating_sub(body.code.len());
-            if removed<8 || removed*4<original.code.len() {continue;}
-            if report.added_operations+body.code.len()>growth_limit {continue;}
+            if removed<8 || removed*4<original.code.len() {
+                report.attempt(callee,&known,members.len(),"insufficient body reduction",original.code.len(),Some(body.code.len()));continue;
+            }
+            if report.added_operations+body.code.len()>growth_limit {
+                report.attempt(callee,&known,members.len(),"code growth limit",original.code.len(),Some(body.code.len()));continue;
+            }
+            report.attempt(callee,&known,members.len(),"accepted",original.code.len(),Some(body.code.len()));
             let clone=original_functions+generated.len();
             for &site in &members {redirects[site]=Some(clone);}
             report.clones.push(serde_json::json!({"original":callee,"clone":clone,"direct_sites":members.len(),

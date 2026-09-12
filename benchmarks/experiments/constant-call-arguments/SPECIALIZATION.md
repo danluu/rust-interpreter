@@ -34,7 +34,7 @@ as one JIT fallback category.
 
 Host qualification floor: 4 GiB. Reuse the existing populated debug/release
 dependency cache from build10, two Cargo workers, offline locked dependencies
-and the same host profiles. Expect376workspace tests per profile (one ignored)
+and the same host profiles. Expect377workspace tests per profile (one ignored)
 before publishing the prototype tools. Record free space before/after children;
 there is no cache deletion or fresh real-project build in this qualification.
 The next saved-program check uses retained typed programs and the exact control
@@ -45,3 +45,9 @@ to its interpreter oracle. Preserve that failed receipt. Build02 clears only
 those flags on the interpreter side, retaining identical guest resource limits,
 and adds two CLI checks for exact verification, unrelated mutation rejection
 and preservation of original bodies and existing output files.
+
+Build02 passed376tests/profile and saved01 produced18/9/1clones. The first token
+replay reduced logical operations by only0.16%; the busiest eligible callees
+were not cloned. Add a bounded256-attempt diagnostic explaining declines (no
+optimization-policy change), a true code-growth decline case, and a seeded
+backedge-to-entry regression. Build03 expects377tests/profile.
