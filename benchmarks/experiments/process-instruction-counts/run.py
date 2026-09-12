@@ -19,6 +19,20 @@ NAME = 'token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex'
 KEY = '49746a2218dbfdccacac0031f47e7a13b0440489c226979ff3374f6f899e09f9'
 
 
+def validate_test_output(mode, out, err, rbc, catalog, selected):
+    if mode == 'native':
+        assert 'test '+NAME+' ... ok' in out and 'test result: ok. 1 passed;' in out
+        return {}
+    assert out == '0\n'
+    match, = re.findall(r'^rust-interp-test-selection: (.+)$',err,re.M)
+    selection = json.loads(match)
+    assert selection['artifact_sha256'] == sha(rbc) and selection['catalog_sha256'] == sha(catalog)
+    assert selection['name'] == NAME and selection['function'] == selected['function']
+    # VM statistics are optional and disabled for this whole-process probe.
+    # The catalog-bound selection and successful exit validate the assertion.
+    return dict(selection=selection)
+
+
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
@@ -101,17 +115,7 @@ def main():
             for mode in (['native','jit'] if pair%2 == 0 else ['jit','native']):
                 row,out,err = execute(str(pair)+'-'+mode,commands[mode])
                 row.update(pair=pair,mode=mode)
-                if mode == 'native':
-                    assert 'test '+NAME+' ... ok' in out and 'test result: ok. 1 passed;' in out
-                else:
-                    assert out == '0\n'
-                    match, = re.findall(r'^rust-interp-test-selection: (.+)$',err,re.M)
-                    selection = json.loads(match)
-                    assert selection['artifact_sha256'] == sha(rbc) and selection['catalog_sha256'] == sha(catalog)
-                    assert selection['name'] == NAME and selection['function'] == selected['function']
-                    row['selection'] = selection
-                    logical, = re.findall(r'^instructions=(\d+) peak_guest_memory=(\d+)$',err,re.M)
-                    row['logical_instructions'],row['peak_guest_memory'] = map(int,logical)
+                row.update(validate_test_output(mode,out,err,rbc,catalog,selected))
                 pair_rows[mode] = row
                 write(work/'records.json',rows)
             a,b = [pair_rows[m]['counts'] for m in ['native','jit']]
