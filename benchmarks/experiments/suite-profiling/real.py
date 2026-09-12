@@ -31,7 +31,7 @@ def distribution(profile,statistics):
             if not hits:continue
             end=f['jit_block_ends'][pc];length=end-pc
             delta[pc]+=hits;delta[end]-=hits
-            label='1' if length==1 else next((f'2..{limit}' for limit in [4,8,16,32,64] if length<=limit),'65..1024')
+            label=next(label for upper,label in [(1,'1'),(4,'2..4'),(8,'5..8'),(16,'9..16'),(32,'17..32'),(64,'33..64'),(1024,'65..1024')] if length<=upper)
             blocks[label]+=hits
             variant=f['operations'][pc].split(' ',1)[0]
             if length!=1 or variant not in ['Call','Return']:
