@@ -45,3 +45,12 @@ requires real test coverage and unchanged one-shot behavior. Preserve original
 assertions and strict rustc checking. Use the shared lock with a 45-second wait,
 two build workers and the 8 GiB floor. Preserve raw evidence and publish compact
 results and qualified changes regularly.
+
+After the three public edited workflows, extend the saved-artifact qualification
+to Ruff's six registry tests and Nushell's four parser-keyword tests. Use the
+last successful native executable and matching source-state bytecode from each
+owned completed history. Verify their identities and modification times. Run
+each native test in a separate process, compare old/new ordinary batches, then
+fresh/prepared isolated executions under identical recorded entropy. Empty
+entropy tapes are valid for deterministic cases. This is additional correctness
+coverage; it provides no new end-to-end or timing claim. Keep the 8 GiB floor.
