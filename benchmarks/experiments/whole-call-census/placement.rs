@@ -23,7 +23,12 @@ impl Default for Options {
 const MAX_COPY_BYTES: usize = 128;
 
 #[derive(Clone, Copy, Default)]
-pub struct Policy { pub compare: bool, pub prefix: bool, pub runtime_guard: bool }
+pub struct Policy { pub compare: bool, pub prefix: bool, pub runtime_guard: bool,
+    pub cfg: bool, pub one_call: bool }
+fn runtime_zeroes(f: &Function, policy: Policy) -> bool {
+    crate::registers::needs_initial_zeroes(f)
+        && (!policy.cfg || !crate::register_init::proves_initialized(f))
+}
 fn scalar_leaf(f: &Function, policy: Policy) -> bool {
     f.code.len() > 1
         && f.code.iter().any(|op| matches!(op, Op::Return))
@@ -42,6 +47,7 @@ fn scalar_leaf(f: &Function, policy: Policy) -> bool {
             | Op::Jump { .. }
             | Op::Return
             | Op::Trap { .. } => true,
+            Op::Call { .. } => policy.one_call,
             Op::CompareBytes { .. } => policy.compare,
             Op::Copy { size, .. } => *size <= MAX_COPY_BYTES,
             Op::Binary { bits, .. } | Op::Unary { bits, .. } => *bits <= 64,
@@ -193,6 +199,9 @@ fn relocated(
             src: r(*src),
             size: *size,
         },
+        Op::Call { function, args, destination } => Op::Call {
+            function: *function, args: args.iter().map(|reg| r(*reg)).collect(), destination: r(*destination),
+        },
         Op::CompareBytes { dst, left, right, size } => Op::CompareBytes {
             dst: r(*dst), left: r(*left), right: r(*right), size: r(*size),
         },
@@ -293,12 +302,13 @@ pub fn transform(original: &Program, options: Options, policy: Policy) -> Result
         .iter()
         .map(|f| {
             scalar_leaf(f, policy)
+                && (!policy.one_call || f.code.iter().filter(|op| matches!(op, Op::Call { .. })).count() <= 1)
                 && f.code.len() <= options.leaf_operations
                 && f.frame_size <= 512
                 && f.registers <= 256
                 && f.result.size <= MAX_COPY_BYTES
                 && f.args.iter().all(|slot| slot.size <= MAX_COPY_BYTES)
-                && !if policy.prefix { crate::registers::needs_initial_zeroes(f) } else { crate::registers::needs_initial_zeroes_for_inlining(f) }
+                && !if policy.prefix { runtime_zeroes(f, policy) } else { crate::registers::needs_initial_zeroes_for_inlining(f) }
         })
         .collect();
     let original_operations: usize = original.functions.iter().map(|f| f.code.len()).sum();
@@ -492,7 +502,7 @@ pub fn transform(original: &Program, options: Options, policy: Policy) -> Result
         output.code = code;
         // Reject an expansion that introduces whole-caller register clearing.
         // This is a performance guard, never a trusted semantic annotation.
-        let clearing = |f| if policy.runtime_guard { crate::registers::needs_initial_zeroes(f) }
+        let clearing = |f| if policy.runtime_guard { runtime_zeroes(f, policy) }
             else { crate::registers::needs_initial_zeroes_for_inlining(f) };
         if !clearing(caller) && clearing(output)
         {
@@ -503,7 +513,7 @@ pub fn transform(original: &Program, options: Options, policy: Policy) -> Result
             continue;
         }
         changed.push(json!({"function":id,"name":caller.name,"sites":selected_count,
-            "selected_pcs":selected_pcs,"runtime_zeroes_before":crate::registers::needs_initial_zeroes(caller),"runtime_zeroes_after":crate::registers::needs_initial_zeroes(output),"old_operations":caller.code.len(),"new_operations":output.code.len(),"removed_jumps":removed,
+            "selected_pcs":selected_pcs,"runtime_zeroes_before":runtime_zeroes(caller,policy),"runtime_zeroes_after":runtime_zeroes(output,policy),"old_runtime_zeroes_after":crate::registers::needs_initial_zeroes(output),"old_operations":caller.code.len(),"new_operations":output.code.len(),"removed_jumps":removed,
             "old_frame_size":caller.frame_size,"new_frame_size":output.frame_size,"old_registers":caller.registers,"new_registers":output.registers,
             "needed_register_zeroes_before":crate::registers::needs_initial_zeroes_for_inlining(caller),"needed_register_zeroes_after":crate::registers::needs_initial_zeroes_for_inlining(output)}));
     }

@@ -5,6 +5,8 @@ use rust_interp_bytecode::{Binary, Function, Op, Program, Reg, Slot, diagnostic_
 mod registers;
 mod opportunities;
 mod placement;
+#[path = "../whole-call-inline/register_init.rs"]
+mod register_init;
 use rust_interp_bytecode::remove_fallthrough_jumps;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -207,8 +209,10 @@ fn placements(program: &Program, sites: &[CallSite]) -> Result<Vec<serde_json::V
     let mut results = vec![];
     for (label, policy) in [
         ("unchanged", placement::Policy::default()),
-        ("compare_and_prefix_old_guard", placement::Policy {compare:true,prefix:true,runtime_guard:false}),
-        ("compare_and_prefix_runtime_guard", placement::Policy {compare:true,prefix:true,runtime_guard:true}),
+        ("compare_and_prefix_old_guard", placement::Policy {compare:true,prefix:true,runtime_guard:false,..Default::default()}),
+        ("compare_and_prefix_runtime_guard", placement::Policy {compare:true,prefix:true,runtime_guard:true,..Default::default()}),
+        ("compare_cfg", placement::Policy {compare:true,prefix:true,runtime_guard:true,cfg:true,one_call:false}),
+        ("compare_cfg_one_call", placement::Policy {compare:true,prefix:true,runtime_guard:true,cfg:true,one_call:true}),
     ] {
         let (q, report) = placement::transform(program, placement::Options::default(), policy)?;
         if label == "unchanged" {

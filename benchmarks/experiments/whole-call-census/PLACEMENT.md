@@ -22,3 +22,16 @@ the transformed programs. Keep the census 02 result and test-count failure intac
 If the runtime guard removes most opportunities, investigate a stronger bounded
 definite-initialization proof shared by runtime and compiler before expanding
 inlining. Do not weaken initialization requirements or tune the size thresholds.
+
+The completed placement 03 confirms this limitation. Follow-up 04 adds the bounded
+CFG proof in `../whole-call-inline/register_init.rs`, used for both eligibility
+and the proposed runtime clearing guard. Four tests include exhaustive independent
+path masks for 38,416 small graphs, joins/backedges/aliases, and every resource
+bound. Exhaustion returns no proof; entry always starts with no definitions.
+
+Measure two further static policies: CompareBytes plus that proof, and the same
+policy permitting at most one direct Call in an eligible body. The latter adds
+complete Call operand relocation; all existing size/growth/copy limits remain.
+This diagnostic performs one bounded pass, no recursive expansion or tuning.
+Neither policy executes guests or becomes the production compiler here. The
+unchanged-pass byte comparison and all previous profile checks remain mandatory.

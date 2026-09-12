@@ -55,6 +55,10 @@ def main():
             require(receipt['evidence'][str(smoke_path.relative_to(ROOT))] == sha(smoke_path)
                     and prior == smoke['commands'], 'smoke command receipt differs')
             source = {str(p.relative_to(ROOT)):sha(p) for p in HERE.iterdir() if p.is_file()}
+            for name in ['register_init.rs','register_init_tests.rs']:
+                p=HERE.parent/'whole-call-inline'/name
+                source[str(p.relative_to(ROOT))]=sha(p)
+                shutil.copy2(p,out/p.name)
             source[str((HERE.parent/'call-slot-census/tests.rs').relative_to(ROOT))]=sha(HERE.parent/'call-slot-census/tests.rs')
             source.update({p:h for p,h in tool['files'].items() if p.startswith('crates/bytecode/')})
             frozen = {**source, **{str(p.relative_to(ROOT)):sha(p) for p in
@@ -111,7 +115,7 @@ def main():
             cargo=['cargo','+nightly-2026-09-08']
             flags=['--release','--locked','--offline','--jobs','2','--manifest-path',str(HERE/'Cargo.toml'),'--target-dir',str(target)]
             command('tests',cargo+['test']+flags)
-            require('test result: ok. 17 passed; 0 failed; 0 ignored;' in (work/'tests.log').read_text(), 'census test coverage differs')
+            require('test result: ok. 21 passed; 0 failed; 0 ignored;' in (work/'tests.log').read_text(), 'census test coverage differs')
             command('build',cargo+['build']+flags)
             binary=target/'release/whole-call-census'; frozen[str(binary.relative_to(ROOT))]=sha(binary)
             cases=[]
@@ -127,7 +131,7 @@ def main():
                 cases.append(dict(label=row['label'],report=str(destination.relative_to(ROOT)),report_sha256=sha(destination),
                     **{k:v for k,v in data.items() if k != 'sites'},executed_call_sites=len(data['sites']), opportunities=output['opportunities'], placements=output['placements']))
             write(out/'summary.json',dict(status='passed',tool_key=tool['tool_key'],source_commit=tool['commit'],
-                tests_passed=17,new_guest_executions=0,performance_measurement=False,cases=cases,frozen=frozen,commands=commands,
+                tests_passed=21,new_guest_executions=0,performance_measurement=False,cases=cases,frozen=frozen,commands=commands,
                 limitation='Dynamic counts from unchanged artifacts are opportunities, not speedup estimates. Leaf eligibility excludes caller growth and placement guards; it does not simulate inlining. No transformed guest executes.'))
             status.update(status='finished',returncode=0,finished_at=time.time());write(work/'status.json',status)
             print(json.dumps(dict(status='passed',cases=[dict(label=c['label'],totals=c['totals'],declined_functions=len(c['declined_functions'])) for c in cases])),flush=True)
