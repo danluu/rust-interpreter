@@ -8,6 +8,17 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+The shared-call specialization prototype is on
+`experiment/constant-call-specialization-20260912`, with 377 debug/release tests
+and all 34 saved real-suite assertions passing. Its initial runtime changes are
+−0.69% token, −2.38% folded and +0.32% pgrust. The candidate remains off main;
+no real edited-command performance screen has run. Bounded decline diagnostics
+show its busiest eligible callees being rejected inside the folder. A focused
+regression reproduces an ordering limitation: dead branches still trigger the
+register-initialization guard before CFG cleanup. Qualify cleanup ordering while
+retaining the final guard, then remeasure only if the artifacts change.
+[Replay assessment](results/constant-specialize-replay-01/assessment.md).
+
 Catalog-bound single-test profiling passes 340 Rust tests/profile and fourteen
 real VM commands. Seven current token/folded/pgrust test profiles exactly match
 fresh retained-VM controls under replayed entropy. Their saved bytecode stays
