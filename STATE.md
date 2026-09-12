@@ -48,19 +48,33 @@ The compiler experiment has completed primary, broad correctness and all seven
 held-out gates. The exact candidate is still isolated; source integration and
 production adoption have not been performed.
 
-Follow [PROFILE-NEXT.md](benchmarks/experiments/aggregate-byte-writes/PROFILE-NEXT.md):
-three owned original-test executions each, with exact emitted-code capture.
-Folded sampling is running as `aggregate-relocation-folded-sample-01`; token
-follows only after its VM children and supervisor finish. Do not alter tests,
-RNG, runtime options or source to lengthen a sample. Summarize and attribute each
-profile to its own mappings/code, then choose a substantial remaining cost.
+The [six fresh profile executions](results/aggregate-relocation-profiles-assessment-01/summary.json)
+verify against the exact original-source benchmark artifacts and their own
+emitted code. Clearing is 20.42% of folded and 10.10% of token self samples.
+The [cursor census](results/aggregate-relocation-cursor-census-02/assessment.md)
+reconciles all 1,304 cursor samples. Remaining-budget loads/stores alone account
+for 7.54% folded and 10.06% token. No new guest execution was needed for the split.
+The first census was rejected at the lock; its failure/source are preserved.
 
-The [complete final report](results/aggregate-relocation-heldout-recovery-01/assessment.md)
-independently recomputes all seven gates using the explicit Ruff retry history.
-The [recovery coordinator qualification](results/aggregate-relocation-recovery-controls-02/assessment.md)
-checks both original command templates, 30 invalid receipts and two monitor
-lifecycle/error cases. Its first flag-suffix qualification failure is preserved.
-The retry observed at least 19 GiB free; the original stop's cause is unresolved.
+The next implementation is declared in
+[BUDGET-REGISTER-NEXT.md](benchmarks/experiments/aggregate-byte-writes/BUDGET-REGISTER-NEXT.md):
+reserve x22 for the exact remaining budget across resumable native chains.
+Call temporaries must be reassigned with a clobber audit; Return's private-frame
+register-base load moves after the checked result copy. The external prologue
+loads budget before the internal resume label; every VM exit publishes it before
+restoring the host register. Preserve all three persistent guest-register pairs,
+checks, counts, initialization and non-resumable modes.
+
+No budget-register implementation or benchmark has started. Next actions:
+1. Implement an isolated VM build recipe, keeping exporter/wrapper9637 bytes.
+2. Add focused ABI/budget/fault/profile/TLS differential coverage and run broad
+   qualifications; retain exact paired artifacts.
+3. Run the declared A/A controls, then fixed primary gates (at least 10% token
+   wall improvement, lower CPU, beyond the A/A envelope; folded within5%).
+4. Require all seven independent held-out guards before any adoption; source
+   integration remains a separate reproducible component-identity check.
+
+No task process is active. The unbounded goal remains active.
 
 Five committed archive batches preserve completed public Cargo caches.
 The newest preserves a debug-check target: 781,927,676 unique bytes in

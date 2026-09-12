@@ -118,6 +118,17 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Aggregate relocation now passes all [seven fixed held-outs](../results/aggregate-relocation-heldout-recovery-01/assessment.md):
+  588 commands, 105 edited pairs and 294 artifacts. Wall changes range from
+  −0.28% to +2.71%, CPU from −0.27% to +2.21%; no pooled speedup. The original
+  Ruff disk-guard stop remains excluded and preserved. Six fresh exact-artifact
+  profiles verify. Item3.3 now has a [field-level cursor census](../results/aggregate-relocation-cursor-census-02/assessment.md):
+  instruction-budget accesses account for 10.06% token and7.54% folded samples.
+  The next bounded ABI experiment keeps budget in a native register while
+  preserving exact charges, fault order and all VM exits. It is planned, not
+  implemented or adopted. Production source integration remains separate.
+
+
 - Item 9.2 now includes explicit provenance for completed public exporter-change
   benchmarks. The [qualification](../results/compiler-cache-selector-03/assessment.md)
   verifies four real cache identities, rejects 25 invalid selections/proofs,

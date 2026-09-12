@@ -74,7 +74,10 @@ Before interpreting a fine-grained result, run matched identical-tool A/A contro
 for the primary workflows using the current qualified tool and same schedule.
 Require **at least 10% paired token complete-command wall improvement and lower
 child CPU**; folded must stay within 5% paired wall and CPU regression. The token
-gain must exceed the observed same-workflow A/A discrepancy. If this ambitious
+gain must exceed the token A/A envelope: the larger of the absolute paired-median
+ratio's deviation from 1 and the nearest-rank 90th percentile of the fifteen
+absolute paired ratio deviations. Keep all A/A samples; do not retry an otherwise
+valid control to obtain a narrower envelope. If this ambitious
 gate fails, preserve the result and park the change rather than loosen the gate
 or tune a series of small variants. Every held-out must independently stay within
 5% paired wall and CPU regression before adoption. Do not pool cases or count
