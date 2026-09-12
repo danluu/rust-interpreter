@@ -63,9 +63,13 @@ These counts do not predict a speedup.
 [address admission](results/scalar-boundary-admission-01/assessment.md).
 
 The isolated versioned artifact contract passes 297 debug/release tests,
-one ignored, and exact legacy roundtrips. No scalar guest or performance
-comparison has run. Next is custom interpreter execution, then native
-resumable support, caller value operands and compiler promotion.
+one ignored, and exact legacy roundtrips. The custom interpreter now passes
+305 debug/release tests; serialized CLI checks pass 23 commands with
+native Rust controls. No scalar performance comparison has run.
+Native resumable support, caller value operands and compiler promotion
+remain next. The experimental runtime is unpublished.
+[Interpreter](results/scalar-abi-interpreter-build-01/assessment.md);
+[CLI qualification](results/scalar-abi-cli-01/assessment.md);
 [Artifact qualification](results/scalar-abi-artifact-build-01/assessment.md);
 [implementation contract](benchmarks/experiments/scalar-value-abi/CONTRACT.md).
 

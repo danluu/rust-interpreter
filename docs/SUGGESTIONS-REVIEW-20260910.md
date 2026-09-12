@@ -151,9 +151,11 @@ review are not commitments or evidence of feasibility.
   [Final-bytecode admission](../results/scalar-boundary-admission-01/assessment.md)
   now passes eleven tests and admits 1,542 token slots, retaining 85.80M argument
   copies and 47.66M returns. The isolated [versioned artifact contract](../results/scalar-abi-artifact-build-01/assessment.md)
-  passes 297 debug/release tests and exact legacy roundtrips. Next is custom
-  interpreter execution, then native resumable/caller-value/compiler support.
-  No scalar guest or performance comparison has run yet; the counts are not
+  passes 297 debug/release tests and exact legacy roundtrips. The
+  [custom interpreter](../results/scalar-abi-interpreter-build-01/assessment.md)
+  now passes 305 debug/release tests; [CLI checks](../results/scalar-abi-cli-01/assessment.md)
+  pass 23 commands with native controls. Native resumable/caller-value/compiler
+  support remains next. No scalar performance comparison has run; the counts are not
   a speedup claim. [Implementation contract](../benchmarks/experiments/scalar-value-abi/CONTRACT.md).
 
 - The qualified aggregate compiler is now integrated as `5b2330c` / `9637b0ac`.

@@ -97,10 +97,12 @@ neither work bound is exhausted. Counts do not forecast latency.
 The [scalar artifact contract](results/scalar-abi-artifact-build-01/assessment.md)
 is implemented in an isolated tree and passes 297 debug/release workspace tests,
 one ignored. Both original version-5 artifacts roundtrip byte-for-byte. Version 6
-uses a companion ABI table; existing execution APIs reject scalar bodies. No
-runtime tool was published and no scalar guest has run. Next is the custom
-[interpreter implementation](benchmarks/experiments/scalar-value-abi/INTERPRETER-NEXT.md),
-then native resumable support, caller value operands and compiler promotion.
+uses a companion ABI table; existing Program execution APIs reject scalar bodies.
+The [custom interpreter](results/scalar-abi-interpreter-build-01/assessment.md) now
+passes 305 debug/release tests (one ignored), including recursion, TLS, faults
+and exact budgets. [Serialized CLI checks](results/scalar-abi-cli-01/assessment.md)
+pass 23 commands with native Rust controls. No runtime was published. Next are
+native resumable support, caller value operands and compiler promotion.
 The [contract and fresh complete-command gates](benchmarks/experiments/scalar-value-abi/CONTRACT.md)
 remain required. Existing native Calls already cross guest frames without
 returning to the Rust VM. No scalar performance comparison has run yet.
