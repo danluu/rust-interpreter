@@ -8,6 +8,8 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+The composed candidate is qualified on `experiment/composed-development-20260912`: whole-call expansion, fixed frame clearing, call-slot hints, a persistent budget register and compiler-proven function reuse. Build `9abacd0a` passes392 Rust tests per profile;203 cache/strict-check commands cover both incremental and nonincremental project profiles. Automatic reuse falls back to full lowering when the repository disables incremental compilation. The pgrust guard passes all132 commands and fifteen edited pairs: +0.2% wall and +1.0% CPU, within the5% limits. Token, folded, the original three-test9637b0ac anchor and broader guards remain pending. Main contains these results; engine adoption remains unqualified. [Build qualification](results/composed-development-build-03/summary.json), [cache qualification](results/composed-development-cache-03/summary.json), [pgrust result](results/composed-development-edit-pgrust-02/assessment.md).
+
 Explicit parallel isolated suites pass365Rust tests/profile and56Python tests.
 The five-edit token complete-command screen improves wall time34.3% with3.2%
 more CPU. All40 commands, original assertions, wrong edits and restoration
