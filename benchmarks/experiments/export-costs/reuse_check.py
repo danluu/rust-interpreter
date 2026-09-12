@@ -97,6 +97,29 @@ def persistent_cache(stderr, census):
     return report
 
 
+def actual_cache(stderr):
+    prefix = 'rust-interp-function-cache: '
+    lines = [line[len(prefix):] for line in stderr.splitlines() if line.startswith(prefix)]
+    assert len(lines) == 1 and len(lines[0].encode()) <= 1024**2
+    report = json.loads(lines[0])
+    assert report['schema_version'] == 1 and report['mode'] == 'reuse'
+    assert 'rust-interp-function-costs:' not in stderr and 'rust-interp-binding-replay:' not in stderr
+    assert re.fullmatch('[0-9a-f]{64}', report['namespace']) and report['staged_in_incremental_session'] is True
+    for key in ['loaded_entries', 'previous_payload_uses', 'red_functions', 'green_missing', 'staged_entries',
+                'lowered_functions', 'skipped_functions', 'declined_functions']:
+        assert type(report[key]) is int and 0 <= report[key] <= 10_000
+    assert report['skipped_functions'] == report['previous_payload_uses']
+    assert report['lowered_functions'] == report['red_functions'] + report['green_missing']
+    total = report['lowered_functions'] + report['skipped_functions']
+    assert total > 0 and report['staged_entries'] + report['declined_functions'] == total
+    assert report['all_original_lowering_executed'] == (report['skipped_functions'] == 0)
+    assert type(report['staged_bytes']) is int and 72 <= report['staged_bytes'] <= 128 * 1024**2
+    for key, value in report.items():
+        if key.endswith('_seconds'):
+            assert math.isfinite(value) and value >= 0
+    return report
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
@@ -104,6 +127,7 @@ def main():
     parser.add_argument('--typed-relocations', action='store_true')
     parser.add_argument('--binding-replay', action='store_true')
     parser.add_argument('--expected-tests', type=int)
+    parser.add_argument('--function-reuse', action='store_true')
     args = parser.parse_args()
     assert re.fullmatch(r'export-reuse-fixtures-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -111,6 +135,7 @@ def main():
         require_space(ROOT, 8)
         build = json.loads(args.build.read_text())
         assert not args.binding_replay or args.typed_relocations
+        assert not args.function_reuse or args.binding_replay
         expected_tests = 47 if args.binding_replay else (44 if args.typed_relocations else 41)
         if args.expected_tests is not None:
             assert args.expected_tests >= expected_tests
@@ -130,6 +155,8 @@ def main():
             paths.append(ROOT / 'benchmarks/experiments/export-costs/TYPED-RELOCATIONS.md')
         if args.binding_replay:
             paths.append(ROOT / 'benchmarks/experiments/export-costs/BINDING-REPLAY.md')
+        if args.function_reuse:
+            paths.append(ROOT / 'benchmarks/experiments/export-costs/PERSISTENT-REUSE.md')
         paths += [ROOT / 'tests' / (f + '_fixture.rs') for f in fixtures]
         paths += [p / name for p in [tool, baseline] for name in ['rust-interp-mir-export', 'rust-interp-vm', 'rust-interp-rustc-wrapper']]
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
@@ -139,6 +166,7 @@ def main():
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER', 'CARGO_INCREMENTAL']}
         records, reports = [], []
         replay_reports = []
+        cache_reports = []
         relocation_kinds = set()
         type_id_numeric_allocations = 0
         def invoke(label, command, selected=env, success=True):
@@ -167,6 +195,8 @@ def main():
             modes = [('retained', baseline, False), ('off', tool, False), ('on', tool, True)]
             if args.binding_replay:
                 modes.append(('replay', tool, True))
+            if args.function_reuse:
+                modes.extend([('reuse-cold', tool, False), ('reuse-warm', tool, False)])
             for label, compiler, enabled in modes:
                 artifact = work / (name + '-' + label + '.rbc')
                 selected = dict(env, RUST_INTERP_OUTPUT=str(artifact), RUST_INTERP_ENTRY='rust_interp_entry')
@@ -176,11 +206,19 @@ def main():
                         selected['RUST_INTERP_ALLOCATION_TRACE'] = '1'
                     if label == 'replay':
                         selected['RUST_INTERP_BINDING_REPLAY'] = '1'
+                extra = []
+                if label.startswith('reuse-'):
+                    selected['RUST_INTERP_FUNCTION_CACHE'] = 'reuse'
+                    extra = ['-C', 'incremental=' + str(work / (name + '-incremental'))]
                 invoke_label = name + '-export-' + label
                 _, stderr = invoke(invoke_label, [compiler / 'rust-interp-mir-export', source, '--crate-name',
                     'reuse_census_case', '--edition=2024', '--emit=metadata', '--sysroot', sysroot,
-                    '-o', artifact.with_suffix('.rmeta')], selected)
+                    *extra, '-o', work / (name + '-reuse.rmeta') if extra else artifact.with_suffix('.rmeta')], selected)
                 hashes.append(sha(artifact))
+                if label.startswith('reuse-'):
+                    cached = actual_cache(stderr)
+                    assert cached['skipped_functions'] == 0 if label == 'reuse-cold' else cached['skipped_functions'] > 0
+                    cache_reports.append(dict(fixture=name, phase=label, **cached))
                 if enabled:
                     report, scopes = observation(stderr, artifact)
                     assert report['schema_version'] == (2 if args.typed_relocations else 1)
@@ -226,6 +264,18 @@ def main():
                 ('binding-without-costs', '', {'RUST_INTERP_FUNCTION_COSTS': '0', 'RUST_INTERP_BINDING_REPLAY': '1'}, 'binding replay requires'),
                 ('binding-with-trace', '', {'RUST_INTERP_BINDING_REPLAY': '1', 'RUST_INTERP_ALLOCATION_TRACE': '1'}, 'binding replay requires'),
             ]
+        if args.function_reuse:
+            base = {'RUST_INTERP_FUNCTION_CACHE': 'reuse', 'RUST_INTERP_FUNCTION_COSTS': '0', 'RUST_INTERP_BINDING_REPLAY': '0'}
+            rejections += [
+                ('reuse-type', 'fn unused() { let _: u64 = "wrong"; }', base, 'mismatched types'),
+                ('reuse-borrow', 'fn unused() { let mut x=1; let a=&mut x; let b=&mut x; *a+=*b; }', base, 'cannot borrow'),
+                ('reuse-partial', '', dict(base, RUST_INTERP_DEMAND_BODIES='1'), 'reuse requires strict checking'),
+                ('reuse-costs', '', dict(base, RUST_INTERP_FUNCTION_COSTS='1'), 'reuse requires strict checking'),
+                ('reuse-binding', '', dict(base, RUST_INTERP_BINDING_REPLAY='1'), 'binding replay requires'),
+                ('reuse-trace', '', dict(base, RUST_INTERP_ALLOCATION_TRACE='1'), 'reuse requires strict checking'),
+                ('reuse-invalid', '', dict(base, RUST_INTERP_FUNCTION_CACHE='invalid'), 'accepts only'),
+                ('reuse-without-incremental', '', base, 'requires an incremental dependency graph'),
+            ]
         for name, body, settings, diagnostic in rejections:
             source = work / (name + '.rs')
             source.write_text('pub fn entry() -> u64 { 1 }\n' + body + '\n')
@@ -235,8 +285,9 @@ def main():
             if args.binding_replay:
                 selected['RUST_INTERP_BINDING_REPLAY'] = '1'
             selected.update(settings)
+            extra = ['-C', 'incremental=' + str(work / 'rejection-incremental')] if args.function_reuse and name != 'reuse-without-incremental' else []
             _, stderr = invoke('reject-' + name, [tool / 'rust-interp-mir-export', source,
-                '--crate-type=lib', '--edition=2024', '--emit=metadata', '-o', artifact.with_suffix('.rmeta')], selected, success=False)
+                '--crate-type=lib', '--edition=2024', '--emit=metadata', *extra, '-o', artifact.with_suffix('.rmeta')], selected, success=False)
             assert diagnostic in stderr and not artifact.exists() and 'rust-interp-function-costs:' not in stderr
         assert all(sha(ROOT / path) == digest for path, digest in frozen.items())
         if args.typed_relocations:
@@ -244,9 +295,10 @@ def main():
         out = ROOT / 'results' / args.run_id
         out.mkdir(exist_ok=False)
         write(out / 'summary.json', dict(status='passed', performance_measurement=False, tool_key=key,
-              source_commit=build['source_commit'], commands=len(records), native_executions=3 * len(fixtures), guest_executions=(24 if args.binding_replay else 18) * len(fixtures),
-              exports=(4 if args.binding_replay else 3) * len(fixtures), native_builds=len(fixtures), expected_rejections=len(rejections), fixtures=reports,
+              source_commit=build['source_commit'], commands=len(records), native_executions=3 * len(fixtures), guest_executions=((24 if args.binding_replay else 18) + (12 if args.function_reuse else 0)) * len(fixtures),
+              exports=((4 if args.binding_replay else 3) + (2 if args.function_reuse else 0)) * len(fixtures), native_builds=len(fixtures), expected_rejections=len(rejections), fixtures=reports,
               binding_replay=args.binding_replay, reconstruction=replay_reports,
+              function_reuse=args.function_reuse, actual_reuse=cache_reports,
               typed_relocations=args.typed_relocations, relocation_kinds=sorted(relocation_kinds),
               type_id_numeric_allocations_excluded=type_id_numeric_allocations,
               all_artifact_hashes_identical=True, frozen=frozen, raw=str(work.relative_to(ROOT)),
