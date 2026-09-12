@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Catalog-selected profiling qualifies 340 Rust tests/profile and 14 real VM commands covering 7 current tests, with exact entropy/counts. Next investigate private thin raw-pointer value promotion under the existing scalar-local proof, preserving checking, address exposure exclusions and legacy promotion capacity. Both register-capacity candidates stay parked.
+**Next:** Pointer promotion is parked after a 0.34% wall/CPU edit-screen gain, below10%. Next inspect lifetime-based reuse of distinct virtual-register storage using existing bounded CFG liveness. This differs from the parked gap-removal compaction; retain all previous failed candidates off main.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

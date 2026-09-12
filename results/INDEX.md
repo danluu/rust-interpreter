@@ -75,6 +75,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | register-width | [jit-register-width-weighted-01/summary.json](jit-register-width-weighted-01/summary.json) |
 | region-cache | [jit-region-cache-screen-01/summary.json](jit-region-cache-screen-01/summary.json) |
 | suite-profiling | [suite-profiling-real-01/summary.json](suite-profiling-real-01/summary.json) |
+| pointer-promotion | [private-pointer-screen-token-01/summary.json](private-pointer-screen-token-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
