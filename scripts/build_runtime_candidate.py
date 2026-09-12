@@ -20,12 +20,20 @@ CONTROL = '9ae791980111702fbe88b04e5fff74d6816218fba433701ab54b370447f9337b'
 TARGET = ROOT / '.work/fixed-frame-clear-combined-build-01/target'
 
 
+def test_counts(output):
+    matches = re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;', output)
+    assert matches and all(int(failed) == 0 for _, failed, _ in matches)
+    return dict(passed=sum(int(passed) for passed, _, _ in matches),
+                ignored=sum(int(ignored) for _, _, ignored in matches))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--expected-tests', type=int, required=True)
     parser.add_argument('--plan', type=Path, required=True)
     parser.add_argument('--build-exporter', action='store_true', help='also qualify and install the current exporter/wrapper')
+    parser.add_argument('--reuse-tests', type=Path, help='reuse both passed profiles from a build stopped before binary publication; Rust inputs must be identical')
     args = parser.parse_args()
     assert re.fullmatch(r'[a-z][a-z0-9-]*-build-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -38,19 +46,51 @@ def main():
         paths += [p for p in (ROOT / 'crates').rglob('*') if p.is_file() and (p.suffix == '.rs' or p.name == 'Cargo.toml')]
         paths += [Path(__file__).resolve(), args.plan.resolve()]
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
+        reused_counts = {}
+        if args.reuse_tests is not None:
+            old = args.reuse_tests.resolve(strict=True)
+            assert old.parent == ROOT / '.work' and old.name != args.run_id
+            old_plan = json.loads((old / 'plan.json').read_text())
+            old_status_path = ROOT / '.work/experiments' / old.name / 'status.json'
+            old_status = json.loads(old_status_path.read_text())
+            assert old_status['owner'] == old_status['cwd'] == str(ROOT) and old_status['status'] == 'finished'
+            assert sha(old_status_path.with_name('plan.json')) == old_status['plan_sha256']
+            assert sha(old_status_path.with_name('command.log')) == old_status['log_sha256']
+            assert old_plan['target'] == str(TARGET) and old_plan['expected_tests'] == args.expected_tests
+            assert old_plan.get('build_exporter', False) == args.build_exporter
+            for name, digest in old_plan['frozen'].items():
+                if name == str(Path(__file__).resolve().relative_to(ROOT)):
+                    content = subprocess.check_output(['git', 'show', old_plan['source_commit'] + ':' + name], cwd=ROOT)
+                    assert hashlib.sha256(content).hexdigest() == digest
+                else:
+                    assert sha(ROOT / name) == digest, 'tested input changed: ' + name
+            commands = json.loads((old / 'commands.json').read_text())
+            assert [c['label'] for c in commands] == ['test-debug', 'test-release']
+            assert all(c['returncode'] == 0 for c in commands)
+            proof_paths = [old / 'plan.json', old / 'commands.json', old_status_path,
+                           old_status_path.with_name('plan.json'), old_status_path.with_name('command.log')]
+            for label in ['test-debug', 'test-release']:
+                logs = [old / (label + '.' + suffix) for suffix in ['stdout', 'stderr']]
+                reused_counts[label] = test_counts(''.join(p.read_text() for p in logs))
+                assert reused_counts[label] == dict(passed=args.expected_tests, ignored=1)
+                proof_paths += logs
+            frozen.update({str(p.relative_to(ROOT)): sha(p) for p in proof_paths})
         retained, _ = installed_tools(CONTROL)
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(source_commit=source, frozen=frozen, target=str(TARGET), control=CONTROL,
-            expected_tests=args.expected_tests, build_exporter=args.build_exporter, jobs=2, minimum_free_gib=8, performance_measurement=False))
+            expected_tests=args.expected_tests, build_exporter=args.build_exporter,
+            tests_reused_from=str(args.reuse_tests) if args.reuse_tests is not None else None,
+            jobs=2, minimum_free_gib=8, performance_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
                              'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET']}
         env.update(CARGO_TERM_COLOR='never', CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
                    CARGO_PROFILE_TEST_DEBUG='0', CARGO_PROFILE_RELEASE_DEBUG='1')
-        records, counts = [], {}
+        records, counts = [], dict(reused_counts)
         for label, action, profile in [('test-debug', 'test', []), ('test-release', 'test', ['--release']),
                                        ('build-release', 'build', ['--release'])]:
+            if label in reused_counts: continue
             require_space(ROOT, 8)
             command = ['cargo', '+nightly-2026-09-08', action, *profile, '--locked', '--offline', '--jobs', '2',
                        '--target-dir', str(TARGET)]
@@ -65,10 +105,7 @@ def main():
             write(work / 'commands.json', records)
             assert child.returncode == 0, f'{label} failed'
             if action == 'test':
-                matches = re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;', stdout + stderr)
-                assert matches and all(int(failed) == 0 for _, failed, _ in matches)
-                counts[label] = dict(passed=sum(int(passed) for passed, _, _ in matches),
-                                     ignored=sum(int(ignored) for _, _, ignored in matches))
+                counts[label] = test_counts(stdout + stderr)
                 assert counts[label] == dict(passed=args.expected_tests, ignored=1), counts
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
         binaries = json.loads((retained / 'ready.json').read_text())
@@ -99,6 +136,7 @@ def main():
         result.mkdir(exist_ok=False)
         write(result / 'summary.json', dict(status='passed', source_commit=source, tool_key=key, binaries=binaries,
             composition=composition, tests=counts, performance_measurement=False,
+            tests_reused_from=str(args.reuse_tests) if args.reuse_tests is not None else None,
             source_manifest_sha256=sha(work / 'plan.json'), raw=str(work.relative_to(ROOT))))
         print('PASS', counts, key, flush=True)
 
