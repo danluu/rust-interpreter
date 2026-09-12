@@ -56,6 +56,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | merged-jit | [jit-merged-token-01/summary.json](jit-merged-token-01/summary.json) |
 | merged-jit-profile | [jit-merged-token-sample-01/generated-attribution.json](jit-merged-token-sample-01/generated-attribution.json) |
 | rematerialization | [jit-remat-screen-01/summary.json](jit-remat-screen-01/summary.json) |
+| prepared-jit | [prepared-jit-build-04/summary.json](prepared-jit-build-04/summary.json) |
+| prepared-suite | [prepared-suite-pilot-01/summary.json](prepared-suite-pilot-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |

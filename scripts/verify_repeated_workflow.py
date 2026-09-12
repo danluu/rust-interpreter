@@ -76,6 +76,7 @@ def verify(report, reference=None, *, compiler_flags=None):
     require(all(t['content_changed'] for t in transitions if t['phase'] != 'cold'), 'unchanged warm sample')
     previous = dict.fromkeys(modes)
     artifacts = {}
+    suites = {}
     paths = set()
     for row in rows:
         cycle, state, mode = row['cycle'], row['state'], row['mode']
@@ -92,6 +93,33 @@ def verify(report, reference=None, *, compiler_flags=None):
         if job_counts is not None:
             for call in row['calls']:
                 verify_command_jobs(call['command'], job_counts[mode])
+        if report.get('compare_isolated_batches'):
+            from suite_reports import read_report, validate_report
+            suite_mode = 'native' if mode == 'native' else 'fresh' if mode == 'baseline' else 'prepared'
+            item = row['suite_report']
+            path = ROOT / item['path']
+            require(path.resolve().is_relative_to((ROOT / report['raw'] / 'suites' / mode).resolve()),
+                    'suite report outside this mode')
+            suite, _ = read_report(path, item['sha256'])
+            suites[cycle, state, mode] = validate_report(suite, row['tests'], suite_mode, state != -1)
+            require(len(row['calls']) == 1, 'isolated suite must execute in one complete command')
+            call = row['calls'][0]
+            command = call['command']
+            require(command.count('--suite-report') == 1 and command[command.index('--suite-report')+1] == str(path),
+                    'command selected another report')
+            if mode == 'native':
+                require(Path(command[1]).resolve() == ROOT / 'scripts/native_suite.py', 'native isolation runner differs')
+                verify_command_jobs(suite['build']['command'], job_counts[mode])
+                require(suite['build']['returncode'] == 0, 'native suite did not build')
+                for test in suite['tests']:
+                    require(test['command'] == [suite['executable'], '--exact', test['name'], '--test-threads=1'],
+                            'native test process did not select its exact body')
+            else:
+                require(command.count('--isolated-batch') == 1 and command[command.index('--isolated-batch')+1] == suite_mode,
+                        'isolated mode differs from command')
+                require(call['launch']['isolated_batch'] == suite_mode and
+                        call['launch']['suite_report_sha256'] == item['sha256'] and
+                        call['launch']['suite_report_path'] == str(path), 'launched suite differs')
         if mode != 'native':
             settings = report.get('tool_builds', {}).get(mode, {})
             if compiler_flags is not None:
@@ -120,6 +148,9 @@ def verify(report, reference=None, *, compiler_flags=None):
             selected = [r for r in rows if r['cycle'] == c and r['state'] == s]
             require(len({r['source_sha256'] for r in selected}) == 1, 'paired sources differ')
             require(all(r['tests'] == selected[0]['tests'] for r in selected), 'paired test selections differ')
+            if report.get('compare_isolated_batches'):
+                require(suites[c, s, modes[0]] == suites[c, s, modes[1]] == suites[c, s, modes[2]],
+                        'isolated test outcomes differ between native/fresh/prepared')
             identical = artifacts[c, s, custom_modes[0]] == artifacts[c, s, custom_modes[1]]
             paired_identical &= identical
             if compiler_flags is None:

@@ -7,7 +7,8 @@ Example: interpreter.py --manifest-path PROJECT/Cargo.toml --package hashfn
 Repeat --entry with --test-body to run several zero-argument functions returning
 unit or Result<(), E> in one command. Ordinary function inputs and output are integer bit
 patterns. This prototype provides a guest allocator, but no general Rust main
-or OS runtime. Test batches stop at the first failure.
+or OS runtime. Ordinary test batches stop at the first failure; optional isolated
+batches report every selected test with fresh guest state.
 Use --test-body --test-target NAME to select one Cargo integration-test target.
 """
 import argparse
@@ -182,6 +183,8 @@ def main():
     parser.add_argument('--instruction-limit',type=int,help='maximum VM instructions (default: 100000000)')
     parser.add_argument('--allocation-limit',type=int,help='maximum live guest allocations, independent of byte memory (0..1000000; default: 100000)')
     parser.add_argument('--engine',choices=['interpreter','jit'],default='interpreter')
+    parser.add_argument('--isolated-batch',choices=['fresh','prepared'],help='experimental separate guest state per selected test; runtime limits apply to each test')
+    parser.add_argument('--suite-report',type=Path,help='new JSON result path for --isolated-batch')
     parser.add_argument('--jit-native-call-stubs',action='store_true',help='experimental Calls linked with ordinary regions; requires --jit-native-calls')
     parser.add_argument('--jit-resumable-calls',action='store_true',help='experimental native Calls over guest frames; requires JIT, excludes tree/stub calls')
     parser.add_argument('--jit-persistent-registers',action='store_true',help='experimental full-width values retained across native block edges; requires --engine=jit')
@@ -210,6 +213,16 @@ def main():
     if args.run_try_callbacks and not args.trap_unsupported_calls:
         parser.error('--run-try-callbacks requires --trap-unsupported-calls')
     auditing=args.audit_entries is not None
+    if (args.isolated_batch is None) != (args.suite_report is None):
+        parser.error('--isolated-batch and --suite-report must be supplied together')
+    if args.isolated_batch is not None:
+        if auditing or not args.test_body or len(args.entry or []) < 2 or args.arguments:
+            parser.error('--isolated-batch requires at least two --entry test bodies without audit or entry arguments')
+        if args.engine != 'jit' or not args.jit_resumable_calls or args.jit_native_calls or args.jit_native_call_stubs:
+            parser.error('--isolated-batch requires resumable JIT execution without tree/stub modes')
+        if args.suite_report.exists() or args.suite_report.is_symlink() or not args.suite_report.parent.is_dir():
+            parser.error('--suite-report requires a new file in an existing directory')
+        args.suite_report=args.suite_report.resolve()
     if args.allocation_trace and auditing:
         parser.error('--allocation-trace cannot be combined with --audit-entries')
     if args.retain_audit_bodies and not auditing:
@@ -384,6 +397,10 @@ def main():
     if args.jit_native_call_stubs:vm_command.append('--jit-native-call-stubs')
     if args.instruction_limit is not None:vm_command+=['--instruction-limit',str(args.instruction_limit)]
     if args.allocation_limit is not None:vm_command+=['--allocation-limit',str(args.allocation_limit)]
+    if args.isolated_batch is not None:
+        vm_command+=['--isolated-batch',args.isolated_batch,'--suite-report',str(args.suite_report)]
+        timings.update(isolated_batch=args.isolated_batch,suite_report_path=str(args.suite_report),
+                       runtime_limits_scope='each isolated test')
     if stats:timings['allocation_limit']=args.allocation_limit if args.allocation_limit is not None else 100_000
     if stats:
         # The invocation lock protects the selected sidecar through execution.
@@ -397,6 +414,10 @@ def main():
     stage=time.perf_counter()
     result=subprocess.run([*vm_command,str(artifacts[0]),*values],env=env)
     timings['execution_seconds']=time.perf_counter()-stage
+    if args.suite_report is not None and args.suite_report.is_file():
+        if args.suite_report.stat().st_size>16*1024*1024:
+            raise RuntimeError('suite report exceeds 16 MiB')
+        timings['suite_report_sha256']=hashlib.sha256(args.suite_report.read_bytes()).hexdigest()
     timings['launcher_seconds']=time.perf_counter()-started
     if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
     return result.returncode

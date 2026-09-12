@@ -35,6 +35,15 @@ For an integration target, also add `--test-target NAME`. Use native test names
 from `cargo test --test NAME -- --list` without a crate-name prefix. Integration
 targets share dependency metadata while each command selects its exact artifact.
 Repeat `--entry` to batch zero-argument bodies returning unit or `Result<(), E>`.
+For experimental test isolation, add `--engine jit --jit-resumable-calls
+--isolated-batch prepared --suite-report NEW_FILE.json` with at least two entries.
+Each test gets fresh guest memory, statics and TLS; compiled code is shared.
+All selected tests are attempted and reported, including after an assertion
+failure. `--isolated-batch fresh` constructs separate JIT code for comparison.
+Runtime limits apply to each test. This models independent executions;
+ordinary libtest can share mutable globals. Ignore/should-panic/unwind/thread
+semantics are not implemented by this mode.
+
 Use `--engine interpreter` for the reference engine. Some standard-library paths
 require `--std-mir`, which prepares a reusable metadata sysroot.
 

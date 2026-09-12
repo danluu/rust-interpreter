@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Rematerialization runtime screen fails (+0.78% wall/+0.81% CPU); park without retiming. Build prepared custom JIT execution with fresh memory/register/frame/TLS state per test, qualify isolation and errors, then measure real source-edit/multi-test commands. All previous parked decisions remain.
+**Next:** Prepared JIT API and isolated VM runner pass 320 debug/release tests; real fre pilot passes eight commands. Cargo launcher and native per-test process controls pass 36 Python tests. Qualify complete source-edit/suite commands on pgrust, token and folded next; report outcomes and costs without a default-promotion or full-libtest claim.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

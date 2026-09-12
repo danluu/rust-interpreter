@@ -1,0 +1,50 @@
+"""Validate selected test reports without accepting compiler/resource errors as assertions."""
+import hashlib
+import json
+
+from native_suite import test_status
+
+
+def guest_test_failure(stderr):
+    prefix = 'rust-interp-vm: guest trap: '
+    for line in stderr.splitlines():
+        if not line.startswith(prefix):
+            continue
+        message = line.removeprefix(prefix)
+        if 'assertion' in message or 'panicking::' in message:
+            return True
+        for crate in ['core', 'std']:
+            for helper in ['option::unwrap_failed', 'option::expect_failed', 'result::unwrap_failed']:
+                if message.startswith(crate+'::'+helper+' '):
+                    return True
+    return False
+
+
+def read_report(path, expected_hash=None):
+    if path.is_symlink() or not path.is_file() or not 0 < path.stat().st_size <= 16*1024*1024:
+        raise RuntimeError('missing or oversized test suite report')
+    payload = path.read_bytes()
+    digest = hashlib.sha256(payload).hexdigest()
+    if expected_hash is not None and digest != expected_hash:
+        raise RuntimeError('test suite report hash differs')
+    return json.loads(payload), digest
+
+
+def validate_report(report, names, mode, success):
+    def require(condition, message):
+        if not condition:
+            raise RuntimeError(message)
+    require(report['schema_version'] == 1 and report['mode'] == mode, 'suite mode/schema differs')
+    rows = report['tests']
+    require([row['name'] for row in rows] == names and len(set(names)) == len(names), 'test names/order differ')
+    require(all(row['status'] in ['passed', 'failed'] for row in rows), 'unsupported test outcome')
+    failed = sum(row['status'] == 'failed' for row in rows)
+    require(report['passed'] == len(names)-failed and report['failed'] == failed, 'test counts differ')
+    require(report['status'] == ('passed' if success else 'failed') and (failed == 0) == success,
+            'wrong-edit or passing-suite control failed')
+    for row in rows:
+        if mode == 'native':
+            require(row['status'] == test_status(row['name'], row['returncode'], row['stdout']), 'native test status differs')
+        elif row['status'] == 'failed':
+            require(guest_test_failure('rust-interp-vm: '+row['error']), 'failure was not a guest assertion')
+    return [(row['name'], row['status']) for row in rows]

@@ -8,11 +8,20 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-Cross-region rematerialization is parked: 315 tests pass in each profile, but
-its runtime screen regresses 0.78% wall/0.81% CPU, missing the 10% improvement
-gate. No conditional promotion benchmarks will run. Next build prepared custom
-JIT code with fresh guest state for each test, then measure source-edit/suite
-commands. [Decision](results/jit-remat-screen-01/assessment.md).
+Prepared custom JIT code now survives distinct test executions while each gets
+fresh guest state. The API and optional VM runner pass 320 debug and release
+tests (one ignored); the real fre token pilot passes three native tests and
+five custom commands, including exact fresh/prepared equality with recorded
+inputs. The Cargo launcher and separate-process native control pass 36 Python
+tests. Next qualify real edited commands on pgrust, token and folded under
+[the fixed protocol](benchmarks/experiments/prepared-jit/WORKFLOWS.md).
+No end-to-end performance gain or full libtest compatibility is claimed.
+[Build](results/prepared-jit-build-04/summary.json),
+[pilot](results/prepared-suite-pilot-01/summary.json).
+
+Cross-region rematerialization remains parked after its 0.78% wall/0.81% CPU
+runtime regression. No conditional promotion benchmarks will run.
+[Decision](results/jit-remat-screen-01/assessment.md).
 
 Persistent function reuse is correct but its first complete-command screen
 misses the fixed 8% gate: 5.30% paired edited wall improvement and 4.32% CPU.
@@ -21,8 +30,8 @@ The candidate stays opt-in and disabled by default; its conditional promotion
 holdouts are canceled. Do not retime it. Guest execution remains about 3.1 s
 of the 4.7 s command, versus native's 2.2 s complete command. The current-source JIT is now measured against the historical VM: effectively
 tied (0.18% median difference across six controlled runtime pairs). Fresh
-samples put 88.64% in generated code. Next investigate cross-region value
-rematerialization with explicit interpreter continuation state.
+samples put 88.64% in generated code; the subsequent rematerialization screen
+failed as recorded above.
 [Decision](results/export-reuse-screen-token-01/assessment.md).
 
 Earlier runtime qualification: integer helper inlining improves Ruff 5.8%, pgrust 3.0% and five additional workloads 2.8–7.5% relative to the scalar-inlining VM, with unchanged semantics and passing regression guards. All 297 debug/release tests and 588 comparison commands pass (one Rust test ignored). [Integer-inlining assessment](results/binary-inline-20260912/assessment.md). These gains primarily concern interpretation. The new JIT diagnosis is in [its assessment](results/jit-merged-token-01/assessment.md); the unbounded whole-command optimization goal remains active.
