@@ -39,3 +39,15 @@ its individual profile commands all returned0. Verify that exact recorded
 failure and the report-bound commands file; preserve its failed classification.
 No private profiles, source, binaries, benchmark inputs or caches are included.
 All previous byte/metadata equality, single-copy staging and reserve rules apply.
+
+The fourth batch covers the successful profiling commands in the ten exact
+public diagnostic runs listed in legacy_profiles.py, plus six completed native
+PC maps. These older runs have terminal child receipts instead of supervisors.
+Require the recorded root cwd, completed commands, no matching live processes
+and no open files. Preserve their original summary classifications. Some old
+profile commands bind an output path without a digest: record and preserve its
+current bytes, explicitly distinguishing this from historical hash validation.
+The four drift profiles and six PC maps retain their historical hash checks.
+Only diagnostic JSON outputs are compressed; no benchmark inputs, source,
+executables, tool libraries, caches or private data enter this batch. Keep the
+same staging, metadata equality, atomic replacement and3GiB reserve rules.

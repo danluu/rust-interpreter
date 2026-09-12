@@ -13,12 +13,12 @@ def properties(path):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--run-id',choices=['completed-evidence-compression-01','completed-evidence-compression-02','completed-evidence-compression-03'],default='completed-evidence-compression-01')
+    parser.add_argument('--run-id',choices=['completed-evidence-compression-01','completed-evidence-compression-02','completed-evidence-compression-03','completed-evidence-compression-04'],default='completed-evidence-compression-01')
     run=parser.parse_args().run_id
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,3)
         work=ROOT/'.work'/run;work.mkdir(exist_ok=False)
-        inputs=[];proofs=[Path(__file__),Path(__file__).with_name('TRANSPARENT-STORAGE.md')]
+        inputs=[];proofs=[Path(__file__),Path(__file__).with_name('TRANSPARENT-STORAGE.md')];digest_origins={}
         if run.endswith('01'):
             profile=ROOT/'results/suite-profiling-real-01/summary.json';report=json.loads(profile.read_text());assert report['status']=='passed';proofs.append(profile)
             for item in report['profiles']:
@@ -47,7 +47,7 @@ def main():
                     assert record['identity']['status']=='finished' and record['identity']['returncode']==0
                     for name in ['jit-code/code.bin','jit-code/map.json']:
                         inputs.append((record_path.parent/name,record['files'][name],sample_run))
-        else:
+        elif run.endswith('03'):
             for run_name,field in [('budget-register-randomness-01','executions'),('resumable-bulk-token-transitions-01','evidence')]:
                 rp=ROOT/'results'/run_name/'summary.json';r=json.loads(rp.read_text());assert r['status']=='passed';proofs.append(rp)
                 path=Path('.work')/run_name/'profile.json'
@@ -68,7 +68,10 @@ def main():
                     path=Path('.work')/run_name/(str(index)+'-profile.json')
                     rows=[row for row in commands if str(path) in row['files']];assert len(rows)==1 and rows[0]['returncode']==0
                     inputs.append((ROOT/path,rows[0]['files'][str(path)],run_name))
-        for run_name in sorted({run_name for _,_,run_name in inputs}):
+        else:
+            from legacy_profiles import inputs as legacy_inputs
+            inputs,legacy_proofs,digest_origins=legacy_inputs();proofs+=legacy_proofs
+        for run_name in sorted({run_name for _,_,run_name in inputs}) if not run.endswith('04') else []:
             path=ROOT/'.work/experiments'/run_name/'status.json';s=json.loads(path.read_text())
             expected_returncode=1 if run.endswith('03') and run_name=='budget-register-smoke-04' else 0
             assert s['owner']==s['cwd']==str(ROOT) and s['status']=='finished' and s['returncode']==expected_returncode
@@ -78,7 +81,7 @@ def main():
         for path,digest,run_name in inputs:
             assert path.resolve(strict=True)==path and sha(path)==digest
             prepared.append(dict(path=str(path.relative_to(ROOT)),sha256=digest,before=properties(path)))
-        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,inputs=prepared,method='ditto --hfsCompression --noclone; verify bytes and metadata, then atomic replacement',minimum_free_gib=3))
+        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,inputs=prepared,digest_origins=digest_origins,method='ditto --hfsCompression --noclone; verify bytes and metadata, then atomic replacement',minimum_free_gib=3))
         records=[]
         env={k:v for k,v in os.environ.items() if not k.startswith('DITTO')};env['DITTOABORT']='1'
         for item in prepared:
