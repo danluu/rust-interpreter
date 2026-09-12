@@ -84,12 +84,17 @@ confirms varying paths while all profiles account exactly for their own totals.
 Smoke 05 preserves randomness, checks per-run accounting, and retains exact
 cross-run counts for deterministic folded-trie. Performance gates are unchanged.
 
-`budget-register-fre-01` is active (supervisor 1972), replaying all 389 discovered
-fre bodies with fresh native controls. Its frozen files must remain unchanged.
-Wait for its controller and supervisor to finish before another benchmark user.
+The [full fre qualification](results/budget-register-fre-01/assessment.md) passes
+382 bodies, seven ignored, with 382 fresh native controls and identical exported
+artifacts. No outcome changes or JIT declines. Broad correctness is complete.
+
+The folded A/A control `budget-register-aa-01-folded-literal-trie` is active
+(supervisor 44697, controller 44700, workflow child 44703). Both sides use the
+exact qualified tool `9637b0ac` in separate Cargo histories. Keep its frozen
+driver/harness/helper files unchanged and wait for all owned children to finish.
 
 Next actions:
-1. Verify fre's 382 passes, seven ignored and 382 identical compiler artifacts.
+1. Finish and verify the folded A/A control; then run the token A/A control.
 2. Run `budget_workflows.py` in its [fixed order](benchmarks/experiments/aggregate-byte-writes/BUDGET-WORKFLOWS.md):
    A/A folded, A/A token, candidate folded, candidate token. Use the supervisor
    and the script's fixed run IDs. No valid A/A retries or changed thresholds.
