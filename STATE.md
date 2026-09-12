@@ -19,8 +19,11 @@ remain roughly 2.5 times native on this target.
 
 Broad qualification passes 47,004 native differential commands, 245 TLS checks,
 382 fre bodies with seven ignored, and all 52 integration assertions. The
-baseline and candidate share the exact exporter and wrapper. Nine original
-library workflow gates remain before runtime retention; keep this candidate
+baseline and candidate share the exact exporter and wrapper. Three of the nine
+[library workflow gates](results/fixed-frame-clear-libraries-01/summary.json)
+pass: pgrust and folded fre have near-zero differences; token improves 3.43%
+wall and 3.32% CPU. The source branch includes the newer main interpreter loop,
+whose final composition with fixed clearing remains to be qualified. Keep this candidate
 separate from the historical full-workflow anchor below. Good tooling and
 evidence changes can be published independently of the experimental runtime.
 
