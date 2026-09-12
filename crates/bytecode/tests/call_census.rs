@@ -1,9 +1,10 @@
 use rust_interp_bytecode::{Function,Op,Program,Slot,VERSION};
 use std::path::PathBuf;
 use std::process::Command;
+static DIRECTORY_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 struct Directory(PathBuf);
 impl Directory {
-    fn new()->Self {let p=std::env::temp_dir().join(format!("rust-interp-call-census-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));std::fs::create_dir(&p).unwrap();Self(p)}
+    fn new()->Self {let p=std::env::temp_dir().join(format!("rust-interp-call-census-{}-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos(),DIRECTORY_ID.fetch_add(1,std::sync::atomic::Ordering::Relaxed)));std::fs::create_dir(&p).unwrap();Self(p)}
 }
 impl Drop for Directory {fn drop(&mut self){std::fs::remove_dir_all(&self.0).unwrap();}}
 fn program()->Program {Program {version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,data:vec![],statics:vec![],thread_locals:vec![],functions:vec![Function{name:"test".into(),frame_size:0,frame_align:16,registers:0,args:vec![],result:Slot{offset:0,size:0},code:vec![Op::Return]}]}}
