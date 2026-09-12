@@ -1,9 +1,15 @@
 # Prospective composed selected-suite comparison
 
-Candidate tool 6abc0d2980c1dbe9ee48252dd06f2ab0dbc146072f1f3b5b356b2fb86b309b33
-contains the four composed runtime/compiler mechanisms and strict function reuse.
-It passed 391 tests in both host profiles, seven exact original recorded tests,
-the three original one/two-worker suites and the native/cache fixture checks.
+The initial composed tool 6abc0d29 passed 391 tests in both host profiles, seven
+exact original recorded tests, three one/two-worker suites and native/cache
+fixtures. Its first pgrust command stopped before any edited pair because that
+repository disables incremental compilation and forced reuse requires it.
+The corrected candidate adds automatic cache eligibility, preserving repository
+profiles. Supply its exact qualified `--build` and `--cache-qualification` paths.
+Require 392 passing tests/profile and automatic-cache fixture qualification.
+Its VM must match the initially qualified VM bytes; an exporter-only change
+does not invalidate saved-bytecode execution evidence. Freeze the new exporter,
+VM, wrapper and tool key in the plan before the first child.
 The retained selected-suite tool is
 fe9dcae0c86c6df0b6ac629034bab3a291e15e5315f9bfc87f5da9cbb4d0fe6e.
 
@@ -15,7 +21,10 @@ The 132 complete commands per case include 15 candidate/baseline edit pairs and
 15 same-session baseline/duplicate A/A pairs. No unchanged build is a latency
 sample. Every custom route uses prepared execution and exactly two suite workers.
 Checking stays strict. Baseline and duplicate use the same retained tool in
-independent caches; the candidate alone enables `--function-cache reuse`.
+independent caches; the candidate alone enables `--function-cache auto`.
+Reuse requires an actual incremental session and compiler dependency tracking;
+otherwise the exporter performs full lowering and records that decision. Forced
+reuse remains available separately. No mode changes the repository's profile.
 
 Each mode has its own cache. Run ordinary `cargo test --lib -- --exact NAMES`
 with default libtest concurrency as the primary native control. A second native

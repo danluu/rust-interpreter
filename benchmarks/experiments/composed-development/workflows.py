@@ -76,6 +76,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--case', choices=CASES, required=True)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--build', type=Path, required=True)
+    parser.add_argument('--cache-qualification', type=Path, required=True)
     args = parser.parse_args()
     assert re.fullmatch('composed-development-edit-' + args.case + r'-\d{2}', args.run_id)
     project, variant, pattern, reference = CASES[args.case]
@@ -97,24 +99,28 @@ def main():
         names = [t['name'] for t in listing['tests'] if pattern in t['name'] and not t['ignored']]
         assert names and set(case['tests']) <= set(names)
         assert all(t['ordinary_test'] for t in listing['tests'] if t['name'] in names)
-        build_paths = {m: ROOT / 'results' / ('composed-development-build-02' if m == 'candidate'
-                          else 'parallel-suites-build-01') / 'summary.json' for m in CUSTOM}
+        build_paths = {m: args.build.resolve(strict=True) if m == 'candidate' else
+                       ROOT / 'results/parallel-suites-build-01/summary.json' for m in CUSTOM}
         builds = {m: json.loads(p.read_text()) for m, p in build_paths.items()}
         tools = {m: installed_tools(b['tool_key'])[0] for m, b in builds.items()}
         for m, build in builds.items():
             assert build['status'] == 'passed'
             assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(
-                passed=391 if m == 'candidate' else 365, ignored=1)
+                passed=392 if m == 'candidate' else 365, ignored=1)
             require_export_option(tools[m], build['tool_key'], 'filtered-tests')
-        require_export_option(tools['candidate'], builds['candidate']['tool_key'], 'function-cache-reuse')
-        proofs = [ROOT / 'results' / name / 'summary.json' for name in
-                  ['composed-development-cache-02', 'composed-development-serial-01',
-                   'composed-development-qualification-01']]
+        require_export_option(tools['candidate'], builds['candidate']['tool_key'], 'function-cache-auto')
+        proofs = [args.cache_qualification.resolve(strict=True), *[ROOT / 'results' / name / 'summary.json'
+                  for name in ['composed-development-serial-01', 'composed-development-qualification-01']]]
         for p in proofs:
             proof = json.loads(p.read_text())
             assert proof['status'] == 'passed'
-            if 'tool_key' in proof: assert proof['tool_key'] == builds['candidate']['tool_key']
-            else: assert proof['binaries']['candidate'] == builds['candidate']['binaries']['rust-interp-vm']
+            if p == proofs[0]:
+                assert proof['tool_key'] == builds['candidate']['tool_key'] and proof['automatic_cache_qualified']
+            else:
+                # These tests execute saved bytecode, so identical VM bytes
+                # preserve their qualification across an exporter-only rebuild.
+                vm_hash = proof.get('vm_sha256') or proof['binaries']['candidate']
+                assert vm_hash == builds['candidate']['binaries']['rust-interp-vm']
         changed = source / case['file']
         original = changed.read_bytes()
         states = list(source_states(original.decode(), case, 3, CUSTOM, True))
@@ -184,7 +190,7 @@ def main():
                     command += ['--allocation-limit', str(ref['allocation_limit'])]
                 for field in ['inline_leaves', 'trap_unsupported_calls', 'run_try_callbacks']:
                     if ref.get(field): command += ['--' + field.replace('_', '-')]
-                if mode == 'candidate': command += ['--function-cache', 'reuse']
+                if mode == 'candidate': command += ['--function-cache', 'auto']
                 selected_env = guest
             else:
                 command = native_command(TOOLCHAIN, source / 'Cargo.toml', case['package'], work / mode,
@@ -214,7 +220,7 @@ def main():
                             if line.startswith('rust-interp-launch: ')]
                 assert len(launches) == 1
                 launch = launches[0]
-                assert launch['function_cache'] == ('reuse' if mode == 'candidate' else 'off')
+                assert launch['function_cache'] == ('auto' if mode == 'candidate' else 'off')
                 assert launch['suite_report_sha256'] == suite_sha
                 artifact = Path(launch['artifact_path'])
                 row.update(launch=launch, suite_sha256=suite_sha, artifact=snapshot(artifact),
@@ -234,7 +240,14 @@ def main():
                 if mode == 'candidate':
                     reports = [json.loads(line.split(': ', 1)[1]) for line in stderr.splitlines()
                                if line.startswith('rust-interp-function-cache: ')]
-                    assert len(reports) == 1 and reports[0]['mode'] == 'reuse'
+                    assert len(reports) == 1 and reports[0]['mode'] in ['reuse', 'off']
+                    if reports[0]['mode'] == 'off':
+                        assert reports[0]['requested_mode'] == 'auto' and reports[0]['reason']
+                        assert reports[0]['all_original_lowering_executed'] and reports[0]['skipped_functions'] == 0
+                        assert not reports[0]['staged_in_incremental_session']
+                    else:
+                        assert reports[0]['staged_in_incremental_session']
+                        assert reports[0]['skipped_functions'] == reports[0]['previous_payload_uses']
                     row['function_cache'] = reports[0]
             elif mode != 'check':
                 row['outcomes'] = native_outcomes(stdout, names, success)

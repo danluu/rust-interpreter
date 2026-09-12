@@ -14,15 +14,24 @@ const MAX_FILE: u64 = 128 * 1024 * 1024;
 const MAX_PAYLOAD: usize = 64 * 1024 * 1024;
 type Result<T> = std::result::Result<T, String>;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Mode { Off, Verify, Reuse }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Mode { Off, Verify, Reuse, Auto }
 pub(crate) fn mode() -> Result<Mode> {
     match std::env::var_os("RUST_INTERP_FUNCTION_CACHE") {
         None => Ok(Mode::Off),
         Some(value) if value == "0" => Ok(Mode::Off),
         Some(value) if value == "verify" => Ok(Mode::Verify),
         Some(value) if value == "reuse" => Ok(Mode::Reuse),
-        _ => Err("RUST_INTERP_FUNCTION_CACHE accepts only 0, verify or reuse".into()),
+        Some(value) if value == "auto" => Ok(Mode::Auto),
+        _ => Err("RUST_INTERP_FUNCTION_CACHE accepts only 0, verify, reuse or auto".into()),
+    }
+}
+
+pub(crate) fn effective_mode(requested: Mode, incremental_session: bool, dependency_tracking: bool) -> Mode {
+    match requested {
+        Mode::Auto if incremental_session && dependency_tracking => Mode::Reuse,
+        Mode::Auto => Mode::Off,
+        mode => mode,
     }
 }
 
@@ -217,6 +226,18 @@ impl Cache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn automatic_reuse_requires_both_session_and_dependency_tracking() {
+        for session in [false, true] {
+            for tracking in [false, true] {
+                assert_eq!(effective_mode(Mode::Auto, session, tracking),
+                    if session && tracking { Mode::Reuse } else { Mode::Off });
+                for explicit in [Mode::Off, Mode::Reuse, Mode::Verify] {
+                    assert_eq!(effective_mode(explicit, session, tracking), explicit);
+                }
+            }
+        }
+    }
     #[test]
     fn bulk_payloads_preserve_the_legacy_fixed_width_wire_bytes() {
         let entries = BTreeMap::from([("ab-cd".into(), (0..131_072).map(|n| n as u8).collect())]);

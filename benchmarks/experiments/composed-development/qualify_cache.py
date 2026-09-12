@@ -37,6 +37,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
+    parser.add_argument('--automatic-cache', action='store_true',
+                        help='also qualify automatic reuse and disabled incremental profiles')
     args = parser.parse_args()
     assert re.fullmatch(r'composed-development-cache-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -46,9 +48,11 @@ def main():
         build_path = args.build.resolve(strict=True)
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
-        assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(passed=391, ignored=1)
+        assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(
+            passed=392 if args.automatic_cache else 391, ignored=1)
         tools, key = installed_tools(build['tool_key'])
         require_export_option(tools, key, 'function-cache-reuse')
+        if args.automatic_cache: require_export_option(tools, key, 'function-cache-auto')
         sysroot, _, std_key, _ = checked_std_mir(TOOLCHAIN)
         assert std_key == 'bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef'
         fixtures = ['scalar_constant', 'static', 'tls', 'caller', 'type_id', 'dynamic', 'c_allocator']
@@ -151,7 +155,7 @@ def main():
                     '--edition=2024', '-o', native])
                 expected = invoke('cargo-' + label + '-native-run', [native, '7'])[0]
                 artifacts = []
-                for index, mode in enumerate(['reuse', 'off', 'reuse']):
+                for index, mode in enumerate(['reuse', 'off', 'auto' if args.automatic_cache else 'reuse']):
                     stdout, stderr = invoke('cargo-' + label + '-' + str(index) + '-' + mode,
                         [*base, '--function-cache', mode, '--', '7'], launch_env)
                     assert stdout == expected
@@ -162,7 +166,7 @@ def main():
                     artifacts.append(sha(artifact))
                     snapshot = work / ('cargo-' + label + '-' + str(index) + '.rbc')
                     snapshot.write_bytes(artifact.read_bytes())
-                    if mode == 'reuse':
+                    if mode != 'off':
                         cached = cache_report(stderr)
                         cache_rows.append(dict(fixture='cargo-scalar', state=label, index=index, **cached))
                     else:
@@ -188,6 +192,43 @@ def main():
             assert cargo_results[0]['artifact_sha256'] == cargo_results[2]['artifact_sha256']
             assert cargo_results[0]['native_stdout'] == cargo_results[2]['native_stdout']
             assert cargo_results[0]['native_stdout'] != cargo_results[1]['native_stdout']
+            if args.automatic_cache:
+                manifest = crate / 'Cargo.toml'
+                manifest.write_text(manifest.read_text() + '\n[profile.dev]\nincremental=false\n')
+                for label, payload in states:
+                    edit.replace(payload)
+                    expected = next(r['native_stdout'] for r in cargo_results if r['state'] == label)
+                    digests = []
+                    for mode in ['off', 'auto']:
+                        stdout, stderr = invoke('cargo-no-incremental-' + label + '-' + mode,
+                            [*base, '--function-cache', mode, '--', '7'], launch_env)
+                        assert stdout == expected
+                        launch = report(stderr, 'rust-interp-launch: ')
+                        assert launch['function_cache'] == mode
+                        artifact = Path(launch['artifact_path'])
+                        assert sha(artifact) == launch['artifact_sha256']
+                        digests.append(sha(artifact))
+                        if mode == 'auto':
+                            cached = report(stderr, 'rust-interp-function-cache: ')
+                            assert cached['requested_mode'] == 'auto' and cached['mode'] == 'off'
+                            assert cached['all_original_lowering_executed'] and cached['skipped_functions'] == 0
+                            assert cached['lowered_functions'] > 0 and not cached['staged_in_incremental_session']
+                            cache_rows.append(dict(fixture='cargo-without-incremental', state=label, **cached))
+                    assert len(set(digests)) == 1
+                _, stderr = invoke('cargo-forced-reuse-no-incremental',
+                    [*base, '--function-cache', 'reuse', '--', '7'], launch_env, success=False)
+                assert 'incremental dependency graph' in stderr and 'rust-interp-launch: ' not in stderr
+                for error, bad, diagnostic in [
+                    ('type', b'fn unused() { let _: u64 = "wrong"; }', 'mismatched types'),
+                    ('borrow', b'fn unused() { let mut x=1; let a=&mut x; let b=&mut x; *a+=*b; }', 'cannot borrow')]:
+                    edit.replace(original + b'\n' + bad + b'\n')
+                    stdout, stderr = invoke('cargo-auto-no-incremental-reject-' + error,
+                        [*base, '--function-cache', 'auto', '--', '7'], launch_env, success=False)
+                    assert diagnostic in stderr and stdout == '' and 'rust-interp-launch: ' not in stderr
+                edit.replace(original)
+                stdout, _ = invoke('cargo-auto-no-incremental-restored-final',
+                    [*base, '--function-cache', 'auto', '--', '7'], launch_env)
+                assert stdout == cargo_results[0]['native_stdout']
         assert source.read_bytes() == original
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
         write(work / 'cache-reports.json', cache_rows)
@@ -195,7 +236,8 @@ def main():
         out.mkdir(exist_ok=False)
         write(out / 'summary.json', dict(status='passed', tool_key=key, commands=len(rows),
             fixtures=fixture_results, cargo_states=cargo_results, strict_rejections=['type', 'borrow'],
-            source_restored=True, performance_measurement=False, raw=str(work.relative_to(ROOT)),
+            source_restored=True, automatic_cache_qualified=args.automatic_cache,
+            performance_measurement=False, raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work / 'plan.json'), records_sha256=sha(work / 'records.json'),
             cache_reports_sha256=sha(work / 'cache-reports.json')))
         print('PASS composed cache, native/reference agreement and strict Cargo edits', flush=True)

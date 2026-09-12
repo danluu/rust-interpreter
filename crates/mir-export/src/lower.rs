@@ -164,7 +164,9 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
               allocation_trace: bool, force_batch: bool) -> Result<Exported> {
     let mut timings = crate::export_timings::Timings::new("lower");
     use crate::function_cache::Mode;
-    let cache_mode = crate::function_cache::mode()?;
+    let requested_cache_mode = crate::function_cache::mode()?;
+    let cache_mode = crate::function_cache::effective_mode(requested_cache_mode,
+        tcx.incr_comp_session.is_some(), tcx.dep_graph.is_fully_enabled());
     let cache_enabled = cache_mode != Mode::Off;
     let actual_reuse = cache_mode == Mode::Reuse;
     let function_dependencies = crate::function_dependencies::enabled()? || actual_reuse;
@@ -179,7 +181,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     if cache_mode == Mode::Verify && (!binding_replay || !function_dependencies) {
         return Err("function cache verification requires binding replay and dependency observation".into());
     }
-    if actual_reuse && (demand || allocation_trace || function_costs.is_some() || binding_replay) {
+    if matches!(requested_cache_mode, Mode::Reuse | Mode::Auto)
+        && (demand || allocation_trace || function_costs.is_some() || binding_replay) {
         return Err("function cache reuse requires strict checking and disabled allocation/function-cost/binding observers".into());
     }
     let mut function_cache = if cache_enabled {
@@ -437,6 +440,14 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
                 else { "same-session recipe reconstruction; no persistent cache or performance claim" }}));
     }
     if let Some(cache) = function_cache { cache.stage()?; }
+    else if requested_cache_mode == Mode::Auto {
+        eprintln!("rust-interp-function-cache: {}", serde_json::json!({
+            "schema_version":1,"requested_mode":"auto","mode":"off",
+            "reason":"compiler incremental session or dependency tracking is disabled",
+            "all_original_lowering_executed":true,"skipped_functions":0,
+            "lowered_functions":functions.iter().filter(|f| f.is_some()).count(),
+            "staged_in_incremental_session":false}));
+    }
     timings.checkpoint("reachable_mir_and_local_passes");
     // Preserve identities without expanding callbacks that cannot match any
     // indirect call's argument/return layout. Unknown shim shapes are always
