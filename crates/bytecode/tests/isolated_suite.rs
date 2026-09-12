@@ -45,6 +45,112 @@ fn command(program: &Path, mode: &str, report: &Path, extra: &[&str]) -> Output 
                "--suite-report"]).arg(report).args(extra).arg(program).output().unwrap()
 }
 
+fn many_entries(failure: bool) -> Program {
+    let original = fixture(failure);
+    let mut p = original.clone();
+    let count = 8;
+    let mut functions = vec![];
+    let names: Vec<_> = (0..count).map(|index| format!("case-{index:02}")).collect();
+    for (index, name) in names.iter().enumerate() {
+        let mut entry = original.functions[usize::from(index != 0)].clone();
+        entry.name = name.clone();
+        entry.code[1] = Op::Call { function: count, args: vec![], destination: 0 };
+        functions.push(entry);
+    }
+    functions.push(original.functions[2].clone());
+    let mut root = original.functions[3].clone();
+    root.name = format!("selected test batch: {}", names.join(", "));
+    root.code = vec![Op::Local { dst: 0, offset: 0 }];
+    for function in 0..count {
+        root.code.extend([Op::ResetThreadLocals, Op::Call { function, args: vec![], destination: 0 }]);
+    }
+    root.code.push(Op::Return);
+    functions.push(root);
+    p.functions = functions; p.entry = count + 1; p
+}
+
+#[test]
+fn parallel_workers_preserve_test_state_and_catalog_order() {
+    let files = Files::new(); let program = many_entries(false); let artifact = files.program(&program);
+    let catalog = rust_interp_bytecode::EntryCatalog::new(&program,
+        format!("{:x}", Sha256::digest(std::fs::read(&artifact).unwrap())),
+        (0..8).map(|function| rust_interp_bytecode::SelectedEntry {
+            name: program.functions[function].name.clone(), function,
+            body_name: program.functions[function].name.clone(),
+        }).collect()).unwrap();
+    let catalog_path = files.0.join("entries.json");
+    let catalog_bytes = serde_json::to_vec(&catalog).unwrap();
+    std::fs::write(&catalog_path, &catalog_bytes).unwrap();
+    let mut expected = None;
+    for mode in ["fresh", "prepared"] {
+        for workers in [1, 2, 3, 64] {
+            let path = files.0.join(format!("{mode}-{workers}.json"));
+            let workers_text = workers.to_string();
+            let mut extra = vec!["--suite-workers", &workers_text];
+            if workers == 2 || workers == 64 { extra.extend(["--suite-catalog", catalog_path.to_str().unwrap()]); }
+            let run = command(&artifact, mode, &path, &extra);
+            assert!(run.status.success(), "{}", String::from_utf8_lossy(&run.stderr));
+            let report: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+            assert_eq!(report["workers"], workers.min(8));
+            assert_eq!(report["requested_workers"], workers);
+            assert_eq!(report["passed"], 8); assert_eq!(report["failed"], 0);
+            let mut outcomes = vec![];
+            for (index, test) in report["tests"].as_array().unwrap().iter().enumerate() {
+                assert_eq!(test["name"], format!("case-{index:02}"));
+                assert_eq!(test["function"], index);
+                assert!(test["worker"].as_u64().unwrap() < workers.min(8));
+                assert!(test["jit_bytes"].as_u64().unwrap() <= 16 * 1024 * 1024);
+                outcomes.push((test["instructions"].clone(), test["peak_guest_memory"].clone()));
+            }
+            if let Some(expected) = &expected { assert_eq!(&outcomes, expected); }
+            else { expected = Some(outcomes); }
+        }
+    }
+    assert_eq!(std::fs::read(catalog_path).unwrap(), catalog_bytes);
+}
+
+#[test]
+fn parallel_failures_and_limits_do_not_skip_other_tests() {
+    let files = Files::new(); let artifact = files.program(&many_entries(true));
+    for mode in ["fresh", "prepared"] {
+        for limited in [false, true] {
+            let path = files.0.join(format!("{mode}-{limited}.json"));
+            let mut extra = vec!["--suite-workers", "3"];
+            if limited { extra.extend(["--instruction-limit", "1"]); }
+            let run = command(&artifact, mode, &path, &extra);
+            assert!(!run.status.success());
+            let report: Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+            assert_eq!(report["tests"].as_array().unwrap().len(), 8);
+            assert_eq!(report["failed"], if limited { 8 } else { 1 });
+            for (index, test) in report["tests"].as_array().unwrap().iter().enumerate() {
+                assert_eq!(test["name"], format!("case-{index:02}"));
+                if limited { assert!(test["error"].as_str().unwrap().contains("instruction limit")); }
+                else if index == 0 { assert!(test["error"].as_str().unwrap().contains("selected failure")); }
+                else { assert_eq!(test["status"], "passed"); }
+            }
+        }
+    }
+}
+
+#[test]
+fn invalid_worker_requests_preserve_reports_and_require_isolation() {
+    let files = Files::new(); let artifact = files.program(&fixture(false));
+    for (index, extra) in [vec!["--suite-workers", "0"], vec!["--suite-workers", "65"],
+        vec!["--suite-workers", "-1"], vec!["--suite-workers", "2", "--suite-workers", "3"],
+        vec!["--suite-workers", "2", "--profile", "unused-profile.json"]].iter().enumerate() {
+        let path = files.0.join(format!("invalid-workers-{index}.json"));
+        assert!(!command(&artifact, "prepared", &path, extra).status.success());
+        assert!(!path.exists());
+    }
+    let path = files.0.join("retained.json"); std::fs::write(&path, b"retained").unwrap();
+    assert!(!command(&artifact, "prepared", &path, &["--suite-workers", "2"]).status.success());
+    assert_eq!(std::fs::read(path).unwrap(), b"retained");
+    let run = Command::new(env!("CARGO_BIN_EXE_rust-interp-vm"))
+        .args(["--suite-workers", "1"]).arg(&artifact).output().unwrap();
+    assert!(!run.status.success());
+    assert!(String::from_utf8_lossy(&run.stderr).contains("require an isolated batch"));
+}
+
 #[test]
 fn distinct_selected_tests_share_only_prepared_code_and_report_each_outcome() {
     let files = Files::new(); let artifact = files.program(&fixture(false));

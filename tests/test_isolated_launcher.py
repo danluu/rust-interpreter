@@ -33,6 +33,15 @@ class IsolatedLauncherValidation(unittest.TestCase):
                 with self.subTest(arguments=arguments): self.rejected(arguments)
             self.assertFalse(Path(report).exists())
 
+    def test_worker_counts_require_a_bounded_isolated_suite(self):
+        self.rejected(['--entry', 'first', '--suite-workers', '2'])
+        with tempfile.TemporaryDirectory() as directory:
+            base = ['--entry', 'first', '--entry', 'second', '--test-body', '--engine', 'jit',
+                    '--jit-resumable-calls', '--isolated-batch', 'prepared',
+                    '--suite-report', str(Path(directory) / 'report.json')]
+            for count in ['0', '-1', '65', '1.5']:
+                with self.subTest(count=count): self.rejected(base + ['--suite-workers', count])
+
     def test_existing_or_dangling_report_paths_are_preserved_before_building(self):
         base = ['--entry', 'first', '--entry', 'second', '--test-body', '--engine', 'jit', '--jit-resumable-calls',
                 '--isolated-batch', 'prepared', '--suite-report']

@@ -1,7 +1,7 @@
 //! Explicit isolated selected-entry execution, not a replacement for libtest.
 use rust_interp_bytecode::{EntryCatalog, Limits, Op, PreparedJit, Program, PARTIAL_VALIDATION};
 use serde_json::{Value, json};
-use std::{collections::HashSet, io::Write, time::Instant};
+use std::{collections::HashSet, io::Write, time::Instant, sync::atomic::{AtomicUsize, Ordering}};
 
 #[derive(Clone, Copy)]
 pub enum Mode { Fresh, Prepared }
@@ -39,21 +39,16 @@ fn selected_entries(program: &Program) -> Result<Vec<(&str, usize)>, String> {
     Ok(entries)
 }
 
-pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
-           catalog: Option<&EntryCatalog>, bytes: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
-    let started = Instant::now();
-    let entries = match catalog {
-        Some(catalog) => catalog.validated_entries(program, bytes)?,
-        None => selected_entries(program)?,
-    };
-    // Reserve the report before any guest code runs. Never replace a previous
-    // result merely because the same command was invoked a second time.
-    let file = std::fs::OpenOptions::new().write(true).create_new(true).open(path)?;
+fn worker(program: &Program, mode: Mode, limits: &Limits, entries: &[(&str, usize)],
+          next: &AtomicUsize, worker: usize) -> Result<(u128, Vec<(usize, Value)>), String> {
+    // The JIT is born, used and dropped on this worker. Only immutable Program
+    // data and completed JSON outcomes cross thread boundaries.
     let mut shared = match mode { Mode::Fresh => None, Mode::Prepared => Some(PreparedJit::new(program, limits)?) };
     let mut preparation_nanos = shared.as_ref().map_or(0, PreparedJit::preparation_nanos);
-    let mut tests: Vec<Value> = vec![];
-    let mut failures = 0;
-    for (name, entry) in entries {
+    let mut tests = vec![];
+    loop {
+        let index = next.fetch_add(1, Ordering::Relaxed);
+        let Some(&(name, entry)) = entries.get(index) else { break; };
         let test_started = Instant::now();
         let result = if let Some(jit) = &mut shared {
             jit.execute_entry(entry, &[], limits.clone())
@@ -63,29 +58,72 @@ pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
             jit.execute_entry(entry, &[], limits.clone())
         };
         let seconds = test_started.elapsed().as_secs_f64();
-        tests.push(match result {
+        let mut outcome = match result {
             Ok(run) => json!({"name":name,"function":entry,"status":"passed","seconds":seconds,
                 "instructions":run.instructions,"peak_guest_memory":run.peak_memory,
                 "jit_compile_ns":run.jit_compile_nanos,"jit_bytes":run.jit_bytes,
                 "jit_compiled_functions":run.jit_compiled_functions,"jit_declined_functions":run.jit_declined_functions,
                 "jit_instructions":run.jit_instructions,"jit_entries":run.jit_entries}),
             Err(error) => {
-                failures += 1;
                 json!({"name":name,"function":entry,"status":"failed","seconds":seconds,"error":error})
             }
-        });
+        };
+        outcome["worker"] = json!(worker);
+        tests.push((index, outcome));
     }
+    Ok((preparation_nanos, tests))
+}
+
+pub fn run(program: &Program, mode: Mode, limits: &Limits, path: &str,
+           catalog: Option<&EntryCatalog>, bytes: &[u8], requested_workers: usize) -> Result<(), Box<dyn std::error::Error>> {
+    let started = Instant::now();
+    if !(1..=64).contains(&requested_workers) { return Err("suite workers must be in 1..64".into()); }
+    let entries = match catalog {
+        Some(catalog) => catalog.validated_entries(program, bytes)?,
+        None => selected_entries(program)?,
+    };
+    if entries.is_empty() { return Err("isolated batch has no entries".into()); }
+    // Reserve the report before any guest code runs. Never replace a previous
+    // result merely because the same command was invoked a second time.
+    let file = std::fs::OpenOptions::new().write(true).create_new(true).open(path)?;
+    let workers = requested_workers.min(entries.len());
+    let next = AtomicUsize::new(0);
+    let results = if workers == 1 {
+        vec![worker(program, mode, limits, &entries, &next, 0)?]
+    } else {
+        std::thread::scope(|scope| -> Result<_, String> {
+            let mut handles = vec![];
+            for id in 0..workers {
+                let entries = &entries;
+                let next = &next;
+                handles.push(std::thread::Builder::new().name(format!("rust-interp-suite-{id}"))
+                    .spawn_scoped(scope, move || worker(program, mode, limits, entries, next, id))
+                    .map_err(|error| format!("cannot start suite worker: {error}"))?);
+            }
+            // Scope completion also joins all remaining workers if a startup
+            // or worker failure returns early. No guest or JIT outlives run.
+            handles.into_iter().map(|handle| handle.join()
+                .map_err(|_| "suite worker panicked".to_owned())?).collect()
+        })?
+    };
+    let mut preparation_nanos = 0;
+    let mut ordered = vec![];
+    for (preparation, tests) in results { preparation_nanos += preparation; ordered.extend(tests); }
+    ordered.sort_unstable_by_key(|(index, _)| *index);
+    let tests: Vec<Value> = ordered.into_iter().map(|(_, outcome)| outcome).collect();
+    let failures = tests.iter().filter(|test| test["status"] == "failed").count();
     let report = json!({"schema_version":1,"status":if failures == 0 {"passed"} else {"failed"},
         "mode":match mode {Mode::Fresh=>"fresh",Mode::Prepared=>"prepared"},
+        "requested_workers":requested_workers,"workers":workers,
         "entry_source":if catalog.is_some() {"artifact-bound catalog"} else {"legacy batch descriptor"},
         "isolation":"new guest memory, statics, registers, frames, heap and TLS for each entry",
         "scope":"explicit selected unit-result entries; no libtest ignore, should-panic, unwind or thread semantics",
         "runtime_limits":{"instructions":limits.instructions,"allocations":limits.allocations,
             "memory_bytes":limits.memory,"frames":limits.frames},
         "jit_code_limit_bytes":limits.jit_code_bytes,
-        "limit_scope":"runtime limits apply to each isolated test; the code limit applies to each JIT owner",
+        "limit_scope":"runtime limits apply to each isolated test; the code limit applies to each JIT owner, with one owner per prepared worker",
         "seconds_before_report_write":started.elapsed().as_secs_f64(),
-        "preparation_ns":preparation_nanos,"preparation_scope":"included in per-test seconds for fresh mode; shared constructor precedes prepared-mode tests",
+        "preparation_ns":preparation_nanos,"preparation_scope":"sum of constructor durations, which can overlap across workers; included in per-test seconds for fresh mode; each prepared worker constructs before its tests",
         "passed":tests.len()-failures,"failed":failures,"tests":tests});
     let mut output = std::io::BufWriter::new(file);
     serde_json::to_writer_pretty(&mut output, &report)?;

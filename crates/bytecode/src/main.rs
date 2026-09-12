@@ -14,8 +14,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut isolated_batch = None;
     let mut suite_report = None;
     let mut suite_catalog = None;
+    let mut suite_workers = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
@@ -30,6 +31,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--suite-report" => {
                 if suite_report.is_some() { return Err("duplicate suite report path".into()); }
                 suite_report = Some(args.next().ok_or("missing suite report path")?);
+            }
+            "--suite-workers" => {
+                if suite_workers.is_some() { return Err("duplicate suite worker count".into()); }
+                let workers: usize = args.next().ok_or("missing suite worker count")?.parse()?;
+                if !(1..=64).contains(&workers) { return Err("suite workers must be in 1..64".into()); }
+                suite_workers = Some(workers);
             }
             "--suite-catalog" => {
                 if suite_catalog.is_some() { return Err("duplicate suite catalog path".into()); }
@@ -139,13 +146,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }));
         program.entry = selected;
     }
+    if suite_workers.is_some() && isolated_batch.is_none() {
+        return Err("suite workers require an isolated batch".into());
+    }
     if let Some(mode) = isolated_batch {
         if engine != Engine::Jit || !limits.jit_resumable_calls || limits.jit_native_calls
             || limits.jit_native_call_stubs || profile_path.is_some() || limits.jit_code_dump.is_some() || !args.is_empty()
         {
             return Err("isolated batches require resumable JIT execution without tree/stub, profile, code dump or entry arguments".into());
         }
-        suite::run(&program, mode, &limits, suite_report.as_deref().unwrap(), catalog.as_ref(), &bytes)?;
+        suite::run(&program, mode, &limits, suite_report.as_deref().unwrap(), catalog.as_ref(), &bytes, suite_workers.unwrap_or(1))?;
         println!("0");
         return Ok(());
     }

@@ -221,6 +221,7 @@ def _main(resources):
     parser.add_argument('--engine',choices=['interpreter','jit'],default='interpreter')
     parser.add_argument('--isolated-batch',choices=['fresh','prepared'],help='experimental separate guest state per selected test; runtime limits apply to each test')
     parser.add_argument('--suite-report',type=Path,help='new JSON result path for --isolated-batch')
+    parser.add_argument('--suite-workers',type=int,help='isolated test workers, each owning its JIT (1..64; default: 1)')
     parser.add_argument('--jit-native-call-stubs',action='store_true',help='experimental Calls linked with ordinary regions; requires --jit-native-calls')
     parser.add_argument('--jit-resumable-calls',action='store_true',help='experimental native Calls over guest frames; requires JIT, excludes tree/stub calls')
     parser.add_argument('--jit-persistent-registers',action='store_true',help='experimental full-width values retained across native block edges; requires --engine=jit')
@@ -270,6 +271,8 @@ def _main(resources):
         args.entry=[]
     if (args.isolated_batch is None) != (args.suite_report is None):
         parser.error('--isolated-batch and --suite-report must be supplied together')
+    if args.suite_workers is not None and (args.isolated_batch is None or not 1<=args.suite_workers<=64):
+        parser.error('--suite-workers requires an isolated batch and a count in 1..64')
     if args.isolated_batch is not None:
         if auditing or not args.test_body or (not filtered and len(args.entry or []) < 2) or args.arguments:
             parser.error('--isolated-batch requires --test-filter or at least two --entry test bodies without audit or entry arguments')
@@ -491,12 +494,14 @@ def _main(resources):
     if args.allocation_limit is not None:vm_command+=['--allocation-limit',str(args.allocation_limit)]
     if args.isolated_batch is not None:
         vm_command+=['--isolated-batch',args.isolated_batch,'--suite-report',str(args.suite_report)]
+        if args.suite_workers is not None:vm_command+=['--suite-workers',str(args.suite_workers)]
         if filtered or entry_catalog_supported(tools,key):
             catalog=selected_entry_catalog(artifacts[0],args.entry)
             vm_command+=['--suite-catalog',str(catalog)]
             timings['entry_catalog_path']=str(catalog)
             timings['entry_catalog_sha256']=hashlib.sha256(catalog.read_bytes()).hexdigest()
         timings.update(isolated_batch=args.isolated_batch,suite_report_path=str(args.suite_report),
+                       suite_workers_requested=args.suite_workers or 1,
                        runtime_limits_scope='each isolated test')
     if stats:timings['allocation_limit']=args.allocation_limit if args.allocation_limit is not None else 100_000
     if stats:
@@ -518,6 +523,7 @@ def _main(resources):
         from suite_reports import validate_runtime_limits
         suite=json.loads(args.suite_report.read_bytes())
         validate_runtime_limits(suite,args.instruction_limit,args.allocation_limit)
+        timings['suite_workers']=suite.get('workers',1)
         if 'runtime_limits' in suite:timings['runtime_limits']=suite['runtime_limits']
     timings['launcher_seconds']=time.perf_counter()-started
     if stats:print('rust-interp-launch: '+json.dumps(timings),file=sys.stderr)
