@@ -63,6 +63,10 @@ def main():
     if len(set(args.engines)) != len(args.engines):
         parser.error('specify each engine at most once')
     cases = json.loads(args.manifest.read_text())
+    for case in cases:
+        for field, minimum in [('instruction_limit', 1), ('allocation_limit', 0)]:
+            if field in case and (type(case[field]) is not int or not minimum <= case[field] < 2**64):
+                parser.error(f'{case["name"]}: {field} must be an explicit integer in range; omit it to use the default')
     binaries = dict(baseline=args.baseline.resolve(), candidate=args.candidate.resolve())
     paths = [*binaries.values(), args.manifest.resolve(), Path(__file__).resolve()]
     paths += [Path(case['artifact']).resolve() for case in cases]
