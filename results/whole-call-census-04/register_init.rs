@@ -49,7 +49,7 @@ fn prove(f: &Function, bounds: Bounds) -> Option<bool> {
     let mut edges = 0usize;
     for b in 0..n {
         let end = positions.get(b+1).copied().unwrap_or(f.code.len());
-        let mut edge = |pc: usize| -> Option<()> {
+        let mut edge = |pc| -> Option<()> {
             edges += 1;
             if edges > bounds.edges { return None; }
             charge(&mut work, 1)?;
