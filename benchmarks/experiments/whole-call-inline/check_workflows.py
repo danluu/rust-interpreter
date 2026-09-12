@@ -79,9 +79,9 @@ def main():
         workflow.require(allowed.changed==3 and ast.dump(original_verify,include_attributes=False)==
             ast.dump(candidate_verify,include_attributes=False),'downstream verification changed outside exact admission')
         paths += [Path(__file__),Path(workflow.__file__),harness,
-                  Path(workflow.__file__).with_name('PLAN.md'),candidate_path,base,
+                  Path(workflow.__file__).with_name('PLAN.md'),Path(workflow.__file__).with_name('WORKFLOWS.md'),candidate_path,base,
                   root/'results/aggregate-relocation-controls-01/summary.json']
-        out=root/'results/whole-call-workflow-controls-01';out.mkdir(exist_ok=False)
+        out=root/'results/whole-call-workflow-controls-02';out.mkdir(exist_ok=False)
         workflow.write(out/'summary.json',dict(status='passed',key_routes_checked=cases,
             changed_guard_rejections=rejected,changed_tool_rejections=tool_rejections,
             qualified_verifier_body_preserved=True,original_assertions_preserved=True,tools=tools,

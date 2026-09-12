@@ -26,7 +26,7 @@ ORDER = [('aa', 'folded-literal-trie'), ('aa', 'token-phrase'),
 
 
 def run_id(phase, label):
-    return 'whole-call-'+phase+'-01-'+label
+    return 'whole-call-'+phase+'-02-'+label
 
 
 def stage_aa(text):
@@ -144,7 +144,7 @@ def main():
         with (ROOT/'.work/benchmark.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             paths = qualifications()
-            control_path = ROOT/'results/whole-call-workflow-controls-01/summary.json'
+            control_path = ROOT/'results/whole-call-workflow-controls-02/summary.json'
             controls = read(control_path)
             require(controls['status'] == 'passed' and all(sha(ROOT/p) == h for p,h in controls['frozen'].items()),
                     'workflow control qualification changed')
@@ -176,7 +176,7 @@ def main():
                 '--comparison-engine','jit',*(['--expect-identical-bytecode'] if args.phase == 'aa' else []),
                 '--baseline-jit-resumable-calls','--baseline-jit-persistent-registers',
                 '--candidate-jit-resumable-calls','--candidate-jit-persistent-registers',*case['flags']]
-            paths += [Path(__file__), original, harness, HERE/'PLAN.md',HERE/'verify_workflow.py', ROOT/'benchmarks/workflow-corpus.json']
+            paths += [Path(__file__), original, harness, HERE/'PLAN.md',HERE/'WORKFLOWS.md',HERE/'verify_workflow.py', ROOT/'benchmarks/workflow-corpus.json']
             paths += [ROOT/'scripts'/n for n in ['interpreter.py','verify_repeated_workflow.py','workflow_space.py',
                 'workflow_cases.py','workflow_case_file.py','workflow_controls.py','workflow_measurements.py','workflow_io.py','workflow_jobs.py','std_mir.py']]
             frozen = {str(p.relative_to(ROOT)):sha(p) for p in paths}
