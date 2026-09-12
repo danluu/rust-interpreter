@@ -59,6 +59,12 @@ fn later_callers_keep_edges_to_original_nonleaf_functions() {
     // node, then independently expands its own direct edge to leaf 1.
     p.functions[0].code.insert(2, Op::Call { function: 1, args: vec![0], destination: 1 });
     later.code.insert(2, Op::Call { function: 0, args: vec![0], destination: 1 });
+    // Call-site discovery deliberately forgets slot facts across a Call.
+    // Restate them before the second site in both original callers.
+    for caller in [&mut p.functions[0], &mut later] {
+        caller.code.splice(3..3, [Op::Local { dst: 0, offset: 0 },
+                                 Op::Local { dst: 1, offset: 32 }]);
+    }
     p.functions.push(later);
     p.entry = 2;
     let original_leaf = bincode::serialize(&p.functions[1]).unwrap();
@@ -98,19 +104,22 @@ fn rejected_caller_restores_budget_before_later_admission() {
     // introduces a branch between caller definition and read, requiring the
     // bounded CFG proof. Crossing its register bound must conservatively keep
     // this caller unchanged, with exact growth/diagnostic budget rollback.
-    p.functions[0].code.insert(0, Op::Jump { target: 1 });
+    // A fallthrough Jump would be removed before the proof; retain an actual
+    // branch boundary with both initialized, valid paths reaching the body.
+    p.functions[0].code.splice(0..0, [Op::Imm { dst: 2, value: 1 },
+        Op::Switch { value: 2, cases: vec![(1, 2)], otherwise: 2 }]);
     let opts = inline::Options { program_growth_percent: 50, ..options() };
     let (_, small) = checked_transform(&p, opts).unwrap();
     assert_eq!(small["changed_callers"][0]["function"], 0);
     p.functions[0].registers = 65_536;
     assert!(!crate::registers::needs_initial_zeroes(&p.functions[0]));
     let rejected = bincode::serialize(&p.functions[0]).unwrap();
-    // Thirty original operations allow either 11-operation expansion, but
+    // Thirty-one original operations allow either 11-operation expansion, but
     // not both without rollback. All programs remain valid and initialized.
     let (q, report) = checked_transform(&p, opts).unwrap();
-    assert_eq!(bincode::serialize(&q.functions[0]).unwrap(), rejected);
+    assert!(bincode::serialize(&q.functions[0]).unwrap() == rejected, "rejected caller was modified");
     assert_eq!(report, serde_json::json!({
-        "selected_sites": 1, "original_operations": 30, "new_operations": 39,
+        "selected_sites": 1, "original_operations": 31, "new_operations": 40,
         "added_operations_upper_bound": 11, "max_leaf_operations": 192,
         "max_program_growth_percent": 50, "cloned_diagnostic_bytes": 27,
         "changed_callers": [{"function": 2, "name": "later admitted", "sites": 1,
