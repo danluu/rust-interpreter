@@ -8,6 +8,22 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+Fixed frame clearing is implemented on `experiment/fixed-frame-clear`, with
+runtime source `6f9e148` and candidate tool `fdbf713b`. It preserves all frame
+zeroing and specializes statically known extents up to 256 bytes. The
+[three-history es8 confirmation](results/fixed-frame-clear-confirm-02/assessment.md)
+passes the predeclared aggregate gate: 8.37% complete-command wall improvement,
+8.48% CPU, 15 real edited pairs; the initial pilot is excluded. Each history
+and all wrong-edit/restoration controls remain available. Candidate commands
+remain roughly 2.5 times native on this target.
+
+Broad qualification passes 47,004 native differential commands, 245 TLS checks,
+382 fre bodies with seven ignored, and all 52 integration assertions. The
+baseline and candidate share the exact exporter and wrapper. Nine original
+library workflow gates remain before runtime retention; keep this candidate
+separate from the historical full-workflow anchor below. Good tooling and
+evidence changes can be published independently of the experimental runtime.
+
 General interpreter arithmetic and scalar-memory improvements are now qualified
 in source: about 12.7% faster saved-artifact execution on pgrust/Ruff and
 14.6–20.5% on four additional Fre cases. All 297 workspace tests pass in debug

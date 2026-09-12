@@ -19,6 +19,19 @@ from timing import environment, invoke, read, require, sha
 from native_results import libtest_summary
 from workflow_io import SourceEdit, write_json as write
 from workflow_measurements import mode_order
+from interpreter import installed_tools
+
+def integration_order(modes, state):
+    if len(modes) == 3:
+        return mode_order(modes, 0, state, True)
+    require(len(modes) == 4 and len(set(modes)) == 4, 'expected three or four distinct modes')
+    if state <= 0:
+        return modes if state == 0 else list(reversed(modes))
+    # Four balanced rows put each mode in every position; reverse the next
+    # block so the fifth edit does not always repeat the first pair order.
+    row = (state - 1) % 4
+    order = [modes[(i + row) % 4] for i in [0, 1, 3, 2]]
+    return list(reversed(order)) if (state - 1) // 4 % 2 else order
 
 def end_greedy_edits(original):
     text = original.decode()
@@ -78,6 +91,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--case', choices=['end-greedy', 'es8'], default='end-greedy')
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--comparison-tools', type=Path, help='qualified baseline/candidate runtime composition receipt')
+    parser.add_argument('--initial-mode-offset', type=int, choices=range(4), default=0)
+    parser.add_argument('--lock-wait-seconds', type=int, choices=range(61), default=0)
     args = parser.parse_args()
     require(re.fullmatch(r'fre-integration-[a-z0-9-]+-\d{2}', args.run_id), 'invalid run id')
     target, source_name, make_edits = {
@@ -91,7 +107,15 @@ def main():
     write(work / 'status.json', status)
     try:
         with (ROOT / '.work/benchmark.lock').open('a') as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            deadline = time.monotonic() + args.lock_wait_seconds
+            while True:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError:
+                    if time.monotonic() >= deadline:
+                        raise
+                    time.sleep(min(1, max(0, deadline - time.monotonic())))
             coverage = read(ROOT / 'results/fre-integration-targets-02/summary.json')
             require(coverage['status'] == 'passed' and coverage['original_tests_passed'] == 52 and
                 read(ROOT / '.work/experiments/fre-integration-targets-02/status.json')['status'] == 'finished', 'coverage not complete')
@@ -121,22 +145,55 @@ def main():
             env = environment('repository')
             guest_env = dict(env, RUST_INTERP_LAUNCH_STATS='1', RUSTFLAGS='-Zmir-opt-level=3 -Zinline-mir-threshold=400 -Zinline-mir-hint-threshold=800 -Zinline-mir-forwarder-threshold=240')
             commands = dict(native=native, custom=custom, check=check)
+            paired = args.comparison_tools is not None
+            tool_key = coverage['tool_key']
+            baseline_key = None
+            composition_paths = []
+            if paired:
+                tools_path = args.comparison_tools.resolve()
+                tools = read(tools_path)
+                require(set(tools) == {'baseline', 'candidate'}, 'comparison tools differ')
+                commands = {'native': native}
+                for mode in ['baseline', 'candidate']:
+                    key = tools[mode]['tool_key']
+                    directory, _ = installed_tools(key)
+                    require(read(directory / 'ready.json') == tools[mode]['binaries'], 'tool composition changed')
+                    command = list(custom)
+                    command[command.index('--tool-key') + 1] = key
+                    commands[mode] = command
+                    composition_paths.extend([directory / 'ready.json', directory / 'source.json', directory / 'capabilities.json'])
+                require(tools['baseline']['tool_key'] != tools['candidate']['tool_key'], 'comparison needs distinct tools')
+                for name in ['rust-interp-mir-export', 'rust-interp-rustc-wrapper']:
+                    require(tools['baseline']['binaries'][name] == tools['candidate']['binaries'][name], 'frontend components differ')
+                commands['check'] = check
+                baseline_key, tool_key = (tools[m]['tool_key'] for m in ['baseline', 'candidate'])
+                composition_paths.append(tools_path)
+            custom_modes = {'baseline', 'candidate'} if paired else {'custom'}
+            require(args.initial_mode_offset < len(commands), 'mode offset exceeds mode count')
+            order = list(commands)
+            order = order[args.initial_mode_offset:] + order[:args.initial_mode_offset]
+            commands = {name: commands[name] for name in order}
+            target_ratio = .92 if paired else .90
             paths = [Path(__file__), HERE / ('ES8.md' if args.case == 'es8' else 'EDIT.md'), ROOT / 'scripts/interpreter.py',
                 test_source, ROOT / 'results/fre-integration-targets-02/summary.json', ROOT / 'scripts/workflow_io.py',
                 ROOT / 'scripts/workflow_measurements.py', ROOT / 'scripts/workflow_controls.py', ROOT / 'benchmarks/experiments/tuned-native/timing.py']
+            paths += composition_paths
+            if paired: paths.append(ROOT / 'benchmarks/experiments/frame-initialization/FIXED-CLEAR.md')
             frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
             source_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
-            write(work / 'plan.json', dict(owner=str(ROOT), source_commit=source_commit, tool_key=coverage['tool_key'],
+            write(work / 'plan.json', dict(owner=str(ROOT), source_commit=source_commit, tool_key=tool_key, baseline_tool_key=baseline_key,
                 source_pin=marker['revision'], frozen=frozen, commands=commands, source_states=[dict(state=s, label=l) for s, l, _ in states],
                 jobs=18, native_test_threads='default', warm_reused_caches=True, case=args.case, target=target,
-                pilot_target_wall_ratio=.90, note='Five real production edits; original assertions unchanged. Anchor excluded. CPU reported. No retention decision from this one-cycle pilot.'))
+                initial_mode_order=order,
+                pilot_target_wall_ratio=target_ratio, comparison='candidate/baseline' if paired else 'custom/native',
+                note='Five real production edits; original assertions unchanged. Anchor excluded. CPU reported. No retention decision from this one-cycle pilot.'))
             records = []
             status.update(status='running')
             write(work / 'status.json', status)
             def run_state(state, label):
                 digest = sha(file)
-                for mode in mode_order(['native', 'custom', 'check'], 0, 6 if state == 'restored' else state, True):
-                    row, stdout, stderr = invoke(work, str(state) + '-' + mode, commands[mode], source, guest_env if mode == 'custom' else env)
+                for mode in integration_order(list(commands), 6 if state == 'restored' else state):
+                    row, stdout, stderr = invoke(work, str(state) + '-' + mode, commands[mode], source, guest_env if mode in custom_modes else env)
                     row.update(state=state, mode=mode, edit=label, source_sha256=digest)
                     records.append(row)
                     write(work / 'records.json', records)
@@ -144,13 +201,13 @@ def main():
                     require((row['returncode'] == 0) == success, 'unexpected assertion outcome: ' + str(state) + '/' + mode)
                     if mode == 'native':
                         row['suite'] = libtest_summary(stdout, selected=previous['tests'], success=success)
-                    elif mode == 'custom':
+                    elif mode in custom_modes:
                         require((stdout.strip() == '0') == success, 'unexpected VM result')
                         launches = [json.loads(line.split(': ', 1)[1]) for line in stderr.splitlines() if line.startswith('rust-interp-launch: ')]
                         require(len(launches) == 1, 'missing custom stage/identity record')
                         row['launch'] = launches[0]
                         artifact = Path(row['launch']['artifact_path'])
-                        snapshot = work / 'artifacts' / (str(state) + '.rbc')
+                        snapshot = work / 'artifacts' / (str(state) + ('-' + mode if paired else '') + '.rbc')
                         require(sha(artifact) == row['launch']['artifact_sha256'], 'executed bytecode changed')
                         subprocess.run(['cp', '-c', str(artifact), str(snapshot)], check=True)
                         require(sha(snapshot) == row['launch']['artifact_sha256'], 'snapshot differs')
@@ -159,6 +216,9 @@ def main():
                         require(('Compiling ' if mode == 'native' else 'Checking ') + 'fre-kernels' in stderr, 'production edit was not rebuilt')
                     write(work / 'records.json', records)
                     print(state, mode, round(row['seconds'], 3), flush=True)
+                if paired:
+                    matched = [r['launch']['artifact_sha256'] for r in records if r['state'] == state and r['mode'] in custom_modes]
+                    require(len(matched) == 2 and len(set(matched)) == 1, 'paired exported bytecode differs')
             with SourceEdit(file, original) as edit:
                 for state, label, payload in states:
                     edit.replace(payload)
@@ -166,20 +226,25 @@ def main():
             require(file.read_bytes() == original and not subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=source, text=True).strip(), 'source restoration differs')
             run_state('restored', 'original-after-restoration')
             require(all(sha(ROOT / p) == h for p, h in frozen.items()), 'experiment inputs changed')
-            require(len(records) == 24, 'incomplete edit history and restoration controls')
+            require(len(records) == 8 * len(commands), 'incomplete edit history and restoration controls')
             index = {(r['mode'], r['state']): r for r in records}
-            pairs = [dict(state=s, wall_ratio=index['custom', s]['seconds'] / index['native', s]['seconds'],
-                cpu_ratio=index['custom', s]['cpu']['total_seconds'] / index['native', s]['cpu']['total_seconds']) for s in range(1, 6)]
+            candidate_mode, baseline_mode = ('candidate', 'baseline') if paired else ('custom', 'native')
+            pairs = [dict(state=s, wall_ratio=index[candidate_mode, s]['seconds'] / index[baseline_mode, s]['seconds'],
+                cpu_ratio=index[candidate_mode, s]['cpu']['total_seconds'] / index[baseline_mode, s]['cpu']['total_seconds'],
+                custom_native_wall_ratio=index[candidate_mode, s]['seconds'] / index['native', s]['seconds']) for s in range(1, 6)]
             medians = {m: statistics.median(index[m, s]['seconds'] for s in range(1, 6)) for m in commands}
             out = ROOT / 'results' / args.run_id
             out.mkdir(exist_ok=False)
             write(out / 'summary.json', dict(status='passed', raw=str(work.relative_to(ROOT)), source_commit=source_commit,
-                tool_key=coverage['tool_key'], commands=24, edited_pairs=5, artifacts=8, source_restored=True,
+                tool_key=tool_key, baseline_tool_key=baseline_key, commands=len(records), edited_pairs=5,
+                artifacts=8 * len(custom_modes), source_restored=True, paired_bytecode_identical=True if paired else None,
                 case=args.case, target=target, tests=previous['tests'], restoration_recompiled_all_modes=True,
                 original_assertions_passed=True, wrong_edit_rejected_by_native_and_custom=True, check_accepts_well_typed_wrong_logic=True,
                 median_seconds=medians, pairs=pairs, paired_median_wall_ratio=statistics.median(p['wall_ratio'] for p in pairs),
                 paired_median_cpu_ratio=statistics.median(p['cpu_ratio'] for p in pairs),
-                pilot_target_met=statistics.median(p['wall_ratio'] for p in pairs) <= .90,
+                pilot_target_met=statistics.median(p['wall_ratio'] for p in pairs) <= target_ratio,
+                pilot_target_wall_ratio=target_ratio, comparison='candidate/baseline' if paired else 'custom/native',
+                initial_mode_order=order,
                 records_sha256=sha(work / 'records.json'), frozen=frozen,
                 note='Actual production-library edits through one integration target. Five edited pairs, warm primed/reused caches, 18 jobs, native repository debuginfo/O0/incremental/default threads. Pilot only; no cold or whole-suite claim.'))
             status.update(status='finished', returncode=0, finished_at=time.time())
