@@ -15,7 +15,7 @@ from compare_saved_runtime import acquire_lock, sha
 from interpreter import installed_tools, require_export_option
 from native_suite import test_status
 from suite_reports import read_report, validate_report
-from workflow_cases import WORKFLOWS
+from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from workflow_measurements import source_states
 
@@ -27,6 +27,7 @@ def main():
     project='ruff' if args.case=='ruff' else 'fre'
     workflow='ruff' if args.case=='ruff' else 'folded-literal-trie'
     package='ruff_linter' if args.case=='ruff' else 'fre-kernels'
+    case=WORKFLOWS[project] if args.case=='ruff' else WORKFLOW_VARIANTS[project,workflow]
     start_floor=8.75 if args.case=='ruff' else 8.25
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,start_floor)
@@ -39,7 +40,7 @@ def main():
         reference_path=ROOT/'results'/history_id/'summary.json';reference=json.loads(reference_path.read_text())
         rows=json.loads((raw/'records.json').read_text());native_row=[row for row in rows if row['mode']=='native'][-1]
         assert native_row['state']==5 and native_row['calls'][0]['returncode']==0
-        names=native_row['tests'];assert len(names)==(6 if args.case=='ruff' else 18) and names==WORKFLOWS[workflow]['tests']
+        names=native_row['tests'];assert len(names)==(6 if args.case=='ruff' else 18) and names==case['tests']
         matches=re.findall(r'Running unittests src/lib.rs \(([^)]+)\)',native_row['calls'][0]['stderr']);assert len(matches)==1
         native=Path(matches[0]);assert native.is_relative_to(raw/'native') and not native.is_symlink()
         supervisor_path=ROOT/'.work/experiments'/history_id/'status.json';supervisor=json.loads(supervisor_path.read_text())
@@ -49,8 +50,8 @@ def main():
         assert marker['owner']==str(ROOT) and marker['revision']==reference['revision']
         assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=source,text=True).strip()==reference['revision']
         assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=source,text=True).strip()
-        path=source/WORKFLOWS[workflow]['file'];original=path.read_bytes()
-        states=list(source_states(original.decode(),WORKFLOWS[workflow],1,['native','baseline','candidate'],True))
+        path=source/case['file'];original=path.read_bytes()
+        states=list(source_states(original.decode(),case,1,['native','baseline','candidate'],True))
         edited=states[-1]['source'];assert hashlib.sha256(edited).hexdigest()==native_row['source_sha256']
         entropy_path=ROOT/'results/fixed-frame-clear-entropy-check-01/summary.json';entropy=json.loads(entropy_path.read_text())
         library=ROOT/entropy['library'];assert entropy['status']=='passed' and sha(library)==entropy['library_sha256']
@@ -85,7 +86,7 @@ def main():
             command=[sys.executable,str(ROOT/'scripts/interpreter.py'),'--manifest-path',str(source/'Cargo.toml'),
                 '--package',package,'--jobs','2','--tool-key',key,'--test-body','--std-mir','--inline-leaves',
                 '--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
-                '--instruction-limit','1000000000','--isolated-batch','fresh','--suite-report',str(report_path),
+                '--instruction-limit',str(reference['instruction_limit']),'--isolated-batch','fresh','--suite-report',str(report_path),
                 '--cache-namespace',args.run_id,*[a for name in names for a in ['--entry',name]]]
             row=invoke('export-and-execute',command);assert row['returncode']==0,row['stderr']
             assert 'Checking '+package in row['stderr'] and path.read_bytes()==edited
@@ -97,7 +98,7 @@ def main():
             catalog=work/'program.rbc.entries.json';catalog.write_bytes(Path(launch['entry_catalog_path']).read_bytes())
             assert sha(artifact)==launch['artifact_sha256']==json.loads(catalog.read_text())['artifact_sha256']
             base=[str(tool/'rust-interp-vm'),'--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
-                  '--instruction-limit','1000000000']
+                  '--instruction-limit',str(reference['instruction_limit'])]
             normal=invoke('ordinary-batch',base+[str(artifact)]);assert normal['returncode']==0 and normal['stdout']=='0\n'
             exact=[];consumption=[]
             for label,mode,action in [('fresh-record','fresh','record'),('fresh-replay','fresh','replay'),('prepared-replay','prepared','replay')]:
