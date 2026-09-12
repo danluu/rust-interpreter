@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Compare native, explicit and automatic suites across pinned production edits."""
-import argparse,hashlib,json,os,statistics,subprocess,sys,time
+import argparse,hashlib,json,os,shutil,statistics,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3];sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
@@ -26,8 +26,10 @@ def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45)
         cache_root=ROOT if args.workspace_cache_root is None else external_cache_root(args.workspace_cache_root,ROOT)
-        require_space(cache_root,8.3 if project=='pgrust' else 9.5)
-        require_space(ROOT,8)
+        minimum_child_gib=4 if args.case=='token' else 8
+        admission_gib=6.5 if args.case=='token' else 8.3 if project=='pgrust' else 9.5
+        require_space(cache_root,admission_gib)
+        require_space(ROOT,minimum_child_gib)
         build_paths={m:ROOT/'results'/r/'summary.json' for m,r in [('baseline','suite-profiling-build-02'),('candidate','constant-fold-compose-02')]}
         builds={m:json.loads(p.read_text()) for m,p in build_paths.items()};assert builds['baseline']['status']=='passed' and builds['candidate']['status']=='composed'
         qualification=ROOT/'results/constant-fold-saved-02/summary.json';assert json.loads(qualification.read_text())['status']=='passed'
@@ -61,18 +63,23 @@ def main():
             for profile in ['DEV','TEST']:env['CARGO_PROFILE_'+profile+'_BUILD_OVERRIDE_OPT_LEVEL']=str(ref['build_tool_opt_level'])
         guest_env=env.copy()
         if ref['guest_rustflags']:guest_env['RUSTFLAGS']=' '.join(ref['guest_rustflags'])
-        frozen_paths=[Path(__file__),Path(__file__).with_name('SCREEN.md'),*build_paths.values(),qualification,fixture,verifier,ref_path,listing_path,marker]
+        frozen_paths=[Path(__file__),Path(__file__).with_name('SCREEN.md'),Path(__file__).with_name('STORAGE.md'),ROOT/'results/constant-fold-storage-sizing-01/summary.json',*build_paths.values(),qualification,fixture,verifier,ref_path,listing_path,marker]
         frozen_paths += [ROOT/'scripts'/n for n in ['interpreter.py','workspace_cache.py','test_discovery.py','workflow_cases.py','workflow_io.py','workflow_measurements.py','suite_reports.py','native_suite.py','std_mir.py']]
         frozen_paths += [tool/n for tool in tools.values() for n in ['rust-interp-vm','rust-interp-mir-export','rust-interp-rustc-wrapper']]
         for rel in subprocess.check_output(['git','ls-files','-z'],cwd=source).decode().split('\0'):
             if rel and source/rel!=path:frozen_paths.append(source/rel)
         frozen={str(p.relative_to(ROOT)):sha(p) for p in frozen_paths}
         plan=dict(owner=str(ROOT),case=case,filter=pattern,names=names,tools={m:b['tool_key'] for m,b in builds.items()},revision=ref['revision'],frozen=frozen,
-            original_source_sha256=sha(path),minimum_child_gib=8,profiles='repository for native and both custom modes; two Cargo workers',
+            original_source_sha256=sha(path),minimum_child_gib=minimum_child_gib,admission_gib=admission_gib,profiles='repository for native and both custom modes; two Cargo workers',
             cache_parent=None if args.workspace_cache_root is None else str(args.workspace_cache_root.resolve()),cache_work=str(cache_work),evidence_root=str(work),
             runtime_limits=dict(instructions=ref['instruction_limit'],allocations=ref['allocation_limit']),guest_rustflags=ref['guest_rustflags'],
             comparison='Five paired cumulative production-body edits; complete commands include strict checking, export and all selected assertions. Independent fresh Cargo caches, identical VM/profiles/limits/workers, native/check controls. Original/wrong/restored states are outside timing medians.',minimum_token_wall_improvement=0.10,maximum_token_cpu_ratio=1.0,maximum_guard_wall_and_cpu_ratio=1.05)
         write(work/'plan.json',plan);rows=[];transitions=[];verifications=[];previous={mode:None for mode in ['native','baseline','candidate','check']}
+        space=[]
+        def check_space(state,mode):
+            space.append(dict(state=state,mode=mode,checked_at=time.time(),evidence_free_bytes=shutil.disk_usage(ROOT).free,cache_free_bytes=shutil.disk_usage(cache_root).free))
+            write(work/'space.json',space)
+            require_space(ROOT,minimum_child_gib);require_space(cache_root,minimum_child_gib)
         def execute(mode,state,label,success):
             suite_path=work/(f'{state}-{mode}-suite.json');digest=sha(path)
             assert previous[mode]!=digest,'unchanged source entered edited command'
@@ -91,7 +98,7 @@ def main():
                     if ref.get(field):command+=['--'+field.replace('_','-')]
                 command+=['--test-filter',pattern]
                 child_env=guest_env
-            require_space(ROOT,8);require_space(cache_root,8);before=child_usage();started=time.perf_counter()
+            check_space(state,mode);before=child_usage();started=time.perf_counter()
             child,stdout,stderr=capture(command,cwd=source,env=child_env,receipt_path=work/'active.json',receipt=dict(state=state,mode=mode,label=label))
             row=dict(mode=mode,state=state,label=label,command=command,seconds=time.perf_counter()-started,cpu=child_cpu_since(before),returncode=child.returncode,stdout=stdout,stderr=stderr,source_sha256=digest,previous_source_sha256=previous[mode]);rows.append(row);write(work/'records.json',rows)
             assert sha(path)==digest and (child.returncode==0)==(success or mode=='check'),stderr
@@ -122,7 +129,7 @@ def main():
                 artifacts={r['mode']:ROOT/r['artifact_path'] for r in selected if r['mode']!='native'}
                 verification=work/(str(state['state'])+'-folding.json')
                 command=[str(verifier),'--verify-fold',str(artifacts['baseline']),str(artifacts['candidate']),str(verification)]
-                require_space(ROOT,8)
+                check_space(state['state'],'verification')
                 child,stdout,stderr=capture(command,cwd=ROOT,env=env,receipt_path=work/'verification-active.json',receipt=dict(state=state['state']))
                 part=dict(state=state['state'],command=command,pid=child.pid,returncode=child.returncode,stdout=stdout,stderr=stderr)
                 verifications.append(part);write(work/'verifications.json',verifications)
@@ -141,7 +148,7 @@ def main():
             tools={m:b['tool_key'] for m,b in builds.items()},commands=len(rows),edited_pairs=5,source_restored=True,test_source_unchanged=True,vm_bytes_identical=True,bytecode_changes_expected=True,exact_constant_fold_pairs=len(verifications),verification_commands=len(verifications),verifications_sha256=sha(work/'verifications.json'),
             all_native_assertion_outcomes_match=True,paired_wall_ratio=wall_ratio,paired_cpu_ratio=cpu_ratio,pairs=pairs,
             median_edited_seconds={m:statistics.median(r['seconds'] for r in rows if r['mode']==m and 1<=r['state']<=5) for m in ['native','baseline','candidate','check']},
-            timing_scope=plan['comparison'],raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),transitions_sha256=sha(work/'transitions.json')))
+            timing_scope=plan['comparison'],raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),transitions_sha256=sha(work/'transitions.json'),space_sha256=sha(work/'space.json'),minimum_recorded_free_bytes=min(min(r['evidence_free_bytes'],r['cache_free_bytes']) for r in space)))
         print('PASS: source transitions and native assertions; performance gate',gate_passed,'wall',wall_ratio,'CPU',cpu_ratio,flush=True)
 
 
