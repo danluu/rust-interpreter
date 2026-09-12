@@ -72,12 +72,19 @@ Focused cases cover every budget, faults, profiles and large register/ABI copies
 Build 01's test-message mismatch remains preserved; runtime error behavior did
 not change. The implementation is committed and production sources are unchanged.
 
-The full native differential validator `budget-register-native-01` is active
-(supervisor 30178, controller 30182, initial validator 30185). Do not edit its
-frozen inputs or launch another benchmark-lock user until all are terminal.
+The [native differential validator](results/budget-register-native-01/assessment.md)
+passes all 47,004 commands across both modes. Smoke 01 matched folded-trie
+success counters/profiles but its checker expected a shortened budget error.
+The exact existing literal is corrected; attempts 02 and 03 were rejected at
+lock acquisition before guest execution. All failures and sources are preserved.
+A separate user-owned cleanup session is archiving caches. Do not control it or
+queue another lock waiter during its active archive work. Inspect lock holders
+and active archive children read-only, not the lifetime of the Codex session.
+No task-owned process is currently active.
 
 Next actions:
-1. Finish native validation, run the exact original-artifact/profile/budget smoke,
+1. Once external archive activity is terminal, run the corrected exact-artifact smoke
+   under fresh ID `budget-register-smoke-04`,
    then TLS/destructor and fre body qualifications against the same VM.
 2. Run matched A/A controls for both primaries, then the fixed primary gates:
    at least 10% token complete-command wall improvement, lower CPU and beyond
