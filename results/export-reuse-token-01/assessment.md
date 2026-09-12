@@ -1,0 +1,5 @@
+Token repeatedly lowers 5,375 functions. Across the five production edits, exactly repeated indexed outputs account for a median **178ms of 459ms** observed function work (**38.8%**). Two edits repeat about 99% of the work, while two other edits repeat only 28–30%. Equal output remains insufficient to prove a valid cache hit.
+
+All original assertions and wrong-edit controls passed. The controller stopped when the restored original differed from its cold anchor. Read-only verification found that this output exactly matches the retained exporter’s existing cycle-1 and cycle-2 restoration artifacts, including the preceding edited-source hash. All eight observed outputs match the corresponding historical state. The stopped run and its incorrect cold-anchor restoration expectation are preserved; no rerun was performed. The source is restored.
+
+A raw function-output cache alone has too little median opportunity to fund an 8% token end-to-end screen. Inspect embedded-address changes and compiler dependencies before choosing a cache boundary.

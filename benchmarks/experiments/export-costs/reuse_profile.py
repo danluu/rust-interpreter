@@ -46,6 +46,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--case', choices=REFERENCES, required=True)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--restored-reference-cycle', type=int, choices=[0, 1], required=True,
+                        help='preselect the retained original-source artifact from the matching cache history')
     args = parser.parse_args()
     assert re.fullmatch('export-reuse-' + args.case + r'-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -63,6 +65,12 @@ def main():
         original_rows = json.loads(raw_reference.read_text())
         references = {r['state']: r for r in original_rows if r['mode'] == 'baseline' and r['cycle'] == 0}
         assert set(references) == {0, -1, 1, 2, 3, 4, 5}
+        restored = next(r for r in original_rows if r['mode'] == 'baseline'
+                        and r['cycle'] == args.restored_reference_cycle and r['state'] == 0)
+        if args.restored_reference_cycle == 1:
+            assert restored['previous_source_sha256'] == references[5]['source_sha256']
+        assert restored['source_sha256'] == references[0]['source_sha256']
+        references['restored'] = restored
         case = WORKFLOW_VARIANTS[reference['project'], reference['workflow']]
         source = ROOT / '.work/sources/fre'
         marker = json.loads((source / '.rust-interp-owned.json').read_text())
@@ -95,6 +103,7 @@ def main():
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'plan.json', dict(frozen=frozen, source_commit=build['source_commit'], tool_key=key,
               source_revision=marker['revision'], command=command, performance_measurement=False,
+              restored_reference_cycle=args.restored_reference_cycle,
               states=[0, -1, 1, 2, 3, 4, 5, 'restored']))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
@@ -125,7 +134,7 @@ def main():
             report, scopes = observation(stderr, saved)
             write(work / (label + '.census.json'), report)
             row.update(census_sha256=sha(work / (label + '.census.json')), timings=scopes)
-            expected = references[0 if state == 'restored' else state]
+            expected = references[state]
             row['matches_retained_artifact'] = sha(saved) == expected['artifacts'][0]['sha256']
             write(work / 'records.json', records)
             assert row['source_sha256'] == expected['source_sha256']
@@ -150,6 +159,8 @@ def main():
               revision=reference['revision'], commands=len(records), edited_states=5, wrong_edit_rejected=True,
               source_restored=True, restored_source_rebuilt=True, original_tests_unchanged=True,
               all_artifact_hashes_identical=True, transitions=transitions,
+              restored_reference_cycle=args.restored_reference_cycle,
+              restored_output_matches_first_anchor=records[-1]['artifact_sha256'] == records[0]['artifact_sha256'],
               median_repeated_output_seconds=statistics.median(r['repeated_output_seconds'] for r in edited),
               median_observed_function_seconds=statistics.median(r['observed_function_seconds'] for r in edited),
               median_repeated_output_cost_fraction=statistics.median(r['repeated_output_cost_fraction'] for r in edited),
