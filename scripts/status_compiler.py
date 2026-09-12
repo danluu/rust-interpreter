@@ -9,8 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 def render():
     paths = [f'results/{run}/summary.json' for run in (
         'aggregate-integration-root-01', 'aggregate-relocation-e2e-01',
-        'aggregate-relocation-heldout-recovery-01', 'budget-register-primary-01')]
-    integration, primary, held, budget = [json.loads((ROOT / p).read_text()) for p in paths]
+        'aggregate-relocation-heldout-recovery-01', 'budget-register-primary-01',
+        'call-slot-primary-01')]
+    integration, primary, held, budget, slots = [json.loads((ROOT / p).read_text()) for p in paths]
     key = integration['tool_key']
     if not (all(d['status'] == 'passed' for d in (integration, primary, budget))
             and held['status'] == 'all seven histories verified'
@@ -19,7 +20,8 @@ def render():
             and primary['expected_tools']['candidate']['tool_key'] == key
             and primary['primary_performance_gates_passed']
             and held['heldout_gates_passed']
-            and not budget['primary_gates_passed']):
+            and not budget['primary_gates_passed']
+            and slots['status'] == 'passed' and not slots['primary_gates_passed']):
         raise RuntimeError('integrated compiler evidence differs from the recorded decision')
     index = json.loads((ROOT / 'benchmarks/tool-builds.json').read_text())
     build = next(b for b in index['builds'] if b['commit'] == integration['source_commit'])
@@ -52,8 +54,12 @@ def render():
         'was 1.01%, below the fixed 10% target and inside the 3.99% identical-tool',
         'variation envelope. Correctness passed; performance did not qualify it.',
         '[Fixed decision](results/budget-register-primary-01/assessment.md).', '',
-        'Next: use existing profiles to measure static argument/result slot opportunities',
-        'in native Calls and Returns. Full libtest, unwinding, threads and general OS/FFI',
+        'The guarded Call-argument experiment is also parked: token wall improved',
+        '1.27%, below the fixed 10% target and inside its 2.04% identical-tool envelope.',
+        'It passed 297 debug/release tests and original-artifact smoke checks.',
+        '[Fixed decision](results/call-slot-primary-01/assessment.md).', '',
+        'Next: measure missed whole-call forwarding and leaf-inlining opportunities',
+        'in existing typed artifacts and profiles. Full libtest, unwinding, threads and general OS/FFI',
         'remain open; runtime options remain explicit.', '',
         'The following sections preserve the preceding runtime comparisons.', '']
     return lines, [dict(category='integrated-compiler-evidence', report=p,

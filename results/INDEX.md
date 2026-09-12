@@ -10,6 +10,7 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
 | integrated-compiler-evidence | [budget-register-primary-01/summary.json](budget-register-primary-01/summary.json) |
+| integrated-compiler-evidence | [call-slot-primary-01/summary.json](call-slot-primary-01/summary.json) |
 | current-copy-evidence | [resumable-copy-original-e2e-01/gate-evaluation.json](resumable-copy-original-e2e-01/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-e2e-01/gate-evaluation.json](resumable-copy-e2e-01/gate-evaluation.json) |
 | current-copy-evidence | [resumable-copy-release-01/summary.json](resumable-copy-release-01/summary.json) |

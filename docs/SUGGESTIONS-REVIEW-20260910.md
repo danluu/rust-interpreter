@@ -124,7 +124,11 @@ review are not commitments or evidence of feasibility.
   inferred. Isolated VM `ac38fa59` now guards actual addresses before using these
   slots and keeps the existing checked path on mismatch. [Workspace checks](../results/call-slot-build-01/assessment.md)
   pass 297 tests in debug/release, one ignored; [original-artifact smoke](../results/call-slot-smoke-01/assessment.md)
-  passes 20 commands. Fresh A/A controls and fixed real-edit gates are in progress.
+  passes 20 commands. The [fixed primary comparison](../results/call-slot-primary-01/assessment.md)
+  now parks this candidate: token wall improves 1.27%, below 10% and inside
+  2.04% identical-tool variation. Folded improves 1.39%, also inside its 1.62%
+  envelope. All four complete histories remain; no tuning retries or integration.
+  Next: measure missed whole-call forwarding and leaf-inlining opportunities.
 
 - The qualified aggregate compiler is now integrated as `5b2330c` / `9637b0ac`.
   [Normal root builds](../results/aggregate-integration-root-01/assessment.md)

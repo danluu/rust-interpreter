@@ -34,8 +34,13 @@ was 1.01%, below the fixed 10% target and inside the 3.99% identical-tool
 variation envelope. Correctness passed; performance did not qualify it.
 [Fixed decision](results/budget-register-primary-01/assessment.md).
 
-Next: use existing profiles to measure static argument/result slot opportunities
-in native Calls and Returns. Full libtest, unwinding, threads and general OS/FFI
+The guarded Call-argument experiment is also parked: token wall improved
+1.27%, below the fixed 10% target and inside its 2.04% identical-tool envelope.
+It passed 297 debug/release tests and original-artifact smoke checks.
+[Fixed decision](results/call-slot-primary-01/assessment.md).
+
+Next: measure missed whole-call forwarding and leaf-inlining opportunities
+in existing typed artifacts and profiles. Full libtest, unwinding, threads and general OS/FFI
 remain open; runtime options remain explicit.
 
 The following sections preserve the preceding runtime comparisons.

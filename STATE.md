@@ -47,7 +47,7 @@ other pass effects and shared-host noise; the components do not prove causation.
 The aggregate compiler is integrated and qualified. The ordinary launcher selects
 its exact measured source key. The [normal workspace qualification](results/aggregate-integration-root-01/assessment.md)
 passes 289 debug and release tests (one ignored) and reproduces all three
-executables byte-for-byte. The isolated guarded Call VM is now qualified; its first A/A workflow is active.
+executables byte-for-byte. The isolated guarded Call VM is qualified but parked after its fixed primary gate failed.
 
 The x22 budget-register experiment is parked after its [fixed primary decision](results/budget-register-primary-01/assessment.md).
 It passes broad correctness, native/TLS/fre replay and original-artifact checks,
@@ -93,14 +93,20 @@ Eight completed public caches were reviewed and archived outside timers:
 hashes verified. All archive processes are terminal; original source/results/
 executed snapshots remain. A pre-review lock rejection is preserved.
 
-`call-slot-e2e-01-token-phrase` is active (supervisor 25827, controller 25831,
-workflow 25838). Keep frozen inputs unchanged. Wait for all three to finish,
-record the workflow, then run `call-slot-fast-path/report_primary.py` through
-supervisor ID `call-slot-primary-01`. Do not retune the candidate.
-The fixed primary gate is ≥10% token wall gain, lower CPU and a gain exceeding
-fresh A/A variation; folded wall/CPU must remain within 5%. The tracked
-`report_primary.py` recomputes all four histories. A primary failure parks the
-candidate. Fresh native/TLS/fre validation and seven held-outs precede adoption.
+The [combined guarded Call comparison](results/call-slot-primary-01/assessment.md)
+verifies all four complete histories. Token wall improves 1.27%, CPU 1.12%;
+its wall difference is inside the 2.04% A/A envelope and below the fixed 10%
+target. Folded wall improves 1.39%, inside its 1.62% envelope. The candidate is
+parked with no threshold changes or tuning retries. It is not integrated.
+All supervisor/controller/workflow processes are terminal.
+
+Next: inspect and measure missed whole-call elimination in the existing typed
+artifacts and profiles. A hot slice-comparison wrapper only forwards its arguments
+and copies a one-byte temporary result, but the current forwarding pass requires
+a direct result destination. Another hot comparison leaf contains CompareBytes,
+which the current inliner does not accept. Measure these opportunities and code
+growth before selecting an isolated compiler experiment. Keep current limits,
+original assertions and native controls; profile counts are not speedup forecasts.
 
 The unbounded goal remains active. Continue implementation and real edited-command
 comparisons after this diagnostic. Integration and the failed budget experiment
