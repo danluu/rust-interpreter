@@ -14,7 +14,7 @@ from suite_reports import read_report,validate_report,validate_runtime_limits
 
 
 def main():
-    run='jit-region-cache-smoke-01'
+    run='jit-region-cache-smoke-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,8)
         control_path=ROOT/'results/jit-register-width-build-02/summary.json'
@@ -25,7 +25,7 @@ def main():
         tools={mode:installed_tools(s['tool_key'])[0] for mode,s in [('baseline',control),('candidate',build)]}
         qualification=ROOT/'results/fixed-frame-clear-entropy-check-01/summary.json'
         q=json.loads(qualification.read_text());assert q['status']=='passed' and q['commands']==17 and q['expected_rejections']==10
-        library=Path(q['library']);assert sha(library)==q['library_sha256']
+        library=(ROOT/q['library']).resolve(strict=True);assert sha(library)==q['library_sha256']
         frozen_paths=[Path(__file__),Path(__file__).with_name('PLAN.md'),control_path,build_path,qualification,library]
         frozen_paths += [tool/'rust-interp-vm' for tool in tools.values()]
         inputs=[]

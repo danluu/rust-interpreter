@@ -14,7 +14,7 @@ def main():
     run='jit-region-cache-screen-01'
     control_path=ROOT/'results/jit-register-width-build-02/summary.json'
     build_path=ROOT/'results/jit-region-cache-build-01/summary.json'
-    smoke_path=ROOT/'results/jit-region-cache-smoke-01/summary.json'
+    smoke_path=ROOT/'results/jit-region-cache-smoke-02/summary.json'
     control=json.loads(control_path.read_text());build=json.loads(build_path.read_text());smoke=json.loads(smoke_path.read_text())
     assert control['status']==build['status']==smoke['status']=='passed'
     assert build['tests']['test-debug']==build['tests']['test-release']==dict(passed=339,ignored=1)
