@@ -16,7 +16,7 @@ from interpreter import installed_tools, TOOLCHAIN
 from std_mir import checked_std_mir
 from workflow_io import SourceEdit, capture, require_space, write_json as write
 from reuse_build import CONTROL
-from reuse_check import observation, reconstruction
+from reuse_check import observation, reconstruction, persistent_cache
 
 
 def main():
@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, default=ROOT / 'results/export-reuse-build-03/summary.json')
     parser.add_argument('--binding-replay-qualification', type=Path)
+    parser.add_argument('--persistent-cache', action='store_true')
     args = parser.parse_args()
     assert re.fullmatch(r'export-dependency-fixture-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -32,7 +33,8 @@ def main():
         build_path = args.build.resolve()
         build = json.loads(build_path.read_text())
         binding_replay = args.binding_replay_qualification is not None
-        assert build['status'] == 'passed' and set(build['tests'].values()) == ({47} if binding_replay else {44})
+        assert not args.persistent_cache or binding_replay
+        assert build['status'] == 'passed' and set(build['tests'].values()) == ({50} if args.persistent_cache else {47} if binding_replay else {44})
         if binding_replay:
             qualified = json.loads(args.binding_replay_qualification.read_text())
             assert qualified['status'] == 'passed' and qualified['commands'] == 231
@@ -69,6 +71,8 @@ def main():
                  HERE / 'dependency_fixture/main.rs', HERE / 'dependency_fixture/model.rs']
         if binding_replay:
             paths += [args.binding_replay_qualification.resolve(), HERE / 'BINDING-REPLAY.md']
+        if args.persistent_cache:
+            paths.append(HERE / 'PERSISTENT-REUSE.md')
         paths += [p / name for p in [tool, baseline] for name in ['rust-interp-mir-export', 'rust-interp-vm', 'rust-interp-rustc-wrapper']]
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'plan.json', dict(frozen=frozen, tool_key=key, source_commit=build['source_commit'],
@@ -83,6 +87,11 @@ def main():
             stages[mode] = stage
         records, observations, seen = [], [], {}
         replay_reports = []
+        cache_reports = []
+        finalized_cache_files = {}
+        def cache_files():
+            return {str(p.relative_to(ROOT)): sha(p) for p in (stages['on'] / 'incremental').glob('*/s-*/rust-interp-functions-v1.bin')
+                    if not p.parent.name.endswith('-working')}
         def invoke(label, command, selected=env, success=True):
             require_space(ROOT, 8)
             child, stdout, stderr = capture(list(map(str, command)), cwd=ROOT, env=selected,
@@ -120,11 +129,15 @@ def main():
                     selected['RUST_INTERP_FUNCTION_DEPENDENCIES'] = '1'
                     if binding_replay:
                         selected['RUST_INTERP_BINDING_REPLAY'] = '1'
+                    if args.persistent_cache:
+                        selected['RUST_INTERP_FUNCTION_CACHE'] = 'verify'
                 _, stderr = invoke(name + '-export-' + mode, [compiler / 'rust-interp-mir-export', source / 'main.rs',
                     '--crate-name', 'dependency_case', '--edition=2024', '--emit=metadata', '--sysroot', sysroot,
                     '-C', 'incremental=' + str(stage / 'incremental'), '-o', stage / 'program.rmeta'], selected, success=valid)
                 if not valid:
                     assert 'mismatched types' in stderr and not artifact.exists()
+                    if mode == 'on' and args.persistent_cache:
+                        assert cache_files() == finalized_cache_files, 'invalid source changed finalized payloads'
                     continue
                 saved = work / (name + '-' + mode + '.rbc')
                 shutil.copy2(artifact, saved)
@@ -136,6 +149,19 @@ def main():
                     if mode == 'on':
                         if binding_replay:
                             replay_reports.append(dict(state=name, **reconstruction(stderr, report)))
+                        if args.persistent_cache:
+                            cached = persistent_cache(stderr, report)
+                            cache_reports.append(dict(state=name, **cached))
+                            after = cache_files()
+                            assert after, 'successful compiler did not finalize the staged cache file'
+                            assert all(after[p] == h for p, h in finalized_cache_files.items() if p in after), 'prior hard-linked payload changed'
+                            finalized_cache_files.clear()
+                            finalized_cache_files.update(after)
+                            write(work / (name + '-finalized-cache-files.json'), after)
+                            if name == 'original':
+                                assert cached['loaded_entries'] == cached['previous_payload_uses'] == 0
+                            else:
+                                assert cached['loaded_entries'] > 0 and cached['previous_payload_uses'] > 0
                         functions = report['functions']
                         assert len({f['dependency']['node'] for f in functions}) == len(functions)
                         green = [f for f in functions if f['dependency']['previous_green']]
@@ -176,6 +202,7 @@ def main():
               unknown_green=unknown, candidate_dependency_boundary_supported=green > 0 and mismatches == unknown == 0,
               all_lowering_executed=True, frozen=frozen, raw=str(work.relative_to(ROOT)),
               binding_replay=binding_replay, reconstruction=replay_reports,
+              persistent_cache=args.persistent_cache, prior_payload_verification=cache_reports,
               records_sha256=sha(work / 'records.json'), observations_sha256=sha(work / 'observations.json'),
               scope='No cached output or skipped lowering. Green status is tested against actual typed templates; binding and shared exporter state remain separate requirements.')
         out = ROOT / 'results' / args.run_id

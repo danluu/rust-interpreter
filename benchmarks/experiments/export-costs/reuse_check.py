@@ -79,6 +79,24 @@ def reconstruction(stderr, census):
     return report
 
 
+def persistent_cache(stderr, census):
+    prefix = 'rust-interp-function-cache: '
+    lines = [line[len(prefix):] for line in stderr.splitlines() if line.startswith(prefix)]
+    assert len(lines) == 1 and len(lines[0].encode()) <= 1024**2
+    report = json.loads(lines[0])
+    assert report['schema_version'] == 1 and report['mode'] == 'verify'
+    assert report['all_original_lowering_executed'] is True and report['staged_in_incremental_session'] is True
+    assert re.fullmatch('[0-9a-f]{64}', report['namespace'])
+    for key in ['loaded_entries', 'previous_payload_uses', 'red_functions', 'green_missing', 'staged_entries']:
+        assert type(report[key]) is int and 0 <= report[key] <= 10_000
+    assert report['previous_payload_uses'] + report['red_functions'] + report['green_missing'] == census['observed_functions']
+    assert all(f['dependency']['namespace_qualified'] is True for f in census['functions'])
+    assert type(report['staged_bytes']) is int and 72 <= report['staged_bytes'] <= 128 * 1024**2
+    for key in ['load_seconds', 'file_encoding_seconds', 'file_write_seconds', 'current_template_encoding_seconds', 'previous_template_decoding_seconds']:
+        assert math.isfinite(report[key]) and report[key] >= 0
+    return report
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
