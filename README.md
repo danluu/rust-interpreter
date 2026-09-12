@@ -46,7 +46,12 @@ the checked compiler invocation that exports them. A selected expected-panic
 test, zero runnable matches or more than 256 matches produces an error before
 execution. A single filtered test is supported.
 
-Each test gets fresh guest memory, statics and TLS; compiled code is shared.
+Each test gets fresh guest memory, statics and TLS; compiled code is shared
+within a worker. Add `--suite-workers 2` for concurrent isolated tests. The
+default is one worker; each worker owns its JIT on its creating thread and has
+its own code budget. Reports remain in selection order. Two workers passed the
+[saved-suite runtime screen](results/parallel-suites-screen-01/assessment.md);
+complete source-edit measurements are still pending.
 All selected tests are attempted and reported, including after an assertion
 failure. `--isolated-batch fresh` constructs separate JIT code for comparison.
 Runtime limits apply to each test. This models independent executions;

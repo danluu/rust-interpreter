@@ -8,12 +8,19 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+Explicit parallel isolated suites pass365Rust tests/profile and56Python tests.
+Six paired saved-suite comparisons show token41.8% faster wall time with3.8%
+more CPU; folded/pgrust guards pass. Fresh guest state and one creating-thread
+JIT owner per worker are preserved. One worker remains the default. Next run
+real edits with both serial and concurrent native controls; these results
+exclude checking/export. [Decision](results/parallel-suites-screen-01/assessment.md).
+
 Seeded valid-program differential coverage passes all362workspace tests in both
 profiles plus768additional seeds/profile. Programs cover loops, diamonds,
 calls, widths, heap/linear aliases, budgets, code declines and exact PC counts.
 The final VM build stopped on storage after both test profiles passed; runtime
 sources are unchanged, so this tests-only feature needs no new VM publication.
-Next test parallel isolated workers, each owning its JIT on its creating thread.
+The parallel worker follow-up is recorded above.
 [Coverage](results/generated-cfg-campaign-01/assessment.md).
 
 Split heap/linear native address checks are parked. All363host tests/profile

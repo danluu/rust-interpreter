@@ -55,7 +55,7 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Seeded differential coverage passes362tests/profile plus768additional seeds/profile. Next test concurrent isolated suites with one JIT owner per worker thread, fresh guest state per test and deterministic reports. Measure real source-edit commands before changing defaults. Split-arena and shared-call candidates remain parked.
+**Next:** Explicit parallel suites pass365Rust tests/profile and56Python tests; saved token runtime improves41.8% wall with3.8% moreCPU, with folded/pgrust guards passed. Next measure real source edits against retained serial custom and serial/concurrent native controls. One worker remains the default.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 

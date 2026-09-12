@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Build a native library test target once, then run each exact test in its own process."""
 import argparse
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack
 import json
 import os
 from pathlib import Path
@@ -40,6 +42,14 @@ def selected_executable(stdout, target):
 
 def execute(args, report):
     started = time.perf_counter()
+    requested = getattr(args, 'suite_workers', 1)
+    if not 1 <= requested <= 64:
+        raise ValueError('suite workers must be in 1..64')
+    workers = min(requested, len(args.entry))
+    report.update(requested_workers=requested, workers=workers)
+    receipt_directory = args.suite_report.with_suffix('.workers')
+    if workers > 1:
+        receipt_directory.mkdir()  # Reserve distinct child receipts before Cargo.
     command = native_command(TOOLCHAIN, args.manifest_path, args.package, args.target_dir,
                              args.jobs, '1', [], timings=args.timings)
     command = command[:command.index('--')] + ['--no-run', '--message-format=json-render-diagnostics']
@@ -55,16 +65,28 @@ def execute(args, report):
         return child.returncode
     executable = selected_executable(stdout, args.target_dir)
     report['executable'] = str(executable)
-    for name in args.entry:
+    def run_test(item):
+        index, name = item
         command = [str(executable), '--exact', name, '--test-threads=1']
         before = time.perf_counter()
+        child_receipt = receipt_directory / f'{index}.json' if workers > 1 else receipt
         child, stdout, stderr = capture(command, cwd=Path.cwd(), env=os.environ.copy(),
-            receipt_path=receipt, receipt=dict(mode='native-suite-test', test=name))
+            receipt_path=child_receipt, receipt=dict(mode='native-suite-test', test=name))
         row = dict(name=name, command=command, seconds=time.perf_counter()-before,
                    returncode=child.returncode, stdout=stdout, stderr=stderr)
-        report['tests'].append(row)
-        sys.stdout.write(stdout); sys.stderr.write(stderr)
         row['status'] = test_status(name, child.returncode, stdout)
+        return row
+    with ExitStack() as cleanup:
+        if workers == 1:
+            outcomes = map(run_test, enumerate(args.entry))
+        else:
+            pool = cleanup.enter_context(ThreadPoolExecutor(max_workers=workers, thread_name_prefix='native-suite'))
+            outcomes = pool.map(run_test, enumerate(args.entry))
+        # Preserve selection order and wait for all started children even when
+        # an invalid result raises. Failed assertions do not stop other tests.
+        for row in outcomes:
+            report['tests'].append(row)
+            sys.stdout.write(row['stdout']); sys.stderr.write(row['stderr'])
     failures = sum(t['status'] == 'failed' for t in report['tests'])
     report.update(status='failed' if failures else 'passed', passed=len(args.entry)-failures,
                   failed=failures, seconds_before_report_write=time.perf_counter()-started)
@@ -78,6 +100,8 @@ def main():
     parser.add_argument('--target-dir', required=True, type=Path)
     parser.add_argument('--jobs', required=True, type=int, choices=range(1, 257))
     parser.add_argument('--test-threads', choices=['1'], default='1')
+    parser.add_argument('--suite-workers', type=int, choices=range(1, 65), default=1,
+                        help='concurrent isolated test processes; each uses one libtest thread')
     parser.add_argument('--entry', action='append', required=True)
     parser.add_argument('--timings', action='store_true')
     parser.add_argument('--suite-report', required=True, type=Path)

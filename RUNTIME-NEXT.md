@@ -4,13 +4,15 @@ Use [STATUS.md](STATUS.md) for the current measured build and controls and
 [the September 11 review](docs/SUGGESTIONS-REVIEW-20260911.md) for individual decisions.
 Historical plans and failed gates stay in Git and their linked result directories.
 
-1. **Test concurrent isolated suites.** Seeded differential coverage now passes
-   362tests/profile plus768additional seeds/profile, with loops, calls, aliases,
-   widths, budgets and exact PC counts. Native controls run tests concurrently;
-   the prepared custom runner is serial. Investigate independent workers that
-   create and retain their own JITs on their creating threads. Preserve fresh
-   guest memory/statics/TLS per test and deterministic report ordering. Measure
-   complete source-edit commands before making concurrency a default.
+1. **Measure concurrent suites through real edits.** Explicit workers now pass
+   365Rust tests/profile and56Python tests. The fixed saved-suite screen improves
+   token wall41.8% with3.8% more CPU; folded/pgrust guards pass. Each worker owns
+   its JIT and every test starts fresh. The recent exact-name native controls
+   were serial; include both serial and concurrent native processes in the
+   complete-command comparison. Keep one worker as the default until all real
+   source-edit controls and guards pass.
+   [Runtime decision](results/parallel-suites-screen-01/assessment.md),
+   [next comparison](benchmarks/experiments/parallel-suites/WORKFLOW.md).
    Shared-call specialization, pointer promotion, register-cache and packing
    candidates also remain parked without retiming.
    [Native samples](results/selected-native-block-sample-01/assessment.md),
