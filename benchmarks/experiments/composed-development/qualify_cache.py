@@ -175,10 +175,15 @@ def main():
                         ('type', b'fn unused() { let _: u64 = "wrong"; }', 'mismatched types'),
                         ('borrow', b'fn unused() { let mut x=1; let a=&mut x; let b=&mut x; *a+=*b; }', 'cannot borrow')]:
                         edit.replace(payload + b'\n' + bad + b'\n')
-                        _, stderr = invoke('cargo-reject-' + error,
+                        stdout, stderr = invoke('cargo-reject-' + error,
                             [*base, '--function-cache', 'reuse', '--', '7'], launch_env, success=False)
                         assert diagnostic in stderr and 'rust-interp-launch: ' not in stderr
-                        assert not artifact.exists(), 'failed strict checking left executable bytecode selectable'
+                        assert stdout == '' and not re.search(r'\binstructions=\d+', stderr)
+                        # Cargo may retain prior successful metadata/sidecars on
+                        # an error. Failure must stop the launcher before the VM;
+                        # physical absence of historical artifacts is not needed.
+                        # The restored-source command below must rebuild/check
+                        # and agree with the native result for that source.
                         edit.replace(payload)
             assert cargo_results[0]['artifact_sha256'] == cargo_results[2]['artifact_sha256']
             assert cargo_results[0]['native_stdout'] == cargo_results[2]['native_stdout']

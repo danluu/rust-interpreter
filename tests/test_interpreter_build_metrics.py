@@ -213,6 +213,14 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
                             for _, args in self.invocations))
         self.assertEqual(self.launch_stats()[0]['function_cache'], 'off')
 
+    def test_function_reuse_does_not_launch_vm_after_a_failed_check(self):
+        self.cargo_returncode = 101
+        self.assertEqual(self.launch(['--function-cache', 'reuse']), 101)
+        self.assertEqual(len(self.invocations), 1)
+        self.assertEqual(self.invocations[0][0][0], 'cargo')
+        self.assertIsNone(self.before_vm)
+        self.assertEqual(self.launch_stats(), [])
+
     def test_function_reuse_rejects_an_older_installed_exporter(self):
         (self.tools / 'capabilities.json').write_text(json.dumps(dict(
             schema_version=1, bytecode_version=5, tool_key='a' * 64,
