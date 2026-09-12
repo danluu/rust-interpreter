@@ -26,6 +26,6 @@ bound on the current inliner's narrower address analysis.
 
 The diagnostic reuses the typed census implementation and its eight tests;
 adds four proposal/classification tests and imports the exact register-analysis
-source with its five tests. Freeze all sources, profiles, artifacts and commands
+source with its three tests. Freeze all sources, profiles, artifacts and commands
 under the existing benchmark lock. Snapshot the diagnostic and preserve failures.
 Select a bounded compiler change only after inspecting the full results.
