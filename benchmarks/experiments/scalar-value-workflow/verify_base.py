@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""Exact scalar compiler/runtime verifier; original assertions and controls retained.
+
+Derived from scripts/verify_repeated_workflow.py SHA256 d628a47864af62bb92d771f96f2341267952e2c7eaf35f0f17cb8e1aaad64c91.
+Only exact tool admission and the two allowed binary identities differ from the qualified relocation verifier.
+"""
+import argparse
+import fcntl
+import hashlib
+import json
+from pathlib import Path
+import time
+
+from workflow_measurements import initial_modes, mode_order
+from workflow_jobs import recorded_build_jobs, verify_command_jobs
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def read(path):
+    return json.loads(path.read_text())
+
+
+EXPECTED_TOOLS = {'baseline': {'tool_key': '9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223', 'vm_sha256': '21d1e163a603aaf9d6f3238fd1057293c73afc41d17b5f73779b2d3188169ca9', 'exporter_sha256': '556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095', 'wrapper_sha256': 'ba366dd3b4815e4ddb25d130c5d1f861396bc24c3f99cf960bb7433618d29f35'}, 'candidate': {'tool_key': 'ba4ad407e70d887c7872dd85efaaff05fe3efb8e01808767f649ba135803f5c7', 'vm_sha256': 'dd9c6b33f1fe7831c2129f83eb126800709d7f8428155705e6db3e0cb450f07a', 'exporter_sha256': 'f405196933bf2ec693fccc268fa94b41bd51208380930a92df8b5b23201062b4', 'wrapper_sha256': 'ba366dd3b4815e4ddb25d130c5d1f861396bc24c3f99cf960bb7433618d29f35'}}
+
+def admit_tools(expected):
+    require(expected == EXPECTED_TOOLS, 'unexpected scalar comparison tools')
+
+
+def verify(report, expected_tools, reference=None):
+    """Verify a changed exporter with separately supplied immutable binary identities."""
+    require(report['schema_version']==2,'unsupported workflow schema')
+    require(set(expected_tools)=={'baseline','candidate'},'missing expected tool mode')
+    fields={'tool_key','vm_sha256','exporter_sha256','wrapper_sha256'}
+    require(all(set(t)==fields and all(isinstance(v,str) and len(v)==64 and
+        all(c in '0123456789abcdef' for c in v) for v in t.values()) for t in expected_tools.values()),'invalid expected tool identities')
+    admit_tools(expected_tools)
+    a,b=expected_tools['baseline'],expected_tools['candidate']
+    require(a['tool_key']!=b['tool_key'] and a['exporter_sha256']!=b['exporter_sha256'] and
+        a['vm_sha256']!=b['vm_sha256'] and a['wrapper_sha256']==b['wrapper_sha256'],'comparison does not bind the planned compiler/runtime change')
+    require('comparison' in report and not report['comparison']['identical_bytecode_required'],
+        'compiler comparison cannot waive a required artifact match')
+    builds=report['tool_builds']
+    for mode,expected in expected_tools.items():
+        require(all(builds[mode][k]==expected[k] for k in fields-{'wrapper_sha256'}),'reported tool identity differs')
+        for binary,key in [('rust-interp-vm','vm_sha256'),('rust-interp-mir-export','exporter_sha256'),('rust-interp-rustc-wrapper','wrapper_sha256')]:
+            path=ROOT/'.work/interpreter-tools'/expected['tool_key']/binary
+            require(hashlib.sha256(path.read_bytes()).hexdigest()==expected[key],'installed tool identity differs')
+    ignored={'tool_key','exporter_sha256','vm_sha256','scalar_values'}
+    require({k:v for k,v in builds['baseline'].items() if k not in ignored}==
+        {k:v for k,v in builds['candidate'].items() if k not in ignored},'compiler comparison changed other controls')
+    compiler_flags={m:builds[m]['guest_rustflags'] for m in expected_tools}
+    required_flags=['-Zmir-opt-level=3','-Zinline-mir-threshold=400',
+        '-Zinline-mir-hint-threshold=800','-Zinline-mir-forwarder-threshold=240']
+    require(all(f==required_flags for f in compiler_flags.values()),'guest flags differ from relocation plan')
+    job_counts = (recorded_build_jobs(report)
+                  if 'build_jobs' in report and 'native_control' in report else None)
+    require('custom_build_jobs' not in report or job_counts is not None,
+            'custom worker receipt lacks shared/native controls')
+    rows = read(ROOT / report['raw'] / 'records.json')
+    if 'case_file' in report:
+        from workflow_case_file import verify_snapshot
+        verify_snapshot(ROOT, report, rows)
+    transitions = read(ROOT / report['raw'] / 'source-transitions.json')
+    cycles = report['cycles']
+    edits = len(report['edits'])
+    states = [0, -1, *range(1, edits + 1)]
+    custom_modes = ['baseline', 'candidate'] if 'comparison' in report else ['interpreter', 'jit']
+    modes = ['native', *custom_modes]
+    scheduled_modes = initial_modes(modes, report.get('initial_mode_order'))
+    expected_orders = [dict(cycle=c, state=s,
+        phase=('cold' if c == 0 else 'anchor') if s == 0 else ('wrong-edit' if s == -1 else 'edit'),
+        modes=mode_order(scheduled_modes, c, s, 'comparison' in report))
+        for c in range(cycles) for s in states]
+    require(report['mode_orders'] == expected_orders, 'recorded mode schedule differs')
+    require([(r['cycle'], r['state'], r['mode']) for r in rows] ==
+        [(o['cycle'], o['state'], m) for o in expected_orders for m in o['modes']], 'command order differs from schedule')
+    expected = {(c, s, m) for c in range(cycles) for s in states for m in modes}
+    actual = [(r['cycle'], r['state'], r['mode']) for r in rows]
+    require(len(set(actual)) == len(actual) and set(actual) == expected, 'missing or duplicate samples')
+    require(report['test_source_unchanged'] and report['wrong_production_edit_rejected'], 'source/test controls failed')
+    require(len(transitions) == cycles * len(states), 'missing source transitions')
+    require(all(t['content_changed'] for t in transitions if t['phase'] != 'cold'), 'unchanged warm sample')
+    previous = dict.fromkeys(modes)
+    artifacts = {}
+    paths = set()
+    for row in rows:
+        cycle, state, mode = row['cycle'], row['state'], row['mode']
+        phase = ('cold' if cycle == 0 else 'anchor') if state == 0 else ('wrong-edit' if state == -1 else 'edit')
+        require(row['phase'] == phase, 'incorrect cold/anchor/edit label')
+        require(row['previous_source_sha256'] == previous[mode], 'source history mismatch')
+        if phase != 'cold':
+            require(previous[mode] != row['source_sha256'], 'mode rebuilt unchanged source')
+        previous[mode] = row['source_sha256']
+        require(row['seconds'] > 0 and row['cpu_seconds'] > 0, 'invalid timing')
+        cpu = sum(c['cpu']['user_seconds'] + c['cpu']['system_seconds'] for c in row['calls'])
+        require(abs(cpu - row['cpu_seconds']) < 1e-8, 'CPU total does not match child calls')
+        require(all((c['returncode'] == 0) == (state != -1) for c in row['calls']), 'unexpected command result')
+        if job_counts is not None:
+            for call in row['calls']:
+                verify_command_jobs(call['command'], job_counts[mode])
+        if mode != 'native':
+            settings = report.get('tool_builds', {}).get(mode, {})
+            if compiler_flags is not None:
+                require(all(call.get('rustflags') == ' '.join(compiler_flags[mode]) and
+                            call['launch']['tool_key'] == settings['tool_key'] and
+                            call['command'].count('--tool-key')==1 and call['command'][call['command'].index('--tool-key')+1]==settings['tool_key']
+                            for call in row['calls']),
+                        'executed compiler flags or tool differ')
+            for field, flag in [('jit_native_calls', '--jit-native-calls'),
+                                ('jit_native_call_stubs', '--jit-native-call-stubs'),
+                                ('jit_persistent_registers', '--jit-persistent-registers'),
+                                ('jit_resumable_calls', '--jit-resumable-calls')]:
+                if field in settings:
+                    for call in row['calls']:
+                        require((flag in call['command']) == settings[field], 'recorded runtime option differs')
+                        require(call['launch'].get(field, False) == settings[field], 'launched runtime option differs')
+            require(len(row['artifacts']) == 1, 'expected one batched artifact')
+            artifact = row['artifacts'][0]
+            path = artifact['path']
+            require(path not in paths, 'repeated artifact path was overwritten')
+            paths.add(path)
+            digest = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
+            require(digest == artifact['sha256'], 'artifact hash mismatch')
+            artifacts[cycle, state, mode] = digest
+    paired_identical = True
+    for c in range(cycles):
+        for s in states:
+            selected = [r for r in rows if r['cycle'] == c and r['state'] == s]
+            require(len({r['source_sha256'] for r in selected}) == 1, 'paired sources differ')
+            require(all(r['tests'] == selected[0]['tests'] for r in selected), 'paired test selections differ')
+            identical = artifacts[c, s, custom_modes[0]] == artifacts[c, s, custom_modes[1]]
+            paired_identical &= identical
+            if compiler_flags is None:
+                require(identical, 'paired bytecode differs')
+    for s in states:
+        require(len({r['source_sha256'] for r in rows if r['state'] == s}) == 1, 'repeated source state differs')
+    if cycles == 3:
+        for s in range(1, edits + 1):
+            orders = [o['modes'] for o in report['mode_orders'] if o['state'] == s]
+            for m in modes:
+                require(sorted(o.index(m) for o in orders) == [0, 1, 2], 'unbalanced mode positions')
+    if 'comparison' in report:
+        require(len(report['comparison']['pairs']) == cycles * edits, 'missing edited pairs')
+    require(len(report['cycle_anchor_seconds']) == cycles - 1, 'incorrect anchor count')
+    require(report['cold_success_seconds'] == {r['mode']: r['seconds'] for r in rows if r['phase'] == 'cold'}, 'cold results contain warm anchors')
+    cross_cycle = [{"state": s, "sha256_by_cycle": [artifacts[c, s, custom_modes[1]] for c in range(cycles)]} for s in states]
+    check_count = 0
+    if report.get('check_floor') is not None:
+        checks = read(ROOT / report['raw'] / 'check-records.json')
+        keys = [(c['cycle'], c['state']) for c in checks]
+        require(len(set(keys)) == len(keys) and set(keys) == {(c, s) for c in range(cycles) for s in states}, 'missing/duplicate check controls')
+        check_count = len(checks)
+        control = report['native_control']
+        encoded = '\x1f'.join(control['rustflags']) or None
+        previous = None
+        for check in checks:
+            group = [r for r in rows if r['cycle'] == check['cycle'] and r['state'] == check['state']]
+            require(check['returncode'] == 0 and all(r['source_sha256'] == check['source_sha256'] for r in group), 'check/source mismatch')
+            require(check['previous_source_sha256'] == previous, 'check source history mismatch')
+            if check['phase'] != 'cold':
+                require(previous != check['source_sha256'], 'unchanged check control')
+            previous = check['source_sha256']
+            require(check['phase'] == group[0]['phase'], 'check phase mismatch')
+            require(check['seconds'] > 0 and check['cpu_seconds'] > 0 and abs(check['cpu_seconds'] - check['cpu']['total_seconds']) < 1e-8, 'invalid check timing')
+            command = check['command']
+            require(command[2] == 'check' and '--profile' in command and command[command.index('--profile') + 1] == 'test' and '--' not in command, 'check did not select the non-executing test target')
+            verify_command_jobs(command, control['jobs'])
+            require('test result:' not in check['stdout'], 'check unexpectedly executed tests')
+        for row in rows:
+            for call in row['calls']:
+                require(call.get('encoded_rustflags') == (encoded if row['mode'] == 'native' else None), 'native flags missing or leaked to custom engines')
+                command = call['command']
+                if row['mode'] == 'native':
+                    actual = [a for a in command if a.startswith('--test-threads=')]
+                    expected = [] if control['test_threads'] == 'default' else ['--test-threads=' + control['test_threads']]
+                    require(actual == expected, 'test concurrency differs')
+    history = None
+    if reference:
+        old = read(ROOT / reference['raw'] / 'records.json')
+        require(report['case_sha256'] == reference['case_sha256'], 'reference case differs')
+        comparisons = []
+        for row in rows:
+            matching = [r for r in old if r['state'] == row['state'] and r['mode'] == row['mode']]
+            require(len(matching) == 1, 'reference must contain one cycle')
+            prior = matching[0]
+            require(prior['source_sha256'] == row['source_sha256'] and prior['tests'] == row['tests'], 'reference source/tests differ')
+            if row['mode'] != 'native':
+                comparisons.append(artifacts[row['cycle'], row['state'], row['mode']] == prior['artifacts'][0]['sha256'])
+        history = dict(identical=sum(comparisons), different=len(comparisons) - sum(comparisons))
+    result = dict(schema_version=1, measurement_controls_verified=True,
+        commands=len(rows), cycles=cycles, edited_pairs=cycles * edits,
+        check_commands=check_count, explicit_controls_verified=bool(check_count),
+        exact_artifact_hashes_verified=len(paths), paired_bytecode_identical=paired_identical,
+        cross_cycle_bytecode_identical=all(len(set(x['sha256_by_cycle'])) == 1 for x in cross_cycle),
+        cross_cycle_artifacts=cross_cycle, reference_bytecode=history,
+        cross_cycle_semantic_equivalence_proven=False,
+        note='Control verification does not imply identical compilation across cache histories or a performance claim.')
+    if compiler_flags is not None:
+        result['compiler_comparison'] = dict(expected_guest_flags=compiler_flags,
+            expected_tools=expected_tools, identical_wrapper_and_runtime_options=True, bytecode_equivalence_proven=False)
+    return result
