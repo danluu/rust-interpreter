@@ -65,16 +65,27 @@ loads budget before the internal resume label; every VM exit publishes it before
 restoring the host register. Preserve all three persistent guest-register pairs,
 checks, counts, initialization and non-resumable modes.
 
-No budget-register implementation or benchmark has started. Next actions:
-1. Implement an isolated VM build recipe, keeping exporter and wrapper bytes from tool `9637b0ac`.
-2. Add focused ABI/budget/fault/profile/TLS differential coverage and run broad
-   qualifications; retain exact paired artifacts.
-3. Run the declared A/A controls, then fixed primary gates (at least 10% token
-   wall improvement, lower CPU, beyond the A/A envelope; folded within 5%).
-4. Require all seven independent held-out guards before any adoption; source
+The [isolated budget-register build](results/budget-register-build-02/assessment.md)
+now passes 293 debug and release workspace tests, one ignored. Tool `36656766`
+contains VM `d0eb1143`; exporter and wrapper bytes match control `9637b0ac`.
+Focused cases cover every budget, faults, profiles and large register/ABI copies.
+Build 01's test-message mismatch remains preserved; runtime error behavior did
+not change. The implementation is committed and production sources are unchanged.
+
+The full native differential validator `budget-register-native-01` is active
+(supervisor 30178, controller 30182, initial validator 30185). Do not edit its
+frozen inputs or launch another benchmark-lock user until all are terminal.
+
+Next actions:
+1. Finish native validation, run the exact original-artifact/profile/budget smoke,
+   then TLS/destructor and fre body qualifications against the same VM.
+2. Run matched A/A controls for both primaries, then the fixed primary gates:
+   at least 10% token complete-command wall improvement, lower CPU and beyond
+   the A/A envelope; folded within 5% wall/CPU regression.
+3. Require all seven independent held-out guards before any adoption; source
    integration remains a separate reproducible component-identity check.
 
-No task process is active. The unbounded goal remains active.
+The unbounded goal remains active. No budget-register performance result exists.
 
 Five committed archive batches preserve completed public Cargo caches.
 The newest preserves a debug-check target: 781,927,676 unique bytes in

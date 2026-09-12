@@ -118,6 +118,12 @@ review are not commitments or evidence of feasibility.
 
 ## Implemented follow-ups
 
+- Item 3.3's isolated x22 budget ABI now passes [293 debug/release workspace tests](../results/budget-register-build-02/assessment.md),
+  one ignored. It preserves exact checking points, fault order, host ABI and
+  all persistent register pairs. Broad execution qualification is underway;
+  matched A/A and real-edit performance gates remain pending. The first build's
+  test-message mismatch is preserved, with no runtime error change.
+
 - Aggregate relocation now passes all [seven fixed held-outs](../results/aggregate-relocation-heldout-recovery-01/assessment.md):
   588 commands, 105 edited pairs and 294 artifacts. Wall changes range from
   −0.28% to +2.71%, CPU from −0.27% to +2.21%; no pooled speedup. The original
