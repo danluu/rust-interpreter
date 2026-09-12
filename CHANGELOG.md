@@ -1,5 +1,11 @@
 # Checked-in changes
 
+## 2026-09-12 interpreter frame dispatch
+
+- Keep the current function and checked register slice across ordinary instructions and branches; reacquire them after frame transitions and each JIT fallback.
+- Saved-artifact interpreter execution improves a further 26.8% on pgrust and 28.1% on Ruff, with 15.2–29.4% gains on five additional workloads. All 588 comparison commands preserve results, instructions and peak guest memory; JIT passes wall/CPU regression guards. Full edit/build/test latency and unknown holdouts remain unmeasured.
+- All 297 workspace tests pass in debug and release (one ignored). The Python suite passes 21 tests, including three checks for bounded shared-lock waiting. [Qualification and measurements](results/same-frame-interpreter-20260912/assessment.md).
+
 ## 2026-09-12 compute-heavy integration result
 
 - All 24 real-edit/restoration controls pass on fre es8i, but custom takes 2.678× native wall time. The 20.4% short-target gain does not generalize.
