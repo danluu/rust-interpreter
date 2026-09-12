@@ -7,11 +7,11 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 
 def main():
-    run='constant-fold-saved-01'
+    run='constant-fold-saved-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,7)
-        composition_path=ROOT/'results/constant-fold-compose-01/summary.json';composition=json.loads(composition_path.read_text())
-        assert composition['status']=='composed' and composition['source_commit'].startswith('23fc551')
+        composition_path=ROOT/'results/constant-fold-compose-02/summary.json';composition=json.loads(composition_path.read_text())
+        assert composition['status']=='composed' and composition['build']=='results/constant-fold-build-08/summary.json'
         binary=ROOT/composition['verifier'];assert sha(binary)==composition['verifier_sha256']
         reference_path=ROOT/'results/suite-profiling-real-01/summary.json';reference=json.loads(reference_path.read_text())
         assert reference['status']=='passed' and reference['exact_logical_counts_and_entropy']

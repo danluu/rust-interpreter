@@ -14,7 +14,7 @@ def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,8)
         builds={mode:ROOT/'results'/name/'summary.json' for mode,name in [
-            ('baseline','suite-profiling-build-02'),('candidate','constant-fold-compose-01')]}
+            ('baseline','suite-profiling-build-02'),('candidate','constant-fold-compose-02')]}
         summaries={mode:json.loads(path.read_text()) for mode,path in builds.items()}
         assert summaries['baseline']['status']=='passed' and summaries['candidate']['status']=='composed'
         compiler_build=ROOT/summaries['candidate']['build'];compiled=json.loads(compiler_build.read_text());assert compiled['tests']['test-debug']==compiled['tests']['test-release']==dict(passed=366,ignored=1)

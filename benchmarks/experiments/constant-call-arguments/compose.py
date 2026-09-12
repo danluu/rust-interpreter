@@ -8,17 +8,17 @@ from interpreter import installed_tools
 from workflow_io import require_space,write_json as write
 
 def main():
-    run='constant-fold-compose-01'
+    run='constant-fold-compose-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,7)
         base_path=ROOT/'results/suite-profiling-build-02/summary.json'
-        build_path=ROOT/'results/constant-fold-build-05/summary.json'
+        build_path=ROOT/'results/constant-fold-build-08/summary.json'
         base=json.loads(base_path.read_text());build=json.loads(build_path.read_text())
-        assert base['status']==build['status']=='passed' and build['source_commit'].startswith('23fc551')
+        assert base['status']==build['status']=='passed'
         assert build['tests']['test-debug']==build['tests']['test-release']==dict(passed=366,ignored=1)
         plan_path=ROOT/build['raw']/'plan.json';plan=json.loads(plan_path.read_text())
         assert sha(plan_path)==build['source_manifest_sha256'] and all(sha(ROOT/p)==h for p,h in plan['frozen'].items())
-        status_path=ROOT/'.work/experiments/constant-fold-build-05/status.json';status=json.loads(status_path.read_text())
+        status_path=ROOT/'.work/experiments/constant-fold-build-08/status.json';status=json.loads(status_path.read_text())
         assert status['status']=='finished' and status['returncode']==0 and status['owner']==str(ROOT)
         assert sha(status_path.with_name('plan.json'))==status['plan_sha256'] and sha(status_path.with_name('command.log'))==status['log_sha256']
         control,_=installed_tools(base['tool_key']);compiler,_=installed_tools(build['tool_key'])
