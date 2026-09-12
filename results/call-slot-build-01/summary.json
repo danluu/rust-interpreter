@@ -1,0 +1,113 @@
+{
+  "status": "passed",
+  "tool_key": "ac38fa59bbf22bc80a1db9729e02e0fb5372c47ee675492e53ab3658ef53db92",
+  "control_tool_key": "9637b0acb1d208524c3c8b446af64cfd5e2d0d3be75e1412a8df76750ce36223",
+  "binaries": {
+    "rust-interp-vm": "af5dd30033833654ea92d85629081f462d3487b6b330c8bee664c4c20ed443e0",
+    "rust-interp-mir-export": "556776f6760d16a336157b3f230092e0ad9c022cb47a914ed3cf938ab32b7095",
+    "rust-interp-rustc-wrapper": "ba366dd3b4815e4ddb25d130c5d1f861396bc24c3f99cf960bb7433618d29f35"
+  },
+  "tests": {
+    "debug": {
+      "passed": 297,
+      "ignored": 1,
+      "call_slot_tests": [
+        "jit::call_slots::tests::calls_and_memory_writes_preserve_hints_but_register_writes_kill_them",
+        "jit::call_slots::tests::exhausted_analysis_discards_partial_hints",
+        "jit::call_slots::tests::skipped_definitions_merges_and_backedges_keep_unknown_addresses",
+        "jit::call_slots::tests::target_width_addition_alias_order_and_extent_limits_are_conservative",
+        "jit::resumable::tests::slot_arguments::external_call_guards_preserve_fault_order_partial_copies_and_native_abi",
+        "jit::resumable::tests::slot_arguments::guarded_address_matches_original_for_arbitrary_entry_registers_and_extents",
+        "jit::resumable::tests::slot_arguments::guarded_calls_preserve_each_budget_through_loops_recursion_and_fallback",
+        "jit::resumable::tests::slot_arguments::large_argument_copies_and_return_faults_keep_exact_budget_accounting"
+      ]
+    },
+    "release": {
+      "passed": 297,
+      "ignored": 1,
+      "call_slot_tests": [
+        "jit::call_slots::tests::calls_and_memory_writes_preserve_hints_but_register_writes_kill_them",
+        "jit::call_slots::tests::exhausted_analysis_discards_partial_hints",
+        "jit::call_slots::tests::skipped_definitions_merges_and_backedges_keep_unknown_addresses",
+        "jit::call_slots::tests::target_width_addition_alias_order_and_extent_limits_are_conservative",
+        "jit::resumable::tests::slot_arguments::external_call_guards_preserve_fault_order_partial_copies_and_native_abi",
+        "jit::resumable::tests::slot_arguments::guarded_address_matches_original_for_arbitrary_entry_registers_and_extents",
+        "jit::resumable::tests::slot_arguments::guarded_calls_preserve_each_budget_through_loops_recursion_and_fallback",
+        "jit::resumable::tests::slot_arguments::large_argument_copies_and_return_faults_keep_exact_budget_accounting"
+      ]
+    }
+  },
+  "source": ".work/call-slot-build-01/tool-source",
+  "provenance": ".work/call-slot-build-01/provenance.json",
+  "provenance_sha256": "ea21ec5c88bf210e6e47f0d36ab422e4ed4a0417964c2dda4057ee6ff8787e56",
+  "commands": [
+    {
+      "label": "debug",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/Users/danluu/dev/rust-interp/.work/call-slot-build-01/tool-source/Cargo.toml",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/call-slot-build-01",
+        "--workspace"
+      ],
+      "pid": 84758,
+      "returncode": 0,
+      "log_sha256": "ca0326845da573ae2dd69555b047453dd00ad94c69c459bd669f3944de243e52"
+    },
+    {
+      "label": "release",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/Users/danluu/dev/rust-interp/.work/call-slot-build-01/tool-source/Cargo.toml",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/call-slot-build-01",
+        "--workspace",
+        "--release"
+      ],
+      "pid": 90424,
+      "returncode": 0,
+      "log_sha256": "e4d4290706c5c21759646926ef5a0b2020f4f7d411bcdb68209f933ace0740df"
+    },
+    {
+      "label": "vm",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "build",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--manifest-path",
+        "/Users/danluu/dev/rust-interp/.work/call-slot-build-01/tool-source/Cargo.toml",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/diagnostic-builds/call-slot-build-01",
+        "--release",
+        "-p",
+        "rust-interp-bytecode",
+        "--bin",
+        "rust-interp-vm"
+      ],
+      "pid": 95287,
+      "returncode": 0,
+      "log_sha256": "376a48f02bf305a0c383aa68e8f2d8c5df3ec64cbee6a09491a649aa453baba9"
+    }
+  ],
+  "experimental_call_slot_guards": true,
+  "production_change": false,
+  "performance_measurement": false
+}
