@@ -87,6 +87,11 @@ All 297 workspace tests pass in debug and release (one ignored), with JIT within
 the regression guards. These runtime measurements exclude export/build costs.
 [Runtime comparison](results/general-interpreter-20260912/assessment.md).
 
+Keeping frame state across interpreter instructions adds 26.8% and 28.1% runtime
+improvements on pgrust and Ruff relative to that VM. Five additional workloads
+improve 15.2–29.4%; JIT stays within its wall/CPU regression guards. All bounds
+checks remain. [Frame-loop comparison](results/same-frame-interpreter-20260912/assessment.md).
+
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for mechanisms and limits,
 [RUNTIME-NEXT.md](RUNTIME-NEXT.md) for the next experiments,
 [CHANGELOG.md](CHANGELOG.md) for checked-in changes, and
