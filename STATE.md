@@ -44,28 +44,27 @@ other pass effects and shared-host noise; the components do not prove causation.
 
 ## Immediate continuation
 
-Ruff is running as `aggregate-relocation-heldout-01-ruff`. Its live admission
-passed with 22.01 GiB free against 16.16 GiB required. Four completed public
-archive batches are committed. The new
-[compiler-comparison cache selector](results/compiler-cache-selector-03/assessment.md)
-qualifies four real identities, 25 selector rejections, a restore fixture,
-27 batch-routing rejections and 44 archive regressions. Two qualification
-failures and their source snapshots are preserved. Existing measured verifier
-sources remain unchanged.
+Ruff stopped at its pre-command 8 GiB disk guard after one complete cycle.
+The [stop audit](results/aggregate-relocation-ruff-stop-01/assessment.md) verifies
+21 primary commands, seven checks, five edit pairs and 14 artifacts, with source
+restored. These partial pairs are excluded from performance gates. The original
+failure and the first assessor's schema error are preserved. No task process is
+active and no retry has started.
+
+The [declared retry](benchmarks/experiments/aggregate-byte-writes/HELDOUT-RETRY-NEXT.md)
+keeps all three cycles, tools, assertions and gates. Qualify a separate coordinator
+and receipt adapter first; add 8 GiB admission headroom and read-only space logging.
+The failed history and frozen original verifier sources remain unchanged.
 
 The [fourth batch](results/aggregate-relocation-space-04/assessment.md) archived
 the completed new Nushell comparison: 13,455,530,886 unique bytes preserved in
 4,355,839,039 archive bytes. All four terminal receipts and 99 external hashes
 verify. Source, reports, tool installations and executed snapshots remain.
 
-1. Wait for the Ruff workflow and supervisor to finish; keep measured sources
-   frozen. Inspect `.work/experiments/aggregate-relocation-heldout-01-ruff/status.json`
-   and its `relocation-assessment.json` when complete.
-2. Recheck live Nushell admission using `heldout_space.estimate`. Only then
-   launch supervised `run_heldout.py --case nushell` from `aggregate-byte-writes`.
-3. Complete the fixed remaining cases under the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
-   The [qualified final reporter](benchmarks/experiments/aggregate-byte-writes/report_heldouts.py)
-   independently reverifies all seven histories. No adoption before that result.
+1. Qualify the separate retry coordinator and reporting/predecessor adapter.
+2. Check live admission, then run the single declared Ruff retry under its new ID.
+3. Complete Nushell and the remaining fixed cases. Reverify all seven complete
+   histories with the explicit retry mapping before any adoption decision.
 
 Exact process identities, full tool hashes and current receipts are in
 `.work/continuation-state.json`; inspect live receipts after a restart.
