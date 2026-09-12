@@ -10,8 +10,8 @@ const MAX_OPERANDS: usize = 262_144;
 const MAX_WORK: usize = 32_000_000; // word/set operations before conservative decline
 
 pub(super) struct Liveness {
-    bits: Vec<u64>,
-    stride: usize,
+    pub(super) bits: Vec<u64>,
+    pub(super) stride: usize,
     successors: Vec<Vec<usize>>,
 }
 impl Liveness {
@@ -43,7 +43,7 @@ fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
     Some(Allocation { live, registers })
 }
 
-fn ranked(f: &Function, max_work: usize) -> Option<(Liveness, Vec<(u64, Reg)>)> {
+pub(super) fn ranked(f: &Function, max_work: usize) -> Option<(Liveness, Vec<(u64, Reg)>)> {
     let n = f.code.len();
     if n == 0 || n > MAX_PCS || f.registers > MAX_REGISTERS { return None; }
     let stride = f.registers.div_ceil(64);

@@ -1919,6 +1919,12 @@ mod local_memory_tests;
 
 mod register_widths;
 mod register_width_profile;
+mod register_lifetimes;
+
+/// Offline lifetime allocation diagnostic; the original program is unchanged.
+pub fn register_lifetime_census(program: &Program, profile: Option<&[u8]>) -> Result<serde_json::Value, String> {
+    register_lifetimes::census(program, profile)
+}
 
 /// Inspect a possible narrower register assignment without running guest code.
 pub fn register_width_census(program: &Program) -> Result<serde_json::Value, String> {
