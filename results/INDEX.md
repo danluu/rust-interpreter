@@ -38,6 +38,8 @@ paths; omission is not deletion, supersession, or proof of irrelevance.
 | fixed-clear-combined | [fixed-frame-clear-combined-01/summary.json](fixed-frame-clear-combined-01/summary.json) |
 | fixed-clear-entropy | [fixed-frame-clear-entropy-token-01/summary.json](fixed-frame-clear-entropy-token-01/summary.json) |
 | fixed-clear-combined-confirmation | [fixed-frame-clear-combined-confirm-01/summary.json](fixed-frame-clear-combined-confirm-01/summary.json) |
+| export-reuse-token | [export-reuse-token-01/summary.json](export-reuse-token-01/summary.json) |
+| export-reuse-folded | [export-reuse-folded-01/summary.json](export-reuse-folded-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-integration-root-01/summary.json](aggregate-integration-root-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-e2e-01/summary.json](aggregate-relocation-e2e-01/summary.json) |
 | integrated-compiler-evidence | [aggregate-relocation-heldout-recovery-01/summary.json](aggregate-relocation-heldout-recovery-01/summary.json) |
