@@ -75,15 +75,16 @@ fn emitted_capacity_checks_match_independent_bounds_and_exact_credit() {
                 assert!(a.words.iter().all(|w| w & 0xfc000000 != 0x94000000
                     && w & 0xfffffc1f != 0xd63f0000), "capacity probe cannot link-call");
                 let entry=code.append(&a.words).unwrap();
+                let (mut saw_fast,mut saw_checked,mut saw_decline)=(false,false,false);
                 for old_memory in [17usize,64,4095] {
                     let old_registers=8usize;
                     let base=old_memory.div_ceil(align)*align;
                     let next=base+size.max(1);
                     let need=next-old_memory;
                     let register_bytes=count*16;
-                    for extra_memory in [0,need.saturating_sub(1),need,need+4096] {
-                        for extra_registers in [0,count.saturating_sub(1),count,count+256] {
-                            for extra_work in [0,(need+register_bytes).saturating_sub(1),need+register_bytes,need+register_bytes+4096] {
+                    for extra_memory in [0,need.saturating_sub(1),need,need+65536] {
+                        for extra_registers in [0,count.saturating_sub(1),count,count+4096] {
+                            for extra_work in [0,(need+register_bytes).saturating_sub(1),need+register_bytes,need+register_bytes+65536] {
                                 let end=old_memory+extra_memory;
                                 let slots=old_registers+extra_registers;
                                 let budget=old_memory+16*old_registers+extra_work;
@@ -105,16 +106,19 @@ fn emitted_capacity_checks_match_independent_bounds_and_exact_credit() {
                                     assert_eq!(status,usize::from(!fits) as u64);
                                     if fits {
                                         let cost=call_capacity_cost(&f).unwrap();
+                                        saw_fast |= seed>=cost;
+                                        saw_checked |= seed<cost;
                                         let expected=if seed>=cost {seed-cost} else {
                                             (end-next).min(16*(slots-old_registers-count)).min(budget-next-16*(old_registers+count))
                                         };
                                         assert_eq!(output,[(base as u128)<<64|expected as u128,0x2468u128<<64|0x1357]);
-                                    } else { assert_eq!(output,[u128::MAX;2]); }
+                                    } else { saw_decline=true; assert_eq!(output,[u128::MAX;2]); }
                                 }
                             }
                         }
                     }
                 }
+                assert!(saw_fast && saw_checked && saw_decline, "layout {size}/{align}/{count} must cover every path");
             }
         }
     }
