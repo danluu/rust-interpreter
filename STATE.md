@@ -2,18 +2,30 @@
 
 The unbounded goal remains active: improve the custom Rust development engine
 using real source-edit/build/test benchmarks. Every item in `suggestions.txt`
-has an [explicit decision](docs/SUGGESTIONS-REVIEW-20260911.md); that user-owned
+has an [explicit decision](docs/SUGGESTIONS-REVIEW-20260912.md); that user-owned
 file remains unchanged and untracked. Local commits, private GitHub publication and regular pushes of qualified changes to main are authorized.
 Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
 Explicit parallel isolated suites pass365Rust tests/profile and56Python tests.
-Six paired saved-suite comparisons show token41.8% faster wall time with3.8%
-more CPU; folded/pgrust guards pass. Fresh guest state and one creating-thread
-JIT owner per worker are preserved. One worker remains the default. Next run
-real edits with both serial and concurrent native controls; these results
-exclude checking/export. [Decision](results/parallel-suites-screen-01/assessment.md).
+The five-edit token complete-command screen improves wall time34.3% with3.2%
+more CPU. All40 commands, original assertions, wrong edits and restoration
+checks pass. Candidate5.330s versus retained custom8.021s; the candidate still
+takes2.216× the paired two-process native control. Fresh guest state and one
+creating-thread JIT owner per worker are preserved. One worker remains default;
+folded/pgrust complete-command guards also pass (−2.1%/+3.2% wall). The earlier saved-runtime screen
+was41.8% faster and excluded checking/export.
+[Edit decision](results/parallel-suites-edit-token-01/assessment.md).
+
+The replacement September12 suggestions change the next optimization priority:
+qualify and measure a composed build with modest correct components against a
+fixed anchor, rather than requiring every component to win8–10% independently.
+Use fresh A/A controls, original edits, stronger ordinary Cargo/libtest native
+controls and held-outs. Old failed gates remain failed; no multiplied-ratio
+prediction is treated as evidence. Call-protocol and exporter-binding work
+follow the composition's measured costs. Safe metadata cleanup enabled the
+current benchmark; it is maintenance, not optimizer progress.
 
 Seeded valid-program differential coverage passes all362workspace tests in both
 profiles plus768additional seeds/profile. Programs cover loops, diamonds,
