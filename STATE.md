@@ -44,28 +44,26 @@ other pass effects and shared-host noise; the components do not prove causation.
 
 ## Immediate continuation
 
-Ruff has not started because live space admission remains below its 16.16 GiB
-requirement. Three completed public archive batches are committed. The new
+Ruff is running as `aggregate-relocation-heldout-01-ruff`. Its live admission
+passed with 22.01 GiB free against 16.16 GiB required. Four completed public
+archive batches are committed. The new
 [compiler-comparison cache selector](results/compiler-cache-selector-03/assessment.md)
 qualifies four real identities, 25 selector rejections, a restore fixture,
 27 batch-routing rejections and 44 archive regressions. Two qualification
 failures and their source snapshots are preserved. Existing measured verifier
 sources remain unchanged.
 
-The fourth batch, `aggregate-relocation-space-04`, is **applying** the separately
-[reviewed](results/aggregate-relocation-space-04/inventory-review.json) four
-caches of the completed new Nushell type-relations comparison. It contains
-13,455,530,886 unique bytes. Plan:
-`.work/cache-batches/aggregate-relocation-space-04.json`, SHA-256
-`0143f41fa889a896895a30836736dfba0f93b92eec3e03158abe158f3754782d`.
-Supervisor receipt: `.work/experiments/aggregate-relocation-space-04-apply/status.json`.
+The [fourth batch](results/aggregate-relocation-space-04/assessment.md) archived
+the completed new Nushell comparison: 13,455,530,886 unique bytes preserved in
+4,355,839,039 archive bytes. All four terminal receipts and 99 external hashes
+verify. Source, reports, tool installations and executed snapshots remain.
 
-1. Wait for every archive child and supervisor to finish. Do not queue another
-   lock waiter. Then run supervised `assess_archive_batch.py --batch aggregate-relocation-space-04`
-   and preserve terminal receipts.
-2. Recheck live Ruff admission using `heldout_space.estimate`. Only then launch
-   supervised `run_heldout.py --case ruff` from `aggregate-byte-writes`.
-3. Complete the six remaining fixed cases under the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
+1. Wait for the Ruff workflow and supervisor to finish; keep measured sources
+   frozen. Inspect `.work/experiments/aggregate-relocation-heldout-01-ruff/status.json`
+   and its `relocation-assessment.json` when complete.
+2. Recheck live Nushell admission using `heldout_space.estimate`. Only then
+   launch supervised `run_heldout.py --case nushell` from `aggregate-byte-writes`.
+3. Complete the fixed remaining cases under the [qualification plan](benchmarks/experiments/aggregate-byte-writes/QUALIFICATION-NEXT.md).
    The [qualified final reporter](benchmarks/experiments/aggregate-byte-writes/report_heldouts.py)
    independently reverifies all seven histories. No adoption before that result.
 
