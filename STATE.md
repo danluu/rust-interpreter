@@ -24,8 +24,18 @@ passes 300 debug/release tests (one ignored), 47,004 native differential
 commands, 245 TLS checks, 382 fre bodies (seven ignored), and 52 integration
 assertions. [Decision](results/fixed-frame-clear-combined-01/assessment.md).
 
-The next direction is exporter graph reuse, guided by the measured 691ms token
-lowering cost. Equal serialized functions or MIR hashes alone are insufficient
+Exporter reuse now has a qualified cost observer (41 debug/release tests and
+104 original-fixture commands). The real token/folded histories each execute
+five edits, a wrong edit, an original anchor and a restored-source rebuild.
+Exactly repeated function outputs cover median 178ms/460ms on token and
+44ms/96ms on folded. Token restoration initially stopped on an incorrect
+cold-anchor expectation; its output exactly matches the retained exporter’s
+existing restored-state history, without a rerun. The source is restored.
+[Token census](results/export-reuse-token-01/assessment.md),
+[folded census](results/export-reuse-folded-01/assessment.md).
+
+The next direction is typed relocation records and a dependency audit before
+exporter graph reuse, guided by the measured 691ms token lowering cost. Equal serialized functions or MIR hashes alone are insufficient
 cache keys: layout, call ABI, constant identity and dependency changes matter.
 The two-stream entropy diagnostic establishes exact token execution across both
 VMs and engines with identical inputs; it makes no performance claim.
