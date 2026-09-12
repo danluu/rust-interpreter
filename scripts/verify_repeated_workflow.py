@@ -22,6 +22,34 @@ def read(path):
     return json.loads(path.read_text())
 
 
+def verify_entry_catalog(root, artifact, launch, names, suite=None):
+    """Bind a retained catalog to its launch, bytecode and executed identities."""
+    present = 'entry_catalog' in artifact
+    require(present == ('entry_catalog_path' in launch) == ('entry_catalog_sha256' in launch),
+            'catalog launch or snapshot receipt is missing')
+    if not present:
+        require(suite is None or suite.get('entry_source', 'legacy batch descriptor') == 'legacy batch descriptor',
+                'catalog execution lacks retained evidence')
+        return
+    item = artifact['entry_catalog']
+    path = root / item['path']
+    require(path == Path(str(root / artifact['path']) + '.entries.json') and not path.is_symlink(),
+            'catalog snapshot is outside its artifact')
+    require(path.is_file() and 0 < path.stat().st_size <= 8 * 1024 * 1024, 'invalid catalog snapshot size')
+    payload = path.read_bytes()
+    require(hashlib.sha256(payload).hexdigest() == item['sha256'], 'catalog snapshot changed')
+    catalog = json.loads(payload)
+    require(catalog['artifact_sha256'] == artifact['sha256'] and
+            [e['name'] for e in catalog['entries']] == names, 'catalog artifact or test selection differs')
+    require(launch['entry_catalog_sha256'] == item['sha256'] and
+            launch['entry_catalog_path'] == launch['artifact_path'] + '.entries.json', 'launched catalog differs')
+    if suite is not None:
+        require(suite['entry_source'] == 'artifact-bound catalog' and
+                [(e['name'], e['function']) for e in catalog['entries']] ==
+                [(t['name'], t['function']) for t in suite['tests']],
+                'executed entry identities differ from the catalog')
+
+
 def verify(report, reference=None, *, compiler_flags=None):
     """Verify runtime comparisons by default; explicitly bind compiler changes.
 
@@ -141,6 +169,8 @@ def verify(report, reference=None, *, compiler_flags=None):
             paths.add(path)
             digest = hashlib.sha256((ROOT / path).read_bytes()).hexdigest()
             require(digest == artifact['sha256'], 'artifact hash mismatch')
+            verify_entry_catalog(ROOT, artifact, row['calls'][0]['launch'], row['tests'],
+                                 suite if report.get('compare_isolated_batches') else None)
             artifacts[cycle, state, mode] = digest
     paired_identical = True
     for c in range(cycles):

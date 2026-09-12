@@ -40,3 +40,12 @@ admit this metadata export at 8.75 GiB free and preserve the 8 GiB per-child
 floor. Run native tests individually, record/replay guest entropy for isolated
 equality, and verify that omitting the catalog reproduces the format rejection.
 Restore the original source. Preserve this setup's profile difference explicitly.
+
+Ruff now passes all twelve commands, including the expected missing-catalog
+rejection. Qualify the catalog across the complete pgrust source-edit sequence,
+preserving the catalog beside each bytecode snapshot and matching the executed
+function IDs to it. Retained pgrust native/check caches occupy 1.2 MiB/32 KiB
+and all fourteen artifacts total 2.5 MiB; admit this small correctness sequence
+at 8.125 GiB, retaining the 8 GiB check before every child. This is a catalog
+correctness follow-up, not a repetition to promote the earlier performance
+result. Freeze this plan with the controller and tools.

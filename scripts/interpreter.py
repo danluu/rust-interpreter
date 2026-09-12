@@ -429,6 +429,7 @@ def main():
             catalog=selected_entry_catalog(artifacts[0],args.entry)
             vm_command+=['--suite-catalog',str(catalog)]
             timings['entry_catalog_path']=str(catalog)
+            timings['entry_catalog_sha256']=hashlib.sha256(catalog.read_bytes()).hexdigest()
         timings.update(isolated_batch=args.isolated_batch,suite_report_path=str(args.suite_report),
                        runtime_limits_scope='each isolated test')
     if stats:timings['allocation_limit']=args.allocation_limit if args.allocation_limit is not None else 100_000

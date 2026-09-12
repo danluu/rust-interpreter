@@ -15,9 +15,9 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 import bench_e2e_workflow as bench
 from compare_saved_runtime import acquire_lock, sha
-from interpreter import installed_tools
+from interpreter import installed_tools, entry_catalog_supported
 from suite_reports import read_report, validate_report
-from verify_repeated_workflow import verify
+from verify_repeated_workflow import verify, verify_entry_catalog
 from workflow_controls import native_environment
 from workflow_io import capture, require_space, write_json as write
 from workflow_measurements import child_usage, child_cpu_since
@@ -33,13 +33,17 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--case',choices=REFERENCES,required=True)
     parser.add_argument('--run-id',required=True)
+    parser.add_argument('--build',type=Path,help='qualified replacement tool build for catalog correctness checks')
+    parser.add_argument('--minimum-start-gib',type=float,help='explicit predeclared admission floor, at least 8 GiB')
     args=parser.parse_args()
-    assert re.fullmatch('prepared-suite-'+args.case+r'-\d{2}',args.run_id)
+    assert re.fullmatch(r'prepared-(?:suite|catalog)-'+args.case+r'-\d{2}',args.run_id)
     assert not any(name.startswith('DYLD_') for name in os.environ),'ambient native interposition is unsupported'
-    build_path=ROOT/'results/prepared-jit-build-04/summary.json'
+    build_path=args.build.resolve() if args.build is not None else ROOT/'results/prepared-jit-build-04/summary.json'
     build=json.loads(build_path.read_text())
-    assert build['status']=='passed' and all(row==dict(passed=320,ignored=1) for row in build['tests'].values())
+    assert build['status']=='passed' and all(row['passed']>=320 and row['ignored']==1 for row in build['tests'].values())
     tool,key=installed_tools(build['tool_key'])
+    has_catalog=entry_catalog_supported(tool,key)
+    if args.run_id.startswith('prepared-catalog-'):assert has_catalog
     ref_path=ROOT/'results'/REFERENCES[args.case]/'summary.json'
     reference=json.loads(ref_path.read_text())
     work=ROOT/'.work'/args.run_id;work.mkdir(exist_ok=False)
@@ -57,15 +61,17 @@ def main():
     if reference['inline_leaves']:command+=['--inline-leaves','--baseline-inline-leaves']
     for flag in ['trap-unsupported-calls','run-try-callbacks']:
         if reference.get(flag.replace('-','_')):command+=['--'+flag]
-    paths=[Path(__file__),Path(__file__).with_name('WORKFLOWS.md'),build_path,ref_path]
+    paths=[Path(__file__),Path(__file__).with_name('WORKFLOWS.md'),Path(__file__).with_name('CATALOG.md'),build_path,ref_path]
     paths += [ROOT/'scripts'/name for name in ['bench_e2e_workflow.py','interpreter.py','workflow_io.py',
         'workflow_controls.py','workflow_measurements.py','workflow_cases.py','workflow_case_file.py',
         'workflow_jobs.py','verify_repeated_workflow.py','std_mir.py','native_suite.py','suite_reports.py','compare_saved_runtime.py']]
     paths += [tool/name for name in ['rust-interp-vm','rust-interp-mir-export','rust-interp-rustc-wrapper','ready.json']]
     frozen={str(path.relative_to(ROOT)):sha(path) for path in paths}
-    write(work/'plan.json',dict(command=command,frozen=frozen,minimum_start_gib=9 if args.case=='pgrust' else 10,
+    start_floor=args.minimum_start_gib if args.minimum_start_gib is not None else 9 if args.case=='pgrust' else 10
+    assert start_floor>=8
+    write(work/'plan.json',dict(command=command,frozen=frozen,minimum_start_gib=start_floor,
         scope='one-cycle descriptive qualification, no default-promotion or general speedup claim'))
-    require_space(ROOT,9 if args.case=='pgrust' else 10)
+    require_space(ROOT,start_floor)
     original_argv=sys.argv
     try:
         sys.argv=command;bench.main()
@@ -117,7 +123,19 @@ def main():
                 assert len(launches)==1 and launches[0]['suite_report_sha256']==digest
                 launch=launches[0];artifact=Path(launch['artifact_path'])
                 payload=artifact.read_bytes();assert hashlib.sha256(payload).hexdigest()==launch['artifact_sha256']
-                with (work/(mode+'-restored.rbc')).open('xb') as destination:destination.write(payload)
+                snapshot=work/(mode+'-restored.rbc')
+                with snapshot.open('xb') as destination:destination.write(payload)
+                saved=dict(path=str(snapshot.relative_to(ROOT)),sha256=launch['artifact_sha256'])
+                assert ('entry_catalog_path' in launch)==has_catalog
+                if launch.get('entry_catalog_path') is not None:
+                    catalog=Path(launch['entry_catalog_path']);contents=catalog.read_bytes()
+                    assert hashlib.sha256(contents).hexdigest()==launch['entry_catalog_sha256']
+                    assert json.loads(contents)['artifact_sha256']==launch['artifact_sha256']
+                    catalog_snapshot=Path(str(snapshot)+'.entries.json')
+                    with catalog_snapshot.open('xb') as destination:destination.write(contents)
+                    saved['entry_catalog']=dict(path=str(catalog_snapshot.relative_to(ROOT)),sha256=launch['entry_catalog_sha256'])
+                verify_entry_catalog(ROOT,saved,launch,prior['tests'],suite)
+                row['artifact']=saved
                 row['artifact_sha256']=launch['artifact_sha256'];artifacts.append(launch['artifact_sha256'])
             write(work/'restoration.json',restored)
         assert len(artifacts)==2 and artifacts[0]==artifacts[1]
@@ -126,7 +144,7 @@ def main():
     pairs=report['comparison']['pairs']
     result=dict(status='passed',case=args.case,tool_key=key,primary_commands=len(rows),check_commands=checked['check_commands'],
         restored_commands=len(restored),edited_pairs=len(pairs),source_restored=True,test_source_unchanged=True,
-        wrong_edit_assertions_match=True,paired_bytecode_identical=True,
+        wrong_edit_assertions_match=True,paired_bytecode_identical=True,entry_catalogs_verified=has_catalog,
         wall_ratio=statistics.median(p['candidate_seconds']/p['baseline_seconds'] for p in pairs),
         cpu_ratio=statistics.median(p['candidate_cpu_seconds']/p['baseline_cpu_seconds'] for p in pairs),
         median_seconds=report['median_seconds'],cold_seconds=report['cold_success_seconds'],

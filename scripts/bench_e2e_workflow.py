@@ -340,7 +340,19 @@ def main():
                 assert len(payload)==launch['artifact_bytes'] and hashlib.sha256(payload).hexdigest()==launch['artifact_sha256']
                 snapshot=work/'artifacts'/mode/sample_path(sample,index,args.cycles,'rbc');snapshot.parent.mkdir(parents=True,exist_ok=True)
                 with snapshot.open('xb') as destination:destination.write(payload)
-                snapshots.append(dict(path=str(snapshot.relative_to(ROOT)),sha256=launch['artifact_sha256'],bytes=len(payload)))
+                item=dict(path=str(snapshot.relative_to(ROOT)),sha256=launch['artifact_sha256'],bytes=len(payload))
+                snapshots.append(item)
+                if launch.get('entry_catalog_path') is not None:
+                    catalog=Path(launch['entry_catalog_path'])
+                    assert catalog==Path(str(artifact)+'.entries.json') and not catalog.is_symlink()
+                    assert 0<catalog.stat().st_size<=8*1024*1024
+                    payload=catalog.read_bytes();digest=hashlib.sha256(payload).hexdigest()
+                    assert digest==launch['entry_catalog_sha256']
+                    descriptor=json.loads(payload)
+                    assert descriptor['artifact_sha256']==item['sha256'] and [e['name'] for e in descriptor['entries']]==selected
+                    catalog_snapshot=Path(str(snapshot)+'.entries.json')
+                    with catalog_snapshot.open('xb') as destination:destination.write(payload)
+                    item['entry_catalog']=dict(path=str(catalog_snapshot.relative_to(ROOT)),sha256=digest)
         if args.cargo_timings:
             reports=[];record['cargo_timings']=reports
             for index,call in enumerate(calls):
