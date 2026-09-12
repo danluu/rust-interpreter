@@ -32,6 +32,8 @@ def main():
         require_space(ROOT,minimum_child_gib)
         build_paths={m:ROOT/'results'/r/'summary.json' for m,r in [('baseline','suite-profiling-build-02'),('candidate','constant-fold-compose-02')]}
         builds={m:json.loads(p.read_text()) for m,p in build_paths.items()};assert builds['baseline']['status']=='passed' and builds['candidate']['status']=='composed'
+        if builds['candidate']['tool_key']=='c6f297f56834626d419c23bd0ac1a0ca4be75ae28bf5f6a6b4c79bc6b7a61e07':
+            raise RuntimeError('candidate predates the null-read preservation fix; qualify a replacement tool before timing')
         qualification=ROOT/'results/constant-fold-saved-02/summary.json';assert json.loads(qualification.read_text())['status']=='passed'
         fixture=ROOT/'results/constant-fold-fixture-01/summary.json';proof=json.loads(fixture.read_text());assert proof['status']=='passed' and proof['original_tests']==9 and proof['exact_whole_artifact_constant_folding']
         assert proof['tools']=={mode:b['tool_key'] for mode,b in builds.items()}

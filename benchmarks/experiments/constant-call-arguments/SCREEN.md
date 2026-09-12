@@ -1,5 +1,9 @@
 # Complete-command constant-folding screen
 
+Paused after the null-read regression: compose02 is disqualified. Qualify a
+replacement tool and update these bindings before starting another screen.
+Screen01 stopped at disk admission and contains no measured command.
+
 Freeze this recipe before timing. Compare `constant-fold-compose-02` with
 `suite-profiling-build-02` (c013f239); VM and wrapper bytes are identical.
 The candidate changes only the checked exporter, applying the bounded folder
