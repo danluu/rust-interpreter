@@ -1,12 +1,12 @@
 use crate::{Function, Op};
 
 /// Registers have initial-zero semantics. Reused, initialized host storage can
-/// retain its old values only when every read is preceded by a write in the
-/// same basic block. This deliberately conservative proof needs no fixed point
-/// or path assumptions. Calls cannot access their caller's register storage.
+/// retain its old values only when every reachable read is preceded by a write
+/// on every path. Calls cannot access their caller's register storage.
 /// Call this only after program validation has checked registers and targets.
 /// Fast block proof first; an entry-prefix fallback permits values carried
 /// across blocks when their initial definitions dominate every continuation.
+/// A bounded CFG proof handles remaining cases; exhaustion keeps zeroing.
 pub(crate) fn needs_initial_zeroes(function: &Function) -> bool {
     if !block_needs_initial_zeroes(function, &[]) { return false; }
     let mut entry = vec![false; function.registers];
@@ -25,8 +25,8 @@ pub(crate) fn needs_initial_zeroes(function: &Function) -> bool {
         && !crate::register_init::proves_initialized(function)
 }
 
-// Keep the exporter's established inlining heuristic independent of the
-// runtime initialization proof; this experiment changes register reuse only.
+// Preserve the earlier block-only heuristic as an independent test reference.
+#[cfg(test)]
 pub(crate) fn needs_initial_zeroes_for_inlining(function: &Function) -> bool {
     block_needs_initial_zeroes(function, &[])
 }
