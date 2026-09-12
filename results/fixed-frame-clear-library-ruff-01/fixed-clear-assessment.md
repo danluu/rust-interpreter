@@ -1,0 +1,3 @@
+Ruff passes its 5% retention gate: paired candidate/baseline complete-command wall ratio **1.009748** (+0.97%), CPU ratio **0.996197** (−0.38%). Per-mode command medians are native **5.598s**, baseline **3.086s**, candidate **3.059s**. Paired ratios use each matching edit and need not equal ratios of those marginal medians.
+
+All 63 primary commands, 21 Cargo checks, 15 edited pairs and 42 artifact snapshots verify. Every pair uses identical bytecode, original assertions, the original worker/profile/MIR settings, wrong-production-edit controls and source restoration. These small differences do not establish a fixed-clearing speedup on Ruff; they pass the regression gate. Final composition with current main remains separate.

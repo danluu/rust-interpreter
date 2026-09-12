@@ -51,11 +51,11 @@ The [compute-heavy integration target](results/fre-integration-es8-edit-01/asses
 
 [Source restoration now refreshes modification time](results/source-restore-after-01/assessment.md) so Cargo rebuilds the restored original. Actual Cargo regressions and 18 Python tests pass. Remaining original-source bytecode differences keep export determinism open.
 
-**Fixed frame clearing: experimental, confirmation passed.** Three further es8 edit histories improve paired complete-command wall by 8.37% and CPU by 8.48%, excluding the pilot. Per-history wall gains range from 7.10% to 9.07%; the candidate remains roughly 2.5× native. All 47,004 native differential commands, 245 TLS checks, 382 fre bodies (seven ignored) and 52 integration assertions pass. [Library retention gates](results/fixed-frame-clear-libraries-01/summary.json): 4 of 9 pass. Final composition with the newer main interpreter frame loop remains unqualified. [Confirmation](results/fixed-frame-clear-confirm-02/assessment.md).
+**Fixed frame clearing: experimental, confirmation passed.** Three further es8 edit histories improve paired complete-command wall by 8.37% and CPU by 8.48%, excluding the pilot. Per-history wall gains range from 7.10% to 9.07%; the candidate remains roughly 2.5× native. All 47,004 native differential commands, 245 TLS checks, 382 fre bodies (seven ignored) and 52 integration assertions pass. [Library retention gates](results/fixed-frame-clear-libraries-01/summary.json): 5 of 9 pass. Final composition with the newer main interpreter frame loop remains unqualified. [Confirmation](results/fixed-frame-clear-confirm-02/assessment.md).
 
 **Open adoption work:** tuned native controls; complete test-suite execution; unwinding, threads and general OS/FFI; deterministic/reusable export graphs. Selected test-body results are not whole-project qualification.
 
-**Next:** Complete five remaining library gates for fixed frame clearing: pgrust, folded fre, token and Nushell parser pass. Then qualify composition with the newer main interpreter runtime.
+**Next:** Complete fre TLS, pgrust SHA-1, private rg-aot and Nushell type-relations gates for fixed frame clearing. Five library gates pass. Then qualify composition with current main.
 
 [Review decisions](docs/SUGGESTIONS-REVIEW-20260911.md) · [Work state](STATE.md) · [Evidence index](results/INDEX.md) · [Retention policy](results/RETENTION.md)
 
