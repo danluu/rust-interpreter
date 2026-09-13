@@ -49,6 +49,14 @@ fn hex(value: Fingerprint) -> String {
     format!("{:016x}{:016x}", a.as_u64(), b.as_u64())
 }
 
+fn current_hir_arena_identity<'hir>(arenas: &rustc_data_structures::sync::WorkerLocal<hir::Arena<'hir>>) -> usize {
+    // GlobalCtxt stores the WorkerLocal wrapper; LoweringContext stores its
+    // current worker's Arena after this same deref coercion. Compare the Arena,
+    // not the wrapper allocation, while retaining every later identity check.
+    let arena: &hir::Arena<'hir> = arenas;
+    arena as *const _ as usize
+}
+
 pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
     owner: ast::NodeId, span: Span, function: &ast::Fn, role: &'static str) -> Option<Candidate> {
     if !(tcx.sess.opts.unstable_opts.hir_body_cache_capture || tcx.sess.opts.unstable_opts.hir_body_cache_reuse)
@@ -85,7 +93,7 @@ pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'t
         source: probe.input.owner_source.clone(),
         input_statistics: [probe.body_bytes, probe.body_nodes, probe.parameter_nodes,
             probe.trait_entries, probe.trait_candidates, probe.external_resolutions],
-        context_identity: [tcx.sess as *const _ as usize, tcx.hir_arena as *const _ as usize,
+        context_identity: [tcx.sess as *const _ as usize, current_hir_arena_identity(tcx.hir_arena),
             resolver as *const _ as usize],
     })
 }
@@ -186,5 +194,31 @@ impl LoweringContext<'_, '_> {
     }
     pub(super) fn reject_body_capture(&mut self, reason: &'static str) {
         if let Some(trace) = &mut self.body_trace { trace.reject(reason); }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::current_hir_arena_identity;
+    use rustc_data_structures::sync::{Registry, WorkerLocal};
+    use rustc_hir as hir;
+    use std::num::NonZero;
+
+    #[test]
+    fn candidate_identity_uses_worker_arena_and_rejects_wrapper_or_foreign_arena() {
+        // Registry association is thread-local and cannot be replaced. Use a
+        // fresh thread so this control is independent of other libtest cases.
+        std::thread::spawn(|| {
+            let registry = Registry::new(NonZero::new(1).unwrap());
+            registry.register();
+            let arenas = WorkerLocal::new(|_| hir::Arena::default());
+            let other = WorkerLocal::new(|_| hir::Arena::default());
+            let lowered: &hir::Arena<'_> = &arenas;
+            let actual = current_hir_arena_identity(&arenas);
+            assert_eq!(actual, lowered as *const _ as usize);
+            assert_ne!(actual, &arenas as *const _ as usize);
+            assert_ne!(actual, current_hir_arena_identity(&other));
+            assert_eq!(actual, current_hir_arena_identity(&arenas));
+        }).join().unwrap();
     }
 }

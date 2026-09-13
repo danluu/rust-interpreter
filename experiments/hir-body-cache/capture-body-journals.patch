@@ -1309,7 +1309,7 @@ diff --git a/compiler/rustc_ast_lowering/src/body_cache/mod.rs b/compiler/rustc_
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
-@@ -0,0 +1,190 @@
+@@ -0,0 +1,224 @@
 +//! Checked body capture and separately selected, fully verified replay.
 +use std::path::PathBuf;
 +use rustc_ast::{self as ast, node_id::NodeMap};
@@ -1361,6 +1361,14 @@ new file mode 100644
 +    format!("{:016x}{:016x}", a.as_u64(), b.as_u64())
 +}
 +
++fn current_hir_arena_identity<'hir>(arenas: &rustc_data_structures::sync::WorkerLocal<hir::Arena<'hir>>) -> usize {
++    // GlobalCtxt stores the WorkerLocal wrapper; LoweringContext stores its
++    // current worker's Arena after this same deref coercion. Compare the Arena,
++    // not the wrapper allocation, while retaining every later identity check.
++    let arena: &hir::Arena<'hir> = arenas;
++    arena as *const _ as usize
++}
++
 +pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
 +    owner: ast::NodeId, span: Span, function: &ast::Fn, role: &'static str) -> Option<Candidate> {
 +    if !(tcx.sess.opts.unstable_opts.hir_body_cache_capture || tcx.sess.opts.unstable_opts.hir_body_cache_reuse)
@@ -1397,7 +1405,7 @@ new file mode 100644
 +        source: probe.input.owner_source.clone(),
 +        input_statistics: [probe.body_bytes, probe.body_nodes, probe.parameter_nodes,
 +            probe.trait_entries, probe.trait_candidates, probe.external_resolutions],
-+        context_identity: [tcx.sess as *const _ as usize, tcx.hir_arena as *const _ as usize,
++        context_identity: [tcx.sess as *const _ as usize, current_hir_arena_identity(tcx.hir_arena),
 +            resolver as *const _ as usize],
 +    })
 +}
@@ -1498,6 +1506,32 @@ new file mode 100644
 +    }
 +    pub(super) fn reject_body_capture(&mut self, reason: &'static str) {
 +        if let Some(trace) = &mut self.body_trace { trace.reject(reason); }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::current_hir_arena_identity;
++    use rustc_data_structures::sync::{Registry, WorkerLocal};
++    use rustc_hir as hir;
++    use std::num::NonZero;
++
++    #[test]
++    fn candidate_identity_uses_worker_arena_and_rejects_wrapper_or_foreign_arena() {
++        // Registry association is thread-local and cannot be replaced. Use a
++        // fresh thread so this control is independent of other libtest cases.
++        std::thread::spawn(|| {
++            let registry = Registry::new(NonZero::new(1).unwrap());
++            registry.register();
++            let arenas = WorkerLocal::new(|_| hir::Arena::default());
++            let other = WorkerLocal::new(|_| hir::Arena::default());
++            let lowered: &hir::Arena<'_> = &arenas;
++            let actual = current_hir_arena_identity(&arenas);
++            assert_eq!(actual, lowered as *const _ as usize);
++            assert_ne!(actual, &arenas as *const _ as usize);
++            assert_ne!(actual, current_hir_arena_identity(&other));
++            assert_eq!(actual, current_hir_arena_identity(&arenas));
++        }).join().unwrap();
 +    }
 +}
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/prepared.rs b/compiler/rustc_ast_lowering/src/body_cache/prepared.rs
@@ -2220,7 +2254,7 @@ new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
 @@ -0,0 +1 @@
-+pub(super) const SOURCE_IDENTITY: &str = "1cffd7526fd7d5415407a8d8ec333f1eae5dc06239189f0121bc6455759fceaf";
++pub(super) const SOURCE_IDENTITY: &str = "a6cf8a739f3c7a29707bacb4f12ecb575700f72bc41004260f99951f85ecf13b";
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/storage.rs b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
 new file mode 100644
 --- /dev/null
