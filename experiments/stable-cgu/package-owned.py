@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """Compose a local stage2 prefix from provenanced bootstrap components."""
 import argparse
-import fcntl
+import atexit
+from contextlib import ExitStack
 import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
-import signal
 import subprocess
+import sys
 import tarfile
 import time
+import tomllib
+
+from owned_stage import CANONICAL_LOCK, workload_lock
 
 
 def sha256(path):
@@ -39,13 +43,19 @@ parser.add_argument('--dist-receipt', type=Path, required=True)
 parser.add_argument('--patch', type=Path, required=True)
 parser.add_argument('--llvm-objcopy', type=Path, required=True)
 parser.add_argument('--llvm-source-proof', type=Path, required=True)
-parser.add_argument('--previous-package-receipt', type=Path, required=True)
+parser.add_argument('--previous-package-receipt', type=Path)
+parser.add_argument('--first-production', action='store_true')
+parser.add_argument('--source-capability', type=Path)
 parser.add_argument('--prefix', type=Path, required=True)
 parser.add_argument('--receipt', type=Path, required=True)
 parser.add_argument('--host', default='aarch64-apple-darwin')
 parser.add_argument('--lock-wait-seconds', type=int, default=45)
+parser.add_argument('--lock-fd', type=int, help='canonical lock descriptor inherited from the owned stage supervisor')
 args = parser.parse_args()
 require(0 < args.lock_wait_seconds <= 1800, 'invalid lock admission bound')
+require((args.first_production and args.previous_package_receipt is None and args.source_capability is not None)
+        or (not args.first_production and args.previous_package_receipt is not None and args.source_capability is None),
+        'choose legacy additive packaging with a predecessor or explicit first-production with a source capability')
 for name, value in vars(args).items():
     if isinstance(value, Path):
         setattr(args, name, value.resolve())
@@ -55,7 +65,7 @@ require(not any(name.startswith(('LD_', 'DYLD_')) for name in os.environ),
 require('RUST_SYSROOT' not in os.environ, 'package probes reject a sysroot override')
 args.receipt.mkdir(parents=True, exist_ok=False)
 started = time.time()
-lock_path = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+lock_path = CANONICAL_LOCK
 admission = {'supervisor_pid': os.getpid(), 'started_at': started,
              'lock_path': str(lock_path), 'lock_wait_limit_seconds': args.lock_wait_seconds,
              'status': 'waiting', 'runner_sha256': sha256(Path(__file__)),
@@ -64,21 +74,15 @@ admission = {'supervisor_pid': os.getpid(), 'started_at': started,
 def save_admission():
     (args.receipt / 'admission.json').write_text(json.dumps(admission, indent=2) + '\n')
 save_admission()
-lock = lock_path.open('a+')
-def admission_timeout(signum, frame):
-    raise TimeoutError('shared resource admission deadline')
-previous_alarm = signal.signal(signal.SIGALRM, admission_timeout)
-signal.alarm(args.lock_wait_seconds)
+lock_scope = ExitStack()
+atexit.register(lock_scope.close)
 print('Owned package supervisor', os.getpid(), 'waiting for shared slot', flush=True)
 try:
-    fcntl.flock(lock, fcntl.LOCK_EX)
+    lock_scope.enter_context(workload_lock(lock_path, args.lock_wait_seconds, args.lock_fd))
 except TimeoutError:
     admission.update(status='lock admission timed out; no package started', finished_at=time.time())
     save_admission()
     raise SystemExit('shared lock unavailable; no package started')
-finally:
-    signal.alarm(0)
-    signal.signal(signal.SIGALRM, previous_alarm)
 admission.update(status='lock acquired', lock_acquired_at=time.time())
 save_admission()
 
@@ -102,7 +106,31 @@ require(member_hash == llvm_proof['member_sha256'] == sha256(args.llvm_objcopy),
         'objcopy does not match its pinned archive member')
 require(str(args.llvm_objcopy) in llvm_proof['files'] and
         os.access(args.llvm_objcopy, os.X_OK), 'configured LLVM objcopy is unavailable')
-previous_package = json.loads(args.previous_package_receipt.read_text())
+previous_package = (json.loads(args.previous_package_receipt.read_text())
+                    if args.previous_package_receipt is not None else None)
+source_capability = None
+if args.first_production:
+    # This import comes from the same reviewed repository snapshot as the
+    # production driver. No external validator path or derived snippets.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+    from std_mir_source_paths import source_capability as expected_source_capability, validate_probe
+    source_capability = json.loads(args.source_capability.read_text())
+    require(source_capability == expected_source_capability(revision),
+            'production source capability differs from the truthful compiler revision')
+    config = tomllib.loads((args.source / 'bootstrap.toml').read_text())
+    reviewed_config = tomllib.loads((Path(__file__).with_name(
+        'bootstrap-production-source-paths.toml')).read_text())
+    require(config == reviewed_config, 'production bootstrap TOML differs from the full reviewed configuration')
+    expected_rust = {'download-rustc': False, 'optimize': True, 'incremental': False,
+        'debug-assertions': False, 'debug-assertions-tools': False, 'overflow-checks': False,
+        'debug-assertions-std': False, 'overflow-checks-std': False, 'debug-logging': False,
+        'debuginfo-level': 1, 'codegen-units': 16, 'lto': 'thin-local', 'channel': 'dev',
+        'omit-git-hash': False, 'lld': False, 'llvm-tools': False, 'remap-debuginfo': True}
+    require(all(config.get('rust', {}).get(k) == v for k, v in expected_rust.items())
+            and config.get('build', {}).get('jobs') == 2
+            and config.get('llvm', {}).get('download-ci-llvm') is True
+            and config.get('llvm', {}).get('link-shared') is True,
+            'first-production bootstrap profile differs from the reviewed assertions-off/remapped policy')
 for receipt in [build, original_build, dist]:
     require(receipt['returncode'] == 0, 'input bootstrap command did not pass')
     require(receipt['source_revision'] == revision, 'source revision differs from build')
@@ -156,7 +184,12 @@ record = {'schema_version': 1, 'supervisor_pid': os.getpid(), 'started_at': star
           'inputs': inputs, 'commands': [], 'copied_files': {}, 'materialized_file_symlinks': {}}
 record['llvm_source_proof'] = llvm_proof
 record['llvm_source_proof_sha256'] = sha256(args.llvm_source_proof)
-record['previous_package_receipt_sha256'] = sha256(args.previous_package_receipt)
+record['package_mode'] = 'first-production' if args.first_production else 'additive-support-tool'
+if previous_package is not None:
+    record['previous_package_receipt_sha256'] = sha256(args.previous_package_receipt)
+if source_capability is not None:
+    record['std_source_paths'] = source_capability
+    record['source_capability_sha256'] = sha256(args.source_capability)
 
 
 def save():
@@ -189,7 +222,7 @@ def copy_tree(root, destination, skip=()):
             raise RuntimeError('unsupported package entry: ' + str(path))
 
 
-def command(argv):
+def command(argv, expected_returncode=0):
     index = len(record['commands'])
     log_path = args.receipt / f'probe-{index:02d}.log'
     with log_path.open('w') as log:
@@ -206,7 +239,7 @@ def command(argv):
         item['returncode'] = returncode
     item.update(finished_at=time.time(), log_sha256=sha256(log_path))
     save()
-    require(item['returncode'] == 0, 'package probe failed: ' + str(argv))
+    require(item['returncode'] == expected_returncode, 'package probe failed: ' + str(argv))
     return log_path.read_text()
 
 
@@ -259,8 +292,26 @@ version = command([str(args.prefix / 'bin/rustc'), '-vV'])
 require('commit-hash: ' + revision in version, 'packaged compiler source identity differs')
 require(command([str(args.prefix / 'bin/rustc'), '--print', 'sysroot']).strip() == str(args.prefix),
         'packaged compiler does not resolve its own sysroot')
-require('stable-cgu-partitioning' in command([str(args.prefix / 'bin/rustc'), '-Zhelp']),
+option_help = command([str(args.prefix / 'bin/rustc'), '-Zhelp'])
+require('stable-cgu-partitioning' in option_help,
         'packaged compiler lacks experimental option')
+if args.first_production:
+    require('stable-mono-cgu-partitioning' in option_help,
+            'production compiler lacks the per-MonoItem policy option')
+    probe = args.receipt / 'native-source-probe.rs'
+    probe.write_text('const UNCALLED: u32 = panic!("native production source lookup probe");\n')
+    diagnostics = command([str(args.prefix / 'bin/rustc'), str(probe), '--crate-type=lib',
+        '--edition=2024', '--emit=metadata', '--error-format=json', '--sysroot', str(args.prefix),
+        '-Zstable-cgu-partitioning=no', '-Zstable-mono-cgu-partitioning=no',
+        '-o', str(args.receipt / 'native-source-probe.rmeta')], expected_returncode=1)
+    library = args.prefix / 'lib/rustlib/src/rust/library'
+    files = {str(p.relative_to(library)): sha256(p) for p in sorted(library.rglob('*')) if p.is_file()}
+    record['native_source_probe'] = {'sources': validate_probe(
+        [json.loads(line) for line in diagnostics.splitlines() if line.strip()], library, files),
+        'source_files': files, 'diagnostics_rewritten': False,
+        'raw_log': f'probe-{len(record["commands"]) - 1:02d}.log',
+        'full_presentation_qualified': False, 'strict_integration_required': True}
+    save()
 command([str(support_tool), '--version'])
 for path in [args.prefix / 'bin/rustc', support_tool,
              *sorted((args.prefix / 'lib').rglob('*.dylib'))]:
@@ -269,12 +320,13 @@ for path in [args.prefix / 'bin/rustc', support_tool,
 
 record['files'] = {str(path.relative_to(args.prefix)): sha256(path)
                    for path in sorted(args.prefix.rglob('*')) if path.is_file()}
-require(all(record['files'].get(name) == value
-            for name, value in previous_package['files'].items()),
-        'previously qualified package file changed')
-require(record['files'].keys() - previous_package['files'].keys() ==
-        {str(support_tool.relative_to(args.prefix))}, 'unexpected package additions')
-record['previous_package_files_preserved'] = len(previous_package['files'])
+if previous_package is not None:
+    require(all(record['files'].get(name) == value
+                for name, value in previous_package['files'].items()),
+            'previously qualified package file changed')
+    require(record['files'].keys() - previous_package['files'].keys() ==
+            {str(support_tool.relative_to(args.prefix))}, 'unexpected package additions')
+    record['previous_package_files_preserved'] = len(previous_package['files'])
 record.update(finished_at=time.time(), free_bytes_after=shutil.disk_usage(args.source).free,
               status='composed; loader closure and installer qualification still required')
 save()
@@ -291,7 +343,13 @@ provenance = {'stage': 2, 'source_commit': revision,
               'llvm_source_proof_sha256': sha256(args.llvm_source_proof),
               'llvm_archive_sha256': llvm_proof['archive_sha256'],
               'objcopy_sha256': member_hash,
-              'previous_package_receipt_sha256': sha256(args.previous_package_receipt),
               'packaging': 'assembled stage2 runtime plus bootstrap rustc-dev/std images and matching pinned rust-src'}
+if previous_package is not None:
+    provenance['previous_package_receipt_sha256'] = sha256(args.previous_package_receipt)
+if source_capability is not None:
+    provenance.update(std_source_paths=source_capability, package_mode='first-production',
+        source_capability_sha256=sha256(args.source_capability),
+        native_std_profile='assertions-off; overflow-checks-off; bootstrap source remapping enabled',
+        native_source_probe='passed raw E0080 source/snippet preflight; strict integration still required')
 (args.receipt / 'provenance.json').write_text(json.dumps(provenance, indent=2) + '\n')
 print(json.dumps({'prefix': str(args.prefix), 'provenance': str(args.receipt / 'provenance.json')}))
