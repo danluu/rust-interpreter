@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--automatic-cache', action='store_true',
                         help='also qualify automatic reuse and disabled incremental profiles')
     kinds = parser.add_mutually_exclusive_group()
+    kinds.add_argument('--memory-operands-candidate', action='store_true', help='qualify the 428-test memory-operand runtime')
     kinds.add_argument('--paired-registers-candidate', action='store_true', help='qualify the 421-test paired-register runtime')
     kinds.add_argument('--guarded-indirect-candidate', action='store_true', help='qualify the 424-test guarded indirect-call runtime')
     kinds.add_argument('--wide-bitwise-candidate', action='store_true', help='qualify the 419-test wide integer emitter')
@@ -47,8 +48,8 @@ def main():
     kinds.add_argument('--main-integration-candidate', action='store_true', help='qualify the 418-test compiler/runtime integration')
     kinds.add_argument('--call-protocol-candidate', action='store_true', help='qualify the 395-test runtime with the retained composed exporter')
     args = parser.parse_args()
-    assert not (args.paired_registers_candidate or args.guarded_indirect_candidate or args.wide_bitwise_candidate or args.capacity_credit_candidate or args.call_protocol_candidate or args.main_integration_candidate) or args.automatic_cache
-    prefix = 'paired-registers' if args.paired_registers_candidate else 'guarded-indirect' if args.guarded_indirect_candidate else 'wide-bitwise' if args.wide_bitwise_candidate else 'call-capacity-credit' if args.capacity_credit_candidate else 'call-protocol-main' if args.main_integration_candidate else 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development'
+    assert not (args.memory_operands_candidate or args.paired_registers_candidate or args.guarded_indirect_candidate or args.wide_bitwise_candidate or args.capacity_credit_candidate or args.call_protocol_candidate or args.main_integration_candidate) or args.automatic_cache
+    prefix = 'memory-operands' if args.memory_operands_candidate else 'paired-registers' if args.paired_registers_candidate else 'guarded-indirect' if args.guarded_indirect_candidate else 'wide-bitwise' if args.wide_bitwise_candidate else 'call-capacity-credit' if args.capacity_credit_candidate else 'call-protocol-main' if args.main_integration_candidate else 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development'
     assert re.fullmatch(prefix + r'-cache-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
@@ -58,7 +59,7 @@ def main():
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
         assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(
-            passed=421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393 if args.automatic_cache else 391, ignored=1)
+            passed=428 if args.memory_operands_candidate else 421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393 if args.automatic_cache else 391, ignored=1)
         tools, key = installed_tools(build['tool_key'])
         require_export_option(tools, key, 'function-cache-reuse')
         if args.automatic_cache: require_export_option(tools, key, 'function-cache-auto')
@@ -66,6 +67,8 @@ def main():
         assert std_key == 'bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef'
         fixtures = ['scalar_constant', 'static', 'tls', 'caller', 'type_id', 'dynamic', 'c_allocator']
         paths = [Path(__file__), Path(__file__).with_name('PLAN.md'), build_path]
+        if args.memory_operands_candidate:
+            paths.append(ROOT / 'benchmarks/experiments/memory-operands/PLAN.md')
         if args.paired_registers_candidate:
             paths.append(ROOT / 'benchmarks/experiments/paired-registers/PLAN.md')
         if args.guarded_indirect_candidate: paths.append(ROOT / 'benchmarks/experiments/guarded-indirect/PLAN.md')

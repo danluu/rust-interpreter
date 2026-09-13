@@ -25,7 +25,7 @@ mod transfers;
 #[cfg(test)]
 mod limit_tests;
 #[cfg(test)]
-mod register_pair_tests;
+mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
 // Its pointers never enter guest registers or addressable guest memory.
@@ -1297,24 +1297,9 @@ impl Assembler<'_> {
         } else { self.raw_spill(reg, lo, hi); }
     }
     fn raw_spill(&mut self, reg: Reg, lo: u32, hi: u32) {
-        self.transfer_register_pair(false, reg, lo, hi);
-    }
-    fn transfer_register_pair(&mut self, load: bool, reg: Reg, lo: u32, hi: u32) {
-        // Non-writeback LDP/STP has a signed seven-bit offset scaled by eight.
-        // A VM register occupies sixteen initialized, host-owned bytes. Keep
-        // two scalar accesses where a pair would need an extra address add;
-        // for far registers, materialize their common base only once.
-        if reg < 32 || reg >= 2048 {
-            let (base, offset) = self.reg_address(reg, false);
-            debug_assert!(offset < 64);
-            self.emit((if load { 0xa9400000 } else { 0xa9000000 })
-                | (offset << 15) | (hi << 10) | (base << 5) | lo);
-            return;
-        }
         for (high, rs) in [(false, lo), (true, hi)] {
             let (base, offset) = self.reg_address(reg, high);
-            self.emit((if load { 0xf9400000 } else { 0xf9000000 })
-                | (offset << 10) | (base << 5) | rs);
+            self.emit(0xf9000000 | (offset << 10) | (base << 5) | rs);
         }
     }
     fn remember(&mut self, reg: Reg, fact: Fact) {
@@ -1378,6 +1363,25 @@ impl Assembler<'_> {
         }
         self.get(rd, reg, false);
         self.checked_address(rd, size, write);
+    }
+    /// Return the unsigned, size-scaled memory immediate. Only already proven
+    /// active-frame ranges can use a displaced base; all other addresses retain
+    /// the original validation and an immediate of zero.
+    fn memory_address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) -> u32 {
+        if [1, 2, 4, 8, 16].contains(&size) {
+            if let Some(offset) = self.local_range(reg, size) {
+                let scale = size.min(8);
+                let immediate = offset / scale;
+                if offset % scale == 0 && immediate < 4096 - usize::from(size == 16) {
+                    // x1 is the current logical frame base; x2 is the current
+                    // linear-memory base. Neither can move inside this region.
+                    self.three(0x8b000000, rd, 2, 1);
+                    return immediate as u32;
+                }
+            }
+        }
+        self.address(rd, reg, size, write);
+        0
     }
     fn fold(&mut self, op: &Op) -> bool {
         match *op {
@@ -1578,21 +1582,29 @@ impl Assembler<'_> {
     }
 
     fn load_mem(&mut self, lo: u32, hi: u32, base: u32, size: usize) {
-        self.mov(lo, 31);
-        self.mov(hi, 31);
+        self.load_mem_at(lo, hi, base, size, 0);
+    }
+    fn load_mem_at(&mut self, lo: u32, hi: u32, base: u32, size: usize, immediate: u32) {
         // Use byte assembly for unusual scalar widths (e.g. enum layouts).
         if [1, 2, 4, 8, 16].contains(&size) {
+            debug_assert!(immediate < 4096 - u32::from(size == 16));
+            // LDRB/LDRH/LDR W zero-extend the whole low word. The low
+            // accumulator is overwritten, and a 16-byte load also defines hi.
+            if size <= 8 { self.mov(hi, 31); }
             let opcode = match size {
                 1 => 0x39400000,
                 2 => 0x79400000,
                 4 => 0xb9400000,
                 _ => 0xf9400000,
             };
-            self.emit(opcode | (base << 5) | lo);
+            self.emit(opcode | (immediate << 10) | (base << 5) | lo);
             if size == 16 {
-                self.emit(0xf9400000 | (1 << 10) | (base << 5) | hi);
+                self.emit(0xf9400000 | ((immediate + 1) << 10) | (base << 5) | hi);
             }
         } else {
+            debug_assert_eq!(immediate, 0);
+            self.mov(lo, 31);
+            self.mov(hi, 31);
             for i in 0..size {
                 self.emit(0x39400000 | ((i as u32) << 10) | (base << 5) | 13);
                 self.emit(
@@ -1606,18 +1618,23 @@ impl Assembler<'_> {
         }
     }
     fn store_mem(&mut self, lo: u32, hi: u32, base: u32, size: usize) {
+        self.store_mem_at(lo, hi, base, size, 0);
+    }
+    fn store_mem_at(&mut self, lo: u32, hi: u32, base: u32, size: usize, immediate: u32) {
         if [1, 2, 4, 8, 16].contains(&size) {
+            debug_assert!(immediate < 4096 - u32::from(size == 16));
             let opcode = match size {
                 1 => 0x39000000,
                 2 => 0x79000000,
                 4 => 0xb9000000,
                 _ => 0xf9000000,
             };
-            self.emit(opcode | (base << 5) | lo);
+            self.emit(opcode | (immediate << 10) | (base << 5) | lo);
             if size == 16 {
-                self.emit(0xf9000000 | (1 << 10) | (base << 5) | hi);
+                self.emit(0xf9000000 | ((immediate + 1) << 10) | (base << 5) | hi);
             }
         } else {
+            debug_assert_eq!(immediate, 0);
             for i in 0..size {
                 let shift = ((i % 8) * 8) as u32;
                 self.emit(0xd340fc00 | (shift << 16) | ((if i < 8 { lo } else { hi }) << 5) | 13); // lsr
@@ -1673,18 +1690,18 @@ impl Assembler<'_> {
                 if let Some((_, value)) = self.local_value(local, size as usize) {
                     self.forward_local_value(value, size as usize, "Load");
                 } else {
-                    self.address(11, address, size as usize, false);
-                    self.load_mem(9, 10, 11, size as usize);
+                    let immediate = self.memory_address(11, address, size as usize, false);
+                    self.load_mem_at(9, 10, 11, size as usize, immediate);
                 }
                 self.put(dst, 9, if size <= 8 { 31 } else { 10 });
                 self.remember_local_memory(local, size as usize, dst);
             }
             Op::Store { address, src, size } => {
                 let local = self.local_range(address, size as usize);
-                self.address(11, address, size as usize, true);
+                let immediate = self.memory_address(11, address, size as usize, true);
                 self.get(9, src, false);
-                self.get(10, src, true);
-                self.store_mem(9, 10, 11, size as usize);
+                if size > 8 { self.get(10, src, true); }
+                self.store_mem_at(9, 10, 11, size as usize, immediate);
                 self.invalidate_local_memory(local, size as usize);
                 self.remember_local_memory(local, size as usize, src);
             }
