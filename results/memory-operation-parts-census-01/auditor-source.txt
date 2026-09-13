@@ -1,0 +1,46 @@
+from pathlib import Path
+import hashlib,json,subprocess,sys
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
+from compare_saved_runtime import acquire_lock,sha
+from workflow_io import require_space,write_json as write
+with (ROOT/'.work/benchmark.lock').open('a') as lock:
+    acquire_lock(lock,45);require_space(ROOT,8)
+    frozen={};evidence={}
+    for name in ['memory-operation-parts-build-01','memory-operation-parts-census-01']:
+        path=ROOT/'results'/name/'summary.json';proof=json.loads(path.read_text());assert proof['status']=='passed'
+        assert proof['guest_benchmark_commands']==0 and not proof['performance_measurement']
+        evidence[str(path.relative_to(ROOT))]=sha(path);raw=ROOT/proof['raw']
+        assert sha(raw/'plan.json')==proof['plan_sha256'] and sha(raw/'records.json')==proof['records_sha256']
+        plan=json.loads((raw/'plan.json').read_text());assert plan['owner']==str(ROOT)
+        if 'build' in name:assert proof['tests']=={'debug':412,'release':412} and proof['commands']==2
+        else:assert proof['commands']==3
+        for p,h in plan['frozen'].items():
+            assert p not in frozen or frozen[p]==h,p
+            frozen[p]=h
+        terminal=ROOT/'results'/name/'terminal.json';final=json.loads(terminal.read_text())
+        assert final['owner']==final['cwd']==str(ROOT) and final['status']=='finished' and final['returncode']==0
+        outer=ROOT/'.work/experiments'/name
+        assert sha(outer/'status.json')==sha(terminal)
+        assert sha(outer/'plan.json')==final['plan_sha256'] and sha(outer/'command.log')==final['log_sha256']
+        evidence[str(terminal.relative_to(ROOT))]=sha(terminal)
+    result=ROOT/'results/memory-operation-parts-census-01';path=result/'attribution.json';data=json.loads(path.read_text())
+    assert data['status']=='passed' and data['guest_commands']==0 and not data['performance_measurement']
+    for p,h in data['evidence'].items():
+        assert p not in frozen or frozen[p]==h,p
+        frozen[p]=h
+    assert [c['functions'] for c in data['cases']]==[1101,1305]
+    assert all(not c['omitted_executed_functions'] and not c['ambiguous'] for c in data['cases'])
+    assert [c['selected_samples'] for c in data['cases']]==[721,348]
+    assert all(sha(ROOT/p)==h for p,h in frozen.items())
+    revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip();bindings=[]
+    for p,h in sorted(frozen.items()):
+        if p.startswith(('crates/','scripts/','benchmarks/')) or p in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
+            spec=revision+':'+p
+            assert hashlib.sha256(subprocess.check_output(['git','show',spec],cwd=ROOT)).hexdigest()==h,p
+            bindings.append(dict(path=p,sha256=h,git_source=spec))
+    write(result/'source-bindings.json',dict(source_revision=revision,files=bindings))
+    write(result/'closure.json',dict(status='passed',unique_frozen_inputs=len(frozen),git_bound_files=len(bindings),
+        source_bindings_sha256=sha(result/'source-bindings.json'),evidence=evidence,attribution_sha256=sha(path),
+        auditor_sha256=sha(Path(__file__)),all_frozen_inputs_verified=True,guest_commands=0,executable_code_publications=0,
+        performance_measurement=False))
+    print('closed',len(frozen),'inputs and',len(bindings),'Git source bindings')
