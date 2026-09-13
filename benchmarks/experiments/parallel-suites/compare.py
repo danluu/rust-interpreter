@@ -51,6 +51,7 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
     kinds = parser.add_mutually_exclusive_group()
+    kinds.add_argument('--immediate-shifts-candidate', action='store_true', help='qualify the 432-test immediate shift runtime')
     kinds.add_argument('--memory-operands-candidate', action='store_true', help='qualify the 428-test memory-operand runtime')
     kinds.add_argument('--paired-registers-candidate', action='store_true', help='qualify the 421-test paired-register runtime')
     kinds.add_argument('--guarded-indirect-candidate', action='store_true', help='qualify the 424-test guarded indirect-call runtime')
@@ -63,21 +64,23 @@ def main():
     parser.add_argument('--selection-qualification', type=Path,
                         help='exact saved-test qualification for a rebuilt composed VM')
     args = parser.parse_args()
-    runtime_candidate = args.memory_operands_candidate or args.paired_registers_candidate or args.guarded_indirect_candidate or args.wide_bitwise_candidate or args.capacity_credit_candidate or args.composed_candidate or args.call_protocol_candidate or args.main_integration_candidate
+    runtime_candidate = args.immediate_shifts_candidate or args.memory_operands_candidate or args.paired_registers_candidate or args.guarded_indirect_candidate or args.wide_bitwise_candidate or args.capacity_credit_candidate or args.composed_candidate or args.call_protocol_candidate or args.main_integration_candidate
     if runtime_candidate and args.selection_qualification is None:
         parser.error('a runtime candidate requires --selection-qualification')
-    prefix = 'memory-operands' if args.memory_operands_candidate else 'paired-registers' if args.paired_registers_candidate else 'guarded-indirect' if args.guarded_indirect_candidate else 'wide-bitwise' if args.wide_bitwise_candidate else 'call-capacity-credit' if args.capacity_credit_candidate else 'call-protocol-main' if args.main_integration_candidate else 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development' if args.composed_candidate else 'parallel-suites'
+    prefix = 'immediate-shifts' if args.immediate_shifts_candidate else 'memory-operands' if args.memory_operands_candidate else 'paired-registers' if args.paired_registers_candidate else 'guarded-indirect' if args.guarded_indirect_candidate else 'wide-bitwise' if args.wide_bitwise_candidate else 'call-capacity-credit' if args.capacity_credit_candidate else 'call-protocol-main' if args.main_integration_candidate else 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development' if args.composed_candidate else 'parallel-suites'
     assert not runtime_candidate or args.phase == 'serial'
     assert re.fullmatch(prefix + '-' + args.phase + r'-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
-        require_space(ROOT, 8 if args.memory_operands_candidate else 3.5)
+        require_space(ROOT, 8 if args.immediate_shifts_candidate or args.memory_operands_candidate else 3.5)
         paths = [Path(__file__), Path(__file__).with_name('PLAN.md')]
         paths += [ROOT / 'scripts' / name for name in ['compare_saved_runtime.py', 'interpreter.py',
             'workspace_cache.py', 'workflow_io.py', 'workflow_measurements.py', 'suite_reports.py', 'native_suite.py']]
         builds = dict(candidate=args.build.resolve(strict=True),
                       retained=ROOT / ('results/parallel-suites-build-01/summary.json'
                           if runtime_candidate else 'results/selected-native-build-01/summary.json'))
+        if args.immediate_shifts_candidate:
+            paths.append(ROOT / 'benchmarks/experiments/immediate-shifts/PLAN.md')
         if args.memory_operands_candidate:
             paths.append(ROOT / 'benchmarks/experiments/memory-operands/PLAN.md')
         if args.paired_registers_candidate:
@@ -98,7 +101,7 @@ def main():
         for mode, path in builds.items():
             build = json.loads(path.read_text())
             assert build['status'] == 'passed'
-            candidate_tests = 428 if args.memory_operands_candidate else 421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393
+            candidate_tests = 432 if args.immediate_shifts_candidate else 428 if args.memory_operands_candidate else 421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393
             expected = dict(passed=(candidate_tests if mode == 'candidate' else 365) if runtime_candidate
                             else (365 if mode == 'candidate' else 360), ignored=1)
             assert build['tests']['test-debug'] == build['tests']['test-release'] == expected
@@ -153,7 +156,7 @@ def main():
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         work = ROOT / '.work' / args.run_id; work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(owner=str(ROOT), frozen=frozen, inputs=inputs,
-            phase=args.phase, keys=keys, minimum_free_gib=8 if args.memory_operands_candidate else 3, pairs=6 if args.phase == 'screen' else 0,
+            phase=args.phase, keys=keys, minimum_free_gib=8 if args.immediate_shifts_candidate or args.memory_operands_candidate else 3, pairs=6 if args.phase == 'screen' else 0,
             normal_entropy_for_all_concurrent_runs=True, complete_workflow_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_'))}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -167,7 +170,7 @@ def main():
                 order = [(pair, 'candidate', workers, False) for pair in range(6)
                          for workers in ([1, 2] if pair % 2 == 0 else [2, 1])]
             for pair, mode, workers, replay in order:
-                require_space(ROOT, 8 if args.memory_operands_candidate else 3)
+                require_space(ROOT, 8 if args.immediate_shifts_candidate or args.memory_operands_candidate else 3)
                 suite_path = work / f'{case}-{pair}-{mode}-{workers}-suite.json'
                 command = [str(vms[mode]), '--engine', 'jit', '--jit-resumable-calls', '--jit-persistent-registers',
                     '--isolated-batch', 'prepared', '--suite-report', str(suite_path), '--suite-catalog', item['catalog'],
