@@ -1,0 +1,3 @@
+Retired compiler intermediates from six completed public MIR coverage audits. Each terminal invocation, entry-list digest, published coverage result and current owned source revision were verified. The raw audit report, excluding only its added tool key, uniquely matches the audit file in the selected target; no obsolete namespace formula was guessed. These early formats saved diagnostics rather than individual lowered-body shards, and no guest was executed.
+
+All 6,633 protected files remain byte-identical. Removed 4,731 files containing 2,947,490,868 logical bytes; observed free space rose by 2,871,676,928 bytes. Executables, diagnostics and all other noncompiler files remain. No benchmark was repeated.
