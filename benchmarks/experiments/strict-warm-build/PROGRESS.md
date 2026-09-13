@@ -180,9 +180,15 @@ refusal. Native cache-hit behavior and speed remain unqualified.
 The separate existing-compiler probe with the real version identity compiled
 the unchanged fixture successfully, but all 24 eligible bodies reported
 `rejected-body-tree`. Its full source/compiler guards passed and the produced
-native binary was not executed. The fixture environment repair is now prepared,
-along with phase-specific rejection diagnostics; those new compiler sources
-remain uncompiled. This is not evidence of a successful capture or reuse hit.
+native binary was not executed. The fixture environment repair and
+phase-specific rejection diagnostics subsequently passed the selected compiler
+check and all 26 unit controls, with zero warnings, failures, ignored or filtered
+tests. Their actual compiler source is
+`0bc623ee4860082df9d1d2216aefad9abb42990d`; all 61 commands and complete source
+inventories are archived. The stage1 executable has not yet been rebuilt for
+this checkpoint. This is not evidence of a successful capture or reuse hit.
+[Fixture and phase-diagnostic check evidence](../../../results/hir-fixture-phase-check-01/README.md).
+[Four upgrade-driver controls](../../../results/hir-fixture-phase-upgrade-controls-01/README.md).
 [Direct capture diagnostic and unchanged compiler evidence](../../../results/hir-direct-capture-probe-01/README.md).
 [ReadyHit compiler check and 26-unit evidence](../../../results/hir-ready-hit-check-01/README.md).
 [Failed native attempt and unchanged compiler evidence](../../../results/hir-native-correctness-failed-01/README.md).
