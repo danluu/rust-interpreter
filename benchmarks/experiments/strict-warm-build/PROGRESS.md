@@ -206,6 +206,13 @@ verified cache hits across 22 names. All tree, journal and poststate audits rema
 required. Stage2 packaging, application integration and performance qualification
 remain pending.
 [Complete native replay and retained original failure](../../../results/hir-arena-native-qualification-01/README.md).
+The stage2 packaging controller subsequently passed all eight focused controls
+and its metadata plan passed all five source guards, including equality with the
+qualified 64-file stage1 runtime. Historical native evidence is read from the
+verified archive, preserving it when bootstrap replaces its old output paths.
+The plan retains all 27 compiler units, native fixture checks, package checks and
+the 24/9/8 GiB capacity thresholds. The stage2 build has not been launched.
+[Stage2 controller controls and metadata plan](../../../results/hir-arena-stage2-controls-plan-01/README.md).
 [Worker-arena repair check and 27-unit evidence](../../../results/hir-arena-identity-check-01/README.md).
 [Complete rebuilt native diagnostic](../../../results/hir-diagnostic-native-01/README.md).
 [Fixture and phase-diagnostic check evidence](../../../results/hir-fixture-phase-check-01/README.md).
@@ -239,7 +246,7 @@ and complete build-script execution still need implementation.
 The opt-in Darwin descriptor operations (open, write, close and descriptor flags)
 are implemented and passed native comparison checks in both interpreter engines.
 After integration with main, the release workspace suite passed 533 tests with
-10 ignored diagnostics and no failures or filtering; both native controls and all
+10 ignored tests and no failures or filtering; both native controls and all
 17 child commands passed. This supplies file-descriptor primitives; complete
 standard-library file/stream support and interpreted Cargo host-unit routing
 remain pending. No build-time improvement is claimed from these checks.
