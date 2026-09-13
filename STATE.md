@@ -8,6 +8,19 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+The optional toolchain lookup cache now passes115 launcher/harness tests and20
+real Cargo checks. Cache hits preserve the same standard-MIR key and bytecode;
+original, valid, wrong, type-error, borrow-error and restored states have their
+expected outcomes. The new option skips repeated compiler identity discovery
+only; Cargo checking, runtime and exporter bytes remain identical. Seven driver
+checks pass after an earlier zero-test lock-admission timeout. The frozen
+three-project comparison is running pgrust, private rg-aot and Nushell,132
+changed-source commands each. No performance result is claimed yet.
+[Qualification](results/toolchain-lookup-cargo-01/summary.json),
+[prospective comparison](benchmarks/experiments/toolchain-lookup/WORKFLOW.md).
+The source is on `experiment/toolchain-lookup-20260912` and defaults stay unchanged.
+
+
 The call-protocol candidate `8f1070db` completes all462 commands with expected outcomes across token, folded and pgrust. The token adoption gate fails: wall improves1.62% versus the corrected composition and5.78% versus the fixed anchor, below both the observed3.81% A/A wall envelope and the8% anchor target; A/A CPU noise is3.68%. Candidate remains2.031× ordinary native and2.196× line-tables native. Folded and pgrust guards pass (wall−1.06%/+0.19%, CPU−0.49%/−0.06% versus composition). Keep the runtime experimental and do not retime the unchanged candidate. [Token](results/resumable-call-protocol-edit-token-01/stage-assessment.md), [folded](results/resumable-call-protocol-edit-folded-01/stage-assessment.md), [pgrust](results/resumable-call-protocol-edit-pgrust-01/stage-assessment.md).
 
 The source integration with main's compiler reuse is now qualified as tool `49746a22`:418 Rust tests per debug/release profile,99 Python checks, seven exact saved tests, nine suite commands and203 native/cache commands pass. Two failed host builds preserve evidence of fixture assumptions exposed by broader inlining; corrected fixtures retain original-graph admission and rejected-caller rollback checks. This establishes correctness of the combined candidate, not a new performance result. The implementation remains on `experiment/call-protocol-main-integration-20260912`. [Build](results/call-protocol-main-build-03/summary.json), [strict cache checks](results/call-protocol-main-cache-01/summary.json).

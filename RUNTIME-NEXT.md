@@ -42,9 +42,11 @@ suggestion. Historical experiments retain their original decisions.
    139ms rebinding within642ms baseline lowering. Resolve the binding cost
    before choosing lazy allocation identities or a new cache format; green
    bodies do not make session-local compiler allocations reusable unchanged.
-   Next remove redundant toolchain identity discovery from the launcher,
-   with explicit opt-in, path/environment invalidation and measured edited
-   commands on short workflows. Full-catalog selection remains later work;
+   The optional compiler-identity lookup cache passes115 harness checks,
+   20 real Cargo checks and seven driver tests. Its fixed pgrust/rg-aot/
+   Nushell comparison is running, with identical runtime/compiler binaries
+   and strict checking in every custom arm. Finish all396 commands before
+   assessing adoption. Full-catalog selection remains later work;
    original checking and artifact identity requirements remain intact.
 5. **Use the stronger native controls already established.** Every current
    comparison uses matched two-worker Cargo and ordinary native libtest
