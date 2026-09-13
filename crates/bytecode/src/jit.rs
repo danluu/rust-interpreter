@@ -860,7 +860,8 @@ fn supported(op: &Op) -> bool {
         Op::Copy { size, .. } => *size <= 128,
         Op::Binary { bits, op, .. } => *bits <= 64 || (*bits == 128 && matches!(op,
             Binary::Sub | Binary::Eq | Binary::Ne | Binary::Lt | Binary::Le
-                | Binary::Gt | Binary::Ge | Binary::Cmp)),
+                | Binary::Gt | Binary::Ge | Binary::Cmp | Binary::And | Binary::Or
+                | Binary::Xor | Binary::Shl | Binary::Shr)),
         Op::Unary { bits, .. } => *bits <= 64,
         _ => false,
     }
@@ -1095,6 +1096,53 @@ impl Assembler<'_> {
         self.get(12, b, true);
         let observed = matches!(op, Binary::Sub) && self.reads[overflow as usize].is_some();
         match op {
+            Binary::And | Binary::Or | Binary::Xor => {
+                let opcode = match op {
+                    Binary::And => 0x8a000000,
+                    Binary::Or => 0xaa000000,
+                    Binary::Xor => 0xca000000,
+                    _ => unreachable!(),
+                };
+                self.three(opcode, 9, 9, 10);
+                self.three(opcode, 11, 11, 12);
+                self.put(dst, 9, 11);
+            }
+            Binary::Shl | Binary::Shr => {
+                // Bytecode shifts mask the complete count modulo128. The low
+                // seven bits suffice, regardless of the count's upper word.
+                // A64 variable shifts mask modulo64; handle the cross-word
+                // contribution at zero and select the >=64 result explicitly.
+                self.mask(10, 7);
+                self.three(0xcb000000, 12, 31, 10); // -count
+                let left = matches!(op, Binary::Shl);
+                self.three(if left { 0x9ac02400 } else { 0x9ac02000 },
+                    13, if left { 9 } else { 11 }, 12);
+                self.cmp(10, 31);
+                self.emit(0x9a800000 | (13 << 16) | (31 << 5) | 13); // csel x13,xzr,x13,eq
+                if left {
+                    self.three(0x9ac02000, 11, 11, 10);
+                    self.three(0xaa000000, 11, 11, 13);
+                    self.three(0x9ac02000, 9, 9, 10);
+                } else {
+                    self.three(0x9ac02400, 9, 9, 10);
+                    self.three(0xaa000000, 9, 9, 13);
+                    self.three(if signed { 0x9ac02800 } else { 0x9ac02400 }, 11, 11, 10);
+                    if signed {
+                        self.emit(0x9340fc00 | (63 << 16) | (11 << 5) | 14); // asr x14,x11,#63
+                    }
+                }
+                self.imm(12, 64);
+                self.cmp(10, 12);
+                if left {
+                    self.emit(0x9a800000 | (11 << 16) | (2 << 12) | (9 << 5) | 11); // csel hi,lo,hi,hs
+                    self.emit(0x9a800000 | (9 << 16) | (2 << 12) | (31 << 5) | 9); // csel lo,zr,lo,hs
+                } else {
+                    self.emit(0x9a800000 | (9 << 16) | (2 << 12) | (11 << 5) | 9); // csel lo,hi,lo,hs
+                    self.emit(0x9a800000 | (11 << 16) | (2 << 12)
+                        | ((if signed { 14 } else { 31 }) << 5) | 11); // csel hi,sign,hi,hs
+                }
+                self.put(dst, 9, 11);
+            }
             Binary::Sub => {
                 self.three(0xeb000000, 9, 9, 10); // SUBS low half, setting no-borrow
                 self.three(if observed { 0xfa000000 } else { 0xda000000 }, 11, 11, 12); // SBCS/SBC high
