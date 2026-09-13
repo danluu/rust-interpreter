@@ -176,3 +176,34 @@ compiler/toolchain/home route changes are rejected before launching a child.
 Unrelated build-script environment inputs remain allowed and are bound by the
 complete configuration digest. The focused forced-loader regression is prepared
 but has not been run.
+
+`scripts/standard_diagnostic_mapping.py` implements the separate qualification
+configuration. Call `prepare_standard_diagnostic_mapping(fixture_root, compiler,
+public_library, {'off': off_sysroot, 'on': on_sysroot}, base_environment,
+public_compiler=public_identity)` after authoritative compiler/std loading and
+fixture creation. `public_identity` contains the retained absolute `rustc`, its
+`sha256`, and its complete `compiler` version output. Keep the base environment
+unchanged and make command-specific environment copies.
+
+The returned `rustc_flags` apply directly to every public/custom native command.
+Its newly created fixture `.cargo/config.toml` carries the identical ordered list
+in `[host]`, `[host.<triple>]`, and `[target.<triple>]` with the pinned unstable
+host-routing configuration. All four entire std source inventories must match;
+the flags map their real roots and truthful public/custom `/rustc/<commit>/library`
+prefixes to a shared content-identified namespace, solely for `diagnostics` scope.
+No macro, object, debug-info, profile, backend, checking, or Cargo job option is
+changed. Native/exported `file!()` and proc-macro source observables still require
+the real controls above; source review alone does not prove them.
+
+Call `recheck()` around each command and `validate_diagnostics(raw_records,
+require_std=...)` on actual saved JSON before any existing strict comparison.
+Every mapped std span must already contain the exact nonempty source text and
+valid byte/Unicode-character coordinates. Set `require_std=True` for E0080 to
+require both core panic and std macro spans. The method neither mutates nor
+returns a rewritten diagnostic. `evidence()` records source/config identities,
+ordered flags, and verified span coordinates. The qualifier must separately
+retain actual post-router host/guest argv proving these flags reached rustc.
+
+Eight focused compiler-free helper tests are prepared but unrun. The helper is
+not installed into ordinary build or measured commands and does not qualify a
+compiler with missing source snippets by itself.

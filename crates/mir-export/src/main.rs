@@ -17,6 +17,7 @@ mod audit;
 mod test_metadata;
 mod names;
 mod wrapper_route;
+mod compiler_argv;
 mod export_timings;
 mod function_costs;
 mod typed_relocations;
@@ -271,4 +272,292 @@ fn main() -> std::process::ExitCode {
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
             "compiler_sysroot":env!("RUST_INTERP_SYSROOT"),
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1","stable-mono-cgu-partitioning"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1","stable-mono-cgu-partitioning","compiler-argv-record-v1"]}));
+        return std::process::ExitCode::SUCCESS;
+    }
+    let environment = wrapper_route::Environment::read();
+    let route = wrapper_route::route(args, &environment).unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    if let Err(error) = route.check_compiler(Path::new(env!("RUST_INTERP_SYSROOT"))) {
+        eprintln!("{error}");
+        return std::process::ExitCode::from(2);
+    }
+    let use_driver = route.requires_exporter();
+    let borrowck_mode = route.borrowck_cache;
+    args = route.args;
+    let wrapper = route.wrapper;
+    let wants_test = environment.export_test;
+    if !route.export {
+        if use_driver {
+            if !args.iter().any(|arg| arg == "--sysroot" || arg.starts_with("--sysroot=")) {
+                args.extend(["--sysroot".into(), env!("RUST_INTERP_SYSROOT").into()]);
+            }
+            if let Err(error) = compiler_argv::record("native-driver", &args) {
+                eprintln!("cannot retain compiler argv: {error}");
+                return std::process::ExitCode::from(2);
+            }
+            return native_driver::run(&args, borrowck_mode);
+        }
+        if let Err(error) = compiler_argv::record("native", &args) {
+            eprintln!("cannot retain compiler argv: {error}");
+            return std::process::ExitCode::from(2);
+        }
+        let status = std::process::Command::new(&args[0])
+            .args(&args[1..])
+            .status()
+            .expect("start rustc");
+        std::process::exit(status.code().unwrap_or(1));
+    }
+    let audit_selection = std::env::var_os("RUST_INTERP_AUDIT_SELECTION").map(PathBuf::from);
+    let list_tests = match std::env::var_os("RUST_INTERP_LIST_TESTS") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => { eprintln!("RUST_INTERP_LIST_TESTS must be 1 when set"); std::process::exit(2); }
+    };
+    let test_filter = std::env::var_os("RUST_INTERP_TEST_FILTER").map(|value| {
+        value.to_str().ok_or("test filter must be UTF-8".into()).and_then(test_metadata::Filter::parse)
+            .unwrap_or_else(|error: String| { eprintln!("{error}"); std::process::exit(2); })
+    });
+    if test_filter.is_some() && (list_tests || !wants_test || audit_selection.is_some() ||
+        std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some()) {
+        eprintln!("test filtering requires a test target without discovery, execution or audit entries");
+        std::process::exit(2);
+    }
+    if list_tests && (!wants_test || audit_selection.is_some() ||
+        std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some()) {
+        eprintln!("test discovery requires a test target without execution or audit entries");
+        std::process::exit(2);
+    }
+    let entries = if list_tests || test_filter.is_some() { vec![] } else if let Some(path) = &audit_selection {
+        if std::env::var_os("RUST_INTERP_ENTRY").is_some() || std::env::var_os("RUST_INTERP_ENTRIES").is_some() {
+            eprintln!("audit selection cannot be combined with execution entries");
+            std::process::exit(2);
+        }
+        audit::read_entries(path).unwrap_or_else(|error| {
+            eprintln!("invalid audit selection: {error}"); std::process::exit(2);
+        })
+    } else { match std::env::var("RUST_INTERP_ENTRIES") {
+        Ok(value) => match serde_json::from_str::<Vec<String>>(&value) {
+            Ok(entries) => entries,
+            Err(error) => {
+                eprintln!("RUST_INTERP_ENTRIES must be a JSON array of entry names: {error}");
+                std::process::exit(2);
+            }
+        },
+        Err(_) => vec![std::env::var("RUST_INTERP_ENTRY")
+            .unwrap_or_else(|_| "rust_interp_entry".into())],
+    }};
+    if !args
+        .iter()
+        .any(|a| a == "--sysroot" || a.starts_with("--sysroot="))
+    {
+        args.extend(["--sysroot".into(), env!("RUST_INTERP_SYSROOT").into()]);
+    }
+    let output = PathBuf::from(
+        std::env::var_os("RUST_INTERP_OUTPUT").expect("RUST_INTERP_OUTPUT is required"),
+    );
+    // A failed source revision or configuration must not leave this standalone
+    // output looking like the result of the failed request.
+    let old_trace = allocation_trace_path(&output);
+    for path in [&output, &old_trace] {
+        if let Err(e) = std::fs::remove_file(path) {
+            if e.kind() != std::io::ErrorKind::NotFound {
+                eprintln!("cannot remove old export output: {e}");
+                std::process::exit(2);
+            }
+        }
+    }
+    let retain_audit_bodies = match std::env::var_os("RUST_INTERP_RETAIN_AUDIT_BODIES") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_RETAIN_AUDIT_BODIES must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    if retain_audit_bodies && (audit_selection.is_none() || !wants_test) {
+        eprintln!("retaining audit bodies requires an audit selection and a test target");
+        std::process::exit(2);
+    }
+    let inline_leaves = match std::env::var_os("RUST_INTERP_INLINE_LEAVES") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_INLINE_LEAVES must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    let trap_unsupported_calls = match std::env::var_os("RUST_INTERP_TRAP_UNSUPPORTED_CALLS") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_TRAP_UNSUPPORTED_CALLS must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    let run_try_callbacks = match std::env::var_os("RUST_INTERP_RUN_TRY_CALLBACKS") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_RUN_TRY_CALLBACKS must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    if run_try_callbacks && !trap_unsupported_calls {
+        eprintln!("running try callbacks requires explicit unavailable-call trapping; unwinding remains unsupported");
+        std::process::exit(2);
+    }
+    let demand = std::env::var("RUST_INTERP_DEMAND_BODIES").is_ok_and(|s| s == "1");
+    if demand && borrowck_mode != wrapper_route::BorrowckCacheMode::Off {
+        eprintln!("borrowck cache requires ordinary strict compiler analysis");
+        std::process::exit(2);
+    }
+    let function_costs = function_costs::enabled().unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    if function_costs && (demand || audit_selection.is_some()) {
+        eprintln!("function costs require strict checking of one selected execution graph");
+        std::process::exit(2);
+    }
+    let function_cache = function_cache::mode().unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    let actual_reuse = matches!(function_cache, function_cache::Mode::Reuse | function_cache::Mode::Auto);
+    let function_dependencies = function_dependencies::enabled().unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    if function_dependencies && !function_costs && !actual_reuse {
+        eprintln!("function dependency observation requires function costs and strict checking");
+        std::process::exit(2);
+    }
+    let binding_replay = lower::reuse::enabled().unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
+    if binding_replay && (!function_costs || audit_selection.is_some() || demand) {
+        eprintln!("binding replay requires function costs and strict execution-graph checking");
+        std::process::exit(2);
+    }
+    if function_cache == function_cache::Mode::Verify && (!binding_replay || !function_dependencies) {
+        eprintln!("function cache verification requires binding replay and dependency observation");
+        std::process::exit(2);
+    }
+    if actual_reuse && (demand || audit_selection.is_some() || function_costs || binding_replay) {
+        eprintln!("function cache reuse requires strict checking and disabled function-cost/binding observers");
+        std::process::exit(2);
+    }
+    let allocation_trace = match std::env::var_os("RUST_INTERP_ALLOCATION_TRACE") {
+        None => false,
+        Some(value) if value == "1" => true,
+        Some(_) => {
+            eprintln!("RUST_INTERP_ALLOCATION_TRACE must be 1 when set");
+            std::process::exit(2);
+        }
+    };
+    if allocation_trace {
+        if demand || audit_selection.is_some() {
+            eprintln!("allocation tracing requires strict checking of one selected execution graph");
+            std::process::exit(2);
+        }
+    }
+    if trap_unsupported_calls && demand {
+        eprintln!("unavailable-call reachability requires ordinary strict frontend checking");
+        std::process::exit(2);
+    }
+    let demand_cache = demand && std::env::var("RUST_INTERP_DEMAND_CACHE").is_ok_and(|s| s == "1");
+    if list_tests && (demand || retain_audit_bodies || inline_leaves || trap_unsupported_calls ||
+        allocation_trace || function_costs || function_dependencies || binding_replay ||
+        function_cache != function_cache::Mode::Off) {
+        eprintln!("test discovery requires strict checking without execution-graph options");
+        std::process::exit(2);
+    }
+    if test_filter.is_some() && demand {
+        eprintln!("test filtering requires ordinary strict frontend checking");
+        std::process::exit(2);
+    }
+    if audit_selection.is_some() && demand {
+        eprintln!("lowering audits require ordinary strict frontend checking");
+        std::process::exit(2);
+    }
+    if wrapper && demand {
+        eprintln!("demand checking is a standalone experiment; it does not produce Cargo metadata");
+        std::process::exit(2);
+    }
+    if let Some(capture) = std::env::var_os("RUST_INTERP_CAPTURE") {
+        let environment: std::collections::BTreeMap<_, _> = std::env::vars()
+            .filter(|(k, _)| {
+                k.starts_with("CARGO_PKG_")
+                    || k.starts_with("CARGO_FEATURE_")
+                    || k.starts_with("CARGO_CFG_")
+                    || [
+                        "OUT_DIR",
+                        "CARGO_MANIFEST_DIR",
+                        "CARGO_MANIFEST_PATH",
+                        "CARGO_CRATE_NAME",
+                        "CARGO_PRIMARY_PACKAGE",
+                        "CARGO_BIN_NAME",
+                    ]
+                    .contains(&k.as_str())
+            })
+            .collect();
+        let record = serde_json::json!({"args":args,"cwd":std::env::current_dir().expect("compiler cwd"),"env":environment});
+        std::fs::write(
+            capture,
+            serde_json::to_vec_pretty(&record).expect("serialize invocation"),
+        )
+        .expect("save compiler invocation");
+    }
+    // Refuse codegen: the application path must never silently use LLVM.
+    let mut emissions = Vec::new();
+    for (i, arg) in args.iter().enumerate() {
+        let value = arg.strip_prefix("--emit=").or_else(|| {
+            (arg == "--emit")
+                .then(|| args.get(i + 1).map(String::as_str))
+                .flatten()
+        });
+        if let Some(value) = value {
+            emissions.extend(
+                value
+                    .split(',')
+                    .map(|part| part.split('=').next().unwrap_or("")),
+            );
+        }
+    }
+    if !emissions.contains(&"metadata")
+        || emissions
+            .iter()
+            .any(|kind| !["metadata", "dep-info"].contains(kind))
+    {
+        eprintln!("rust-interp-export requires --emit=metadata (use cargo check)");
+        std::process::exit(2);
+    }
+    let mut callbacks = Export {
+        entries,
+        output,
+        started: Instant::now(),
+        demand,
+        demand_cache,
+        audit_selection,
+        list_tests,
+        test_filter,
+        retain_audit_bodies,
+        test_body: wants_test,
+        inline_leaves,
+        trap_unsupported_calls,
+        run_try_callbacks,
+        allocation_trace,
+        borrowck_cache: borrowck_mode,
+    };
+    if let Err(error) = compiler_argv::record("exported", &args) {
+        eprintln!("cannot retain compiler argv: {error}");
+        return std::process::ExitCode::from(2);
+    }
+    let result = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(&args, &mut callbacks));
+    borrowck_cache::report();
+    if result.is_err() { std::process::ExitCode::FAILURE } else { std::process::ExitCode::SUCCESS }
+}

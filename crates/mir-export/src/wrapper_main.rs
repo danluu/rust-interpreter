@@ -2,6 +2,7 @@
 //! in this process. Selected exports and opt-in compiler query caching exec
 //! the adjacent, installed exporter.
 mod wrapper_route;
+mod compiler_argv;
 
 use std::process::{Command, ExitCode};
 
@@ -42,6 +43,10 @@ fn main() -> ExitCode {
         command.args(&original[1..]);
         command
     } else {
+        if let Err(error) = compiler_argv::record("native", &route.args) {
+            eprintln!("cannot retain compiler argv: {error}");
+            return ExitCode::from(2);
+        }
         let mut command = Command::new(&route.args[0]);
         command.args(&route.args[1..]);
         command

@@ -248,6 +248,7 @@ def _main(resources):
     parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
     parser.add_argument('--compiler-key',help='use an owned complete stage2 compiler; requires preinstalled matching --tool-key')
+    parser.add_argument('--compiler-argv-record-dir',type=Path,help='retain actual compiler argv in an existing empty directory for qualification')
     parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable with the selected compiler')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off',help='custom compiler CGU grouping policy (default: off)')
     parser.add_argument('--host-proc-macro-opt',choices=['off','on'],default='off',help='experimental O1 codegen for unoptimized host proc-macro dylibs, retaining checks; requires --std-mir (default: off)')
@@ -268,6 +269,10 @@ def _main(resources):
     parser.add_argument('--test-target',help='select a named Cargo integration-test target; requires --test-body')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    if args.compiler_argv_record_dir is not None:
+        directory=args.compiler_argv_record_dir
+        if not directory.is_absolute() or directory.resolve(strict=True)!=directory or not directory.is_dir() or any(directory.iterdir()):
+            parser.error('--compiler-argv-record-dir requires an ordinary absolute empty directory')
     if args.compiler_key is not None and args.tool_key is None:parser.error('--compiler-key requires preinstalled --tool-key')
     if args.stable_cgu_partitioning!='off' and args.compiler_key is None:parser.error('--stable-cgu-partitioning=on requires --compiler-key')
     if args.host_proc_macro_opt!='off' and (not args.std_mir or args.compiler_key is not None or args.cargo_key is not None or args.borrowck_cache!='off'):
@@ -365,6 +370,7 @@ def _main(resources):
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
     validate_tool_compiler(tools,key,custom)
     if custom:require_export_option(tools,key,'stable-cgu-partitioning')
+    if args.compiler_argv_record_dir is not None:require_export_option(tools,key,'compiler-argv-record-v1')
     if args.stable_mono_cgu_partitioning is not None:
         require_export_option(tools,key,stable_mono_cgu.OPTION)
         mono_wrapper=stable_mono_cgu.require_tool_capability(tools,custom)
@@ -382,6 +388,8 @@ def _main(resources):
     if stats:timings['function_cache']=args.function_cache
     if stats:timings['borrowck_cache']=args.borrowck_cache
     if stats:timings['host_proc_macro_opt']=args.host_proc_macro_opt
+    if stats and args.compiler_argv_record_dir is not None:
+        timings['compiler_argv_record_dir']=str(args.compiler_argv_record_dir)
     if custom:
         timings['custom_compiler']=dict(key=custom.key,rustc=str(custom.rustc),
             rustc_sha256=custom.identity['files']['bin/rustc'],compiler=custom.identity['compiler'],
@@ -446,6 +454,8 @@ def _main(resources):
     for name in list(env):
         if name.startswith('RUST_INTERP_'):env.pop(name)
     if custom and cargo is None:env=custom.environment(env)
+    if args.compiler_argv_record_dir is not None:
+        env['RUST_INTERP_COMPILER_ARGV_RECORD_DIR']=str(args.compiler_argv_record_dir)
     if cargo:env=cargo.environment(env,TOOLCHAIN,custom)
     tool_manifest=json.loads((tools/'ready.json').read_text())
     wrapper_name='rust-interp-rustc-wrapper' if 'rust-interp-rustc-wrapper' in tool_manifest else 'rust-interp-mir-export'
