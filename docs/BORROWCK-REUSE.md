@@ -12,6 +12,13 @@ fixtures cover functions becoming reachable and changes to inlined callees:
 these can demand an unchanged borrow-check result without a reusable enclosing
 MIR result. Avoided provider calls are not evidence of lower total build time.
 
+The [correctness qualification](../results/borrowck-query-reuse-01/assessment.md)
+passes 146 tests across exporter/routing, launcher, direct compiler and Cargo
+scopes. Each positive reuse fixture avoids three provider executions while
+retaining the original provider for its nonempty opaque result. The pinned
+compiler defaults to Polonius-next; the nondefault bypass fixture uses legacy
+Polonius.
+
 Rustc's `mir_borrowck` query returns a result containing a map of inferred opaque
 types. Most ordinary function bodies return a successful empty map. This query
 has no on-disk result cache in the pinned compiler. Although ordinary analysis
@@ -59,6 +66,9 @@ result fingerprints, verified proposals, reconstructed results and any bypass
 reason. `provider_wrapped` distinguishes an active observer from a configuration
 that uses the standard compiler directly; bypassed calls are not counted.
 These counts describe avoided provider executions, not saved time.
+Reports identify the process and crate/test unit. Cargo can replay a fresh
+unit's cached stderr, including an old report; repeated lines are not evidence
+of a new compiler invocation and must not be summed across Cargo commands.
 
 Enabling the option also routes ordinary dependent compiler invocations through
 the exporter, which can add startup overhead. Native compilation retains the
@@ -66,7 +76,8 @@ public rustc logger, ICE/Ctrl-C handlers, native configuration callback and
 `-Ztime-passes` total reporting. Rustc's private fatal-signal diagnostic hook is
 not exposed to custom drivers. Normal off-mode routing is unchanged.
 
-The opt-in correctness suite is `tests/test_borrowck_cache.py`. Set
+The opt-in correctness suites are `tests/test_borrowck_cache.py` and
+`tests/test_borrowck_cache_cargo.py`. Set
 `RUST_INTERP_TEST_EXPORTER` to the newly built exporter; optionally set
 `RUST_INTERP_TEST_VM` and `RUST_INTERP_TEST_ARTIFACT_DIR` to execute exported
 programs and retain exact commands and diagnostics. Run it while holding the
@@ -97,6 +108,11 @@ implementations and opaque types can change the facts a consumer uses. This
 implementation leaves Cargo invalidation intact and uses rustc's tracked
 semantic dependencies. Persisting broader frontend state and changing
 cross-crate metadata invalidation remain separate compiler integration work.
+
+The [retained Nushell interval audit](../results/cargo-residual-nushell-01/assessment.md)
+places most elapsed time inside reported compilation-unit intervals; its
+uncovered time remains unattributed. This implementation does not establish
+which part of that historical work it can avoid.
 
 ## Pinned compiler review references
 

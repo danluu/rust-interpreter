@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "qualification": "composite correctness qualification; no performance measurement",
+  "compiled_source_commit": "11537c75bc1ffe180c55ee5462593b295aab8f9e",
+  "rust_tests": 80,
+  "launcher_tests": 56,
+  "compiler_correctness_tests": 9,
+  "cargo_correctness_tests": 1,
+  "test_scopes": [
+    {
+      "phase": "borrowck-cache-qualification-03",
+      "passed": "commands 0-2: exporter/routing tests, binaries, launcher tests",
+      "excluded": "command3 initially failed two fixture assumptions"
+    },
+    {
+      "phase": "borrowck-cache-correctness-05",
+      "passed": "all nine direct compiler tests",
+      "excluded": "Cargo wrong-state assertions expected JSON instead of rendered diagnostics"
+    },
+    {
+      "phase": "borrowck-cache-cargo-07",
+      "passed": "complete Cargo test, including correct diagnostic format and selected-unit reports"
+    }
+  ],
+  "binaries": {
+    "rust-interp-mir-export": "452a577f6cdddb9530fee42e527f1c0ffb1a32193065b5dbb1bed1293675219e",
+    "rust-interp-rustc-wrapper": "b8a99004aa21c72354ea64e9825fb641c4f2b2ccb258a2c50afdd2647ac58f8f",
+    "rust-interp-vm": "fe7a666954698cb9000277ced69921ec29c2a9fb8a0005b6aec4ee72bc415133"
+  },
+  "test_sources": {
+    "test_borrowck_cache.py": "b7216acfff870a1e5b2b669b7705d638d8343e1d9a687838a97943d5a395a4c0",
+    "test_borrowck_cache_cargo.py": "e1f33c5e6a0a44c159b8fe56cbf39335cfd3892ffa24b4a9790878a2d868d7a7"
+  },
+  "positive_direct_query_observations": [
+    {
+      "fixture": "test_newly_reachable_bodies_reconstruct_only_empty_results-4b1i5qn0",
+      "command_index": 8,
+      "checking": "ordinary rustc analysis; only proven-green successful empty query values reconstructed",
+      "compilation": {
+        "crate_name": "reachable_verify",
+        "test": false
+      },
+      "counter_scope": "calls observed by this override; bypassed providers are not counted",
+      "disabled_reason": null,
+      "fingerprint_matches": 3,
+      "fingerprint_misses": 1,
+      "green_candidates": 4,
+      "mode": "verify",
+      "persistent_sidecar": false,
+      "process_id": 44426,
+      "proof": "previous rustc result fingerprint and already-green dependency node",
+      "provider_calls": 6,
+      "provider_wrapped": true,
+      "reused": 0,
+      "schema_version": 1,
+      "verified": 3
+    },
+    {
+      "fixture": "test_newly_reachable_bodies_reconstruct_only_empty_results-4b1i5qn0",
+      "command_index": 20,
+      "checking": "ordinary rustc analysis; only proven-green successful empty query values reconstructed",
+      "compilation": {
+        "crate_name": "reachable_reuse",
+        "test": false
+      },
+      "counter_scope": "calls observed by this override; bypassed providers are not counted",
+      "disabled_reason": null,
+      "fingerprint_matches": 3,
+      "fingerprint_misses": 1,
+      "green_candidates": 4,
+      "mode": "reuse",
+      "persistent_sidecar": false,
+      "process_id": 44500,
+      "proof": "previous rustc result fingerprint and already-green dependency node",
+      "provider_calls": 3,
+      "provider_wrapped": true,
+      "reused": 3,
+      "schema_version": 1,
+      "verified": 0
+    },
+    {
+      "fixture": "test_selected_export_cached_and_inlined_value_demands-p9a0qm81",
+      "command_index": 30,
+      "checking": "ordinary rustc analysis; only proven-green successful empty query values reconstructed",
+      "compilation": {
+        "crate_name": "selected_export_mir3",
+        "test": true
+      },
+      "counter_scope": "calls observed by this override; bypassed providers are not counted",
+      "disabled_reason": null,
+      "fingerprint_matches": 3,
+      "fingerprint_misses": 1,
+      "green_candidates": 4,
+      "mode": "reuse",
+      "persistent_sidecar": false,
+      "process_id": 46644,
+      "proof": "previous rustc result fingerprint and already-green dependency node",
+      "provider_calls": 2,
+      "provider_wrapped": true,
+      "reused": 3,
+      "schema_version": 1,
+      "verified": 0
+    },
+    {
+      "fixture": "test_selected_export_cached_and_inlined_value_demands-p9a0qm81",
+      "command_index": 35,
+      "checking": "ordinary rustc analysis; only proven-green successful empty query values reconstructed",
+      "compilation": {
+        "crate_name": "selected_export_mir3",
+        "test": true
+      },
+      "counter_scope": "calls observed by this override; bypassed providers are not counted",
+      "disabled_reason": null,
+      "fingerprint_matches": 2,
+      "fingerprint_misses": 1,
+      "green_candidates": 3,
+      "mode": "verify",
+      "persistent_sidecar": false,
+      "process_id": 46659,
+      "proof": "previous rustc result fingerprint and already-green dependency node",
+      "provider_calls": 7,
+      "provider_wrapped": true,
+      "reused": 0,
+      "schema_version": 1,
+      "verified": 2
+    }
+  ],
+  "command_counts": {
+    "test_cached_unchanged_bodies_need_no_borrowcheck_value-qtn3if0b": 16,
+    "test_dependency_edits_preserve_output_and_invalidate_changed_semantics-8seyzezd": 26,
+    "test_metadata_only_library_uses_same_compiler_checks-gk_wc5h9": 12,
+    "test_newly_reachable_bodies_reconstruct_only_empty_results-4b1i5qn0": 24,
+    "test_no_incremental_and_explicit_mir_dump_use_original_provider-jiy3z3d4": 12,
+    "test_opaque_results_and_disabled_intervening_compilation-21mzv7ua": 16,
+    "test_selected_export_cached_and_inlined_value_demands-p9a0qm81": 40,
+    "test_uncalled_errors_are_rejected_and_restoration_is_current-mr2qjbo6": 7,
+    "test_warnings_and_lint_expectations_are_preserved-7gcjncj_": 8,
+    "test_cargo_exports_native_build_scripts_and_failed_edit_restoration-woq_w4wi": 35
+  },
+  "recorded_commands": 196,
+  "commands_gzip_sha256": "47a79919af7a8a697d91952d7e12267f8122c767483b38226fe639183a80738b",
+  "commands_uncompressed_sha256": "2042a5b9f04f3345e04b8ad0c4ad52d3d2b8d5599e2f658bb5ce47f100e341b0",
+  "receipts": [
+    {
+      "phase": "borrowck-cache-qualification-03",
+      "receipt_sha256": "dee712b96bcd8b8740ee27a35c6b0fbc89bfe77b78e96d5d0e16ba05d1dd9b7d",
+      "log_sha256": "86ff79401537eb711775b41cc72a865b2356b96af347c256a46051b7c65542c9"
+    },
+    {
+      "phase": "borrowck-cache-correctness-05",
+      "receipt_sha256": "4bc492d5afd563cf310445381815a9c1882896d6bf91cb934e3924b09cb106b6",
+      "log_sha256": "848dad48afa6493a1b902731dc165e1d797fd9d006e359b3a29bae9a953c6a12"
+    },
+    {
+      "phase": "borrowck-cache-cargo-07",
+      "receipt_sha256": "6e9c1e4e257100ac6ea22363bcf5c0f3344953148c26703dd14a40003ac1c53b",
+      "log_sha256": "36b494a65ea1c9507287db329cb12b953fb0c3990565fc72ad78e02ad9d9cf81"
+    }
+  ],
+  "earlier_failures": [
+    {
+      "path": ".work/borrowck-cache-launcher-02",
+      "reason": "assumed ordinary cached MIR requires green borrowck value reconstruction; actual reports showed zero opportunities"
+    },
+    {
+      "path": ".work/borrowck-cache-qualification-03",
+      "reason": "Polonius next is the pinned default; a two-digit edit shifted spans and caused four provider executions rather than one"
+    },
+    {
+      "path": ".work/borrowck-cache-correctness-05",
+      "reason": "json-render-diagnostics renders compiler errors on stderr, not compiler-message JSON on stdout"
+    }
+  ],
+  "no_new_benchmarks": true,
+  "nushell_modified": false,
+  "default_enabled": false,
+  "measured_build_time_improvement": null,
+  "cargo_report_caveat": "Cargo can replay cached stderr; direct query observations above exclude Cargo report replay"
+}

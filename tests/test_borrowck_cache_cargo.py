@@ -130,7 +130,7 @@ class BorrowckCacheCargoTests(unittest.TestCase):
         result = self.invoke(command, env)
         return result, bytecode, target
 
-    def reports(self, result, mode):
+    def reports(self, result, mode, test_body=False):
         reports = [json.loads(line[len(compiler_tests.PREFIX):])
                    for line in result.stderr.splitlines() if line.startswith(compiler_tests.PREFIX)]
         self.assertTrue(reports, result.stderr)
@@ -139,9 +139,10 @@ class BorrowckCacheCargoTests(unittest.TestCase):
             for field in compiler_tests.COUNTERS:
                 self.assertIs(type(report[field]), int, (field, report))
                 self.assertGreaterEqual(report[field], 0, report)
-        # Some native units may have caching disabled. At least the selected
-        # incremental exporter must actually have installed its provider.
+        # Cargo can replay cached stderr for fresh dependencies. Require the
+        # requested selected unit's report, rather than accepting any helper.
         self.assertTrue(any(report["provider_wrapped"] and not report["disabled_reason"]
+                            and report["compilation"] == {"crate_name": CRATE, "test": test_body}
                             for report in reports), reports)
         return reports
 
@@ -163,9 +164,9 @@ class BorrowckCacheCargoTests(unittest.TestCase):
 
     def assert_borrow_error(self, result):
         self.assertNotEqual(result.returncode, 0, result.stderr)
-        codes = [message.get("message", {}).get("code") for message in self.messages(result)
-                 if message.get("reason") == "compiler-message"]
-        self.assertIn("E0515", [code["code"] for code in codes if code], result.stdout)
+        # Match the launcher's json-render-diagnostics convention: Cargo
+        # emits artifacts as JSON but renders compiler errors on stderr.
+        self.assertRegex(result.stderr, r"(?m)^error\[E0515\]:")
 
     def test_cargo_exports_native_build_scripts_and_failed_edit_restoration(self):
         self.fixture()
@@ -210,7 +211,7 @@ class BorrowckCacheCargoTests(unittest.TestCase):
                         self.assertEqual(executed.stdout, str(expected) + "\n")
                     test_result, test_bytecode, _ = self.export(mode, test_body=True)
                     self.assert_success(test_result)
-                    self.reports(test_result, mode)
+                    self.reports(test_result, mode, test_body=True)
                     self.assertGreater(test_bytecode.stat().st_size, 0)
                     self.assert_export_artifact(test_result, test_bytecode, test_body=True)
                     if self.vm:
