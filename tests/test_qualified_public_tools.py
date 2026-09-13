@@ -182,7 +182,27 @@ class PublicToolProvenanceTests(unittest.TestCase):
             state = q._stamp(path)
             return dict(path=str(path), resolved=state[0], bytes=state[4], sha256=q.file_digest(path), stamp=state)
         with tempfile.TemporaryDirectory() as temporary:
-            directory = Path(temporary); first = directory / 'first'; second = directory / 'second'
+            directory = Path(temporary).resolve(strict=True); first = directory / 'first'; second = directory / 'second'
+            bindir = directory / 'bin'; bindir.mkdir()
+            libdir = directory / 'lib'; libdir.mkdir()
+            executable = bindir / 'compiler'; executable.write_bytes(b'compiler')
+            dylib = libdir / 'fixture.dylib'; dylib.write_bytes(b'library')
+            logical = str(bindir / '../lib/fixture.dylib')
+            lib = file_identity(Path(logical)); root = file_identity(executable)
+            identity = dict(policy='macos-dyld-closure-v1', libraries=[dict(logical=logical,
+                resolved=lib['resolved'], bytes=lib['bytes'], sha256=lib['sha256'])],
+                nodes={'$CARGO':dict(dependencies=['@rpath/fixture.dylib'], rpaths=['@loader_path/../lib']),
+                       logical:dict(dependencies=['/usr/lib/libSystem.B.dylib'], rpaths=[])},
+                searches={logical:True}, system_libraries=['/usr/lib/libSystem.B.dylib'])
+            closure = dict(executable=root, identity=identity,
+                aliases={root['path']:root['resolved'], logical:lib['resolved']},
+                state=dict(libraries={logical:lib['stamp']}, searches={logical:True}))
+            q.check_closure(closure)
+            proof = dict(tool_key='1' * 64, platform=q.platform_identity(),
+                         input_records={logical:lib}, searches={logical:True})
+            q.validate_live_inputs(proof, rehash=True)
+            del identity['searches'][logical]
+            with self.assertRaises(KeyError):q.check_closure(closure)
             first.write_bytes(b'library'); second.write_bytes(b'library')
             link = directory / 'current'; link.symlink_to(first)
             record = file_identity(link)

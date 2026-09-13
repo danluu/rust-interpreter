@@ -35,8 +35,18 @@ def relative(name):
 
 
 def absolute(name):
-    require(isinstance(name, str) and name.startswith('/') and os.path.normpath(name) == name,
+    logical_absolute(name)
+    require(os.path.normpath(name) == name,
             'invalid absolute input path')
+    return name
+
+
+def logical_absolute(name):
+    # Loader search strings must retain '..': lexical normalization across a
+    # symlink can change which image dyld loads. Resolved identities separately
+    # require canonical paths, and live guards verify resolution and stamps.
+    require(isinstance(name, str) and name.startswith('/') and '\0' not in name
+            and str(Path(name)) == name, 'invalid logical absolute input path')
     return name
 
 
@@ -47,7 +57,7 @@ def hashes(value):
 
 def record_file(record):
     """Validate an archived identity; _stamp layout is shared with live guards."""
-    absolute(record['path']); absolute(record['resolved'])
+    logical_absolute(record['path']); absolute(record['resolved'])
     require(valid_key(record['sha256']) and type(record['bytes']) is int and record['bytes'] >= 0,
             'invalid file identity')
     state = record['stamp']
@@ -63,23 +73,24 @@ def check_closure(closure):
     require(identity['policy'] == 'macos-dyld-closure-v1', 'unsupported library policy')
     aliases, searches = closure['aliases'], identity['searches']
     require(all(type(v) is bool for v in searches.values()), 'invalid library search proof')
+    for name in searches:logical_absolute(name)
     for name, resolved in aliases.items():
-        absolute(name); absolute(resolved)
+        logical_absolute(name); absolute(resolved)
     require(aliases.get(root['path']) == root['resolved'], 'missing executable resolution')
     libraries = {entry['logical']: entry for entry in identity['libraries']}
     require(len(libraries) == len(identity['libraries']), 'duplicate library identity')
     for name, item in libraries.items():
-        absolute(name); absolute(item['resolved'])
+        logical_absolute(name); absolute(item['resolved'])
         require(valid_key(item['sha256']) and type(item['bytes']) is int and item['bytes'] >= 0
                 and aliases.get(name) == item['resolved'], 'invalid library identity')
     visited, used, systems, contexts = set(), set(), set(), set()
 
     def expanded(token, loader):
         if token.startswith('@loader_path/'):
-            return os.path.normpath(str(Path(loader).parent / token[len('@loader_path/'):]))
+            return str(Path(loader).parent / token[len('@loader_path/'):])
         if token.startswith('@executable_path/'):
-            return os.path.normpath(str(Path(root['resolved']).parent / token[len('@executable_path/'):]))
-        return absolute(token)
+            return str(Path(root['resolved']).parent / token[len('@executable_path/'):])
+        return logical_absolute(str(Path(token)))
 
     def visit(logical, inherited=(), ancestors=()):
         resolved = aliases[logical]
@@ -95,7 +106,7 @@ def check_closure(closure):
             if system_path(token):
                 systems.add(token); continue
             if token.startswith('@rpath/'):
-                candidates = [os.path.normpath(str(Path(p) / token[len('@rpath/'):])) for p in rpaths]
+                candidates = [str(Path(p) / token[len('@rpath/'):]) for p in rpaths]
                 require(candidates and not any(system_path(p) for p in candidates), 'unproved runpath')
                 available = [p for p in candidates if searches[p]]
                 require(available and len({aliases[p] for p in available}) == 1,
