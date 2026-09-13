@@ -3,11 +3,20 @@
 //! the adjacent, installed exporter.
 mod wrapper_route;
 mod compiler_argv;
+mod compiler_roles;
 
 use std::process::{Command, ExitCode};
 
 fn main() -> ExitCode {
+    if let Err(error) = compiler_roles::check_files() {
+        eprintln!("compiler role binding: {error}");
+        return ExitCode::from(2);
+    }
     let original: Vec<String> = std::env::args().collect();
+    if original.len() == 2 && original[1] == "--rust-interp-compiler-roles" {
+        println!("{}", compiler_roles::BINDING_JSON.unwrap_or("null"));
+        return ExitCode::SUCCESS;
+    }
     if original.len() == 2 && original[1] == "--rust-interp-host-library-capability" {
         println!("{}\n{}", wrapper_route::host_library_capability(), env!("RUST_INTERP_SYSROOT"));
         return ExitCode::SUCCESS;

@@ -19,6 +19,7 @@ mod test_metadata;
 mod names;
 mod wrapper_route;
 mod compiler_argv;
+mod compiler_roles;
 mod export_timings;
 mod function_costs;
 mod typed_relocations;
@@ -269,13 +270,28 @@ fn allocation_trace_path(output: &Path) -> PathBuf {
 }
 
 fn main() -> std::process::ExitCode {
+    let roles_check = compiler_roles::check_files().and_then(|()| {
+        if let Some(runtime) = compiler_roles::RUNTIME {
+            let driver = compiler_roles::loaded_driver(rustc_driver::run_compiler as *const ())?;
+            compiler_roles::validate_loaded(&runtime, rustc_interface::util::rustc_version_str(), &driver)?;
+        }
+        Ok(())
+    });
+    if let Err(error) = roles_check {
+        eprintln!("compiler role binding: {error}");
+        return std::process::ExitCode::from(2);
+    }
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
-        println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
+        let mut capabilities = serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
             "compiler_sysroot":env!("RUST_INTERP_SYSROOT"),
             "host_library_opt":serde_json::from_str::<serde_json::Value>(&wrapper_route::host_library_capability()).expect("host library capability"),
             "frontend_workers":serde_json::from_str::<serde_json::Value>(&wrapper_route::frontend_worker_capability()).expect("frontend worker capability"),
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1","stable-mono-cgu-partitioning","compiler-argv-record-v1","frontend-workers-v1","host-library-opt-v1"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1","stable-mono-cgu-partitioning","compiler-argv-record-v1","frontend-workers-v1","host-library-opt-v1"]});
+        if let Some(binding) = compiler_roles::BINDING_JSON {
+            capabilities["compiler_roles"] = serde_json::from_str(binding).expect("validated compiler roles");
+        }
+        println!("{capabilities}");
         return std::process::ExitCode::SUCCESS;
     }
     let environment = wrapper_route::Environment::read();
