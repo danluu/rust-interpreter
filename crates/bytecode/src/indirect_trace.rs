@@ -139,6 +139,6 @@ fn observe_saved_indirect_targets() {
             "jit_instructions":run.jit_instructions,"jit_entries":run.jit_entries,
             "jit_resumable_calls":run.jit_resumable_calls,"jit_resumable_returns":run.jit_resumable_returns,
             "jit_bytes":run.jit_bytes,"jit_compiled_functions":run.jit_compiled_functions,
-            "jit_declined_functions":run.jit_declined_functions,"entropy_calls":run.entropy_calls,"entropy_bytes":run.entropy_bytes},
+            "jit_declined_functions":run.jit_declined_functions},
         "guest_commands":1,"performance_measurement":false}));
 }
