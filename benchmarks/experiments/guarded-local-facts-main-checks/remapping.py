@@ -26,7 +26,12 @@ def main():
         log = (raw / 'test-debug.stderr').read_text()
         executable, = re.findall(r'Running tests/trap_span_remap.rs \(([^\n)]+)\)', log)
         executable = Path(executable).resolve(strict=True)
-        assert executable.parent == ROOT / '.work/fixed-frame-clear-combined-build-01/target/debug/deps'
+        target = ROOT / '.work/fixed-frame-clear-combined-build-01/target/debug'
+        relative = executable.relative_to(target).as_posix()
+        # This pinned Cargo puts integration test executables in the unit's
+        # build/hash/out directory. Bind both hash occurrences and the package,
+        # using the exact successful test command recorded by our build.
+        assert re.fullmatch(r'build/rust-interp-bytecode/([0-9a-f]{16})/out/trap_span_remap-\1', relative)
         caps = json.loads((tools / 'capabilities.json').read_text())
         rustc = Path(caps['compiler_sysroot']) / 'bin/rustc'
         sysroot, _, std_key, _ = checked_std_mir(TOOLCHAIN)
