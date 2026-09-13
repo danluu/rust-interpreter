@@ -164,6 +164,21 @@ class StdSourcePathsTests(unittest.TestCase):
                 CONFIGURATION(self.root, {'CARGO_HOME': str(cargo_home)})
         self.assertEqual(self.commands, [])
 
+    def test_configured_child_loader_and_identity_overrides_are_rejected(self):
+        cargo_home = self.root / 'cargo-home'; cargo_home.mkdir()
+        config = cargo_home / 'config.toml'
+        for setting in ['DYLD_LIBRARY_PATH={value="/foreign/lib",force=true}',
+                        'DYLD_LIBRARY_PATH=""', 'CARGO_ENCODED_RUSTFLAGS=""',
+                        'RUSTUP_TOOLCHAIN="' + v2.TOOLCHAIN + '"',
+                        'RUSTUP_HOME="/other/rustup"', 'CARGO_HOME="/other/cargo"', 'RUSTC=""']:
+            config.write_text('[env]\n' + setting + '\n')
+            with self.subTest(setting=setting), self.assertRaises(RuntimeError):
+                CONFIGURATION(self.root, {'CARGO_HOME': str(cargo_home)})
+        config.write_text('[env]\nBUILD_INPUT={value="fixture-data",force=true}\nRUSTC_WRAPPER=""\n')
+        proof = CONFIGURATION(self.root, {'CARGO_HOME': str(cargo_home)})
+        self.assertEqual(proof[str(config)]['sha256'], custom.file_digest(config))
+        self.assertEqual(self.commands, [])
+
     def test_missing_published_source_or_extra_sysroot_file_is_rejected(self):
         sysroot, _, key, _ = self.prepare()
         sysroot.chmod(0o755)
