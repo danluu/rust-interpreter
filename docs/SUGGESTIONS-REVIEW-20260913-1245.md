@@ -4,6 +4,8 @@ Read the replacement user-owned `suggestions.txt`, SHA256
 `4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f`.
 It remains unmodified and untracked. This review supersedes the previous file's
 next-work priorities without changing completed measurements or ownership.
+Re-read after the renewed user request during the13:09–13:15 work interval;
+the file still has this exact hash and contains no later replacement.
 
 Several recommendations are already implemented. The guarded SipHash ranges
 are adopted, ordinary native regions already precharge their static instruction
@@ -28,7 +30,7 @@ starting concurrent heavy work, or increasing this host's two-worker setting.
 | 1.7, 4.1, 4.2 Cargo info cache | A prospective small-project primary is reasonable where the mechanism applies. Measure that project's actual probes/prefix; Nushell's 0.17s is not established for rg-aot or pgrust. Declare selection and gates before timing and retain regression guards; one favorable private-project screen cannot alone establish general adoption. Avoid duplicating the compiler session's patch. |
 | 2.1 Flush | Finished: retain the passing screen and failed full primary. All 154 full commands preserve assertions and restoration. Park unchanged standalone timing; keep correctness evidence for a justified later composition. |
 | 2.2 Memory guards | The 265M disjoint-frame census already led to adopted guarded ranges and local facts. Do not implement or time it again. The current work is a disabled test-only partition of the adopted emitter, separating checking from data transfer using existing captures. It is not another generic address-check runtime variation. |
-| 2.3 Budget | Already once per region: `jit.rs` emits static count, comparison, insufficient-budget branch and subtraction before the body. Existing tails handle exact limits. Current saved budget samples are 106/1,651 and 99/1,439, about 6.4%/6.9%, not 11% on block. Any narrower subtract/branch fusion is a new proposal requiring preserved fallback state and its own cost evidence; it is not the suggested per-op-to-per-region change. |
+| 2.3 Budget | Already once per region: `jit.rs` emits static count, comparison, insufficient-budget branch and subtraction before the body. Existing tails handle exact limits. Current saved budget samples are 106/1,651 and 99/1,439, about 6.4%/6.9%, not 11% on block. The narrower subtract-immediate/borrow-branch fusion was also already qualified and screened in `scalar-copy-budget`: it restores the debit on fallback, removes one net word per region, and failed its40-command primary (wall ratio1.023906, A/A8.80%). Do not recreate or retime that unchanged mechanism. Neither result supports the suggested per-op-to-per-region change. |
 | 2.4 Protocol composition | Keep compatible composition as an option. The wider-clear/copy bundle failed its screen and remains parked. Publication/addressing/dispatch changes need concrete diffs and complete frame, fault and budget proofs. Do not infer additive gains from overlapping sample categories or combine with an already-existing budget mechanism. |
 | 2.5 Token floor | Guest execution remains the largest current stage. Avoid an absolute claim that only guest work can cross a chosen native ratio: exporter/Cargo savings also reduce the complete command. Preserve the original unsplit test and its assertions. |
 | 3.1, 3.4 Parser costs | Prioritize a parser-specific reuse/pass breakdown in the compiler workstream, reusing saved receipts first. The token result of 172 unsupported recipes and 22.88ms does not establish the parser's count. Reconcile counts with its own lowered/reused graph before changing recipe coverage. |
@@ -52,3 +54,6 @@ Evidence: [adopted runtime and compiler](../results/guarded-local-facts-main-fin
 [parser comparison](../results/pgrust-parser-edits-incremental-history-01/assessment.md),
 [compiler workstream](../benchmarks/experiments/strict-warm-build/PROGRESS.md),
 [memory diagnostic plan](../benchmarks/experiments/memory-operation-parts/PLAN.md).
+
+Budget-specific cross-check: [prior fusion plan](../benchmarks/experiments/scalar-copy-budget/PLAN.md),
+[qualified failed screen](../results/scalar-copy-budget-screen-token-01/assessment.md).
