@@ -35,3 +35,16 @@ comparison caches and private source; publish only aggregate private receipts.
 
 Only after these checks pass can source merge to main. Do not attach a new
 performance verdict to these commands or rewrite any completed gate.
+
+The first project run completed all16 Nushell/private commands, then raised
+KeyError on the public reference's `catalog` field (the large/private schema
+calls it `entry_catalog`). The token original bytecode and catalog both match
+in a retained post-failure audit; all sources and frozen inputs are unchanged.
+Preserve that failed run. Correct the schema adapter with missing/ambiguous
+field rejection and test it before resuming only token, folded and pgrust.
+The new104-test harness covers98 root tests plus six project-driver tests.
+Run24 commands in fresh namespaces for those three complete histories; retain
+the16 finished commands without rerunning large/private cases or the223 cache/
+Cargo checks. The extra original token command remains recorded, without a
+timing verdict. This explicitly retires the old harness freeze after its
+terminal failure and the unchanged-input audit.

@@ -6,6 +6,24 @@ import qualify_projects as project
 
 
 class ProjectQualificationTests(unittest.TestCase):
+    def test_both_reference_catalog_schemas_require_one_unambiguous_artifact(self):
+        artifact = dict(path='test.rbc', sha256='bytecode')
+        catalog = dict(path='test.json', sha256='catalog')
+        for key in ['catalog', 'entry_catalog']:
+            row = dict(artifact=artifact, **{key: catalog})
+            self.assertEqual(project.reference_artifact(row, 'artifact'), artifact)
+            self.assertEqual(project.reference_artifact(row, 'entry_catalog'), catalog)
+        for row in [{}, dict(catalog=catalog, entry_catalog=catalog)]:
+            with self.assertRaises(AssertionError):
+                project.reference_artifact(row, 'entry_catalog')
+
+    def test_remaining_cases_are_unique_and_keep_declared_order(self):
+        self.assertEqual(project.selected_cases(['token', 'folded', 'pgrust']),
+                         ['token', 'folded', 'pgrust'])
+        for names in [[], ['token', 'token'], ['pgrust', 'token'], ['unknown']]:
+            with self.assertRaises(AssertionError):
+                project.selected_cases(names)
+
     def test_reference_restoration_uses_first_completed_history(self):
         rows = [dict(mode=mode, cycle=cycle, state=state)
                 for mode in ['baseline', 'candidate'] for cycle in range(4)

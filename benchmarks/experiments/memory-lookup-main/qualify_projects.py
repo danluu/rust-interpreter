@@ -33,6 +33,19 @@ def references(rows):
     return selected
 
 
+def reference_artifact(row, kind):
+    keys = [kind] if kind == 'artifact' else ['catalog', 'entry_catalog']
+    present = [key for key in keys if key in row]
+    assert len(present) == 1, ('ambiguous reference artifact', kind, present)
+    return row[present[0]]
+
+
+def selected_cases(names):
+    assert names and len(set(names)) == len(names), 'empty or duplicate cases'
+    assert names == [name for name in CASES if name in names], 'unknown or reordered cases'
+    return list(names)
+
+
 def rewrite_command(command, key, namespace, report):
     result = list(command)
     for option, value in [('--tool-key', key), ('--cache-namespace', namespace),
@@ -64,13 +77,16 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--harness', type=Path, required=True)
+    parser.add_argument('--cases', nargs='+', choices=CASES, default=CASES)
     args = parser.parse_args()
+    cases = selected_cases(args.cases)
+    expected_commands = len(cases) * len(STATES)
     assert args.run_id.startswith('memory-lookup-main-projects-') and Path(args.run_id).name == args.run_id
     build_path, harness_path = args.build.resolve(strict=True), args.harness.resolve(strict=True)
     build, harness = [json.loads(p.read_text()) for p in [build_path, harness_path]]
     assert build['status'] == harness['status'] == 'passed'
     assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(passed=428, ignored=1)
-    assert harness['tests'] == 102
+    assert harness['tests'] == 104
     tools, key = installed_tools(build['tool_key'])
     assert json.loads((tools / 'ready.json').read_text()) == build['binaries']
     proof_path = ROOT / 'results/memory-lookup-complete-01/summary.json'
@@ -97,7 +113,7 @@ def main():
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 16)
-        for case_name in CASES:
+        for case_name in cases:
             reference = ROOT / 'results' / ('memory-lookup-edit-' + case_name + '-01') / 'summary.json'
             row, = [c for c in proof['cases'] if c['case'] == case_name]
             assert sha(reference) == row['summary_sha256']
@@ -137,7 +153,7 @@ def main():
                       if p and source / p != changed]
             frozen.update({str(p.relative_to(ROOT)): fingerprint(p) for p in paths})
             write(work / 'plan.json', dict(owner=str(ROOT), frozen=frozen, tool_key=key,
-                cases=CASES, expected_commands=40, performance_measurement=False,
+                cases=cases, expected_commands=expected_commands, performance_measurement=False,
                 reference_history='first complete cycle, then cycle1 original as restoration',
                 minimum_child_gib=8, current_case=case_name, admitted_free_bytes=shutil.disk_usage(ROOT).free))
             selected_env = dict(env)
@@ -177,10 +193,11 @@ def main():
                     validate_runtime_limits(report, limits['instructions'], limits['allocations'], required=True)
                     assert report['workers'] == report['requested_workers'] == workers
                     for kind, suffix in [('artifact', 'rbc'), ('entry_catalog', 'json')]:
-                        assert launch[kind + '_sha256'] == prior_row[kind]['sha256'], (case_name, index, kind)
+                        reference_bytes = reference_artifact(prior_row, kind)
+                        assert launch[kind + '_sha256'] == reference_bytes['sha256'], (case_name, index, kind)
                         saved = work / f'{case_name}-{index}-{kind}.{suffix}'
                         shutil.copy2(launch[kind + '_path'], saved)
-                        assert sha(saved) == prior_row[kind]['sha256']
+                        assert sha(saved) == reference_bytes['sha256']
                         observation[kind] = dict(path=str(saved.relative_to(ROOT)), sha256=sha(saved))
                     observation['suite_sha256'] = digest
                     write(work / 'records.json', records)
@@ -189,11 +206,11 @@ def main():
             assert all(fingerprint(ROOT / p) == h for p, h in frozen.items())
             completed.append(dict(case=case_name, commands=8, source_restored=True,
                 exact_reference_artifacts=True, original_assertion_outcomes=True, private=case_name == 'rg-aot'))
-        assert len(records) == 40 and len(completed) == 5
+        assert len(records) == expected_commands and len(completed) == len(cases)
         assert all(sha(ROOT / p) == h for p, h in json.loads(inputs_path.read_text()).items())
         result = ROOT / 'results' / args.run_id
         result.mkdir(exist_ok=False)
-        write(result / 'summary.json', dict(status='passed', commands=40, cases=completed,
+        write(result / 'summary.json', dict(status='passed', commands=expected_commands, cases=completed,
             tool_key=key, performance_measurement=False, private_details_redacted=True,
             raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'), records_sha256=sha(work / 'records.json')))
 
