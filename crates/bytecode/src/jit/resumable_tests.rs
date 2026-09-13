@@ -839,6 +839,8 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 working_budget,
                                 indirect_layout: std::ptr::null(),
                                 indirect_layouts: std::ptr::null(),
+                                bridge: tree_bridge::BridgeCursor::new(std::ptr::null_mut(), std::ptr::null()),
+                                bridge_instructions: 0, bridge_calls: 0, bridge_entries: 0,
                             };
                             let args = [
                                 registers.as_mut_ptr() as usize,

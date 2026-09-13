@@ -57,6 +57,17 @@ pub(super) struct BridgeCursor {
     pub fault_register_end: usize,
 }
 
+impl BridgeCursor {
+    pub(super) fn new(registers: *mut u128, profile_table: *const *mut u64) -> Self {
+        Self {
+            tree: TreeCursor { base: Cursor { remaining: 0, profile_hits: std::ptr::null_mut() },
+                memory_len: 0, peak_linear: 0, return_address: 0, profile_table,
+                calls: 0, tree_instructions: 0, regions_ready: 0, stub_calls: 0 },
+            frames: std::ptr::null_mut(), registers, depth: 0, fault_depth: 0, fault_register_end: 0,
+        }
+    }
+}
+
 pub(super) mod layout {
     use super::*;
     pub const FRAMES:usize=std::mem::offset_of!(BridgeCursor,frames);

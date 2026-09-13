@@ -272,13 +272,7 @@ impl<'a> Jit<'a> {
             working_budget,
             indirect_layout: std::ptr::null(),
             indirect_layouts: self.indirect.as_ref().map_or(std::ptr::null(),|m|m.layouts.as_ptr()),
-            bridge: tree_bridge::BridgeCursor {
-                tree: native_calls::TreeCursor { base: Cursor { remaining: 0, profile_hits: std::ptr::null_mut() },
-                    memory_len: 0, peak_linear: 0, return_address: 0, profile_table: tree_profiles.as_ptr(),
-                    calls: 0, tree_instructions: 0, regions_ready: 0, stub_calls: 0 },
-                frames: std::ptr::null_mut(), registers: registers.as_mut_ptr(), depth: 0,
-                fault_depth: 0, fault_register_end: 0,
-            },
+            bridge: tree_bridge::BridgeCursor::new(registers.as_mut_ptr(), tree_profiles.as_ptr()),
             bridge_instructions: 0, bridge_calls: 0, bridge_entries: 0,
         };
         // SAFETY: all preparation precedes these fresh exclusive pointers.
