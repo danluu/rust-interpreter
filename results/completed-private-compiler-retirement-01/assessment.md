@@ -1,0 +1,5 @@
+Retired compiler intermediates from 30 exact cache roots belonging to five completed private 132-command comparisons. The original drivers were matched to each frozen plan. All 660 recorded commands, within-state native/custom outcomes, bytecode/catalog identities, current source restoration and terminal controllers were checked. Earlier histories did not save per-state native executable snapshots; their recorded outcomes and every remaining executable are preserved without claiming additional historical binary identity.
+
+The first attempt refused a nonexistent summary field before inventory or deletion. The revised audit reads the actual per-command evidence and also handles the earlier single-tool result format. Both attempts remain recorded.
+
+All 10,730 protected files remain byte-identical. Removed 39,440 files containing 2,935,425,084 logical bytes; observed free space rose by 2,305,642,496 bytes. Raw private paths, adapters, command details and manifests remain local. No benchmark was repeated and no performance result changed.
