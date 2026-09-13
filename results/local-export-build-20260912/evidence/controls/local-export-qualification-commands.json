@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "cwd": "/Users/danluu/dev/rust-interp-perf-20260912",
+  "source_key": "14af97a36405cc925ce89529e5bc9ff2db9ecdbd0f8b816095ace66235fc4c75",
+  "freeze": {
+    "command": [
+      "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python",
+      ".work/build-general-20260912/freeze_local_export_inputs.py"
+    ],
+    "steps": [
+      {
+        "label": "source",
+        "command": [
+          "python3",
+          ".work/build-general-20260912/freeze_local_export.py"
+        ]
+      },
+      {
+        "label": "controls",
+        "command": [
+          "python3",
+          ".work/build-general-20260912/freeze_local_export_controls.py"
+        ]
+      }
+    ]
+  },
+  "qualification": {
+    "local-export-debug-tests": {
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--workspace",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        ".work/perf-general-20260912/target",
+        "--config",
+        "profile.dev.debug=0",
+        "--config",
+        "profile.test.debug=0"
+      ],
+      "profile": "debug"
+    },
+    "local-export-release-tests": {
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--release",
+        "--workspace",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        ".work/perf-general-20260912/target"
+      ],
+      "profile": "release"
+    },
+    "local-export-tools-build": {
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        ".work/perf-general-20260912/target",
+        "-p",
+        "rust-interp-bytecode",
+        "-p",
+        "rust-interp-mir-export"
+      ],
+      "profile": "release"
+    },
+    "local-export-tools-install": {
+      "command": [
+        "python3",
+        ".work/build-general-20260912/install_local_export.py"
+      ],
+      "profile": null
+    },
+    "local-export-fixture-tests": {
+      "command": [
+        "python3",
+        ".work/build-general-20260912/validate_local_export.py"
+      ],
+      "profile": null
+    }
+  }
+}

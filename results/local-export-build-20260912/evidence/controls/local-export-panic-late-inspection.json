@@ -1,0 +1,1448 @@
+{
+  "schema_version": 1,
+  "coverage_pass": true,
+  "reviewer": "root",
+  "method": "explicit actual MIR and bytecode data-flow inspection",
+  "execution_sha256": "7ef357f74d714f21d377da0c919cde0a3c1a1bcd7c3b93439961ee0ef41e50b2",
+  "frozen_sha256": "ccee9b076330a18ede874ebfc4240aefcc1bf0e5cac8f4017ef999918de9aeae",
+  "fixture_sha256": "04007048542ea651580d1fe7c7e59a714b3cf008fc693184110e7185efefd992",
+  "source_support": [
+    {
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/rustc-src/rust/compiler/rustc_middle/src/ty/mod.rs",
+      "sha256": "0e0c7c37576509e21766e7e2a2103c6600b78d13bdde3d23782391de7b437b54",
+      "first_line": 1830,
+      "excerpt": "    /// Returns the possibly-auto-generated MIR of a [`ty::InstanceKind`].\n    #[instrument(skip(self), level = \"debug\")]\n    pub fn instance_mir(self, instance: ty::InstanceKind<'tcx>) -> &'tcx Body<'tcx> {\n        let body = match instance {\n            ty::InstanceKind::Item(def) => {\n                debug!(\"calling def_kind on def: {:?}\", def);\n                let def_kind = self.def_kind(def);\n                debug!(\"returned from def_kind: {:?}\", def_kind);\n                match def_kind {\n                    DefKind::Const { .. }\n                    | DefKind::Static { .. }\n                    | DefKind::AssocConst { .. }\n                    | DefKind::Ctor(..)\n                    | DefKind::AnonConst => self.mir_for_ctfe(def),\n                    DefKind::Fn | DefKind::AssocFn\n                        if matches!(\n                            self.constness(def),\n                            hir::Constness::Const { always: true }\n                        ) =>\n                    {\n                        self.mir_for_ctfe(def)\n                    }\n                    // If the caller wants `mir_for_ctfe` of a function they should not be using\n                    // `instance_mir`, so we'll assume const fn also wants the optimized version.\n                    _ => self.optimized_mir(def),\n                }\n            }\n            ty::InstanceKind::Intrinsic(..) | ty::InstanceKind::LlvmIntrinsic(..) => {\n                bug!(\"intrinsics have no instance MIR\")\n            }\n            ty::InstanceKind::Virtual(..) => bug!(\"virtual dispatches have no instance MIR\"),\n            ty::InstanceKind::Shim(shim) => self.mir_shims(shim),\n        };\n\n        assert!(\n            matches!(body.phase, MirPhase::Runtime(_)),\n            \"body: {body:?} instance: {instance:?} {:?}\",\n            if let ty::InstanceKind::Item(d) = instance { Some(self.def_kind(d)) } else { None },\n        );\n\n        body\n    }\n"
+    },
+    {
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/rustc-src/rust/compiler/rustc_mir_transform/src/lib.rs",
+      "sha256": "831e88a60b9a057b7671dd3b1b8d114e85f64cd694d854f622fe1a37b63bcba5",
+      "first_line": 768,
+      "excerpt": "            &prettify::ReorderBasicBlocks,\n            &prettify::ReorderLocals,\n        ],\n        Some(MirPhase::Runtime(RuntimePhase::Optimized)),\n    );\n}\n\n/// Optimize the MIR and prepare it for codegen.\nfn optimized_mir(tcx: TyCtxt<'_>, did: LocalDefId) -> &Body<'_> {\n    if tcx.is_constructor(did.to_def_id()) {\n        // There's no reason to run all of the MIR passes on constructors when\n        // we can just output the MIR we want directly. This also saves const\n        // qualification and borrow checking the trouble of special casing\n        // constructors.\n        return tcx.mir_for_ctfe(did);\n    }\n\n    tcx.arena.alloc(inner_optimized_mir(tcx, did))\n}\n\nfn inner_optimized_mir(tcx: TyCtxt<'_>, did: LocalDefId) -> Body<'_> {\n    match tcx.hir_body_const_context(did) {\n        // Run the `mir_for_ctfe` query, which depends on `mir_drops_elaborated_and_const_checked`\n        // which we are going to steal below. Thus we need to run `mir_for_ctfe` first, so it\n        // computes and caches its result.\n        Some(hir::ConstContext::ConstFn) => tcx.ensure_done().mir_for_ctfe(did),\n        None => {}\n        Some(other) => panic!(\"do not use `optimized_mir` for constants: {other:?}\"),\n    }\n    debug!(\"about to call mir_drops_elaborated...\");\n    let body = tcx.mir_drops_elaborated_and_const_checked(did).steal();\n    let mut body = remap_mir_for_const_eval_select(tcx, body, hir::Constness::NotConst);\n\n    if body.tainted_by_errors.is_some() {\n        return body;\n    }\n\n    // Before doing anything, remember which items are being mentioned so that the set of items\n    // visited does not depend on the optimization level.\n    // We do not use `run_passes` for this as that might skip the pass if `injection_phase` is set.\n    mentioned_items::MentionedItems.run_pass(tcx, &mut body);\n\n    // If `mir_drops_elaborated_and_const_checked` found that the current body has unsatisfiable\n    // predicates, it will shrink the MIR to a single `unreachable` terminator.\n    // More generally, if MIR is a lone `unreachable`, there is nothing to optimize.\n    if let TerminatorKind::Unreachable = body.basic_blocks[START_BLOCK].terminator().kind\n        && body.basic_blocks[START_BLOCK].statements.is_empty()\n    {\n        return body;\n    }\n\n    run_optimization_passes(tcx, &mut body);\n\n    body\n}\n"
+    },
+    {
+      "path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/lib/rustlib/rustc-src/rust/compiler/rustc_mir_transform/src/pass_manager.rs",
+      "sha256": "5fa8f4a45e528143a24ef5ca15bf07760e1a0adafde18af9b4aeb414b04bec99",
+      "first_line": 384,
+      "excerpt": "    if let Some(new_phase) = phase_change {\n        if body.phase >= new_phase {\n            panic!(\"Invalid MIR phase transition from {:?} to {:?}\", body.phase, new_phase);\n        }\n\n        body.phase = new_phase;\n        body.pass_count = 0;\n\n        dump_mir_for_phase_change(tcx, body);\n\n        let validate =\n            (validate_each & tcx.sess.opts.unstable_opts.validate_mir & !body.should_skip())\n                || new_phase == MirPhase::Runtime(RuntimePhase::Optimized);\n        let lint = tcx.sess.opts.unstable_opts.lint_mir & !body.should_skip();\n        if validate {\n            validate_body(tcx, body, format!(\"after phase change to {}\", new_phase.name()));\n        }\n        if lint {\n            lint_body(tcx, body, format!(\"after phase change to {}\", new_phase.name()));\n        }\n\n        body.pass_count = 1;\n    }\n}\n\npub(super) fn validate_body<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>, when: String) {\n    validate::Validator { when }.run_pass(tcx, body);\n}\n\npub(super) fn dump_mir_for_phase_change<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) {\n    assert_eq!(body.pass_count, 0);\n    if let Some(dumper) = MirDumper::new(tcx, body.phase.name(), body) {\n        dumper.set_show_pass_num().set_disambiguator(&\"after\").dump_mir(body)\n    }\n}\n"
+    }
+  ],
+  "report_writer_sha256": "48158763152bc00e703f36999f7feaa6d1168fb79eabe3639662367d2f4e325d",
+  "cases": [
+    {
+      "arm": "baseline",
+      "inline": false,
+      "artifact_sha256": "0c19f2e41f6fa98fda6924eb570092e70032758cb6c6d8919d331b2c7578d3d3",
+      "program_json_sha256": "c2ee6d95a43111ffccc6f42b1a9b147e7680eb30984cd1d7f66c136e00f0f671",
+      "mir": {
+        "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-export-panic-late-20260912-01/baseline-plain/mir/panic_store_late_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir",
+        "sha256": "571fbce10b12e80aa4d97163d0f632e2193949fe67d648898a8ee1435cfff05f",
+        "function_signature": "fn store_then_panic(_1: &mut u64, _2: u64) -> ! {",
+        "block_excerpt": "    bb0: {\n        (*_1) = Not(copy _2);\n        _3 = core::panicking::panic(const \"panic-store late fixture\") -> unwind continue;\n    }",
+        "dereference_assignment": "(*_1) = Not(copy _2);",
+        "panic_call": "_3 = core::panicking::panic(const \"panic-store late fixture\") -> unwind continue;",
+        "reachable_from_entry": true,
+        "same_basic_block": true,
+        "dereference_is_first_argument": true,
+        "stored_value_is_complement_of_second_argument": true,
+        "not_panic_preparation": true,
+        "terminator_is_recognized_original_fndef": true,
+        "is_actual_instance_mir_body": true,
+        "instance_mir_stage_reason": "The selected helper is an ordinary local non-const function Item, not a constructor, always-const function, shim or virtual instance. Both frozen Lower::new implementations query instance_mir(instance.def). The installed pinned rustc_middle implementation routes this Item to optimized_mir. rustc_mir_transform returns the body after its Runtime(Optimized) phase; pass_manager dumps that phase as runtime-optimized/after. The actual dump has that header and exact helper signature. Diagnostic and primary artifact bytes match under otherwise identical flags.",
+        "recognized_definition": "core::panicking::panic",
+        "classifier_source_reason": "Pinned core/src/panicking.rs defines the public panic_internals-gated non-generic panic function with never return type in the same core crate as the panic_fmt lang item. The source calls that exact function directly. Both selected classifiers require Fn/AssocFn, the core/std lang-item crate and never return, then accept the core::panicking:: prefix. The assignment has a Deref projection and UnaryOp, so panic_preparation returns false; the whole-block early trap path cannot discard it. The retained actual Trap names that exact definition and helper span.",
+        "classifier_source_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/owned-analysis-source/crates/mir-export/src/lower.rs",
+        "classifier_source_sha256": "66b4a1207a41450623542563aa3360c54f74e5cde311f2b021783c3d3d2e138e",
+        "reachability_reason": "The helper has exactly one basic block, bb0, which is its entry block. The selected rust_interp_entry takes its nonzero-mode branch and calls this helper as actual bytecode function2 in both leaf configurations; the normal-return helper alone is inlined.",
+        "argument_mapping_reason": "The signature binds _1 to &mut u64 destination and _2 to u64 value. The sole dereference assignment writes Not(copy _2) through _1, immediately before the direct panic terminator."
+      },
+      "bytecode": {
+        "function_index": 2,
+        "function_name": "store_then_panic[]",
+        "unary_pc": 4,
+        "store_pc": 5,
+        "trap_pc": 6,
+        "unary": {
+          "Unary": {
+            "dst": 4,
+            "op": "Not",
+            "src": 3,
+            "bits": 64
+          }
+        },
+        "store": {
+          "Store": {
+            "address": 1,
+            "src": 4,
+            "size": 8
+          }
+        },
+        "trap": {
+          "Trap": {
+            "message": "core::panicking::panic at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs:10:5: 10:55"
+          }
+        },
+        "reachable_from_entry": true,
+        "store_executes_before_trap": true,
+        "address_is_destination_argument": true,
+        "value_is_complement_of_value_argument": true,
+        "unary_source_is_value_argument": true,
+        "no_overwrite_between_unary_and_store": true,
+        "excludes_caller_initialization": true,
+        "argument_and_control_flow_derivation": "Entry args are mode at offset8 and value at offset16. PCs1-3 initialize destination at offset24 from value. Mode1 follows PC9 to PC21. PCs21-27 put the address of offset24 in the reference buffer at offset40 and call function2 with that buffer plus the value buffer. This call remains present with inlining enabled. Function2 args occupy offsets0 and8. Its PCs0-3 load destination into r1 and value into r3, PC4 computes Not64 into r4, PC5 stores r4 through r1, and PC6 traps. The helper has no branches or calls and no intervening writer; there is no path to its panic Trap bypassing Store5. Caller initialization and the reference-buffer Store are distinct operations and are not the witness.",
+        "trace": [
+          {
+            "function_index": 0,
+            "pc": 0,
+            "operation": {
+              "Imm": {
+                "dst": 22,
+                "value": 0
+              }
+            },
+            "meaning": "Initialize promoted boolean temporary r22 to zero; it is overwritten at PC8."
+          },
+          {
+            "function_index": 0,
+            "pc": 1,
+            "operation": {
+              "Local": {
+                "dst": 0,
+                "offset": 24
+              }
+            },
+            "meaning": "r0 points to caller destination local at frame offset24."
+          },
+          {
+            "function_index": 0,
+            "pc": 2,
+            "operation": {
+              "Local": {
+                "dst": 1,
+                "offset": 16
+              }
+            },
+            "meaning": "r1 points to the caller second-argument value buffer at offset16."
+          },
+          {
+            "function_index": 0,
+            "pc": 3,
+            "operation": {
+              "Copy": {
+                "dst": 0,
+                "src": 1,
+                "size": 8
+              }
+            },
+            "meaning": "Initialize caller destination from value. This Copy is not the witnessed complement Store."
+          },
+          {
+            "function_index": 0,
+            "pc": 4,
+            "operation": {
+              "Local": {
+                "dst": 3,
+                "offset": 8
+              }
+            },
+            "meaning": "r3 points to caller first-argument mode buffer at offset8."
+          },
+          {
+            "function_index": 0,
+            "pc": 5,
+            "operation": {
+              "Load": {
+                "dst": 4,
+                "address": 3,
+                "size": 8
+              }
+            },
+            "meaning": "Load the u64 mode into r4."
+          },
+          {
+            "function_index": 0,
+            "pc": 6,
+            "operation": {
+              "Imm": {
+                "dst": 5,
+                "value": 0
+              }
+            },
+            "meaning": "Set r5 to zero for the mode comparison."
+          },
+          {
+            "function_index": 0,
+            "pc": 7,
+            "operation": {
+              "Binary": {
+                "dst": 6,
+                "overflow": 7,
+                "op": "Eq",
+                "a": 4,
+                "b": 5,
+                "bits": 64,
+                "signed": false
+              }
+            },
+            "meaning": "Compare mode to zero; mode1 produces false, integer0, in r6."
+          },
+          {
+            "function_index": 0,
+            "pc": 8,
+            "operation": {
+              "Cast": {
+                "dst": 22,
+                "src": 6,
+                "from": 8,
+                "to": 8,
+                "signed": false
+              }
+            },
+            "meaning": "Copy the boolean comparison to r22 without changing false/zero."
+          },
+          {
+            "function_index": 0,
+            "pc": 9,
+            "operation": {
+              "Switch": {
+                "value": 22,
+                "cases": [
+                  [
+                    0,
+                    21
+                  ]
+                ],
+                "otherwise": 10
+              }
+            },
+            "meaning": "For mode1, switch on zero to PC21; the normal-return branch is bypassed."
+          },
+          {
+            "function_index": 0,
+            "pc": 21,
+            "operation": {
+              "Local": {
+                "dst": 17,
+                "offset": 40
+              }
+            },
+            "meaning": "r17 addresses the caller reference-argument buffer at offset40."
+          },
+          {
+            "function_index": 0,
+            "pc": 22,
+            "operation": {
+              "Local": {
+                "dst": 18,
+                "offset": 24
+              }
+            },
+            "meaning": "r18 is the address of the caller destination local at offset24."
+          },
+          {
+            "function_index": 0,
+            "pc": 23,
+            "operation": {
+              "Store": {
+                "address": 17,
+                "src": 18,
+                "size": 8
+              }
+            },
+            "meaning": "Store the destination address into the reference-argument buffer, not the complemented value into the destination."
+          },
+          {
+            "function_index": 0,
+            "pc": 24,
+            "operation": {
+              "Local": {
+                "dst": 19,
+                "offset": 40
+              }
+            },
+            "meaning": "r19 addresses the initialized reference buffer at offset40."
+          },
+          {
+            "function_index": 0,
+            "pc": 25,
+            "operation": {
+              "Local": {
+                "dst": 20,
+                "offset": 16
+              }
+            },
+            "meaning": "r20 addresses the unchanged caller value buffer at offset16."
+          },
+          {
+            "function_index": 0,
+            "pc": 26,
+            "operation": {
+              "Local": {
+                "dst": 21,
+                "offset": 40
+              }
+            },
+            "meaning": "r21 provides a return buffer; the callee result has zero bytes and the callee traps."
+          },
+          {
+            "function_index": 0,
+            "pc": 27,
+            "operation": {
+              "Call": {
+                "function": 2,
+                "args": [
+                  19,
+                  20
+                ],
+                "destination": 21
+              }
+            },
+            "meaning": "Call actual function2 with argument buffers r19/r20; its args copy eight bytes into frame offsets0/8 respectively."
+          },
+          {
+            "function_index": 2,
+            "pc": 0,
+            "operation": {
+              "Local": {
+                "dst": 0,
+                "offset": 0
+              }
+            },
+            "meaning": "r0 addresses helper arg0 at offset0, containing the destination pointer copied from caller offset40."
+          },
+          {
+            "function_index": 2,
+            "pc": 1,
+            "operation": {
+              "Load": {
+                "dst": 1,
+                "address": 0,
+                "size": 8
+              }
+            },
+            "meaning": "Load arg0 into r1: r1 is the address of caller destination local at offset24."
+          },
+          {
+            "function_index": 2,
+            "pc": 2,
+            "operation": {
+              "Local": {
+                "dst": 2,
+                "offset": 8
+              }
+            },
+            "meaning": "r2 addresses helper arg1 at offset8, containing the value copied from caller offset16."
+          },
+          {
+            "function_index": 2,
+            "pc": 3,
+            "operation": {
+              "Load": {
+                "dst": 3,
+                "address": 2,
+                "size": 8
+              }
+            },
+            "meaning": "Load the u64 value argument into r3."
+          },
+          {
+            "function_index": 2,
+            "pc": 4,
+            "operation": {
+              "Unary": {
+                "dst": 4,
+                "op": "Not",
+                "src": 3,
+                "bits": 64
+              }
+            },
+            "meaning": "Compute the 64-bit complement of r3 into r4."
+          },
+          {
+            "function_index": 2,
+            "pc": 5,
+            "operation": {
+              "Store": {
+                "address": 1,
+                "src": 4,
+                "size": 8
+              }
+            },
+            "meaning": "Write r4 through r1 for eight bytes: the complemented value reaches the destination. No intervening operation overwrites r1 or r4."
+          },
+          {
+            "function_index": 2,
+            "pc": 6,
+            "operation": {
+              "Trap": {
+                "message": "core::panicking::panic at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs:10:5: 10:55"
+              }
+            },
+            "meaning": "Trap for the directly recognized core panic at the original helper call span, immediately after Store."
+          }
+        ]
+      }
+    },
+    {
+      "arm": "baseline",
+      "inline": true,
+      "artifact_sha256": "1a23807a7c46b7a9b8cd67fddf50f0385dfe3a86c3c436a4cdc5071107712b59",
+      "program_json_sha256": "83bd876ef527e9c75042b38c2ac9d2ca29692580b763f25727a26baccf84f193",
+      "mir": {
+        "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-export-panic-late-20260912-01/baseline-inline/mir/panic_store_late_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir",
+        "sha256": "571fbce10b12e80aa4d97163d0f632e2193949fe67d648898a8ee1435cfff05f",
+        "function_signature": "fn store_then_panic(_1: &mut u64, _2: u64) -> ! {",
+        "block_excerpt": "    bb0: {\n        (*_1) = Not(copy _2);\n        _3 = core::panicking::panic(const \"panic-store late fixture\") -> unwind continue;\n    }",
+        "dereference_assignment": "(*_1) = Not(copy _2);",
+        "panic_call": "_3 = core::panicking::panic(const \"panic-store late fixture\") -> unwind continue;",
+        "reachable_from_entry": true,
+        "same_basic_block": true,
+        "dereference_is_first_argument": true,
+        "stored_value_is_complement_of_second_argument": true,
+        "not_panic_preparation": true,
+        "terminator_is_recognized_original_fndef": true,
+        "is_actual_instance_mir_body": true,
+        "instance_mir_stage_reason": "The selected helper is an ordinary local non-const function Item, not a constructor, always-const function, shim or virtual instance. Both frozen Lower::new implementations query instance_mir(instance.def). The installed pinned rustc_middle implementation routes this Item to optimized_mir. rustc_mir_transform returns the body after its Runtime(Optimized) phase; pass_manager dumps that phase as runtime-optimized/after. The actual dump has that header and exact helper signature. Diagnostic and primary artifact bytes match under otherwise identical flags.",
+        "recognized_definition": "core::panicking::panic",
+        "classifier_source_reason": "Pinned core/src/panicking.rs defines the public panic_internals-gated non-generic panic function with never return type in the same core crate as the panic_fmt lang item. The source calls that exact function directly. Both selected classifiers require Fn/AssocFn, the core/std lang-item crate and never return, then accept the core::panicking:: prefix. The assignment has a Deref projection and UnaryOp, so panic_preparation returns false; the whole-block early trap path cannot discard it. The retained actual Trap names that exact definition and helper span.",
+        "classifier_source_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/owned-analysis-source/crates/mir-export/src/lower.rs",
+        "classifier_source_sha256": "66b4a1207a41450623542563aa3360c54f74e5cde311f2b021783c3d3d2e138e",
+        "reachability_reason": "The helper has exactly one basic block, bb0, which is its entry block. The selected rust_interp_entry takes its nonzero-mode branch and calls this helper as actual bytecode function2 in both leaf configurations; the normal-return helper alone is inlined.",
+        "argument_mapping_reason": "The signature binds _1 to &mut u64 destination and _2 to u64 value. The sole dereference assignment writes Not(copy _2) through _1, immediately before the direct panic terminator."
+      },
+      "bytecode": {
+        "function_index": 2,
+        "function_name": "store_then_panic[]",
+        "unary_pc": 4,
+        "store_pc": 5,
+        "trap_pc": 6,
+        "unary": {
+          "Unary": {
+            "dst": 4,
+            "op": "Not",
+            "src": 3,
+            "bits": 64
+          }
+        },
+        "store": {
+          "Store": {
+            "address": 1,
+            "src": 4,
+            "size": 8
+          }
+        },
+        "trap": {
+          "Trap": {
+            "message": "core::panicking::panic at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs:10:5: 10:55"
+          }
+        },
+        "reachable_from_entry": true,
+        "store_executes_before_trap": true,
+        "address_is_destination_argument": true,
+        "value_is_complement_of_value_argument": true,
+        "unary_source_is_value_argument": true,
+        "no_overwrite_between_unary_and_store": true,
+        "excludes_caller_initialization": true,
+        "argument_and_control_flow_derivation": "Entry args are mode at offset8 and value at offset16. PCs1-3 initialize destination at offset24 from value. Mode1 follows PC9 to PC39. PCs39-45 put the address of offset24 in the reference buffer at offset40 and call function2 with that buffer plus the value buffer. This call remains present with inlining enabled. Function2 args occupy offsets0 and8. Its PCs0-3 load destination into r1 and value into r3, PC4 computes Not64 into r4, PC5 stores r4 through r1, and PC6 traps. The helper has no branches or calls and no intervening writer; there is no path to its panic Trap bypassing Store5. Caller initialization and the reference-buffer Store are distinct operations and are not the witness.",
+        "trace": [
+          {
+            "function_index": 0,
+            "pc": 0,
+            "operation": {
+              "Imm": {
+                "dst": 22,
+                "value": 0
+              }
+            },
+            "meaning": "Initialize promoted boolean temporary r22 to zero; it is overwritten at PC8."
+          },
+          {
+            "function_index": 0,
+            "pc": 1,
+            "operation": {
+              "Local": {
+                "dst": 0,
+                "offset": 24
+              }
+            },
+            "meaning": "r0 points to caller destination local at frame offset24."
+          },
+          {
+            "function_index": 0,
+            "pc": 2,
+            "operation": {
+              "Local": {
+                "dst": 1,
+                "offset": 16
+              }
+            },
+            "meaning": "r1 points to the caller second-argument value buffer at offset16."
+          },
+          {
+            "function_index": 0,
+            "pc": 3,
+            "operation": {
+              "Copy": {
+                "dst": 0,
+                "src": 1,
+                "size": 8
+              }
+            },
+            "meaning": "Initialize caller destination from value. This Copy is not the witnessed complement Store."
+          },
+          {
+            "function_index": 0,
+            "pc": 4,
+            "operation": {
+              "Local": {
+                "dst": 3,
+                "offset": 8
+              }
+            },
+            "meaning": "r3 points to caller first-argument mode buffer at offset8."
+          },
+          {
+            "function_index": 0,
+            "pc": 5,
+            "operation": {
+              "Load": {
+                "dst": 4,
+                "address": 3,
+                "size": 8
+              }
+            },
+            "meaning": "Load the u64 mode into r4."
+          },
+          {
+            "function_index": 0,
+            "pc": 6,
+            "operation": {
+              "Imm": {
+                "dst": 5,
+                "value": 0
+              }
+            },
+            "meaning": "Set r5 to zero for the mode comparison."
+          },
+          {
+            "function_index": 0,
+            "pc": 7,
+            "operation": {
+              "Binary": {
+                "dst": 6,
+                "overflow": 7,
+                "op": "Eq",
+                "a": 4,
+                "b": 5,
+                "bits": 64,
+                "signed": false
+              }
+            },
+            "meaning": "Compare mode to zero; mode1 produces false, integer0, in r6."
+          },
+          {
+            "function_index": 0,
+            "pc": 8,
+            "operation": {
+              "Cast": {
+                "dst": 22,
+                "src": 6,
+                "from": 8,
+                "to": 8,
+                "signed": false
+              }
+            },
+            "meaning": "Copy the boolean comparison to r22 without changing false/zero."
+          },
+          {
+            "function_index": 0,
+            "pc": 9,
+            "operation": {
+              "Switch": {
+                "value": 22,
+                "cases": [
+                  [
+                    0,
+                    39
+                  ]
+                ],
+                "otherwise": 10
+              }
+            },
+            "meaning": "For mode1, switch on zero to PC39; the normal-return branch is bypassed."
+          },
+          {
+            "function_index": 0,
+            "pc": 39,
+            "operation": {
+              "Local": {
+                "dst": 17,
+                "offset": 40
+              }
+            },
+            "meaning": "r17 addresses the caller reference-argument buffer at offset40."
+          },
+          {
+            "function_index": 0,
+            "pc": 40,
+            "operation": {
+              "Local": {
+                "dst": 18,
+                "offset": 24
+              }
+            },
+            "meaning": "r18 is the address of the caller destination local at offset24."
+          },
+          {
+            "function_index": 0,
+            "pc": 41,
+            "operation": {
+              "Store": {
+                "address": 17,
+                "src": 18,
+                "size": 8
+              }
+            },
+            "meaning": "Store the destination address into the reference-argument buffer, not the complemented value into the destination."
+          },
+          {
+            "function_index": 0,
+            "pc": 42,
+            "operation": {
+              "Local": {
+                "dst": 19,
+                "offset": 40
+              }
+            },
+            "meaning": "r19 addresses the initialized reference buffer at offset40."
+          },
+          {
+            "function_index": 0,
+            "pc": 43,
+            "operation": {
+              "Local": {
+                "dst": 20,
+                "offset": 16
+              }
+            },
+            "meaning": "r20 addresses the unchanged caller value buffer at offset16."
+          },
+          {
+            "function_index": 0,
+            "pc": 44,
+            "operation": {
+              "Local": {
+                "dst": 21,
+                "offset": 40
+              }
+            },
+            "meaning": "r21 provides a return buffer; the callee result has zero bytes and the callee traps."
+          },
+          {
+            "function_index": 0,
+            "pc": 45,
+            "operation": {
+              "Call": {
+                "function": 2,
+                "args": [
+                  19,
+                  20
+                ],
+                "destination": 21
+              }
+            },
+            "meaning": "Call actual function2 with argument buffers r19/r20; its args copy eight bytes into frame offsets0/8 respectively."
+          },
+          {
+            "function_index": 2,
+            "pc": 0,
+            "operation": {
+              "Local": {
+                "dst": 0,
+                "offset": 0
+              }
+            },
+            "meaning": "r0 addresses helper arg0 at offset0, containing the destination pointer copied from caller offset40."
+          },
+          {
+            "function_index": 2,
+            "pc": 1,
+            "operation": {
+              "Load": {
+                "dst": 1,
+                "address": 0,
+                "size": 8
+              }
+            },
+            "meaning": "Load arg0 into r1: r1 is the address of caller destination local at offset24."
+          },
+          {
+            "function_index": 2,
+            "pc": 2,
+            "operation": {
+              "Local": {
+                "dst": 2,
+                "offset": 8
+              }
+            },
+            "meaning": "r2 addresses helper arg1 at offset8, containing the value copied from caller offset16."
+          },
+          {
+            "function_index": 2,
+            "pc": 3,
+            "operation": {
+              "Load": {
+                "dst": 3,
+                "address": 2,
+                "size": 8
+              }
+            },
+            "meaning": "Load the u64 value argument into r3."
+          },
+          {
+            "function_index": 2,
+            "pc": 4,
+            "operation": {
+              "Unary": {
+                "dst": 4,
+                "op": "Not",
+                "src": 3,
+                "bits": 64
+              }
+            },
+            "meaning": "Compute the 64-bit complement of r3 into r4."
+          },
+          {
+            "function_index": 2,
+            "pc": 5,
+            "operation": {
+              "Store": {
+                "address": 1,
+                "src": 4,
+                "size": 8
+              }
+            },
+            "meaning": "Write r4 through r1 for eight bytes: the complemented value reaches the destination. No intervening operation overwrites r1 or r4."
+          },
+          {
+            "function_index": 2,
+            "pc": 6,
+            "operation": {
+              "Trap": {
+                "message": "core::panicking::panic at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs:10:5: 10:55"
+              }
+            },
+            "meaning": "Trap for the directly recognized core panic at the original helper call span, immediately after Store."
+          }
+        ]
+      }
+    },
+    {
+      "arm": "candidate",
+      "inline": false,
+      "artifact_sha256": "0c19f2e41f6fa98fda6924eb570092e70032758cb6c6d8919d331b2c7578d3d3",
+      "program_json_sha256": "c2ee6d95a43111ffccc6f42b1a9b147e7680eb30984cd1d7f66c136e00f0f671",
+      "mir": {
+        "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-export-panic-late-20260912-01/candidate-plain/mir/panic_store_late_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir",
+        "sha256": "571fbce10b12e80aa4d97163d0f632e2193949fe67d648898a8ee1435cfff05f",
+        "function_signature": "fn store_then_panic(_1: &mut u64, _2: u64) -> ! {",
+        "block_excerpt": "    bb0: {\n        (*_1) = Not(copy _2);\n        _3 = core::panicking::panic(const \"panic-store late fixture\") -> unwind continue;\n    }",
+        "dereference_assignment": "(*_1) = Not(copy _2);",
+        "panic_call": "_3 = core::panicking::panic(const \"panic-store late fixture\") -> unwind continue;",
+        "reachable_from_entry": true,
+        "same_basic_block": true,
+        "dereference_is_first_argument": true,
+        "stored_value_is_complement_of_second_argument": true,
+        "not_panic_preparation": true,
+        "terminator_is_recognized_original_fndef": true,
+        "is_actual_instance_mir_body": true,
+        "instance_mir_stage_reason": "The selected helper is an ordinary local non-const function Item, not a constructor, always-const function, shim or virtual instance. Both frozen Lower::new implementations query instance_mir(instance.def). The installed pinned rustc_middle implementation routes this Item to optimized_mir. rustc_mir_transform returns the body after its Runtime(Optimized) phase; pass_manager dumps that phase as runtime-optimized/after. The actual dump has that header and exact helper signature. Diagnostic and primary artifact bytes match under otherwise identical flags.",
+        "recognized_definition": "core::panicking::panic",
+        "classifier_source_reason": "Pinned core/src/panicking.rs defines the public panic_internals-gated non-generic panic function with never return type in the same core crate as the panic_fmt lang item. The source calls that exact function directly. Both selected classifiers require Fn/AssocFn, the core/std lang-item crate and never return, then accept the core::panicking:: prefix. The assignment has a Deref projection and UnaryOp, so panic_preparation returns false; the whole-block early trap path cannot discard it. The retained actual Trap names that exact definition and helper span.",
+        "classifier_source_path": "/Users/danluu/dev/rust-interp-perf-20260912/crates/mir-export/src/lower.rs",
+        "classifier_source_sha256": "b04da38becc629d283473cc4ac32cf7b34719e0e1668887c46d3b7ebabfffbe3",
+        "reachability_reason": "The helper has exactly one basic block, bb0, which is its entry block. The selected rust_interp_entry takes its nonzero-mode branch and calls this helper as actual bytecode function2 in both leaf configurations; the normal-return helper alone is inlined.",
+        "argument_mapping_reason": "The signature binds _1 to &mut u64 destination and _2 to u64 value. The sole dereference assignment writes Not(copy _2) through _1, immediately before the direct panic terminator."
+      },
+      "bytecode": {
+        "function_index": 2,
+        "function_name": "store_then_panic[]",
+        "unary_pc": 4,
+        "store_pc": 5,
+        "trap_pc": 6,
+        "unary": {
+          "Unary": {
+            "dst": 4,
+            "op": "Not",
+            "src": 3,
+            "bits": 64
+          }
+        },
+        "store": {
+          "Store": {
+            "address": 1,
+            "src": 4,
+            "size": 8
+          }
+        },
+        "trap": {
+          "Trap": {
+            "message": "core::panicking::panic at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs:10:5: 10:55"
+          }
+        },
+        "reachable_from_entry": true,
+        "store_executes_before_trap": true,
+        "address_is_destination_argument": true,
+        "value_is_complement_of_value_argument": true,
+        "unary_source_is_value_argument": true,
+        "no_overwrite_between_unary_and_store": true,
+        "excludes_caller_initialization": true,
+        "argument_and_control_flow_derivation": "Entry args are mode at offset8 and value at offset16. PCs1-3 initialize destination at offset24 from value. Mode1 follows PC9 to PC21. PCs21-27 put the address of offset24 in the reference buffer at offset40 and call function2 with that buffer plus the value buffer. This call remains present with inlining enabled. Function2 args occupy offsets0 and8. Its PCs0-3 load destination into r1 and value into r3, PC4 computes Not64 into r4, PC5 stores r4 through r1, and PC6 traps. The helper has no branches or calls and no intervening writer; there is no path to its panic Trap bypassing Store5. Caller initialization and the reference-buffer Store are distinct operations and are not the witness.",
+        "trace": [
+          {
+            "function_index": 0,
+            "pc": 0,
+            "operation": {
+              "Imm": {
+                "dst": 22,
+                "value": 0
+              }
+            },
+            "meaning": "Initialize promoted boolean temporary r22 to zero; it is overwritten at PC8."
+          },
+          {
+            "function_index": 0,
+            "pc": 1,
+            "operation": {
+              "Local": {
+                "dst": 0,
+                "offset": 24
+              }
+            },
+            "meaning": "r0 points to caller destination local at frame offset24."
+          },
+          {
+            "function_index": 0,
+            "pc": 2,
+            "operation": {
+              "Local": {
+                "dst": 1,
+                "offset": 16
+              }
+            },
+            "meaning": "r1 points to the caller second-argument value buffer at offset16."
+          },
+          {
+            "function_index": 0,
+            "pc": 3,
+            "operation": {
+              "Copy": {
+                "dst": 0,
+                "src": 1,
+                "size": 8
+              }
+            },
+            "meaning": "Initialize caller destination from value. This Copy is not the witnessed complement Store."
+          },
+          {
+            "function_index": 0,
+            "pc": 4,
+            "operation": {
+              "Local": {
+                "dst": 3,
+                "offset": 8
+              }
+            },
+            "meaning": "r3 points to caller first-argument mode buffer at offset8."
+          },
+          {
+            "function_index": 0,
+            "pc": 5,
+            "operation": {
+              "Load": {
+                "dst": 4,
+                "address": 3,
+                "size": 8
+              }
+            },
+            "meaning": "Load the u64 mode into r4."
+          },
+          {
+            "function_index": 0,
+            "pc": 6,
+            "operation": {
+              "Imm": {
+                "dst": 5,
+                "value": 0
+              }
+            },
+            "meaning": "Set r5 to zero for the mode comparison."
+          },
+          {
+            "function_index": 0,
+            "pc": 7,
+            "operation": {
+              "Binary": {
+                "dst": 6,
+                "overflow": 7,
+                "op": "Eq",
+                "a": 4,
+                "b": 5,
+                "bits": 64,
+                "signed": false
+              }
+            },
+            "meaning": "Compare mode to zero; mode1 produces false, integer0, in r6."
+          },
+          {
+            "function_index": 0,
+            "pc": 8,
+            "operation": {
+              "Cast": {
+                "dst": 22,
+                "src": 6,
+                "from": 8,
+                "to": 8,
+                "signed": false
+              }
+            },
+            "meaning": "Copy the boolean comparison to r22 without changing false/zero."
+          },
+          {
+            "function_index": 0,
+            "pc": 9,
+            "operation": {
+              "Switch": {
+                "value": 22,
+                "cases": [
+                  [
+                    0,
+                    21
+                  ]
+                ],
+                "otherwise": 10
+              }
+            },
+            "meaning": "For mode1, switch on zero to PC21; the normal-return branch is bypassed."
+          },
+          {
+            "function_index": 0,
+            "pc": 21,
+            "operation": {
+              "Local": {
+                "dst": 17,
+                "offset": 40
+              }
+            },
+            "meaning": "r17 addresses the caller reference-argument buffer at offset40."
+          },
+          {
+            "function_index": 0,
+            "pc": 22,
+            "operation": {
+              "Local": {
+                "dst": 18,
+                "offset": 24
+              }
+            },
+            "meaning": "r18 is the address of the caller destination local at offset24."
+          },
+          {
+            "function_index": 0,
+            "pc": 23,
+            "operation": {
+              "Store": {
+                "address": 17,
+                "src": 18,
+                "size": 8
+              }
+            },
+            "meaning": "Store the destination address into the reference-argument buffer, not the complemented value into the destination."
+          },
+          {
+            "function_index": 0,
+            "pc": 24,
+            "operation": {
+              "Local": {
+                "dst": 19,
+                "offset": 40
+              }
+            },
+            "meaning": "r19 addresses the initialized reference buffer at offset40."
+          },
+          {
+            "function_index": 0,
+            "pc": 25,
+            "operation": {
+              "Local": {
+                "dst": 20,
+                "offset": 16
+              }
+            },
+            "meaning": "r20 addresses the unchanged caller value buffer at offset16."
+          },
+          {
+            "function_index": 0,
+            "pc": 26,
+            "operation": {
+              "Local": {
+                "dst": 21,
+                "offset": 40
+              }
+            },
+            "meaning": "r21 provides a return buffer; the callee result has zero bytes and the callee traps."
+          },
+          {
+            "function_index": 0,
+            "pc": 27,
+            "operation": {
+              "Call": {
+                "function": 2,
+                "args": [
+                  19,
+                  20
+                ],
+                "destination": 21
+              }
+            },
+            "meaning": "Call actual function2 with argument buffers r19/r20; its args copy eight bytes into frame offsets0/8 respectively."
+          },
+          {
+            "function_index": 2,
+            "pc": 0,
+            "operation": {
+              "Local": {
+                "dst": 0,
+                "offset": 0
+              }
+            },
+            "meaning": "r0 addresses helper arg0 at offset0, containing the destination pointer copied from caller offset40."
+          },
+          {
+            "function_index": 2,
+            "pc": 1,
+            "operation": {
+              "Load": {
+                "dst": 1,
+                "address": 0,
+                "size": 8
+              }
+            },
+            "meaning": "Load arg0 into r1: r1 is the address of caller destination local at offset24."
+          },
+          {
+            "function_index": 2,
+            "pc": 2,
+            "operation": {
+              "Local": {
+                "dst": 2,
+                "offset": 8
+              }
+            },
+            "meaning": "r2 addresses helper arg1 at offset8, containing the value copied from caller offset16."
+          },
+          {
+            "function_index": 2,
+            "pc": 3,
+            "operation": {
+              "Load": {
+                "dst": 3,
+                "address": 2,
+                "size": 8
+              }
+            },
+            "meaning": "Load the u64 value argument into r3."
+          },
+          {
+            "function_index": 2,
+            "pc": 4,
+            "operation": {
+              "Unary": {
+                "dst": 4,
+                "op": "Not",
+                "src": 3,
+                "bits": 64
+              }
+            },
+            "meaning": "Compute the 64-bit complement of r3 into r4."
+          },
+          {
+            "function_index": 2,
+            "pc": 5,
+            "operation": {
+              "Store": {
+                "address": 1,
+                "src": 4,
+                "size": 8
+              }
+            },
+            "meaning": "Write r4 through r1 for eight bytes: the complemented value reaches the destination. No intervening operation overwrites r1 or r4."
+          },
+          {
+            "function_index": 2,
+            "pc": 6,
+            "operation": {
+              "Trap": {
+                "message": "core::panicking::panic at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs:10:5: 10:55"
+              }
+            },
+            "meaning": "Trap for the directly recognized core panic at the original helper call span, immediately after Store."
+          }
+        ]
+      }
+    },
+    {
+      "arm": "candidate",
+      "inline": true,
+      "artifact_sha256": "1a23807a7c46b7a9b8cd67fddf50f0385dfe3a86c3c436a4cdc5071107712b59",
+      "program_json_sha256": "83bd876ef527e9c75042b38c2ac9d2ca29692580b763f25727a26baccf84f193",
+      "mir": {
+        "path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-export-panic-late-20260912-01/candidate-inline/mir/panic_store_late_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir",
+        "sha256": "571fbce10b12e80aa4d97163d0f632e2193949fe67d648898a8ee1435cfff05f",
+        "function_signature": "fn store_then_panic(_1: &mut u64, _2: u64) -> ! {",
+        "block_excerpt": "    bb0: {\n        (*_1) = Not(copy _2);\n        _3 = core::panicking::panic(const \"panic-store late fixture\") -> unwind continue;\n    }",
+        "dereference_assignment": "(*_1) = Not(copy _2);",
+        "panic_call": "_3 = core::panicking::panic(const \"panic-store late fixture\") -> unwind continue;",
+        "reachable_from_entry": true,
+        "same_basic_block": true,
+        "dereference_is_first_argument": true,
+        "stored_value_is_complement_of_second_argument": true,
+        "not_panic_preparation": true,
+        "terminator_is_recognized_original_fndef": true,
+        "is_actual_instance_mir_body": true,
+        "instance_mir_stage_reason": "The selected helper is an ordinary local non-const function Item, not a constructor, always-const function, shim or virtual instance. Both frozen Lower::new implementations query instance_mir(instance.def). The installed pinned rustc_middle implementation routes this Item to optimized_mir. rustc_mir_transform returns the body after its Runtime(Optimized) phase; pass_manager dumps that phase as runtime-optimized/after. The actual dump has that header and exact helper signature. Diagnostic and primary artifact bytes match under otherwise identical flags.",
+        "recognized_definition": "core::panicking::panic",
+        "classifier_source_reason": "Pinned core/src/panicking.rs defines the public panic_internals-gated non-generic panic function with never return type in the same core crate as the panic_fmt lang item. The source calls that exact function directly. Both selected classifiers require Fn/AssocFn, the core/std lang-item crate and never return, then accept the core::panicking:: prefix. The assignment has a Deref projection and UnaryOp, so panic_preparation returns false; the whole-block early trap path cannot discard it. The retained actual Trap names that exact definition and helper span.",
+        "classifier_source_path": "/Users/danluu/dev/rust-interp-perf-20260912/crates/mir-export/src/lower.rs",
+        "classifier_source_sha256": "b04da38becc629d283473cc4ac32cf7b34719e0e1668887c46d3b7ebabfffbe3",
+        "reachability_reason": "The helper has exactly one basic block, bb0, which is its entry block. The selected rust_interp_entry takes its nonzero-mode branch and calls this helper as actual bytecode function2 in both leaf configurations; the normal-return helper alone is inlined.",
+        "argument_mapping_reason": "The signature binds _1 to &mut u64 destination and _2 to u64 value. The sole dereference assignment writes Not(copy _2) through _1, immediately before the direct panic terminator."
+      },
+      "bytecode": {
+        "function_index": 2,
+        "function_name": "store_then_panic[]",
+        "unary_pc": 4,
+        "store_pc": 5,
+        "trap_pc": 6,
+        "unary": {
+          "Unary": {
+            "dst": 4,
+            "op": "Not",
+            "src": 3,
+            "bits": 64
+          }
+        },
+        "store": {
+          "Store": {
+            "address": 1,
+            "src": 4,
+            "size": 8
+          }
+        },
+        "trap": {
+          "Trap": {
+            "message": "core::panicking::panic at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs:10:5: 10:55"
+          }
+        },
+        "reachable_from_entry": true,
+        "store_executes_before_trap": true,
+        "address_is_destination_argument": true,
+        "value_is_complement_of_value_argument": true,
+        "unary_source_is_value_argument": true,
+        "no_overwrite_between_unary_and_store": true,
+        "excludes_caller_initialization": true,
+        "argument_and_control_flow_derivation": "Entry args are mode at offset8 and value at offset16. PCs1-3 initialize destination at offset24 from value. Mode1 follows PC9 to PC39. PCs39-45 put the address of offset24 in the reference buffer at offset40 and call function2 with that buffer plus the value buffer. This call remains present with inlining enabled. Function2 args occupy offsets0 and8. Its PCs0-3 load destination into r1 and value into r3, PC4 computes Not64 into r4, PC5 stores r4 through r1, and PC6 traps. The helper has no branches or calls and no intervening writer; there is no path to its panic Trap bypassing Store5. Caller initialization and the reference-buffer Store are distinct operations and are not the witness.",
+        "trace": [
+          {
+            "function_index": 0,
+            "pc": 0,
+            "operation": {
+              "Imm": {
+                "dst": 22,
+                "value": 0
+              }
+            },
+            "meaning": "Initialize promoted boolean temporary r22 to zero; it is overwritten at PC8."
+          },
+          {
+            "function_index": 0,
+            "pc": 1,
+            "operation": {
+              "Local": {
+                "dst": 0,
+                "offset": 24
+              }
+            },
+            "meaning": "r0 points to caller destination local at frame offset24."
+          },
+          {
+            "function_index": 0,
+            "pc": 2,
+            "operation": {
+              "Local": {
+                "dst": 1,
+                "offset": 16
+              }
+            },
+            "meaning": "r1 points to the caller second-argument value buffer at offset16."
+          },
+          {
+            "function_index": 0,
+            "pc": 3,
+            "operation": {
+              "Copy": {
+                "dst": 0,
+                "src": 1,
+                "size": 8
+              }
+            },
+            "meaning": "Initialize caller destination from value. This Copy is not the witnessed complement Store."
+          },
+          {
+            "function_index": 0,
+            "pc": 4,
+            "operation": {
+              "Local": {
+                "dst": 3,
+                "offset": 8
+              }
+            },
+            "meaning": "r3 points to caller first-argument mode buffer at offset8."
+          },
+          {
+            "function_index": 0,
+            "pc": 5,
+            "operation": {
+              "Load": {
+                "dst": 4,
+                "address": 3,
+                "size": 8
+              }
+            },
+            "meaning": "Load the u64 mode into r4."
+          },
+          {
+            "function_index": 0,
+            "pc": 6,
+            "operation": {
+              "Imm": {
+                "dst": 5,
+                "value": 0
+              }
+            },
+            "meaning": "Set r5 to zero for the mode comparison."
+          },
+          {
+            "function_index": 0,
+            "pc": 7,
+            "operation": {
+              "Binary": {
+                "dst": 6,
+                "overflow": 7,
+                "op": "Eq",
+                "a": 4,
+                "b": 5,
+                "bits": 64,
+                "signed": false
+              }
+            },
+            "meaning": "Compare mode to zero; mode1 produces false, integer0, in r6."
+          },
+          {
+            "function_index": 0,
+            "pc": 8,
+            "operation": {
+              "Cast": {
+                "dst": 22,
+                "src": 6,
+                "from": 8,
+                "to": 8,
+                "signed": false
+              }
+            },
+            "meaning": "Copy the boolean comparison to r22 without changing false/zero."
+          },
+          {
+            "function_index": 0,
+            "pc": 9,
+            "operation": {
+              "Switch": {
+                "value": 22,
+                "cases": [
+                  [
+                    0,
+                    39
+                  ]
+                ],
+                "otherwise": 10
+              }
+            },
+            "meaning": "For mode1, switch on zero to PC39; the normal-return branch is bypassed."
+          },
+          {
+            "function_index": 0,
+            "pc": 39,
+            "operation": {
+              "Local": {
+                "dst": 17,
+                "offset": 40
+              }
+            },
+            "meaning": "r17 addresses the caller reference-argument buffer at offset40."
+          },
+          {
+            "function_index": 0,
+            "pc": 40,
+            "operation": {
+              "Local": {
+                "dst": 18,
+                "offset": 24
+              }
+            },
+            "meaning": "r18 is the address of the caller destination local at offset24."
+          },
+          {
+            "function_index": 0,
+            "pc": 41,
+            "operation": {
+              "Store": {
+                "address": 17,
+                "src": 18,
+                "size": 8
+              }
+            },
+            "meaning": "Store the destination address into the reference-argument buffer, not the complemented value into the destination."
+          },
+          {
+            "function_index": 0,
+            "pc": 42,
+            "operation": {
+              "Local": {
+                "dst": 19,
+                "offset": 40
+              }
+            },
+            "meaning": "r19 addresses the initialized reference buffer at offset40."
+          },
+          {
+            "function_index": 0,
+            "pc": 43,
+            "operation": {
+              "Local": {
+                "dst": 20,
+                "offset": 16
+              }
+            },
+            "meaning": "r20 addresses the unchanged caller value buffer at offset16."
+          },
+          {
+            "function_index": 0,
+            "pc": 44,
+            "operation": {
+              "Local": {
+                "dst": 21,
+                "offset": 40
+              }
+            },
+            "meaning": "r21 provides a return buffer; the callee result has zero bytes and the callee traps."
+          },
+          {
+            "function_index": 0,
+            "pc": 45,
+            "operation": {
+              "Call": {
+                "function": 2,
+                "args": [
+                  19,
+                  20
+                ],
+                "destination": 21
+              }
+            },
+            "meaning": "Call actual function2 with argument buffers r19/r20; its args copy eight bytes into frame offsets0/8 respectively."
+          },
+          {
+            "function_index": 2,
+            "pc": 0,
+            "operation": {
+              "Local": {
+                "dst": 0,
+                "offset": 0
+              }
+            },
+            "meaning": "r0 addresses helper arg0 at offset0, containing the destination pointer copied from caller offset40."
+          },
+          {
+            "function_index": 2,
+            "pc": 1,
+            "operation": {
+              "Load": {
+                "dst": 1,
+                "address": 0,
+                "size": 8
+              }
+            },
+            "meaning": "Load arg0 into r1: r1 is the address of caller destination local at offset24."
+          },
+          {
+            "function_index": 2,
+            "pc": 2,
+            "operation": {
+              "Local": {
+                "dst": 2,
+                "offset": 8
+              }
+            },
+            "meaning": "r2 addresses helper arg1 at offset8, containing the value copied from caller offset16."
+          },
+          {
+            "function_index": 2,
+            "pc": 3,
+            "operation": {
+              "Load": {
+                "dst": 3,
+                "address": 2,
+                "size": 8
+              }
+            },
+            "meaning": "Load the u64 value argument into r3."
+          },
+          {
+            "function_index": 2,
+            "pc": 4,
+            "operation": {
+              "Unary": {
+                "dst": 4,
+                "op": "Not",
+                "src": 3,
+                "bits": 64
+              }
+            },
+            "meaning": "Compute the 64-bit complement of r3 into r4."
+          },
+          {
+            "function_index": 2,
+            "pc": 5,
+            "operation": {
+              "Store": {
+                "address": 1,
+                "src": 4,
+                "size": 8
+              }
+            },
+            "meaning": "Write r4 through r1 for eight bytes: the complemented value reaches the destination. No intervening operation overwrites r1 or r4."
+          },
+          {
+            "function_index": 2,
+            "pc": 6,
+            "operation": {
+              "Trap": {
+                "message": "core::panicking::panic at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs:10:5: 10:55"
+              }
+            },
+            "meaning": "Trap for the directly recognized core panic at the original helper call span, immediately after Store."
+          }
+        ]
+      }
+    }
+  ]
+}

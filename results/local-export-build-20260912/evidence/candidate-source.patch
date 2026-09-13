@@ -1,0 +1,3251 @@
+diff --git a/benchmarks/experiments/check-layout-without-vector/PLAN.md b/benchmarks/experiments/check-layout-without-vector/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..4ab0a1864c53c295851eda922b06e359150b5788
+--- /dev/null
++++ b/benchmarks/experiments/check-layout-without-vector/PLAN.md
+@@ -0,0 +1,40 @@
++# Check retained layouts without a temporary slot vector
++
++Status: source-only, unqualified candidate. No builds, tests, benchmarks or
++performance claims are part of this preparation.
++
++Base: `d8077a061bd4c58e9e0f8c0a07073344c49bdb94`.
++Owned branch: `perf/check-layout-without-vector-20260912`.
++
++`ChosenLayout::into_shapes` currently reconstructs every dedicated slot into a
++temporary vector before choosing either that vector or the retained colored
++layout for verification. A chosen colored layout discards the reconstruction.
++An uncolored layout needs only equality with the supplied slots and its extent.
++
++Keep the full checked reconstruction at its existing capture boundary, including
++for colored layouts. Replace vector collection with an arithmetic walk. Compare
++dedicated slots without allocation when no colored layout was chosen. Every
++shape must still pass checked allocation before either certificate assertion;
++a slot mismatch must not short-circuit a later overflow. Retain the extent
++assertion before the final slot assertion, their messages, the selected colored
++slots, shape ownership and all caller/certificate behavior.
++
++A test-only copy retains the original verifier. Three focused tests compare six
++successful colored/dedicated fixtures (including gaps, zero-sized slots and empty
++shapes), fourteen slot/length/extent failures, and twelve later checked offset or
++size overflow cases combined with earlier certificate mismatches. They assert
++literal panic precedence as well as retained-oracle equality. The tests have not
++been run; root will execute the appropriate qualification separately.
++
++Structurally this removes one temporary vector allocation and its slot writes
++and destruction per admitted capture. It preserves the complete arithmetic walk;
++the fraction of build readiness attributable to this work is not yet established.
++This is separate from the base's local operand-size and artifact serialization
++changes, and does not change runtime code, wire formats, cached observation
++fields, planner bounds or the independent physical-range certificate.
++
++Source review found no blocker in the arithmetic/assertion order, ownership or
++test type inference. A text comparison confirms that the retained verifier body
++matches the base after renaming `self` and removing comments/whitespace. These
++are source checks only; compilation, test execution and performance remain
++unqualified.
+diff --git a/benchmarks/experiments/epoch-scalar-aliases/PLAN.md b/benchmarks/experiments/epoch-scalar-aliases/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..0a83f71a7a8afc70adca2b537210f4eae550bf3d
+--- /dev/null
++++ b/benchmarks/experiments/epoch-scalar-aliases/PLAN.md
+@@ -0,0 +1,94 @@
++# Scalar capture alias epochs: unqualified source candidate
++
++Base: `04bb082113ae6fc04eee4ea0c370cdf1f5b34648`. Branch:
++`perf/epoch-scalar-aliases-20260912`. No builds, tests, or benchmarks have run.
++This candidate is separate from outer validation reuse and owned output compaction.
++The root's preimplementation design follows; implementation details and pending
++qualification are recorded below it.
++
++The current scalar_moves::eliminate clears a register-sized aliases table at
++every basic block. Replace logical resets with a per-block generation while
++preserving source-version checks, writer invalidation, and all capture/dead-read
++and branch remapping logic. Keep this distinct from owned promotion output.
++
++A candidate representation is Option<(Reg, u32, NonZeroU32)> for source, source
++version and epoch. A NonZeroU32 niche can retain the current 12-byte size of
++Option<(Reg,u32)> on this host; check actual size and do not claim a portable
++layout guarantee. Avoid adding a second register-sized array. On a read, reuse
++an alias only when its epoch equals the current block and its source version is
++still current. On each write clear that destination alias as before. On capture
++record the current epoch. All decisions therefore see the same logical table.
++
++Use nonzero generations and handle wrapping explicitly: if the generation wraps
++to zero, clear aliases once and restart at one, so ancient aliases cannot become
++live again. This avoids new size limits or exceptional behavior even though the
++production caller currently caps code/registers at 100,000. No source version
++arithmetic changes. A tiny generation-advance helper can be tested at the wrap
++boundary without allocating billions of operations.
++
++Tests should retain the original algorithm for differential output/count
++comparisons across branches, loops, register writers, calls, and scalar widths;
++include a literal stale-capture counterexample at a block boundary and a direct
++wrap reset expectation. Preserve existing rejection/aliasing/overlap oracles.
++Measure only as a future distinct candidate with fixed fresh histories. This
++may lose on small functions because each alias lookup gains an epoch comparison;
++no speed claim follows from the asymptotic reset improvement alone.
++
++## Implemented scope
++
++`Alias` is `Option<(Reg, u32, NonZeroU32)>`: source register, source version,
++block epoch. There is one alias table as before and one scalar current epoch.
++A block start advances the epoch. A captured alias can rewrite a read only if
++both its epoch and its source version still match. Explicit writes still clear
++the destination alias and use the original `versions[r] += 1` arithmetic.
++Capture recognition, scalar widths and all operand rewrite order are unchanged.
++
++The initial nonzero epoch is one; the first block advances it to two. The initial
++table contains no aliases, so this numbering has no observable effect. Advancing
++`u32::MAX` clears the complete table before returning epoch one. No old entry can
++become current when epoch values are reused. This adds no code/register limit and
++uses no new unsafe code. The final read census, capture liveness, dead-operation
++selection and branch remapping are unchanged, including the original output copy
++loop. The separate owned-compaction candidate can compose at that final loop.
++
++## Prepared tests and retained reference
++
++`scalar_promote_moves_epoch_tests.rs` retains `eliminate` from
++`04bb082:crates/mir-export/src/lower/scalar_promote_moves.rs`. Only its
++name/visibility and the paths to unchanged parent helpers differ. The exact
++original function text, excluding trailing blank lines, has SHA-256
++`603fe733350f2f88137088676eba7914feed7407d75a85f350b82d5a5db9e7ff`.
++It keeps the original full `aliases.fill(None)` at every block boundary and is
++independent of the epoch helper and representation.
++
++Full serialized instruction streams and removal counts are compared on 512
++fixed-seed cases with branches, cycles, duplicate switch keys, capture casts,
++width/signedness changes, explicit writers, direct/indirect call operands and
++retained diagnostics. These are compiler-algorithm comparisons; the random
++streams are not executed or claimed as native semantic oracles.
++
++Literal checks cover all five scalar widths, including overwriting a captured
++source, and a join that bypasses capture without changing the source version.
++The latter must retain the original code and return the initial register zero
++instead of seven when run by the existing checked interpreter entrypoint.
++A direct generation-wrap check seeds both ancient epoch-one and maximum-epoch
++aliases, requires the table to clear before restarting at one, and checks that
++a normal advance does not clear physical entries. Existing semantic/aliasing/
++branch and instruction-budget fixtures remain unchanged.
++
++On aarch64 macOS, a prepared host-footprint test requires both the old alias slot
++and the epoch slot to occupy 12 bytes. This check has not run. The layout is not a
++portable guarantee or a measured memory improvement; qualification must reject
++or separately reconsider the representation if that host assertion fails.
++
++## Qualification still required
++
++Run the exporter debug/release tests and existing scalar-promotion/native/
++interpreter/JIT, aliasing and rejection fixtures under the shared lock. Root must
++also qualify any composition with owned output compaction against unchanged
++public bytecode and reports. Keep the same frozen VM/wrapper and launcher in all
++build-time comparisons, and freeze a new candidate/tool/source manifest before
++any independently predeclared screen. Preserve all earlier parked candidates.
++No speedup follows from removing table clears: small functions may lose to the
++additional epoch comparison on each alias read. No measurement is part of this
++commit or its source review.
+diff --git a/benchmarks/experiments/local-export-work-reuse/PLAN.md b/benchmarks/experiments/local-export-work-reuse/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..890c7efd5001a847802249cda5a8bfbf032a9832
+--- /dev/null
++++ b/benchmarks/experiments/local-export-work-reuse/PLAN.md
+@@ -0,0 +1,102 @@
++# Compose local exporter work reuse
++
++Prospective source-only composition in the owned worktree
++`/Users/danluu/dev/rust-interp-build-plan-20260912`, on the new branch
++`perf/local-export-work-reuse-20260912`. The starting commit is
++`d8077a061bd4c58e9e0f8c0a07073344c49bdb94`; the original component branches
++remain unchanged. No builds, tests, benchmarks or performance claims accompany
++this preparation, and the currently qualifying root source is unaffected.
++
++## Exact composition
++
++Apply the reviewed commits without source adaptation:
++
++- `15dfa9f5b13ce544d459067fa3df2dda9e476de3`: check the chosen scalar layout
++  without allocating a temporary dedicated-slot vector. Every checked allocation
++  still precedes the extent assertion, which still precedes the slot assertion.
++- `3fdbd3705072ba7fae1fc1ba2c03c63af16b10bd`: retain the first panic classifier
++  result within one immutable MIR block, and format the allocator suffix path
++  once. Statement lowering, instance resolution, virtual handling and diagnostics
++  keep their previous order.
++
++The component path sets are disjoint. `SOURCES.json` will bind the common base,
++original and applied commits, every component path's exact Git blob/mode and
++SHA256, and the separate fixture and qualification documents. The composition
++adds no production behavior beyond the exact two reviewed deltas. Their parent
++already contains the separately reviewed operand-size and one-pass serialization
++candidates; none of these changes is qualified by this source manifest.
++
++## Qualification obligations
++
++Run debug/release workspace checks and the established differential/rejection
++suite, retaining raw command receipts, before any adoption screen. The three
++ChosenLayout tests must preserve their literal valid-layout, mismatch and later
++overflow outcomes against the original allocating verifier. Compare baseline and
++candidate artifacts and recoverable errors with matching pinned tools, options,
++source paths and frozen runtime. Retain the inherited operand-size native fixture,
++one-pass serialization identity checks, allocator/indirect-call tests, strict
++frontend controls, and cache/replay validation.
++
++The extra fixture below closes a specific call-classification coverage question.
++Its source alone does not establish that the compiler emitted the desired MIR or
++that a dynamic path was exercised. A failed coverage check blocks the claim of
++coverage; it does not justify deleting checks or changing compiler flags silently.
++
++## Store before a late panic trap
++
++`tests/panic_store_fixture.rs` contains an `#[inline(never)]` helper that writes
++its argument through `&mut u64` and then invokes a literal panic. A normal control
++stores and returns the same argument. An independent native-only observation
++mode catches the helper's panic and prints the stored value; the ordinary panic
++mode leaves the panic uncaught so the original failure behavior remains visible.
++The exported entry does not call the native catch adapter.
++
++Later root qualification must perform all of these checks:
++
++1. Compile the same fixture from the same absolute path with both compiler
++   artifacts, under the normal pinned flags, with identical selected entries and
++   each existing leaf-inlining setting. Retain raw artifacts, lowered reports and
++   diagnostic outputs. Inspect the actual MIR from that compiler invocation:
++   the helper must have a reachable block whose original terminator is a direct
++   recognized panic `FnDef` and whose preceding statements include the assignment
++   through the dereferenced argument. That statement must fail the existing
++   `panic_preparation` predicate, proving use of the late classifier branch.
++2. Decode and validate the retained programs. Locate the helper by its reported
++   function identity, then inspect actual data flow: a Store of the supplied
++   value through the pointer argument must precede the reachable panic Trap.
++   Specifically identify the size-8 Store from the second argument through the
++   dereferenced first argument; exclude the caller's initial `!value` store.
++   Checking only a function name, the presence of any Store, or the order of
++   unrelated opcodes is insufficient. Verify that no earlier control edge skips
++   this Store on the helper's path, including any inlined representation.
++3. Compare complete serialized artifact bytes and semantic reports between the
++   parent and composition, excluding only already-declared timing/path fields.
++   If ordinary exporter output omits the MIR needed for item 1, retain a separate
++   diagnostic MIR export using exactly the same compiler/optimization settings;
++   do not count a differently optimized fixture as proof of the primary export.
++4. For fixed boundary values `0`, `1`, `0x8000000000000000` and
++   `0xffffffffffffffff`, the native observation adapter must report the exact
++   value after catching the panic. The normal control must return that value in
++   native execution and each selected runtime. The uncaught native call and both
++   exported panic calls must fail, and parent/candidate VM error text and exit
++   behavior must agree. Native and VM panic formatting need not be identical.
++   Structural Store-before-Trap evidence remains necessary because a VM failure
++   alone cannot reveal the final memory contents.
++
++Pass those boundary values as decimal CLI arguments, since the fixture's native
++parser does not accept hexadecimal prefixes. Retain the panic hook's stderr in
++successful native observation mode; successful catching does not suppress it.
++
++The native observation adapter relies on unwind behavior and must be compiled
++with the existing native fixture settings that allow catching panics. If the
++qualified native settings abort, retain the uncaught check and use a separately
++documented native unwind adapter only for the store oracle; do not silently
++change the exported program's panic policy.
++
++Independent source review by `binary_codegen` found no blocker in this fixture
++or the qualification design. This review did not compile or execute the fixture.
++
++After correctness and diagnostic evidence are complete, root may freeze a
++separate observations-off build-readiness screen. Keep the existing meaningful
++5% adoption floor and fixed guard rules; do not infer speedup or frequency from
++this source change, aggregate phase totals, or the new coverage fixture.
+diff --git a/benchmarks/experiments/local-export-work-reuse/SOURCES.json b/benchmarks/experiments/local-export-work-reuse/SOURCES.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..ad5bff340ff21695c6d9bfd253d54d25ac28dcf3
+--- /dev/null
++++ b/benchmarks/experiments/local-export-work-reuse/SOURCES.json
+@@ -0,0 +1,130 @@
++{
++  "kind": "unqualified-source-only-composition",
++  "branch": "perf/local-export-work-reuse-20260912",
++  "worktree": "/Users/danluu/dev/rust-interp-build-plan-20260912",
++  "common_base": "d8077a061bd4c58e9e0f8c0a07073344c49bdb94",
++  "exact_source_union_commit": "96d74d87259c8e1323734c410284657c59f44d9c",
++  "components": [
++    {
++      "name": "chosen-layout-without-vector",
++      "original_commit": "15dfa9f5b13ce544d459067fa3df2dda9e476de3",
++      "applied_commit": "3553b7821aa7eb506e5dcbef63e85d834de18e1a",
++      "files": [
++        {
++          "path": "benchmarks/experiments/check-layout-without-vector/PLAN.md",
++          "mode": "100644",
++          "git_blob": "4ab0a1864c53c295851eda922b06e359150b5788",
++          "sha256": "8174082627b8e194bcaa01cad0368eee3f6bd9efadf82cf4774dd8616c0314e7",
++          "bytes": 2406
++        },
++        {
++          "path": "crates/mir-export/src/lower/scalar_frame.rs",
++          "mode": "100644",
++          "git_blob": "13df103bfff09d7cb7817d4f37f8a48abcbe8067",
++          "sha256": "0113870ff3a9db436e087bef26a09d14649c5408306926251806b105ccc5dd59",
++          "bytes": 20478
++        },
++        {
++          "path": "crates/mir-export/src/lower/scalar_frame_layout_tests.rs",
++          "mode": "100644",
++          "git_blob": "e62d65880560065f833d9a028441a0127d2625d2",
++          "sha256": "fbfb233aabdbfd9b373fb343c962539e42c8421fef77d67c89c105ce20e33eb7",
++          "bytes": 5054
++        }
++      ]
++    },
++    {
++      "name": "reuse-call-classification",
++      "original_commit": "3fdbd3705072ba7fae1fc1ba2c03c63af16b10bd",
++      "applied_commit": "96d74d87259c8e1323734c410284657c59f44d9c",
++      "files": [
++        {
++          "path": "benchmarks/experiments/reuse-call-classification/PLAN.md",
++          "mode": "100644",
++          "git_blob": "5f05bec8c6577a93a1c70133c6abff3c30ab8394",
++          "sha256": "b7ad371db417febddbef3ec9079831a4b00f9d74b440aea1ff6c10547e79747f",
++          "bytes": 4568
++        },
++        {
++          "path": "benchmarks/experiments/reuse-call-classification/SOURCES.json",
++          "mode": "100644",
++          "git_blob": "a62ea8111b65180fc6b66ce44e50c6233335c416",
++          "sha256": "264da57bbfb14d92a93fe4b62928fbd74ebeabae1867d4072e43a92748ce9473",
++          "bytes": 1839
++        },
++        {
++          "path": "crates/mir-export/src/lower.rs",
++          "mode": "100644",
++          "git_blob": "1b789502243bb59114be99128ddd79eba7342c5c",
++          "sha256": "b04da38becc629d283473cc4ac32cf7b34719e0e1668887c46d3b7ebabfffbe3",
++          "bytes": 123150
++        }
++      ]
++    }
++  ],
++  "component_paths_disjoint": true,
++  "tracked_delta_equals_component_union": true,
++  "fixture_and_plan": [
++    {
++      "path": "benchmarks/experiments/local-export-work-reuse/PLAN.md",
++      "sha256": "1edde9bd39f29ffefbad6891e29da40a6a5c31cd1a347e21dc36ce9fe7a3e44d",
++      "bytes": 6334
++    },
++    {
++      "path": "tests/panic_store_fixture.rs",
++      "sha256": "71ee4a3d817990ea243968be710f9d233450ea25cd0f5ab921055f2bd1651cc3",
++      "bytes": 1582
++    }
++  ],
++  "unchanged_dependencies": [
++    {
++      "path": "scripts/validate_interpreter.py",
++      "mode": "100644",
++      "git_blob": "0f23fa98eda56ff26d35182669ba16ce2967c1bb",
++      "sha256": "f6518620e45b53c4169c0046f2dff997569fd8c16b7df9489397b6c1411fbc81",
++      "bytes": 37171
++    },
++    {
++      "path": "tests/local_layout_fixture.rs",
++      "mode": "100644",
++      "git_blob": "34c9d1df5cbc725a1b40dcbb3d2a300d5d55a7fb",
++      "sha256": "cc907e09389db88bebebf61c0989208358c75a21097f697dfbf650f2c46539f6",
++      "bytes": 5649
++    },
++    {
++      "path": "crates/mir-export/src/artifact_serialization.rs",
++      "mode": "100644",
++      "git_blob": "ffbf2950f7f3800dbb13817c2397a36e5cf98e90",
++      "sha256": "5ed5c9bdd3e6f471da04b2375a5b65081a22b6c84758a7b0d544e69d21bca9cb",
++      "bytes": 544
++    },
++    {
++      "path": "Cargo.lock",
++      "mode": "100644",
++      "git_blob": "9d50bab4980a07550685d3835bf26535f4bbf5da",
++      "sha256": "dbc56f0402bbfa25c9b44e8385c5c8c2d31770da7e889f871d6fded3d73475d2",
++      "bytes": 6287
++    },
++    {
++      "path": "rust-toolchain.toml",
++      "mode": "100644",
++      "git_blob": "8fda10170519bd537b10b45150160b0757969e5c",
++      "sha256": "0087d3a23067241ad1eb1f3dfa731d5daf8b8ea6b16ca3cf68a78fe43dc8c132",
++      "bytes": 113
++    }
++  ],
++  "source_reviews": {
++    "15dfa9f5": "runtime_review: no source blocker",
++    "3fdbd370": "runtime_review: no source blocker",
++    "fixture_and_plan": "binary_codegen: no source blocker; actual MIR/bytecode coverage still unqualified"
++  },
++  "builds_executed": false,
++  "tests_executed": false,
++  "benchmarks_executed": false,
++  "pending": [
++    "correctness qualification",
++    "actual MIR and bytecode Store-before-Trap coverage proof",
++    "separately frozen performance screen"
++  ],
++  "manifest_self_hash": "Excluded to avoid a self-reference; the packaging commit binds this file."
++}
+diff --git a/benchmarks/experiments/local-sizes-one-pass-artifact/PLAN.md b/benchmarks/experiments/local-sizes-one-pass-artifact/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..b1de3efe70a252cf5933e09d44a369e7f5f3bc15
+--- /dev/null
++++ b/benchmarks/experiments/local-sizes-one-pass-artifact/PLAN.md
+@@ -0,0 +1,67 @@
++# Initialized operand sizes and one-pass artifact serialization
++
++Status: unqualified source composition. No builds, tests or benchmarks are run
++for this preparation. Candidate 4 qualification and its original fixture remain
++separate; its diagnostics will determine whether this composition merits later
++qualification and a prospectively fixed adoption screen.
++
++Owned worktree: `/Users/danluu/dev/rust-interp-build-plan-20260912`.
++Branch: `perf/local-sizes-one-pass-artifact-20260912`.
++Base: `03d894adc4f1856a2c6c2b5a3f7a203a77c851e5`.
++
++## Exact scope
++
++Apply these two already-reviewed source commits without modification, in order:
++
++1. `8307fac87bd21d03ec36e85468857df32c5627eb`: initialized local operand-size
++   reuse, its extended native fixture and prospective design.
++2. `5245c1c1e1f23482fa5303826362c16731303f26`: one-pass normal artifact
++   serialization, its byte-identity tests and prospective design.
++
++Both commits have the same base and disjoint changed paths. Preserve their
++original branches (`perf/reuse-local-operand-sizes-20260912` and
++`perf/one-pass-artifact-20260912`). Add only this composition note and
++`SOURCES.json` beyond the exact union. Do not incorporate the root's active
++qualification/controller changes or alter its fixture.
++
++The original designs remain authoritative for each component's invariant:
++
++- [Initialized local operand sizes](../reuse-local-operand-sizes/PLAN.md)
++- [One-pass artifact serialization](../one-pass-artifact/PLAN.md)
++
++Their interaction is limited to consuming the completed Program: operand sizes
++are reused while lowering; the immutable final graph then passes through the
++existing validation/optimization pipeline and the new serializer. Neither
++component retains references into the other's storage or adds persistent cache
++state. There is no new combined implementation or altered error-order policy.
++
++## Source reviews and verification
++
++Before composition, binary_codegen independently reviewed both original commits
++and reported no blocker. Root assigned the operand-size review to binary_codegen
++while benchmark_review completed its separate controller work. The reviews
++covered initialization/packing size invariants, exact operand evaluation order,
++synthetic fallback and native oracle arithmetic; and pinned bincode encoding,
++private-buffer publication, fixture validity and allocation tradeoffs.
++
++Record the exact base, original/applied commits, file modes, Git blob IDs,
++logical byte lengths and SHA-256 hashes in `SOURCES.json`. Before committing the
++composition metadata, require that the changed-path set is exactly the seven
++component paths and that every path's bytes and mode equal its original source
++commit. Recheck that the original branch heads did not move. After adding this
++note and the manifest, the only additional paths may be those two metadata
++files. This is a source-union check, not executable qualification.
++
++## Qualification boundary
++
++Root's current candidate 4 inputs (`17bd9ac`/`f47`) and original local-layout
++fixture remain outside this composition. The extended fixture belongs to this
++branch; any future baseline/candidate artifact comparison must use that same
++fixture on both sides. Current candidate 4 results cannot qualify these two
++additional changes.
++
++Existing command/seed schedules for the native fixture are unchanged. Five new
++serializer unit tests remain unexecuted. Peak allocation and allocation-failure
++timing can differ because one-pass serialization grows a Vec; byte identity and
++ordinary returned-error/publication behavior do not establish a memory or speed
++improvement. No hit rate, timing gain or adoption decision is claimed here.
+diff --git a/benchmarks/experiments/local-sizes-one-pass-artifact/SOURCES.json b/benchmarks/experiments/local-sizes-one-pass-artifact/SOURCES.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..74e129fdfff0e33dcca188df051ea0f393a98d2c
+--- /dev/null
++++ b/benchmarks/experiments/local-sizes-one-pass-artifact/SOURCES.json
+@@ -0,0 +1,171 @@
++{
++  "schema_version": 1,
++  "kind": "unqualified-source-composition",
++  "base_commit": "03d894adc4f1856a2c6c2b5a3f7a203a77c851e5",
++  "source_union_commit": "bff619198f44ff0e3148e255df39c063d0edf0bc",
++  "source_union_tree": "b89554dd00e9d16d166997ce75e65b6d485aa026",
++  "branch": "perf/local-sizes-one-pass-artifact-20260912",
++  "owned_worktree": "/Users/danluu/dev/rust-interp-build-plan-20260912",
++  "components": [
++    {
++      "name": "initialized_local_operand_sizes",
++      "source_commit": "8307fac87bd21d03ec36e85468857df32c5627eb",
++      "applied_commit": "d9b1a105a5a4dd23f4f47f662a94fdd3db28d7c7",
++      "preserved_branch": "perf/reuse-local-operand-sizes-20260912"
++    },
++    {
++      "name": "one_pass_artifact_serialization",
++      "source_commit": "5245c1c1e1f23482fa5303826362c16731303f26",
++      "applied_commit": "bff619198f44ff0e3148e255df39c063d0edf0bc",
++      "preserved_branch": "perf/one-pass-artifact-20260912"
++    }
++  ],
++  "files": [
++    {
++      "path": "benchmarks/experiments/reuse-local-operand-sizes/PLAN.md",
++      "mode": "100644",
++      "git_blob": "838cb5e65a8327ecb318c2b04331c431c1e307ff",
++      "bytes": 4866,
++      "sha256": "35020caec0ba42c67020e041c64834dcb49129bd82aa8362c3359dffd5294910",
++      "component": "initialized_local_operand_sizes",
++      "source_commit": "8307fac87bd21d03ec36e85468857df32c5627eb",
++      "base_entry": null
++    },
++    {
++      "path": "crates/mir-export/src/lower.rs",
++      "mode": "100644",
++      "git_blob": "cd3ddcc14b20cf56097b09e866670b99b4db04b4",
++      "bytes": 122883,
++      "sha256": "7567fbe5dd5b1ba3284e6c9a340dfa81159e05f0122a0664dbf72772bc47cefa",
++      "component": "initialized_local_operand_sizes",
++      "source_commit": "8307fac87bd21d03ec36e85468857df32c5627eb",
++      "base_entry": {
++        "mode": "100644",
++        "git_blob": "4f47ec72c73786b9ac0af638764068da82437827"
++      }
++    },
++    {
++      "path": "tests/local_layout_fixture.rs",
++      "mode": "100644",
++      "git_blob": "34c9d1df5cbc725a1b40dcbb3d2a300d5d55a7fb",
++      "bytes": 5649,
++      "sha256": "cc907e09389db88bebebf61c0989208358c75a21097f697dfbf650f2c46539f6",
++      "component": "initialized_local_operand_sizes",
++      "source_commit": "8307fac87bd21d03ec36e85468857df32c5627eb",
++      "base_entry": {
++        "mode": "100644",
++        "git_blob": "6226c2499a9d2936fad14be45c4b7d83cc9e1a19"
++      }
++    },
++    {
++      "path": "benchmarks/experiments/one-pass-artifact/PLAN.md",
++      "mode": "100644",
++      "git_blob": "20832278893bd465cff187be7204c14880fbe766",
++      "bytes": 5490,
++      "sha256": "b1e376146b4f19cd0df5d4d874835e69af8e9de724860a9eeafeee0463e1d888",
++      "component": "one_pass_artifact_serialization",
++      "source_commit": "5245c1c1e1f23482fa5303826362c16731303f26",
++      "base_entry": null
++    },
++    {
++      "path": "crates/mir-export/src/artifact_serialization.rs",
++      "mode": "100644",
++      "git_blob": "ffbf2950f7f3800dbb13817c2397a36e5cf98e90",
++      "bytes": 544,
++      "sha256": "5ed5c9bdd3e6f471da04b2375a5b65081a22b6c84758a7b0d544e69d21bca9cb",
++      "component": "one_pass_artifact_serialization",
++      "source_commit": "5245c1c1e1f23482fa5303826362c16731303f26",
++      "base_entry": null
++    },
++    {
++      "path": "crates/mir-export/src/artifact_serialization_tests.rs",
++      "mode": "100644",
++      "git_blob": "2f246c02c8738c23ad39ffa55de8a06551c2c139",
++      "bytes": 7581,
++      "sha256": "70c7a15694cec96b33aa395578be63617f8fafb692c820a5e64b60716d17ea20",
++      "component": "one_pass_artifact_serialization",
++      "source_commit": "5245c1c1e1f23482fa5303826362c16731303f26",
++      "base_entry": null
++    },
++    {
++      "path": "crates/mir-export/src/main.rs",
++      "mode": "100644",
++      "git_blob": "e68957c26226a00ae59ac2d15ff9b55d4f1a6397",
++      "bytes": 24643,
++      "sha256": "7797d110f3035c69d60b40f79b6a3ecd78e5160816567d2124048bcbb7d608fd",
++      "component": "one_pass_artifact_serialization",
++      "source_commit": "5245c1c1e1f23482fa5303826362c16731303f26",
++      "base_entry": {
++        "mode": "100644",
++        "git_blob": "5d2c081c6f3f5f5d5733f9adf70caeb62d5137c0"
++      }
++    }
++  ],
++  "unchanged_reference_dependencies": [
++    {
++      "path": "crates/bytecode/tests/common/call_copy_cases.rs",
++      "mode": "100644",
++      "git_blob": "bcf9eb3fb9a307eae3d352a5d4041eea804f52f6",
++      "bytes": 4990,
++      "sha256": "ba4a9ef2182cee3d337d2b5d532226471b8b9c25baf9ded0e47c47b52d00661f"
++    },
++    {
++      "path": "scripts/validate_interpreter.py",
++      "mode": "100644",
++      "git_blob": "0f23fa98eda56ff26d35182669ba16ce2967c1bb",
++      "bytes": 37171,
++      "sha256": "f6518620e45b53c4169c0046f2dff997569fd8c16b7df9489397b6c1411fbc81"
++    },
++    {
++      "path": "Cargo.lock",
++      "mode": "100644",
++      "git_blob": "9d50bab4980a07550685d3835bf26535f4bbf5da",
++      "bytes": 6287,
++      "sha256": "dbc56f0402bbfa25c9b44e8385c5c8c2d31770da7e889f871d6fded3d73475d2"
++    },
++    {
++      "path": "rust-toolchain.toml",
++      "mode": "100644",
++      "git_blob": "8fda10170519bd537b10b45150160b0757969e5c",
++      "bytes": 113,
++      "sha256": "0087d3a23067241ad1eb1f3dfa731d5daf8b8ea6b16ca3cf68a78fe43dc8c132"
++    }
++  ],
++  "composition_metadata": {
++    "plan": "benchmarks/experiments/local-sizes-one-pass-artifact/PLAN.md",
++    "plan_bytes": 3647,
++    "plan_sha256": "f266ff412dcd56ab0e1bb3e06c718ae0cdbab5603e1cd894b0129ab593cea8e0",
++    "manifest": "benchmarks/experiments/local-sizes-one-pass-artifact/SOURCES.json",
++    "identity_note": "The final Git commit binds this manifest; no self-referential manifest hash is recorded."
++  },
++  "source_reviews": [
++    {
++      "reviewer": "binary_codegen",
++      "source_commit": "8307fac87bd21d03ec36e85468857df32c5627eb",
++      "result": "no blocker",
++      "scope": "read-only source review; no builds or tests"
++    },
++    {
++      "reviewer": "binary_codegen",
++      "source_commit": "5245c1c1e1f23482fa5303826362c16731303f26",
++      "result": "no blocker",
++      "scope": "read-only source review; no builds or tests"
++    }
++  ],
++  "verification": {
++    "component_parents_match_base": true,
++    "component_paths_disjoint": true,
++    "changed_path_set_equals_union": true,
++    "all_component_bytes_and_modes_match": true,
++    "original_branches_preserved": true,
++    "source_component_files": 7
++  },
++  "qualification": {
++    "status": "unqualified",
++    "builds_run": 0,
++    "tests_run": 0,
++    "benchmarks_run": 0,
++    "shared_lock_acquired": false,
++    "root_qualification_inputs": "17bd9ac/f47 remain separate and unchanged by this task"
++  }
++}
+diff --git a/benchmarks/experiments/one-pass-artifact/PLAN.md b/benchmarks/experiments/one-pass-artifact/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..20832278893bd465cff187be7204c14880fbe766
+--- /dev/null
++++ b/benchmarks/experiments/one-pass-artifact/PLAN.md
+@@ -0,0 +1,96 @@
++# One-pass normal artifact serialization
++
++Status: prospective, unqualified source candidate. No builds, tests or timings
++have been run. Keep this separate from the four-component candidate currently
++being qualified and from the initialized-local operand-size candidate.
++
++Owned worktree: `/Users/danluu/dev/rust-interp-build-plan-20260912`.
++Branch: `perf/one-pass-artifact-20260912`.
++Base: `03d894adc4f1856a2c6c2b5a3f7a203a77c851e5`.
++
++## Mechanism and scope
++
++The pinned Cargo.lock selects bincode 1.3.3. Its `internal::serialize` traverses
++the value with `serialized_size`, allocates an exact-capacity Vec, and traverses
++again with `serialize_into` using an unlimited configuration. The public
++`serialize_into` function also uses unlimited, little-endian fixed-width integer
++encoding, and skips the sizing traversal. The public helpers differ in their
++trailing-byte option, but that option is consulted only during decoding.
++
++Replace only normal Program artifact serialization in exporter `main.rs` with a
++private Program-typed helper. The helper owns a `Vec::new()`, calls the public
++`bincode::serialize_into`, preserves `map_err(|e| e.to_string())`, and returns the
++completed buffer only on success. Program and all nested fields use derived
++serializers over immutable, finite owned data; there is no custom stateful
++serializer whose second invocation is part of this contract.
++
++Do not change decoding, runtime code, configuration, flags, validation,
++serialization timing boundaries, hashing/finalization order, or publication.
++The completed private buffer still reaches the existing temporary-file and
++rename code. Do not stream directly into a file or publish a partial buffer.
++
++Keep audit/pack's preallocation size calculation, 64 MiB body cap, 1 GiB total
++cap, count checks and post-serialization size check unchanged. Keep function
++census fingerprint preflights and all trace/report limits unchanged. Normal
++serialization has no artifact byte cap; do not add one or borrow a diagnostic
++limit as a reservation size.
++
++## Allocation and error boundary
++
++Use only `Vec::new()`: no capacity heuristic, historical artifact size, opcode
++estimate, fixed blanket reservation, shrinking pass or new failure mapping.
++This trades exact preallocation for amortized buffer growth. The pinned
++toolchain's RawVec grows to the greater of twice its old capacity and the
++required capacity. Reallocations, copied bytes and retained spare capacity may
++offset the removed traversal. Peak allocation and allocation-failure timing are
++not claimed identical to the old implementation. Qualification must consider
++those costs, without describing the source change as a measured speedup.
++
++Derived Program serialization has no unknown-length sequence or custom-error
++path. Keep the existing recoverable-error mapping and graph-validation order;
++do not make the helper generic solely to manufacture a stateful or failing
++Serialize contract for tests. Existing malformed-source/publication checks
++remain relevant to the enclosing exporter path.
++
++## Correctness checks to prepare
++
++Compare the production helper's complete bytes against retained
++`bincode::serialize` output for full existing call-copy Program fixtures and a
++new all-field fixture with every opcode variant, nested enums, nonempty
++arguments/cases, Unicode and embedded NUL strings, high u128 values, statics and
++TLS. Include a small literal wire-format expectation so accidentally selecting
++varint encoding or changing field order is detected independently of a round
++trip. Retain the existing decoder unchanged and use it only in tests.
++
++Exercise independently growing code, string and byte-payload shapes with modest
++deterministic sizes around growth boundaries. Assert byte identity and full
++length, not an allocator-specific capacity or reallocation count. Verify that
++serialization does not introduce validation or mutate a Program, including a
++malformed Program that both serializers can encode before the existing
++validator rejects it.
++
++Root will run tests and same-source artifact/hash comparisons under the shared
++workload lock before deciding whether to qualify this separately. No tests,
++builds, benchmarks or shared-lock acquisition are authorized for this source
++preparation task.
++
++## Source preparation
++
++The implementation adds one Program-typed helper and replaces the normal emit
++call; the serialization checkpoint and all later operations remain in place.
++Audit pack, function census, trace, lowerer, runtime and decoder sources are
++unchanged. The helper keeps the original bincode-error-to-String conversion and
++returns no buffer on error. It does not add structural validation to encoding.
++
++Five tests are prepared: literal V5 framing; ten existing complete call-copy
++fixtures; every opcode payload and all Program fields under both strict and
++partial-validation headers; 42 deterministic buffer-growth shapes; and unchanged
++malformed-register validation errors. The all-field fixture is structurally
++validated but intentionally never executed: its role is wire-field coverage.
++The existing common call-copy fixture file is included directly, unchanged,
++rather than rebuilding a smaller approximation of those Programs.
++
++The source audit independently counted the minimal encoding as 122 bytes with
++Return tag 13, checked the all-field call arities, register/width/slot bounds,
++Darwin-only opcode target and unsorted nonoverlapping TLS ranges, and verified
++the shared fixture module path. These are source checks, not test results.
+diff --git a/benchmarks/experiments/owned-scalar-output/PLAN.md b/benchmarks/experiments/owned-scalar-output/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..3de36e7f1cc8ab618a39e9ca6655929a4a3aa73c
+--- /dev/null
++++ b/benchmarks/experiments/owned-scalar-output/PLAN.md
+@@ -0,0 +1,56 @@
++# Move retained scalar-promotion bytecode into its output
++
++Unqualified candidate, recorded before production edits or measurements.
++Base: `04bb082`; owned branch `perf/owned-scalar-output-20260912` in
++`/Users/danluu/dev/rust-interp-build-plan-20260912`.
++
++The scalar promotion and scalar capture-removal passes already receive an
++owned mutable bytecode vector. Each finishes its analysis and early declines,
++allocates its replacement vector, then clones every retained operation. This
++duplicates owned diagnostic strings, switch tables and call argument vectors
++even though the old bytecode is discarded immediately after remapping.
++
++Change only the committed output loops to drain their original vectors and move
++unchanged operations into the output. Retain the original inspection match by
++borrowing each drained operation while deciding whether to rewrite it. Keep all
++candidate selection, writer/read proofs, scalar register numbering, immediate
++zero insertion, bounds and early returns before draining. Mapping must still
++record the output position for every original PC, including removed operations;
++both branch remapping passes and all report counters remain unchanged.
++
++Scalar capture forwarding mutates operands during its existing analysis; a
++zero-removal return must retain those mutations exactly as before. Draining is
++only after dead-capture classification and the zero-removal return. Removed
++operations are ordinary Rust values with owned fields; dropping them introduces
++no guest instruction or guest destructor. No additional optimization or
++invalidation strategy is introduced. The alias-table epoch proposal and
++redundant whole-program validation investigation remain separate.
++
++Tests will preserve the pre-change cloning loops as a test-only reference,
++compare serialized output/register counts/reports across existing scalar and
++move fixtures, and add literal control-flow/call/diagnostic checks. Retained
++nonempty heap allocations should survive the move path, proving that the
++candidate does not merely return equal cloned values. Early declines and paths
++with no dead captures must preserve their existing behavior. Existing execution
++fixtures retain native arithmetic/byte expectations and exact instruction-limit
++and fault checks; reference parity alone is not the semantic oracle.
++
++No tests, builds or benchmarks will be run by this agent. Root will qualify the
++commit serially under the shared lock and keep strict rustc checks, flags,
++bytecode equality requirements and the frozen VM unchanged. Current receipts
++put total scalar promotion near 52 ms for edited token builds, but they do not
++attribute that time to cloning and establish no speedup for this candidate.
++
++The implemented test-only reference algorithms come from the portions before
++the first `#[cfg(test)]` in `04bb082`'s scalar promotion and move-removal modules.
++Their original UTF-8 source SHA-256 digests are respectively
++`753ef109f8774d96535ac0da53fa35246c0a3abc136ba4e0afa39778dd36f1b4`
++and `32b7c28642d5e47dbcd223ae37eec99b219b96a59eec689454a44438ef1ed89d`.
++Only test module wiring and an elimination forwarding helper are added to those
++references. Literal expectations and existing execution oracles independently
++cover the behavior; reference equality checks preserve exact bytecode and
++report ordering.
++
++Independent source review found no blocker in the ownership transition, module
++wiring, remapping or literal fixtures. No correctness or performance execution
++has occurred for this candidate, so it remains unqualified.
+diff --git a/benchmarks/experiments/reuse-call-classification/PLAN.md b/benchmarks/experiments/reuse-call-classification/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..5f05bec8c6577a93a1c70133c6abff3c30ab8394
+--- /dev/null
++++ b/benchmarks/experiments/reuse-call-classification/PLAN.md
+@@ -0,0 +1,75 @@
++# Reuse call classification within one MIR block
++
++Source-only candidate based on `d8077a061bd4c58e9e0f8c0a07073344c49bdb94`.
++It is unqualified: no builds, tests, benchmarks, or speedup claims accompany this
++commit. The active root diagnostic and compiler remain unchanged.
++
++## Exact change
++
++`Lower::lower` already classifies each reachable direct call before lowering its
++statements to recognize safe panic preparation. It ordinarily repeats the same
++classification after statement lowering and instance resolution. Keep that first
++`Option<String>` inside the current block and consume it at the existing second
++classification site. No map or cross-function state is added.
++
++`Lower::allocation_function` formats a definition path inside each of two suffix
++predicates. Format it once at the existing first predicate position, after the
++same crate and item-name guards, then test both suffixes in their original order.
++The temporary string remains scoped to the suffix test.
++
++These changes may reduce name formatting and query dispatch for general direct
++calls, including generic standard-library code and container operations. The
++frequency and elapsed contribution have not been measured.
++
++## Ordering and dependency contract
++
++- Unreachable blocks still exit before panic classification. The first lookup
++  still uses the original terminator operand's `FnDef`, not the resolved instance.
++- The safe preparation predicate runs only after a positive classification.
++  Its original trap, source-span formatting, and early continuation stay in place.
++- Every other block lowers its statements, queries the call operand type,
++  resolves the instance, and handles virtual calls in the existing order before
++  consuming the retained result. A positive result cannot bypass resolution or
++  an earlier error. Arguments evaluated by earlier MIR blocks remain evaluated.
++- The original definition and MIR are immutable during this block. The first
++  classification reads all required rustc dependencies inside the same
++  `function_dependencies::observe` operation as before. Reusing it within this
++  operation removes repeated reads; it does not lend another function cached
++  results without recording that function's dependency edges.
++- Allocation crate/name guards, suffix order, global allocator/error-handler
++  rejection, argument materialization, and emitted instructions remain ordered.
++  Recognized allocator names do not newly bypass path classification.
++- No changes to validators, transformation certificates, bytecode, function
++  cache/replay formats, frontend policy, observer schemas, or semantic limits.
++
++## Required qualification
++
++Run workspace debug/release tests and the existing full differential/rejection
++validation against the candidate. Compare artifact bytes and diagnostic outcomes
++with the same fixture inputs and options compiled by this commit's parent.
++The existing coverage most directly relevant to this change is:
++
++- `scripts/validate_interpreter.py`: result-unwrap success/trap cases, fake
++  core/alloc/TLS panic namespaces, custom allocator rejection, strict frontend
++  errors, indirect function calls, and the demand/cache edit sequence.
++- `tests/integer_panic_fixture.rs`: native comparison for actual panic helpers
++  and similarly named ordinary user functions across integer/MIR configurations.
++- `tests/heap_fixture.rs`: Box/Vec operations, allocation/reallocation/deallocation,
++  zeroed allocation, reserve errors, and independently asserted native results.
++- `tests/dynamic_fixture.rs` and `tests/tls_fixture.rs`: virtual dispatch and
++  argument/side-effect behavior, plus the TLS panic path.
++- Existing original token/Ruff/Nushell assertion suites retain negative-edit
++  controls and provide additional artifact-identity checks when a future composed
++  candidate is qualified.
++
++No implementation-shaped unit test is added for a rustc-query call count. The
++source review must specifically check the unchanged early-panic path and that
++the retained positive/negative result is consumed only after statement errors,
++instance-resolution errors, and virtual handling. If an existing differential
++fixture does not exercise an identified boundary, add a focused independent
++source fixture before qualification rather than infer coverage from source shape.
++
++Any future performance decision requires a separate predeclared, observations-off
++build-readiness screen with frozen tools/inputs and original/wrong/restored source
++controls. This source-only candidate does not alter an existing gate or authorize
++retiming an unchanged failed candidate.
+diff --git a/benchmarks/experiments/reuse-call-classification/SOURCES.json b/benchmarks/experiments/reuse-call-classification/SOURCES.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..a62ea8111b65180fc6b66ce44e50c6233335c416
+--- /dev/null
++++ b/benchmarks/experiments/reuse-call-classification/SOURCES.json
+@@ -0,0 +1,38 @@
++{
++  "schema_version": 1,
++  "kind": "unqualified-source-candidate",
++  "base_commit": "d8077a061bd4c58e9e0f8c0a07073344c49bdb94",
++  "branch": "perf/reuse-call-classification-20260912",
++  "owned_worktree": "/Users/danluu/dev/rust-interp-build-metrics-20260912",
++  "production_files": [
++    "crates/mir-export/src/lower.rs"
++  ],
++  "files": [
++    {
++      "path": "crates/mir-export/src/lower.rs",
++      "bytes": 123150,
++      "sha256": "b04da38becc629d283473cc4ac32cf7b34719e0e1668887c46d3b7ebabfffbe3",
++      "git_blob": "1b789502243bb59114be99128ddd79eba7342c5c",
++      "base_sha256": "7567fbe5dd5b1ba3284e6c9a340dfa81159e05f0122a0664dbf72772bc47cefa"
++    },
++    {
++      "path": "benchmarks/experiments/reuse-call-classification/PLAN.md",
++      "bytes": 4568,
++      "sha256": "b7ad371db417febddbef3ec9079831a4b00f9d74b440aea1ff6c10547e79747f",
++      "git_blob": "5f05bec8c6577a93a1c70133c6abff3c30ab8394",
++      "base_sha256": null
++    }
++  ],
++  "unchanged_qualification_and_observer_inputs": {
++    "scripts/validate_interpreter.py": "f6518620e45b53c4169c0046f2dff997569fd8c16b7df9489397b6c1411fbc81",
++    "tests/integer_panic_fixture.rs": "038b2ce09eca8fa0e5d089cd09b5d0aa8f15fed621b33338543f9b5a67959c41",
++    "tests/heap_fixture.rs": "39b836d4461144c1257862df77b2f92eafbe5f47c62bfb36176d2893a1b9a283",
++    "tests/dynamic_fixture.rs": "285b20cfaa17384c54f5ca00a7acf4c015e2dff5e26ac3de25b260faef1969a4",
++    "tests/tls_fixture.rs": "bd11e4e71c5b618989816245bd8deb439ebcc667caec47bd7a050d88ebb1cca8",
++    "tests/result_test_fixture.rs": "663d1a63894d6d75211bf51db094baa74f4de53c3138f9491f2bbc930f932864",
++    "crates/mir-export/src/function_dependencies.rs": "54bbc6061976f0890e7f59d2e888469eca62af5543e4bb64247f53d7cf099309"
++  },
++  "manifest_excludes_itself": true,
++  "builds_tests_benchmarks_executed": false,
++  "performance_claim": false
++}
+diff --git a/benchmarks/experiments/reuse-export-validation/PLAN.md b/benchmarks/experiments/reuse-export-validation/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..d1cde8fbe00a9a7666e22eb027cbd82c3820486b
+--- /dev/null
++++ b/benchmarks/experiments/reuse-export-validation/PLAN.md
+@@ -0,0 +1,159 @@
++# Identical-program validation reuse
++
++Unqualified source candidate based on
++`04bb082113ae6fc04eee4ea0c370cdf1f5b34648`, branch
++`perf/reuse-export-validation-20260912`. The prior source investigation is retained
++below. The implementation removes only main/audit's immediate repeated checks,
++documents lower::export's structural-validation postcondition, and removes the
++obsolete emit-level `validation` timing checkpoint. All checks across mutations,
++standalone public validators and transformation certificates remain unchanged.
++The inline/forwarder duplication discussed below is not changed.
++
++No builds, tests or benchmarks were run. This is separate from the active build
++screen and is intended only for a future distinct composed candidate; no standalone
++5% performance improvement is claimed.
++
++## Proven outer duplicate
++
++The following source positions and check sequence describe the base commit.
++
++`lower::export` has exactly one successful outer return, at `lower.rs:557`.
++Every successful mode reaches `optimize_control_flow(&mut program)` at line 552.
++That function's implementation in `control_flow.rs:41–66` validates both before
++and after its mutations. Its last fallible operation is `validate(program)?`.
++After success, lower only prints the CFG report, records/finishes timers, and
++moves the same Program into Exported. None receives a mutable Program reference.
++
++All preceding paths converge here: single and batch entries, Result adapters,
++forced filtered-test batches, normal lowering, demand/partial checking, binding
++replay, cache verification and actual function-cache reuse. The apparent early
++`return Ok((function, ...))` at lower.rs:334 belongs to the inner per-function
++lowering closure, not to `export`. Cached functions still enter the assembled
++graph, adapters, aggregate relocation, call optimization and final CFG pass.
++Cache staging at line 439 occurs before assembly/final validation and remains
++unchanged. No serialized whole-Program cache bypasses the final pass.
++
++In `main.rs:100–106`, the returned Program is immediately borrowed and validated
++again before serialization. In `audit.rs:34–38`, the and_then closure does the
++same. Both are exact duplicates of the CFG pass's final check. Program, Function
++and Op contain owned ordinary data without interior mutability or custom
++validation callbacks. `validate` reads only that data, including deterministic
++floating-point width checks, and has no external state or successful side effects.
++
++There are no Program writes in either receiving path. Main takes separate trace
++and cost fields; Costs::finish receives &Program and bytes. Test selection occurs
++before export, and the lowerer records selected IDs before transformations that
++preserve IDs. EntryCatalog::new/check_entries later validates a distinct sidecar
++contract against the immutable Program; retain it. Audit only counts fields,
++formats unavailable calls, and optionally calls Pack::store with &Program.
++Pack's size/count limits, serialization-size comparison and digest remain intact.
++Discovery returns before export and creates no Program.
++
++## Implemented outer change and diagnostic contract
++
++The implementation documents `lower::export`'s success postcondition: the returned
++Program has passed the final structural validation after all graph mutations.
++Only the immediate main/audit duplicate calls are removed. Exported.program is
++publicly mutable inside the binary, so this is not a permanent validation token:
++future mutations or a new early success path must establish validation again.
++There is no need for a hash cache, persistent flag, unsafe path or public API.
++
++An invalid final graph already fails inside optimize_control_flow, before the
++CFG-success log or Exported construction. The duplicated caller checks cannot
++produce another ordinary error on an unchanged successful graph. Main therefore
++retains its exact `custom interpreter cannot lower this entry: ...` error wrapper;
++audit retains the same per-entry blocked/error record. Serialization, trace,
++catalog, retention and publication error order remains unchanged. Allocation
++failure behavior can naturally differ when a redundant temporary TLS-range clone
++is removed; this is not a new successful-validation path.
++
++The base's optional emit timing checkpoint named `validation` measures the
++duplicate. The obsolete checkpoint is removed; structural
++validation remains inside `emit.lower_graph` / lower CFG timing. Existing timer
++schema supports a list of stage names, and the attribution reader checks only
++unique names/nonnegative durations/sum. `scripts/status_current.py` directly reads
++the old retained report's `emit['validation']`; that historical report is valid
++and must remain untouched. A future report promoted into that status slot needs
++an explicitly updated consumer/attribution, not a fabricated validation duration.
++Audit lowering_ms and main lowering_ms naturally omit the repeated scan; no
++claims should compare their old/new named subphases as independent attribution.
++
++Strict rustc after_analysis checking, uncalled type/borrow rejection, explicit
++experimental demand behavior and PARTIAL_VALIDATION marking remain unchanged.
++VM loading/execution and prepared-suite validation remain independent and intact.
++
++## Adjacent call-pipeline checks
++
++With inlining enabled the base's full-Program checks are:
++
++1. Initial forwarding entry.
++2. Inline preparation entry, after forwarding has changed call targets.
++3. Inline final result.
++4. Final forwarding entry, on that identical inline result.
++5. CFG entry, after final forwarding has changed call targets.
++6. CFG final result.
++7. Immediate main or audit check, on that identical CFG result.
++
++Only 3→4 and 6→7 cross no mutation. Without inlining, initial/final forwarding is
++one pass, so the sequence is forwarding entry, CFG entry, CFG exit, caller check;
++only the last pair is duplicate. Retain the checks across mutations rather than
++replacing independent transformation validation with an assumption that the
++transformation preserves validity.
++
++For a separately scoped internal reuse of 3→4, extract forwarding's unchanged
++worker behind its existing validated public wrapper. The inline-enabled pipeline
++can invoke the private worker immediately after transform_owned returns its
++validated Program; the no-inline branch still calls the public validated wrapper.
++Forwarding's existing public error behavior and validation-before-options order
++remain unchanged. The worker need not expose a new public API. Keep inline's
++initial/final validators, CFG's initial/final validators, register-initialization
++guards, ordered-copy proofs and every layout/relocation certificate unchanged.
++This extra helper/refactor is more scope than deleting the outer duplicates.
++
++## Worth and qualification
++
++The historical public exporter-attribution report measured 5.1 ms for the emit
++duplicate on edited token builds. It does not measure current source, all earlier
++validation scans, or every audit entry. The ordinary outer change saves one scan
++per export; audit saves one per independently exported entry. Reusing the adjacent
++inline result would save one further scan only when inlining is enabled. There is
++no evidence these changes alone can meet the fixed 5% build-to-ready screen gate.
++The outer deletion is a defensible small cleanup; do not spend a new six-history
++screen on it alone or claim a 5% benefit from scan counts. Prefer a later distinct
++composed candidate if its wider scope already merits qualification.
++
++Qualification must cover unchanged serialized public artifacts and sidecars,
++normal/filtered/single/batch paths, inlining on/off, cache off/verify/reuse where
++supported, and audit with/without retained bodies. Retain invalid-program/error
++ordering tests on every public optimization API plus strict frontend rejection
++fixtures and final artifact-validation checks. Existing pipeline parity fixtures
++should compare full reports and code. Do not introduce an unchecked VM entrypoint
++or remove any certificate to simplify this experiment.
++
++
++## Existing qualification coverage to run before adoption
++
++Root should use the unchanged semantic and audit fixtures under the established
++shared lock, with candidate exporter and independently frozen VM/wrapper:
++
++- `scripts/validate_interpreter.py`: native/interpreter/JIT comparisons, normal
++  and Result/batch entries, strict uncalled type/borrow rejection, demand policies,
++  corrupted-artifact rejection, and audit policy rejection.
++- `scripts/validate_audit_artifacts.py`: mixed lowered/blocked audit entries,
++  metadata, optional retained bodies, native outcomes, and retained-artifact
++  provenance across configuration/cache changes. Compare candidate/base artifact
++  bytes and normalized audit records while excluding elapsed-time fields.
++- Existing export fixtures with inlining on/off, filtered and isolated suites,
++  and function-cache off/verify/reuse modes: require unchanged bytecode, catalogue
++  and selection bindings, diagnostics, strict checking and stale-output rejection.
++  `tests/test_test_discovery.py` and `tests/test_interpreter_build_metrics.py` retain
++  focused discovery/filtered-selection and validation-before-readiness checks.
++- With optional export timers enabled, check unique stage names, nonnegative
++  durations and the exclusive-stage sum as in the existing exporter-attribution
++  harness. The emit `validation` stage must be absent; final structural validation
++  still occurs in lowering. Do not rewrite retained historical reports.
++
++Run the required debug/release workspace checks and the composed candidate's
++predeclared qualification. No new test that merely counts validator invocations
++or copies the caller implementation is added. The benchmark launcher and its
++measured build-to-ready boundary are unchanged.
+diff --git a/benchmarks/experiments/reuse-local-operand-sizes/PLAN.md b/benchmarks/experiments/reuse-local-operand-sizes/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..838cb5e65a8327ecb318c2b04331c431c1e307ff
+--- /dev/null
++++ b/benchmarks/experiments/reuse-local-operand-sizes/PLAN.md
+@@ -0,0 +1,84 @@
++# Reuse initialized local operand sizes
++
++Status: prospective, unqualified source candidate. No builds, tests or timings
++have been run for this change. This is separate from qualification of the four
++components in its base commit.
++
++Owned worktree: `/Users/danluu/dev/rust-interp-build-plan-20260912`.
++Branch: `perf/reuse-local-operand-sizes-20260912`.
++Base: `03d894adc4f1856a2c6c2b5a3f7a203a77c851e5`.
++
++## Scope and invariant
++
++`Lower::new` already normalizes each local type, obtains its layout, checks that
++it is sized and within the alignment limit, and stores the resulting byte size
++in its `Slot`. Its `local_types` entry records successful initialization for the
++same local and `Instance`. Frame packing can change offsets, but its independent
++layout checks preserve each local's size. No later lowering step changes those
++sizes. Reuse that size only for an unprojected `Copy` or `Move` operand whose
++`local_types` entry exists.
++
++Add a private `operand_size` helper, with the original normalized-type/layout
++query as its fallback. Use it only in scalar operand loading, ordinary aggregate
++field copies, and repeat element copies. These sites need a byte count rather
++than a complete layout. Keep every query at its existing evaluation position:
++scalar and field operands are evaluated first; repeat counts are evaluated
++first, followed by element size, operand evaluation, and the expansion bound.
++Do not change raw-pointer aggregate checks, calls, layout-bearing operations,
++scalar load width checks, or operand evaluation for zero-sized values.
++
++Projected places, constants, and `RuntimeChecks` continue through the original
++query. `Lower::empty` has no initialized `local_types`, so synthetic adapters and
++replay helpers retain the original fallback and errors even if they construct
++other storage. The optimization adds no persistent cache, flags or metadata, and
++does not change the scalar-layout certificate or its lifetime.
++
++## Correctness evidence to prepare
++
++Extend the existing native differential `local_layout_fixture.rs`, preserving
++its independent integer-only oracle and seed schedule. Add dynamic local values
++used by scalar operations and aggregate/repeat construction, including native
++128-bit values, aggregates larger than a scalar, and aligned zero-sized values.
++Retain projected reads and constants to exercise fallback behavior alongside
++initialized locals. Expected results must use native arithmetic rather than the
++interpreter or its bytecode helpers.
++
++The existing validator already hashes this fixture, checks native output count,
++and compares each result in both interpreter engines. Existing Result adapter,
++projection, runtime-check and malformed-input coverage remains relevant. Root
++will run the appropriate checks and compare candidate/base bytecode and reports
++before any timing. Source review will verify unchanged evaluation/error order,
++initialization and packing invariants, and synthetic fallback. No new tests
++should merely mirror the helper's condition without a real compiler context.
++
++## Performance boundary
++
++The avoided work is dispatch to an already-cached rustc layout query at these
++size-only sites. No hit rate or speedup is assumed. Root will use diagnostics
++and a separately fixed qualification plan to decide whether to measure or
++compose this candidate; existing four-component measurements remain separate.
++
++## Source preparation
++
++The implementation changes precisely the three planned query sites. A source
++audit found only initialization and scalar-frame packing write `Lower.locals`;
++only initialization fills `local_types`. The planner independently rejects any
++slot whose size differs from its original shape. The new helper does not depend
++on retaining `ChosenLayout` after capture consumes it.
++
++The extended fixture uses a non-inlined generic repeat helper for u8/u16/u32/u64,
++u128, a 32-byte `(u128, i128)` tuple, and an aligned ZST. Dynamic indexed reads
++consume repeated values; aggregate movement, constant repetition and an empty
++repeat are present alongside existing associated-type/projection cases. The
++native oracle derives low/high words arithmetically and uses literal 96-byte
++aggregate size and 64-byte marker alignment expectations. The signed product
++cannot overflow i128 for an i64 input. Source forms are not evidence of retained
++MIR opcode counts; qualification must inspect or compare the actual artifacts.
++
++The existing 111-input validator schedule and 261-input standalone fixture test
++are unchanged. Its source already appears in `inputs_sha256`, and native output
++count is asserted before comparing seeds. Compare baseline and candidate using
++this same extended fixture, rather than comparing changed fixture outputs with
++older fixtures. Existing synthetic Result adapter cases remain unchanged.
++
++`git diff --check` passed. No compiler, fixture, test or benchmark was executed.
+diff --git a/benchmarks/experiments/skip-unchanged-cfg/PLAN.md b/benchmarks/experiments/skip-unchanged-cfg/PLAN.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..5b28b40f965d33e2a64e30fc5a76335da1205f82
+--- /dev/null
++++ b/benchmarks/experiments/skip-unchanged-cfg/PLAN.md
+@@ -0,0 +1,89 @@
++# Keep provably unchanged CFG bodies
++
++Unqualified candidate, recorded before source edits or measurements. Base:
++`04bb082113ae6fc04eee4ea0c370cdf1f5b34648`. Owned branch:
++`perf/skip-unchanged-cfg-20260912`, worktree
++`/Users/danluu/dev/rust-interp-build-plan-20260912`.
++
++The CFG pass validates the complete Program before inspecting functions and
++again after all transformations. For each function it currently computes
++register-initialization requirements, constructs a replacement instruction
++vector, installs it and repeats the initialization proof. Two exact unchanged
++cases can keep their original allocation and reuse the first proof:
++
++- A nonempty body whose last instruction is not a CFG terminal. The current
++  transform already skips the whole body, after target checking, and returns an
++  unchanged clone with `skipped_terminal_fallthrough = true`. Earlier terminals
++  do not alter this established skip policy.
++- A body ending in Return or Trap with no earlier Jump, Switch, Return or Trap.
++  It is a single live block. Jump resolution, block order and remapping are
++  identities; no operation disappears, no jump is inserted or removed, and no
++  layout or initialization rejection is possible. Calls and fallible operations
++  remain ordinary instructions under this pass's existing terminal definition.
++
++Add only an unchanged-case classifier in the validated per-function path.
++Empty bodies and every other terminal-final CFG keep the original transform.
++Keep both whole-Program validators and their ordering, including validation of
++unreachable operands/targets and bodies that otherwise qualify for skipping.
++Run the original initialization proof once and use its result for both report
++booleans on unchanged bodies. Preserve function IDs, old/new operation counts,
++all zero transformation counters and all false rejection flags; set the
++terminal-fallthrough flag only for the first case. Do not change the borrowed
++transform helper's validation/error behavior or use a serialized equality test
++as a new eligibility condition.
++
++Tests will compare the complete serialized Program and every report field with
++the retained full 04bb082 implementation under both layout settings. Add literal
++report expectations for initialized and initially-zero registers, calls,
++diagnostics, missing-terminal bodies and earlier terminals; prove retained
++allocations in admitted cases. Exercise early Return/Trap followed by a terminal,
++branches and cycles through the original path. Malformed whole Programs must
++retain exact rejection and failure ordering before any function mutation.
++Existing runtime, fault and instruction-budget tests remain unchanged.
++
++## Existing evidence and its limits
++
++Completed public token evidence at `results/export-reuse-token-01/summary.json`
++references the original checkout's immutable historical
++`.work/export-reuse-token-01/{0,-1,1,2,3,4,5,restored}.census.json` records. Reading
++those JSON records found 5,421 program functions, 5,375 observed functions and
++548 MIR-one-block functions in every state. That subset contains 6,946 of
++approximately 1,087,813 lowered operations (1,087,817 in the wrong-edit state).
++There are 535 equal lowered/final function hashes in every state. The original
++state census SHA-256 is
++`d38309dabedc4265719b6033073f79330c5ad6166590033f6fade567fc48e617`.
++
++These records describe MIR and final/lowered outputs, not the bytecode entering
++CFG optimization. Calls and intervening graph passes change block structure.
++Neither these counts nor whole-function hash equality determine fast-path
++eligibility, and no saved per-function CFG shape report was found. The retained
++export-cost report places the whole CFG stage near 54 ms; recent root stage
++receipts place it near 56 ms. These are diagnostic context, not a hit rate,
++recoverable-time estimate or performance result.
++
++No builds, tests, new profiles or benchmarks will be run by this agent. Root
++will qualify source and any later composition under the shared lock, preserving
++strict checking, bytecode/report equivalence, flags and frozen runtime tools.
++The extra short-circuit eligibility scan may cost time on ineligible functions;
++its actual benefit requires prospective measurements.
++
++## Implemented source and pending qualification
++
++The new private classifier is called only from the already-validated function
++loop. The general transformation and both validators are unchanged. The first
++initialization proof remains in its original position. Unchanged functions
++reuse that boolean and retain their instruction vector; all other functions
++keep the prior replacement, second proof and rollback sequence.
++
++`control_flow_reference.rs` retains the complete 04bb082 source, removing only
++the original test-module registration and adding a provenance comment. The
++unmodified source SHA-256 is
++`41de045aab31ccc1f00eb117d54f364850bbefee0a1b836345f615b516285014`.
++Existing CFG fixtures now compare complete outputs and reports with this
++reference. Four focused tests add both-layout literal reports and pointer
++retention for eligible bodies, the existing invalid-PC fallthrough result,
++explicit early-terminal/branch exclusions, and validation-before-mutation with
++multiple errors in differing orders. These tests are prepared, not executed.
++
++This source commit is unqualified. Independent source review and root's serial
++correctness/performance checks remain required before any adoption claim.
+diff --git a/crates/bytecode/src/control_flow.rs b/crates/bytecode/src/control_flow.rs
+index 038876ea8c1b3d6fb53a1c8773e7ac327df43c04..c3aebf577773ff1ee47a1c1e9fd1ad777e4070ae 100644
+--- a/crates/bytecode/src/control_flow.rs
++++ b/crates/bytecode/src/control_flow.rs
+@@ -4,6 +4,12 @@ use serde::Serialize;
+ #[cfg(test)]
+ #[path = "control_flow_tests.rs"]
+ mod tests;
++#[cfg(test)]
++#[path = "control_flow_reference.rs"]
++mod reference;
++#[cfg(test)]
++#[path = "control_flow_unchanged_tests.rs"]
++mod unchanged_tests;
+ 
+ #[derive(Debug, Default, Serialize)]
+ pub struct FunctionControlFlowReport {
+@@ -43,18 +49,25 @@ pub(crate) fn optimize(program: &mut Program, layout: bool) -> Result<ControlFlo
+     let mut report = ControlFlowReport::default();
+     for (id, function) in program.functions.iter_mut().enumerate() {
+         let before = crate::registers::needs_initial_zeroes(function);
+-        let (code, mut part) = transform_code(&function.code, layout)?;
+-        let original = std::mem::replace(&mut function.code, code);
+-        let after = crate::registers::needs_initial_zeroes(function);
+-        if !before && after {
+-            function.code = original;
+-            part = FunctionControlFlowReport {
+-                old_operations: function.code.len(),
+-                new_operations: function.code.len(),
+-                rejected_register_clearing: true,
+-                ..Default::default()
+-            };
+-        }
++        let (mut part, after) = if let Some(part) = unchanged_body(&function.code) {
++            // The validated body and register count stay identical, so its
++            // initialization proof and owned instruction storage stay valid.
++            (part, before)
++        } else {
++            let (code, mut part) = transform_code(&function.code, layout)?;
++            let original = std::mem::replace(&mut function.code, code);
++            let after = crate::registers::needs_initial_zeroes(function);
++            if !before && after {
++                function.code = original;
++                part = FunctionControlFlowReport {
++                    old_operations: function.code.len(),
++                    new_operations: function.code.len(),
++                    rejected_register_clearing: true,
++                    ..Default::default()
++                };
++            }
++            (part, after)
++        };
+         part.function = id;
+         part.register_zeroes_before = before;
+         part.register_zeroes_proposed = after;
+@@ -73,6 +86,26 @@ fn terminal(op: &Op) -> bool {
+     )
+ }
+ 
++/// Called only after complete Program validation, including all branch targets.
++fn unchanged_body(code: &[Op]) -> Option<FunctionControlFlowReport> {
++    let (last, prefix) = code.split_last()?;
++    let skipped_terminal_fallthrough = !terminal(last);
++    if skipped_terminal_fallthrough
++        || (matches!(last, Op::Return | Op::Trap { .. }) && !prefix.iter().any(terminal))
++    {
++        // The existing transform skips nonterminal-final bodies outright.
++        // A single terminal-ended block has identity reachability and layout.
++        Some(FunctionControlFlowReport {
++            old_operations: code.len(),
++            new_operations: code.len(),
++            skipped_terminal_fallthrough,
++            ..Default::default()
++        })
++    } else {
++        None
++    }
++}
++
+ /// Resolve jump-only paths without arbitrarily choosing a representative of a
+ /// cycle. Input branches are already validated by transform_code.
+ fn jump_targets(code: &[Op]) -> Vec<Option<usize>> {
+diff --git a/crates/bytecode/src/control_flow_reference.rs b/crates/bytecode/src/control_flow_reference.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..9218836fa7db230f326b74e2ad198edfb39d6c44
+--- /dev/null
++++ b/crates/bytecode/src/control_flow_reference.rs
+@@ -0,0 +1,352 @@
++// Retained full 04bb082 CFG implementation. Only the original test module wiring is removed.
++//! Export-time jump threading, unreachable-code removal and deterministic block layout.
++use crate::{Op, Program, remove_fallthrough_jumps};
++use serde::Serialize;
++
++#[derive(Debug, Default, Serialize)]
++pub struct FunctionControlFlowReport {
++    pub function: usize,
++    pub old_operations: usize,
++    pub new_operations: usize,
++    pub redirected_edges: usize,
++    pub unreachable_operations: usize,
++    pub inserted_jumps: usize,
++    pub removed_fallthrough_jumps: usize,
++    pub layout_rejected_for_growth: bool,
++    pub rejected_register_clearing: bool,
++    pub skipped_terminal_fallthrough: bool,
++    pub register_zeroes_before: bool,
++    pub register_zeroes_proposed: bool,
++}
++
++#[derive(Debug, Default, Serialize)]
++pub struct ControlFlowReport {
++    pub functions: Vec<FunctionControlFlowReport>,
++    pub old_operations: usize,
++    pub new_operations: usize,
++}
++
++/// Simplify control flow without changing function IDs, layouts, registers or
++/// data. Jump-only cycles remain loops; switch case precedence and every original
++/// fallthrough are preserved. Instruction budgets count the resulting artifact.
++/// Layout falls back to threading if code would grow. A transformation that would
++/// introduce whole-function register clearing is rejected. The VM never applies
++/// this pass implicitly to hand-constructed programs.
++pub fn optimize_control_flow(program: &mut Program) -> Result<ControlFlowReport, String> {
++    optimize(program, true)
++}
++
++pub(crate) fn optimize(program: &mut Program, layout: bool) -> Result<ControlFlowReport, String> {
++    crate::validate(program)?;
++    let mut report = ControlFlowReport::default();
++    for (id, function) in program.functions.iter_mut().enumerate() {
++        let before = crate::registers::needs_initial_zeroes(function);
++        let (code, mut part) = transform_code(&function.code, layout)?;
++        let original = std::mem::replace(&mut function.code, code);
++        let after = crate::registers::needs_initial_zeroes(function);
++        if !before && after {
++            function.code = original;
++            part = FunctionControlFlowReport {
++                old_operations: function.code.len(),
++                new_operations: function.code.len(),
++                rejected_register_clearing: true,
++                ..Default::default()
++            };
++        }
++        part.function = id;
++        part.register_zeroes_before = before;
++        part.register_zeroes_proposed = after;
++        report.old_operations += part.old_operations;
++        report.new_operations += function.code.len();
++        report.functions.push(part);
++    }
++    crate::validate(program)?;
++    Ok(report)
++}
++
++fn terminal(op: &Op) -> bool {
++    matches!(
++        op,
++        Op::Jump { .. } | Op::Switch { .. } | Op::Return | Op::Trap { .. }
++    )
++}
++
++/// Resolve jump-only paths without arbitrarily choosing a representative of a
++/// cycle. Input branches are already validated by transform_code.
++fn jump_targets(code: &[Op]) -> Vec<Option<usize>> {
++    let mut color = vec![0u8; code.len()];
++    let mut resolved = vec![None; code.len()];
++    let mut lengths = vec![0usize; code.len()];
++    let mut path = Vec::new();
++    for start in 0..code.len() {
++        if color[start] != 0 {
++            continue;
++        }
++        path.clear();
++        let mut pc = start;
++        let (target, mut length) = loop {
++            if color[pc] == 2 {
++                break (resolved[pc], lengths[pc]);
++            }
++            if color[pc] == 1 {
++                break (None, 0);
++            }
++            let Op::Jump { target } = code[pc] else {
++                color[pc] = 2;
++                resolved[pc] = Some(pc);
++                break (Some(pc), 0);
++            };
++            color[pc] = 1;
++            path.push(pc);
++            pc = target;
++        };
++        for pc in path.iter().rev().copied() {
++            resolved[pc] = target;
++            if target.is_some() {
++                length += 1;
++                lengths[pc] = length;
++            }
++            color[pc] = 2;
++        }
++    }
++    // A decreasing distance certifies that every redirected path reaches its
++    // terminal through jumps only. Cycles cannot satisfy these local equations.
++    for (pc, target) in resolved.iter().enumerate() {
++        if let Some(target) = target {
++            assert!(!matches!(code[*target], Op::Jump { .. }));
++            if let Op::Jump { target: next } = code[pc] {
++                assert_eq!(resolved[next], Some(*target));
++                assert_eq!(lengths[next].checked_add(1), Some(lengths[pc]));
++            } else {
++                assert_eq!((*target, lengths[pc]), (pc, 0));
++            }
++        }
++    }
++    resolved
++}
++
++fn transform_code(
++    original: &[Op],
++    layout: bool,
++) -> Result<(Vec<Op>, FunctionControlFlowReport), String> {
++    if original.is_empty() {
++        return Err("empty body".into());
++    }
++    for op in original {
++        let check = |pc: usize| {
++            if pc < original.len() {
++                Ok(())
++            } else {
++                Err("invalid CFG target".to_owned())
++            }
++        };
++        match op {
++            Op::Jump { target } => check(*target)?,
++            Op::Switch {
++                cases, otherwise, ..
++            } => {
++                check(*otherwise)?;
++                for (_, target) in cases {
++                    check(*target)?;
++                }
++            }
++            _ => {}
++        }
++    }
++    if !terminal(original.last().expect("nonempty")) {
++        return Ok((
++            original.to_vec(),
++            FunctionControlFlowReport {
++                old_operations: original.len(),
++                new_operations: original.len(),
++                skipped_terminal_fallthrough: true,
++                ..Default::default()
++            },
++        ));
++    }
++    let targets = jump_targets(original);
++    // Resolve edges while inspecting the original body. Clone only the final
++    // retained instructions, after reachability and layout have been decided.
++    let code = original;
++    let resolve = |pc: usize| targets[pc].unwrap_or(pc);
++    let mut redirected = 0;
++    for op in code {
++        let mut count = |pc: usize| {
++            redirected += usize::from(resolve(pc) != pc);
++        };
++        match op {
++            Op::Jump { target } => count(*target),
++            Op::Switch {
++                cases, otherwise, ..
++            } => {
++                count(*otherwise);
++                for (_, target) in cases {
++                    count(*target);
++                }
++            }
++            _ => {}
++        }
++    }
++    let mut live = vec![false; code.len()];
++    let mut pending = vec![0];
++    while let Some(pc) = pending.pop() {
++        if live[pc] {
++            continue;
++        }
++        live[pc] = true;
++        match &code[pc] {
++            Op::Jump { target } => pending.push(resolve(*target)),
++            Op::Switch {
++                cases, otherwise, ..
++            } => {
++                pending.push(resolve(*otherwise));
++                pending.extend(cases.iter().map(|(_, target)| resolve(*target)));
++            }
++            Op::Return | Op::Trap { .. } => {}
++            _ => pending.push(pc + 1), // A terminal final instruction was required above.
++        }
++    }
++    let mut starts = vec![false; code.len()];
++    starts[0] = true;
++    for (pc, op) in code.iter().enumerate() {
++        match op {
++            Op::Jump { target } => starts[resolve(*target)] = true,
++            Op::Switch {
++                cases, otherwise, ..
++            } => {
++                starts[resolve(*otherwise)] = true;
++                for (_, target) in cases {
++                    starts[resolve(*target)] = true;
++                }
++            }
++            _ => {}
++        }
++        if terminal(op) && pc + 1 < code.len() {
++            starts[pc + 1] = true;
++        }
++    }
++    let mut boundaries: Vec<_> = (0..code.len()).filter(|pc| starts[*pc]).collect();
++    boundaries.push(code.len());
++    let blocks: Vec<_> = boundaries.windows(2).map(|x| x[0]..x[1]).collect();
++    let mut block_at = vec![0; code.len()];
++    for (id, block) in blocks.iter().enumerate() {
++        for pc in block.clone() {
++            block_at[pc] = id;
++        }
++    }
++    let mut order = Vec::new();
++    let mut visited = vec![false; blocks.len()];
++    for seed in 0..blocks.len() {
++        let mut current = Some(seed);
++        while let Some(id) = current {
++            let block = &blocks[id];
++            if visited[id] || !live[block.start] {
++                break;
++            }
++            visited[id] = true;
++            order.push(id);
++            if !layout {
++                break;
++            }
++            let candidates: Vec<_> = match &code[block.end - 1] {
++                Op::Jump { target } => vec![resolve(*target)],
++                Op::Switch {
++                    cases, otherwise, ..
++                } => std::iter::once(resolve(*otherwise))
++                    .chain(cases.iter().map(|(_, target)| resolve(*target)))
++                    .collect(),
++                Op::Return | Op::Trap { .. } => vec![],
++                _ => vec![block.end],
++            };
++            current = candidates
++                .into_iter()
++                .map(|pc| block_at[pc])
++                .find(|next| !visited[*next]);
++        }
++    }
++    let mut remap = vec![None; code.len()];
++    let mut output = Vec::new();
++    let mut inserted = 0;
++    for (index, id) in order.iter().copied().enumerate() {
++        let block = &blocks[id];
++        for pc in block.clone() {
++            assert!(live[pc]);
++            remap[pc] = Some(output.len());
++            let mut op = code[pc].clone();
++            match &mut op {
++                Op::Jump { target } => *target = resolve(*target),
++                Op::Switch { cases, otherwise, .. } => {
++                    *otherwise = resolve(*otherwise);
++                    for (_, target) in cases {
++                        *target = resolve(*target);
++                    }
++                }
++                _ => {}
++            }
++            output.push(op);
++        }
++        if !terminal(&code[block.end - 1])
++            && order.get(index + 1).map(|next| blocks[*next].start) != Some(block.end)
++        {
++            // This new edge must reach the original fallthrough instruction.
++            // It was not present during jump threading, so do not resolve it.
++            output.push(Op::Jump { target: block.end });
++            inserted += 1;
++        }
++    }
++    for op in &mut output {
++        let map = |pc: &mut usize| -> Result<(), String> {
++            *pc = remap[*pc].ok_or("reachable edge points to a removed instruction")?;
++            Ok(())
++        };
++        match op {
++            Op::Jump { target } => map(target)?,
++            Op::Switch {
++                cases, otherwise, ..
++            } => {
++                map(otherwise)?;
++                for (_, target) in cases {
++                    map(target)?;
++                }
++            }
++            _ => {}
++        }
++    }
++    let removed = remove_fallthrough_jumps(&mut output)?;
++    if layout && output.len() > original.len() {
++        let (fallback, mut report) = transform_code(original, false)?;
++        report.layout_rejected_for_growth = true;
++        return Ok((fallback, report));
++    }
++    #[cfg(test)]
++    {
++        // Independently check the multiset of observable operations. Only Jump
++        // instructions can be inserted/removed, and only unreachable non-branches
++        // can disappear. Switch values and case ordering were retained by cloning.
++        let observable = |op: &Op| !matches!(op, Op::Jump { .. } | Op::Switch { .. });
++        let mut before: Vec<_> = original
++            .iter()
++            .enumerate()
++            .filter(|(pc, op)| live[*pc] && observable(op))
++            .map(|(_, op)| bincode::serialize(op).expect("serialize operation"))
++            .collect();
++        let mut after: Vec<_> = output
++            .iter()
++            .filter(|op| observable(op))
++            .map(|op| bincode::serialize(op).expect("serialize operation"))
++            .collect();
++        before.sort();
++        after.sort();
++        assert_eq!(before, after);
++    }
++    let report = FunctionControlFlowReport {
++        old_operations: original.len(),
++        new_operations: output.len(),
++        redirected_edges: redirected,
++        unreachable_operations: live.iter().filter(|x| !**x).count(),
++        inserted_jumps: inserted,
++        removed_fallthrough_jumps: removed,
++        ..Default::default()
++    };
++    Ok((output, report))
++}
+diff --git a/crates/bytecode/src/control_flow_tests.rs b/crates/bytecode/src/control_flow_tests.rs
+index f1bc8efafcf605f333b04d0b42109c2566c2b1ea..d4b24c7269084eb24aa3fe766a0ed01322fb8ebb 100644
+--- a/crates/bytecode/src/control_flow_tests.rs
++++ b/crates/bytecode/src/control_flow_tests.rs
+@@ -4,6 +4,10 @@ use crate::{Binary, Engine, Function, Limits, Op, Program, Slot, VERSION, execut
+ fn transform(original: &Program, layout: bool) -> Result<(Program, ControlFlowReport), String> {
+     let mut output = original.clone();
+     let report = optimize(&mut output, layout)?;
++    let mut expected = original.clone();
++    let expected_report = super::reference::optimize(&mut expected, layout)?;
++    assert_eq!(bincode::serialize(&output).unwrap(), bincode::serialize(&expected).unwrap());
++    assert_eq!(serde_json::to_value(&report).unwrap(), serde_json::to_value(&expected_report).unwrap());
+     let mut before = original.clone();
+     let mut after = output.clone();
+     for f in &mut before.functions {
+diff --git a/crates/bytecode/src/control_flow_unchanged_tests.rs b/crates/bytecode/src/control_flow_unchanged_tests.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..52de31d611c79660d489306a0b5a49507c95846a
+--- /dev/null
++++ b/crates/bytecode/src/control_flow_unchanged_tests.rs
+@@ -0,0 +1,166 @@
++use super::{optimize, reference, unchanged_body};
++use crate::{Engine, Function, Limits, Op, Program, Slot, VERSION, execute_with_engine};
++use serde_json::{Value, json};
++
++fn program(bodies: Vec<Vec<Op>>) -> Program {
++    Program {
++        version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0,
++        functions: bodies.into_iter().enumerate().map(|(id, code)| Function {
++            name: format!("function-{id}"), frame_size: 16, frame_align: 8, registers: 4,
++            args: vec![], result: Slot { offset: 0, size: 8 }, code,
++        }).collect(),
++        data: vec![1, 2, 3], statics: vec![0; 24], thread_locals: vec![Slot { offset: 16, size: 8 }],
++    }
++}
++
++fn expected_part(id: usize, operations: usize, zeroes: bool, fallthrough: bool) -> Value {
++    json!({"function": id, "old_operations": operations, "new_operations": operations,
++        "redirected_edges": 0, "unreachable_operations": 0, "inserted_jumps": 0,
++        "removed_fallthrough_jumps": 0, "layout_rejected_for_growth": false,
++        "rejected_register_clearing": false, "skipped_terminal_fallthrough": fallthrough,
++        "register_zeroes_before": zeroes, "register_zeroes_proposed": zeroes})
++}
++
++fn compare(program: &mut Program, layout: bool) -> Value {
++    let mut expected = program.clone();
++    let reference = if layout {
++        reference::optimize_control_flow(&mut expected).unwrap()
++    } else {
++        reference::optimize(&mut expected, false).unwrap()
++    };
++    let actual = optimize(program, layout).unwrap();
++    assert_eq!(bincode::serialize(program).unwrap(), bincode::serialize(&expected).unwrap());
++    let actual = serde_json::to_value(actual).unwrap();
++    assert_eq!(actual, serde_json::to_value(reference).unwrap());
++    actual
++}
++
++fn owned_fields(program: &Program) -> Vec<usize> {
++    let mut pointers = Vec::new();
++    for function in &program.functions {
++        pointers.push(function.code.as_ptr() as usize);
++        for op in &function.code {
++            match op {
++                Op::Assert { message, .. } | Op::Trap { message } if !message.is_empty() => {
++                    pointers.push(message.as_ptr() as usize);
++                }
++                Op::Call { args, .. } if !args.is_empty() => pointers.push(args.as_ptr() as usize),
++                Op::CallIndirect { args, arg_sizes, .. } => {
++                    if !args.is_empty() { pointers.push(args.as_ptr() as usize); }
++                    if !arg_sizes.is_empty() { pointers.push(arg_sizes.as_ptr() as usize); }
++                }
++                Op::Switch { cases, .. } if !cases.is_empty() => pointers.push(cases.as_ptr() as usize),
++                _ => {}
++            }
++        }
++    }
++    pointers
++}
++
++#[test]
++fn terminal_ended_single_blocks_keep_storage_and_exact_reports() {
++    let original = program(vec![
++        vec![Op::Imm { dst: 0, value: 7 }, Op::Local { dst: 1, offset: 0 },
++            Op::Store { address: 1, src: 0, size: 8 }, Op::Return],
++        vec![Op::Assert { value: 0, expected: false, message: "initial register".into() }, Op::Return],
++        vec![Op::Trap { message: "kept terminal diagnostic".into() }],
++        vec![Op::Local { dst: 0, offset: 0 },
++            Op::Call { function: 5, args: vec![0], destination: 0 }, Op::Return],
++        vec![Op::Local { dst: 0, offset: 0 },
++            Op::Imm { dst: 1, value: (crate::FUNCTION_POINTER_TAG | 6) as u128 },
++            Op::CallIndirect { callee: 1, args: vec![0], arg_sizes: vec![8], destination: 0, result_size: 8 },
++            Op::Return],
++        vec![Op::Return],
++    ]);
++    let mut original = original;
++    original.functions[5].args.push(Slot { offset: 0, size: 8 });
++    for layout in [false, true] {
++        let mut candidate = original.clone();
++        let bytes = bincode::serialize(&candidate).unwrap();
++        let allocations = owned_fields(&candidate);
++        let report = compare(&mut candidate, layout);
++        let parts: Vec<_> = [(4, false), (2, true), (1, false), (3, false), (4, false), (1, false)]
++            .into_iter().enumerate().map(|(id, (len, zeroes))| expected_part(id, len, zeroes, false)).collect();
++        assert_eq!(report, json!({"functions": parts, "old_operations": 15, "new_operations": 15}));
++        assert_eq!(bincode::serialize(&candidate).unwrap(), bytes);
++        assert_eq!(owned_fields(&candidate), allocations);
++        assert_eq!(execute_with_engine(&candidate, &[], Limits::default(), Engine::Interpreter).unwrap().value, 7);
++    }
++}
++
++#[test]
++fn nonterminal_final_bodies_keep_the_existing_whole_body_skip_policy() {
++    // Even earlier terminals and unreachable bytes are retained by this policy.
++    let original = program(vec![
++        vec![Op::Imm { dst: 0, value: 7 }],
++        vec![Op::Return, Op::Assert { value: 0, expected: false, message: "unreachable read".into() }],
++        vec![Op::Trap { message: "earlier trap".into() }, Op::Imm { dst: 0, value: 1 }],
++        vec![Op::Jump { target: 1 }, Op::Imm { dst: 0, value: 1 }],
++        vec![Op::Switch { value: 0, cases: vec![(0, 1)], otherwise: 1 }, Op::Imm { dst: 0, value: 1 }],
++    ]);
++    for layout in [false, true] {
++        let mut candidate = original.clone();
++        let bytes = bincode::serialize(&candidate).unwrap();
++        let allocations = owned_fields(&candidate);
++        let report = compare(&mut candidate, layout);
++        let parts: Vec<_> = [(1, false), (2, true), (2, false), (2, false), (2, true)]
++            .into_iter().enumerate().map(|(id, (len, zeroes))| expected_part(id, len, zeroes, true)).collect();
++        assert_eq!(report, json!({"functions": parts, "old_operations": 9, "new_operations": 9}));
++        assert_eq!(bincode::serialize(&candidate).unwrap(), bytes);
++        assert_eq!(owned_fields(&candidate), allocations);
++        assert_eq!(execute_with_engine(&candidate, &[], Limits::default(), Engine::Interpreter).unwrap_err(),
++            "invalid bytecode PC");
++    }
++}
++
++#[test]
++fn earlier_terminals_and_terminal_branches_still_use_the_full_transform() {
++    let cases = vec![
++        vec![Op::Return, Op::Return],
++        vec![Op::Trap { message: "first trap".into() }, Op::Return],
++        vec![Op::Jump { target: 1 }, Op::Return],
++        vec![Op::Jump { target: 0 }],
++        vec![Op::Switch { value: 0, cases: vec![(0, 1)], otherwise: 1 }, Op::Return],
++        vec![Op::Imm { dst: 0, value: 1 }, Op::Jump { target: 0 }],
++    ];
++    assert!(unchanged_body(&[]).is_none());
++    for (index, code) in cases.into_iter().enumerate() {
++        assert!(unchanged_body(&code).is_none());
++        for layout in [false, true] {
++            let mut candidate = program(vec![code.clone()]);
++            let report = compare(&mut candidate, layout);
++            assert_eq!(report["functions"][0]["skipped_terminal_fallthrough"], false);
++            if index < 2 {
++                assert_eq!(candidate.functions[0].code.len(), 1);
++                assert_eq!(report["functions"][0]["unreachable_operations"], 1);
++            }
++        }
++    }
++}
++
++#[test]
++fn validation_rejects_every_body_before_any_optimization_and_keeps_error_order() {
++    let invalid = [
++        (vec![], "invalid function limits"),
++        (vec![Op::Imm { dst: 99, value: 1 }, Op::Return], "invalid register"),
++        (vec![Op::Jump { target: 99 }, Op::Imm { dst: 0, value: 1 }], "invalid branch"),
++        (vec![Op::Return, Op::Jump { target: 99 }, Op::Imm { dst: 0, value: 1 }], "invalid branch"),
++        (vec![Op::Imm { dst: 99, value: 1 }, Op::Jump { target: 99 }], "invalid register"),
++        (vec![Op::Jump { target: 99 }, Op::Imm { dst: 99, value: 1 }], "invalid branch"),
++    ];
++    for (bad, error) in invalid {
++        for layout in [false, true] {
++            // Function zero would lose an unreachable Return if validation did
++            // not finish checking later functions before transformation began.
++            let mut candidate = program(vec![vec![Op::Return, Op::Return], bad.clone()]);
++            let mut expected = candidate.clone();
++            let bytes = bincode::serialize(&candidate).unwrap();
++            let allocations = owned_fields(&candidate);
++            assert_eq!(optimize(&mut candidate, layout).unwrap_err(), error);
++            assert_eq!(reference::optimize(&mut expected, layout).unwrap_err(), error);
++            assert_eq!(bincode::serialize(&candidate).unwrap(), bytes);
++            assert_eq!(bincode::serialize(&expected).unwrap(), bytes);
++            assert_eq!(owned_fields(&candidate), allocations);
++        }
++    }
++}
+diff --git a/crates/mir-export/src/artifact_serialization.rs b/crates/mir-export/src/artifact_serialization.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..ffbf2950f7f3800dbb13817c2397a36e5cf98e90
+--- /dev/null
++++ b/crates/mir-export/src/artifact_serialization.rs
+@@ -0,0 +1,14 @@
++//! Normal artifact encoding; bounded diagnostic serialization stays separate.
++use rust_interp_bytecode::Program;
++
++pub(crate) fn serialize(program: &Program) -> Result<Vec<u8>, String> {
++    // The root helper retains bincode's fixed-width little-endian encoding but
++    // avoids serialize's sizing traversal. Keep partial output private on error.
++    let mut bytes = Vec::new();
++    bincode::serialize_into(&mut bytes, program).map_err(|e| e.to_string())?;
++    Ok(bytes)
++}
++
++#[cfg(test)]
++#[path = "artifact_serialization_tests.rs"]
++mod tests;
+diff --git a/crates/mir-export/src/artifact_serialization_tests.rs b/crates/mir-export/src/artifact_serialization_tests.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..2f246c02c8738c23ad39ffa55de8a06551c2c139
+--- /dev/null
++++ b/crates/mir-export/src/artifact_serialization_tests.rs
+@@ -0,0 +1,154 @@
++use super::serialize;
++use rust_interp_bytecode::{
++    Binary, FloatBinary, FloatConversion, FloatUnary, Function, Op, Program, Slot,
++    Unary, PARTIAL_VALIDATION, VERSION, validate,
++};
++
++// Reuse the full Programs also exercised by interpreter/native call-copy tests.
++#[path = "../../bytecode/tests/common/call_copy_cases.rs"]
++mod call_copy_cases;
++
++fn minimal() -> Program {
++    Program { version: VERSION, target: "x".into(), entry: 0,
++        functions: vec![Function { name: "f".into(), frame_size: 0, frame_align: 16,
++            registers: 0, args: vec![], result: Slot { offset: 0, size: 0 }, code: vec![Op::Return] }],
++        data: vec![], statics: vec![], thread_locals: vec![] }
++}
++
++fn assert_legacy_identity(program: &Program) -> Vec<u8> {
++    let expected = bincode::serialize(program).unwrap();
++    let actual = serialize(program).unwrap();
++    assert_eq!(actual, expected);
++    // Neither encoding may mutate the graph, and the existing decoder retains
++    // every field when reading the exact artifact the exporter will publish.
++    assert_eq!(bincode::serialize(program).unwrap(), expected);
++    let decoded: Program = bincode::deserialize(&actual).unwrap();
++    assert_eq!(bincode::serialize(&decoded).unwrap(), expected);
++    actual
++}
++
++#[test]
++fn minimal_program_has_literal_v5_fixint_encoding() {
++    let program = minimal();
++    validate(&program).unwrap();
++    let mut expected = vec![5, 0, 0, 0];
++    expected.extend_from_slice(&1u64.to_le_bytes()); expected.push(b'x');
++    // Entry, function count and function-name length, followed by the name.
++    for word in [0u64, 1, 1] { expected.extend_from_slice(&word.to_le_bytes()); }
++    expected.push(b'f');
++    // Frame size/alignment, registers, args, result offset/size, and code count.
++    for word in [0u64, 16, 0, 0, 0, 0, 1] { expected.extend_from_slice(&word.to_le_bytes()); }
++    expected.extend_from_slice(&13u32.to_le_bytes()); // V5 Return discriminant.
++    for _ in 0..3 { expected.extend_from_slice(&0u64.to_le_bytes()); } // Data, statics, TLS.
++    assert_eq!(expected.len(), 122);
++    assert_eq!(assert_legacy_identity(&program), expected);
++}
++
++#[test]
++fn existing_call_copy_programs_keep_their_complete_bytes() {
++    for case in call_copy_cases::cases() {
++        validate(&case.program).unwrap();
++        assert_eq!(serialize(&case.program).unwrap(), bincode::serialize(&case.program).unwrap(),
++            "{} (runtime oracle {:?})", case.name, case.expected);
++    }
++}
++
++fn all_fields() -> Program {
++    let mut program = minimal();
++    program.target = "aarch64-apple-darwin".into();
++    program.entry = 1;
++    program.data = vec![0, 1, 127, 128, 254, 255];
++    program.statics = (0..80).map(|i| (i * 3) as u8).collect();
++    program.thread_locals = vec![Slot { offset: 48, size: 32 }, Slot { offset: 16, size: 8 }];
++    let mut function = program.functions[0].clone();
++    function.name = "all fields λ\0雪".into();
++    function.frame_size = 256;
++    function.frame_align = 64;
++    function.registers = 32;
++    function.args = vec![Slot { offset: 8, size: 16 }, Slot { offset: 96, size: 0 }];
++    function.result = Slot { offset: 128, size: 32 };
++    function.code = vec![
++        Op::Imm { dst: 0, value: 0xfedcba9876543210_0123456789abcdef },
++        Op::Local { dst: 1, offset: 144 },
++        Op::Load { dst: 2, address: 1, size: 16 },
++        Op::Store { address: 3, src: 2, size: 0 },
++        Op::Copy { dst: 3, src: 1, size: 129 },
++        Op::Binary { dst: 4, overflow: 5, op: Binary::RotateRight, a: 2, b: 6, bits: 128, signed: true },
++        Op::Unary { dst: 7, op: Unary::SwapBytes, src: 4, bits: 64 },
++        Op::Cast { dst: 8, src: 7, from: 64, to: 128, signed: false },
++        Op::Select { dst: 9, condition: 5, yes: 8, no: 2 },
++        Op::Jump { target: 0 },
++        Op::Switch { value: 9, cases: vec![(0, 1), (u128::MAX, 2)], otherwise: 3 },
++        Op::Assert { value: 5, expected: true, message: "assert λ\0".into() },
++        Op::Call { function: 1, args: vec![3, 1], destination: 10 },
++        Op::Return,
++        Op::Trap { message: "trap 雪\0".into() },
++        Op::CopyDynamic { dst: 3, src: 1, size: 11 },
++        Op::CompareBytes { dst: 12, left: 1, right: 3, size: 11 },
++        Op::CallIndirect { callee: 13, args: vec![1, 3], arg_sizes: vec![16, 0], destination: 10, result_size: 32 },
++        Op::Allocate { dst: 14, size: 11, align: 15, zeroed: true },
++        Op::Deallocate { pointer: 14, size: 11, align: 15 },
++        Op::Reallocate { dst: 16, pointer: 14, old_size: 11, align: 15, new_size: 17 },
++        Op::FillBytes { address: 3, value: 18, size: 11 },
++        Op::FloatBinary { dst: 19, op: FloatBinary::CopySign, a: 20, b: 21, bits: 64 },
++        Op::FloatUnary { dst: 22, op: FloatUnary::RoundTiesEven, src: 19, bits: 32 },
++        Op::FloatConvert { dst: 23, kind: FloatConversion::IntToFloat { signed: true }, src: 8, from: 128, to: 64 },
++        Op::FloatConvert { dst: 24, kind: FloatConversion::FloatToInt { signed: false }, src: 23, from: 64, to: 32 },
++        Op::FloatConvert { dst: 25, kind: FloatConversion::FloatToFloat, src: 23, from: 64, to: 32 },
++        Op::ResetThreadLocals,
++        Op::RandomBytes { dst: 26, address: 1, size: 11 },
++        Op::CpuFeatureQuery { dst: 27, name: 1, output: 3, output_len: 10, new_data: 14, new_len: 17 },
++        Op::CAllocate { dst: 28, count: 18, size: 11, errno: 10, zeroed: false },
++        Op::CDeallocate { pointer: 28 },
++        Op::CReallocate { dst: 29, pointer: 28, size: 17, errno: 10 },
++        Op::CAlignedAllocate { dst: 30, output: 3, align: 15, size: 11 },
++        Op::RegisterTlsDestructor { callback: 13, argument: 31 },
++        Op::Return,
++    ];
++    program.functions.push(function);
++    program
++}
++
++#[test]
++fn all_program_fields_and_opcode_payloads_match_the_retained_serializer() {
++    for version in [VERSION, VERSION | PARTIAL_VALIDATION] {
++        let mut program = all_fields();
++        program.version = version;
++        validate(&program).unwrap();
++        let bytes = assert_legacy_identity(&program);
++        assert_eq!(&bytes[..4], &version.to_le_bytes());
++    }
++}
++
++#[test]
++fn buffer_growth_preserves_code_strings_and_byte_payloads() {
++    for len in [0, 1, 7, 8, 15, 16, 31, 32, 255, 256, 257, 4095, 4096, 4097] {
++        let mut code = minimal();
++        code.functions[0].registers = 1;
++        code.functions[0].code = (0..len).map(|i| Op::Imm { dst: 0, value: (i as u128) << 96 }).collect();
++        code.functions[0].code.push(Op::Return);
++        let mut strings = minimal();
++        strings.functions[0].name = "λ\0".repeat(len);
++        strings.functions[0].code = vec![Op::Trap { message: "雪".repeat(len) }];
++        let mut payloads = minimal();
++        payloads.data = (0..len).map(|i| i as u8).collect();
++        payloads.statics = (0..len + 16).map(|i| !(i as u8)).collect();
++        for program in [code, strings, payloads] {
++            validate(&program).unwrap();
++            let bytes = assert_legacy_identity(&program);
++            assert_eq!(bytes.len() as u64, bincode::serialized_size(&program).unwrap());
++        }
++    }
++}
++
++#[test]
++fn encoding_does_not_introduce_validation_or_change_validation_errors() {
++    let mut program = all_fields();
++    program.functions[1].code[0] = Op::Imm { dst: 32, value: u128::MAX };
++    let error = validate(&program).unwrap_err();
++    assert_eq!(error, "invalid register");
++    let bytes = assert_legacy_identity(&program);
++    let decoded: Program = bincode::deserialize(&bytes).unwrap();
++    assert_eq!(validate(&decoded).unwrap_err(), error);
++    assert_eq!(validate(&program).unwrap_err(), error);
++}
+diff --git a/crates/mir-export/src/audit.rs b/crates/mir-export/src/audit.rs
+index 999b36e9597ae90231203d145da5520ce2bd40a2..e2bfc72c8ce42f30f18a3a927212a559d8ed2954 100644
+--- a/crates/mir-export/src/audit.rs
++++ b/crates/mir-export/src/audit.rs
+@@ -31,11 +31,7 @@ pub fn report(tcx: TyCtxt<'_>, entries: &[String], retain: Option<&Path>, inline
+         // A fresh export owns its allocations and indirect-call graph. Only
+         // rustc's checked queries are shared between candidates. An unsupported
+         // candidate cannot leave partial functions in the next one's graph.
+-        let result = super::lower::export(tcx, std::slice::from_ref(entry), false, true, inline_leaves, trap_unsupported_calls, run_try_callbacks, false, false)
+-            .and_then(|exported| {
+-                rust_interp_bytecode::validate(&exported.program)?;
+-                Ok(exported)
+-            });
++        let result = super::lower::export(tcx, std::slice::from_ref(entry), false, true, inline_leaves, trap_unsupported_calls, run_try_callbacks, false, false);
+         let mut record = match result {
+             Ok(exported) => {
+                 let program = &exported.program;
+diff --git a/crates/mir-export/src/lower.rs b/crates/mir-export/src/lower.rs
+index 2345f358994c593db5cd27c2ee8b5d34459d77cf..1b789502243bb59114be99128ddd79eba7342c5c 100644
+--- a/crates/mir-export/src/lower.rs
++++ b/crates/mir-export/src/lower.rs
+@@ -159,6 +159,9 @@ impl Exported {
+     }
+ }
+ 
++/// Every successful result has passed bytecode structural validation after the
++/// final graph transformation. Callers may inspect or serialize that Program
++/// without revalidating it; any later mutation must establish validity again.
+ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bool,
+               inline_leaves: bool, trap_unsupported_calls: bool, run_try_callbacks: bool,
+               allocation_trace: bool, force_batch: bool) -> Result<Exported> {
+@@ -1112,6 +1115,17 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+         }
+         self.mono(op.ty(&self.body.local_decls, self.tcx()))
+     }
++    fn operand_size(&self, op: &Operand<'tcx>) -> Result<usize> {
++        if let Operand::Copy(place) | Operand::Move(place) = op {
++            let local = place.local.as_usize();
++            if place.projection.is_empty() && self.local_types.get(local).is_some() {
++                // Lower::new checked this local's layout; packing preserves its
++                // size. Lower::empty has no local_types and uses the query below.
++                return Ok(self.locals[local].size);
++            }
++        }
++        Ok(self.layout(self.operand_ty(op))?.size.bytes_usize())
++    }
+     fn place(&mut self, place: Place<'tcx>) -> Result<Location<'tcx>> {
+         let mut loc = Location {
+             address: self.named_local(place.local),
+@@ -1233,7 +1247,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+         let address = self.operand(op)?;
+         self.load(
+             address,
+-            self.layout(self.operand_ty(op))?.size.bytes_usize(),
++            self.operand_size(op)?,
+         )
+     }
+     fn call_arguments(
+@@ -1756,7 +1770,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+                     let offset = self.field_offset(field_layout, index.as_usize())?;
+                     let dst = self.add(dest.address, offset);
+                     let src = self.operand(operand)?;
+-                    let size = self.layout(self.operand_ty(operand))?.size.bytes_usize();
++                    let size = self.operand_size(operand)?;
+                     self.code.push(Op::Copy { dst, src, size });
+                 }
+             }
+@@ -1765,7 +1779,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+                     .mono(*count)
+                     .try_to_target_usize(self.tcx())
+                     .ok_or("repeat count")?;
+-                let elem_size = self.layout(self.operand_ty(operand))?.size.bytes_usize();
++                let elem_size = self.operand_size(operand)?;
+                 let src = self.operand(operand)?;
+                 if count > 100_000 {
+                     return Err("repeat expansion limit".into());
+@@ -1811,9 +1825,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+             return Ok(false);
+         };
+         let name = name.as_str();
+-        let reserve_error = ["::raw_vec::handle_error", "::raw_vec::capacity_overflow"]
+-            .iter()
+-            .any(|suffix| self.tcx().def_path_str(def).ends_with(suffix));
++        let reserve_error = {
++            let path = self.tcx().def_path_str(def);
++            ["::raw_vec::handle_error", "::raw_vec::capacity_overflow"]
++                .iter()
++                .any(|suffix| path.ends_with(suffix))
++        };
+         if ![
+             "__rust_alloc",
+             "__rust_alloc_zeroed",
+@@ -2274,19 +2291,26 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+                 self.code.push(Op::Trap { message: "unreachable MIR block".into() });
+                 continue;
+             }
+-            if let TerminatorKind::Call { func, .. } = &block.terminator().kind {
++            // Keep the first query evaluation in this block's observed lowering.
++            // Reuse only its result; statement lowering and call resolution stay ordered.
++            let panic_name = if let TerminatorKind::Call { func, .. } = &block.terminator().kind {
+                 if let ty::FnDef(def, _) = *self.operand_ty(func).kind() {
+-                    if let Some(name) = panic_function(self.tcx(), def) {
+-                        if block.statements.iter().all(panic_preparation) {
+-                            let location = self.tcx().sess.source_map().span_to_diagnostic_string(
+-                                block.terminator().source_info.span.source_callsite(),
+-                            );
+-                            self.code.push(Op::Trap {
+-                                message: format!("{name} at {location}"),
+-                            });
+-                            continue;
+-                        }
+-                    }
++                    panic_function(self.tcx(), def)
++                } else {
++                    None
++                }
++            } else {
++                None
++            };
++            if let Some(name) = &panic_name {
++                if block.statements.iter().all(panic_preparation) {
++                    let location = self.tcx().sess.source_map().span_to_diagnostic_string(
++                        block.terminator().source_info.span.source_callsite(),
++                    );
++                    self.code.push(Op::Trap {
++                        message: format!("{name} at {location}"),
++                    });
++                    continue;
+                 }
+             }
+             for (statement_index, statement) in block.statements.iter().enumerate() {
+@@ -2428,7 +2452,7 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
+                         }
+                         continue;
+                     }
+-                    if let Some(name) = panic_function(self.tcx(), def) {
++                    if let Some(name) = panic_name {
+                         let location = self.tcx().sess.source_map().span_to_diagnostic_string(
+                             block.terminator().source_info.span.source_callsite(),
+                         );
+diff --git a/crates/mir-export/src/lower/scalar_frame.rs b/crates/mir-export/src/lower/scalar_frame.rs
+index 37deb18941b93fa619f6222f9a4349d60e6c7317..13df103bfff09d7cb7817d4f37f8a48abcbe8067 100644
+--- a/crates/mir-export/src/lower/scalar_frame.rs
++++ b/crates/mir-export/src/lower/scalar_frame.rs
+@@ -53,18 +53,31 @@ impl ChosenLayout {
+         // Preserve capture's checked reconstruction, including its overflow
+         // behavior, even when scalar packing selected a smaller layout.
+         let mut end = 0;
+-        let uncolored = self.shapes.iter().map(|&(size, align)| allocate(&mut end, size, align).unwrap()).collect();
+-        let (expected, extent) = match self.slots {
+-            Some(planned) => (planned, self.extent),
+-            None => (uncolored, end),
+-        };
++        let mut uncolored_matches = true;
++        for (index, &(size, align)) in self.shapes.iter().enumerate() {
++            let expected = allocate(&mut end, size, align).unwrap();
++            if self.slots.is_none() {
++                // A mismatch must not skip checked arithmetic for later shapes.
++                uncolored_matches &= slots.get(index)
++                    .is_some_and(|actual| expected.offset == actual.offset && expected.size == actual.size);
++            }
++        }
++        let extent = if self.slots.is_some() { self.extent } else { end };
+         assert_eq!(extent, local_extent, "baseline local extent differs");
+-        assert!(expected.len() == slots.len() && expected.iter().zip(slots)
+-            .all(|(a, b)| a.offset == b.offset && a.size == b.size), "baseline slots differ");
++        let matches = match self.slots {
++            Some(expected) => expected.len() == slots.len() && expected.iter().zip(slots)
++                .all(|(a, b)| a.offset == b.offset && a.size == b.size),
++            None => self.shapes.len() == slots.len() && uncolored_matches,
++        };
++        assert!(matches, "baseline slots differ");
+         self.shapes
+     }
+ }
+ 
++#[cfg(test)]
++#[path = "scalar_frame_layout_tests.rs"]
++mod layout_tests;
++
+ #[derive(Clone, PartialEq, Eq)]
+ struct Dense { words: Vec<u64>, count: usize }
+ impl Dense {
+diff --git a/crates/mir-export/src/lower/scalar_frame_layout_tests.rs b/crates/mir-export/src/lower/scalar_frame_layout_tests.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..e62d65880560065f833d9a028441a0127d2625d2
+--- /dev/null
++++ b/crates/mir-export/src/lower/scalar_frame_layout_tests.rs
+@@ -0,0 +1,110 @@
++//! Original allocating verifier retained from d8077a for behavior comparison.
++use super::*;
++
++fn retained_into_shapes(chosen: ChosenLayout, slots: &[Slot], local_extent: usize) -> Vec<(usize, usize)> {
++    let mut end = 0;
++    let uncolored = chosen.shapes.iter().map(|&(size, align)| allocate(&mut end, size, align).unwrap()).collect();
++    let (expected, extent) = match chosen.slots {
++        Some(planned) => (planned, chosen.extent),
++        None => (uncolored, end),
++    };
++    assert_eq!(extent, local_extent, "baseline local extent differs");
++    assert!(expected.len() == slots.len() && expected.iter().zip(slots)
++        .all(|(a, b)| a.offset == b.offset && a.size == b.size), "baseline slots differ");
++    chosen.shapes
++}
++
++#[derive(Debug, PartialEq)]
++enum Outcome { Shapes(Vec<(usize, usize)>), Panic(String) }
++
++fn outcome(f: impl FnOnce() -> Vec<(usize, usize)> + std::panic::UnwindSafe) -> Outcome {
++    match std::panic::catch_unwind(f) {
++        Ok(shapes) => Outcome::Shapes(shapes),
++        Err(error) => {
++            let message = error.downcast_ref::<String>().cloned()
++                .or_else(|| error.downcast_ref::<&str>().map(|message| (*message).to_owned()))
++                .expect("expected a string panic payload");
++            Outcome::Panic(message)
++        }
++    }
++}
++
++fn compare(shapes: &[(usize, usize)], planned: Option<&[Slot]>, chosen_extent: usize,
++           slots: &[Slot], local_extent: usize) -> Outcome {
++    let make = || ChosenLayout { shapes: shapes.to_vec(), slots: planned.map(|slots| slots.to_vec()), extent: chosen_extent };
++    let expected = outcome(|| retained_into_shapes(make(), slots, local_extent));
++    let actual = outcome(|| make().into_shapes(slots, local_extent));
++    assert_eq!(actual, expected);
++    actual
++}
++
++fn slots(offsets: &[usize], size: usize) -> Vec<Slot> {
++    offsets.iter().map(|&offset| Slot { offset, size }).collect()
++}
++
++#[test]
++fn colored_and_dedicated_checks_match_the_original_verifier() {
++    let shapes = [(8, 8); 3];
++    let dedicated = slots(&[0, 8, 16], 8);
++    let colored = slots(&[0, 8, 8], 8);
++    assert_eq!(compare(&shapes, None, 24, &dedicated, 24), Outcome::Shapes(shapes.to_vec()));
++    assert_eq!(compare(&shapes, Some(&colored), 16, &colored, 16), Outcome::Shapes(shapes.to_vec()));
++    // Without a colored layout, the reconstructed extent retains precedence
++    // over the stored original-extent field, as in the original verifier.
++    assert_eq!(compare(&shapes, None, 123, &dedicated, 24), Outcome::Shapes(shapes.to_vec()));
++
++    let shapes = [(0, 16), (3, 1), (8, 8), (0, 32), (1, 1)];
++    let expected = [Slot { offset: 0, size: 0 }, Slot { offset: 0, size: 3 },
++        Slot { offset: 8, size: 8 }, Slot { offset: 32, size: 0 }, Slot { offset: 32, size: 1 }];
++    assert_eq!(compare(&shapes, None, 33, &expected, 33), Outcome::Shapes(shapes.to_vec()));
++    assert_eq!(compare(&[], None, 0, &[], 0), Outcome::Shapes(vec![]));
++    assert_eq!(compare(&[], Some(&[]), 0, &[], 0), Outcome::Shapes(vec![]));
++}
++
++#[test]
++fn both_layout_modes_preserve_slot_and_extent_failure_order() {
++    let shapes = [(8, 8); 3];
++    let dedicated = slots(&[0, 8, 16], 8);
++    let colored = slots(&[0, 8, 8], 8);
++    for planned in [None, Some(colored.as_slice())] {
++        let expected = planned.unwrap_or(&dedicated);
++        let extent = if planned.is_some() { 16 } else { 24 };
++        for mutation in 0..7 {
++            let mut actual = expected.to_vec();
++            let mut local_extent = extent;
++            match mutation {
++                0 => actual[0].offset = 1,
++                1 => actual[2].size = 7,
++                2 => { actual.pop(); }
++                3 => actual.push(Slot { offset: extent, size: 0 }),
++                4 => actual.clear(),
++                5 => local_extent += 8,
++                6 => { actual.clear(); local_extent += 8; }
++                _ => unreachable!(),
++            }
++            let got = compare(&shapes, planned, extent, &actual, local_extent);
++            if mutation < 5 {
++                assert_eq!(got, Outcome::Panic("baseline slots differ".into()));
++            } else {
++                let Outcome::Panic(message) = got else { panic!("accepted invalid extent") };
++                assert!(message.contains("baseline local extent differs"));
++                assert!(!message.contains("baseline slots differ"));
++            }
++        }
++    }
++}
++
++#[test]
++fn later_checked_overflow_precedes_earlier_certificate_mismatches() {
++    let planned = slots(&[0, 0], 1);
++    // The second shape fails either checked size addition or checked alignment
++    // addition. The first shape and every supplied certificate already differ.
++    for shapes in [[(usize::MAX, 1), (1, 1)], [(usize::MAX, 1), (0, 8)]] {
++        for chosen in [None, Some(planned.as_slice())] {
++            for actual in [vec![], slots(&[7], 3), slots(&[7, 8, 9], 3)] {
++                assert_eq!(compare(&shapes, chosen, 2, &actual, 99),
++                    Outcome::Panic("called `Option::unwrap()` on a `None` value".into()));
++            }
++        }
++    }
++}
+diff --git a/crates/mir-export/src/lower/scalar_promote_moves.rs b/crates/mir-export/src/lower/scalar_promote_moves.rs
+index 154cdb9b902f9cf74696c65dd165253eef5e4d23..c5aa92548d990fae9812c599c526655720fb99e6 100644
+--- a/crates/mir-export/src/lower/scalar_promote_moves.rs
++++ b/crates/mir-export/src/lower/scalar_promote_moves.rs
+@@ -1,6 +1,20 @@
+ //! Forward width-preserving scalar captures inside a block, then remove only
+ //! captures with no remaining register reads anywhere in the function.
+ use rust_interp_bytecode::{Op,Reg};
++use std::num::NonZeroU32;
++
++type Alias = Option<(Reg, u32, NonZeroU32)>;
++
++fn advance_alias_epoch(epoch: NonZeroU32, aliases: &mut [Alias]) -> NonZeroU32 {
++    match NonZeroU32::new(epoch.get().wrapping_add(1)) {
++        Some(next) => next,
++        None => {
++            // Clear ancient generations before reusing their epoch values.
++            aliases.fill(None);
++            NonZeroU32::MIN
++        }
++    }
++}
+ 
+ fn rewrite_reads(op:&mut Op,mut map:impl FnMut(&mut Reg)) {
+     match op {
+@@ -34,12 +48,13 @@ pub(super) fn eliminate(code:&mut Vec<Op>,register_count:u32,scalars:&[(Reg,u8)]
+     let mut widths=vec![None;register_count as usize];
+     for &(r,bits) in scalars {assert!([8,16,32,64,128].contains(&bits));widths[r as usize]=Some(bits);}
+     let starts=super::starts(code);let mut versions=vec![0u32;register_count as usize];
+-    let mut aliases=vec![None;register_count as usize];let mut captures=vec![None;code.len()];
++    let mut aliases:Vec<Alias>=vec![None;register_count as usize];let mut captures=vec![None;code.len()];
++    let mut epoch=NonZeroU32::MIN;
+     for (pc,op) in code.iter_mut().enumerate() {
+-        if starts[pc] {aliases.fill(None);}
++        if starts[pc] {epoch=advance_alias_epoch(epoch,&mut aliases);}
+         rewrite_reads(op,|r| {
+-            if let Some((source,version))=aliases[*r as usize] {
+-                if versions[source as usize]==version {*r=source;}
++            if let Some((source,version,alias_epoch))=aliases[*r as usize] {
++                if alias_epoch==epoch && versions[source as usize]==version {*r=source;}
+             }
+         });
+         // Calls preserve the caller's registers. Every explicit writer expires
+@@ -47,7 +62,7 @@ pub(super) fn eliminate(code:&mut Vec<Op>,register_count:u32,scalars:&[(Reg,u8)]
+         super::registers(op,|_|{},|r| {versions[r as usize]+=1;aliases[r as usize]=None;});
+         if let Op::Cast{dst,src,from,to,signed:false}=op {
+             if widths[*dst as usize].is_none() && widths[*src as usize]==Some(*from) && from==to {
+-                aliases[*dst as usize]=Some((*src,versions[*src as usize]));captures[pc]=Some(*dst);
++                aliases[*dst as usize]=Some((*src,versions[*src as usize],epoch));captures[pc]=Some(*dst);
+             }
+         }
+     }
+@@ -56,7 +71,9 @@ pub(super) fn eliminate(code:&mut Vec<Op>,register_count:u32,scalars:&[(Reg,u8)]
+     let dead:Vec<_>=captures.iter().map(|r|r.is_some_and(|r|!read[r as usize])).collect();
+     let removed=dead.iter().filter(|&&d|d).count();if removed==0 {return 0;}
+     let mut mapped=vec![0usize;code.len()];let mut out=Vec::with_capacity(code.len()-removed);
+-    for (pc,op) in code.iter().enumerate() {mapped[pc]=out.len();if !dead[pc] {out.push(op.clone());}}
++    // No analysis reads the old code after this point; keep owned operands
++    // while dropping only the already-proven dead captures.
++    for (pc,op) in code.drain(..).enumerate() {mapped[pc]=out.len();if !dead[pc] {out.push(op);}}
+     for op in &mut out {match op {
+         Op::Jump{target}=>*target=mapped[*target],
+         Op::Switch{cases,otherwise,..}=>{*otherwise=mapped[*otherwise];for (_,target) in cases {*target=mapped[*target];}},
+@@ -68,3 +85,7 @@ pub(super) fn eliminate(code:&mut Vec<Op>,register_count:u32,scalars:&[(Reg,u8)]
+ #[cfg(test)]
+ #[path="scalar_promote_moves_tests.rs"]
+ mod tests;
++
++#[cfg(test)]
++#[path="scalar_promote_moves_epoch_tests.rs"]
++mod epoch_tests;
+diff --git a/crates/mir-export/src/lower/scalar_promote_moves_epoch_tests.rs b/crates/mir-export/src/lower/scalar_promote_moves_epoch_tests.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8af51d291ad1d052b03876f894ca41bcdd91aad5
+--- /dev/null
++++ b/crates/mir-export/src/lower/scalar_promote_moves_epoch_tests.rs
+@@ -0,0 +1,172 @@
++//! Uncached block-reset oracle from 04bb082 scalar_promote_moves.rs.
++//! Only the retained function name/visibility and parent-module paths differ.
++use super::*;
++use rust_interp_bytecode::{Binary, Engine, Function, Limits, Program, Slot, VERSION, execute_with_engine};
++
++fn retained_eliminate(code:&mut Vec<Op>,register_count:u32,scalars:&[(Reg,u8)])->usize {
++    let mut widths=vec![None;register_count as usize];
++    for &(r,bits) in scalars {assert!([8,16,32,64,128].contains(&bits));widths[r as usize]=Some(bits);}
++    let starts=super::super::starts(code);let mut versions=vec![0u32;register_count as usize];
++    let mut aliases=vec![None;register_count as usize];let mut captures=vec![None;code.len()];
++    for (pc,op) in code.iter_mut().enumerate() {
++        if starts[pc] {aliases.fill(None);}
++        rewrite_reads(op,|r| {
++            if let Some((source,version))=aliases[*r as usize] {
++                if versions[source as usize]==version {*r=source;}
++            }
++        });
++        // Calls preserve the caller's registers. Every explicit writer expires
++        // captures of its previous value, even if the new bits might be equal.
++        super::super::registers(op,|_|{},|r| {versions[r as usize]+=1;aliases[r as usize]=None;});
++        if let Op::Cast{dst,src,from,to,signed:false}=op {
++            if widths[*dst as usize].is_none() && widths[*src as usize]==Some(*from) && from==to {
++                aliases[*dst as usize]=Some((*src,versions[*src as usize]));captures[pc]=Some(*dst);
++            }
++        }
++    }
++    let mut read=vec![false;register_count as usize];
++    for op in code.iter() {super::super::registers(op,|r|read[r as usize]=true,|_|{});}
++    let dead:Vec<_>=captures.iter().map(|r|r.is_some_and(|r|!read[r as usize])).collect();
++    let removed=dead.iter().filter(|&&d|d).count();if removed==0 {return 0;}
++    let mut mapped=vec![0usize;code.len()];let mut out=Vec::with_capacity(code.len()-removed);
++    for (pc,op) in code.iter().enumerate() {mapped[pc]=out.len();if !dead[pc] {out.push(op.clone());}}
++    for op in &mut out {match op {
++        Op::Jump{target}=>*target=mapped[*target],
++        Op::Switch{cases,otherwise,..}=>{*otherwise=mapped[*otherwise];for (_,target) in cases {*target=mapped[*target];}},
++        _=>{},
++    }}
++    *code=out;removed
++}
++
++fn compare(mut code: Vec<Op>, registers: u32, scalars: &[(Reg, u8)], label: &str) -> (Vec<Op>, usize) {
++    let mut expected = code.clone();
++    let removed = retained_eliminate(&mut expected, registers, scalars);
++    let actual = eliminate(&mut code, registers, scalars);
++    assert_eq!(actual, removed, "removed captures: {label}");
++    assert_eq!(bincode::serialize(&code).unwrap(), bincode::serialize(&expected).unwrap(),
++        "rewritten code: {label}");
++    (code, actual)
++}
++
++#[test]
++fn stale_capture_cannot_cross_a_join_even_when_source_version_is_unchanged() {
++    // The taken branch bypasses the capture. Register 1 must keep its initial
++    // zero, even though linear scanning sees the cast and source 0 never changes.
++    // Missing epoch invalidation would rewrite the Store to source 0 (seven).
++    let code = vec![
++        Op::Imm { dst: 0, value: 7 },
++        Op::Imm { dst: 2, value: 0 },
++        Op::Switch { value: 2, cases: vec![(0, 5)], otherwise: 3 },
++        Op::Cast { dst: 1, src: 0, from: 64, to: 64, signed: false },
++        Op::Jump { target: 5 },
++        Op::Local { dst: 5, offset: 0 },
++        Op::Store { address: 5, src: 1, size: 8 },
++        Op::Return,
++    ];
++    let original = bincode::serialize(&code).unwrap();
++    let (code, removed) = compare(code, 8, &[(0, 64)], "bypassed capture");
++    assert_eq!(removed, 0);
++    assert_eq!(bincode::serialize(&code).unwrap(), original);
++    assert!(matches!(code[6], Op::Store { src: 1, .. }));
++    let program = Program { version: VERSION, target: "aarch64-apple-darwin".into(),
++        entry: 0, functions: vec![Function { name: "bypassed capture".into(), frame_size: 16,
++            frame_align: 16, registers: 8, args: vec![], result: Slot { offset: 0, size: 8 }, code }],
++        data: vec![], statics: vec![], thread_locals: vec![] };
++    assert_eq!(execute_with_engine(&program, &[], Limits::default(), Engine::Interpreter).unwrap().value, 0);
++}
++
++#[test]
++fn generation_wrap_clears_ancient_aliases_before_restarting_at_one() {
++    let old = NonZeroU32::MIN;
++    let last = NonZeroU32::new(u32::MAX).unwrap();
++    let mut aliases = vec![Some((3, 11, old)), Some((4, 12, last)), None];
++    let epoch = advance_alias_epoch(last, &mut aliases);
++    assert_eq!(epoch, NonZeroU32::MIN);
++    assert_eq!(aliases, [None, None, None]);
++    // A normal advance preserves physical entries; their old epoch makes them
++    // logically unavailable. Only wrap needs the full register-table clear.
++    aliases[2] = Some((5, 13, epoch));
++    let next = advance_alias_epoch(epoch, &mut aliases);
++    assert_eq!(next.get(), 2);
++    assert_eq!(aliases[2], Some((5, 13, NonZeroU32::MIN)));
++}
++
++#[cfg(all(target_arch = "aarch64", target_os = "macos"))]
++#[test]
++fn epoch_niche_preserves_alias_slot_size_on_this_host() {
++    // This is a host-specific footprint requirement, not a portable Rust layout
++    // guarantee. Root will run this check before any performance measurement.
++    assert_eq!(std::mem::size_of::<Option<(Reg, u32)>>(), 12);
++    assert_eq!(std::mem::size_of::<Alias>(), 12);
++}
++
++#[test]
++fn all_scalar_widths_preserve_capture_and_source_writer_decisions() {
++    for bits in [8, 16, 32, 64, 128] {
++        for overwrite in [false, true] {
++            let mut code = vec![Op::Imm { dst: 0, value: 7 },
++                Op::Cast { dst: 1, src: 0, from: bits, to: bits, signed: false }];
++            if overwrite { code.push(Op::Imm { dst: 0, value: 19 }); }
++            code.extend([Op::Local { dst: 2, offset: 0 },
++                Op::Store { address: 2, src: 1, size: bits / 8 }, Op::Return]);
++            let (code, removed) = compare(code, 4, &[(0, bits)],
++                &format!("bits {bits}, overwrite {overwrite}"));
++            assert_eq!(removed, usize::from(!overwrite));
++            let expected_source = if overwrite { 1 } else { 0 };
++            assert!(matches!(code[code.len() - 2], Op::Store { src, .. } if src == expected_source));
++        }
++    }
++}
++
++fn next(seed: &mut u64) -> usize {
++    *seed ^= *seed << 13;
++    *seed ^= *seed >> 7;
++    *seed ^= *seed << 17;
++    *seed as usize
++}
++
++#[test]
++fn deterministic_branches_calls_writers_and_casts_match_full_reset_algorithm() {
++    let mut seed = 0xf6d9_248b_7153_a0cdu64;
++    let widths = [8, 16, 32, 64, 128];
++    let scalars: Vec<_> = widths.iter().enumerate().map(|(r, &bits)| (r as Reg, bits)).collect();
++    for case in 0..512 {
++        let before = seed;
++        let len = 8 + next(&mut seed) % 97;
++        let mut code = Vec::new();
++        for _ in 0..len - 1 {
++            let kind = next(&mut seed) % 15;
++            let dst = (next(&mut seed) % 16) as Reg;
++            let a = (next(&mut seed) % 16) as Reg;
++            let b = (next(&mut seed) % 16) as Reg;
++            let c = (next(&mut seed) % 16) as Reg;
++            let bits = widths[next(&mut seed) % widths.len()];
++            let target = next(&mut seed) % len;
++            let otherwise = next(&mut seed) % len;
++            code.push(match kind {
++                0 => Op::Imm { dst, value: next(&mut seed) as u128 },
++                1 | 2 => {
++                    let source = next(&mut seed) % widths.len();
++                    Op::Cast { dst: 5 + (dst % 11), src: source as Reg,
++                        from: widths[source], to: widths[source], signed: false }
++                },
++                3 => Op::Cast { dst, src: a, from: bits,
++                    to: widths[next(&mut seed) % widths.len()], signed: next(&mut seed) % 2 != 0 },
++                4 => Op::Binary { dst, overflow: c, op: Binary::Add, a, b, bits, signed: false },
++                5 => Op::Select { dst, condition: a, yes: b, no: c },
++                6 => Op::Load { dst, address: a, size: (next(&mut seed) % 17) as u8 },
++                7 => Op::Store { address: a, src: b, size: (next(&mut seed) % 17) as u8 },
++                8 => Op::Call { function: 0, args: vec![a, b], destination: c },
++                9 => Op::CallIndirect { callee: dst, args: vec![a, b], arg_sizes: vec![8, 16],
++                    destination: c, result_size: 8 },
++                10 => Op::Switch { value: a, cases: vec![(0, target), (0, otherwise)], otherwise },
++                11 => Op::Jump { target },
++                12 => Op::Return,
++                13 => Op::Trap { message: format!("retained diagnostic {case}") },
++                _ => Op::Copy { dst: a, src: b, size: 8 },
++            });
++        }
++        code.push(Op::Return);
++        compare(code, 16, &scalars, &format!("case {case}, seed {before:016x}"));
++    }
++}
+diff --git a/crates/mir-export/src/lower/scalar_promote_moves_tests.rs b/crates/mir-export/src/lower/scalar_promote_moves_tests.rs
+index b8218d0086f6ea1425057cbca97ffe9991217236..09836234e4556e4166f5c82cded89ec2400545ae 100644
+--- a/crates/mir-export/src/lower/scalar_promote_moves_tests.rs
++++ b/crates/mir-export/src/lower/scalar_promote_moves_tests.rs
+@@ -1,10 +1,18 @@
+ use super::*;
+ use rust_interp_bytecode::{Binary,Engine,Function,Limits,Program,Slot,VERSION,execute_with_engine};
+ fn mov(dst:Reg,src:Reg)->Op {Op::Cast{dst,src,from:64,to:64,signed:false}}
++fn checked_eliminate(code:&mut Vec<Op>,count:u32,scalars:&[(Reg,u8)])->usize {
++    let mut expected=code.clone();
++    let expected_removed=super::super::reference::eliminate(&mut expected,count,scalars);
++    let removed=eliminate(code,count,scalars);
++    assert_eq!(removed,expected_removed);
++    assert_eq!(bincode::serialize(code).unwrap(),bincode::serialize(&expected).unwrap());
++    removed
++}
+ fn check(code:Vec<Op>,expected:u128,removed:usize) {
+     let f=Function{name:"move-captures".into(),frame_size:16,frame_align:16,registers:8,args:vec![],result:Slot{offset:0,size:8},code};
+     let p=Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,functions:vec![f],data:vec![],statics:vec![],thread_locals:vec![]};
+-    let mut q=p.clone();assert_eq!(eliminate(&mut q.functions[0].code,8,&[(0,64)]),removed);
++    let mut q=p.clone();assert_eq!(checked_eliminate(&mut q.functions[0].code,8,&[(0,64)]),removed);
+     let mut engines=vec![Engine::Interpreter];if cfg!(all(target_arch="aarch64",target_os="macos")){engines.push(Engine::Jit);}
+     for program in [&p,&q] {for &engine in &engines {for capacity in [0,16*1024*1024] {
+         let result=execute_with_engine(program,&[],Limits{jit_code_bytes:capacity,..Limits::default()},engine).unwrap();assert_eq!(result.value,expected);
+diff --git a/crates/mir-export/src/lower/scalar_promote_owned_tests.rs b/crates/mir-export/src/lower/scalar_promote_owned_tests.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..e671710d03416fdfe2f78b814dbf838d15dda3b5
+--- /dev/null
++++ b/crates/mir-export/src/lower/scalar_promote_owned_tests.rs
+@@ -0,0 +1,124 @@
++use super::*;
++
++// Every captured field is nonempty. These addresses are compared, never read
++// through pointers, to distinguish moving retained values from cloning them.
++fn owned_fields(code: &[Op]) -> Vec<usize> {
++    let mut fields = Vec::new();
++    for op in code {
++        match op {
++            Op::Assert { message, .. } | Op::Trap { message } => fields.push(message.as_ptr() as usize),
++            Op::Switch { cases, .. } => fields.push(cases.as_ptr() as usize),
++            Op::Call { args, .. } => fields.push(args.as_ptr() as usize),
++            Op::CallIndirect { args, arg_sizes, .. } => {
++                fields.push(args.as_ptr() as usize);
++                fields.push(arg_sizes.as_ptr() as usize);
++            }
++            _ => {}
++        }
++    }
++    fields
++}
++
++#[test]
++fn promotion_and_capture_removal_move_calls_branches_and_diagnostics() {
++    let handle = (rust_interp_bytecode::FUNCTION_POINTER_TAG | 2) as u128;
++    let mut p = program(function(vec![
++        Op::Imm { dst: 0, value: 7 },
++        Op::Local { dst: 1, offset: 16 },
++        Op::Store { address: 1, src: 0, size: 8 },
++        Op::Local { dst: 2, offset: 16 },
++        Op::Load { dst: 3, address: 2, size: 8 },
++        Op::Assert { value: 3, expected: true, message: "kept assertion".into() },
++        Op::Local { dst: 4, offset: 32 },
++        Op::Call { function: 1, args: vec![4], destination: 4 },
++        Op::Imm { dst: 5, value: handle },
++        Op::CallIndirect { callee: 5, args: vec![4], arg_sizes: vec![8], destination: 4, result_size: 8 },
++        Op::Switch { value: 3, cases: vec![(7, 12)], otherwise: 11 },
++        Op::Trap { message: "unexpected branch".into() },
++        Op::Local { dst: 6, offset: 0 },
++        Op::Local { dst: 7, offset: 16 },
++        Op::Copy { dst: 6, src: 7, size: 8 },
++        Op::Return,
++    ], 8));
++    let mut callee = function(vec![Op::Return], 0);
++    callee.name = "identity callee".into();
++    callee.args = vec![Slot { offset: 0, size: 8 }];
++    callee.result = Slot { offset: 0, size: 8 };
++    p.functions.push(callee);
++    validate(&p).unwrap();
++    let original = p.clone();
++    let fields = owned_fields(&p.functions[0].code);
++    let mut count = 8;
++    let report = checked_promote(&mut p.functions[0].code, &mut count, &[Slot { offset: 16, size: 8 }]);
++    p.functions[0].registers = count as usize;
++    assert_eq!(count, 9);
++    assert_eq!((report.slots, report.removed_addresses, report.rewritten, report.removed_moves), (1, 3, 3, 1));
++    let expected = vec![
++        Op::Imm { dst: 8, value: 0 },
++        Op::Imm { dst: 0, value: 7 },
++        Op::Cast { dst: 8, src: 0, from: 64, to: 64, signed: false },
++        Op::Assert { value: 8, expected: true, message: "kept assertion".into() },
++        Op::Local { dst: 4, offset: 32 },
++        Op::Call { function: 1, args: vec![4], destination: 4 },
++        Op::Imm { dst: 5, value: handle },
++        Op::CallIndirect { callee: 5, args: vec![4], arg_sizes: vec![8], destination: 4, result_size: 8 },
++        Op::Switch { value: 8, cases: vec![(7, 10)], otherwise: 9 },
++        Op::Trap { message: "unexpected branch".into() },
++        Op::Local { dst: 6, offset: 0 },
++        Op::Store { address: 6, src: 8, size: 8 },
++        Op::Return,
++    ];
++    assert_eq!(bincode::serialize(&p.functions[0].code).unwrap(), bincode::serialize(&expected).unwrap());
++    assert_eq!(owned_fields(&p.functions[0].code), fields);
++    validate(&p).unwrap();
++    check(&original, &[], 7);
++    check(&p, &[], 7);
++}
++
++#[test]
++fn zero_removal_keeps_forwarded_reads_and_cross_block_capture() {
++    let mut p = program(function(vec![
++        Op::Imm { dst: 0, value: 7 },
++        Op::Cast { dst: 1, src: 0, from: 64, to: 64, signed: false },
++        Op::Assert { value: 1, expected: true, message: "forwarded read".into() },
++        Op::Jump { target: 5 },
++        Op::Trap { message: "unreachable".into() },
++        Op::Local { dst: 2, offset: 0 },
++        Op::Store { address: 2, src: 1, size: 8 },
++        Op::Return,
++    ], 3));
++    let original = p.clone();
++    let code_address = p.functions[0].code.as_ptr();
++    let fields = owned_fields(&p.functions[0].code);
++    let mut expected = p.functions[0].code.clone();
++    assert_eq!(reference::eliminate(&mut expected, 3, &[(0, 64)]), 0);
++    assert_eq!(scalar_moves::eliminate(&mut p.functions[0].code, 3, &[(0, 64)]), 0);
++    assert_eq!(bincode::serialize(&p.functions[0].code).unwrap(), bincode::serialize(&expected).unwrap());
++    assert!(matches!(p.functions[0].code[1], Op::Cast { dst: 1, src: 0, .. }));
++    assert!(matches!(p.functions[0].code[2], Op::Assert { value: 0, .. }));
++    assert!(matches!(p.functions[0].code[6], Op::Store { src: 1, .. }));
++    assert_eq!(p.functions[0].code.as_ptr(), code_address);
++    assert_eq!(owned_fields(&p.functions[0].code), fields);
++    check(&original, &[], 7);
++    check(&p, &[], 7);
++}
++
++#[test]
++fn declined_promotion_keeps_original_owned_fields_and_register_count() {
++    for slots in [vec![], vec![Slot { offset: 16, size: 8 }]] {
++        let mut code = vec![Op::Local { dst: 0, offset: 16 },
++            Op::Load { dst: 1, address: 0, size: 4 },
++            Op::Assert { value: 1, expected: false, message: "retained on decline".into() },
++            Op::Return];
++        let before = bincode::serialize(&code).unwrap();
++        let code_address = code.as_ptr();
++        let fields = owned_fields(&code);
++        let mut count = 2;
++        let report = checked_promote(&mut code, &mut count, &slots);
++        assert_eq!((report.slots, report.removed_addresses, report.rewritten, report.removed_moves), (0, 0, 0, 0));
++        assert_eq!(count, 2);
++        assert_eq!(bincode::serialize(&code).unwrap(), before);
++        assert_eq!(code.as_ptr(), code_address);
++        assert_eq!(owned_fields(&code), fields);
++    }
++}
+diff --git a/crates/mir-export/src/lower/scalar_promote_reference/moves.rs b/crates/mir-export/src/lower/scalar_promote_reference/moves.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69a8b26439de85dc6dce8421f0bd4223774e3ee
+--- /dev/null
++++ b/crates/mir-export/src/lower/scalar_promote_reference/moves.rs
+@@ -0,0 +1,68 @@
++// Test-only cloning reference retained from 04bb082. Production algorithms
++// are unchanged here; only test-module wiring differs from the source module.
++//! Forward width-preserving scalar captures inside a block, then remove only
++//! captures with no remaining register reads anywhere in the function.
++use rust_interp_bytecode::{Op,Reg};
++
++fn rewrite_reads(op:&mut Op,mut map:impl FnMut(&mut Reg)) {
++    match op {
++        Op::Imm{..}|Op::Local{..}|Op::Jump{..}|Op::Return|Op::Trap{..}|Op::ResetThreadLocals=>{},
++        Op::Load{address,..}=>map(address),
++        Op::Store{address,src,..}=>{map(address);map(src);},
++        Op::Copy{dst,src,..}=>{map(dst);map(src);},
++        Op::CopyDynamic{dst,src,size}=>{map(dst);map(src);map(size);},
++        Op::Binary{a,b,..}|Op::FloatBinary{a,b,..}=>{map(a);map(b);},
++        Op::Unary{src,..}|Op::Cast{src,..}|Op::FloatUnary{src,..}|Op::FloatConvert{src,..}=>map(src),
++        Op::Select{condition,yes,no,..}=>{map(condition);map(yes);map(no);},
++        Op::Switch{value,..}|Op::Assert{value,..}=>map(value),
++        Op::Call{args,destination,..}=>{map(destination);for r in args {map(r);}},
++        Op::CallIndirect{callee,args,destination,..}=>{map(callee);map(destination);for r in args {map(r);}},
++        Op::CompareBytes{left,right,size,..}=>{map(left);map(right);map(size);},
++        Op::Allocate{size,align,..}=>{map(size);map(align);},
++        Op::Deallocate{pointer,size,align}=>{map(pointer);map(size);map(align);},
++        Op::Reallocate{pointer,old_size,align,new_size,..}=>{map(pointer);map(old_size);map(align);map(new_size);},
++        Op::FillBytes{address,value,size}=>{map(address);map(value);map(size);},
++        Op::RandomBytes{address,size,..}=>{map(address);map(size);},
++        Op::CpuFeatureQuery{name,output,output_len,new_data,new_len,..}=>{for r in [name,output,output_len,new_data,new_len] {map(r);}},
++        Op::CAllocate{count,size,errno,..}=>{for r in [count,size,errno] {map(r);}},
++        Op::CDeallocate{pointer}=>map(pointer),
++        Op::RegisterTlsDestructor{callback,argument}=>{map(callback);map(argument);},
++        Op::CReallocate{pointer,size,errno,..}=>{for r in [pointer,size,errno] {map(r);}},
++        Op::CAlignedAllocate{output,align,size,..}=>{for r in [output,align,size] {map(r);}},
++    }
++}
++
++pub(super) fn eliminate(code:&mut Vec<Op>,register_count:u32,scalars:&[(Reg,u8)])->usize {
++    let mut widths=vec![None;register_count as usize];
++    for &(r,bits) in scalars {assert!([8,16,32,64,128].contains(&bits));widths[r as usize]=Some(bits);}
++    let starts=super::starts(code);let mut versions=vec![0u32;register_count as usize];
++    let mut aliases=vec![None;register_count as usize];let mut captures=vec![None;code.len()];
++    for (pc,op) in code.iter_mut().enumerate() {
++        if starts[pc] {aliases.fill(None);}
++        rewrite_reads(op,|r| {
++            if let Some((source,version))=aliases[*r as usize] {
++                if versions[source as usize]==version {*r=source;}
++            }
++        });
++        // Calls preserve the caller's registers. Every explicit writer expires
++        // captures of its previous value, even if the new bits might be equal.
++        super::registers(op,|_|{},|r| {versions[r as usize]+=1;aliases[r as usize]=None;});
++        if let Op::Cast{dst,src,from,to,signed:false}=op {
++            if widths[*dst as usize].is_none() && widths[*src as usize]==Some(*from) && from==to {
++                aliases[*dst as usize]=Some((*src,versions[*src as usize]));captures[pc]=Some(*dst);
++            }
++        }
++    }
++    let mut read=vec![false;register_count as usize];
++    for op in code.iter() {super::registers(op,|r|read[r as usize]=true,|_|{});}
++    let dead:Vec<_>=captures.iter().map(|r|r.is_some_and(|r|!read[r as usize])).collect();
++    let removed=dead.iter().filter(|&&d|d).count();if removed==0 {return 0;}
++    let mut mapped=vec![0usize;code.len()];let mut out=Vec::with_capacity(code.len()-removed);
++    for (pc,op) in code.iter().enumerate() {mapped[pc]=out.len();if !dead[pc] {out.push(op.clone());}}
++    for op in &mut out {match op {
++        Op::Jump{target}=>*target=mapped[*target],
++        Op::Switch{cases,otherwise,..}=>{*otherwise=mapped[*otherwise];for (_,target) in cases {*target=mapped[*target];}},
++        _=>{},
++    }}
++    *code=out;removed
++}
+diff --git a/crates/mir-export/src/lower/scalar_promote_reference/transform.rs b/crates/mir-export/src/lower/scalar_promote_reference/transform.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d77f314b1d40c87c7fed975944bf32ca252ba7f7
+--- /dev/null
++++ b/crates/mir-export/src/lower/scalar_promote_reference/transform.rs
+@@ -0,0 +1,144 @@
++// Test-only cloning reference retained from 04bb082. Production algorithms
++// are unchanged here; only test-module wiring differs from the source module.
++//! Only for private, non-address-exposed primitive MIR slots. The caller must
++//! prove that other pointers cannot alias these ranges. This is not a general
++//! optimizer for externally supplied bytecode.
++use rust_interp_bytecode::{Op,Reg,Slot};
++use std::collections::BTreeMap;
++
++#[derive(Default,Debug)]
++pub(super) struct Report { pub slots:usize, pub removed_addresses:usize, pub rewritten:usize, pub removed_moves:usize }
++
++// Explicit matches force review when the bytecode gains a register operand.
++fn registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnMut(Reg)) {
++    match op {
++        Op::Imm{..}|Op::Local{..}|Op::Jump{..}|Op::Return|Op::Trap{..}|Op::ResetThreadLocals=>{},
++        Op::Load{address,..}=>read(*address),
++        Op::Store{address,src,..}=>{read(*address);read(*src);},
++        Op::Copy{dst,src,..}=>{read(*dst);read(*src);},
++        Op::CopyDynamic{dst,src,size}=>{read(*dst);read(*src);read(*size);},
++        Op::Binary{a,b,..}|Op::FloatBinary{a,b,..}=>{read(*a);read(*b);},
++        Op::Unary{src,..}|Op::Cast{src,..}|Op::FloatUnary{src,..}|Op::FloatConvert{src,..}=>read(*src),
++        Op::Select{condition,yes,no,..}=>{read(*condition);read(*yes);read(*no);},
++        Op::Switch{value,..}|Op::Assert{value,..}=>read(*value),
++        Op::Call{args,destination,..}=>{read(*destination);for &r in args {read(r);}},
++        Op::CallIndirect{callee,args,destination,..}=>{read(*callee);read(*destination);for &r in args {read(r);}},
++        Op::CompareBytes{left,right,size,..}=>{read(*left);read(*right);read(*size);},
++        Op::Allocate{size,align,..}=>{read(*size);read(*align);},
++        Op::Deallocate{pointer,size,align}=>{read(*pointer);read(*size);read(*align);},
++        Op::Reallocate{pointer,old_size,align,new_size,..}=>{read(*pointer);read(*old_size);read(*align);read(*new_size);},
++        Op::FillBytes{address,value,size}=>{read(*address);read(*value);read(*size);},
++        Op::RandomBytes{address,size,..}=>{read(*address);read(*size);},
++        Op::CpuFeatureQuery{name,output,output_len,new_data,new_len,..}=>{for r in [name,output,output_len,new_data,new_len] {read(*r);}},
++        Op::CAllocate{count,size,errno,..}=>{for r in [count,size,errno] {read(*r);}},
++        Op::CDeallocate{pointer}=>read(*pointer),
++        Op::RegisterTlsDestructor{callback,argument}=>{read(*callback);read(*argument);},
++        Op::CReallocate{pointer,size,errno,..}=>{for r in [pointer,size,errno] {read(*r);}},
++        Op::CAlignedAllocate{output,align,size,..}=>{for r in [output,align,size] {read(*r);}},
++    }
++    match op {
++        Op::Binary{dst,overflow,..}=>{write(*dst);write(*overflow);},
++        Op::Imm{dst,..}|Op::Local{dst,..}|Op::Load{dst,..}|Op::Unary{dst,..}|Op::Cast{dst,..}|Op::Select{dst,..}
++        |Op::CompareBytes{dst,..}|Op::Allocate{dst,..}|Op::Reallocate{dst,..}|Op::RandomBytes{dst,..}|Op::CpuFeatureQuery{dst,..}
++        |Op::CAllocate{dst,..}|Op::CReallocate{dst,..}|Op::CAlignedAllocate{dst,..}
++        |Op::FloatBinary{dst,..}|Op::FloatUnary{dst,..}|Op::FloatConvert{dst,..}=>write(*dst),
++        Op::Store{..}|Op::Copy{..}|Op::CopyDynamic{..}|Op::Jump{..}|Op::Switch{..}|Op::Assert{..}
++        |Op::Call{..}|Op::CallIndirect{..}|Op::Return|Op::Trap{..}|Op::Deallocate{..}|Op::CDeallocate{..}
++        |Op::RegisterTlsDestructor{..}|Op::FillBytes{..}|Op::ResetThreadLocals=>{},
++    }
++}
++
++fn starts(code:&[Op])->Vec<bool> {
++    let mut start=vec![false;code.len()];start[0]=true;
++    for (pc,op) in code.iter().enumerate() {
++        match op {
++            Op::Jump{target}=>start[*target]=true,
++            Op::Switch{cases,otherwise,..}=>{start[*otherwise]=true;for (_,target) in cases {start[*target]=true;}},
++            _=>{},
++        }
++        if matches!(op,Op::Jump{..}|Op::Switch{..}|Op::Return|Op::Trap{..})&&pc+1<start.len() {start[pc+1]=true;}
++    }
++    start
++}
++
++pub(super) fn promote(code:&mut Vec<Op>,count:&mut u32,slots:&[Slot])->Report {
++    if slots.is_empty() || slots.len()>256 || code.is_empty() || code.len()>100_000 || *count>100_000 {return Report::default();}
++    let by_offset:BTreeMap<_,_>=slots.iter().enumerate().map(|(i,s)|(s.offset,i)).collect();
++    assert_eq!(slots.len(),by_offset.len());
++    for slot in slots {assert!([1,2,4,8,16].contains(&slot.size));}
++    let mut writer_counts=vec![0u32;*count as usize];let mut addresses=vec![None;*count as usize];
++    let mut candidate=vec![true;slots.len()];let mut uses=vec![0usize;slots.len()];
++    for op in code.iter() {
++        registers(op,|_|{},|r|writer_counts[r as usize]+=1);
++        if let Op::Local{dst,offset}=op {if let Some(&slot)=by_offset.get(offset) {addresses[*dst as usize]=Some(slot);}}
++    }
++    for (r,&slot) in addresses.iter().enumerate() {if let Some(slot)=slot {if writer_counts[r]!=1 {candidate[slot]=false;}}}
++    let start=starts(code);let mut defined=vec![0usize;*count as usize];let mut epoch=0;
++    for (pc,op) in code.iter().enumerate() {
++        if start[pc] {epoch=pc+1;}
++        registers(op,|r| {
++            if let Some(slot)=addresses[r as usize] {
++                let size=slots[slot].size;
++                let allowed=match op {
++                    Op::Load{address,size:n,..}=>*address==r&&usize::from(*n)==size,
++                    Op::Store{address,src,size:n}=>*address==r&&*src!=r&&usize::from(*n)==size,
++                    Op::Copy{src,dst,size:n}=>(*src==r||*dst==r)&&*n==size,
++                    _=>false,
++                };
++                if !allowed || defined[r as usize]!=epoch {candidate[slot]=false;}
++                uses[slot]+=1;
++            }
++        },|_|{});
++        if let Op::Local{dst,..}=op {defined[*dst as usize]=epoch;}
++    }
++    for (yes,uses) in candidate.iter_mut().zip(uses) {*yes &= uses>0;}
++    let mut canonical=vec![None;slots.len()];let mut output=Vec::with_capacity(code.len()+slots.len());let mut report=Report::default();
++    for (slot,&yes) in candidate.iter().enumerate() {
++        if yes {let dst=*count;*count+=1;canonical[slot]=Some(dst);output.push(Op::Imm{dst,value:0});report.slots+=1;}
++    }
++    if report.slots==0 {return report;}
++    let promoted=|r:Reg|addresses[r as usize].and_then(|slot|canonical[slot]);
++    let mov=|dst,src,size:usize|Op::Cast{dst,src,from:(size*8) as u8,to:(size*8) as u8,signed:false};
++    let mut mapped=vec![0usize;code.len()];
++    for (pc,op) in code.iter().enumerate() {
++        mapped[pc]=output.len();
++        match op {
++            Op::Local{dst,..} if promoted(*dst).is_some()=>{report.removed_addresses+=1;},
++            Op::Load{dst,address,size} if promoted(*address).is_some()=>{
++                output.push(mov(*dst,promoted(*address).unwrap(),*size as usize));report.rewritten+=1;
++            },
++            Op::Store{address,src,size} if promoted(*address).is_some()=>{
++                output.push(mov(promoted(*address).unwrap(),*src,*size as usize));report.rewritten+=1;
++            },
++            Op::Copy{dst,src,size} if promoted(*dst).is_some()||promoted(*src).is_some()=>{
++                match (promoted(*dst),promoted(*src)) {
++                    (Some(dst),Some(src))=>output.push(mov(dst,src,*size)),
++                    (Some(dst),None)=>output.push(Op::Load{dst,address:*src,size:*size as u8}),
++                    (None,Some(src))=>output.push(Op::Store{address:*dst,src,size:*size as u8}),
++                    _=>unreachable!(),
++                }
++                report.rewritten+=1;
++            },
++            _=>output.push(op.clone()),
++        }
++    }
++    for op in &mut output {
++        match op {
++            Op::Jump{target}=>*target=mapped[*target],
++            Op::Switch{cases,otherwise,..}=>{*otherwise=mapped[*otherwise];for (_,target) in cases {*target=mapped[*target];}},
++            _=>{},
++        }
++    }
++    *code=output;
++    let scalars:Vec<_>=canonical.iter().enumerate().filter_map(|(i,r)|r.map(|r|(r,(slots[i].size*8) as u8))).collect();
++    report.removed_moves=scalar_moves::eliminate(code,*count,&scalars);
++    report
++}
++
++
++#[path="moves.rs"]
++mod scalar_moves;
++
++pub(super) fn eliminate(code: &mut Vec<Op>, count: u32, scalars: &[(Reg, u8)]) -> usize {
++    scalar_moves::eliminate(code, count, scalars)
++}
+diff --git a/crates/mir-export/src/lower/scalar_promote_tests.rs b/crates/mir-export/src/lower/scalar_promote_tests.rs
+index f9f8fceca6be5bafc694fdd6ad23af74db412742..3649c860016fc3197245b8ba3ca539fd434c4ed2 100644
+--- a/crates/mir-export/src/lower/scalar_promote_tests.rs
++++ b/crates/mir-export/src/lower/scalar_promote_tests.rs
+@@ -6,9 +6,19 @@ fn function(code:Vec<Op>,registers:usize)->Function {
+ fn program(f:Function)->Program {
+     Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,functions:vec![f],data:vec![],statics:vec![],thread_locals:vec![]}
+ }
++fn checked_promote(code:&mut Vec<Op>,count:&mut u32,slots:&[Slot])->Report {
++    let mut expected=code.clone();let mut expected_count=*count;
++    let expected_report=reference::promote(&mut expected,&mut expected_count,slots);
++    let actual=promote(code,count,slots);
++    assert_eq!(bincode::serialize(code).unwrap(),bincode::serialize(&expected).unwrap());
++    assert_eq!(*count,expected_count);
++    assert_eq!((actual.slots,actual.removed_addresses,actual.rewritten,actual.removed_moves),
++        (expected_report.slots,expected_report.removed_addresses,expected_report.rewritten,expected_report.removed_moves));
++    actual
++}
+ fn transformed(p:&Program,slots:&[Slot])->(Program,Report) {
+     let mut out=p.clone();let f=&mut out.functions[0];let mut count=f.registers as u32;
+-    let r=promote(&mut f.code,&mut count,slots);f.registers=count as usize;validate(&out).unwrap();(out,r)
++    let r=checked_promote(&mut f.code,&mut count,slots);f.registers=count as usize;validate(&out).unwrap();(out,r)
+ }
+ fn engines()->Vec<Engine> {
+     let mut v=vec![Engine::Interpreter];if cfg!(all(target_arch="aarch64",target_os="macos")){v.push(Engine::Jit);}v
+@@ -95,7 +105,7 @@ fn scalar_promotion_rejects_unproved_address_uses_and_definitions() {
+     ];
+     for mut code in prefixes {
+         code.push(Op::Return);let before=bincode::serialize(&code).unwrap();let mut count=3;
+-        let r=promote(&mut code,&mut count,&[Slot{offset:16,size:8}]);assert_eq!(r.slots,0);assert_eq!(count,3);assert_eq!(before,bincode::serialize(&code).unwrap());
++        let r=checked_promote(&mut code,&mut count,&[Slot{offset:16,size:8}]);assert_eq!(r.slots,0);assert_eq!(count,3);assert_eq!(before,bincode::serialize(&code).unwrap());
+     }
+ }
+ 
+@@ -111,3 +121,6 @@ fn scalar_promotion_preserves_faults_at_remaining_memory_accesses() {
+         }
+     }
+ }
++
++#[path="scalar_promote_owned_tests.rs"]
++mod owned_output_tests;
+diff --git a/crates/mir-export/src/lower/scalar_promote_transform.rs b/crates/mir-export/src/lower/scalar_promote_transform.rs
+index 35570003cdc6f71740d69f6734ca154fa6f5e988..f4101663eb53481d5e9dc145fe9f45b42d93d5a6 100644
+--- a/crates/mir-export/src/lower/scalar_promote_transform.rs
++++ b/crates/mir-export/src/lower/scalar_promote_transform.rs
+@@ -98,9 +98,11 @@ pub(super) fn promote(code:&mut Vec<Op>,count:&mut u32,slots:&[Slot])->Report {
+     let promoted=|r:Reg|addresses[r as usize].and_then(|slot|canonical[slot]);
+     let mov=|dst,src,size:usize|Op::Cast{dst,src,from:(size*8) as u8,to:(size*8) as u8,signed:false};
+     let mut mapped=vec![0usize;code.len()];
+-    for (pc,op) in code.iter().enumerate() {
++    // Analysis and early declines are complete. Retained operations can move
++    // their strings and operand vectors into the replacement code unchanged.
++    for (pc,op) in code.drain(..).enumerate() {
+         mapped[pc]=output.len();
+-        match op {
++        match &op {
+             Op::Local{dst,..} if promoted(*dst).is_some()=>{report.removed_addresses+=1;},
+             Op::Load{dst,address,size} if promoted(*address).is_some()=>{
+                 output.push(mov(*dst,promoted(*address).unwrap(),*size as usize));report.rewritten+=1;
+@@ -117,7 +119,7 @@ pub(super) fn promote(code:&mut Vec<Op>,count:&mut u32,slots:&[Slot])->Report {
+                 }
+                 report.rewritten+=1;
+             },
+-            _=>output.push(op.clone()),
++            _=>output.push(op),
+         }
+     }
+     for op in &mut output {
+@@ -137,5 +139,9 @@ pub(super) fn promote(code:&mut Vec<Op>,count:&mut u32,slots:&[Slot])->Report {
+ #[path="scalar_promote_tests.rs"]
+ mod tests;
+ 
++#[cfg(test)]
++#[path="scalar_promote_reference/transform.rs"]
++mod reference;
++
+ #[path="scalar_promote_moves.rs"]
+ mod scalar_moves;
+diff --git a/crates/mir-export/src/main.rs b/crates/mir-export/src/main.rs
+index e513137d0abcfeeefd6b825508feaf35b1053af3..e68957c26226a00ae59ac2d15ff9b55d4f1a6397 100644
+--- a/crates/mir-export/src/main.rs
++++ b/crates/mir-export/src/main.rs
+@@ -11,6 +11,7 @@ extern crate rustc_session;
+ extern crate rustc_span;
+ 
+ mod lower;
++mod artifact_serialization;
+ mod allocation_trace;
+ mod audit;
+ mod test_metadata;
+@@ -100,10 +101,9 @@ impl Export {
+         match lower::export(tcx, &self.entries, self.demand, self.test_body, self.inline_leaves,
+                             self.trap_unsupported_calls, self.run_try_callbacks, self.allocation_trace, self.test_filter.is_some()).and_then(|mut exported| {
+             timings.checkpoint("lower_graph");
++            // Export validated this final graph; the remaining steps only read it.
+             let program = &exported.program;
+-            rust_interp_bytecode::validate(&program)?;
+-            timings.checkpoint("validation");
+-            let bytes = bincode::serialize(&program).map_err(|e| e.to_string())?;
++            let bytes = artifact_serialization::serialize(program)?;
+             timings.checkpoint("serialization");
+             use sha2::Digest;
+             let artifact_sha256 = (self.allocation_trace || self.trap_unsupported_calls || !exported.selected_entries.is_empty())
+diff --git a/tests/local_layout_fixture.rs b/tests/local_layout_fixture.rs
+index 6226c2499a9d2936fad14be45c4b7d83cc9e1a19..34c9d1df5cbc725a1b40dcbb3d2a300d5d55a7fb 100644
+--- a/tests/local_layout_fixture.rs
++++ b/tests/local_layout_fixture.rs
+@@ -1,4 +1,4 @@
+-//! Differential fixture for per-instance local types and projected places.
++//! Differential fixture for initialized local layouts and projected places.
+ 
+ trait Model {
+     type Word: Copy;
+@@ -34,9 +34,13 @@ struct Record<T> {
+ 
+ enum Choice<T> { Single(T), Pair(T, T), Empty(Marker) }
+ 
++#[inline(never)]
++fn repeat_local<T: Copy>(value: T) -> [T; 3] { [value; 3] }
++
+ #[inline(never)]
+ fn exercise<M: Model>(seed: u64) -> u64 {
+     let first: M::Word = M::narrow(seed);
++    let repeated = repeat_local(first);
+     let mut record = Record {
+         marker: Marker,
+         values: [first, M::narrow(seed.rotate_left(13)), M::narrow(!seed)],
+@@ -59,11 +63,44 @@ fn exercise<M: Model>(seed: u64) -> u64 {
+     selected ^ M::widen(slice[index]).rotate_left(11)
+         ^ M::widen(slice[(index + 1) % 3]).rotate_left(29)
+         ^ M::widen(first) ^ ((record.tag as u64) << 40)
++        ^ M::widen(repeated[(index + 2) % 3]).rotate_left(43)
++}
++
++#[inline(never)]
++fn read_repeated(
++    pairs: &[(u128, i128); 3], words: &[u128; 3], markers: &[Marker; 3],
++    constants: &[u64; 3], empty: &[(u128, i128); 0], index: usize,
++) -> u64 {
++    let (left, right) = pairs[index];
++    let other = words[(index + 1) % 3];
++    (left as u64).rotate_left(5) ^ ((left >> 64) as u64)
++        ^ (right as u64).rotate_left(17) ^ ((right as u128 >> 64) as u64).rotate_left(29)
++        ^ (other as u64).rotate_left(41) ^ constants[index]
++        ^ std::mem::size_of_val(pairs) as u64
++        ^ std::mem::align_of_val(&markers[index]) as u64
++        ^ std::mem::size_of_val(empty) as u64
++}
++
++#[inline(never)]
++fn wide_and_zero_repeats(seed: u64) -> u64 {
++    let wide = ((seed as u128) << 64) | ((!seed) as u128);
++    let signed = (seed as i64 as i128).wrapping_mul(0x1_0000_0001);
++    let pair = (wide, signed);
++    // Repeat elements include 16-byte scalars, 32-byte aggregates and aligned
++    // zero-sized locals. Moving the arrays into a tuple also copies aggregates.
++    let pairs = repeat_local(pair);
++    let words = repeat_local(wide);
++    let markers = repeat_local(Marker);
++    let aggregate = (pairs, words, markers);
++    let constants = [0x123456789abcdef0; 3];
++    let empty = [pair; 0];
++    read_repeated(&aggregate.0, &aggregate.1, &aggregate.2, &constants, &empty, (seed % 3) as usize)
+ }
+ 
+ pub fn rust_interp_entry(seed: u64) -> u64 {
+     exercise::<Byte>(seed) ^ exercise::<Half>(seed).rotate_left(3)
+         ^ exercise::<Word>(seed).rotate_left(17) ^ exercise::<Wide>(seed).rotate_left(31)
++        ^ wide_and_zero_repeats(seed)
+ }
+ 
+ // Independent integer-only oracle: no associated types, aggregate layout,
+@@ -84,10 +121,15 @@ fn reference(seed: u64) -> u64 {
+         };
+         let current = match seed % 3 { 0 => current_first, 1 => second, _ => third };
+         let value = selected ^ current.rotate_left(11) ^ next.rotate_left(29)
+-            ^ first ^ (((seed >> 56) as u8 as u64) << 40);
++            ^ first ^ (((seed >> 56) as u8 as u64) << 40) ^ first.rotate_left(43);
+         answer ^= value.rotate_left(shift);
+     }
+-    answer
++    // The signed product fits in i128 for every i64 input. Sizes are literal
++    // guest-byte expectations, independent of native aggregate layout queries.
++    let product = (seed as i64 as i128) * 0x1_0000_0001i128;
++    answer ^ (!seed).rotate_left(5) ^ seed
++        ^ (product as u64).rotate_left(17) ^ ((product as u128 >> 64) as u64).rotate_left(29)
++        ^ (!seed).rotate_left(41) ^ 0x123456789abcdef0 ^ 96 ^ 64
+ }
+ 
+ fn main() {
+diff --git a/tests/panic_store_fixture.rs b/tests/panic_store_fixture.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..19e48847f0596affc715de9584d7a729091eac1a
+--- /dev/null
++++ b/tests/panic_store_fixture.rs
+@@ -0,0 +1,43 @@
++// Qualification must inspect the actual MIR and exported Store-before-Trap
++// data flow; the source shape and helper name alone do not prove coverage.
++#[inline(never)]
++fn store_then_panic(destination: &mut u64, value: u64) -> ! {
++    *destination = value;
++    panic!("panic-store fixture");
++}
++
++#[inline(never)]
++fn store_and_return(destination: &mut u64, value: u64) {
++    *destination = value;
++}
++
++pub fn rust_interp_entry(mode: u64, value: u64) -> u64 {
++    let mut destination = !value;
++    if mode == 0 {
++        store_and_return(&mut destination, value);
++        destination
++    } else {
++        store_then_panic(&mut destination, value)
++    }
++}
++
++fn main() {
++    let mut args = std::env::args().skip(1);
++    let mode = args.next().expect("mode or observe");
++    let value: u64 = args.next().expect("value").parse().unwrap();
++    assert!(args.next().is_none(), "unexpected argument");
++    if mode == "observe" {
++        // This native-only adapter observes the store despite unwinding. It is
++        // unreachable from the selected interpreter entry above.
++        let mut destination = !value;
++        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
++            store_then_panic(&mut destination, value);
++        }));
++        assert!(result.is_err(), "helper did not panic");
++        assert_eq!(destination, value, "store before panic was lost");
++        println!("{destination}");
++    } else {
++        // Panic mode is intentionally uncaught here for the failure oracle.
++        println!("{}", rust_interp_entry(mode.parse().unwrap(), value));
++    }
++}
