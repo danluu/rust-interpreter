@@ -41,6 +41,7 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     logs = out/'logs'; logs.mkdir()
     state_sources = out/'state-sources'; state_sources.mkdir()
+    binaries = out/'binaries'; binaries.mkdir()
     frozen = {str(p): file_digest(p) for p in (owner/'scripts').glob('*.py')}
     for path in [owner/'experiments/stable-cgu/owned_stage.py', Path(__file__),
                  HERE/'external.rs', HERE/'main.rs']:
@@ -140,6 +141,8 @@ def main():
                     stdout, runtime_stderr = run(label+'-execute', [binary])
                     require(stdout == value and not runtime_stderr, 'native fixture output differs')
                     require(file_digest(binary) == binary_hash, 'native binary changed during execution')
+                    shutil.copy2(binary, binaries/label)
+                    require(file_digest(binaries/label) == binary_hash, 'saved native binary differs')
                     if warning:
                         require(any(d.get('level') == 'warning' and d.get('code')
                             and d['code']['code'] == warning for d in diagnostics), 'required warning missing')
