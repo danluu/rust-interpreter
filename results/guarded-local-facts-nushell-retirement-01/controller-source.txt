@@ -1,0 +1,170 @@
+from contextlib import ExitStack
+from pathlib import Path
+import json, os, shutil, stat, subprocess, sys, time
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts'))
+from compare_saved_runtime import acquire_lock,sha
+from workflow_io import write_json as write
+from native_suite import test_status
+from suite_reports import validate_report
+
+NAME='guarded-local-facts-nushell-retirement-01'
+RUNS=['guarded-local-facts-edit-nushell-01']
+
+def identity(path):
+    s=path.lstat()
+    assert stat.S_ISREG(s.st_mode) and path.resolve(strict=True)==path,path
+    return dict(device=s.st_dev,inode=s.st_ino,size=s.st_size,blocks=s.st_blocks,
+                links=s.st_nlink,mtime_ns=s.st_mtime_ns,mode=s.st_mode)
+
+def check_open(root):
+    check=subprocess.run(['lsof','-Fpn','+D',str(root)],text=True,capture_output=True)
+    assert not check.stderr and check.returncode in [0,1], (root,check.stderr)
+    fields=check.stdout.splitlines()
+    # Holding our exact invocation lock is expected; every other open file fails.
+    if root.parent.parent==ROOT/'.work/interpreter-workspaces':
+        assert len(fields)==3 and fields[0]=='p'+str(os.getpid()) and fields[1].startswith('f') and fields[1][1:].isdigit() and fields[2]=='n'+str(root/'invocation.lock'), (root,fields)
+    else:
+        assert not fields and check.returncode==1, (root,fields)
+    return dict(path=str(root.relative_to(ROOT)),returncode=check.returncode,
+                only_open_file_is_own_invocation_lock=True,owner_pid=os.getpid())
+
+with ExitStack() as stack:
+    lock=stack.enter_context((ROOT/'.work/benchmark.lock').open('a'));acquire_lock(lock,45)
+    from workflow_io import require_space
+    from workflow_cases import WORKFLOW_VARIANTS
+    require_space(ROOT,8)
+    roots=set();proofs={};process_checks=[];evidence_roots=set();pids=set()
+    run=RUNS[0];base=ROOT/'.work'/run;evidence_roots.add(base)
+    source=ROOT/'.work/sources/nushell';marker=source/'.rust-interp-owned.json'
+    owner=json.loads(marker.read_text());assert owner['owner']==str(ROOT)
+    assert owner['revision']=='9d3157963241cf89447119d34d6e887859f5e7e8'
+    assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=source,text=True).strip()==owner['revision']
+    assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=source).strip()
+    case=WORKFLOW_VARIANTS['nushell','type-relations'];changed=source/case['file']
+    for path in [marker,changed,ROOT/'scripts/workflow_cases.py']:proofs[str(path.relative_to(ROOT))]=sha(path)
+    result_path=ROOT/'results'/run/'summary.json';result=json.loads(result_path.read_text())
+    assert result['status']=='passed' and result['commands']==132 and result['source_restored'] and result['test_source_unchanged']
+    assert result['gate_passed'] and result['candidate_control_bytecode_matches'] and not result['private']
+    assert result['raw']==str(base.relative_to(ROOT));proofs[str(result_path.relative_to(ROOT))]=sha(result_path)
+    for name,digest in result['evidence'].items():
+        path=base/(name+'.json');assert sha(path)==digest;proofs[str(path.relative_to(ROOT))]=digest
+    plan=json.loads((base/'plan.json').read_text());assert plan['owner']==str(ROOT) and plan['revision']==owner['revision']
+    assert sha(changed)==plan['source_sha256'] and plan['tests']==case['tests'] and len(plan['tests'])==14
+    keys=plan['tool_keys'];assert keys==result['tool_keys'] and set(keys)=={'baseline','duplicate','candidate'}
+    full_path=ROOT/'results/guarded-local-facts-full-continuation-01/summary.json'
+    full=json.loads(full_path.read_text());assert full['status']=='passed' and full['all_five_gates_passed'] and full['commands']==726
+    assert full['new_commands']==132 and full['repeated_commands']==0 and full['final_source_and_input_audit_passed']
+    proofs[str(full_path.relative_to(ROOT))]=sha(full_path)
+    for name,field in [('plan.json','plan_sha256'),('records.json','records_sha256'),('final-audit.json','final_audit_sha256')]:
+        path=ROOT/full['raw']/name;assert sha(path)==full[field];proofs[str(path.relative_to(ROOT))]=sha(path)
+    parent=json.loads((ROOT/full['raw']/'records.json').read_text());child,=parent
+    assert child['case']=='nushell' and child['returncode']==0 and child['pid']==32284 and child['summary_sha256']==sha(result_path)
+    pids.add(child['pid'])
+    outer=ROOT/'.work/experiments/guarded-local-facts-full-continuation-admission-02'
+    terminal_path=outer/'status.json';terminal=json.loads(terminal_path.read_text())
+    assert terminal['owner']==terminal['cwd']==str(ROOT) and terminal['status']=='finished' and terminal['returncode']==0
+    assert terminal['supervisor_pid']==30499 and terminal['child_pid']==30502
+    pids.update([30499,30502]);proofs[str(terminal_path.relative_to(ROOT))]=sha(terminal_path)
+    saved_terminal=ROOT/'results/guarded-local-facts-full-continuation-01/terminal.json'
+    assert sha(saved_terminal)==sha(terminal_path);proofs[str(saved_terminal.relative_to(ROOT))]=sha(saved_terminal)
+    for name,field in [('plan.json','plan_sha256'),('command.log','log_sha256')]:
+        path=outer/name;assert sha(path)==terminal[field];proofs[str(path.relative_to(ROOT))]=sha(path)
+    rows=json.loads((base/'records.json').read_text());assert len(rows)==132
+    schedule=[(cycle,state) for cycle in range(3) for state in [0,-1,1,2,3,4,5]]+[(3,0)]
+    assert [(r['cycle'],r['state']) for r in rows[::6]]==schedule
+    previous=dict.fromkeys(['baseline','duplicate','candidate','native','native_lines','check'])
+    for i,(cycle,state) in enumerate(schedule):
+        group=rows[i*6:(i+1)*6];modes={r['mode']:r for r in group}
+        assert set(modes)==set(previous) and all((r['cycle'],r['state'])==(cycle,state) for r in group)
+        assert len({r['source_sha256'] for r in group})==1
+        assert len({json.dumps(r['outcomes']) for r in group if r['mode']!='check'})==1
+        for kind in ['artifact','entry_catalog']:
+            assert len({modes[m][kind]['sha256'] for m in keys})==1
+        for row in group:
+            mode=row['mode'];assert row['previous_source_sha256']==previous[mode] and row['source_sha256']!=previous[mode]
+            previous[mode]=row['source_sha256']
+            assert (row['returncode']==0)==(state!=-1 or mode=='check')
+            if mode in keys:
+                cmd=row['command'];suite=Path(cmd[cmd.index('--suite-report')+1]);assert suite.parent==base
+                assert sha(suite)==row['suite_sha256'];proofs[str(suite.relative_to(ROOT))]=sha(suite)
+                report=json.loads(suite.read_text())
+                assert row['outcomes']==[list(x) for x in sorted(validate_report(report,plan['tests'],'prepared',state!=-1))]
+            elif mode!='check':
+                import re
+                found=re.findall(r'^test (.+) \.\.\. (ok|FAILED|ignored)$',row['stdout'],re.M)
+                assert len(found)==14 and set(dict(found))==set(plan['tests']) and all(v!='ignored' for _,v in found)
+                assert row['outcomes']==[list(x) for x in sorted((n,'passed' if v=='ok' else 'failed') for n,v in found)]
+    assert all(h==plan['source_sha256'] for h in previous.values())
+    for row in rows:
+        mode=row['mode'];cmd=row['command'];pids.add(row['pid'])
+        assert cmd[cmd.index('--manifest-path')+1]==str(source/'Cargo.toml')
+        if mode in ['native','native_lines','check']:
+            target=Path(cmd[cmd.index('--target-dir')+1]);assert target==base/mode
+        else:
+            assert cmd[cmd.index('--cache-namespace')+1]==run+':'+mode
+            assert cmd[cmd.index('--tool-key')+1]==row['launch']['tool_key']==keys[mode]
+            target=Path(row['launch']['workspace_path']);assert target.parent==ROOT/'.work/interpreter-workspaces'/keys[mode]
+        roots.add(target)
+        for kind in ['artifact','catalog','entry_catalog','selection','native_executable']:
+            if kind in row:
+                item=row[kind];assert sha(ROOT/item['path'])==item['sha256'];proofs[item['path']]=item['sha256']
+    assert len(roots)==6;roots=sorted(roots);assert all(p.resolve(strict=True)==p for p in roots)
+    for pid in sorted(pids):
+        check=subprocess.run(['ps','-p',str(pid),'-o','pid,ppid,lstart,tty,command'],capture_output=True,text=True)
+        assert check.returncode in [0,1] and not check.stderr and run not in check.stdout and 'guarded-local-facts-full-continuation' not in check.stdout
+        process_checks.append(dict(pid=pid,returncode=check.returncode,stdout=check.stdout))
+    for root in roots:
+        if root.parent.parent==ROOT/'.work/interpreter-workspaces':
+            invocation=stack.enter_context((root/'invocation.lock').open('r+'));acquire_lock(invocation,45)
+    assert all(sha(ROOT/path)==digest for path,digest in proofs.items())
+    work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
+    rows=[];protected=dict(proofs);open_checks=[];sizes=[]
+    for root in roots:
+        open_checks.append(check_open(root))
+        count_before=len(rows);bytes_before=sum(r['size'] for r in rows)
+        for path in root.rglob('*'):
+            assert not path.is_symlink(),path
+            if not path.is_file():continue
+            info=identity(path);relative=path.relative_to(root);parts=relative.parts
+            compiler=False;incremental=False
+            for prefix in [('debug',),('target','debug'),('target','aarch64-apple-darwin','debug')]:
+                if parts[:len(prefix)]==prefix and len(parts)>len(prefix):
+                    section=parts[len(prefix)]
+                    compiler=section in ['incremental','build','deps'];incremental=section=='incremental'
+            remove=compiler and (incremental or path.suffix in ['.o','.rlib','.rmeta'])
+            remove=remove and not info['mode'] & 0o111
+            remove=remove and path.suffix not in ['.rbc','.dylib','.a','.rs','.toml','.lock'] and '.rbc.' not in path.name
+            key=str(path.relative_to(ROOT))
+            if remove: rows.append(dict(path=key,**info))
+            else: protected[key]=sha(path)
+        sizes.append(dict(path=str(root.relative_to(ROOT)),files=len(rows)-count_before,
+                          logical_bytes=sum(r['size'] for r in rows)-bytes_before))
+        print(json.dumps(dict(root_index=len(sizes)-1,files=sizes[-1]['files'],logical_bytes=sizes[-1]['logical_bytes'])),flush=True)
+    # Protect all original, retained-prefix and continuation evidence outside the selected compiler cache.
+    for base in sorted(evidence_roots):
+        for path in base.rglob('*'):
+            if not path.is_file() or path.relative_to(base).parts[0] in ['native','native_lines','check']:continue
+            assert not path.is_symlink();protected[str(path.relative_to(ROOT))]=sha(path)
+    write(work/'inventory.json',rows);write(work/'protected.json',protected)
+    assert rows, 'no eligible compiler intermediates remain; no deletion attempted'
+    before=shutil.disk_usage(ROOT).free;started=time.time()
+    write(work/'plan.json',dict(owner=str(ROOT),script_sha256=sha(Path(__file__)),completed_runs=RUNS,
+        roots=sizes,process_checks=process_checks,open_checks=open_checks,files=len(rows),
+        logical_bytes=sum(r['size'] for r in rows),free_before=before,started_at=started,
+        scope='Six exact compiler caches from the completed guarded-local-facts Nushell132-command history. Source pin/restoration, all726 completion, successful admission-02 supervisor, original commands, tests and artifact identities verified. Only nonexecutable compiler intermediates are eligible. Every executable, bytecode/catalog snapshot and raw proof is preserved under shared/invocation locks and fresh process/open-file checks. No shared target, installed tool, current command or peer cache.'))
+    assert all(sha(ROOT/p)==h for p,h in proofs.items())
+    for root in roots:
+        check_open(root)
+    for row in rows:
+        path=ROOT/row['path'];current=identity(path)
+        assert all(current[k]==row[k] for k in ['device','inode','size','mtime_ns','mode']), (path,current,row)
+        # Unlinking an earlier hard link changes st_nlink, not this file's identity or bytes.
+        path.unlink()
+    assert all(sha(ROOT/p)==h for p,h in protected.items())
+    result=dict(status='passed',files_removed=len(rows),logical_bytes_removed=sum(r['size'] for r in rows),
+        free_before=before,free_after=shutil.disk_usage(ROOT).free,started_at=started,finished_at=time.time(),
+        protected_files=len(protected),all_protected_hashes_unchanged=True,
+        inventory_sha256=sha(work/'inventory.json'),protected_manifest_sha256=sha(work/'protected.json'),
+        plan_sha256=sha(work/'plan.json'),raw=str(work.relative_to(ROOT)),performance_measurement=False,completed_histories=1,completed_commands=132)
+    write(work/'summary.json',result);print(json.dumps(result),flush=True)
