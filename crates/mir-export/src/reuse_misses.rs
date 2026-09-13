@@ -4,7 +4,7 @@ use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
 
-const MAX_FUNCTIONS: usize = 10_000;
+use crate::limits::MAX_FUNCTIONS;
 const MAX_LABEL_BYTES: usize = 4096;
 const MAX_REPORT_BYTES: usize = 16 * 1024 * 1024;
 

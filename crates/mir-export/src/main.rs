@@ -12,6 +12,7 @@ extern crate rustc_session;
 extern crate rustc_span;
 
 mod lower;
+mod limits;
 mod allocation_trace;
 mod audit;
 mod test_metadata;

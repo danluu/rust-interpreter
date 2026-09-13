@@ -313,7 +313,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     let mut replay_declines = BTreeMap::<String, usize>::new();
     let mut functions: Vec<Option<Function>> = vec![];
     while let Some(index) = exporter.pending.pop_front() {
-        if exporter.instances.len() >= 10_000 {
+        if exporter.instances.len() > crate::limits::MAX_FUNCTIONS {
             return Err(exporter.expansion_error(&functions, index, None));
         }
         let instance = exporter.instances[index];
@@ -461,7 +461,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         if let Some(costs) = &mut function_costs {
             costs.record(index, &f, prepare, elapsed, mir_locals, mir_blocks, bindings, dependency)?;
         }
-        if exporter.instances.len() > 10_000 {
+        if exporter.instances.len() > crate::limits::MAX_FUNCTIONS {
             return Err(exporter.expansion_error(&functions, index, Some(&f)));
         }
         functions.resize_with(exporter.instances.len(), || None);
@@ -683,7 +683,7 @@ impl<'tcx> Exporter<'tcx> {
         let required = self.needs_body.iter().filter(|&&needed| needed).count();
         let lowered = functions.iter().filter(|function| function.is_some()).count();
         eprintln!("rust-interp-function-expansion: {}", serde_json::json!({
-            "schema_version": 1, "limit": 10_000,
+            "schema_version": 1, "limit": crate::limits::MAX_FUNCTIONS,
             "registered": self.instances.len(), "body_required": required,
             "completed_bodies_before_current": lowered, "pending": self.pending.len(),
             "current_body_completed": staged.is_some(),
