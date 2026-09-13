@@ -9,6 +9,17 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+The memory/lookup composition is qualified and its five-case comparison is
+running under one serialized controller. The unchanged memory runtime is
+paired with cached compiler-identity discovery; wide-runtime controls use
+fresh discovery. The new harness passes 138 tests and the combined Cargo
+fixture passes all 20 expected commands, including strict rejection of
+uncalled type and borrow errors. All 726 Nushell, private rg-aot, token, folded
+and pgrust commands are required. No partial timing result establishes a
+gain or changes the completed memory-only and lookup-only failed decisions.
+[Frozen comparison](benchmarks/experiments/memory-lookup/WORKFLOW.md),
+[Cargo qualification](results/memory-lookup-cargo-01/summary.json).
+
 Guarded native indirect-call specialization passes424 Rust tests per profile,
 123 harness checks, seven exact real tests, nine suite commands and203 strict
 native/cache checks. Three current profiles preserve every logical PC count,
