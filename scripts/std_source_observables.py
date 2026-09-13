@@ -4,8 +4,11 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import re
+from types import SimpleNamespace
 
 from verified_std_diagnostics import source_span_text
+from stable_mono_cgu import receipt as mono_receipt
+from stable_mono_qualification import argument_values
 
 POLICY = 'std-source-observables-v1'
 SOURCE = 'lib/rustlib/src/rust/library/'
@@ -91,6 +94,15 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
                 and identity['namespace'] == 'stable-mono-cgu:' + mode
                 and identity['source_files'] == sources and ready['full_presentation_qualified'] is False,
                 'source prerequisite prepared std provenance differs')
+    require(set(plan['copy_proofs']) == set(controls['second_prefix_final']) == {'native', 'off', 'on'},
+            'missing complete second-prefix copy proof')
+    for role, proof in plan['copy_proofs'].items():
+        expected_files = plan['compiler']['files'] if role == 'native' else plan['std_readiness'][role]['sysroot_files']
+        original_root = str(compiler_sysroot) if role == 'native' else expected_std[role]['sysroot']
+        require(proof['files'] == expected_files and proof['files_sha256'] == digest(expected_files)
+                and proof['original'] == original_root and proof['path'] == plan['copied_sources'][role]
+                and controls['second_prefix_final'][role] == dict(path=proof['path'], files_sha256=proof['files_sha256'],
+                    files_unchanged=True, stamps_unchanged=True), 'second-prefix copied bytes or final equality proof differs')
     require(len(rows) == 57, 'source prerequisite child history is incomplete')
     for index, row in enumerate(rows):
         child = json.loads(payloads[f'{index:03d}-child.json'])
@@ -202,9 +214,8 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
                         'observable value differs from the actual output')
                 relative = {'main': 'src/main.rs', 'std-looking': 'src/core/src/panic.rs'}[label]
                 require(value['relative'] == relative, 'observable function source identity differs')
-                workspace = Path(state['workspace'])
-                require(workspace == path.parent / 'application' if history['route'] == 'native'
-                        else workspace.is_relative_to(path.parent / 'observable-cache'), 'observable workspace escaped owned paths')
+                workspace = Path(state['source_root'])
+                require(workspace == path.parent / 'application', 'observable source root differs from actual manifest cwd')
                 for field in ['file', 'local_file'] + ([] if phase == 'application-map' else ['span_file']):
                     reported = Path(value[field])
                     require((reported if reported.is_absolute() else workspace / reported) == workspace / relative,
@@ -222,22 +233,55 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
             flags = [] if phase in ['unmapped', 'restored'] else mapped['rustc_flags'][:]
             if phase == 'application-map': flags += ['--remap-path-prefix=src=' + APP_PREFIX]
             require(state['rustc_flags'] == flags, 'observable mapping flags differ')
+            if history['route'] == 'exported':
+                launches = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in row['stderr'].splitlines()
+                            if line.startswith('rust-interp-launch: ')]
+                require(len(launches) == 1 and launches[0] == row['launch'], 'exported source control lacks its actual launch report')
+                launch = launches[0]
+                wrapper = plan['mono_wrapper']
+                require(wrapper == dict(policy='stable-mono-cgu-routing-v1',
+                    sha256=plan['tools']['rust-interp-rustc-wrapper'], compiler_sysroot=str(compiler_sysroot)),
+                    'source prerequisite wrapper association differs')
+                expected_compiler = dict(key=compiler_key, rustc=str(Path(compiler_sysroot) / 'bin/rustc'),
+                    rustc_sha256=plan['compiler']['files']['bin/rustc'], compiler=plan['compiler']['compiler'],
+                    stable_cgu_partitioning='off', stable_mono_cgu_partitioning=mono_receipt(
+                        history['mode'], SimpleNamespace(identity=plan['compiler']), wrapper))
+                cache = Path(state['workspace'])
+                artifact = Path(launch['artifact_path'])
+                require(launch['tool_key'] == tool_key and launch['custom_compiler'] == expected_compiler
+                        and launch['std_mir'] == expected_std[history['mode']]
+                        and launch['std_mir_policy'] == 'metadata-sysroot-v2-source-paths-release-backtrace'
+                        and launch['toolchain_lookup'] == dict(mode='cached', outcome='owned-manifest')
+                        and launch['workspace_path'] == str(cache)
+                        and cache.is_relative_to(path.parent / 'observable-cache' / (history['mode'] + '-exported'))
+                        and artifact.is_relative_to(cache / 'target')
+                        and launch['artifact_sha256'] == row['artifact_sha256']
+                        and launch['compiler_argv_record_dir'] == str(path.parent / 'compiler-argv' / (history['mode'] + '-' + phase))
+                        and launch['artifact_bytes'] == len(payloads[row['artifact_snapshot']]),
+                        'actual exported launch tool/compiler/std/artifact association differs')
             actual = [r for r in controls['actual_compiler_argv'] if (r['mode'], r['phase'], r['route'])
                       == (history['mode'], phase, history['route'])]
             require(actual, 'observable state lacks actual compiler argv')
             for proof in actual:
                 argv = proof['argv']
                 require(argv[0] == str(Path(compiler_sysroot) / 'bin/rustc')
+                        and argument_values(argv, '--crate-name') == ['std_source_observables']
                         and [a for a in argv if a.startswith('--remap-path-')] == flags
                         and argv.count('-Zstable-cgu-partitioning=no') == 1
                         and argv.count('-Zstable-mono-cgu-partitioning=' + ('yes' if history['mode'] == 'on' else 'no')) == 1,
                         'actual observable compiler policy/remaps differ')
                 if history['route'] == 'native':
-                    require(selected(proof['command_index'])['command'] == argv, 'native actual argv differs')
+                    require(proof['command_index'] == state['command_index'] - 1
+                            and selected(proof['command_index'])['command'] == argv, 'native actual argv differs')
                 else:
                     raw = payloads[proof['raw']]
                     fields = raw.decode().split('\0')
                     require(evidence[proof['raw']] == proof['raw_sha256'] and fields[-1] == ''
                             and fields[:3] == ['rust-interp-compiler-argv-v1', 'exported', str(compiler_sysroot)]
-                            and fields[4:-1] == argv, 'exported actual argv differs from NUL recorder bytes')
+                            and fields[3] == state['source_root'] and fields[4:-1] == argv
+                            and proof['command_index'] == state['command_index']
+                            and Path(proof['raw']).is_relative_to(Path('compiler-argv') / (history['mode'] + '-' + phase))
+                            and argument_values(argv, '--target') == [expected_std[history['mode']]['target']]
+                            and argument_values(argv, '--sysroot') == [expected_std[history['mode']]['sysroot']],
+                            'exported actual argv differs from NUL recorder bytes or source command')
     return dict(path=str(path), sha256=files[str(path)], result=result, evidence_files=files)

@@ -32,6 +32,9 @@ class SourceObservableContracts(unittest.TestCase):
         return qualify.observable_values(self.output(), self.app, self.app)
 
     def test_actual_owned_std_looking_filenames_and_coordinates_are_checked(self):
+        manifest = tomllib.loads((self.app / 'Cargo.toml').read_text())
+        self.assertEqual(manifest['lib']['path'], 'src/main.rs')
+        self.assertFalse(manifest['package']['autobins'])
         values = self.values()
         self.assertEqual(values['std-looking']['relative'], 'src/core/src/panic.rs')
         for output in [self.output().replace('src/main.rs', 'elsewhere.rs'),
@@ -39,6 +42,8 @@ class SourceObservableContracts(unittest.TestCase):
                        self.output().splitlines()[0] + '\n']:
             with self.subTest(output=output), self.assertRaises(RuntimeError):
                 qualify.observable_values(output, self.app, self.app)
+        with self.assertRaises(RuntimeError):
+            qualify.observable_values(self.output(), self.root / 'artifact-cache', self.app)
 
     def test_application_scope_sensitivity_allows_only_span_display_path(self):
         original = self.values()
