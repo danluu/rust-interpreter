@@ -10,10 +10,22 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Assess a new composition of opt-in native indirect calls with successor-only
-   register flushing. Both standalone sources and failures remain retained;
-   check overlap and qualify the composition before a fresh primary-first screen.
-   Do not add their point estimates or relax any gate.
+1. Join the saved native protocol samples to exact direct-call targets and
+   current adopted per-PC profiles. Identify which callees and protocol parts
+   remain expensive before choosing another runtime mechanism. Reuse the closed
+   typed continuation census; no new guest execution is needed for this join.
+
+The indirect/successor-flush composition is parked after its 40-command screen:
+wall improves 3.15% against 9.17% A/A, so the wall margin 1.06028 fails. CPU
+improves 3.22% and its margin passes. All original assertions, wrong edits and
+restoration pass. Its 544 tests per profile, 119 strict/cache controls, three
+exact emission checks, three exact real profiles and 13 screen controls pass;
+384 unchanged launcher contracts (16 skips) were reused with exact bindings.
+No full or held-out case started. Do not retime the unchanged combination.
+The first emission admission expired before work; the completed second
+admission preserves that record. Main keeps the adopted runtime. Controllers
+require `experiment/native-indirect-flush-20260913` and tool a0189e06.
+[Screen and closed evidence](results/native-indirect-flush-screen-token-01/assessment.md).
 
 The native indirect metadata prototype is parked after its40-command screen:
 wall improves4.06% versus4.56% A/A, so the required wall margin1.00493 fails.

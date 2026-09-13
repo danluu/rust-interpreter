@@ -19,5 +19,6 @@ Park this composition. No full comparison, held-out suite, or parser compatibili
 command was started. Do not retime the unchanged candidate or replace the gate
 with the suggestions file's retrospective high-variance threshold. Main retains
 the adopted runtime. The ordinary-native ratio here is 1.64176 on this short
-screen, not a new adopted or general codebase claim. Complete command receipts,
-source restoration and retained artifacts require the separate closure audit.
+screen, not a new adopted or general codebase claim. The completed closure audit verifies 1,962 frozen inputs, 56 retained artifacts
+and 374 Git source bindings, including the admission failure and reused launcher
+contracts.
