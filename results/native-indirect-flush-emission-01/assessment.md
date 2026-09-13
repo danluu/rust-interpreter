@@ -1,0 +1,1 @@
+The 45-second lock admission expired while a peer qualification held the shared lock. No inner work directory, emission command, guest command or timing sample was created. No peer was controlled. Resume the same untimed check under a new run ID after the lock is available.
