@@ -21,6 +21,7 @@ mod call_slots;
 mod code_dump;
 mod values;
 mod transfers;
+mod immediate_shifts;
 
 #[cfg(test)]
 mod limit_tests;
@@ -1772,8 +1773,9 @@ impl Assembler<'_> {
                     self.wide_binary(dst, overflow, op, a, b, signed);
                     return;
                 }
+                let immediate_count = self.immediate_shift_amount(op, bits, b);
                 self.get(9, a, false);
-                self.get(10, b, false);
+                if immediate_count.is_none() { self.get(10, b, false); }
                 self.mask(9, bits);
                 if !matches!(
                     op,
@@ -1798,6 +1800,10 @@ impl Assembler<'_> {
                 let overflow_observed = matches!(op, Binary::Add | Binary::Sub | Binary::Mul)
                     && self.reads[overflow as usize].is_some();
                 match op {
+                    Binary::Shl | Binary::Shr | Binary::RotateLeft | Binary::RotateRight
+                        if immediate_count.is_some() => {
+                        self.immediate_shift(op, bits, signed, immediate_count.unwrap());
+                    }
                     Binary::Add | Binary::Sub | Binary::Mul => self.arithmetic(op, bits, signed, overflow_observed),
                     Binary::Div | Binary::Rem => self.division(op, bits, signed),
                     Binary::And => self.three(0x8a000000, 9, 9, 10),
