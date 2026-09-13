@@ -427,6 +427,32 @@ def main():
                                'trap-unsupported-calls', 'run-try-callbacks']:
                     require_export_option(tool, keys[mode], option)
             require_candidate_policy(tools['candidate'], keys['candidate'], args.candidate_policy)
+            public = None
+            public_guards = None
+            if args.candidate_policy == 'host-proc-macro-opt':
+                from qualified_public_tools import (GUARD_POLICY, validate_input_guard,
+                    validate_live_inputs, validate_public_tool)
+                def public_bytes(path):
+                    require(path.resolve(strict=True) == path and path.is_file(), 'public provenance follows a symlink')
+                    return path.read_bytes()
+
+                public = validate_public_tool(tools['baseline'], keys['baseline'], public_bytes)
+                qualified_std = public['correctness']['shared_std']
+                require(qualified_std['key'] == std['key'] and qualified_std['ready_sha256'] == std['sha256']
+                        and qualified_std['sysroot'] == std['sysroot'], 'screen std differs from qualified public tools')
+                validate_input_guard(public, json.loads((tools['baseline'] / 'publication-guard.json').read_bytes()))
+                guard_directory = work / 'public-input-guards'
+                guard_directory.mkdir(exist_ok=False)
+
+                def public_guard(name, rehash=False):
+                    path = guard_directory / name
+                    require(not path.exists() and not path.is_symlink(), 'public guard output already exists')
+                    write_json(path, validate_live_inputs(public, rehash=rehash))
+                    return dict(path=str(path), sha256=sha(path))
+
+                public_guards = dict(policy=GUARD_POLICY, admission=public_guard('admission.json', True),
+                    directory=str(guard_directory), final_path=str(guard_directory / 'final.json'),
+                    boundaries_per_command=2)
             for directory in [work / 'artifacts', work / 'suites', work / 'receipts',
                               *[work / 'caches' / m for m in MODES]]:
                 directory.mkdir(parents=True, exist_ok=False)
@@ -441,6 +467,8 @@ def main():
             if args.candidate_policy == 'host-proc-macro-opt':
                 paths += [Path(__file__).with_name(name) for name in
                           ['HOST_PROC_MACRO_OPT.md', 'HOST_PROC_MACRO_SCREEN.md']]
+                paths += public['payload_paths'] + [Path(public_guards['admission']['path'])]
+                paths += [p for p in tools['baseline'].rglob('*') if p.is_file() or p.is_symlink()]
             paths += sorted((ROOT / 'scripts').glob('*.py'))
             paths += [p for tool in set(tools.values()) for p in tool.iterdir() if p.is_file()]
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
@@ -471,6 +499,7 @@ def main():
                     compiler_comparison='same public compiler/exporter/VM; matched stock/candidate/stock Cargo')
             if args.candidate_policy == 'host-proc-macro-opt':
                 plan.update(proc_macro_policy_by_mode={m: proc_macro_setting(m) for m in MODES},
+                    public_input_guards=public_guards,
                     std_mir_by_mode=stds,
                     compiler_comparison='same public compiler/Cargo/exporter/VM; host proc-macro codegen off/on/off',
                     codegen_policy_amendment=dict(path=str(Path(__file__).with_name('HOST_PROC_MACRO_OPT.md')),
@@ -510,6 +539,8 @@ def main():
 
             def invoke(mode, sample):
                 verify_inputs(sample['source'])
+                ordinal = len(rows)
+                guard_before = public_guard(f'{ordinal:03}-before.json') if public else None
                 digest = sha(changed)
                 require(previous[mode] != digest, 'unchanged command entered screen')
                 command = command_for(mode, keys[mode], source, work, sample,
@@ -532,6 +563,10 @@ def main():
                     source_sha256=digest, previous_source_sha256=previous[mode], free_bytes=free)
                 rows.append(row)
                 write_json(work / 'records.json', rows)
+                if public:
+                    row['public_input_guards'] = dict(before=guard_before,
+                        after=public_guard(f'{ordinal:03}-after.json'))
+                    write_json(work / 'records.json', rows)
                 verify_inputs(sample['source'])
                 success = sample['phase'] != 'wrong-edit'
                 require((child.returncode == 0) == success, 'wrong-edit/passing exit status differs')
@@ -571,6 +606,8 @@ def main():
             run_state(states[-1])
             verify_inputs(original)
             summary = assessment(rows)
+            if public:
+                summary['final_public_input_guard'] = public_guard('final.json', True)
             summary.update(candidate_policy=args.candidate_policy,
                 raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),
                 records_sha256=sha(work / 'records.json'), source_restored=True, cache_workspaces=workspaces)
