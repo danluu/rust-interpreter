@@ -1,16 +1,16 @@
-# Experimental guarded ranges
+# Guarded related pointer ranges
 
-This directory records a qualified prototype and its prospective comparison.
-Main retains the previously adopted VM: the guarded execution change is not
-adopted by its passing primary screen. All five full cases remain required.
+The runtime passes the complete five-case comparison and separate main-tool
+integration qualification. Its compiled VM source is
+[e4da187](https://github.com/danluu/rust-interpreter/tree/e4da1878fc4e2e4ad04e1884549464a98e9d60a4).
+The historical timing harness is retained at
+[f81ac8f](https://github.com/danluu/rust-interpreter/tree/f81ac8f/benchmarks/experiments/guarded-ranges).
+The main integration uses the same VM and preserves the newer compiler work.
 
-The exact compiled runtime source is
-[e4da187](https://github.com/danluu/rust-interpreter/tree/e4da1878fc4e2e4ad04e1884549464a98e9d60a4),
-and the evolving qualification/full-comparison harness is on
-[experiment/guarded-ranges-20260913](https://github.com/danluu/rust-interpreter/tree/experiment/guarded-ranges-20260913/benchmarks/experiments/guarded-ranges).
-These reports retain original failures and zero-guest offline repairs.
-No completed measurement was repeated to cross a performance gate.
+All original failures, admission refusals and the zero-guest offline profile
+repair remain recorded. No completed performance case was repeated to cross a
+gate. The primary gain is narrow and the selected project coverage is explicit.
 
-[Qualification](../../../results/guarded-ranges-validation-repair-01/assessment.md),
-[screen](../../../results/guarded-ranges-screen-token-01/assessment.md),
-[full protocol](FULL.md).
+[Full decision](../../../results/guarded-ranges-admission-resume-01/assessment.md),
+[integration](../../../results/guarded-ranges-main-qualification-01/assessment.md),
+[protocol](FULL.md).

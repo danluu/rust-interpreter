@@ -9,7 +9,7 @@ const MAX_ITEMS: usize = 65_536;
 const MAX_SPAN: i64 = 4096;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-enum Root { Register(Reg), FrameSlot(usize) }
+pub(super) enum Root { Register(Reg), FrameSlot(usize) }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Value { Frame(usize), Imm(u128), Pointer(Root, i64), Opaque }
 
@@ -142,6 +142,9 @@ struct Group { sites: Vec<serde_json::Value>, accesses: usize, low: i64, high: i
 
 const KEYS: [&str; 7] = ["fixed_addresses","local_addresses","unknown_addresses",
     "entry_pointer_addresses","all_group_addresses","best_group_addresses","best_group_redundant_checks"];
+
+mod plan;
+pub(super) use plan::{Plan, runtime_plan};
 
 fn function(f: &Function, intervals: &[(usize,usize,u64)], budget: &mut usize) -> Option<serde_json::Value> {
     function_with_mode(f,intervals,budget,false)

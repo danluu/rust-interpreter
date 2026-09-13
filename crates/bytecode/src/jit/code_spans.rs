@@ -10,7 +10,7 @@ const MAX_OUTPUT_BYTES: usize = 256 * 1024 * 1024;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Kind {
-    Entry, Budget, Profile, Operation, Flush, RegionExit, FaultTail,
+    Entry, RangeGuard, Budget, Profile, Operation, Flush, RegionExit, FaultTail,
     AssertionTail, BudgetFallback, SuccessorFallback, Transition,
 }
 

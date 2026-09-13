@@ -52,6 +52,16 @@ aggregations; stage subtraction is a scope description, not causal attribution.
 
 ## Current execution
 
+The guarded-range follow-up now passes all five gates and the complete 726-command
+audit. Its primary wall improvement is 2.55%, narrowly beyond 2.275% A/A; held-outs
+pass regression guards. The exact VM/current-compiler composition also passes
+132 harness checks and 263 fresh correctness commands, reusing source-bound
+component proofs without repeating timings. Publish the qualified source and
+continue with broader original parser-test coverage and actual-emitter evidence.
+[Complete decision](../results/guarded-ranges-admission-resume-01/assessment.md),
+[integration](../results/guarded-ranges-main-qualification-01/assessment.md).
+
+
 Follow-up after the latest request: `suggestions.txt` remains the same22:10
 revision, SHA256`739e9e770db3536b5854c491421c266df996281c5bee519eb0d71b809a6c2169`.
 The composition is now published. Suggestions2.1/2.4 have new verified

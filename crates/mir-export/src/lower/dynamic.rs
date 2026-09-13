@@ -233,17 +233,42 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
         tracked: bool,
         source_info: mir::SourceInfo,
     ) -> Result<()> {
-        let (mut arguments, mut sizes) = self.call_arguments(func, args)?;
-        if sizes.first() != Some(&16) {
-            return Err("virtual call requires a fat-pointer receiver".into());
-        }
-        let metadata = self.add(arguments[0], 8);
-        let table = self.load(metadata, 8)?;
+        let receiver = &args.first().ok_or("virtual call has no receiver")?.node;
+        let receiver_ty = self.operand_ty(receiver);
+        let (table, mut arguments, mut sizes) = if !self.layout(receiver_ty)?.is_sized() {
+            // Box<dyn FnOnce>::call_once passes `*self` by value. Its MIR
+            // operand is the unsized place itself, not storage for a fat
+            // pointer. The vtable shim takes a thin pointer to that place;
+            // MIR retains ownership, moving/dropping the concrete capture
+            // and later deallocating the Box through the ordinary paths.
+            if !matches!(receiver_ty.kind(), ty::Dynamic(..)) {
+                return Err("unsupported unsized virtual receiver".into());
+            }
+            let (Operand::Copy(place) | Operand::Move(place)) = receiver else {
+                return Err("unsized virtual receiver must be a place".into());
+            };
+            let receiver = self.place(*place)?;
+            let table = receiver.metadata.ok_or("unsized virtual receiver has no vtable")?;
+            let pointer = self.temporary(8);
+            self.store(pointer, receiver.address, 8)?;
+            let (mut arguments, mut sizes) = self.call_arguments(func, &args[1..])?;
+            arguments.insert(0, pointer);
+            sizes.insert(0, 8);
+            (table, arguments, sizes)
+        } else {
+            let (arguments, mut sizes) = self.call_arguments(func, args)?;
+            if sizes.first() != Some(&16) {
+                return Err("virtual call requires a fat-pointer receiver".into());
+            }
+            let metadata = self.add(arguments[0], 8);
+            let table = self.load(metadata, 8)?;
+            sizes[0] = 8;
+            (table, arguments, sizes)
+        };
         let field = self.add(table, slot.checked_mul(8).ok_or("vtable offset overflow")?);
         let callee = self.load(field, 8)?;
         // The concrete vtable method receives just the data pointer. The
         // remaining arguments retain their ordinary MIR/guest ABI layouts.
-        sizes[0] = 8;
         if tracked {
             arguments.push(self.caller_argument(source_info)?);
             sizes.push(8);
