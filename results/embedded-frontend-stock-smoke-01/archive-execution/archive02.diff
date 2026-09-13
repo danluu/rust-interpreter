@@ -1,0 +1,35 @@
+--- archive-source-01/archive.py
++++ archive-source-02/archive.py
+@@ -135,8 +135,18 @@
+                 child = self.json(path, item['sha256'])
+                 require(child['command'] == item['command'] and child['returncode'] == item['returncode'],
+                         'raw child association differs')
+-                self.add(path.parent / 'stdout', child['stdout_sha256'])
+-                self.add(path.parent / 'stderr', child['stderr_sha256'])
++                schema = row['command_receipt_schema']
++                require(schema in ['workflow_io', 'owned_stage'], 'unreviewed child receipt schema')
++                for stream in ['stdout', 'stderr']:
++                    key = stream + '_sha256'
++                    if schema == 'workflow_io':
++                        require(key not in child and key in item, 'inspection stream binding schema changed')
++                        expected = item[key]
++                    else:
++                        require(key in child and (key not in item or item[key] == child[key]),
++                                'owned child stream binding schema changed')
++                        expected = child[key]
++                    self.add(path.parent / stream, expected)
+         if row['tests'] is not None:
+             if 'tests' in record:
+                 require(record['tests'] == row['tests'], 'control count differs')
+@@ -164,6 +174,11 @@
+             with self.owned.workload_lock(self.owned.CANONICAL_LOCK, 600):
+                 self.record.update(status='running', admitted_at=time.time(), free_bytes_before=self.owned.disk(OWNER)); self.save()
+                 self.source_guard()
++                prior = self.inputs['prior_archive_failure']
++                require(self.json(prior['receipt']['path'], prior['receipt']['sha256'])['error'] == prior['error'],
++                        'archive01 failure changed')
++                for key in ['helper', 'inputs', 'launch']:
++                    self.add(prior[key]['path'], prior[key]['sha256'])
+                 self.add(INPUTS, self.args.inputs_sha); self.add(Path(__file__).resolve(), self.args.helper_sha)
+                 self.add(self.inputs['readme']['path'], self.inputs['readme']['sha256'])
+                 self.add(self.inputs['frozen']['path'], self.inputs['frozen']['sha256'])
