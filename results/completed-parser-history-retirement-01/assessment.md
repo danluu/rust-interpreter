@@ -1,0 +1,3 @@
+Retired compiler intermediates from six exact caches of the two completed 66-command original pgrust parser histories. The audit verified their retained 2/22-command prefixes, completed 64/44-command continuations, all saved logs/suites/bytecode/native executable snapshots, current source restoration and original 114-test outcomes. All 6,480 protected files remain byte-identical.
+
+Removed 13,939 files containing 1,970,811,335 logical bytes; observed free space rose by 1,719,816,192 bytes. No parser command was repeated, and its original performance results and cross-cycle artifact diagnosis remain unchanged. Shared and invocation locks were held, with fresh process/open-file checks. This is storage maintenance only.
