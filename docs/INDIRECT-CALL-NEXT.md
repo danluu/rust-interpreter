@@ -11,7 +11,10 @@ with 23 published thunks; the exhaustive test executes 737,989 of 843,776 with
 
 Tool `9e219e2e` retains the wide-operation exporter/wrapper. The full changed-
 source token/folded/pgrust comparison is now active, 154 commands per case.
-These counts do not establish a latency gain; no timing result is available yet.
+The first token attempt stopped after52 commands at its disk floor. Cleanup
+preserved protected artifacts, and a fresh complete comparison is active with
+the same frozen rules. No partial pairs are reused. These counts do not
+establish a latency gain; no timing result is available yet.
 
 The first host build stopped at two existing test fixture initializers missing
 the new cursor pointer. Both fixtures were corrected; the failed receipt stays

@@ -13,7 +13,12 @@ tests per debug/release profile, 123 harness checks, seven exact real tests,
 nine suite commands and 203 native/cache checks. All three current profiles
 match exact per-PC counts, memory and entropy. Native indirect calls account
 for1,025,924 of1,025,947 calls in the block test and737,989 of843,776 in the
-exhaustive test. The full462-command token/folded/pgrust comparison is active. Tool `9e219e2e` retains the
+exhaustive test. The first token timing stopped at its8GiB disk floor after
+52 commands, with no performance verdict. Completed public compiler caches
+were safely retired outside timers, with protected hashes unchanged. A fresh
+full462-command token/folded/pgrust comparison is active as controller02;
+its initial free space was about31GiB. No partial pairs are reused.
+[Storage recovery](results/guarded-indirect-storage-recovery-01/assessment.md). Tool `9e219e2e` retains the
 wide-operation baseline and complete frontend checking. The first host compile
 failure was two missing test-fixture cursor fields; the corrected second build
 passes. The source remains experimental until full command comparisons finish.
