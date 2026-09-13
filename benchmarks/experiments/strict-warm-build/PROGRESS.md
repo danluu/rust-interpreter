@@ -109,7 +109,7 @@ only 3 of 3,941 free-function records qualified: the same one function in three
 `nu-protocol` configurations. The other 689 invocations had incremental disabled.
 This coverage is too narrow to justify compiling the current cache for Nushell.
 [Full coverage and limits](../../../results/hir-owner-development-coverage-01/README.md).
-The actual HIR cache patch remains uncompiled. A separate body-only redesign
+The earlier whole-owner HIR cache patch remains uncompiled. A separate body-only redesign
 preserves ordinary attributes, parameters, signature and generics lowering.
 Its diagnostic passed 66 native controls and a complete native Nushell check,
 again accounting for all 742 reports with zero owner gaps. The ordinary
@@ -123,16 +123,17 @@ now records the actual lowering ID/effect journal and a typed HIR body tree,
 validating the complete observed context boundary and tree/reference/allocation
 closure after stock lowering. The latest checkpoint also reconstructs HIR privately after stock lowering,
 recaptures the complete tree, and rechecks the exit effects; the original stock
-HIR remains the result. This cold audit is uncompiled and has no hit path.
-Twenty-two prepared unit controls and the native run-make sequence remain
-unrun; structural input counts are not measured reusable-body coverage.
+HIR remains the result. The cold-audit checkpoint subsequently passed its selected compiler check
+and all 22 unit controls, without warnings, failures, skips or filtering.
+Its native run-make sequence remains unrun; structural input counts are not measured reusable-body coverage.
 The latest capture key also binds active language/library feature declarations
 and all eight ordered allow-lists at the actual body-lowering entry. This covers
 inputs outside the session-option hash without invoking boolean feature getters.
-It remains capture-only and does not skip ordinary lowering or feature checks.
+The qualified cold checkpoint remains capture-only and does not skip ordinary
+lowering or feature checks.
 An opaque prepared-value converter now validates current IDs, resolutions,
 operator/type enums, integer values and source coordinates without constructing
-HIR or interning symbols. It is still not a reusable-body admission API.
+HIR or interning symbols. That converter alone is not a reusable-body admission API.
 [Native controls](../../../results/hir-body-coverage-native-01/README.md),
 [complete development coverage](../../../results/hir-body-development-coverage-01/README.md).
 A separate [limited compiler check driver](../../../experiments/hir-capture-check/README.md)
@@ -148,10 +149,26 @@ and its exact source application. Its actual compiler check had no remaining
 public declarations, one private-interface warning and one unordered feature-set
 iteration warning. No unit stage ran. The current successor narrows visibility
 and uses stable feature enumeration with independent exact-set validation;
-its compiler check and all twenty-two controls remain pending. Both failed
-histories remain separate and cannot qualify the newer codec or a cache hit.
+the corrected checkpoint `60d5be45` passed the actual selected-crate compiler
+check and all 22 unit controls with zero warnings. Its source is
+`9d21c2bae5edcfd6cae6e96f38731a740b7acc9e`, and all 61 plan/application/check/unit
+commands are archived with complete source and predecessor proofs. Both failed
+histories remain separate and cannot qualify a cache hit.
+[Complete cold-audit check and 22-unit evidence](../../../results/hir-cold-audit-check-01/README.md).
 [Original failed check and exact source archive](../../../results/hir-capture-check-failed-01/README.md).
 [Six upgrade-runner controls](../../../results/hir-upgrade-controls-01/README.md).
+[Ten continuation controls](../../../results/hir-cold-audit-upgrade-controls-01/README.md).
+
+The next source checkpoint implements an exclusive current-context hit token,
+complete destination preflight, ordinary ID/binding adapter replay, and HIR
+materialization. Reuse is separately selected and default off. Every proposed
+hit includes actual journal, recaptured-tree and final-state verification;
+there is no fallback after replay starts. The trusted local cache boundary is
+explicit: structural checks do not authenticate an intentionally forged,
+semantically valid payload with a recomputed checksum. This new implementation
+is uncompiled; all 26 unit controls and native hit/error/restoration histories
+remain unrun. No actual hit count or speedup is established by the earlier
+22-unit cold pass.
 [Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
 [Copied archive guard evidence](../../../results/hir-capture-offline-seed-guards-01/README.md).
 
@@ -168,8 +185,11 @@ enabled, so this verifies fixture behavior only.
 [Ordinary fixture evidence](../../../results/external-trait-index-ordinary-fixtures-01/README.md).
 
 The proposed proc-macro span-handle table passed four standalone container
-controls against the exact patched source. This does not qualify bridge
-integration or establish a performance gain.
+controls against the exact patched source. A separate source-only bridge
+integration fixture now covers real transport and compiler-server boundaries,
+with explicit side effects, stale handles and same/cross-thread controls. These
+new controls remain unrun; standalone results do not qualify bridge integration
+or establish a performance gain.
 [Control evidence](../../../results/proc-macro-span-handle-controls-01/README.md).
 
 Three generated Cargo target directories from the completed worker screen
