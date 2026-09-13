@@ -1,6 +1,7 @@
 # Current state — September 12, 2026
 
-The unbounded goal remains active: improve the custom Rust development engine
+Manual work continues indefinitely; the saved goal record remains paused.
+The objective is to improve the custom Rust development engine
 using real source-edit/build/test benchmarks. Every item in `suggestions.txt`
 has an [explicit decision](docs/SUGGESTIONS-REVIEW-20260912.md); that user-owned
 file remains unchanged and untracked. Local commits, private GitHub publication and regular pushes of qualified changes to main are authorized.
