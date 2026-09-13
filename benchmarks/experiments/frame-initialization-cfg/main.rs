@@ -3,6 +3,8 @@ pub use rust_interp_bytecode::*;
 use serde_json::json;
 #[path = "../../../crates/bytecode/src/registers.rs"]
 mod registers;
+#[path = "../../../crates/bytecode/src/register_init.rs"]
+mod register_init;
 #[path = "../../../crates/bytecode/src/jit/call_slots.rs"]
 mod call_slots;
 mod proof;

@@ -1,0 +1,1 @@
+The first debug control command failed to compile because the standalone crate included the current register visitor without its register_init helper. No control test or artifact analysis executed. Include the exact unchanged helper; do not change the analysis or weaken a check. Retain the original source and failed terminal receipt.
