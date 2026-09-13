@@ -44,7 +44,8 @@ class PublicToolPublicationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             composition, payload, binaries, owner = self.minimal(Path(temporary))
             key = p.digest(composition); destination = owner / '.work/interpreter-tools' / key
-            def reject(tool, supplied_key, reader):
+            def reject(tool, supplied_key, reader, *, qualification_policy):
+                self.assertIsNone(qualification_policy)  # This fixture uses the default macro policy.
                 self.assertEqual(tool, destination); self.assertEqual(supplied_key, key)
                 self.assertFalse((destination / 'ready.json').exists())
                 self.assertEqual(json.loads(reader(destination / 'ready.json')), composition['binaries'])
