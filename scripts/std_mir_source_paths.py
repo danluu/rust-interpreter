@@ -117,6 +117,17 @@ def configuration(root, environment):
     def check(value, route=()):
         if not isinstance(value, dict):
             return
+        if route == ('env',):
+            configured = {}
+            for name, setting in value.items():
+                child = setting.get('value') if isinstance(setting, dict) else setting
+                require(isinstance(child, str), 'unsupported Cargo configured environment: ' + name)
+                require(name not in ['RUSTC', 'RUSTUP_TOOLCHAIN', 'RUSTUP_HOME', 'CARGO_HOME'],
+                        'std v2 conflicts with configured child identity: ' + name)
+                configured[name] = child
+            # Cargo applies these values to child processes, including forced
+            # loader overrides which ambient-environment checks cannot see.
+            validate_environment(configured)
         for key, child in value.items():
             # Pinned Cargo recursively loads top-level includes, including
             # optional/table forms. Their contents are not in this inventory.

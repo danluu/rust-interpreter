@@ -169,3 +169,10 @@ conflicting configuration, raw snippet integrity, mutation and incomplete
 publication, fail-before-ready histories, v1 dispatch and launcher selection.
 They have not been executed. Run them under the canonical workload lock before
 the first actual v2 preparation; then perform the compiler-backed gates above.
+
+Cargo `[env]` entries receive the same presence-based loader and flag checks as
+ambient settings, for both string and `{value, force, relative}` forms. Configured
+compiler/toolchain/home route changes are rejected before launching a child.
+Unrelated build-script environment inputs remain allowed and are bound by the
+complete configuration digest. The focused forced-loader regression is prepared
+but has not been run.
