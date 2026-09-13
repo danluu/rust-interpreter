@@ -23,6 +23,10 @@ from workflow_io import capture, require_space, write_json
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = 'metadata-sysroot-v2-source-paths-release-backtrace'
 SELECTION = 'source-paths-v2'
+SHARED_SELECTION = 'source-paths-v2-shared'
+SHARED_POLICY = 'metadata-sysroot-v2-shared-source-paths-release-backtrace'
+SHARED_NAMESPACE = 'immutable-source-paths-v2:shared'
+SELECTIONS = (SELECTION, SHARED_SELECTION)
 TOOLCHAIN = 'nightly-2026-09-08'
 CARGO_COMMIT = '3c0b534756e166d12eb9fd2e1abfe5b42ac6101e'
 SOURCE = 'lib/rustlib/src/rust/library/'
@@ -30,6 +34,35 @@ REQUIRED_SOURCES = ('Cargo.toml', 'Cargo.lock', 'core/src/lib.rs', 'alloc/src/li
                     'std/src/lib.rs', 'test/src/lib.rs', 'proc_macro/src/lib.rs',
                     'core/src/panic.rs', 'std/src/macros.rs')
 CRATES = ('core', 'alloc', 'std', 'test', 'proc_macro')
+
+
+def namespace_for(selection, application_namespace):
+    require(selection in SELECTIONS, 'unknown std source selection')
+    require(application_namespace != SHARED_NAMESPACE,
+            'shared std requires its explicit selection, not an application namespace')
+    return SHARED_NAMESPACE if selection == SHARED_SELECTION else application_namespace
+
+
+def selection_for_identity(identity):
+    if identity.get('policy') == SHARED_POLICY:
+        require(identity.get('namespace') == SHARED_NAMESPACE, 'shared std namespace differs')
+        return SHARED_SELECTION
+    require(identity.get('policy') == POLICY and identity.get('namespace') != SHARED_NAMESPACE,
+            'unknown or relabeled std source policy')
+    return SELECTION
+
+
+def policy_for(selection):
+    require(selection in SELECTIONS, 'unknown std source selection')
+    return SHARED_POLICY if selection == SHARED_SELECTION else POLICY
+
+
+def validate_pair(selection, stds):
+    require(selection in SELECTIONS and set(stds) == {'off', 'on'}, 'invalid prepared std pair')
+    if selection == SHARED_SELECTION:
+        require(stds['off'] == stds['on'], 'shared std must use one exact key and physical sysroot')
+    else:
+        require(stds['off']['key'] != stds['on']['key'], 'per-mode std requires separate namespaces')
 
 
 def source_capability(commit):
@@ -195,7 +228,8 @@ def make_identity(compiler, cargo, namespace, configs, build_environment_sha256=
     require(cargo['toolchain'] == TOOLCHAIN and cargo['host'] == compiler.host and valid_key(cargo['sha256']) and
             [s[13:] for s in cargo['version'].splitlines() if s.startswith('commit-hash: ')] == [CARGO_COMMIT],
             'std v2 Cargo identity differs')
-    return dict(policy=POLICY, compiler_key=compiler.key, compiler=compiler.identity['compiler'],
+    return dict(policy=SHARED_POLICY if namespace == SHARED_NAMESPACE else POLICY,
+        compiler_key=compiler.key, compiler=compiler.identity['compiler'],
         compiler_sysroot=str(compiler.sysroot), compiler_source_commit=commit, target=compiler.host,
         source_sha256=compiler.identity['source_sha256'], source_files=sources, namespace=namespace,
         flags=FLAGS, cargo=cargo, recipe=recipe(), setup_jobs=2, configuration=configs,
@@ -462,9 +496,9 @@ def main():
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=600)
     args = parser.parse_args()
     compiler = load_compiler(ROOT, args.compiler_key)
-    sysroot, target, key, _ = prepare(ROOT, compiler, args.namespace, args.run_id,
+    sysroot, target, key, ready = prepare(ROOT, compiler, args.namespace, args.run_id,
                                     args.workload_lock, args.lock_wait_seconds)
-    print(json.dumps(dict(sysroot=str(sysroot), target=target, key=key, policy=POLICY,
+    print(json.dumps(dict(sysroot=str(sysroot), target=target, key=key, policy=ready['identity']['policy'],
                          full_presentation_qualified=False)))
 
 

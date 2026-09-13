@@ -15,7 +15,8 @@ from interpreter import ROOT, TOOLCHAIN, installed_tools, require_export_option
 from mono_qualification import decode_record, validate_flags
 from qualify_custom_compiler import environment, diagnostic_records, core_diagnostics, validate_launch
 from standard_diagnostic_mapping import prepare_standard_diagnostic_mapping
-from std_mir_source_paths import SOURCE, load as load_std, tree_files, validate_probe
+from std_mir_source_paths import (SOURCE, SELECTION, SELECTIONS, namespace_for, validate_pair,
+    load as load_std, tree_files, validate_probe)
 from workflow_io import SourceEdit, capture, require_space, write_json
 import stable_mono_cgu
 from source_observable_transport import (POLICY, TRANSPORT, COMMANDS, PHASES, EXPORTED_PHASES,
@@ -108,6 +109,7 @@ def main():
     parser.add_argument('--tool-key', required=True)
     parser.add_argument('--std-mir-off-key', required=True)
     parser.add_argument('--std-mir-on-key', required=True)
+    parser.add_argument('--std-mir-policy', choices=SELECTIONS, default=SELECTION)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=600)
     args = parser.parse_args()
@@ -135,9 +137,10 @@ def main():
             stds, ready = {}, {}
             for mode in ['off', 'on']:
                 selected = load_std(ROOT, getattr(args, 'std_mir_' + mode + '_key'), compiler,
-                                    'stable-mono-cgu:' + mode, rehash=True)
+                                    namespace_for(args.std_mir_policy, 'stable-mono-cgu:' + mode), rehash=True)
                 stds[mode] = dict(key=selected[2], sysroot=str(selected[0]), target=selected[1])
                 ready[mode] = selected[3]
+            validate_pair(args.std_mir_policy, stds)
             source_files = {p[len(SOURCE):]: h for p, h in compiler.identity['files'].items() if p.startswith(SOURCE)}
             (work / 'source-snapshots').mkdir()
             for path in scripts:
@@ -148,7 +151,7 @@ def main():
                 installed_tools(key)
                 require(all(file_digest(Path(p)) == h for p, h in scripts.items()), 'qualification source changed')
                 for mode, std in stds.items():
-                    require(load_std(ROOT, std['key'], compiler, 'stable-mono-cgu:' + mode)[3] == ready[mode],
+                    require(load_std(ROOT, std['key'], compiler, namespace_for(args.std_mir_policy, 'stable-mono-cgu:' + mode))[3] == ready[mode],
                             'prepared standard identity changed')
                 for path, stamps in copy_guards.items():
                     require(tree_stamps(path) == stamps, 'second-prefix copy changed')
@@ -198,7 +201,7 @@ def main():
             require(invoke('second-prefix-sysroot', [second_rustc, '--print', 'sysroot'])['stdout'].strip() == str(copies['native']),
                     'relocated compiler uses a different prefix')
             plan = dict(policy=POLICY, transport_policy=TRANSPORT, expected_commands=COMMANDS,
-                owner=str(ROOT), compiler_key=compiler.key, tool_key=key,
+                owner=str(ROOT), compiler_key=compiler.key, tool_key=key, std_mir_policy=args.std_mir_policy,
                 compiler_sysroot=str(compiler.sysroot), compiler=compiler.identity, std_mir=stds, std_readiness=ready,
                 tools=json.loads((tools / 'ready.json').read_text()), mono_wrapper=wrapper, scripts=scripts,
                 copied_sources={k: str(v) for k, v in copies.items()}, copy_proofs=copy_proofs, source_files=source_files,
@@ -333,7 +336,7 @@ def main():
                                 row = invoke(mode + '-' + phase + '-exported', [sys.executable, ROOT / 'scripts/interpreter.py',
                                     '--manifest-path', application / 'Cargo.toml', '--package', 'std-source-observables', '--entry', 'entry',
                                     '--compiler-key', compiler.key, '--tool-key', key, '--stable-cgu-partitioning', 'off',
-                                    '--stable-mono-cgu-partitioning', mode, '--std-mir', '--std-mir-policy', 'source-paths-v2',
+                                    '--stable-mono-cgu-partitioning', mode, '--std-mir', '--std-mir-policy', args.std_mir_policy,
                                     '--std-mir-key', stds[mode]['key'], '--toolchain-lookup', 'cached',
                                     '--workspace-cache-root', cache, '--cache-namespace', args.run_id,
                                     '--jobs', '2', '--engine', 'jit', '--function-cache', 'auto', '--inline-leaves',
@@ -404,7 +407,7 @@ def main():
                 if path.name != 'result.json':
                     evidence[str(path.relative_to(work))] = file_digest(path)
             result = dict(status='passed', policy=POLICY, transport_policy=TRANSPORT,
-                guest_negative_controls=4, owner=str(ROOT), compiler_key=compiler.key, tool_key=key,
+                guest_negative_controls=4, owner=str(ROOT), compiler_key=compiler.key, tool_key=key, std_mir_policy=args.std_mir_policy,
                 compiler_sysroot=str(compiler.sysroot), std_mir=stds, benchmark=False, diagnostics_rewritten=False,
                 source_restored=True, qualification_only=True, unmapped_source_paths='passed',
                 std_only_application_observables='unchanged', application_remap_sensitivity='expected-span-file-only-change',

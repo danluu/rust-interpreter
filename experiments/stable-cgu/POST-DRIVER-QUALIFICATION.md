@@ -181,3 +181,12 @@ installed associations. Independently verify the archive members before
 publishing conclusions or retiring any generated cache. The remaining gates
 are actual executions; this source-only handoff makes no correctness, speedup
 or sub-0.5-second claim.
+
+
+The shared-std continuation uses the explicit
+[shared immutable std amendment](SHARED-IMMUTABLE-STD.md). It requires a fresh
+shared preparation, then new strict 36-command and 61-command source-observable
+results with both mode arguments selecting the one actual shared key. Earlier
+per-mode preparations and qualified results remain historical evidence. Source-only
+launcher changes do not change the installed Rust tool composition; the separate
+runtime trap-remapping fix does require its own new tool build and workspace tests.

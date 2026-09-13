@@ -111,13 +111,14 @@ def environment():
 def validate_mono_std_ready(path, custom, mode, *, rehash=True):
     """Use the authoritative source-containing loader; its smoke proof is not qualification."""
     require(custom is not None, 'MonoItem std requires a validated custom compiler')
-    from std_mir_source_paths import load, POLICY
+    from std_mir_source_paths import load, selection_for_identity, namespace_for
     path = path.absolute()
     require(path.name == 'ready.json' and path.parent.parent == ROOT / '.work/std-mir'
             and path.resolve(strict=True) == path, 'MonoItem std must be an owned canonical ready.json')
+    selection = selection_for_identity(json.loads(path.read_bytes())['identity'])
     sysroot, target, key, ready = load(ROOT, path.parent.name, custom,
-                                     'stable-mono-cgu:' + mode, rehash=rehash)
-    require(ready['identity']['policy'] == POLICY
+        namespace_for(selection, 'stable-mono-cgu:' + mode), rehash=rehash)
+    require(selection_for_identity(ready['identity']) == selection
             and ready.get('full_presentation_qualified') is False,
             'MonoItem std readiness must retain its setup-only scope')
     artifacts = {str(sysroot / name): dict(sha256=digest, stamp=stamp(sysroot / name))
@@ -125,7 +126,7 @@ def validate_mono_std_ready(path, custom, mode, *, rehash=True):
     return dict(path=str(path), sha256=sha(path), key=key, artifacts=artifacts,
                 compiler=custom.identity['compiler'], rustc=str(custom.rustc),
                 rustc_sha256=custom.identity['files']['bin/rustc'], sysroot=str(sysroot), target=target,
-                policy=POLICY, identity=ready['identity'], readiness=ready)
+                policy=ready['identity']['policy'], identity=ready['identity'], readiness=ready)
 
 
 def validate_std_ready(path, env, custom=None, mode='off', cargo=None, candidate_policy=None):
@@ -279,9 +280,11 @@ def command_for(mode, key, source, work, sample, names=CASE['tests'],
         if candidate_policy == 'stable-mono-cgu':
             require(prepared_std is not None and re.fullmatch('[0-9a-f]{64}', prepared_std['key']),
                     'MonoItem command requires a prepared std key')
+            from std_mir_source_paths import SELECTION, selection_for_identity
+            selection = selection_for_identity(prepared_std['identity']) if 'identity' in prepared_std else SELECTION
             policy_args = ['--compiler-key', compiler_key, '--stable-cgu-partitioning', 'off',
                 '--stable-mono-cgu-partitioning', cgu_setting(mode),
-                '--std-mir-policy', 'source-paths-v2', '--std-mir-key', prepared_std['key']]
+                '--std-mir-policy', selection, '--std-mir-key', prepared_std['key']]
     else:
         require(compiler_key is None, 'custom compiler requires stable-CGU policy')
     if candidate_policy == 'cargo-info-cache':
@@ -325,7 +328,7 @@ def measure_command(command, **kwargs):
 
 
 def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, cargo=None,
-                    mono_wrapper=None, worker_capability=None, library_capability=None):
+                    mono_wrapper=None, worker_capability=None, library_capability=None, prepared_std=None):
     retention = retention_setting(mode, candidate_policy)
     expected = dict(tool_key=key, engine='jit', function_cache='auto', borrowck_cache='off',
         jit_persistent_registers=True, jit_resumable_calls=True, inline_leaves=True,
@@ -344,7 +347,7 @@ def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom
             require(mono_wrapper is not None, 'MonoItem launch requires matching wrapper capability')
             expected['custom_compiler'].update(stable_cgu_partitioning='off',
                 stable_mono_cgu_partitioning=receipt(cgu_setting(mode), custom, mono_wrapper))
-            expected['std_mir_policy'] = STD_POLICY
+            expected['std_mir_policy'] = prepared_std['policy'] if prepared_std else STD_POLICY
     else:
         require(custom is None, 'custom compiler requires stable-CGU policy')
     if candidate_policy == 'cargo-info-cache':
@@ -377,7 +380,7 @@ def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
                 if line.startswith('rust-interp-launch: ')]
     require(len(launches) == 1, 'expected exactly one completed launcher report')
     launch = launches[0]
-    expected = launch_settings(mode, key, candidate_policy, custom, cargo, mono_wrapper, worker_capability, library_capability)
+    expected = launch_settings(mode, key, candidate_policy, custom, cargo, mono_wrapper, worker_capability, library_capability, prepared_std)
     require(all(launch.get(k) == v for k, v in expected.items()), 'launcher settings differ')
     require(custom is not None or 'custom_compiler' not in launch, 'unexpected custom compiler in launcher')
     require(cargo is not None or 'custom_cargo' not in launch, 'unexpected custom Cargo in launcher')
@@ -531,7 +534,13 @@ def main():
             stds = dict.fromkeys(MODES, std)
             if custom or cargo_comparison:
                 stds['candidate'] = validate_std_ready(args.candidate_std_mir_ready, env, custom, 'on', cargos['candidate'], args.candidate_policy)
-                require(std['key'] != stds['candidate']['key'], 'comparison std namespaces must differ')
+                if args.candidate_policy == 'stable-mono-cgu':
+                    from std_mir_source_paths import selection_for_identity, validate_pair
+                    selection = selection_for_identity(std['identity'])
+                    require(selection_for_identity(stds['candidate']['identity']) == selection, 'mixed std preparation policies')
+                    validate_pair(selection, dict(off=stds['baseline'], on=stds['candidate']))
+                else:
+                    require(std['key'] != stds['candidate']['key'], 'comparison std namespaces must differ')
             revision, marker, changed, original = validate_source(source)
             states = protocol_states(original)
             keys = dict(baseline=args.baseline_tool_key, candidate=args.candidate_tool_key,

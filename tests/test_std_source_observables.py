@@ -149,6 +149,17 @@ class SourceObservableContracts(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'both native source locations'):
             transport.expectation('off', 'unmapped', 12, self.output(), {'main': self.values()['main']})
 
+    def test_shared_observable_receipt_rejects_different_physical_std_before_admission(self):
+        from std_mir_source_paths import SHARED_SELECTION
+        owner = Path('/owned/project')
+        path = owner / '.work/observable/result.json'
+        selected = dict(key='d' * 64, sysroot='/owned/std/shared', target='host')
+        payload = json.dumps(dict(std_mir_policy=SHARED_SELECTION)).encode()
+        for candidate in [selected | {'sysroot': '/owned/std/other'}, selected | {'key': 'e' * 64}]:
+            with self.assertRaisesRegex(RuntimeError, 'one exact'):
+                validate_source_observables(path, owner, 'c' * 64, 'a' * 64,
+                    dict(off=selected, on=candidate), compiler_sysroot='/compiler', read_bytes=lambda p: payload)
+
     def test_missing_or_old_qualification_cannot_satisfy_archived_prerequisite(self):
         owner = Path('/owned/project'); path = owner / '.work/source-controls/result.json'
         stds = {m: dict(key=m, sysroot='/std/' + m, target='host') for m in ['off', 'on']}
