@@ -4,13 +4,17 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current priority: complete the frozen memory-operand comparison, with all
-462 token/folded/pgrust commands required. Its refined runtime passes428 Rust
+Current priority: qualify and prospectively measure a composition of memory
+operands and compiler-identity lookup caching. The memory-only comparison
+completes all462 token/folded/pgrust commands. Its refined runtime passes428 Rust
 tests per profile,131 harness checks,7 exact tests,9 suite commands,203 strict
 native/cache checks and3 profiles. Logical work at every PC is identical to
-the wide control; generated code is5.1–5.6% smaller. Only complete changed-source
-commands determine latency. Preserve all frozen inputs and do not run another
-build, test or profile alongside this comparison.
+the wide control; generated code is5.1–5.6% smaller. Token improves6.60% wall
+and5.93% CPU and passes; folded passes its guard. Pgrust's CPU ratio to the
+anchor plus A/A is1.05389, exceeding1.05. Keep that failed adoption decision
+and do not retime it. The next composition targets frontend overhead in pgrust
+while retaining the measured token component. It needs new full-command
+measurements and large/private guards, not multiplied historical ratios.
 [Mechanism and qualification](results/memory-operands-profile-01/assessment.md).
 
 1. **Keep the completed host-MIR decision.** Wrapper466c60a2 completed all264

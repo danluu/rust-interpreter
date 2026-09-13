@@ -49,8 +49,13 @@ a latency result. Token now completes all154 expected commands and passes
 its prospective gate: paired wall−6.60%, CPU−5.93% versus the wide control,
 with1.82% wall/0.53% CPU A/A. Versus the fixed anchor, wall improves17.82%
 and CPU18.07%. The candidate still takes1.862× ordinary native Cargo.
-Folded and pgrust remain mandatory in the frozen462-command comparison;
-no source adoption follows from the primary result alone.
+The complete462-command comparison passes every expected outcome. Folded
+passes its guard. Pgrust misses the CPU margin:1.02027 versus the anchor plus
+3.361% A/A gives1.05389, above1.05; its wall margin passes narrowly. Keep the
+candidate experimental without retiming. The next composition combines this
+memory improvement with the previously qualified compiler-identity cache to
+target frontend overhead in pgrust, with new large/private guards required.
+[Complete decision](results/memory-operands-complete-01/assessment.md).
 [Token result](results/memory-operands-edit-token-01/stage-assessment.md).
 [Qualified mechanism](results/memory-operands-profile-01/assessment.md).
 [Complete comparison](results/paired-registers-complete-01/assessment.md). [Scope and next constraints](docs/REGISTER-TRANSFER-NEXT.md).
