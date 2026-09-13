@@ -85,6 +85,13 @@ change the mechanism, use a fresh prospective screen and retain every full
 adoption guard; do not repeat scalar-copy timings unchanged.
 [Reuse diagnostic and limits](../results/reuse-misses-analysis-01/assessment.md).
 
+The next composed Copy/budget candidate also passes correctness but fails its
+40-command primary screen: wall+2.39%, CPU+0.79%, inside8.80%/5.56% A/A. Keep
+the full comparison unstarted. Smaller native code is not a latency result.
+Inspect complete checked-address sequences next, before a broad memory-model
+redesign; retain tag classification, overflow-safe bounds and fault ordering.
+[Complete screen decision](../results/scalar-copy-budget-screen-token-01/assessment.md).
+
 Original integration checkpoint (subsequently completed): the rebuilt VM matches
 the measured runtime exactly;428 Rust tests per profile
 and223 new cache/Cargo commands pass. The first project qualification stopped
