@@ -1401,20 +1401,60 @@ impl Assembler<'_> {
     /// active-frame ranges can use a displaced base; all other addresses retain
     /// the original validation and an immediate of zero.
     fn memory_address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) -> u32 {
+        if let Some(immediate) = self.local_memory_immediate(reg, size) {
+            // x1 is the current logical frame base; x2 is the current
+            // linear-memory base. Neither can move inside this region.
+            self.three(0x8b000000, rd, 2, 1);
+            return immediate;
+        }
+        self.address(rd, reg, size, write);
+        0
+    }
+    fn local_memory_immediate(&self, reg: Reg, size: usize) -> Option<u32> {
         if [1, 2, 4, 8, 16].contains(&size) {
             if let Some(offset) = self.local_range(reg, size) {
                 let scale = size.min(8);
                 let immediate = offset / scale;
                 if offset % scale == 0 && immediate < 4096 - usize::from(size == 16) {
-                    // x1 is the current logical frame base; x2 is the current
-                    // linear-memory base. Neither can move inside this region.
-                    self.three(0x8b000000, rd, 2, 1);
-                    return immediate as u32;
+                    return Some(immediate as u32);
                 }
             }
         }
-        self.address(rd, reg, size, write);
-        0
+        None
+    }
+    fn scalar_copy(&mut self, dst: Reg, src: Reg, size: usize, forwarded: Option<Fact>) {
+        debug_assert!([1, 2, 4, 8, 16].contains(&size));
+        if let Some(value) = forwarded {
+            // Preserve destination validation before materializing the captured
+            // value, including the original cache replacement order.
+            let immediate = self.memory_address(12, dst, size, true);
+            self.forward_local_value(value, size, "Copy");
+            self.store_mem_at(9, 31, 12, size, immediate);
+            return;
+        }
+        let high = if size <= 8 { 31 } else { 10 };
+        let (source, destination_base, destination) = match (
+            self.local_memory_immediate(src, size), self.local_memory_immediate(dst, size),
+        ) {
+            (Some(source), Some(destination)) => {
+                // Both complete ranges are already proven in the same active
+                // frame. Share its host base; only the memory displacements
+                // differ. Neither load overwrites this base.
+                self.three(0x8b000000, 11, 2, 1);
+                (source, 11, destination)
+            }
+            _ => {
+                // Preserve source-before-destination checks and validate both
+                // entire ranges before touching any bytes.
+                let source = self.memory_address(11, src, size, false);
+                let destination = self.memory_address(12, dst, size, true);
+                (source, 12, destination)
+            }
+        };
+        // Even a sixteen-byte overlapping copy loads both words before its
+        // first store. Narrow copies never consume or define the high scratch.
+        self.load_mem_at(9, high, 11, size, source);
+        self.store_mem_at(9, high, destination_base, size, destination);
     }
     fn fold(&mut self, op: &Op) -> bool {
         match *op {
@@ -1747,6 +1787,14 @@ impl Assembler<'_> {
                 let source_local = self.local_range(src, size);
                 let destination_local = self.local_range(dst, size);
                 let forwarded = self.local_value(source_local, size);
+                if [1, 2, 4, 8, 16].contains(&size) {
+                    self.scalar_copy(dst, src, size, forwarded.map(|(_, value)| value));
+                    self.invalidate_local_memory(destination_local, size);
+                    if let Some((source, _)) = forwarded {
+                        self.remember_local_memory(destination_local, size, source);
+                    }
+                    return;
+                }
                 if forwarded.is_none() { self.address(11, src, size, false); }
                 self.address(12, dst, size, true);
                 // Read all bytes before writing so even overlapping copies

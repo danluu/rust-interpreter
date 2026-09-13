@@ -88,6 +88,62 @@ fn narrow_stores_do_not_read_an_unused_high_operand() {
 }
 
 #[test]
+fn scalar_local_copies_share_one_base_and_load_before_storing() {
+    for size in [1, 2, 4, 8, 16] {
+        let scale = size.min(8);
+        for (source, destination) in [(0, 0), (16, 24), (4088 * scale, 4094 * scale)] {
+            let mut a = Assembler { frame_size: 65536, ..Assembler::default() };
+            a.facts.insert(0, Fact::Local(source));
+            a.facts.insert(1, Fact::Local(destination));
+            a.lower(&Op::Copy { dst: 1, src: 0, size });
+            let load = match size { 1 => 0x39400169, 2 => 0x79400169,
+                4 => 0xb9400169, _ => 0xf9400169 };
+            let store = match size { 1 => 0x39000169, 2 => 0x79000169,
+                4 => 0xb9000169, _ => 0xf9000169 };
+            let src = (source / scale) as u32;
+            let dst = (destination / scale) as u32;
+            let expected = if size == 16 {
+                vec![0x8b01004b, load | (src << 10), 0xf940016a | ((src + 1) << 10),
+                    store | (dst << 10), 0xf900016a | ((dst + 1) << 10)]
+            } else { vec![0x8b01004b, load | (src << 10), store | (dst << 10)] };
+            assert_eq!(a.words, expected, "size={size}, src={source}, dst={destination}");
+            assert!(a.failures.is_empty());
+        }
+    }
+}
+
+#[test]
+fn scalar_copy_fallbacks_keep_checks_and_non_scalar_emission() {
+    for size in 0..=16 {
+        for local in [false, true] {
+            let make = || {
+                let mut a = Assembler { frame_size: 65536, heap: true, ..Assembler::default() };
+                if local {
+                    // Just beyond every scalar immediate, with unaligned
+                    // addresses for wider accesses. Both ranges remain valid.
+                    a.facts.insert(0, Fact::Local(40001));
+                    a.facts.insert(1, Fact::Local(40003));
+                }
+                a
+            };
+            let mut actual = make();
+            actual.lower(&Op::Copy { dst: 1, src: 0, size });
+            let mut original = make();
+            original.address(11, 0, size, false);
+            original.address(12, 1, size, true);
+            // The only remaining change for unencodable/unknown addresses is
+            // omission of the unused narrow high-word clear.
+            let high = if [1, 2, 4, 8].contains(&size) { 31 } else { 10 };
+            original.load_mem(9, high, 11, size);
+            original.store_mem(9, high, 12, size);
+            assert_eq!(actual.words, original.words, "size={size}, local={local}");
+            assert_eq!(actual.failures.len(), original.failures.len());
+            assert_eq!(actual.live_in, original.live_in);
+        }
+    }
+}
+
+#[test]
 fn memory_operands_preserve_bytes_across_widths_alignments_exits_and_budget_tails() {
     const VALUE: u128 = 0xfedc_ba98_7654_3210_0123_4567_89ab_cdef;
     for size in 0..=16 {
@@ -143,6 +199,63 @@ fn memory_operands_preserve_bytes_across_widths_alignments_exits_and_budget_tail
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+#[test]
+fn scalar_copies_preserve_live_wide_values_native_calls_and_every_budget() {
+    use crate::execute_profiled;
+    const VALUE: u128 = 0xfedc_ba98_7654_3210_0123_4567_89ab_cdef;
+    for size in [1, 2, 4, 8, 16] {
+        for offset in [128, 129, 32752, 32760, 32768] {
+            let mask = if size == 16 { u128::MAX } else { (1u128 << (size * 8)) - 1 };
+            let expected_value = ((VALUE & mask) | (!VALUE & !mask)).wrapping_sub(VALUE);
+            let p = Program { version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0,
+                data: vec![0; 65], statics: vec![], thread_locals: vec![],
+                functions: vec![Function { name: "copy caller".into(), frame_size: 48, frame_align: 2,
+                    registers: 2, args: vec![Slot { offset: 16, size: 16 }], result: Slot { offset: 0, size: 16 },
+                    code: vec![Op::Local { dst: 0, offset: 16 }, Op::Load { dst: 1, address: 0, size: 16 },
+                        Op::Local { dst: 0, offset: 0 }, Op::Call { function: 1, args: vec![1], destination: 0 },
+                        Op::Return] },
+                    Function { name: "copy callee".into(), frame_size: offset + 16, frame_align: 1,
+                        registers: 9, args: vec![Slot { offset: 16, size: 16 }], result: Slot { offset: 0, size: 16 },
+                        code: vec![Op::Local { dst: 0, offset: 16 }, Op::Load { dst: 1, address: 0, size: 16 },
+                            Op::Local { dst: 2, offset }, Op::Imm { dst: 3, value: !VALUE },
+                            Op::Store { address: 2, src: 3, size: 16 }, Op::Copy { dst: 2, src: 0, size },
+                            Op::Load { dst: 5, address: 2, size: 16 },
+                            Op::Binary { dst: 6, overflow: 7, op: Binary::Sub, a: 5, b: 1, bits: 128, signed: false },
+                            Op::Local { dst: 8, offset: 0 }, Op::Store { address: 8, src: 6, size: 16 }, Op::Return] }] };
+            crate::validate(&p).unwrap();
+            let complete = execute_with_engine(&p, &[VALUE], Limits::default(), Engine::Interpreter).unwrap();
+            assert_eq!(complete.value, expected_value);
+            for budget in 0..=complete.instructions + 1 {
+                let reference = execute_profiled(&p, &[VALUE], Limits { instructions: budget, ..Limits::default() }, Engine::Interpreter);
+                for capacity in [0, MAX_CODE_BYTES] { for persistent in [false, true] { for resumable in [false, true] {
+                    let limits = || Limits { instructions: budget, jit_code_bytes: capacity,
+                        jit_persistent_registers: persistent, jit_resumable_calls: resumable, ..Limits::default() };
+                    let normal = execute_with_engine(&p, &[VALUE], limits(), Engine::Jit);
+                    let observed = execute_profiled(&p, &[VALUE], limits(), Engine::Jit);
+                    match &reference {
+                        Err(error) => { assert_eq!(&normal.unwrap_err(), error); assert_eq!(&observed.unwrap_err(), error); }
+                        Ok((result, reference_profile)) => {
+                            let normal = normal.unwrap(); let (observed, profile) = observed.unwrap();
+                            for actual in [normal, observed] {
+                                assert_eq!((actual.value, actual.instructions, actual.peak_memory),
+                                    (result.value, result.instructions, result.peak_memory));
+                                if capacity != 0 { assert!(actual.jit_instructions > 0); }
+                            }
+                            for (f, r) in profile.functions.iter().zip(&reference_profile.functions) {
+                                let mut counts = f.interpreted.clone();
+                                for (start, &hits) in f.jit_blocks.iter().enumerate() {
+                                    if hits != 0 { for count in &mut counts[start..f.jit_block_ends[start]] { *count += hits; } }
+                                }
+                                assert_eq!(counts, r.interpreted);
+                            }
+                        }
+                    }
+                }}}
             }
         }
     }
