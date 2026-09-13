@@ -158,5 +158,20 @@ improves paired wall4.55% and CPU3.25%, beyond2.39% wall/1.70% CPU A/A. The
 full stack improves12.05% wall and12.66% CPU against the fixed selected-suite
 anchor. This is measured composition with a useful sub8% component gain; none
 of the earlier failed decisions is relabeled. It still takes1.957× ordinary
-native, and folded/pgrust guards remain outstanding before adoption.
+native. All462 commands now pass expected outcomes. Pgrust passes its guard
+(wall−0.09%, CPU+0.13%); folded changes wall−0.74% and CPU−0.06%, but its
+3.65% CPU A/A exceeds the declared3% limit. Overall adoption does not pass.
+The wide-operation runtime remains experimental, without retiming.
 [Token assessment](../results/wide-bitwise-edit-token-01/stage-assessment.md).
+
+
+### Next bounded optimization: toolchain lookup (4.3)
+
+The runtime comparison is complete. Investigate caching the compiler identity
+and original sysroot discovery that currently launch two rustc proxies on
+every command. Preserve strict checking, the standard-library content key and
+artifact validation. Explicit opt-in and conservative environment/path/file
+identity invalidation must be qualified before changed-source comparisons on
+short workflows. This is separate from the runtime result and does not reopen
+its failed folded guard. The newly published local-export screen also remains
+parked: its1.99% build-to-ready gain missed its own5% threshold.

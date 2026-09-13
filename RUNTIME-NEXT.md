@@ -21,7 +21,7 @@ suggestion. Historical experiments retain their original decisions.
    Modest correct mechanisms were composed and measured; their old ratios are
    not multiplied or their failed gates retroactively changed.
    [Latest token result](results/call-capacity-credit-edit-token-02/stage-assessment.md).
-3. **Qualify wide bitwise operations, then measure their complete commands.**
+3. **Retain the completed wide-operation result.**
    The current-artifact census passes all six control/profile commands and
    finds4.84million interpreted128-bit bitwise/shift operations in the dominant
    block-boundary test,71.5% of its interpreted operations. The custom emitter
@@ -30,8 +30,10 @@ suggestion. Historical experiments retain their original decisions.
    reduce block interpreted operations from6.77million to1.93million with
    exact logical work/memory/entropy. Token completes154 commands and passes: wall−4.55%, CPU−3.25% versus
    integrated baseline; wall−12.05% versus fixed anchor; wall A/A2.39%. It
-   remains1.957× ordinary native. Finish mandatory folded/pgrust guards
-   before adoption. Keep the exhaustive token test in the selection;
+   remains1.957× ordinary native. All462 commands now pass expected outcomes.
+   Pgrust passes its guard; folded wall−0.74%/CPU−0.06% shows no measured
+   regression, but its3.65% CPU A/A exceeds3%, so adoption does not pass.
+   Keep the runtime experimental without retiming. Keep the exhaustive token test in the selection;
    it has far fewer such operations. Counts do not predict a time saving.
    [Current census](results/current-runtime-boundaries-02/assessment.md),
    [qualification plan](benchmarks/experiments/wide-bitwise/PLAN.md).
@@ -40,8 +42,10 @@ suggestion. Historical experiments retain their original decisions.
    139ms rebinding within642ms baseline lowering. Resolve the binding cost
    before choosing lazy allocation identities or a new cache format; green
    bodies do not make session-local compiler allocations reusable unchanged.
-   Full-catalog selection and launcher lookup remain later usability/latency
-   work, with original checking and artifact identity requirements intact.
+   Next remove redundant toolchain identity discovery from the launcher,
+   with explicit opt-in, path/environment invalidation and measured edited
+   commands on short workflows. Full-catalog selection remains later work;
+   original checking and artifact identity requirements remain intact.
 5. **Use the stronger native controls already established.** Every current
    comparison uses matched two-worker Cargo and ordinary native libtest
    concurrency. Nushell's completed88-command native calibration found3.85%
