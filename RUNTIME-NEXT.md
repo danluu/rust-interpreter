@@ -10,14 +10,19 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Observe resolved indirect-call targets and native-entry/continuation coverage
-   on the two exact token profiles. CallIndirect accounts for1,025,947/843,776
-   interpreted calls; one hashbrown find_inner site has948,377 block-profile
-   calls. Native Return−Call counts equal interpreted direct+indirect Calls,
-   but this is not proof of entry readiness, per-site monomorphism or signatures.
-   First collect those facts under bounded test-only observation, preserving
-   exact original behavior/profiles and all function-pointer validation. Then
-   assess a bounded native indirect-call path with safe VM fallback.
+1. Implement and qualify a general native indirect-call transition using exact,
+   immutable signature/layout metadata and the existing native frame protocol.
+   The two exact token traces preserve every adopted per-PC count and code word:
+   all1,025,947 block calls are at monomorphic sites; two targets cover843,768
+   of843,776 exhaustive calls. Only20/23 calls lack an already-native callee
+   entry; every caller continuation is ready. Existing VM local-argument proof
+   covers none. Full128-bit handle and signature checks, limits, fault order,
+   budgets and safe VM fallback remain mandatory. No profiled IDs or workload
+   choices enter code. Start with static code ownership; compare bounded target
+   specialization later if metadata loads remain costly. Then use the declared
+   primary-first end-to-end screen before full project guards.
+   [Coverage and limits](results/indirect-target-census-03/assessment.md),
+   [closed evidence](results/indirect-target-census-03/closure.json).
 
 Adjacent memory pairing is deferred:7,192/8,228 sites affect only30/1,651 and
 13/1,439 sampled PCs, counting both old instructions. Potential removed code is
