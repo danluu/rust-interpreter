@@ -44,8 +44,12 @@ In the five valid token edits,172 recurring green functions lack a supported
 recipe; only34/33/32/1/30 red entries need fresh lowering. Declined lowering costs
 22.88ms, and body-free replay context only4.55ms. Park standalone lazy-MIR and
 broad recipe expansion as the immediate next candidates; return to the measured
-Copy/budget guest costs. The observer remains experimental pending integration
-with the other session's newly published opt-in compiler-query reuse.
+Copy/budget guest costs. The observer is now qualified together with the other
+session's published opt-in compiler-query reuse:88 exporter/routing tests per
+profile,80 Python tests,196 compiler fixture commands and44 new observer/project
+commands pass. The VM remains byte-identical to the adopted operation-map tool;
+compiler-query reuse and the observer both remain opt-in.
+[Combined integration](results/reuse-misses-main-qualification-01/assessment.md).
 [Diagnostic evidence](results/reuse-misses-analysis-01/assessment.md).
 Saved Cargo interval attribution
 finds4.780s reported-unit coverage inside5.260s historical Nushell Cargo;0.469s
