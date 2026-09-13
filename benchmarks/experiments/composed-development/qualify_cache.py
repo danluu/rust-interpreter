@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--automatic-cache', action='store_true',
                         help='also qualify automatic reuse and disabled incremental profiles')
     kinds = parser.add_mutually_exclusive_group()
+    kinds.add_argument('--scalar-copy-budget-candidate', action='store_true', help='qualify the 456-test scalar Copy and budget runtime')
     kinds.add_argument('--scalar-copy-operands-candidate', action='store_true', help='qualify the 441-test scalar Copy operand runtime')
     kinds.add_argument('--direct-operands-candidate', action='store_true', help='qualify the 433-test direct operand runtime')
     kinds.add_argument('--immediate-shifts-candidate', action='store_true', help='qualify the 432-test immediate shift runtime')
@@ -51,18 +52,18 @@ def main():
     kinds.add_argument('--main-integration-candidate', action='store_true', help='qualify the 418-test compiler/runtime integration')
     kinds.add_argument('--call-protocol-candidate', action='store_true', help='qualify the 395-test runtime with the retained composed exporter')
     args = parser.parse_args()
-    assert not (args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate or args.paired_registers_candidate or args.guarded_indirect_candidate or args.wide_bitwise_candidate or args.capacity_credit_candidate or args.call_protocol_candidate or args.main_integration_candidate) or args.automatic_cache
-    prefix = 'scalar-copy-operands' if args.scalar_copy_operands_candidate else 'direct-operands' if args.direct_operands_candidate else 'immediate-shifts' if args.immediate_shifts_candidate else 'memory-operands' if args.memory_operands_candidate else 'paired-registers' if args.paired_registers_candidate else 'guarded-indirect' if args.guarded_indirect_candidate else 'wide-bitwise' if args.wide_bitwise_candidate else 'call-capacity-credit' if args.capacity_credit_candidate else 'call-protocol-main' if args.main_integration_candidate else 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development'
+    assert not (args.scalar_copy_budget_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate or args.paired_registers_candidate or args.guarded_indirect_candidate or args.wide_bitwise_candidate or args.capacity_credit_candidate or args.call_protocol_candidate or args.main_integration_candidate) or args.automatic_cache
+    prefix = 'scalar-copy-budget' if args.scalar_copy_budget_candidate else 'scalar-copy-operands' if args.scalar_copy_operands_candidate else 'direct-operands' if args.direct_operands_candidate else 'immediate-shifts' if args.immediate_shifts_candidate else 'memory-operands' if args.memory_operands_candidate else 'paired-registers' if args.paired_registers_candidate else 'guarded-indirect' if args.guarded_indirect_candidate else 'wide-bitwise' if args.wide_bitwise_candidate else 'call-capacity-credit' if args.capacity_credit_candidate else 'call-protocol-main' if args.main_integration_candidate else 'resumable-call-protocol' if args.call_protocol_candidate else 'composed-development'
     assert re.fullmatch(prefix + r'-cache-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         # Small standalone fixtures and one dependency-free Cargo crate only.
-        require_space(ROOT, 8 if args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 4)
+        require_space(ROOT, 8 if args.scalar_copy_budget_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 4)
         build_path = args.build.resolve(strict=True)
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
         assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(
-            passed=441 if args.scalar_copy_operands_candidate else 433 if args.direct_operands_candidate else 432 if args.immediate_shifts_candidate else 428 if args.memory_operands_candidate else 421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393 if args.automatic_cache else 391, ignored=1)
+            passed=456 if args.scalar_copy_budget_candidate else 441 if args.scalar_copy_operands_candidate else 433 if args.direct_operands_candidate else 432 if args.immediate_shifts_candidate else 428 if args.memory_operands_candidate else 421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393 if args.automatic_cache else 391, ignored=1)
         tools, key = installed_tools(build['tool_key'])
         require_export_option(tools, key, 'function-cache-reuse')
         if args.automatic_cache: require_export_option(tools, key, 'function-cache-auto')
@@ -70,6 +71,8 @@ def main():
         assert std_key == 'bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef'
         fixtures = ['scalar_constant', 'static', 'tls', 'caller', 'type_id', 'dynamic', 'c_allocator']
         paths = [Path(__file__), Path(__file__).with_name('PLAN.md'), build_path]
+        if args.scalar_copy_budget_candidate:
+            paths.append(ROOT / 'benchmarks/experiments/scalar-copy-budget/PLAN.md')
         if args.scalar_copy_operands_candidate:
             paths.append(ROOT / 'benchmarks/experiments/scalar-copy-operands/PLAN.md')
         if args.direct_operands_candidate:
@@ -93,7 +96,7 @@ def main():
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(owner=str(ROOT), frozen=frozen, tool_key=key,
-            fixtures=fixtures, minimum_free_gib=8 if args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 4, performance_measurement=False,
+            fixtures=fixtures, minimum_free_gib=8 if args.scalar_copy_budget_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 4, performance_measurement=False,
             changes='original fixtures plus scalar helper edit, unreachable type/borrow errors and restoration',
             entropy='ordinary OS; fixture assertions avoid comparing random hash keys'))
         env = {k: v for k, v in os.environ.items()
@@ -105,7 +108,7 @@ def main():
         rows, fixture_results, cache_rows = [], [], []
 
         def invoke(label, command, selected=env, success=True):
-            require_space(ROOT, 8 if args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 3)
+            require_space(ROOT, 8 if args.scalar_copy_budget_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 3)
             command = list(map(str, command))
             child, stdout, stderr = capture(command, cwd=ROOT, env=selected,
                 receipt_path=work / 'active.json', receipt=dict(label=label))
