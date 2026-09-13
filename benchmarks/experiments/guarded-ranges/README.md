@@ -14,3 +14,10 @@ No completed measurement was repeated to cross a performance gate.
 [Qualification](../../../results/guarded-ranges-validation-repair-01/assessment.md),
 [screen](../../../results/guarded-ranges-screen-token-01/assessment.md),
 [full protocol](FULL.md).
+
+The four-case prefix completes594 commands and passes all four gates. Nushell
+was refused before any case command; its qualified continuation adds only the
+remaining132 commands. The continuation source and five-test qualification are
+on the same experimental branch under `benchmarks/experiments/guarded-ranges-admission`.
+[Prefix and admission](../../../results/guarded-ranges-full-03-admission/assessment.md),
+[owned public-cache retirement](../../../results/guarded-ranges-public-cache-retirement-02/assessment.md).

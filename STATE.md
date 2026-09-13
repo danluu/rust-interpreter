@@ -42,8 +42,16 @@ repaired offline with zero repeated guest commands: the inactive folded
 control has byte-identical adopted code. Its40-command changed-source screen
 passes narrowly: wall−1.84% with1.74% A/A, CPU−1.14% with1.16% A/A. All original
 assertions, wrong edits, restoration and artifact identity checks pass.
-Proceed to a separately qualified full comparison, primary first; all five
-cases and a final serialized audit remain required for adoption.
+The full harness passes159 checks. After two zero-command admission failures,
+controller03 completes the154-command primary: wall−2.55%, CPU−1.43%, with
+2.275%/1.730% A/A. It narrowly passes the incremental wall gate; all original
+assertions, artifacts and source restoration pass. Folded matching, pgrust and
+private rg-aot also pass, completing594 commands. Nushell was refused before
+its case started because of disk admission. A qualified continuation has
+audited the prefix and now runs only its132 commands after owned public-cache
+cleanup. Nushell and the final serialized audit remain mandatory for adoption.
+[Retained prefix and admission](results/guarded-ranges-full-03-admission/assessment.md).
+[Full primary](results/guarded-ranges-edit-token-01/assessment.md).
 [Complete qualification](results/guarded-ranges-validation-repair-01/assessment.md),
 [screen and limits](results/guarded-ranges-screen-token-01/assessment.md).
 

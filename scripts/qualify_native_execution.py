@@ -80,7 +80,7 @@ def verify_vm_options(path, tool, options, require_statistics=False):
                 statistics['resumable_returns'] += stats.get('jit_resumable_returns', 0)
                 statistics['maximum_generated_bytes'] = max(statistics['maximum_generated_bytes'], stats.get('jit_bytes', 0))
                 statistics['executions_with_declines'] += int(stats.get('jit_declined_functions', 0) > 0)
-    require(counts['jit'] == counts['interpreter'] == 11119 and counts['default_rejection'] == 1,
+    require(counts['jit'] == counts['interpreter'] == 11452 and counts['default_rejection'] == 1,
             'full validator VM command count changed')
     if require_statistics and options['jit_resumable_calls']:
         require(statistics['resumable_calls'] > 0 and statistics['resumable_returns'] > 0,
@@ -163,7 +163,7 @@ def main():
     frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
     write(work / 'plan.json', dict(tool_key=key, binaries=binaries, options=options,
         modes=['default', 'inline'], substitutions=substitutions, assertions_unchanged=True,
-        frozen=frozen, expected_commands_per_mode=23502, performance_measurement=False))
+        frozen=frozen, expected_commands_per_mode=24171, performance_measurement=False))
 
     def verify():
         require(all(sha(ROOT / p) == digest for p, digest in frozen.items()), 'frozen validator input changed')
@@ -202,7 +202,7 @@ def main():
             commands = folder / 'commands.jsonl'
             digest = sha(commands)
             counts = count_commands(commands, folder)
-            require(counts['commands'] == detail['completed_commands'] == 23502, 'incomplete validator run')
+            require(counts['commands'] == detail['completed_commands'] == 24171, 'incomplete validator run')
             selected = verify_vm_options(commands, tool, options, require_statistics=True)
             with commands.open() as rows:
                 provenance = verify_binary_provenance((json.loads(line) for line in rows),
