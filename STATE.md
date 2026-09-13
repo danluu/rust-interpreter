@@ -50,6 +50,13 @@ profile,80 Python tests,196 compiler fixture commands and44 new observer/project
 commands pass. The VM remains byte-identical to the adopted operation-map tool;
 compiler-query reuse and the observer both remain opt-in.
 [Combined integration](results/reuse-misses-main-qualification-01/assessment.md).
+The scalar-Copy/budget composition passes456 Rust tests per profile,121 harness
+checks and222 real correctness/profile commands. Its40-command screen fails:
+paired wall+2.39%/CPU+0.79%, inside8.80%/5.56% A/A. No useful incremental gain
+is established despite3.7–3.9% smaller code and exact guard reconstruction.
+Park it; its full comparison is unstarted. Next inspect complete checked-address
+sequences while preserving the existing memory model and every fault check.
+[Copy/budget decision](results/scalar-copy-budget-screen-token-01/assessment.md).
 [Diagnostic evidence](results/reuse-misses-analysis-01/assessment.md).
 Saved Cargo interval attribution
 finds4.780s reported-unit coverage inside5.260s historical Nushell Cargo;0.469s
