@@ -101,6 +101,8 @@ def _checked_tools_locked():
             capabilities=json.loads(probe.stdout)
             if capabilities.get('schema_version')!=1:raise RuntimeError('unsupported exporter capability schema')
             capabilities.update(tool_key=key,exporter_sha256=manifest['rust-interp-mir-export'])
+            from frontend_workers import bind_wrapper_capability
+            bind_wrapper_capability(directory,manifest,capabilities)
             (directory/'capabilities.json').write_text(json.dumps(capabilities,indent=2))
         (directory/'ready.json').write_text(json.dumps(manifest,indent=2))
     return installed_tools(key)
@@ -226,6 +228,7 @@ def _main(resources):
     parser.add_argument('--manifest-path',type=Path,default=Path('Cargo.toml'))
     parser.add_argument('--package',required=True)
     parser.add_argument('--jobs',type=int,default=4,help='Cargo build jobs (1..256)')
+    parser.add_argument('--frontend-workers',type=int,choices=[1,2],help='experimental explicit compiler frontend workers; omission keeps the pinned default of one')
     selected=parser.add_mutually_exclusive_group(required=True)
     selected.add_argument('--entry',action='append',help='function to run; repeat for a batch of unit test bodies')
     selected.add_argument('--test-filter',help='select ordinary nonignored libtest bodies by name substring in one checked compiler invocation')
@@ -261,6 +264,10 @@ def _main(resources):
     parser.add_argument('--test-target',help='select a named Cargo integration-test target; requires --test-body')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    if args.frontend_workers is not None:
+        from frontend_workers import validate_selection, require_capability, namespace, receipt
+        try:validate_selection(args,os.environ)
+        except ValueError as error:parser.error(str(error))
     if args.toolchain_lookup!='fresh' and not args.std_mir:parser.error('--toolchain-lookup=cached requires --std-mir')
     if args.test_target is not None:
         if not args.test_body:parser.error('--test-target requires --test-body')
@@ -337,6 +344,11 @@ def _main(resources):
     manifest=args.manifest_path.resolve()
     stage=time.perf_counter()
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
+    if args.frontend_workers is not None:
+        require_export_option(tools,key,'frontend-workers-v1')
+        capabilities=json.loads((tools/'capabilities.json').read_text())
+        require_capability(tools,capabilities,json.loads((tools/'ready.json').read_text()))
+        timings['frontend_workers']=receipt(args.frontend_workers,capabilities)
     if args.function_cache!='off':require_export_option(tools,key,'function-cache-'+args.function_cache)
     if args.borrowck_cache!='off':require_export_option(tools,key,'borrowck-cache')
     if listing:require_export_option(tools,key,'list-tests')
@@ -370,6 +382,8 @@ def _main(resources):
     # remains compatible with existing workspaces.
     if args.borrowck_cache!='off':
         identity_input='borrowck-cache-v1\0'+args.borrowck_cache+'\0'+identity_input
+    if args.frontend_workers is not None:
+        identity_input=namespace(args.frontend_workers,identity_input)
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
     if args.workspace_cache_root is None:
         work=cache_base/key/identity
@@ -439,8 +453,9 @@ def _main(resources):
     if stats:cargo_cpu_started=cpu_usage(resource.RUSAGE_CHILDREN)
     stage=time.perf_counter()
     cargo_env=env
-    if args.function_cache!='off' or args.borrowck_cache!='off':
+    if args.function_cache!='off' or args.borrowck_cache!='off' or args.frontend_workers is not None:
         cargo_env=env.copy()
+        if args.frontend_workers is not None:cargo_env['RUST_INTERP_FRONTEND_WORKERS']=str(args.frontend_workers)
         if args.function_cache!='off':cargo_env['RUST_INTERP_FUNCTION_CACHE']=args.function_cache
         if args.borrowck_cache!='off':cargo_env['RUST_INTERP_BORROWCK_CACHE']=args.borrowck_cache
     result=subprocess.run(command,cwd=manifest.parent,env=cargo_env,stdout=subprocess.PIPE,text=True)
