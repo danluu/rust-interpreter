@@ -1,4 +1,4 @@
-"""Build bounded proof controls and analyze a saved artifact without guest execution."""
+"""Run existing tree-proof controls and analyze saved code without benchmark execution."""
 import argparse
 import hashlib
 import json
