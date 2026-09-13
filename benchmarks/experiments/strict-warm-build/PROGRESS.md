@@ -12,32 +12,40 @@ wall change was -0.12%, within 3.08% observed maximum A/A deviation, with
 commands passed; none of the five candidate edit commands was below 0.5s.
 Keep the option off. [Exact history and assessment](../../../results/strict-warm-frontend-worker-screen-01/assessment.md).
 
-Two candidates remain in qualification:
+The host-library O1 screen also completed with all 27 commands and all original
+tests. Edited medians were 4.0088s / 3.9074s / 3.9854s for off/on/off;
+paired wall time improved 2.42%, with 2.22% observed maximum A/A deviation
+and 0.56% more child CPU. None of the five candidate edits was below 0.5s.
+The candidate's one cold observation was 80.63s versus 62.35s / 61.64s for
+the controls. Keep the option experimental and off by default; this single
+history does not establish a reliable gain or final-target qualification.
+[Complete history](../../../results/strict-warm-host-library-screen-01/assessment.md).
+Build02 passed 505 Rust tests (two existing ignored), ten Python controls and
+all three native/edit/diagnostic histories. The earlier metadata-flag rejection
+remains separately [retained](../../../results/host-library-build-failure-01/README.md).
 
-- Conservative O1 compilation of native host libraries. Application profiles,
-  effective checks, build-script settings, guest compilation and proc-macro
-  crate compilation remain fixed. All 84 publication/screen/assessment
-  compatibility tests passed. Build01 passed 504 Rust tests and two of three
-  native histories; the third rejected Cargo's ordinary metadata-embedding
-  flag. The corrected parser preserves that flag, with a new regression test.
-  Fresh build02 qualification is admitted to the shared workload queue;
-  the off/on/off Nushell screen remains pending.
-  [Source checks](../../../results/host-library-screen-source-tests-01/README.md).
-- Stable per-MonoItem code-generation placement using an optimized compiler
-  build. All twelve bootstrap/package stages passed for compiler source
-  `58e1e1f5311f4424ea81def4763081f6da62d9b3`, including option tracking,
-  partitioning, native entry and stripping controls. Installation and the updated matched interpreter-tool build passed.
-  After correcting an initial path-conversion failure before any test ran,
-  workspace02 passed 505 Rust tests with two existing ignored tests; all five
-  workspace-helper controls passed. Both standard-library preparations,
-  strict diagnostics/source-observable qualification and the Nushell screen
-  remain separate gates. The first std preparation is queued.
-  [Compiler build evidence](../../../results/mono-production-compiler-complete-01/README.md).
-  [Required post-build sequence](../../../experiments/stable-cgu/POST-DRIVER-QUALIFICATION.md).
+Stable per-MonoItem code-generation placement remains in qualification.
+All twelve optimized-compiler bootstrap/package stages passed for source
+`58e1e1f5311f4424ea81def4763081f6da62d9b3`, including option tracking,
+partitioning, native entry and stripping controls.
+[Compiler build evidence](../../../results/mono-production-compiler-complete-01/README.md).
+The actual installation and matched tool build passed. Workspace02 passed
+505 Rust tests (two existing ignored) after a corrected helper path-conversion
+failure; all five helper controls passed. Both standard-library preparations
+and all 36 strict diagnostic/semantic integration commands passed.
+The separate source-observable qualification failed at command 38: export
+succeeded, but fixture stdout locking called unsupported `pthread_mutexattr_init`
+in the VM. Its completed source/diagnostic checks and failure are retained;
+full source-observable qualification and the Nushell screen remain pending.
+The proposed fixture adapter will compare each observable byte and coordinate
+against independently retained native values through supported integer returns.
+It must pass fresh controls before any performance screen.
 
-A separate source experiment investigates reuse of unchanged HIR lowering.
-Its initial conservative subset is a feasibility step, with no compiled or
-measured performance claim.
+A separate HIR-lowering experiment now has a compiled coverage diagnostic.
+Its 54 native fixture commands passed, including exact raw error comparisons,
+source shifts and restoration. Four of nine fixture free functions pass the
+conservative input gate. This is not application coverage or a cache-hit result;
+the HIR cache compiler patch itself remains uncompiled and unmeasured.
 
 Only three generated Cargo target directories from the completed worker screen
 were retired. Original bytecode, source, cache metadata, publication inputs and
