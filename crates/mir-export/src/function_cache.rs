@@ -184,6 +184,17 @@ impl Cache {
             previous_binding_seconds: 0.0, green_check_seconds: 0.0, lowered_functions: 0,
             skipped_functions: 0, declined_functions: 0 })
     }
+    // Called only by the enabled diagnostic, before take_previous consumes it.
+    pub fn previous_contains(&self, node: &str) -> bool { self.previous.contains_key(node) }
+    pub fn reuse_miss_counts(&self) -> crate::reuse_misses::CacheCounts<'_> {
+        crate::reuse_misses::CacheCounts {
+            load_note: &self.load_note, loaded_entries: self.loaded_entries,
+            previous_hits: self.previous_hits, red_functions: self.red_functions,
+            green_missing: self.green_missing, lowered: self.lowered_functions,
+            skipped: self.skipped_functions, declined: self.declined_functions,
+            staged_entries: self.next.len(),
+        }
+    }
     pub fn take_previous(&mut self, node: &str, green: bool) -> Option<Vec<u8>> {
         let payload = self.previous.remove(node);
         if green {

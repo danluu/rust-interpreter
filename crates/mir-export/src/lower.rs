@@ -173,6 +173,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     if replay_costs.is_some() && (!actual_reuse || demand) {
         return Err("replay costs require actual function reuse and strict checking".into());
     }
+    let mut reuse_misses = crate::reuse_misses::enabled()?.then(crate::reuse_misses::Observer::default);
+    if reuse_misses.is_some() && (!actual_reuse || demand || replay_costs.is_some()) {
+        return Err("reuse-miss observation requires actual reuse, strict checking and disabled replay-cost observation".into());
+    }
     let function_dependencies = crate::function_dependencies::enabled()? || actual_reuse;
     if function_dependencies && !tcx.dep_graph.is_fully_enabled() {
         return Err("function dependency observation requires an incremental dependency graph".into());
@@ -323,26 +327,44 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         let (lowered, dependency) = crate::function_dependencies::observe(tcx, instance, function_dependencies,
             namespace.as_ref(), |dep| {
             let mut lowering_executed = true;
+            let mut observed_lookup = None;
             let result = (|| {
             if actual_reuse {
                 let cache = function_cache.as_mut().unwrap();
                 let (node, green) = dep.ok_or("reuse requires a dependency node")?;
+                if reuse_misses.is_some() {
+                    observed_lookup = Some(crate::reuse_misses::Lookup::new(green, cache.previous_contains(node)));
+                }
                 if let Some(bytes) = cache.take_previous(node, green) {
                     let began = std::time::Instant::now();
                     let template = reuse::Template::decode(&bytes)?;
-                    cache.previous_decoding_seconds += began.elapsed().as_secs_f64();
+                    let decoded = began.elapsed();
+                    cache.previous_decoding_seconds += decoded.as_secs_f64();
+                    let mut detailed = reuse_misses.as_ref().map(|_| reuse::ReplayCosts::default());
+                    let recipe = detailed.as_ref().map(|_| (template.tape.events.len(), template.tape.recipe_requires_current_mir()));
                     let began = std::time::Instant::now();
                     let function = reuse::replay_measured(&mut exporter, instance, index, template,
-                        replay_costs.as_mut())
+                        detailed.as_mut().or(replay_costs.as_mut()))
                         .map_err(|error| format!("reuse {name}: {error}"))?;
-                    cache.previous_binding_seconds += began.elapsed().as_secs_f64();
+                    let bound = began.elapsed();
+                    cache.previous_binding_seconds += bound.as_secs_f64();
                     cache.retain(node.to_owned(), bytes)?;
                     cache.skipped_functions += 1;
+                    if let Some(observer) = &mut reuse_misses {
+                        let (events, recipe_requires_current_mir) = recipe.unwrap();
+                        observer.record(index, &name, observed_lookup.unwrap(), crate::reuse_misses::Action::Reused,
+                            function.code.len(), crate::reuse_misses::Phases {
+                                decode: decoded, bind: bound, replay: Some(crate::reuse_misses::ReplayInfo {
+                                    events, recipe_requires_current_mir,
+                                    current_context_seconds: detailed.as_ref().unwrap().current_context_seconds(),
+                                }), ..Default::default()
+                            })?;
+                    }
                     lowering_executed = false;
                     return Ok((function, vec![], None, Default::default(), Default::default(), 0, 0));
                 }
             }
-            let started = function_costs.as_ref().map(|_| std::time::Instant::now());
+            let started = (function_costs.is_some() || reuse_misses.is_some()).then(std::time::Instant::now);
             let lower = Lower::new(&mut exporter, instance).map_err(|e| format!("{name}: {e}"))?;
             let prepared = started.map(|_| std::time::Instant::now());
             let mir_locals = lower.body.local_decls.len();
@@ -354,14 +376,25 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
                 cache.lowered_functions += 1;
                 if actual_reuse {
                     let tape = tape.take().ok_or("missing reuse binding tape")?;
-                    if tape.decline.is_some() {
+                    let mut action = None;
+                    let mut encoded = std::time::Duration::ZERO;
+                    if let Some(reason) = &tape.decline {
                         cache.declined_functions += 1;
+                        if reuse_misses.is_some() {
+                            action = Some(crate::reuse_misses::Action::Declined { first_reason: reason.clone() });
+                        }
                     } else {
                         let began = std::time::Instant::now();
                         let observation = exporter.byte_writes.last().ok_or("missing reuse frame observation")?.clone();
                         let bytes = reuse::Template { function: f.clone(), observation, tape }.encode()?;
-                        cache.current_encoding_seconds += began.elapsed().as_secs_f64();
+                        encoded = began.elapsed();
+                        cache.current_encoding_seconds += encoded.as_secs_f64();
                         cache.retain(dep.unwrap().0.to_owned(), bytes)?;
+                        if reuse_misses.is_some() { action = Some(crate::reuse_misses::Action::Staged); }
+                    }
+                    if let Some(observer) = &mut reuse_misses {
+                        observer.record(index, &name, observed_lookup.unwrap(), action.unwrap(), f.code.len(),
+                            crate::reuse_misses::Phases { prepare, lower: elapsed, encode: encoded, ..Default::default() })?;
                     }
                 }
             }
@@ -459,6 +492,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             "scope": "actual prior-template reuse only; context and immediate index partition setup and must not be added to the three top-level phases; context includes instance-MIR lookup and template unpacking; enclosing binding also includes temporary destruction and observer bookkeeping",
             "performance_measurement": false
         }));
+    }
+    if let Some(observer) = reuse_misses {
+        let cache = function_cache.as_ref().ok_or("reuse-miss observation has no cache")?;
+        eprintln!("rust-interp-reuse-misses: {}", observer.finish(cache.reuse_miss_counts())?);
     }
     if let Some(cache) = function_cache { cache.stage()?; }
     else if requested_cache_mode == Mode::Auto {

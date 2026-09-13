@@ -1,0 +1,307 @@
+//! Optional observation of existing cache lookups, not an invalidation oracle.
+//! Reports are diagnostic; strict checking, caching and query behavior stay unchanged.
+use serde::Serialize;
+use std::collections::{BTreeMap, BTreeSet};
+use std::time::Duration;
+
+const MAX_FUNCTIONS: usize = 10_000;
+const MAX_LABEL_BYTES: usize = 4096;
+const MAX_REPORT_BYTES: usize = 16 * 1024 * 1024;
+
+pub(crate) fn enabled() -> Result<bool, String> {
+    match std::env::var_os("RUST_INTERP_REUSE_MISSES") {
+        None => Ok(false),
+        Some(value) if value == "0" => Ok(false),
+        Some(value) if value == "1" => Ok(true),
+        _ => Err("RUST_INTERP_REUSE_MISSES must be 0 or 1".into()),
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum Lookup {
+    GreenPresent,
+    GreenAbsent,
+    RedPresent,
+    RedAbsent,
+}
+
+impl Lookup {
+    pub fn new(green: bool, present: bool) -> Self {
+        match (green, present) {
+            (true, true) => Self::GreenPresent,
+            (true, false) => Self::GreenAbsent,
+            (false, true) => Self::RedPresent,
+            (false, false) => Self::RedAbsent,
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub(crate) enum Action {
+    Reused,
+    Staged,
+    Declined { first_reason: String },
+}
+
+#[derive(Serialize)]
+pub(crate) struct ReplayInfo {
+    pub events: usize,
+    pub recipe_requires_current_mir: bool,
+    pub current_context_seconds: f64,
+}
+
+#[derive(Default)]
+pub(crate) struct Phases {
+    pub prepare: Duration,
+    pub lower: Duration,
+    pub encode: Duration,
+    pub decode: Duration,
+    pub bind: Duration,
+    pub replay: Option<ReplayInfo>,
+}
+
+#[derive(Default, Serialize)]
+struct Totals {
+    functions: usize,
+    operations: usize,
+    reused: usize,
+    staged: usize,
+    declined: usize,
+    prepare_seconds: f64,
+    lower_seconds: f64,
+    template_encode_seconds: f64,
+    template_decode_seconds: f64,
+    binding_seconds: f64,
+    replay_body_required_functions: usize,
+    replay_body_free_functions: usize,
+    replay_current_context_seconds: f64,
+    replay_body_free_context_seconds: f64,
+}
+
+#[derive(Serialize)]
+struct Record {
+    index: usize,
+    name: String,
+    lookup: Lookup,
+    action: Action,
+    operations: usize,
+    prepare_seconds: f64,
+    lower_seconds: f64,
+    template_encode_seconds: f64,
+    template_decode_seconds: f64,
+    binding_seconds: f64,
+    replay: Option<ReplayInfo>,
+}
+
+/// Borrowed final counters from the existing cache; no new lookup or query.
+pub(crate) struct CacheCounts<'a> {
+    pub load_note: &'a str,
+    pub loaded_entries: usize,
+    pub previous_hits: usize,
+    pub red_functions: usize,
+    pub green_missing: usize,
+    pub lowered: usize,
+    pub skipped: usize,
+    pub declined: usize,
+    pub staged_entries: usize,
+}
+
+#[derive(Default)]
+pub(crate) struct Observer {
+    records: Vec<Record>,
+    indices: BTreeSet<usize>,
+    encoded_rows_bytes: usize,
+}
+
+impl Observer {
+    pub fn record(&mut self, index: usize, name: &str, lookup: Lookup, action: Action,
+                  operations: usize, phases: Phases) -> Result<(), String> {
+        if self.records.len() >= MAX_FUNCTIONS || self.indices.contains(&index)
+            || name.len() > MAX_LABEL_BYTES {
+            return Err("reuse-miss observation exceeded its bound or repeated an index".into());
+        }
+        let reused = matches!(&action, Action::Reused);
+        if reused != (lookup == Lookup::GreenPresent)
+            || (reused && (phases.prepare != Duration::ZERO || phases.lower != Duration::ZERO
+                || phases.encode != Duration::ZERO))
+            || (!reused && (phases.decode != Duration::ZERO || phases.bind != Duration::ZERO)) {
+            return Err("reuse-miss action or phase disagrees with the original lookup".into());
+        }
+        if reused != phases.replay.is_some() {
+            return Err("missing replay recipe observation or recipe on a lowered function".into());
+        }
+        if let Some(replay) = &phases.replay {
+            if !replay.current_context_seconds.is_finite() || replay.current_context_seconds < 0.0
+                || replay.current_context_seconds > phases.bind.as_secs_f64()
+                || (replay.events == 0 && replay.recipe_requires_current_mir) {
+                return Err("inconsistent replay context or recipe observation".into());
+            }
+        }
+        if let Action::Declined { first_reason } = &action {
+            if first_reason.is_empty() || first_reason.len() > MAX_LABEL_BYTES || phases.encode != Duration::ZERO {
+                return Err("invalid first decline or encoding on a declined template".into());
+            }
+        }
+        let row = Record { index, name: name.into(), lookup, action, operations,
+            prepare_seconds: phases.prepare.as_secs_f64(), lower_seconds: phases.lower.as_secs_f64(),
+            template_encode_seconds: phases.encode.as_secs_f64(),
+            template_decode_seconds: phases.decode.as_secs_f64(), binding_seconds: phases.bind.as_secs_f64(),
+            replay: phases.replay };
+        // Bound escaped labels before retaining more rows. This diagnostic encoding
+        // lies outside the recorded compiler phases; it is not a latency saving.
+        let bytes = serde_json::to_vec(&row).map_err(|e| e.to_string())?.len();
+        let total = self.encoded_rows_bytes.checked_add(bytes).ok_or("reuse-miss byte count overflow")?;
+        if total > MAX_REPORT_BYTES / 2 { return Err("reuse-miss row byte bound exceeded".into()); }
+        self.indices.insert(index);self.encoded_rows_bytes = total;self.records.push(row);
+        Ok(())
+    }
+
+    pub fn finish(self, cache: CacheCounts<'_>) -> Result<String, String> {
+        let mut groups: BTreeMap<Lookup, Totals> = [Lookup::GreenPresent, Lookup::GreenAbsent,
+            Lookup::RedPresent, Lookup::RedAbsent].into_iter().map(|key| (key, Totals::default())).collect();
+        let mut reasons = BTreeMap::<&str, usize>::new();
+        for row in &self.records {
+            let sum = groups.get_mut(&row.lookup).unwrap();
+            sum.functions += 1;sum.operations += row.operations;
+            sum.prepare_seconds += row.prepare_seconds;sum.lower_seconds += row.lower_seconds;
+            sum.template_encode_seconds += row.template_encode_seconds;
+            sum.template_decode_seconds += row.template_decode_seconds;sum.binding_seconds += row.binding_seconds;
+            if let Some(replay) = &row.replay {
+                sum.replay_current_context_seconds += replay.current_context_seconds;
+                if replay.recipe_requires_current_mir { sum.replay_body_required_functions += 1; }
+                else {
+                    sum.replay_body_free_functions += 1;
+                    sum.replay_body_free_context_seconds += replay.current_context_seconds;
+                }
+            }
+            match &row.action {
+                Action::Reused => sum.reused += 1,
+                Action::Staged => sum.staged += 1,
+                Action::Declined { first_reason } => {sum.declined += 1;*reasons.entry(first_reason).or_default() += 1;}
+            }
+        }
+        let reused = groups.values().map(|g| g.reused).sum::<usize>();
+        let staged = groups.values().map(|g| g.staged).sum::<usize>();
+        let declined = groups.values().map(|g| g.declined).sum::<usize>();
+        if reused != cache.previous_hits || reused != cache.skipped
+            || groups[&Lookup::GreenAbsent].functions != cache.green_missing
+            || groups[&Lookup::RedPresent].functions + groups[&Lookup::RedAbsent].functions != cache.red_functions
+            || staged + declined != cache.lowered || declined != cache.declined
+            || reused + staged != cache.staged_entries
+            || self.records.len() != cache.lowered + cache.skipped {
+            return Err("reuse-miss census disagrees with original cache counters".into());
+        }
+        let text = serde_json::to_string(&serde_json::json!({
+            "schema_version": 1, "complete": true, "performance_measurement": false,
+            "cache_load_note": cache.load_note, "loaded_entries": cache.loaded_entries,
+            "observed_functions": self.records.len(), "reused": reused, "lowered": staged + declined,
+            "staged_new": staged, "declined": declined, "by_lookup": groups,
+            "first_decline_reasons": reasons, "functions": self.records,
+            "scope": "Existing green/red status and prior-payload presence observed before consumption. Red absent is not proof of a new instance or a particular invalidation cause. Only the first binding-tape decline is available. Recipe body requirements classify existing tape events, not compiler dependency absence. Replay current-context time is nested inside binding and includes eager MIR lookup and template unpacking; body-free context is an upper bound for work that a later lazy implementation might avoid. Preparation, body lowering, template clone/encode, decode and replay are disjoint local phases; graph passes, cache file work, green checking and observer bookkeeping are excluded. Names and indices identify this export, not cross-session identities."
+        })).map_err(|e| e.to_string())?;
+        if text.len() > MAX_REPORT_BYTES { return Err("reuse-miss report byte bound exceeded".into()); }
+        Ok(text)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn counts() -> CacheCounts<'static> {
+        CacheCounts { load_note: "loaded", loaded_entries: 2, previous_hits: 1, red_functions: 2,
+            green_missing: 1, lowered: 3, skipped: 1, declined: 2, staged_entries: 2 }
+    }
+    fn fixture() -> Observer {
+        let mut observer = Observer::default();
+        for (index, lookup, action) in [
+            (0, Lookup::GreenPresent, Action::Reused),
+            (1, Lookup::GreenAbsent, Action::Declined { first_reason: "unsupported recipe".into() }),
+            (2, Lookup::RedPresent, Action::Staged),
+            (3, Lookup::RedAbsent, Action::Declined { first_reason: "unsupported recipe".into() }),
+        ] {
+            let mut phases = Phases::default();
+            if index == 0 {
+                phases.bind = Duration::from_millis(7);
+                phases.replay = Some(ReplayInfo { events: 0, recipe_requires_current_mir: false, current_context_seconds: 0.005 });
+            }
+            else { phases.lower = Duration::from_millis(index as u64); }
+            observer.record(index, "same display name", lookup, action, 10, phases).unwrap();
+        }
+        observer
+    }
+    #[test]
+    fn joined_outcomes_reconcile_without_calling_every_miss_red() {
+        let value: serde_json::Value = serde_json::from_str(&fixture().finish(counts()).unwrap()).unwrap();
+        assert_eq!(value["observed_functions"], 4);
+        assert_eq!(value["reused"], 1);assert_eq!(value["lowered"], 3);
+        assert_eq!(value["first_decline_reasons"]["unsupported recipe"], 2);
+        assert_eq!(value["by_lookup"]["green_absent"]["declined"], 1);
+        assert_eq!(value["by_lookup"]["red_absent"]["declined"], 1);
+        assert_eq!(value["by_lookup"]["red_present"]["staged"], 1);
+        assert_eq!(value["by_lookup"]["green_present"]["binding_seconds"], 0.007);
+        assert_eq!(value["by_lookup"]["red_present"]["lower_seconds"], 0.002);
+        assert_eq!(value["by_lookup"]["green_present"]["replay_body_free_functions"], 1);
+        assert_eq!(value["by_lookup"]["green_present"]["replay_body_free_context_seconds"], 0.005);
+    }
+    #[test]
+    fn all_green_and_presence_combinations_are_distinct() {
+        let values: BTreeSet<_> = [false,true].into_iter().flat_map(|green|
+            [false,true].into_iter().map(move |present| Lookup::new(green,present))).collect();
+        assert_eq!(values.len(),4);
+    }
+    #[test]
+    fn mismatched_cache_counts_reject_incomplete_coverage() {
+        for field in 0..7 {
+            let mut cache = counts();
+            match field {0 => cache.previous_hits+=1,1=>cache.red_functions+=1,2=>cache.green_missing+=1,
+                3=>cache.lowered+=1,4=>cache.skipped+=1,5=>cache.declined+=1,_=>cache.staged_entries+=1}
+            assert!(fixture().finish(cache).is_err());
+        }
+    }
+    #[test]
+    fn impossible_lookup_actions_and_mixed_phases_reject() {
+        let mut o = Observer::default();
+        assert!(o.record(0,"x",Lookup::RedPresent,Action::Reused,1,Phases::default()).is_err());
+        assert!(o.record(0,"x",Lookup::GreenPresent,Action::Staged,1,Phases::default()).is_err());
+        assert!(o.record(0,"x",Lookup::GreenAbsent,Action::Staged,1,
+            Phases { bind:Duration::from_nanos(1),..Default::default() }).is_err());
+        assert!(o.record(0,"x",Lookup::GreenPresent,Action::Reused,1,
+            Phases { lower:Duration::from_nanos(1),..Default::default() }).is_err());
+        assert!(o.record(0,"x",Lookup::GreenAbsent,Action::Declined {first_reason:String::new()},1,Phases::default()).is_err());
+        assert!(o.records.is_empty());
+    }
+    #[test]
+    fn duplicate_indices_and_label_or_byte_bounds_reject_before_retention() {
+        let mut o=fixture();
+        assert!(o.record(0,"x",Lookup::RedAbsent,Action::Staged,1,Phases::default()).is_err());
+        assert!(o.record(5,&"x".repeat(MAX_LABEL_BYTES+1),Lookup::RedAbsent,Action::Staged,1,Phases::default()).is_err());
+        o.encoded_rows_bytes=MAX_REPORT_BYTES/2;
+        assert!(o.record(5,"x",Lookup::RedAbsent,Action::Staged,1,Phases::default()).is_err());
+        assert_eq!(o.records.len(),4);
+    }
+    #[test]
+    fn missing_or_impossible_replay_recipe_context_rejects() {
+        for (events, needed, context) in [(0,true,0.001),(1,false,0.008),(1,true,-0.1),(1,true,f64::NAN)] {
+            let mut o=Observer::default();
+            assert!(o.record(0,"x",Lookup::GreenPresent,Action::Reused,1,Phases {
+                bind:Duration::from_millis(7),replay:Some(ReplayInfo {
+                    events,recipe_requires_current_mir:needed,current_context_seconds:context }),
+                ..Default::default()
+            }).is_err());
+            assert!(o.records.is_empty());
+        }
+        assert!(Observer::default().record(0,"x",Lookup::GreenPresent,Action::Reused,1,Phases::default()).is_err());
+    }
+    #[test]
+    fn bounded_function_count_accepts_limit_then_rejects_one_more() {
+        let mut o=Observer::default();
+        for index in 0..MAX_FUNCTIONS {
+            o.record(index,"x",Lookup::RedAbsent,Action::Staged,1,Phases::default()).unwrap();
+        }
+        assert!(o.record(MAX_FUNCTIONS,"x",Lookup::RedAbsent,Action::Staged,1,Phases::default()).is_err());
+        assert_eq!(o.records.len(),MAX_FUNCTIONS);
+    }
+
+}

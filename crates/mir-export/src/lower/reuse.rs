@@ -114,6 +114,12 @@ pub(super) struct Tape {
     pub events: Vec<Event>,
     pub decline: Option<String>,
 }
+impl Tape {
+    pub fn recipe_requires_current_mir(&self) -> bool {
+        self.events.iter().any(|event| !matches!(event,
+            Event::Value { source: Source::Errno, .. } | Event::Indirect(_) | Event::Unavailable(_)))
+    }
+}
 pub(super) struct Recorder {
     constants: HashMap<usize, usize>,
     pub tape: Tape,
@@ -279,6 +285,7 @@ pub(super) struct ReplayCosts {
 }
 
 impl ReplayCosts {
+    pub fn current_context_seconds(&self) -> f64 { self.current_context_seconds }
     pub fn phase_seconds(&self) -> f64 {
         self.setup_seconds + self.events_seconds + self.patch_seconds
     }
@@ -371,6 +378,27 @@ pub(super) fn replay_measured<'tcx>(exporter: &mut Exporter<'tcx>, instance: Ins
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn recipe_body_requirements_cover_every_existing_event_kind() {
+        let no_body = vec![
+            Event::Value { source: Source::Errno, register: 0, original: 0 },
+            Event::Indirect(CallShape { args: vec![], result: 0 }),
+            Event::Unavailable(UnavailableCall { kind: UnavailableCallKind::Foreign,
+                name: "example".into(), caller: "caller".into() }),
+        ];
+        assert!(!Tape::default().recipe_requires_current_mir());
+        assert!(!Tape { events: no_body.clone(), decline: None }.recipe_requires_current_mir());
+        let position = Position { block: 0, statement: 0 };
+        let mut body_events = vec![Event::Call { block: 0, original: 0 }];
+        for source in [Source::Constant { ordinal: 0, as_scalar: false },
+            Source::FunctionPointer(position), Source::ThreadLocal(position), Source::Caller(position)] {
+            body_events.push(Event::Value { source, register: 0, original: 0 });
+        }
+        for event in body_events {
+            let mut events = no_body.clone(); events.push(event);
+            assert!(Tape { events, decline: None }.recipe_requires_current_mir());
+        }
+    }
     #[test]
     fn fresh_ids_preserve_alias_classes_and_shared_ids_keep_their_addresses() {
         let original = HashMap::from([(1, 100), (2, 100), (3, 200)]);
