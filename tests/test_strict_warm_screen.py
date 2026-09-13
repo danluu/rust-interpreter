@@ -3,6 +3,7 @@ import collections
 import importlib.util
 import os
 from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -21,6 +22,24 @@ ORIGINAL = b'fn production() { v0; }\n#[cfg(test)]\nmod tests { /* original asse
 
 
 class ScreenContracts(unittest.TestCase):
+    def test_source_inventory_preserves_symlink_identity_without_following_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / 'directory'
+            directory.mkdir()
+            link = root / 'link'
+            link.symlink_to('directory', target_is_directory=True)
+            directory_link = screen.frozen_input_hash(link)
+            link.unlink()
+            link.symlink_to('missing')
+            dangling_link = screen.frozen_input_hash(link)
+            self.assertNotEqual(directory_link, dangling_link)
+            link.unlink()
+            link.write_bytes(b'missing')
+            self.assertNotEqual(dangling_link, screen.frozen_input_hash(link))
+            with self.assertRaisesRegex(RuntimeError, 'not a file or symlink'):
+                screen.frozen_input_hash(directory)
+
     def test_fresh_edits_and_compiled_controls_have_balanced_arm_positions(self):
         states = screen.protocol_states(ORIGINAL, case())
         self.assertEqual([s['phase'] for s in states],
