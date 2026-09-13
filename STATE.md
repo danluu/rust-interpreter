@@ -83,10 +83,13 @@ retains one completed native control and executes only 39 new commands. All 13
 additional real controls, 21 full-protocol checks and all114 original parser
 tests pass. Four full histories now pass594 commands: token improves wall4.73%
 and CPU3.83% (A/A1.714%/1.583%), while folded, pgrust and private rg-aot pass
-regression guards. Token remains1.641 times native. Nushell has run no command:
-its47.0325 GiB disk admission was refused. Audit and retain the completed prefix,
-reclaim only proven owned caches, and run the remaining132 commands when admitted.
-The runtime stays experimental; completed results are published to main.
+regression guards. Token remains1.641 times native. The27 continuation checks and
+594-command prefix audit now pass. Verified compiler-cache retirement restored
+space, and the original Nushell case is running after its unchanged47.0325 GiB
+admission. Continuation01 retains all594 completed commands and executes only
+the remaining132; its earlier disk refusal and lock timeout remain recorded.
+The runtime stays experimental pending all five gates. Completed results and
+aggregate cleanup proofs are published to main; private details remain local.
 [Composition evidence](results/guarded-local-facts-composed-census-01/assessment.md),
 [qualification](results/guarded-local-facts-profile-01/assessment.md).
 The automatic tool cache now includes its selected toolchain identifier: the
