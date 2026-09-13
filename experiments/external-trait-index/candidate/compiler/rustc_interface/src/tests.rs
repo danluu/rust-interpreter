@@ -831,6 +831,7 @@ fn test_unstable_options_tracking_hash() {
     tracked!(implicit_sysroot_deps, false);
     tracked!(incremental_ignore_spans, true);
     tracked!(index_external_trait_items, true);
+    tracked!(verify_external_trait_item_index, true);
     tracked!(indirect_branch_cs_prefix, true);
     tracked!(inline_mir, Some(true));
     tracked!(inline_mir_hint_threshold, Some(123));
