@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "complete stage2 package and focused compiler/native correctness passed; immutable installation/interpreter integration and performance screen are separate pending steps",
+  "status": "stage2 runtime and complete required Darwin strip support qualified; immutable installation/full interpreter integration and performance screen are separate steps",
   "base_source_commit": "cea272fa356e94bd2ee2cadf376630aa0683867a",
   "source_commit": "73a11f167216d3955c277ed47f9b8cc68208105b",
   "patch_sha256": "26301f52c1e00805502bb3a8d0cfc646ae62c159fd25c2756474712aba986e60",
@@ -38,16 +38,24 @@
     "backtrace_files_matching": 79,
     "final_installation_owner": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913",
     "installer": "scripts/custom_compiler.py",
-    "status": "complete and native-qualified",
-    "package_receipt_sha256": "bf611485e0e7e3305a2951cc091cf9e1daca170a8a5d78ca18e5eb819a5756c7",
-    "package_provenance_sha256": "f9064095a8d7746966cb65c48dd492617d59f6c5af5fc8cce1b13ab20951b4bd",
+    "status": "runtime plus exact CI objcopy support package qualified; full interpreter integration remains separate",
+    "package_receipt_sha256": "6af17f3f09f6c00599053d0172a55ff325d39edbfedfcdeb4c5352df8ad939b6",
+    "package_provenance_sha256": "560112aa9c86d59eb7fc07cb174c01e10e089565ae842cb3dcc9a34175a9f28f",
     "qualified_runtime_files_preserved": 60,
-    "package_files": 6982,
-    "package_files_unchanged_after_native_controls": 6982,
-    "prefix": "/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-build-01/packaged-stage2-05",
-    "provenance_path": "/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-build-01/package-05/provenance.json",
-    "native_control_result_sha256": "39baf5bb34d9e359dbc036903cb29965314561113fbaa57da3cff76f515f6400",
-    "superseded_attempts": "package01 admission timeout; package02 rejected live source link; package03/native01 passed but completeness audit found omitted LLVM native alias; package04 admission timeout; package05/native02 is final"
+    "package_files": 6983,
+    "package_files_unchanged_after_native_controls": 6983,
+    "prefix": "/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-build-01/packaged-stage2-06",
+    "provenance_path": "/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-build-01/package-06/provenance.json",
+    "superseded_attempts": "package01 admission timeout; package02 rejected live source link; package03/native01 passed but completeness audit found omitted LLVM native alias; package04 admission timeout; package05/native02 is final; package05 passed limited native checks but lacked normal Darwin strip support; package06 adds only verified rust-objcopy and passes6 focused native strip/proc-macro states",
+    "original_native_control_result_sha256": "39baf5bb34d9e359dbc036903cb29965314561113fbaa57da3cff76f515f6400",
+    "previous_package_files_preserved": 6982,
+    "strip_control_result_sha256": "e32b5c82be4c0d394982d594473b901ade64d9518d8cd205957db6d2330b47cb",
+    "support_tool": {
+      "path": "lib/rustlib/aarch64-apple-darwin/bin/rust-objcopy",
+      "sha256": "41f770659a8429c0d1239b103da688041df424998529775bfa9b6d97a0011e95",
+      "size": 244992
+    },
+    "llvm_source_proof_sha256": "199ac9113be91efcf6e3d5225a96966c1d36834e05fc1dadb150ca1d05762dd6"
   },
   "final_stage2": {
     "controls": {
@@ -153,5 +161,50 @@
     "current_native_std_debug_assertions": true,
     "current_native_std_overflow_checks": true,
     "no_profile_gain_attribution_to_grouping": true
+  },
+  "support_controls": {
+    "states_passed": 6,
+    "commands_passed": 15,
+    "strip_modes": [
+      "none",
+      "debuginfo",
+      "symbols"
+    ],
+    "kinds": [
+      "binary",
+      "proc-macro"
+    ],
+    "symbol_stats": {
+      "binary": {
+        "none": {
+          "symbols": 6144,
+          "debug_symbols": 4123
+        },
+        "debuginfo": {
+          "symbols": 2021,
+          "debug_symbols": 0
+        },
+        "symbols": {
+          "symbols": 70,
+          "debug_symbols": 0
+        }
+      },
+      "proc-macro": {
+        "none": {
+          "symbols": 6470,
+          "debug_symbols": 4394
+        },
+        "debuginfo": {
+          "symbols": 2076,
+          "debug_symbols": 0
+        },
+        "symbols": {
+          "symbols": 62,
+          "debug_symbols": 0
+        }
+      }
+    },
+    "result_sha256": "e32b5c82be4c0d394982d594473b901ade64d9518d8cd205957db6d2330b47cb",
+    "all_package_files_unchanged": 6983
   }
 }

@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import signal
 import subprocess
+import tarfile
 import time
 
 
@@ -36,6 +37,9 @@ parser.add_argument('--build-receipt', type=Path, required=True)
 parser.add_argument('--original-build-receipt', type=Path, required=True)
 parser.add_argument('--dist-receipt', type=Path, required=True)
 parser.add_argument('--patch', type=Path, required=True)
+parser.add_argument('--llvm-objcopy', type=Path, required=True)
+parser.add_argument('--llvm-source-proof', type=Path, required=True)
+parser.add_argument('--previous-package-receipt', type=Path, required=True)
 parser.add_argument('--prefix', type=Path, required=True)
 parser.add_argument('--receipt', type=Path, required=True)
 parser.add_argument('--host', default='aarch64-apple-darwin')
@@ -85,6 +89,20 @@ config_hash = sha256(args.source / 'bootstrap.toml')
 build = json.loads(args.build_receipt.read_text())
 original_build = json.loads(args.original_build_receipt.read_text())
 dist = json.loads(args.dist_receipt.read_text())
+llvm_proof = json.loads(args.llvm_source_proof.read_text())
+require(llvm_proof['archive_sha256'] ==
+        '0035445cb01c652999862c240d3c8ce663247abdc410482dde10f9e9c264bf8f',
+        'objcopy archive is not the pinned CI LLVM archive')
+require(sha256(Path(llvm_proof['archive'])) == llvm_proof['archive_sha256'],
+        'CI LLVM archive changed')
+with tarfile.open(llvm_proof['archive'], 'r:xz') as archive:
+    member = archive.getmember(llvm_proof['member'])
+    member_hash = hashlib.sha256(archive.extractfile(member).read()).hexdigest()
+require(member_hash == llvm_proof['member_sha256'] == sha256(args.llvm_objcopy),
+        'objcopy does not match its pinned archive member')
+require(str(args.llvm_objcopy) in llvm_proof['files'] and
+        os.access(args.llvm_objcopy, os.X_OK), 'configured LLVM objcopy is unavailable')
+previous_package = json.loads(args.previous_package_receipt.read_text())
 for receipt in [build, original_build, dist]:
     require(receipt['returncode'] == 0, 'input bootstrap command did not pass')
     require(receipt['source_revision'] == revision, 'source revision differs from build')
@@ -136,6 +154,9 @@ record = {'schema_version': 1, 'supervisor_pid': os.getpid(), 'started_at': star
           'prefix': str(args.prefix), 'source_revision': revision, 'config_sha256': config_hash,
           'free_bytes_before': shutil.disk_usage(args.source).free,
           'inputs': inputs, 'commands': [], 'copied_files': {}, 'materialized_file_symlinks': {}}
+record['llvm_source_proof'] = llvm_proof
+record['llvm_source_proof_sha256'] = sha256(args.llvm_source_proof)
+record['previous_package_receipt_sha256'] = sha256(args.previous_package_receipt)
 
 
 def save():
@@ -213,6 +234,14 @@ for path in sorted((args.stage2 / 'lib/rustlib').iterdir()):
         copy_tree(path, args.prefix / 'lib/rustlib' / path.name)
 copy_tree(args.std_image, args.prefix)
 copy_tree(args.dev_image, args.prefix)
+support_tool = args.prefix / 'lib/rustlib' / args.host / 'bin/rust-objcopy'
+support_tool.parent.mkdir(parents=True, exist_ok=True)
+require(not support_tool.exists(), 'unexpected preexisting objcopy support tool')
+shutil.copy2(args.llvm_objcopy, support_tool)
+require(sha256(support_tool) == member_hash and os.access(support_tool, os.X_OK),
+        'packaged objcopy is not the verified executable')
+record['support_tool'] = {'path': str(support_tool.relative_to(args.prefix)),
+                          'sha256': member_hash, 'size': support_tool.stat().st_size}
 copy_tree(args.rust_src, args.prefix / 'lib/rustlib/src/rust')
 copy_tree(args.source / 'LICENSES', args.prefix / 'share/doc/rust/licenses')
 for name in ['COPYRIGHT', 'LICENSE-APACHE', 'LICENSE-MIT', 'README.md']:
@@ -232,12 +261,20 @@ require(command([str(args.prefix / 'bin/rustc'), '--print', 'sysroot']).strip() 
         'packaged compiler does not resolve its own sysroot')
 require('stable-cgu-partitioning' in command([str(args.prefix / 'bin/rustc'), '-Zhelp']),
         'packaged compiler lacks experimental option')
-for path in [args.prefix / 'bin/rustc', *sorted((args.prefix / 'lib').rglob('*.dylib'))]:
+command([str(support_tool), '--version'])
+for path in [args.prefix / 'bin/rustc', support_tool,
+             *sorted((args.prefix / 'lib').rglob('*.dylib'))]:
     command(['otool', '-L', str(path)])
     command(['otool', '-l', str(path)])
 
 record['files'] = {str(path.relative_to(args.prefix)): sha256(path)
                    for path in sorted(args.prefix.rglob('*')) if path.is_file()}
+require(all(record['files'].get(name) == value
+            for name, value in previous_package['files'].items()),
+        'previously qualified package file changed')
+require(record['files'].keys() - previous_package['files'].keys() ==
+        {str(support_tool.relative_to(args.prefix))}, 'unexpected package additions')
+record['previous_package_files_preserved'] = len(previous_package['files'])
 record.update(finished_at=time.time(), free_bytes_after=shutil.disk_usage(args.source).free,
               status='composed; loader closure and installer qualification still required')
 save()
@@ -251,6 +288,10 @@ provenance = {'stage': 2, 'source_commit': revision,
               'package_receipt_sha256': sha256(args.receipt / 'receipt.json'),
               'rust_src_comparison_sha256': sha256(args.source_comparison),
               'rust_src_source': str(args.rust_src), 'rustc_vv': version,
+              'llvm_source_proof_sha256': sha256(args.llvm_source_proof),
+              'llvm_archive_sha256': llvm_proof['archive_sha256'],
+              'objcopy_sha256': member_hash,
+              'previous_package_receipt_sha256': sha256(args.previous_package_receipt),
               'packaging': 'assembled stage2 runtime plus bootstrap rustc-dev/std images and matching pinned rust-src'}
 (args.receipt / 'provenance.json').write_text(json.dumps(provenance, indent=2) + '\n')
 print(json.dumps({'prefix': str(args.prefix), 'provenance': str(args.receipt / 'provenance.json')}))
