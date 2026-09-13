@@ -54,6 +54,26 @@ class OwnedScreenAssessment(unittest.TestCase):
         plan['std_mir_by_mode'] = dict(baseline=off, candidate=on, duplicate=off)
         return plan, cargos
 
+    def proc_macro(self):
+        plan = self.base('host-proc-macro-opt')
+        std = self.std({})
+        plan.update(std_mir=std, std_mir_by_mode=dict.fromkeys(screen.MODES, std),
+            proc_macro_policy_by_mode=dict(baseline='off', candidate='on', duplicate='off'),
+            codegen_policy_amendment=dict(
+                path=str(self.root / 'benchmarks/experiments/strict-warm-build/HOST_PROC_MACRO_OPT.md'),
+                capability='host-proc-macro-opt-v1', optimized_role='unselected linked host proc-macro target',
+                original_opt_level='0 (no explicit optimization flag)', opt_level='1', mir_opt_level=1,
+                lto='off', preserve_effective_debug_assertions=True, preserve_effective_overflow_checks=True,
+                application_profiles_changed=False,
+                std_preparation_policy='unchanged and outside application wrapper'))
+        tool = self.root / '.work/interpreter-tools' / plan['tools']['baseline']
+        tool.mkdir(parents=True)
+        # This is a selection fixture only; the separate complete publication
+        # validator must qualify source.json before the assessor emits results.
+        (tool / 'source.json').write_text(json.dumps(dict(composition=dict(public_compiler=dict(
+            target=HOST, version_stdout_sha256=assess.sha(std['compiler'].encode()))))))
+        return plan
+
     def compiler(self):
         compiler = fake_install(self.root)
         key = compiler.key
@@ -212,6 +232,93 @@ class OwnedScreenAssessment(unittest.TestCase):
         row['cpu']['total_seconds'] = .5
         with self.assertRaisesRegex(RuntimeError, 'inconsistent'):
             assess.command_identity(plan, row, self.raw, None, cargo)
+
+    def test_macro_selection_requires_shared_public_std_and_exact_amendment(self):
+        plan = self.proc_macro()
+        self.assertEqual(assess.selection(plan, assess.member), (None, dict.fromkeys(screen.MODES)))
+        for field, value in [('cargos_by_mode', {}), ('custom_compiler', {}),
+                ('proc_macro_policy_by_mode', dict.fromkeys(screen.MODES, 'on')),
+                ('codegen_policy_amendment', {**plan['codegen_policy_amendment'], 'opt_level': '3'})]:
+            with self.subTest(field=field), self.assertRaises(RuntimeError):
+                assess.selection({**plan, field: value}, assess.member)
+        identity = json.loads(Path(plan['std_mir']['path']).read_text())['identity']
+        for field, value in [('compiler', 'another compiler'), ('target', 'another target'),
+                ('namespace', 'macro:on'), ('cargo', {}), ('lock_sha256', '0' * 64)]:
+            wrong = copy.deepcopy(plan)
+            wrong['std_mir_by_mode']['candidate'] = self.std(identity | {field: value})
+            with self.subTest(field=field), self.assertRaises(RuntimeError):
+                assess.selection(wrong, assess.member)
+
+    def test_macro_saved_commands_require_exact_off_on_off_policy(self):
+        plan = self.proc_macro()
+        for mode in screen.MODES:
+            command = screen.command_for(mode, plan['tools'][mode], Path(plan['source']),
+                self.raw, plan['states'][3], candidate_policy='host-proc-macro-opt')
+            row = dict(mode=mode, index=3, command=command, seconds=1.0,
+                       cpu=dict(user_seconds=.75, system_seconds=.25, total_seconds=1.0))
+            assess.command_identity(plan, row, self.raw, None, None)
+            wrong_policy = list(command)
+            wrong_policy[wrong_policy.index('--host-proc-macro-opt') + 1] = (
+                'off' if mode == 'candidate' else 'on')
+            for value in [wrong_policy, command + ['--borrowck-cache', 'reuse'],
+                          command + ['--cargo-key', 'b' * 64], command[:-2]]:
+                with self.subTest(mode=mode, value=value), self.assertRaisesRegex(RuntimeError, 'timed command'):
+                    assess.command_identity(plan, {**row, 'command': value}, self.raw, None, None)
+
+    def test_macro_measured_std_must_be_the_qualified_artifact(self):
+        plan = self.proc_macro()
+        measured = plan['std_mir']
+        shared = dict(key=measured['key'], ready_sha256=measured['sha256'], sysroot=measured['sysroot'],
+            identity=json.loads(Path(measured['path']).read_text())['identity'])
+        validated = dict(correctness=dict(shared_std=shared))
+        assess.qualified_std(plan, validated, assess.member)
+        for field, value in [('key', '0' * 64), ('ready_sha256', '0' * 64),
+                ('sysroot', '/another/sysroot'), ('identity', {**shared['identity'], 'flags': 'changed'})]:
+            wrong = copy.deepcopy(validated)
+            wrong['correctness']['shared_std'][field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(RuntimeError, 'public-tool qualification'):
+                assess.qualified_std(plan, wrong, assess.member)
+
+    def test_all_macro_input_boundaries_are_required_from_saved_bytes(self):
+        from test_qualified_public_tools import archive
+        import qualified_public_tools as public
+        tool, key, payloads = archive()
+        validated = public.validate_public_tool(tool, key, lambda p: payloads[str(p.relative_to(tool))])
+        directory = self.raw / 'public-input-guards'
+        snapshots = {}
+        guard = dict(schema_version=1, policy=public.GUARD_POLICY, tool_key=key, validation='stat',
+            platform=validated['platform'], files={p: r['stamp'] for p, r in validated['input_records'].items()},
+            searches=validated['searches'])
+
+        def retain(name, value):
+            path = directory / name
+            data = json.dumps(value).encode()
+            snapshots[str(path)] = dict(path=str(path), bytes=len(data), sha256=assess.sha(data), utf8=data.decode())
+            return dict(path=str(path), sha256=assess.sha(data))
+
+        plan = dict(public_input_guards=dict(policy=public.GUARD_POLICY, directory=str(directory),
+            final_path=str(directory / 'final.json'), boundaries_per_command=2,
+            admission=retain('admission.json', {**guard, 'validation': 'sha256'})))
+        rows = [dict(public_input_guards={boundary: retain(f'{i:03d}-{boundary}.json', guard)
+                                         for boundary in ['before', 'after']}) for i in range(27)]
+        summary = dict(final_public_input_guard=retain('final.json', {**guard, 'validation': 'sha256'}))
+        snapshot = lambda path: snapshots[str(path)]
+        with patch.object(Path, 'read_bytes', side_effect=AssertionError('live dependency read')):
+            result = assess.public_screen_guards(plan, rows, summary, self.raw, validated, snapshot)
+        self.assertEqual(result['records_verified'], 56)
+        wrong = copy.deepcopy(rows)
+        del wrong[10]['public_input_guards']['after']
+        with self.assertRaisesRegex(RuntimeError, 'command boundary'):
+            assess.public_screen_guards(plan, wrong, summary, self.raw, validated, snapshot)
+        wrong = copy.deepcopy(rows)
+        wrong[10]['public_input_guards']['before'] = rows[9]['public_input_guards']['before']
+        with self.assertRaisesRegex(RuntimeError, 'path differs'):
+            assess.public_screen_guards(plan, wrong, summary, self.raw, validated, snapshot)
+        # Updating the record hash does not make changed compiler inputs valid.
+        wrong = copy.deepcopy(rows)
+        wrong[10]['public_input_guards']['after'] = retain('010-after.json', {**guard, 'files': {}})
+        with self.assertRaisesRegex(RuntimeError, 'differs from publication'):
+            assess.public_screen_guards(plan, wrong, summary, self.raw, validated, snapshot)
 
 
 if __name__ == '__main__':
