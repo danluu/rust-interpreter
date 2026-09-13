@@ -1,0 +1,81 @@
+{
+  "status": "passed",
+  "raw": ".work/checked-addresses-validation-01",
+  "plan_sha256": "644f5155ce799026692a8608ef6b931b9903b5b5b98d416d17cba34f1c0f737e",
+  "records_sha256": "6a4be231ef0627f009e6df9cbe3377228e362687ec3ee118d9e9880e7d63d422",
+  "stages": [
+    {
+      "stage": "qualification",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "benchmarks/experiments/selected-native-sampling/qualify.py",
+        "--checked-addresses-candidate",
+        "--build",
+        "results/checked-addresses-build-02/summary.json",
+        "--run-id",
+        "checked-addresses-qualification-01"
+      ],
+      "pid": 10541,
+      "returncode": 0,
+      "stdout_sha256": "29e8e5887595c710b10b9ee9edaa20518e93163177f1fe951e87d9f2770b9fc1",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "6100286792112d0d669d8acfdc3ee6105e1ab8e0978c2390f0ba6a1ed696e89a"
+    },
+    {
+      "stage": "serial",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "benchmarks/experiments/parallel-suites/compare.py",
+        "--checked-addresses-candidate",
+        "--phase",
+        "serial",
+        "--selection-qualification",
+        "results/checked-addresses-qualification-01/summary.json",
+        "--build",
+        "results/checked-addresses-build-02/summary.json",
+        "--run-id",
+        "checked-addresses-serial-01"
+      ],
+      "pid": 10555,
+      "returncode": 0,
+      "stdout_sha256": "928919ba9b07869f7c82bd5ffcd0a6906e140c3922bc070e9003ec3ca09b4b0f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "8de04a2e544b445285def7ccef761829f1b9480534c2e7babb7e1d8dc52e97d7"
+    },
+    {
+      "stage": "cache",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "benchmarks/experiments/composed-development/qualify_cache.py",
+        "--checked-addresses-candidate",
+        "--automatic-cache",
+        "--build",
+        "results/checked-addresses-build-02/summary.json",
+        "--run-id",
+        "checked-addresses-cache-01"
+      ],
+      "pid": 13409,
+      "returncode": 0,
+      "stdout_sha256": "fafbe0ab706cc0e1e5eb6687a7c9383155c990585d440cfcf41848af3fd0b802",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "ad7777f85ee33fb051b1b675561751edaacdd76171ec3d36c87f9aa04f81e272"
+    },
+    {
+      "stage": "profile",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "benchmarks/experiments/checked-addresses/profile.py",
+        "--build",
+        "results/checked-addresses-build-02/summary.json",
+        "--run-id",
+        "checked-addresses-profile-01"
+      ],
+      "pid": 14942,
+      "returncode": 0,
+      "stdout_sha256": "1e4626f5fa69d814e8a4298c622a99cf4288038e28bc9bdc5ab6614edd5d6782",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "af8417dce54fc051c0d9314526c82b4f6fee8ac74f2d4cec7e95613fe3b8bba5"
+    }
+  ],
+  "performance_measurement": false
+}

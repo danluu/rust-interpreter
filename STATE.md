@@ -9,70 +9,49 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-Main contains the qualified memory/lookup composition and current guest-cost
-attribution. Its726-command comparison passes all five gates; token improves
-18.35% versus the fixed anchor and remains1.894 times ordinary native.
-The optional binding observer passes75 exporter tests per profile, six harness
-checks,26 Cargo commands and16 current-token off/on history commands. Refined
-binding medians are93.32ms MIR-context preparation,4.83ms immediate indexing,
-28.15ms event resolution and1.15ms patching. Park the positions-table rewrite.
-Current samples put93%/86% of the two token windows inside generated code.
-The constant shift/rotate candidate passes432 tests per profile,107 harness
-checks and222 real correctness/profile commands. Its40-command primary screen
-finds wall+0.90%/CPU+1.19%, inside3.07%/3.00% A/A; no useful gain. Park it and
-cancel unstarted guards. Direct operands for modular arithmetic and bitwise
-operations now pass433 Rust tests per profile,123 current harness checks and
-222 real correctness/profile commands. The40-command screen improves wall5.49%
-and CPU4.66%, beyond3.73%/3.11% A/A. Its full token comparison then passes all
-154 expected outcomes but fails the performance gate: wall+0.78%/CPU+0.06%,
-inside4.84%/2.25% A/A. Keep the runtime experimental; the other four cases
-remain unstarted. The post-execution operation map now passes436 Rust tests per
-profile,103 harness checks and10 real-test commands. All three current code
-dumps and per-PC profiles match adopted main exactly. Two fresh same-process
-samples now assign all3,985 generated samples: Copy accounts for24.34%/18.26% of
-block/exhaustive generated samples. An offline Copy8 audit identifies redundant
-local address calculations. The scalar-copy candidate passes441 Rust tests per profile,125 current harness
-checks and222 real correctness/profile commands. Its40-command screen passes;
-the full726-command campaign then passes every expected outcome and the final
-8,999-input audit. Token gains5.11% wall/3.91% CPU beyond3.62%/2.45% A/A. Folded,
-pgrust and private rg-aot pass. Nushell's wall margin1.09305 exceeds1.05 with
-10.53% A/A, despite a−1.22% point estimate. Keep the runtime experimental and do
-not retime it. Main retains the qualified operation-map/memory/lookup runtime.
-The reuse-miss/current-MIR diagnostic now passes83 exporter tests per profile,
-14 harness tests and44 fixture/project commands with exact retained artifacts.
-In the five valid token edits,172 recurring green functions lack a supported
-recipe; only34/33/32/1/30 red entries need fresh lowering. Declined lowering costs
-22.88ms, and body-free replay context only4.55ms. Park standalone lazy-MIR and
-broad recipe expansion as the immediate next candidates; return to the measured
-Copy/budget guest costs. The observer is now qualified together with the other
-session's published opt-in compiler-query reuse:88 exporter/routing tests per
-profile,80 Python tests,196 compiler fixture commands and44 new observer/project
-commands pass. The VM remains byte-identical to the adopted operation-map tool;
-compiler-query reuse and the observer both remain opt-in.
-[Combined integration](results/reuse-misses-main-qualification-01/assessment.md).
-The scalar-Copy/budget composition passes456 Rust tests per profile,121 harness
-checks and222 real correctness/profile commands. Its40-command screen fails:
-paired wall+2.39%/CPU+0.79%, inside8.80%/5.56% A/A. No useful incremental gain
-is established despite3.7–3.9% smaller code and exact guard reconstruction.
-Park it; its full comparison is unstarted. Next inspect complete checked-address
-sequences while preserving the existing memory model and every fault check.
+Main retains the qualified memory/lookup and operation-map runtime. Its complete
+726-command comparison passed all five gates: token improved 18.35% against
+the fixed anchor and still took 1.894 times ordinary native Cargo. Real edited
+workflows, original assertions and strict checking remain the decision criteria.
+[Adopted composition](results/memory-lookup-complete-01/assessment.md).
+
+The latest checked-address candidate passes 451 Rust tests per debug/release
+profile, 121 harness checks and 222 real correctness/profile commands. Complete
+bounds sequences shrink, with exact guest PC counts, memory/entropy and generated
+map reconstruction. Its 40-command changed-source screen passes every expected
+outcome but establishes no useful gain: paired wall +0.086%, CPU −0.177%, against
+20.416%/17.969% observed A/A variation. Keep the runtime experimental and cancel
+its unstarted full comparison. Do not repeat the screen or infer a small gain
+from code size. Next investigate bounded known-value facts across JIT region
+boundaries before choosing another emitter change.
+[Qualification](results/checked-addresses-validation-01/assessment.md),
+[screen decision](results/checked-addresses-screen-token-01/assessment.md).
+
+Earlier scalar Copy passed four full cases but failed Nushell's frozen wall
+margin despite a small favorable point estimate; the Copy/budget composition
+then failed its fresh primary screen. Both stay experimental. Current generated
+samples attribute Copy 24.34%/18.26% and Load 16.12%/8.02% in the two dominant token
+tests. These opcode totals are not all address-check time, and native Call/Return
+spans are not VM exits. [Current attribution](results/operation-map-sampling-01/assessment.md),
+[scalar Copy decision](results/scalar-copy-operands-admission-resume-01/assessment.md),
 [Copy/budget decision](results/scalar-copy-budget-screen-token-01/assessment.md).
-[Diagnostic evidence](results/reuse-misses-analysis-01/assessment.md).
-Saved Cargo interval attribution
-finds4.780s reported-unit coverage inside5.260s historical Nushell Cargo;0.469s
-without an active reported unit stays unattributed. The suggestions remain
-unchanged; their review records the evidence behind these priorities.
-No goal-state change, unrelated process control or
-new billing path is authorized.
-[Direct-operand final decision](results/direct-operands-full-01/assessment.md),
-[Verified operation maps](results/operation-map-validation-01/assessment.md),
-[Operation attribution](results/operation-map-sampling-01/assessment.md),
-[Scalar-copy screen](results/scalar-copy-operands-screen-token-01/assessment.md),
-[Complete scalar-copy decision](results/scalar-copy-operands-admission-resume-01/assessment.md),
-[Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
-[Refined binding result](results/replay-costs-token-02/assessment.md),
-[current runtime attribution](results/current-runtime-costs-01/assessment.md),
-[composition integration](results/memory-lookup-main-complete-01/assessment.md).
+
+The integrated optional compiler observers and query reuse passed 88 exporter/
+routing tests per profile, 80 Python tests, 196 compiler commands and 44 fresh
+observer/project commands. The reuse diagnostic reconciles 172 unsupported
+green recipes and 34/33/32/1/30 red entries across five valid edits; declined
+lowering costs 22.88 ms and body-free context at most 4.55 ms. Park standalone
+lazy-MIR and broad recipe expansion as immediate optimizations. The other Rust
+session's new Nushell compiler-unit diagnosis is retained on main; its four-worker,
+instrumented observations do not replace our two-worker timing comparisons.
+[Compiler integration](results/reuse-misses-main-qualification-01/assessment.md),
+[reuse costs](results/reuse-misses-analysis-01/assessment.md).
+
+Completed, owned public caches were retired under shared/namespace locks with
+all protected evidence hashes unchanged. Space is rechecked at each admission
+and before every command; unrelated and private caches remain outside cleanup.
+The independent monitor and other sessions remain untouched. The goal stays
+paused while manual work continues. [Latest cleanup](results/checked-address-nushell-retirement-01/assessment.md).
 
 The memory/lookup composition is qualified and its five-case comparison is
 complete under one serialized controller. The unchanged memory runtime is
