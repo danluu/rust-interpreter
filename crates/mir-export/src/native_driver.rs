@@ -4,7 +4,8 @@
 //! `rustc_driver_impl::signal_handler::install` for fatal-signal diagnostics.
 //! That hook is unavailable to external drivers. We retain the platform's
 //! normal fatal-signal behavior rather than copying private signal machinery.
-use crate::{borrowck_cache, wrapper_route::BorrowckCacheMode};
+use crate::{borrowck_cache, demand_retention,
+    wrapper_route::{BorrowckCacheMode, QueryCacheRetentionMode}};
 use rustc_data_structures::profiling::{
     TimePassesFormat, get_resident_set_size, print_time_passes_entry,
 };
@@ -17,6 +18,7 @@ use std::{process::ExitCode, time::Instant};
 struct NativeCallbacks {
     standard: TimePassesCallbacks,
     cache: borrowck_cache::CheckCallbacks,
+    retention: QueryCacheRetentionMode,
     time_passes: Option<TimePassesFormat>,
 }
 
@@ -29,6 +31,7 @@ impl Callbacks for NativeCallbacks {
         self.time_passes = (config.opts.prints.is_empty() && config.opts.unstable_opts.time_passes)
             .then_some(config.opts.unstable_opts.time_passes_format);
         self.cache.config(config);
+        demand_retention::configure(config, self.retention);
     }
 
     fn after_analysis<'tcx>(
@@ -40,7 +43,7 @@ impl Callbacks for NativeCallbacks {
     }
 }
 
-pub(crate) fn run(args: &[String], mode: BorrowckCacheMode) -> ExitCode {
+pub(crate) fn run(args: &[String], mode: BorrowckCacheMode, retention: QueryCacheRetentionMode) -> ExitCode {
     let started = Instant::now();
     let start_rss = get_resident_set_size();
     let early_dcx = EarlyDiagCtxt::new(ErrorOutputType::default());
@@ -50,6 +53,7 @@ pub(crate) fn run(args: &[String], mode: BorrowckCacheMode) -> ExitCode {
     let mut callbacks = NativeCallbacks {
         standard: TimePassesCallbacks::default(),
         cache: borrowck_cache::CheckCallbacks(mode),
+        retention,
         time_passes: None,
     };
     let status = rustc_driver::catch_with_exit_code(|| {
@@ -60,5 +64,6 @@ pub(crate) fn run(args: &[String], mode: BorrowckCacheMode) -> ExitCode {
         print_time_passes_entry("total", started.elapsed(), start_rss, end_rss, format);
     }
     borrowck_cache::report();
+    demand_retention::report();
     status
 }

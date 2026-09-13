@@ -2,7 +2,7 @@
 #[path = "../src/wrapper_route.rs"]
 mod wrapper_route;
 
-use wrapper_route::{BorrowckCacheMode, Environment, Route, route};
+use wrapper_route::{BorrowckCacheMode, QueryCacheRetentionMode, Environment, Route, route};
 
 fn selected() -> Environment {
     Environment {
@@ -22,6 +22,52 @@ fn invoke(extra: &[&str], env: &Environment) -> Result<Route, String> {
         .map(str::to_owned)
         .collect();
     route(args, env)
+}
+
+#[test]
+fn demand_retention_routes_real_compilers_and_preserves_probes() {
+    for mode in [None, Some("off"), Some("demand")] {
+        let env = Environment {
+            query_cache_retention: mode.map(Into::into),
+            ..Environment::default()
+        };
+        let compile = invoke(&["source.rs", "--emit=metadata"], &env).unwrap();
+        assert_eq!(compile.query_cache_retention == QueryCacheRetentionMode::Demand,
+            mode == Some("demand"));
+        assert_eq!(compile.requires_exporter(), mode == Some("demand"));
+        assert!(!invoke(&["-vV"], &env).unwrap().requires_exporter());
+        assert!(!invoke(&["--print=cfg", "-"], &env).unwrap().requires_exporter());
+    }
+    let env = Environment {
+        query_cache_retention: Some("demand".into()),
+        ..Environment::default()
+    };
+    for arguments in [&["@arguments"][..], &["--emit=metadata", "-"],
+        &["source.rs", "--print=cfg"], &["--print=link-args", "source.rs"]] {
+        assert!(invoke(arguments, &env).unwrap().requires_exporter());
+    }
+}
+
+#[test]
+fn demand_retention_rejects_invalid_modes() {
+    for mode in ["all", "auto", "", "Demand", "/some/cache"] {
+        let env = Environment {
+            query_cache_retention: Some(mode.into()),
+            ..Environment::default()
+        };
+        assert!(invoke(&["source.rs"], &env).err().unwrap().contains("off or demand"));
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn demand_retention_rejects_non_unicode_mode() {
+    use std::os::unix::ffi::OsStringExt;
+    let env = Environment {
+        query_cache_retention: Some(std::ffi::OsString::from_vec(vec![255])),
+        ..Environment::default()
+    };
+    assert!(invoke(&["source.rs"], &env).is_err());
 }
 
 #[test]

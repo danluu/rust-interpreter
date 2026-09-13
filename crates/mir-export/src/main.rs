@@ -8,6 +8,7 @@ extern crate rustc_hir;
 extern crate rustc_incremental;
 extern crate rustc_interface;
 extern crate rustc_middle;
+extern crate rustc_serialize;
 extern crate rustc_session;
 extern crate rustc_span;
 
@@ -25,6 +26,8 @@ mod function_cache;
 mod reuse_misses;
 mod borrowck_cache;
 mod native_driver;
+mod demand_retention;
+mod demand_retention_format;
 
 use rustc_driver::{Callbacks, Compilation};
 use rustc_interface::interface;
@@ -48,6 +51,7 @@ struct Export {
     run_try_callbacks: bool,
     allocation_trace: bool,
     borrowck_cache: wrapper_route::BorrowckCacheMode,
+    query_cache_retention: wrapper_route::QueryCacheRetentionMode,
 }
 impl Export {
     fn publish(&self, tcx: TyCtxt<'_>, bytes: &[u8], suffix: &str) -> Result<(), String> {
@@ -186,6 +190,7 @@ impl Export {
 impl Callbacks for Export {
     fn config(&mut self, config: &mut interface::Config) {
         borrowck_cache::configure(config, self.borrowck_cache);
+        demand_retention::configure(config, self.query_cache_retention);
         let previous = config.track_state.take();
         let audit_selection = self.audit_selection.clone();
         config.track_state = Some(Box::new(move |sess| {
@@ -270,7 +275,7 @@ fn main() -> std::process::ExitCode {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","query-cache-retention"]}));
         return std::process::ExitCode::SUCCESS;
     }
     let environment = wrapper_route::Environment::read();
@@ -280,6 +285,7 @@ fn main() -> std::process::ExitCode {
     });
     let use_driver = route.requires_exporter();
     let borrowck_mode = route.borrowck_cache;
+    let query_cache_retention = route.query_cache_retention;
     args = route.args;
     let wrapper = route.wrapper;
     let wants_test = environment.export_test;
@@ -288,13 +294,13 @@ fn main() -> std::process::ExitCode {
             let expected = Path::new(env!("RUST_INTERP_SYSROOT")).join("bin/rustc").canonicalize();
             let supplied = Path::new(&args[0]).canonicalize();
             if !matches!((&expected, &supplied), (Ok(a), Ok(b)) if a == b) {
-                eprintln!("borrowck cache requires the pinned toolchain's rustc executable");
+                eprintln!("compiler cache options require the pinned toolchain's rustc executable");
                 std::process::exit(2);
             }
             if !args.iter().any(|arg| arg == "--sysroot" || arg.starts_with("--sysroot=")) {
                 args.extend(["--sysroot".into(), env!("RUST_INTERP_SYSROOT").into()]);
             }
-            return native_driver::run(&args, borrowck_mode);
+            return native_driver::run(&args, borrowck_mode, query_cache_retention);
         }
         let status = std::process::Command::new(&args[0])
             .args(&args[1..])
@@ -404,6 +410,10 @@ fn main() -> std::process::ExitCode {
     let demand = std::env::var("RUST_INTERP_DEMAND_BODIES").is_ok_and(|s| s == "1");
     if demand && borrowck_mode != wrapper_route::BorrowckCacheMode::Off {
         eprintln!("borrowck cache requires ordinary strict compiler analysis");
+        std::process::exit(2);
+    }
+    if demand && query_cache_retention != wrapper_route::QueryCacheRetentionMode::Off {
+        eprintln!("query cache retention requires ordinary strict compiler analysis");
         std::process::exit(2);
     }
     let function_costs = function_costs::enabled().unwrap_or_else(|error| {
@@ -544,8 +554,10 @@ fn main() -> std::process::ExitCode {
         run_try_callbacks,
         allocation_trace,
         borrowck_cache: borrowck_mode,
+        query_cache_retention,
     };
     let result = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(&args, &mut callbacks));
     borrowck_cache::report();
+    demand_retention::report();
     if result.is_err() { std::process::ExitCode::FAILURE } else { std::process::ExitCode::SUCCESS }
 }
