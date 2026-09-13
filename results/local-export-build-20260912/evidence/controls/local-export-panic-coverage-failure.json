@@ -1,0 +1,435 @@
+{
+  "schema_version": 1,
+  "status": "failed structural coverage",
+  "coverage_pass": false,
+  "completed_commands": 90,
+  "command_outcomes_and_artifact_parity_passed": true,
+  "compiler_regression_found": false,
+  "qualification_pass": false,
+  "reviewer": "root",
+  "reviewed_at": 1789255184.483453,
+  "candidate_tool_key": "14af97a36405cc925ce89529e5bc9ff2db9ecdbd0f8b816095ace66235fc4c75",
+  "baseline_tool_key": "eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d",
+  "cases": [
+    {
+      "arm": "baseline",
+      "inline": false,
+      "function_index": 2,
+      "function": {
+        "name": "store_then_panic[]",
+        "frame_size": 48,
+        "frame_align": 16,
+        "registers": 6,
+        "args": [
+          {
+            "offset": 0,
+            "size": 8
+          },
+          {
+            "offset": 8,
+            "size": 8
+          }
+        ],
+        "result": {
+          "offset": 0,
+          "size": 0
+        },
+        "code": [
+          {
+            "Local": {
+              "dst": 0,
+              "offset": 0
+            }
+          },
+          {
+            "Load": {
+              "dst": 1,
+              "address": 0,
+              "size": 8
+            }
+          },
+          {
+            "Local": {
+              "dst": 2,
+              "offset": 8
+            }
+          },
+          {
+            "Copy": {
+              "dst": 1,
+              "src": 2,
+              "size": 8
+            }
+          },
+          {
+            "Imm": {
+              "dst": 3,
+              "value": 350488137400481480720
+            }
+          },
+          {
+            "Local": {
+              "dst": 4,
+              "offset": 32
+            }
+          },
+          {
+            "Store": {
+              "address": 4,
+              "src": 3,
+              "size": 16
+            }
+          },
+          {
+            "Local": {
+              "dst": 5,
+              "offset": 16
+            }
+          },
+          {
+            "Call": {
+              "function": 3,
+              "args": [
+                4
+              ],
+              "destination": 5
+            }
+          },
+          {
+            "Trap": {
+              "message": "std::rt::panic_fmt at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_fixture.rs:6:5: 6:34"
+            }
+          }
+        ]
+      },
+      "mir_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-export-panic-20260912-01/baseline-plain/mir/panic_store_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir",
+      "mir_text": "// MIR for `store_then_panic` after runtime-optimized\n\nfn store_then_panic(_1: &mut u64, _2: u64) -> ! {\n    debug destination => _1;\n    debug value => _2;\n    let mut _0: !;\n    let _3: !;\n    let mut _4: std::fmt::Arguments<'_>;\n\n    bb0: {\n        (*_1) = copy _2;\n        _4 = std::fmt::Arguments::<'_>::from_str(const \"panic-store fixture\") -> [return: bb1, unwind continue];\n    }\n\n    bb1: {\n        _3 = std::rt::panic_fmt(move _4) -> unwind continue;\n    }\n}\n\nalloc1 (size: 19, align: 1) {\n    0x00 \u2502 70 61 6e 69 63 2d 73 74 6f 72 65 20 66 69 78 74 \u2502 panic-store fixt\n    0x10 \u2502 75 72 65                                        \u2502 ure\n}\n",
+      "artifact_sha256": "14c36295e78b6e2bbb91498b3553ced02e7856842c2bf6e5c835ec4197eabb2b",
+      "program_json_sha256": "4f169620e2c6414371dc50e1fd10726d28ad8ca4fda5dec0c89029d451f474cf",
+      "same_basic_block": false,
+      "argument_directed_size8_store_present": false,
+      "actual_assignment_is_size8_copy": true,
+      "reason": "The dereference assignment is in bb0 before Arguments::from_str; the recognized panic_fmt terminator is in bb1. The assignment becomes Copy at helper PC3, not an eight-byte Store."
+    },
+    {
+      "arm": "baseline",
+      "inline": true,
+      "function_index": 2,
+      "function": {
+        "name": "store_then_panic[]",
+        "frame_size": 48,
+        "frame_align": 16,
+        "registers": 6,
+        "args": [
+          {
+            "offset": 0,
+            "size": 8
+          },
+          {
+            "offset": 8,
+            "size": 8
+          }
+        ],
+        "result": {
+          "offset": 0,
+          "size": 0
+        },
+        "code": [
+          {
+            "Local": {
+              "dst": 0,
+              "offset": 0
+            }
+          },
+          {
+            "Load": {
+              "dst": 1,
+              "address": 0,
+              "size": 8
+            }
+          },
+          {
+            "Local": {
+              "dst": 2,
+              "offset": 8
+            }
+          },
+          {
+            "Copy": {
+              "dst": 1,
+              "src": 2,
+              "size": 8
+            }
+          },
+          {
+            "Imm": {
+              "dst": 3,
+              "value": 350488137400481480720
+            }
+          },
+          {
+            "Local": {
+              "dst": 4,
+              "offset": 32
+            }
+          },
+          {
+            "Store": {
+              "address": 4,
+              "src": 3,
+              "size": 16
+            }
+          },
+          {
+            "Local": {
+              "dst": 5,
+              "offset": 16
+            }
+          },
+          {
+            "Call": {
+              "function": 3,
+              "args": [
+                4
+              ],
+              "destination": 5
+            }
+          },
+          {
+            "Trap": {
+              "message": "std::rt::panic_fmt at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_fixture.rs:6:5: 6:34"
+            }
+          }
+        ]
+      },
+      "mir_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-export-panic-20260912-01/baseline-inline/mir/panic_store_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir",
+      "mir_text": "// MIR for `store_then_panic` after runtime-optimized\n\nfn store_then_panic(_1: &mut u64, _2: u64) -> ! {\n    debug destination => _1;\n    debug value => _2;\n    let mut _0: !;\n    let _3: !;\n    let mut _4: std::fmt::Arguments<'_>;\n\n    bb0: {\n        (*_1) = copy _2;\n        _4 = std::fmt::Arguments::<'_>::from_str(const \"panic-store fixture\") -> [return: bb1, unwind continue];\n    }\n\n    bb1: {\n        _3 = std::rt::panic_fmt(move _4) -> unwind continue;\n    }\n}\n\nalloc1 (size: 19, align: 1) {\n    0x00 \u2502 70 61 6e 69 63 2d 73 74 6f 72 65 20 66 69 78 74 \u2502 panic-store fixt\n    0x10 \u2502 75 72 65                                        \u2502 ure\n}\n",
+      "artifact_sha256": "6b4f707238d2af4e692a8558537e4fc5159638ad20b1bbc2702aeae3b3431b80",
+      "program_json_sha256": "abba6a0ed9149e750f359fe261df5449fe3525fc7bf86f8b024e274ff3ae205c",
+      "same_basic_block": false,
+      "argument_directed_size8_store_present": false,
+      "actual_assignment_is_size8_copy": true,
+      "reason": "The dereference assignment is in bb0 before Arguments::from_str; the recognized panic_fmt terminator is in bb1. The assignment becomes Copy at helper PC3, not an eight-byte Store."
+    },
+    {
+      "arm": "candidate",
+      "inline": false,
+      "function_index": 2,
+      "function": {
+        "name": "store_then_panic[]",
+        "frame_size": 48,
+        "frame_align": 16,
+        "registers": 6,
+        "args": [
+          {
+            "offset": 0,
+            "size": 8
+          },
+          {
+            "offset": 8,
+            "size": 8
+          }
+        ],
+        "result": {
+          "offset": 0,
+          "size": 0
+        },
+        "code": [
+          {
+            "Local": {
+              "dst": 0,
+              "offset": 0
+            }
+          },
+          {
+            "Load": {
+              "dst": 1,
+              "address": 0,
+              "size": 8
+            }
+          },
+          {
+            "Local": {
+              "dst": 2,
+              "offset": 8
+            }
+          },
+          {
+            "Copy": {
+              "dst": 1,
+              "src": 2,
+              "size": 8
+            }
+          },
+          {
+            "Imm": {
+              "dst": 3,
+              "value": 350488137400481480720
+            }
+          },
+          {
+            "Local": {
+              "dst": 4,
+              "offset": 32
+            }
+          },
+          {
+            "Store": {
+              "address": 4,
+              "src": 3,
+              "size": 16
+            }
+          },
+          {
+            "Local": {
+              "dst": 5,
+              "offset": 16
+            }
+          },
+          {
+            "Call": {
+              "function": 3,
+              "args": [
+                4
+              ],
+              "destination": 5
+            }
+          },
+          {
+            "Trap": {
+              "message": "std::rt::panic_fmt at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_fixture.rs:6:5: 6:34"
+            }
+          }
+        ]
+      },
+      "mir_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-export-panic-20260912-01/candidate-plain/mir/panic_store_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir",
+      "mir_text": "// MIR for `store_then_panic` after runtime-optimized\n\nfn store_then_panic(_1: &mut u64, _2: u64) -> ! {\n    debug destination => _1;\n    debug value => _2;\n    let mut _0: !;\n    let _3: !;\n    let mut _4: std::fmt::Arguments<'_>;\n\n    bb0: {\n        (*_1) = copy _2;\n        _4 = std::fmt::Arguments::<'_>::from_str(const \"panic-store fixture\") -> [return: bb1, unwind continue];\n    }\n\n    bb1: {\n        _3 = std::rt::panic_fmt(move _4) -> unwind continue;\n    }\n}\n\nalloc1 (size: 19, align: 1) {\n    0x00 \u2502 70 61 6e 69 63 2d 73 74 6f 72 65 20 66 69 78 74 \u2502 panic-store fixt\n    0x10 \u2502 75 72 65                                        \u2502 ure\n}\n",
+      "artifact_sha256": "14c36295e78b6e2bbb91498b3553ced02e7856842c2bf6e5c835ec4197eabb2b",
+      "program_json_sha256": "4f169620e2c6414371dc50e1fd10726d28ad8ca4fda5dec0c89029d451f474cf",
+      "same_basic_block": false,
+      "argument_directed_size8_store_present": false,
+      "actual_assignment_is_size8_copy": true,
+      "reason": "The dereference assignment is in bb0 before Arguments::from_str; the recognized panic_fmt terminator is in bb1. The assignment becomes Copy at helper PC3, not an eight-byte Store."
+    },
+    {
+      "arm": "candidate",
+      "inline": true,
+      "function_index": 2,
+      "function": {
+        "name": "store_then_panic[]",
+        "frame_size": 48,
+        "frame_align": 16,
+        "registers": 6,
+        "args": [
+          {
+            "offset": 0,
+            "size": 8
+          },
+          {
+            "offset": 8,
+            "size": 8
+          }
+        ],
+        "result": {
+          "offset": 0,
+          "size": 0
+        },
+        "code": [
+          {
+            "Local": {
+              "dst": 0,
+              "offset": 0
+            }
+          },
+          {
+            "Load": {
+              "dst": 1,
+              "address": 0,
+              "size": 8
+            }
+          },
+          {
+            "Local": {
+              "dst": 2,
+              "offset": 8
+            }
+          },
+          {
+            "Copy": {
+              "dst": 1,
+              "src": 2,
+              "size": 8
+            }
+          },
+          {
+            "Imm": {
+              "dst": 3,
+              "value": 350488137400481480720
+            }
+          },
+          {
+            "Local": {
+              "dst": 4,
+              "offset": 32
+            }
+          },
+          {
+            "Store": {
+              "address": 4,
+              "src": 3,
+              "size": 16
+            }
+          },
+          {
+            "Local": {
+              "dst": 5,
+              "offset": 16
+            }
+          },
+          {
+            "Call": {
+              "function": 3,
+              "args": [
+                4
+              ],
+              "destination": 5
+            }
+          },
+          {
+            "Trap": {
+              "message": "std::rt::panic_fmt at /Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_fixture.rs:6:5: 6:34"
+            }
+          }
+        ]
+      },
+      "mir_path": "/Users/danluu/dev/rust-interp-perf-20260912/.work/runs/local-export-panic-20260912-01/candidate-inline/mir/panic_store_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir",
+      "mir_text": "// MIR for `store_then_panic` after runtime-optimized\n\nfn store_then_panic(_1: &mut u64, _2: u64) -> ! {\n    debug destination => _1;\n    debug value => _2;\n    let mut _0: !;\n    let _3: !;\n    let mut _4: std::fmt::Arguments<'_>;\n\n    bb0: {\n        (*_1) = copy _2;\n        _4 = std::fmt::Arguments::<'_>::from_str(const \"panic-store fixture\") -> [return: bb1, unwind continue];\n    }\n\n    bb1: {\n        _3 = std::rt::panic_fmt(move _4) -> unwind continue;\n    }\n}\n\nalloc1 (size: 19, align: 1) {\n    0x00 \u2502 70 61 6e 69 63 2d 73 74 6f 72 65 20 66 69 78 74 \u2502 panic-store fixt\n    0x10 \u2502 75 72 65                                        \u2502 ure\n}\n",
+      "artifact_sha256": "6b4f707238d2af4e692a8558537e4fc5159638ad20b1bbc2702aeae3b3431b80",
+      "program_json_sha256": "abba6a0ed9149e750f359fe261df5449fe3525fc7bf86f8b024e274ff3ae205c",
+      "same_basic_block": false,
+      "argument_directed_size8_store_present": false,
+      "actual_assignment_is_size8_copy": true,
+      "reason": "The dereference assignment is in bb0 before Arguments::from_str; the recognized panic_fmt terminator is in bb1. The assignment becomes Copy at helper PC3, not an eight-byte Store."
+    }
+  ],
+  "proofs": {
+    ".work/runs/local-export-panic-20260912-01/baseline-plain/mir/panic_store_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir": "215fd8c34931aac78524924c3b0e2ef037e265597423f34ee311cb889465c78a",
+    ".work/runs/local-export-panic-20260912-01/baseline-plain-inspect.stdout": "4f169620e2c6414371dc50e1fd10726d28ad8ca4fda5dec0c89029d451f474cf",
+    ".work/runs/local-export-panic-20260912-01/baseline-plain/primary.rbc": "14c36295e78b6e2bbb91498b3553ced02e7856842c2bf6e5c835ec4197eabb2b",
+    ".work/runs/local-export-panic-20260912-01/baseline-inline/mir/panic_store_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir": "215fd8c34931aac78524924c3b0e2ef037e265597423f34ee311cb889465c78a",
+    ".work/runs/local-export-panic-20260912-01/baseline-inline-inspect.stdout": "abba6a0ed9149e750f359fe261df5449fe3525fc7bf86f8b024e274ff3ae205c",
+    ".work/runs/local-export-panic-20260912-01/baseline-inline/primary.rbc": "6b4f707238d2af4e692a8558537e4fc5159638ad20b1bbc2702aeae3b3431b80",
+    ".work/runs/local-export-panic-20260912-01/candidate-plain/mir/panic_store_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir": "215fd8c34931aac78524924c3b0e2ef037e265597423f34ee311cb889465c78a",
+    ".work/runs/local-export-panic-20260912-01/candidate-plain-inspect.stdout": "4f169620e2c6414371dc50e1fd10726d28ad8ca4fda5dec0c89029d451f474cf",
+    ".work/runs/local-export-panic-20260912-01/candidate-plain/primary.rbc": "14c36295e78b6e2bbb91498b3553ced02e7856842c2bf6e5c835ec4197eabb2b",
+    ".work/runs/local-export-panic-20260912-01/candidate-inline/mir/panic_store_fixture.store_then_panic.3-3-000.runtime-optimized.after.mir": "215fd8c34931aac78524924c3b0e2ef037e265597423f34ee311cb889465c78a",
+    ".work/runs/local-export-panic-20260912-01/candidate-inline-inspect.stdout": "abba6a0ed9149e750f359fe261df5449fe3525fc7bf86f8b024e274ff3ae205c",
+    ".work/runs/local-export-panic-20260912-01/candidate-inline/primary.rbc": "6b4f707238d2af4e692a8558537e4fc5159638ad20b1bbc2702aeae3b3431b80",
+    ".work/runs/local-export-panic-20260912-01/execution.json": "2762c0e0635a5107ea26f64a8a4af48f4ca5193d7ce6485ed2739957c061dcb6",
+    ".work/runs/local-export-panic-20260912-01/records.json": "7a0347267ae8a1eda65e6129d0dae8f091487bf3c1a79ff3445b9bc176b306d8",
+    ".work/build-general-20260912/local-export-panic-frozen.json": "61987721f5bf1f5f7270cabcf969edf4b21c6849c6b2447b0fbeb0244fa1ccf1",
+    ".work/build-general-20260912/local-export-panic-attempt-01.json": "f2c3945b41215a80e246e881bb6bf476762a29d4020b77b34cc4720282c69b20",
+    "tests/panic_store_fixture.rs": "71ee4a3d817990ea243968be710f9d233450ea25cd0f5ab921055f2bd1651cc3"
+  },
+  "disposition": "Preserve original source, controls, run and execution status. Do not call finalize or claim this proves late panic classification reuse. A revised fixture/protocol requires its own prospective freeze and complete execution; no performance run has started."
+}

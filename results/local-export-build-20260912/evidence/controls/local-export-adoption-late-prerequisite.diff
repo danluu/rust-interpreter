@@ -1,0 +1,98 @@
+--- before/run_local_export_adoption.py
++++ after/run_local_export_adoption.py
+@@ -140,10 +140,28 @@
+             and audit['checks']['audit-parity']['retained_artifact_pairs'] == 8
+             and audit['completed_commands'] == sum(c['commands'] for c in audit['checks'].values()),
+             'audit/inline qualification incomplete')
+-    panic = qualification(proofs, 'local-export-panic-passed.json')
++    failure_path = B / 'local-export-panic-coverage-failure.json'
++    failure_sha = '9a957ecd4af45cd659c288e13d16f73ad6618ccebc38e1921bbc48789c23f525'
++    bind(proofs, failure_path, failure_sha)
++    failure = read(failure_path)
++    require(failure['status'] == 'failed structural coverage' and failure['coverage_pass'] is False
++            and failure['qualification_pass'] is False and failure['completed_commands'] == 90
++            and failure['candidate_tool_key'] == CANDIDATE and failure['baseline_tool_key'] == BASELINE,
++            'original failed panic coverage must remain preserved')
++    for name, digest in failure['proofs'].items():
++        bind(proofs, ROOT / name, digest)
++    require(not os.path.lexists(B / 'local-export-panic-passed.json'),
++            'original failed panic run must not acquire a passing receipt')
++    panic = qualification(proofs, 'local-export-panic-late-passed.json')
+     require(panic['status'] == 'passed' and panic['completed_commands'] == 90
+             and panic['actual_mir_and_argument_directed_store_before_trap'] is True
+-            and panic['bytecode_and_error_parity'] is True, 'actual panic-store coverage incomplete')
++            and panic['unary_not_64_store_8_verified'] is True
++            and panic['stored_value_relation'] == 'bitwise-not-u64(second_argument)'
++            and panic['expected_decimal_outputs'] == {
++                '0': '18446744073709551615', '1': '18446744073709551614',
++                '9223372036854775808': '9223372036854775807', '18446744073709551615': '0'}
++            and panic['original_coverage_failure'] == dict(path=str(failure_path), sha256=failure_sha)
++            and panic['bytecode_and_error_parity'] is True, 'actual late-panic complement-store coverage incomplete')
+     source = read(B / 'local-export-prebuild-source/source.json')
+     require(source['tool_key'] == CANDIDATE and len(source['files']) == 146, 'wrong frozen source')
+     for name, row in source['files'].items():
+--- before/local-export-adoption-plan.md
++++ after/local-export-adoption-plan.md
+@@ -24,9 +24,24 @@
+ - `local-export-audit-inline-passed.json`: 79 audit-artifact commands, 23 or 24
+   unchanged leaf-inline commands according to its frozen optional legacy-check
+   presence, and eight paired audit exports retaining eight artifact pairs.
+-- `local-export-panic-passed.json`: all 90 commands and explicit actual MIR /
+-  argument-directed Store-before-Trap coverage. Merely reaching its
+-  `awaiting structural inspection` state does not satisfy this prerequisite.
++- `local-export-panic-late-passed.json`: all 90 new commands and explicit actual
++  same-block MIR / Not(64)-to-Store(8)-before-Trap coverage, with the stored value
++  equal to the 64-bit complement of the helper's second argument. Require the
++  four exact MAX-minus-value decimal oracles and all proof hashes. Merely
++  reaching `awaiting structural inspection` does not satisfy this prerequisite.
++- Preserve `local-export-panic-coverage-failure.json`, SHA-256
++  `9a957ecd4af45cd659c288e13d16f73ad6618ccebc38e1921bbc48789c23f525`, and verify
++  every proof it binds. The new passing receipt must reference that exact old
++  failure. The original `local-export-panic-passed.json` must remain absent.
++
++This prerequisite amendment is prospective, before any adoption freeze/timing.
++All five preceding adoption drafts and hashes are retained in
++`local-export-adoption-before-late-prerequisite-01`. The original panic90 passed
++behavior/artifact comparisons but failed its structural target (Copy8 and a
++separate formatting-call block); it is not relabeled as a pass. The separately
++reviewed late-panic source/protocol changes the fixture semantics explicitly to
++MAX-minus-value and retains the same-block and actual scalar Store requirements.
++No adoption command, workload, sample count, runtime option or gate changes.
+ 
+ Freeze verifies every receipt and its proof map, all 146 candidate compiler
+ inputs, common measured scripts, both installed bundles and ready manifests,
+--- before/local-export-adoption-inputs.json
++++ after/local-export-adoption-inputs.json
+@@ -2,9 +2,9 @@
+   "schema_version": 1,
+   "status": "source-only; no checker imports or workloads",
+   "files": {
+-    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/run_local_export_adoption.py": "37e953852950211930154bcac84610f468834c388f6212383ec3129c07b62b26",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/run_local_export_adoption.py": "29437c45c92688e6121a8c43f88e535c701dd4de205940ea405115f80959791d",
+     "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/assess_local_export_adoption.py": "939383f45cfd9ce654cf3543f06e544f94f782ff0a4b84da52bc065cefafb7b2",
+-    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-plan.md": "92bf1cc4c6b29148973b50cb61555af99b02f93e071881271301a9c54af729bf",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-plan.md": "3b666ac11775d51a44fb7fba24aa7d9a8002d7496c5c939bc9fdf0085c48b2f6",
+     "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-commands.json": "e9baf8df42278c33e4d52c70f0ac3ccdf28485b58341eff24e57252f72e579b2",
+     "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/owned-analysis-plan.md": "eea8a55ebc3212cc1b95b69fce2379e8b363d44f3f07e932a9b65d5821604d7a",
+     "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/owned-analysis-public-confirmation-plan.md": "0c38f5a03b9ecd24e67dcd5caa229470e9c0d2195d48bff07c44fa1ea8ab0b17",
+@@ -40,6 +40,19 @@
+     "/Users/danluu/dev/rust-interp-perf-20260912/scripts/compare_saved_runtime.py": "34407784cbda57cf0239336c9e310f81a29a4bbfeae6f8c17fbe5a84b816d4d1",
+     "/Users/danluu/dev/rust-interp-perf-20260912/scripts/workspace_cache.py": "1f0848930ddfb1ad0b1d6f128ad79b0e91faf9610d93f5e2e082dc4b39bb76ec",
+     "/Users/danluu/dev/rust-interp-perf-20260912/scripts/test_discovery.py": "36578b7d275959ce3b706ad2f181f3f17d8bced1b7c554c64fdbc4b7862e9cc5",
+-    "/Users/danluu/dev/rust-interp-perf-20260912/scripts/prepare.py": "8207393587ac874de4348baeaf99db3d4a9b456834390a038ceed9604b3b34a2"
++    "/Users/danluu/dev/rust-interp-perf-20260912/scripts/prepare.py": "8207393587ac874de4348baeaf99db3d4a9b456834390a038ceed9604b3b34a2",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local_export_panic_late_qualification.py": "80f5913936b9e30e1f7c91a972cf45abe9955764e47de91af415c87a6072009c",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-panic-late-plan.md": "f841eb3b93c5b924527f4464e93a435b11e259e02cafd158c3138f3f22bf1933",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-panic-late-inputs.json": "eff0f8dd8cfb78c148b94a22ba6228e970a6dfad9213ad4a02aec1025f6410ce",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-panic-late-source.json": "5611ade37ca66eef18c27f6246d64f86de89c2ff7b90712a983ecd33188636ec",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-panic-late-inspection.example.json": "a57dfa77661a3c1f5805ebee267e8463d3d14868fc7f288bfdfc186570a26934",
++    "/Users/danluu/dev/rust-interp-perf-20260912/tests/panic_store_late_fixture.rs": "04007048542ea651580d1fe7c7e59a714b3cf008fc693184110e7185efefd992",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-panic-coverage-failure.json": "9a957ecd4af45cd659c288e13d16f73ad6618ccebc38e1921bbc48789c23f525",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-before-late-prerequisite-01/preserved.json": "df44008f23fd5c93e3c7931e47b7ab82b78a3c413a192b52da1bce7556ff2bde",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-before-late-prerequisite-01/run_local_export_adoption.py": "37e953852950211930154bcac84610f468834c388f6212383ec3129c07b62b26",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-before-late-prerequisite-01/assess_local_export_adoption.py": "939383f45cfd9ce654cf3543f06e544f94f782ff0a4b84da52bc065cefafb7b2",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-before-late-prerequisite-01/local-export-adoption-plan.md": "92bf1cc4c6b29148973b50cb61555af99b02f93e071881271301a9c54af729bf",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-before-late-prerequisite-01/local-export-adoption-commands.json": "e9baf8df42278c33e4d52c70f0ac3ccdf28485b58341eff24e57252f72e579b2",
++    "/Users/danluu/dev/rust-interp-perf-20260912/.work/build-general-20260912/local-export-adoption-before-late-prerequisite-01/local-export-adoption-inputs.json": "6eaade3485a7047e6bef228549818f55a6c6a760bdfa82cfc586178209d23fc0"
+   }
+ }

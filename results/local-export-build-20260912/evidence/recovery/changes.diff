@@ -1,0 +1,194 @@
+--- preserved/run_local_export_adoption.py
++++ run_local_export_adoption_recovery.py
+@@ -1,6 +1,7 @@
+-"""Freeze/run the existing observations-off build protocol with fresh IDs.
+-
+-Root must review these controls before freeze or execution. Each unchanged
++"""Recover a wholly unstarted observations-off protocol after admission timeout.
++
++Root must review these recovery controls before execution. The original freeze
++is retained unchanged. Each unchanged
+ harness/verifier acquires the shared lock itself; do not use run_locked.py.
+ """
+ import argparse
+@@ -22,6 +23,8 @@
+ COMMANDS = B / 'local-export-adoption-commands.json'
+ FROZEN = B / 'local-export-adoption-frozen.json'
+ LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
++RECOVERY = B / 'local-export-adoption-recovery-01'
++RECOVERY_MANIFEST = RECOVERY / 'recovery.json'
+ BASELINE = 'eb91912d5eb6d06fde8e873404b7235a62ad4527a4dfef9e84de093a917e974d'
+ CANDIDATE = '14af97a36405cc925ce89529e5bc9ff2db9ecdbd0f8b816095ace66235fc4c75'
+ STD_KEY = 'bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef'
+@@ -69,6 +72,34 @@
+ def verify(proofs):
+     for path, digest in proofs.items():
+         require(sha(path) == digest, 'frozen input changed: ' + path)
++
++
++def recovery_proofs():
++    manifest = read(RECOVERY_MANIFEST)
++    require(manifest['kind'] == 'wholly-unstarted-admission-timeout'
++            and manifest['admission_wait_seconds'] == 3600
++            and manifest['workload_commands_changed'] is False
++            and manifest['original_frozen_sha256'] == 'a54ddd20bb73748a1243ca48eceaf672f91c72ae55095f636aa371604dc0f54c'
++            and manifest['original_stopped_controller_sha256'] == 'ad0668a39b0ba0b3219562264152a4370bdd907c8651baee264f4d98651551b7',
++            'recovery must bind the exact wholly unstarted protocol')
++    proofs = dict(manifest['files'])
++    verify(proofs)
++    require(sha(FROZEN) == manifest['original_frozen_sha256'], 'original frozen protocol differs')
++    original = B / 'local-export-adoption-screen-controller.json'
++    require(sha(original) == manifest['original_stopped_controller_sha256'], 'original stopped receipt differs')
++    stopped, frozen = read(original), read(FROZEN)
++    require(stopped['status'] == 'stopped' and stopped['calls'] == [] and stopped['admissions'] == []
++            and stopped['phase'] == 'screen' and stopped['frozen_sha256'] == sha(FROZEN)
++            and stopped['planned_commands'] == frozen['commands']['screen']
++            and stopped['error'].rstrip().endswith('RuntimeError: admission lock unavailable; no workload launched'),
++            'original attempt is not a wholly unstarted admission timeout')
++    paths = [str(path) for case in frozen['cases'] for path in [
++        ROOT / '.work/runs' / case['run_id'], ROOT / 'results' / case['run_id'],
++        *map(Path, case['cache_workspaces'].values())]]
++    require(len(paths) == len(set(paths)) == 32 and manifest['absent_workload_paths'] == paths,
++            'recovery must cover every original raw/report/custom workspace')
++    bind(proofs, RECOVERY_MANIFEST)
++    return proofs
+ 
+ 
+ def qualification(proofs, filename):
+@@ -221,6 +252,10 @@
+ 
+ 
+ def run(phase):
++    recovery_bindings = recovery_proofs()
++    if phase == 'screen':
++        for path in read(RECOVERY_MANIFEST)['absent_workload_paths']:
++            require(not os.path.lexists(path), 'wholly unstarted recovery namespace now exists: ' + path)
+     frozen = read(FROZEN)
+     verify(frozen['proofs'])
+     require(str(Path(sys.executable).resolve(strict=True)) == frozen['executables']['python'], 'Python differs')
+@@ -229,15 +264,17 @@
+                 'PATH selects a different executable: ' + name)
+     require((ROOT / '.work/benchmark.lock').resolve(strict=True) == LOCK, 'shared-lock alias differs')
+     if phase == 'confirmation':
+-        screen = read(B / 'local-export-adoption-screen-assessment.json')
++        screen = read(RECOVERY / 'screen-assessment.json')
+         require(screen['screen_pass'] is True and screen['all_planned_runs_included'] is True,
+                 'complete passing screen required')
+         verify(screen['proofs'])
+-    receipt = B / ('local-export-adoption-' + phase + '-controller.json')
++    receipt = RECOVERY / (phase + '-controller.json')
+     require(not receipt.exists(), 'controller already started; preserve it, do not restart')
+     state = dict(owner='build-general-20260912', phase=phase, controller_pid=os.getpid(),
+                  controller_ppid=os.getppid(), cwd=str(ROOT), started_at=time.time(),
+                  frozen_sha256=sha(FROZEN), planned_commands=frozen['commands'][phase],
++                 recovery_manifest_sha256=sha(RECOVERY_MANIFEST), recovery_proofs=recovery_bindings,
++                 admission_wait_seconds=3600,
+                  calls=[], admissions=[], status='running')
+     write_new(receipt, state)
+ 
+@@ -251,7 +288,7 @@
+             if item['kind'] == 'history':
+                 case = next(c for c in frozen['cases'] if c['run_id'] == label)
+                 admission = LOCK.open('r+b')
+-                wait_started, deadline = time.time(), time.monotonic() + 300
++                wait_started, deadline = time.time(), time.monotonic() + 3600
+                 try:
+                     while True:
+                         try:
+@@ -265,6 +302,7 @@
+                     require(stat.S_ISREG(held.st_mode) and (held.st_dev, held.st_ino) == (named.st_dev, named.st_ino),
+                             'shared-lock identity differs')
+                     verify(frozen['proofs'])
++                    verify(recovery_bindings)
+                     fresh(case)
+                     source_check(case, frozen['executables']['git'])
+                     free = shutil.disk_usage(ROOT).free
+@@ -276,7 +314,7 @@
+                 except BaseException:
+                     admission.close()
+                     raise
+-            log_path = B / (label + '-controller.log')
++            log_path = RECOVERY / (label + '-controller.log')
+             try:
+                 with log_path.open('x') as log:
+                     started = time.time()
+@@ -308,6 +346,7 @@
+                 if admission is not None:
+                     admission.close()
+         verify(frozen['proofs'])
++        verify(recovery_bindings)
+         state.update(status='complete', finished_at=time.time())
+         save()
+     except BaseException:
+@@ -320,9 +359,9 @@
+     require(__debug__, 'do not use Python -O')
+     require(Path.cwd() == ROOT, 'run from isolated root worktree')
+     parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument('mode', choices=['freeze', 'screen', 'confirmation'])
++    parser.add_argument('mode', choices=['screen', 'confirmation'])
+     args = parser.parse_args()
+-    freeze() if args.mode == 'freeze' else run(args.mode)
++    run(args.mode)
+ 
+ 
+ if __name__ == '__main__':
+--- preserved/assess_local_export_adoption.py
++++ assess_local_export_adoption_recovery.py
+@@ -5,15 +5,19 @@
+ from pathlib import Path
+ import statistics
+ 
+-from run_local_export_adoption import B, ROOT, FROZEN, BASELINE, CANDIDATE, STD_KEY
+-from run_local_export_adoption import bind, read, require, sha, verify, write_new
++from run_local_export_adoption_recovery import B, ROOT, FROZEN, BASELINE, CANDIDATE, STD_KEY
++from run_local_export_adoption_recovery import bind, read, require, sha, verify, write_new
++from run_local_export_adoption_recovery import RECOVERY, RECOVERY_MANIFEST, recovery_proofs
+ 
+ 
+ def controller(frozen, phase, proofs):
+-    path = B / ('local-export-adoption-' + phase + '-controller.json')
++    path = RECOVERY / (phase + '-controller.json')
+     result = read(path)
+     require(result['status'] == 'complete' and result['frozen_sha256'] == sha(FROZEN),
+             'complete frozen controller required')
++    require(result['recovery_manifest_sha256'] == sha(RECOVERY_MANIFEST)
++            and result['admission_wait_seconds'] == 3600
++            and result['recovery_proofs'] == recovery_proofs(), 'controller recovery binding differs')
+     planned = frozen['commands'][phase]
+     require(result['planned_commands'] == planned and len(result['calls']) == len(planned),
+             'all planned histories/verifiers required')
+@@ -24,7 +28,7 @@
+                 and previous <= actual['started_at'] <= actual['finished_at'],
+                 'controller command/interval failed')
+         previous = actual['finished_at']
+-        bind(proofs, B / (actual['label'] + '-controller.log'), actual['log_sha256'])
++        bind(proofs, RECOVERY / (actual['label'] + '-controller.log'), actual['log_sha256'])
+     cases = [case for case in frozen['cases'] if case['phase'] == phase]
+     require(len(result['admissions']) == len(cases), 'missing admission')
+     for admission, case in zip(result['admissions'], cases):
+@@ -173,6 +177,7 @@
+     frozen = read(FROZEN)
+     proofs = dict(frozen['proofs'])
+     verify(proofs)
++    proofs.update(recovery_proofs())
+     bind(proofs, FROZEN)
+     cases = controller(frozen, args.phase, proofs)
+     rows = [history(frozen, case, proofs) for case in cases]
+@@ -189,7 +194,7 @@
+         result = dict(screen_pass=passed, aggregate=aggregate, histories=rows,
+                       decision='proceed to fixed confirmations' if passed else 'park; fixed 5% build gate missed')
+     else:
+-        screen_path = B / 'local-export-adoption-screen-assessment.json'
++        screen_path = RECOVERY / 'screen-assessment.json'
+         screen = read(screen_path)
+         require(screen['screen_pass'] is True and screen['all_planned_runs_included'] is True, 'complete screen PASS required')
+         verify(screen['proofs'])
+@@ -201,7 +206,7 @@
+     result.update(baseline_tool_key=BASELINE, candidate_tool_key=CANDIDATE,
+                   all_planned_runs_included=True, aa_noise_subtracted=False,
+                   diagnostic_samples_included=False, compiler_observations=False, proofs=proofs)
+-    write_new(B / ('local-export-adoption-' + args.phase + '-assessment.json'), result)
++    write_new(RECOVERY / (args.phase + '-assessment.json'), result)
+     print(json.dumps({k: v for k, v in result.items() if k != 'proofs'}, indent=2))
+ 
+ 
