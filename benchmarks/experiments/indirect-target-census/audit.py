@@ -29,16 +29,16 @@ def main():
             read(outer+'plan.json');evidence[outer+'command.log']=t['log_sha256']
         def inputs(plan,historical=False):
             for p,h in plan['frozen'].items():
-                if historical:
+                if historical and not p.startswith('.work/'):
                     spec=plan['source_revision']+':'+p
                     assert hashlib.sha256(subprocess.check_output(['git','show',spec])).hexdigest()==h,p
                     bindings[spec]=h
                 else:
                     assert sha(ROOT/p)==h,p;assert frozen.setdefault(p,h)==h,p
-        for name,code in [('indirect-target-build-01',1),('indirect-target-build-02',0)]:
+        for name,code in [('indirect-target-build-01',1),('indirect-target-build-02',0),('indirect-target-build-03',0)]:
             s=read('results/'+name+'/summary.json');raw=s['raw']
             for key in ['plan','records']:assert sha(ROOT/raw/(key+'.json'))==s[key+'_sha256']
-            inputs(read(raw+'/plan.json'),historical=bool(code));records=read(raw+'/records.json')
+            inputs(read(raw+'/plan.json'),historical=name!='indirect-target-build-03');records=read(raw+'/records.json')
             terminal(name,'results/'+name+'/terminal.json',code)
             if code:
                 assert s['tests_executed']==s['guest_commands']==0 and not s['release_started']
@@ -48,13 +48,21 @@ def main():
                 assert [(r['label'],r['returncode']) for r in records]==[('debug',0),('release',0),('observer',0)]
                 for row in records[:2]:
                     assert sum(map(int,re.findall(r'test result: ok\. (\d+) passed;',row['stdout'])))==417
-                    assert sum(map(int,re.findall(r'test result: ok\. \d+ passed; \d+ failed; (\d+) ignored;',row['stdout'])))==11
+                    assert sum(map(int,re.findall(r'test result: ok\. \d+ passed; \d+ failed; (\d+) ignored;',row['stdout'])))==(11 if name=='indirect-target-build-02' else 10)
                 assert sha(ROOT/s['observer'])==s['observer_sha256'];frozen[s['observer']]=s['observer_sha256']
                 observer_hash=s['observer_sha256']
         admission=read('results/indirect-target-admission-01/summary.json')
         assert admission['status']=='not_admitted' and admission['guest_commands']==0 and not admission['inner_directory_created']
         assert not (ROOT/'.work/indirect-target-census-01').exists()
         terminal('indirect-target-census-01','results/indirect-target-admission-01/terminal.json',1)
+        failed=read('results/indirect-target-census-02/summary.json')
+        assert failed['status']=='failed' and failed['guest_commands_attempted']==1 and failed['guest_commands_completed']==0
+        assert not failed['second_case_started']
+        for key in ['plan','records']:assert sha(ROOT/failed['raw']/(key+'.json'))==failed[key+'_sha256']
+        inputs(read(failed['raw']+'/plan.json'),historical=True)
+        rows=read(failed['raw']+'/records.json');assert len(rows)==1 and rows[0]['returncode']==86
+        assert 'requires the main thread without recursion' in rows[0]['stderr']
+        terminal('indirect-target-census-02','results/indirect-target-census-02/terminal.json',1)
         output=ROOT/'results'/args.run_id;s=read(str((output/'summary.json').relative_to(ROOT)))
         assert s['status']=='passed' and s['guest_commands']==2 and s['observer_sha256']==observer_hash
         assert s['exact_adopted_code'] and s['exact_per_pc_counts'] and s['exact_counts_memory_entropy']
@@ -78,7 +86,7 @@ def main():
         write(output/'source-bindings.json',bindings)
         write(output/'closure.json',dict(status='passed',frozen_inputs=len(frozen),git_bound_files=len(bindings),frozen=frozen,
             evidence=evidence,source_bindings_sha256=sha(output/'source-bindings.json'),auditor_sha256=sha(Path(__file__)),
-            retained_guest_commands=2,new_guest_commands=0,failed_builds=1,failed_admissions=1,performance_measurement=False))
+            retained_guest_commands=2,new_guest_commands=0,failed_builds=1,failed_admissions=1,incomplete_guest_attempts=1,performance_measurement=False))
         print('Closed:',len(frozen),'frozen inputs;',len(bindings),'Git bindings',flush=True)
 
 
