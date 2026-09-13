@@ -10,10 +10,17 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Join the saved native protocol samples to exact direct-call targets and
-   current adopted per-PC profiles. Identify which callees and protocol parts
-   remain expensive before choosing another runtime mechanism. Reuse the closed
-   typed continuation census; no new guest execution is needed for this join.
+1. Evaluate a stronger bounded frame-initialization proof using typed bytecode.
+   The saved call-cost join is complete: copy precondition checks lead both
+   captures, with costs spread across many helpers. First test CFG definite
+   initialization and conservative direct-callee memory-effect summaries, then
+   measure coverage against the exact retained clearing PCs. Do not remove
+   runtime clearing or infer safety from rendered operation names.
+
+The saved call-cost join reconciles 66,403,920 / 70,368,216 native direct calls
+and all 433 / 499 transition samples. Two join controls pass; 26 frozen inputs
+and 14 Git bindings are verified. No guest execution or Rust build was needed.
+[Findings and limits](results/native-call-cost-census-01/assessment.md).
 
 The indirect/successor-flush composition is parked after its 40-command screen:
 wall improves 3.15% against 9.17% A/A, so the wall margin 1.06028 fails. CPU
