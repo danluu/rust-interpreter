@@ -42,8 +42,11 @@ repaired offline with zero repeated guest commands: the inactive folded
 control has byte-identical adopted code. Its40-command changed-source screen
 passes narrowly: wall−1.84% with1.74% A/A, CPU−1.14% with1.16% A/A. All original
 assertions, wrong edits, restoration and artifact identity checks pass.
-Proceed to a separately qualified full comparison, primary first; all five
-cases and a final serialized audit remain required for adoption.
+The full harness now passes159 checks. Its first controller times out on
+shared-lock admission before the token workspace exists: zero benchmark
+commands, all five source histories unstarted. Admit the unchanged protocol
+when resources permit; all five cases and a final serialized audit remain
+required for adoption. [Admission receipt](results/guarded-ranges-full-01-admission/summary.json).
 [Complete qualification](results/guarded-ranges-validation-repair-01/assessment.md),
 [screen and limits](results/guarded-ranges-screen-token-01/assessment.md).
 
