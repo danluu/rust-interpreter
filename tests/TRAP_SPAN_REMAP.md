@@ -4,8 +4,13 @@ in `crates/mir-export/src/lower.rs`. The first real attempt passed the complete
 matching full native/exported diagnostics, then its additional filename check
 failed because it looked only at top-level spans: E0080's application callsite
 is in a nested expansion span. That failed attempt remains preserved. The
-narrow recursive span-check correction has not yet been executed; the complete
-two-test qualification is still pending. These tests change no exporter, VM,
+narrow recursive span-check correction subsequently passed all 63 diagnostic
+commands. The final runner retained the earlier 67-command scope pass only
+after verifying identical compiler, prepared std, all three tool binaries and
+every scope-test dependency; its exact source comparison permits only the
+diagnostic helper/assertion correction. Fresh matched tools and the complete
+workspace check also passed (505 tests, four ignored). The original attempt
+remains failed. These tests change no exporter, VM,
 compiler, benchmark, or source-map policy. The caller must serialize every build/run under
 `/Users/danluu/dev/rust-interp/.work/benchmark.lock` and retain the outer process
 receipt. The tests never acquire a nested lock or build tools themselves.
