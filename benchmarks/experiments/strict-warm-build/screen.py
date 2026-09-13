@@ -29,6 +29,7 @@ CANDIDATE_POLICIES = {
     'demand-retention': 'query-cache-retention',
     'native-host-mir': 'native-host-mir-policy',
     'stable-cgu': 'stable-cgu-partitioning',
+    'stable-mono-cgu': 'stable-mono-cgu-partitioning',
     'cargo-info-cache': None,
     'host-proc-macro-opt': 'host-proc-macro-opt-v1',
 }
@@ -91,8 +92,31 @@ def environment():
     return env
 
 
-def validate_std_ready(path, env, custom=None, mode='off', cargo=None):
+def validate_mono_std_ready(path, custom, mode, *, rehash=True):
+    """Use the authoritative source-containing loader; its smoke proof is not qualification."""
+    require(custom is not None, 'MonoItem std requires a validated custom compiler')
+    from std_mir_source_paths import load, POLICY
+    path = path.absolute()
+    require(path.name == 'ready.json' and path.parent.parent == ROOT / '.work/std-mir'
+            and path.resolve(strict=True) == path, 'MonoItem std must be an owned canonical ready.json')
+    sysroot, target, key, ready = load(ROOT, path.parent.name, custom,
+                                     'stable-mono-cgu:' + mode, rehash=rehash)
+    require(ready['identity']['policy'] == POLICY
+            and ready.get('full_presentation_qualified') is False,
+            'MonoItem std readiness must retain its setup-only scope')
+    artifacts = {str(sysroot / name): dict(sha256=digest, stamp=stamp(sysroot / name))
+                 for name, digest in ready['metadata'].items()}
+    return dict(path=str(path), sha256=sha(path), key=key, artifacts=artifacts,
+                compiler=custom.identity['compiler'], rustc=str(custom.rustc),
+                rustc_sha256=custom.identity['files']['bin/rustc'], sysroot=str(sysroot), target=target,
+                policy=POLICY, identity=ready['identity'], readiness=ready)
+
+
+def validate_std_ready(path, env, custom=None, mode='off', cargo=None, candidate_policy=None):
     """Read-only setup verification; never invoke the std-MIR builder."""
+    if candidate_policy == 'stable-mono-cgu':
+        require(cargo is None, 'MonoItem std cannot combine custom Cargo')
+        return validate_mono_std_ready(path, custom, mode)
     path = path.absolute()
     require(path.resolve(strict=True) == path and path.name == 'ready.json', 'invalid std readiness path')
     require(path.parent.parent == ROOT / '.work/std-mir', 'std MIR must be owned by this checkout')
@@ -178,8 +202,10 @@ def require_candidate_policy(tool, key, candidate_policy):
 
 
 def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candidate_std,
-                        baseline_cargo_key=None, candidate_cargo_key=None):
+                        baseline_cargo_key=None, candidate_cargo_key=None, compiler_qualification=None):
     require(policy in CANDIDATE_POLICIES, 'unknown candidate policy')
+    require((compiler_qualification is not None) == (policy == 'stable-mono-cgu'),
+            'strict MonoItem qualification is required only for stable-mono-cgu policy')
     if policy == 'cargo-info-cache':
         require(baseline_key == candidate_key, 'Cargo comparison requires identical tool binaries')
         require(compiler_key is None, 'Cargo comparison requires the public compiler')
@@ -191,7 +217,7 @@ def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candi
         return
     require(baseline_cargo_key is None and candidate_cargo_key is None,
             'Cargo arguments require cargo-info-cache policy')
-    if policy == 'stable-cgu':
+    if policy in ['stable-cgu', 'stable-mono-cgu']:
         require(baseline_key == candidate_key, 'stable-CGU comparison requires identical tool binaries')
         require(isinstance(compiler_key, str) and re.fullmatch('[0-9a-f]{64}', compiler_key),
                 'stable-CGU comparison requires an installed compiler key')
@@ -217,13 +243,19 @@ def proc_macro_setting(mode):
 
 
 def command_for(mode, key, source, work, sample, names=CASE['tests'],
-                candidate_policy=DEFAULT_CANDIDATE_POLICY, compiler_key=None, cargo_key=None):
+                candidate_policy=DEFAULT_CANDIDATE_POLICY, compiler_key=None, cargo_key=None, prepared_std=None):
     retention = retention_setting(mode, candidate_policy)
     policy_args = [] if retention is None else ['--query-cache-retention', retention]
-    if candidate_policy == 'stable-cgu':
+    if candidate_policy in ['stable-cgu', 'stable-mono-cgu']:
         require(isinstance(compiler_key, str) and re.fullmatch('[0-9a-f]{64}', compiler_key),
                 'stable-CGU command requires an installed compiler key')
         policy_args = ['--compiler-key', compiler_key, '--stable-cgu-partitioning', cgu_setting(mode)]
+        if candidate_policy == 'stable-mono-cgu':
+            require(prepared_std is not None and re.fullmatch('[0-9a-f]{64}', prepared_std['key']),
+                    'MonoItem command requires a prepared std key')
+            policy_args = ['--compiler-key', compiler_key, '--stable-cgu-partitioning', 'off',
+                '--stable-mono-cgu-partitioning', cgu_setting(mode),
+                '--std-mir-policy', 'source-paths-v2', '--std-mir-key', prepared_std['key']]
     else:
         require(compiler_key is None, 'custom compiler requires stable-CGU policy')
     if candidate_policy == 'cargo-info-cache':
@@ -234,6 +266,8 @@ def command_for(mode, key, source, work, sample, names=CASE['tests'],
         require(cargo_key is None, 'Cargo arguments require cargo-info-cache policy')
     if candidate_policy == 'host-proc-macro-opt':
         policy_args = ['--host-proc-macro-opt', proc_macro_setting(mode)]
+    require(prepared_std is None or candidate_policy == 'stable-mono-cgu',
+            'explicit prepared std command argument requires MonoItem policy')
     command = [sys.executable, ROOT / 'scripts/interpreter.py', '--manifest-path', source / 'Cargo.toml',
         '--package', CASE['package'], '--jobs', str(JOBS), '--tool-key', key,
         '--cache-namespace', work.name + ':' + mode, '--workspace-cache-root', work / 'caches' / mode,
@@ -258,7 +292,8 @@ def measure_command(command, **kwargs):
     return child, stdout, stderr, elapsed, cpu
 
 
-def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, cargo=None):
+def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, cargo=None,
+                    mono_wrapper=None):
     retention = retention_setting(mode, candidate_policy)
     expected = dict(tool_key=key, engine='jit', function_cache='auto', borrowck_cache='off',
         jit_persistent_registers=True, jit_resumable_calls=True, inline_leaves=True,
@@ -266,11 +301,18 @@ def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom
         suite_workers_requested=SUITE_WORKERS)
     if retention is not None:
         expected['query_cache_retention'] = retention
-    if candidate_policy == 'stable-cgu':
+    if candidate_policy in ['stable-cgu', 'stable-mono-cgu']:
         require(custom is not None, 'stable-CGU launch requires a validated compiler')
         expected['custom_compiler'] = dict(key=custom.key, rustc=str(custom.rustc),
             rustc_sha256=custom.identity['files']['bin/rustc'], compiler=custom.identity['compiler'],
             stable_cgu_partitioning=cgu_setting(mode))
+        if candidate_policy == 'stable-mono-cgu':
+            from stable_mono_cgu import receipt
+            from stable_mono_qualification import STD_POLICY
+            require(mono_wrapper is not None, 'MonoItem launch requires matching wrapper capability')
+            expected['custom_compiler'].update(stable_cgu_partitioning='off',
+                stable_mono_cgu_partitioning=receipt(cgu_setting(mode), custom, mono_wrapper))
+            expected['std_mir_policy'] = STD_POLICY
     else:
         require(custom is None, 'custom compiler requires stable-CGU policy')
     if candidate_policy == 'cargo-info-cache':
@@ -284,12 +326,13 @@ def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom
 
 
 def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
-                   candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, prepared_std=None, cargo=None):
+                   candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, prepared_std=None, cargo=None,
+                   mono_wrapper=None):
     launches = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in stderr.splitlines()
                 if line.startswith('rust-interp-launch: ')]
     require(len(launches) == 1, 'expected exactly one completed launcher report')
     launch = launches[0]
-    expected = launch_settings(mode, key, candidate_policy, custom, cargo)
+    expected = launch_settings(mode, key, candidate_policy, custom, cargo, mono_wrapper)
     require(all(launch.get(k) == v for k, v in expected.items()), 'launcher settings differ')
     require(custom is not None or 'custom_compiler' not in launch, 'unexpected custom compiler in launcher')
     require(cargo is not None or 'custom_cargo' not in launch, 'unexpected custom Cargo in launcher')
@@ -298,6 +341,13 @@ def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
         require(launch.get('query_cache_retention', 'off') == 'off', 'unexpected retention policy in independent comparison')
     if not macro:
         require(launch.get('host_proc_macro_opt', 'off') == 'off', 'unexpected proc-macro policy in independent comparison')
+    if cargo:require(launch.get('query_cache_retention', 'off') == 'off', 'unexpected retention policy in Cargo comparison')
+    if candidate_policy == 'stable-mono-cgu':
+        require(launch.get('query_cache_retention', 'off') == 'off'
+                and launch.get('host_proc_macro_opt', 'off') == 'off'
+                and launch.get('frontend_workers') is None
+                and launch.get('compiler_argv_record_dir') is None,
+                'MonoItem screen combines another policy or qualification instrumentation')
     require(launch['toolchain_lookup']['mode'] == 'cached'
             and launch['toolchain_lookup']['outcome'] in ({'owned-manifest'} if custom else {'miss', 'hit'}),
             'cached toolchain lookup unavailable')
@@ -369,6 +419,8 @@ def main():
                         default=DEFAULT_CANDIDATE_POLICY)
     parser.add_argument('--std-mir-ready', type=Path, required=True)
     parser.add_argument('--compiler-key', help='same installed compiler for all stable-CGU arms')
+    parser.add_argument('--compiler-qualification', type=Path,
+                        help='passed strict stable-mono-cgu integration result.json')
     parser.add_argument('--baseline-cargo-key', help='qualified stock Cargo for baseline and duplicate arms')
     parser.add_argument('--candidate-cargo-key', help='matched source-only candidate Cargo')
     parser.add_argument('--candidate-std-mir-ready', type=Path,
@@ -379,7 +431,7 @@ def main():
     require(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
     validate_comparison(args.candidate_policy, args.baseline_tool_key, args.candidate_tool_key,
                         args.compiler_key, args.candidate_std_mir_ready,
-                        args.baseline_cargo_key, args.candidate_cargo_key)
+                        args.baseline_cargo_key, args.candidate_cargo_key, args.compiler_qualification)
     source = args.source.absolute()
     work = ROOT / '.work' / args.run_id
     work.mkdir(exist_ok=False)
@@ -404,10 +456,10 @@ def main():
                                           else args.baseline_cargo_key) for mode in MODES}
                 for cargo in cargos.values():cargo.environment(env, TOOLCHAIN)
                 cargo_comparison = validate_matched_pair(cargos['baseline'], cargos['candidate'])
-            std = validate_std_ready(args.std_mir_ready, env, custom, 'off', cargos['baseline'])
+            std = validate_std_ready(args.std_mir_ready, env, custom, 'off', cargos['baseline'], args.candidate_policy)
             stds = dict.fromkeys(MODES, std)
             if custom or cargo_comparison:
-                stds['candidate'] = validate_std_ready(args.candidate_std_mir_ready, env, custom, 'on', cargos['candidate'])
+                stds['candidate'] = validate_std_ready(args.candidate_std_mir_ready, env, custom, 'on', cargos['candidate'], args.candidate_policy)
                 require(std['key'] != stds['candidate']['key'], 'comparison std namespaces must differ')
             revision, marker, changed, original = validate_source(source)
             states = protocol_states(original)
@@ -453,6 +505,18 @@ def main():
                 public_guards = dict(policy=GUARD_POLICY, admission=public_guard('admission.json', True),
                     directory=str(guard_directory), final_path=str(guard_directory / 'final.json'),
                     boundaries_per_command=2)
+            mono_qualification, mono_wrapper = None, None
+            if args.candidate_policy == 'stable-mono-cgu':
+                from stable_mono_cgu import require_tool_capability, OPTION
+                from stable_mono_qualification import validate_qualification
+                custom.require_option('stable-cgu-partitioning')
+                custom.require_option(OPTION)
+                mono_wrapper = require_tool_capability(tools['baseline'], custom)
+                require(all(require_tool_capability(tool, custom) == mono_wrapper for tool in tools.values()),
+                        'MonoItem wrapper capabilities differ between arms')
+                mono_qualification = validate_qualification(args.compiler_qualification.absolute(), ROOT,
+                    custom.key, keys['baseline'], dict(off=stds['baseline'], on=stds['candidate']),
+                    compiler_sysroot=custom.sysroot)
             for directory in [work / 'artifacts', work / 'suites', work / 'receipts',
                               *[work / 'caches' / m for m in MODES]]:
                 directory.mkdir(parents=True, exist_ok=False)
@@ -460,6 +524,13 @@ def main():
                      ROOT / 'benchmarks/corpus.json', Path(std['path'])]
             if custom:
                 paths += [Path(stds['candidate']['path']), custom.sysroot.parent / 'ready.json']
+            if mono_qualification:
+                paths += [Path(p) for p in mono_qualification['evidence_files']]
+                paths += [Path(__file__).with_name('STABLE_MONO_CGU_SCREEN.md')]
+                for prepared_std in [stds['baseline'], stds['candidate']]:
+                    prepared = Path(prepared_std['path']).parent
+                    paths += [prepared / 'owner.json']
+                    paths += [prepared / 'evidence' / name for name in prepared_std['readiness']['evidence_files']]
             if cargo_comparison:
                 paths += [Path(stds['candidate']['path']), Path(__file__).with_name('CARGO_INFO_CACHE_SCREEN.md')]
                 for cargo in [cargos['baseline'], cargos['candidate']]:
@@ -507,6 +578,11 @@ def main():
                         original_opt_level='0 (no explicit optimization flag)', opt_level='1', mir_opt_level=1,
                         lto='off', preserve_effective_debug_assertions=True, preserve_effective_overflow_checks=True,
                         application_profiles_changed=False, std_preparation_policy='unchanged and outside application wrapper'))
+            if mono_qualification:
+                plan.update(compiler_qualification=mono_qualification, mono_wrapper=mono_wrapper,
+                    cgu_policy_by_mode=dict.fromkeys(MODES, 'off'),
+                    mono_cgu_policy_by_mode={m: cgu_setting(m) for m in MODES},
+                    compiler_comparison='same compiler and tool binaries; module off/off/off; MonoItem off/on/off')
             write_json(work / 'plan.json', plan)
             previous = dict.fromkeys(MODES)
 
@@ -518,6 +594,10 @@ def main():
                         'prepared standard-library artifact changed')
                 if custom:
                     require(load_compiler(ROOT, custom.key) == custom, 'custom compiler changed')
+                if mono_qualification:
+                    for mode, std in [('off', stds['baseline']), ('on', stds['candidate'])]:
+                        require(validate_mono_std_ready(Path(std['path']), custom, mode, rehash=False) == std,
+                                'source-containing prepared std changed')
                 for cargo in {c.key: c for c in cargos.values() if c is not None}.values():
                     require(load_cargo(ROOT, cargo.key) == cargo, 'Cargo installation changed')
                 current = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
@@ -545,7 +625,8 @@ def main():
                 require(previous[mode] != digest, 'unchanged command entered screen')
                 command = command_for(mode, keys[mode], source, work, sample,
                                       candidate_policy=args.candidate_policy, compiler_key=args.compiler_key,
-                                      cargo_key=cargos[mode].key if cargos[mode] else None)
+                                      cargo_key=cargos[mode].key if cargos[mode] else None,
+                                      prepared_std=stds[mode] if mono_qualification else None)
                 suite_path = work / 'suites' / f"{sample['index']}-{mode}.json"
                 free = shutil.disk_usage(work).free
                 require_space(work, MINIMUM_GIB)
@@ -572,7 +653,8 @@ def main():
                 require((child.returncode == 0) == success, 'wrong-edit/passing exit status differs')
                 launch, outcomes, artifacts, suite_sha = checked_launch(
                     stderr, mode, keys[mode], success, suite_path, work / 'caches' / mode,
-                    candidate_policy=args.candidate_policy, custom=custom, prepared_std=stds[mode], cargo=cargos[mode])
+                    candidate_policy=args.candidate_policy, custom=custom, prepared_std=stds[mode], cargo=cargos[mode],
+                    mono_wrapper=mono_wrapper)
                 workspace = launch['workspace_path']
                 require(workspaces.get(mode, workspace) == workspace, 'arm workspace changed')
                 workspaces[mode] = workspace

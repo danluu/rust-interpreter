@@ -18,9 +18,12 @@ import custom_compiler as custom
 import build_custom_tools
 import interpreter
 import std_mir
+import stable_mono_cgu
 
 
 class CustomCompilerLauncherTests(unittest.TestCase):
+    mono = False
+
     def setUp(self):
         stack = ExitStack()
         self.addCleanup(stack.close)
@@ -28,7 +31,7 @@ class CustomCompilerLauncherTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name).resolve()
         self.addCleanup(thaw, self.root)
-        self.compiler = fake_install(self.root)
+        self.compiler = fake_install(self.root, mono=self.mono)
         stack.enter_context(patch.object(interpreter, 'ROOT', self.root))
         stack.enter_context(patch.object(std_mir, 'ROOT', self.root))
         stack.enter_context(patch.dict(os.environ, {'PATH': '/bin', 'RUST_INTERP_LAUNCH_STATS': '1'}, clear=True))
@@ -39,9 +42,15 @@ class CustomCompilerLauncherTests(unittest.TestCase):
         self.tools = self.root / 'tools'; self.tools.mkdir()
         (self.tools / 'ready.json').write_text(json.dumps(binaries))
         (self.tools / 'compiler.json').write_text(json.dumps(composition))
-        (self.tools / 'capabilities.json').write_text(json.dumps(dict(schema_version=1,
+        capabilities = dict(schema_version=1,
             bytecode_version=5, tool_key=self.key, exporter_sha256=binaries['rust-interp-mir-export'],
-            export_options=['stable-cgu-partitioning'])))
+            export_options=['stable-cgu-partitioning'])
+        if self.mono:
+            capabilities.update(compiler_sysroot=str(self.compiler.sysroot),
+                export_options=['stable-cgu-partitioning', stable_mono_cgu.OPTION, 'function-cache-auto'],
+                stable_mono_cgu_wrapper=dict(policy=stable_mono_cgu.POLICY,
+                    compiler_sysroot=str(self.compiler.sysroot), sha256=binaries[stable_mono_cgu.WRAPPER]))
+        (self.tools / 'capabilities.json').write_text(json.dumps(capabilities))
         self.manifest = self.root / 'Cargo.toml'; self.manifest.write_text('fixture')
         (self.root / 'libfixture.rmeta.rbc').write_bytes(b'bytecode')
         stack.enter_context(patch.object(interpreter, 'installed_tools', return_value=(self.tools, self.key)))
@@ -143,6 +152,27 @@ class CustomCompilerLauncherTests(unittest.TestCase):
             self.assertEqual(env['RUSTFLAGS'], std_mir.FLAGS)
         self.assertEqual(first[3]['identity']['compiler_key'], self.compiler.key)
         self.assertEqual(first[3]['identity']['source_sha256'], self.compiler.identity['source_sha256'])
+
+    def test_explicit_std_v2_key_reaches_loader_and_launch_stats(self):
+        from std_mir_source_paths import POLICY
+        std = (self.root / 'prepared/sysroot', self.compiler.host, 'e' * 64,
+               dict(identity=dict(policy=POLICY)))
+        def prepared(*args, **kwargs):
+            self.assertEqual(kwargs['policy'], 'source-paths-v2')
+            self.assertEqual(kwargs['prepared_key'], 'e' * 64)
+            self.assertEqual(kwargs['namespace'], 'stable-cgu:on')
+            kwargs['lookup_stats'].update(mode='cached', outcome='owned-manifest')
+            return std
+        with patch.object(std_mir, 'checked_std_mir', side_effect=prepared):
+            result, [report] = self.launch('--std-mir', '--toolchain-lookup', 'cached',
+                '--stable-cgu-partitioning', 'on', '--std-mir-policy', 'source-paths-v2',
+                '--std-mir-key', 'e' * 64)
+        self.assertEqual(result, 0)
+        self.assertEqual(report['std_mir']['key'], 'e' * 64)
+        self.assertEqual(report['std_mir_policy'], POLICY)
+        for extra in [('--std-mir-key', 'e' * 64), ('--std-mir', '--std-mir-policy', 'source-paths-v2')]:
+            with self.assertRaises(SystemExit):
+                self.launch(*extra)
 
     def test_tool_build_uses_custom_rustc_and_publishes_checked_compiler_association(self):
         captures = []
