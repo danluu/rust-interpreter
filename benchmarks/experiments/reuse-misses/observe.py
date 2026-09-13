@@ -115,3 +115,16 @@ def observation(stderr, enabled):
 def require_cargo_export(stderr, package):
     require(re.search(r'^\s*(Checking|Compiling)\s+' + re.escape(package) + r'\s', stderr, re.M),
             'Cargo did not rebuild the requested package')
+
+
+def compact(report):
+    """Publish aggregates and a bounded public-project cost list; keep full rows local."""
+    result = {key: value for key, value in report.items() if key != 'functions'}
+    misses = [row for row in report['functions'] if row['action']['kind'] != 'reused']
+    misses.sort(key=lambda row: sum(row[key] for key in PHASES[:3]), reverse=True)
+    body_free = [row for row in report['functions'] if row['replay'] is not None
+                 and not row['replay']['recipe_requires_current_mir']]
+    body_free.sort(key=lambda row: row['replay']['current_context_seconds'], reverse=True)
+    result.update(function_rows_retained_in_raw_only=True,
+        expensive_lowered_functions=misses[:12], expensive_body_free_context_functions=body_free[:12])
+    return result

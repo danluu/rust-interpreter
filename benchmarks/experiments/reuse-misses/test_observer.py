@@ -1,7 +1,7 @@
 import copy
 import json
 import unittest
-from observe import COUNTS, LOOKUPS, NESTED, PHASES, observation
+from observe import COUNTS, LOOKUPS, NESTED, PHASES, compact, observation
 
 
 def fixture():
@@ -89,6 +89,19 @@ class ObservationTests(unittest.TestCase):
         for key,value in [('name','x'*4097),('index',10000),('index',-1)]:
             report,cache=fixture();report['functions'][0][key]=value
             with self.subTest(key=key),self.assertRaises(ValueError):observation(text(report,cache),True)
+
+    def test_compact_output_retains_aggregates_and_only_bounded_cost_lists(self):
+        report,_=fixture();saved=copy.deepcopy(report)
+        for index in range(100):
+            row=copy.deepcopy(report['functions'][0]);row['index']=index+4
+            report['functions'].append(row)
+        out=compact(report)
+        self.assertNotIn('functions',out)
+        self.assertEqual(out['by_lookup'],saved['by_lookup'])
+        self.assertEqual(len(out['expensive_body_free_context_functions']),12)
+        self.assertEqual(len(out['expensive_lowered_functions']),3)
+        self.assertEqual(out['expensive_lowered_functions'][0]['index'],2)
+        self.assertEqual(len(report['functions']),104)
 
 
 if __name__ == '__main__':unittest.main()
