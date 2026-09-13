@@ -10,15 +10,20 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Qualify the selected composition of guarded local-value retention, exact
-   static facts after forwarded loads, and scalar-copy address folding. Three
-   offline censuses reproduce all saved baselines and expose both savings and
-   increased flush code. The candidate is implemented on its experiment branch;
-   runtime checks and timing have not passed. Complete debug/release tests,
-   strict Cargo/cache checks and bound real-test profile/entropy replays before
-   a fresh token-first changed-source screen. Preserve the old failed scalar-copy
-   performance verdict and cancel unstarted guards if this primary fails.
-   [Selection evidence](results/guarded-local-facts-composed-census-01/assessment.md).
+1. Screen the qualified composition of guarded local-value retention, exact
+   static facts after forwarded loads, and scalar-copy address folding. Tool
+   `317a0bf1` passes 504 workspace tests per profile, 119 strict/cache controls,
+   and three exact real-test profile/entropy replays. Two fixture-setup failures
+   are retained beside the passing build. The 40-command token screen remains
+   unstarted after a zero-test harness-lock timeout. Resume its nine harness
+   checks when admitted, then run the frozen screen. Additional 13 real controls
+   and the full comparison are prepared conditionally on a passing primary;
+   their drivers still need validation. Preserve the old failed scalar-copy
+   verdict and cancel unstarted guards if this primary fails. The runtime stays
+   experimental; reports are published on main.
+   [Build](results/guarded-local-facts-build-03/assessment.md),
+   [strict controls](results/guarded-local-facts-qualification-01/assessment.md),
+   [real profiles](results/guarded-local-facts-profile-01/assessment.md).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
