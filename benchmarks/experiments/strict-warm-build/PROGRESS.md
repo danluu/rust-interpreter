@@ -121,7 +121,7 @@ speed. The normal 482 bodies contain 29,817 source bytes and encode 535,975 inpu
 bytes. A reviewed [source-only capture checkpoint](../../../experiments/hir-body-cache/README.md)
 now records the actual lowering ID/effect journal and a typed HIR body tree,
 validating the complete observed context boundary and tree/reference/allocation
-closure after stock lowering. The latest checkpoint also reconstructs HIR privately after stock lowering,
+closure after stock lowering. The cold-audit checkpoint also reconstructs HIR privately after stock lowering,
 recaptures the complete tree, and rechecks the exit effects; the original stock
 HIR remains the result. The cold-audit checkpoint subsequently passed its selected compiler check
 and all 22 unit controls, without warnings, failures, skips or filtering.
@@ -159,16 +159,25 @@ histories remain separate and cannot qualify a cache hit.
 [Six upgrade-runner controls](../../../results/hir-upgrade-controls-01/README.md).
 [Ten continuation controls](../../../results/hir-cold-audit-upgrade-controls-01/README.md).
 
-The next source checkpoint implements an exclusive current-context hit token,
+The ReadyHit checkpoint implements an exclusive current-context hit token,
 complete destination preflight, ordinary ID/binding adapter replay, and HIR
 materialization. Reuse is separately selected and default off. Every proposed
 hit includes actual journal, recaptured-tree and final-state verification;
 there is no fallback after replay starts. The trusted local cache boundary is
 explicit: structural checks do not authenticate an intentionally forged,
-semantically valid payload with a recomputed checksum. This new implementation
-is uncompiled; all 26 unit controls and native hit/error/restoration histories
-remain unrun. No actual hit count or speedup is established by the earlier
-22-unit cold pass.
+semantically valid payload with a recomputed checksum. This implementation
+passed the actual selected compiler check and all 26 unit controls with zero
+warnings, failures, ignored or filtered tests. The truthful compiler source is
+`3d7ad8282c5695196f4a4dcfd0bdceacac3f79b9`, parent `9d21c2ba`; all 61 commands,
+four supervisors and complete source inventories are archived. Native
+hit/error/restoration histories remain unrun, so these unit results establish
+no actual native hit count or speedup.
+[ReadyHit compiler check and 26-unit evidence](../../../results/hir-ready-hit-check-01/README.md).
+[Fourteen upgrade-driver controls and retained initial launcher failure](../../../results/hir-ready-hit-upgrade-python-controls-01/README.md).
+The [native correctness driver](../../../experiments/hir-native-correctness/README.md)
+requires this exact successful history before building stage1 rustc/std, testing
+the tracked option, and running the unchanged native recipe with visible hit
+diagnostics. This is a correctness sequence, not a performance qualification.
 [Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
 [Copied archive guard evidence](../../../results/hir-capture-offline-seed-guards-01/README.md).
 
@@ -187,10 +196,12 @@ enabled, so this verifies fixture behavior only.
 The proposed proc-macro span-handle table passed four standalone container
 controls against the exact patched source. A separate source-only bridge
 integration fixture now covers real transport and compiler-server boundaries,
-with explicit side effects, stale handles and same/cross-thread controls. These
-new controls remain unrun; standalone results do not qualify bridge integration
-or establish a performance gain.
+with explicit side effects, stale handles and same/cross-thread controls. Its
+four Python expectation tests passed against the unchanged fixture and span
+patch. The Rust bridge and compiler-server controls remain unrun; standalone
+and Python results do not qualify bridge integration or establish a gain.
 [Control evidence](../../../results/proc-macro-span-handle-controls-01/README.md).
+[Four expectation tests](../../../results/span-bridge-expectations-tests-01/README.md).
 
 Three generated Cargo target directories from the completed worker screen
 were retired. Original bytecode, source, cache metadata, publication inputs and
