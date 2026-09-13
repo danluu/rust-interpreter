@@ -17,14 +17,18 @@ Two candidates remain in qualification:
 - Conservative O1 compilation of native host libraries. Application profiles,
   effective checks, build-script settings, guest compilation and proc-macro
   crate compilation remain fixed. All 84 publication/screen/assessment
-  compatibility tests passed. The new binaries, three actual native histories
-  and off/on/off Nushell screen are still pending.
+  compatibility tests passed. Build01 passed 504 Rust tests and two of three
+  native histories; the third rejected Cargo's ordinary metadata-embedding
+  flag. The corrected parser preserves that flag, with a new regression test.
+  Fresh build02 qualification and the off/on/off Nushell screen are pending.
   [Source checks](../../../results/host-library-screen-source-tests-01/README.md).
 - Stable per-MonoItem code-generation placement using an optimized compiler
   build. All twelve bootstrap/package stages passed for compiler source
   `58e1e1f5311f4424ea81def4763081f6da62d9b3`, including option tracking,
-  partitioning, native entry and stripping controls. Installation, matched
-  interpreter tools/workspace tests, both standard-library preparations,
+  partitioning, native entry and stripping controls. Installation and the first
+  matched interpreter-tool build passed. The workspace helper failed before
+  any tests because it passed a JSON string to a path-based hashing API; that
+  helper is corrected. Updated tools/workspace tests, both standard-library preparations,
   strict diagnostics/source-observable qualification and the Nushell screen
   are separate remaining gates.
   [Required post-build sequence](../../../experiments/stable-cgu/POST-DRIVER-QUALIFICATION.md).
