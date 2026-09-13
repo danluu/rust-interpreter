@@ -3,10 +3,18 @@ import json
 import unittest
 
 from launcher import child_environment
-from observe import observation
+from observe import observation, require_cargo_export
 
 
 class ObserverTests(unittest.TestCase):
+    def test_cargo_build_script_fixture_uses_compiling_or_checking(self):
+        for prefix in ['   Compiling', '    Checking']:
+            require_cargo_export(prefix + ' host-mir-app v0.1.0 (/fixture/app)', 'host-mir-app')
+        for text in ['       Fresh host-mir-app v0.1.0', '    Checking host-mir-app-helper v0.1.0',
+                     'rust-interp-export: frontend_ms=1']:
+            with self.assertRaises(AssertionError):
+                require_cargo_export(text, 'host-mir-app')
+
     def test_option_is_confined_to_owned_cargo_check_without_mutating_input(self):
         env = dict(RUSTC_WRAPPER='/tools/rust-interp-rustc-wrapper', KEEP='value')
         command = ['cargo', '+nightly', 'check', '--message-format=json-render-diagnostics']

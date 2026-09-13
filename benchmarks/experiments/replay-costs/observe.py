@@ -1,6 +1,11 @@
 """Check observer coverage and non-overlapping timing accounting."""
 import json
 import math
+import re
+
+
+def require_cargo_export(stderr, package):
+    assert re.search(r'^\s*(Checking|Compiling) ' + re.escape(package) + r' v', stderr, re.M), 'no current Cargo unit activity'
 
 
 def messages(stderr, prefix):

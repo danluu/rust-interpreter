@@ -14,7 +14,7 @@ from compare_saved_runtime import acquire_lock, sha
 from interpreter import installed_tools
 from suite_reports import read_report, validate_report
 from workflow_io import SourceEdit, capture, require_space, write_json as write
-from observe import messages, observation
+from observe import messages, observation, require_cargo_export
 
 BASELINE = 'e729a493261568d841d3ef212bcdfeef8fa4bf715cd26538f3cb9d1fa447e846'
 
@@ -78,7 +78,7 @@ def main():
 
         def check(row, enabled, success=True, cold=False):
             assert (row['returncode'] == 0) == success
-            assert 'Checking host-mir-app' in row['stderr']
+            require_cargo_export(row['stderr'], 'host-mir-app')
             launch, = messages(row['stderr'], 'rust-interp-launch')
             report, _ = read_report(Path(launch['suite_report_path']), launch['suite_report_sha256'])
             names = ['tests::checks_another_input', 'tests::checks_host_and_guest_dependencies']
