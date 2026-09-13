@@ -53,7 +53,24 @@ impl Assembler<'_> {
         self.cache_recent = recent;
         self.mask(9, (size * 8) as u8);
         #[cfg(test)]
-        self.local_forwarding.push((self.current_pc, _kind));
+        {
+            self.local_forwarding.push((self.current_pc, _kind));
+            let kind = match fact { Fact::Imm(_) => "Imm", Fact::Local(_) => "Local",
+                Fact::Cached {..} => "Cached", Fact::Physical {..} => "Physical" };
+            self.local_fact_events.push((self.current_pc, _kind, kind));
+        }
+    }
+
+    #[cfg(test)]
+    pub(super) fn observe_retained_local_write(&mut self, local: Option<usize>, reg: Reg, size: usize) -> bool {
+        if !self.observe_guarded_local_retention || local.is_some() || size == 0 { return false; }
+        // Immutable query: no synthetic live-in use may be added after the write.
+        let proven = self.guarded_range.as_ref().is_some_and(|plan| plan.frame_disjoint
+            && plan.displacement(self.current_pc, reg, size, true).is_some());
+        if proven {
+            self.retained_local_writes.push((self.current_pc, reg, size, self.local_values.len()));
+        }
+        proven
     }
 
     pub(super) fn review_local_memory_effect(&mut self, op: &Op) {
