@@ -25,10 +25,11 @@ suggestion. Historical experiments retain their original decisions.
    The current-artifact census passes all six control/profile commands and
    finds4.84million interpreted128-bit bitwise/shift operations in the dominant
    block-boundary test,71.5% of its interpreted operations. The custom emitter
-   now handles And/Or/Xor/Shl/Shr. Host419-test/profile qualification is running,
-   followed by exact original selections, serial/prepared suites and strict
-   cache/native checks. Then freeze fifteen edited pairs, A/A, native controls
-   and folded/pgrust guards. Keep the exhaustive token test in the selection;
+   now handles And/Or/Xor/Shl/Shr. All419 tests/profile,106 harness checks, seven exact selections, nine suite
+   commands and203 native/cache checks pass. Three current profile replays
+   reduce block interpreted operations from6.77million to1.93million with
+   exact logical work/memory/entropy. The full fifteen-pair/A/A comparison
+   is running, with mandatory folded/pgrust guards. Keep the exhaustive token test in the selection;
    it has far fewer such operations. Counts do not predict a time saving.
    [Current census](results/current-runtime-boundaries-02/assessment.md),
    [qualification plan](benchmarks/experiments/wide-bitwise/PLAN.md).
