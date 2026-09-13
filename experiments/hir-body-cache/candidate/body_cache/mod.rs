@@ -145,18 +145,25 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
         report(lctx, &candidate, "rejected-effects", frame.start, end, 0);
         return value;
     };
-    let captured_tree = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)
-        .and_then(|current| capture::capture(&candidate, &current, &value)
-            .and_then(|tree| {
-                let tree = validate::check(tree, &current)?;
-                let prepared = prepared::prepare(&tree, &current)?;
-                prepared::audit(lctx, &candidate, &tree, prepared)?;
-                frame.validate_exit(lctx, &candidate, &checked)?;
-                Some(tree)
-            }));
-    let Some(tree) = captured_tree else {
-        report(lctx, &candidate, "rejected-body-tree", frame.start, end, checked.journal().events.len());
-        return value;
+    // Preserve the first failed boundary in incremental-info diagnostics. Every
+    // check and its order remain the same; no rejected tree can be published.
+    let captured_tree = (|| {
+        let current = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)
+            .ok_or("rejected-body-tree-current")?;
+        let tree = capture::capture(&candidate, &current, &value)
+            .ok_or("rejected-body-tree-capture")?;
+        let tree = validate::check(tree, &current).ok_or("rejected-body-tree-validation")?;
+        let prepared = prepared::prepare(&tree, &current).ok_or("rejected-body-tree-preparation")?;
+        prepared::audit(lctx, &candidate, &tree, prepared).ok_or("rejected-body-tree-cold-audit")?;
+        frame.validate_exit(lctx, &candidate, &checked).ok_or("rejected-body-tree-post-audit-exit")?;
+        Ok(tree)
+    })();
+    let tree = match captured_tree {
+        Ok(tree) => tree,
+        Err(state) => {
+            report(lctx, &candidate, state, frame.start, end, checked.journal().events.len());
+            return value;
+        }
     };
     let payload = storage::Payload { journal: checked.journal().clone(), tree: tree.tree().clone() };
     let state = match previous {

@@ -1,16 +1,16 @@
 {
-  "status": "source-checks-only-fixture-version-override-repair",
+  "status": "source-checks-only-body-tree-rejection-phases",
   "compiler_base_commit": "58e1e1f5311f4424ea81def4763081f6da62d9b3",
   "historical_journal_only_checkpoint": "3f3e9c28704a7866f72ad0974336d79671714ae9",
-  "patch_sha256": "d01a34b5c6cad6bacd17b6494c7ef80b0289d85acd642601dea5834ae258aefc",
+  "patch_sha256": "211425be515befb15594afaf9a1e5338569e605bb5cc92d5d71f66fd5c1f6ed2",
   "patch_files": 25,
-  "patch_bytes": 194534,
+  "patch_bytes": 194952,
   "qualified_gate_sha256": "6df8b5b4fe1c0c88f6c21acbbf0514a61b48173bd037456b7563755c50ca15d1",
   "checks": [
     {
       "command": "prepare_patch.py --source /Users/danluu/dev/rustc-stable-mono-production-20260913",
       "exit": 0,
-      "scope": "Read-only exact Git/base-byte checks; outputs written only to the independent experiment worktree"
+      "scope": "Read-only exact Git/base-byte checks; outputs only in independent diagnostic worktree"
     },
     {
       "command": "Python ast.parse(prepare_patch.py)",
@@ -22,23 +22,19 @@
       "cwd": "read-only pinned Cmono58 compiler checkout"
     },
     {
-      "command": "Compare generated file identities with frozen 5cd6acd3 patch.json",
+      "command": "Compare generated file identities with 75b5a567 patch.json",
       "status": "passed",
       "changed_files": [
-        "compiler/rustc_ast_lowering/src/body_cache/source_identity.rs",
-        "tests/run-make/hir-body-cache-capture/rmake.rs"
+        "compiler/rustc_ast_lowering/src/body_cache/mod.rs",
+        "compiler/rustc_ast_lowering/src/body_cache/source_identity.rs"
       ],
       "unchanged_generated_files": 23,
       "qualified_gate_unchanged": true,
-      "fixture_rs_unchanged": true
-    },
-    {
-      "command": "git diff --check -- experiments/hir-body-cache :(exclude)experiments/hir-body-cache/capture-body-journals.patch",
-      "exit": 0,
-      "note": "Unified-diff blank context lines retain their mandatory single-space marker"
+      "fixture_rs_unchanged": true,
+      "rmake_rs_unchanged": true
     }
   ],
-  "review": "Independent frontend source review found no pinned API/type/order blocker in env_remove/reintroduction, fresh namespaces, raw diagnostics, or no-sidecar assertions. Production guard and all existing histories/assertions retained; no Rust/compiler/test execution for this new source identity.",
+  "review": "Independent generalization review found no change to six-check order, short-circuiting, current/prepared lifetimes, drops, ordinary-HIR fallback or publication. Only gated rejection phase strings differ. No Rust/compiler/test execution for this generated identity.",
   "prepared_unit_tests": 26,
   "rust_compiler_builds": 0,
   "tests_run": 0,
@@ -47,10 +43,10 @@
   "hir_body_codec_implemented": true,
   "hit_path_implemented": true,
   "materializer_implemented": true,
-  "next_required": "Review and execute the repaired native fixture against an explicitly bound compiler/source identity. All 26 unchanged unit controls are unrun for this newly generated identity; earlier qualified checks and the failed original native history remain separate evidence.",
+  "next_required": "Independent review, exact source upgrade, selected compiler check and all 26 unit controls, then native capture diagnostic to identify the failed body-tree phase. No source fix or cache-hit qualification claimed.",
   "normalized_feature_entry_implemented": true,
   "prepared_current_values_implemented": true,
-  "source_identity": "7d6c092002471410d342d3a25633d72e314712df4d6ad6e57a8f4849a947cc2b",
+  "source_identity": "1cffd7526fd7d5415407a8d8ec333f1eae5dc06239189f0121bc6455759fceaf",
   "historical_compiler_check": {
     "checkpoint": "3f3e9c28704a7866f72ad0974336d79671714ae9",
     "status": "failed",
@@ -151,6 +147,30 @@
       "path": "evidence.tar.gz",
       "sha256": "a5a6e0e5b2c49603baa0c4d6d2e51b40f57279ab5f4f4f82d75cad0240d3e58b"
     },
+    "does_not_qualify_current_checkpoint": true
+  },
+  "rejection_phase_diagnostics": {
+    "existing_check_order_preserved": true,
+    "checks_weakened": false,
+    "report_gate": "-Zincremental-info",
+    "phases": [
+      "current",
+      "capture",
+      "validation",
+      "preparation",
+      "cold-audit",
+      "post-audit-exit"
+    ],
+    "executed": false
+  },
+  "historical_direct_capture_probe": {
+    "source_revision": "3d7ad8282c5695196f4a4dcfd0bdceacac3f79b9",
+    "compiler_exit": 0,
+    "body_tree_rejections": 24,
+    "successful_captures": 0,
+    "verified_hits": 0,
+    "native_executed": false,
+    "archive_sha256": "7a3b8ad4111d3d39928ecc78ac4a2c79d17221a706fc36d0bc2b5ae43bd30a97",
     "does_not_qualify_current_checkpoint": true
   }
 }
