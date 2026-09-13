@@ -70,7 +70,8 @@ def main():
                 receipt_path=work/'active.json',receipt=dict(label=label))
             (work/(label+'.stdout')).write_text(stdout);(work/(label+'.stderr')).write_text(stderr)
             records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode,
-                started_at=started,finished_at=time.time()))
+                started_at=started,finished_at=time.time(),
+                stdout_sha256=sha(work/(label+'.stdout')),stderr_sha256=sha(work/(label+'.stderr'))))
             write(work/'commands.json',records);assert child.returncode==0,(stdout+stderr)[-3000:]
             if label=='inspect-control':
                 words=[int(word,16) for line in stdout.splitlines() if re.match(r'^[0-9a-f]{16}\s',line)
@@ -93,7 +94,8 @@ def main():
             for suffix, text in [('stdout', stdout), ('stderr', stderr)]:
                 (work / f'{label}.{suffix}').write_text(text)
             records.append(dict(label=label, command=command, pid=child.pid, returncode=child.returncode,
-                                started_at=started, finished_at=time.time()))
+                                started_at=started, finished_at=time.time(),
+                                stdout_sha256=sha(work/(label+'.stdout')),stderr_sha256=sha(work/(label+'.stderr'))))
             write(work / 'commands.json', records)
             assert child.returncode == 0, f'{label} failed'
             if action == 'test':
