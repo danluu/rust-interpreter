@@ -4027,9 +4027,13 @@
   },
   "schema_version": 1,
   "smallest_smoke": {
-    "build": "D --sysroot=B --edition=2024 --crate-name rustc_main SOURCE/compiler/rustc/src/main.rs -C link-arg=-Wl,-rpath,E/lib -o OWN/smoke-rustc",
+    "build": "RUSTC_BOOTSTRAP=1 D --sysroot=B --edition=2024 --crate-name rustc_main SOURCE/compiler/rustc/src/main.rs -C link-arg=-Wl,-rpath,E/lib -o OWN/smoke-rustc",
     "compiler_roles": "D downloaded beta build executable/default sysroot, B fresh private build sysroot, E qualified stage1 native compiler/sysroot",
-    "control": "compare smoke -vV and a normal compile plus uncalled E0308 to E, with exact same source path/semantic flags; no diagnostic substitutions",
+    "control": "compare smoke -vV and normal compile plus uncalled E0308 to E, with explicit --sysroot=E, exact same source path/semantic flags; no diagnostic substitutions",
+    "environment": {
+      "RUSTC_BOOTSTRAP": "1",
+      "version_overrides": "absent"
+    },
     "prefer_dynamic": "not prescribed: pinned bootstrap applies it only to Mode::Std, not ToolRustcPrivate",
     "rationale": "stock rustc_private driver main, allocator override preserved; actual link requirements and loaded driver proof still required",
     "source": "unchanged pinned compiler/rustc/src/main.rs"

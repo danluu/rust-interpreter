@@ -79,11 +79,15 @@ The smallest subsequent compatibility smoke uses the unchanged pinned
 and its allocator override. Proposed build shape (not executed):
 
 ```text
-D --sysroot=B --edition=2024 --crate-name rustc_main \
+RUSTC_BOOTSTRAP=1 D --sysroot=B --edition=2024 --crate-name rustc_main \
   SOURCE/compiler/rustc/src/main.rs \
   -C link-arg=-Wl,-rpath,E/lib -o OWN/smoke-rustc
 ```
 
+The genuine beta compiler needs `RUSTC_BOOTSTRAP=1` for this stock private-tool
+source. Version overrides remain prohibited. Invocations of the relocated
+`OWN/smoke-rustc` that compile fixtures must explicitly pass `--sysroot=E`, so
+their native standard library is E's rather than an inferred adjacent directory.
 The outer driver must first probe D/E and bind their actual executable and
 loader closures, then retain the actual link command and any missing native
 link requirements. The smoke must report E's truthful version, load the exact
