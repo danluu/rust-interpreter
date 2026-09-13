@@ -17,9 +17,10 @@ import tempfile
 
 from custom_compiler import digest, file_digest, read_json, require, tree_stamps, valid_key
 from toolchain_lookup import _installation
+from custom_cargo_libraries import library_closure, library_state
 
 ROOT = Path(__file__).resolve().parents[1]
-POLICY = 'owned-qualified-cargo-v1'
+POLICY = 'owned-qualified-cargo-v2-dylibs'
 
 
 def file_identity(path):
@@ -99,9 +100,54 @@ def load_cargo(root, key):
         require(os.access(directory / 'payload/cargo', os.X_OK), 'custom Cargo is not executable')
         require(compiler_stamps(identity['pinned_compiler']) == ready['compiler_stamps'],
                 'pinned compiler installation changed; reimport Cargo after requalification')
+        require(library_state(identity['dynamic_libraries']) == ready['library_stamps'],
+                'Cargo dynamic library changed; reimport after requalification')
         return Cargo(key, directory, identity)
     except (OSError, KeyError, TypeError, ValueError, AttributeError) as error:
         raise RuntimeError('invalid custom Cargo installation: ' + str(error)) from error
+
+
+def validate_matched_pair(baseline, candidate):
+    """Prove a Cargo-only source comparison from retained qualification inputs."""
+    require(baseline.key != candidate.key and
+            baseline.identity['files']['cargo'] != candidate.identity['files']['cargo'],
+            'Cargo comparison requires different actual binary hashes')
+    require(baseline.identity['pinned_compiler'] == candidate.identity['pinned_compiler'] and
+            baseline.identity['dynamic_libraries'] == candidate.identity['dynamic_libraries'],
+            'Cargo comparison compiler or dynamic libraries differ')
+    require(baseline.identity['files']['qualification'] == candidate.identity['files']['qualification'],
+            'Cargo comparison requires one exact matched qualification')
+    compositions = []
+    for cargo, mode in [(baseline, 'stock'), (candidate, 'candidate')]:
+        payload = cargo.directory / 'payload'
+        for name in ['cargo', 'source', 'qualification']:
+            require(file_digest(payload / name) == cargo.identity['files'][name],
+                    'Cargo comparison input changed: ' + name)
+        manifest = read_json(payload / 'source')
+        composition = manifest['composition']
+        require(composition['mode'] == mode and digest(composition) == manifest['tool_key'] ==
+                cargo.identity['provenance']['qualified_tool_key'] and
+                composition['cargo_sha256'] == cargo.identity['files']['cargo'],
+                'Cargo comparison source/binary association differs')
+        compositions.append(composition)
+    stock, patched = compositions
+    require(set(stock) == set(patched) and all(stock[k] == patched[k] for k in stock
+            if k not in ['mode', 'source_inventory', 'cargo_sha256']),
+            'Cargo comparison build profile, features, compiler or settings differ')
+    before, after = stock['source_inventory'], patched['source_inventory']
+    require(set(before) == set(after), 'Cargo comparison source inventory differs')
+    changed = sorted(path for path in before if before[path] != after[path])
+    require(changed == ['src/util/rustc.rs'], 'Cargo comparison is not the qualified info-cache source-only change')
+    report = read_json(baseline.directory / 'payload/qualification')
+    require(report['status'] == 'passed' and report['candidate_source_restored'] is True and
+            report['candidate_tests_passed'] == 3 and report['stock_existing_tests_passed'] == 2 and
+            report['stock_expected_regression_failures'] == 1 and
+            report['original_candidate_inventory'] == after and
+            report['source_only_production_difference'] == changed[0],
+            'Cargo comparison qualification outcomes differ')
+    return dict(source_revision=stock['source_revision'], source_only_production_difference=changed,
+                qualification_sha256=baseline.identity['files']['qualification'],
+                source_inputs=len(before), baseline=baseline.receipt(), candidate=candidate.receipt())
 
 
 def install_qualified_cargo(root, report_path, mode, toolchain):
@@ -171,6 +217,7 @@ def install_qualified_cargo(root, report_path, mode, toolchain):
     binding = dict(toolchain=toolchain, host=hosts[0], compiler=compiler,
                    sysroot=str(rustc.parent.parent), rustup_home=report['environment_overrides']['RUSTUP_HOME'])
     stamps = compiler_stamps(binding)
+    dynamic_libraries, library_stamps = library_closure(binary, hosts[0])
     parent = root / '.work/cargos'
     parent.mkdir(parents=True, exist_ok=True)
     require(parent.resolve(strict=True) == parent, 'Cargo installation parent is not owned')
@@ -181,7 +228,7 @@ def install_qualified_cargo(root, report_path, mode, toolchain):
         shutil.copyfile(path, payload / name)
     files = {p.name: file_digest(p) for p in payload.iterdir()}
     require(files['cargo'] == tool['binary']['sha256'], 'copied Cargo differs')
-    identity = dict(policy=POLICY, files=files, pinned_compiler=binding,
+    identity = dict(policy=POLICY, files=files, pinned_compiler=binding, dynamic_libraries=dynamic_libraries,
                     provenance=dict(source_revision=composition['source_revision'],
                         qualified_tool_key=tool['tool_key'], mode=mode,
                         source_manifest_sha256=files['source'], qualification_sha256=files['qualification'],
@@ -193,12 +240,16 @@ def install_qualified_cargo(root, report_path, mode, toolchain):
         return load_cargo(root, key)
     temporary.rename(destination)
     payload = destination / 'payload'
+    # Relocation must preserve the proved external closure, including runpaths.
+    installed_libraries, installed_stamps = library_closure(payload / 'cargo', hosts[0])
+    require(installed_libraries == dynamic_libraries and installed_stamps == library_stamps,
+            'Cargo dynamic-library closure changed after installation')
     for p in payload.iterdir():
         p.chmod(0o555 if p.name == 'cargo' else 0o444)
     payload.chmod(0o555)
     require(compiler_stamps(binding) == stamps, 'compiler changed during Cargo import')
     ready = dict(owner=str(root), key=key, identity=identity,
-                 stamps=tree_stamps(payload), compiler_stamps=stamps)
+                 stamps=tree_stamps(payload), compiler_stamps=stamps, library_stamps=library_stamps)
     path = destination / 'ready.json'
     path.write_text(json.dumps(ready, sort_keys=True) + '\n'); path.chmod(0o444)
     return load_cargo(root, key)

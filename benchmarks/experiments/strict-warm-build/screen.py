@@ -29,6 +29,7 @@ CANDIDATE_POLICIES = {
     'demand-retention': 'query-cache-retention',
     'native-host-mir': 'native-host-mir-policy',
     'stable-cgu': 'stable-cgu-partitioning',
+    'cargo-info-cache': None,
 }
 DEFAULT_CANDIDATE_POLICY = 'demand-retention'
 CASE = WORKFLOW_VARIANTS['nushell', 'type-relations']
@@ -89,7 +90,7 @@ def environment():
     return env
 
 
-def validate_std_ready(path, env, custom=None, mode='off'):
+def validate_std_ready(path, env, custom=None, mode='off', cargo=None):
     """Read-only setup verification; never invoke the std-MIR builder."""
     path = path.absolute()
     require(path.resolve(strict=True) == path and path.name == 'ready.json', 'invalid std readiness path')
@@ -100,6 +101,12 @@ def validate_std_ready(path, env, custom=None, mode='off'):
             and identity['flags'] == STD_FLAGS, 'std ownership or policy differs')
     key = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
     require(path.parent.name == key, 'std MIR identity differs from its directory')
+    if cargo is None:
+        require('cargo' not in identity, 'prepared custom Cargo std MIR requires Cargo selection')
+    else:
+        require(custom is None and identity.get('cargo') == cargo.receipt(),
+                'prepared std MIR uses a different Cargo identity')
+        cargo.environment(env, TOOLCHAIN)
     if custom is None:
         require('compiler_key' not in identity, 'custom std MIR requires a custom compiler')
         rustup = Path(env.get('RUSTUP_HOME', str(Path.home() / '.rustup')))
@@ -114,6 +121,10 @@ def validate_std_ready(path, env, custom=None, mode='off'):
     require(rustc.is_file(), 'pinned rustc is not installed; setup is required')
     compiler = subprocess.check_output([str(rustc), '-vV'], env=env, text=True)
     require(compiler == identity['compiler'], 'prepared std MIR uses a different compiler')
+    if cargo is not None:
+        binding = cargo.identity['pinned_compiler']
+        require(compiler == binding['compiler'] and toolchain == Path(binding['sysroot']),
+                'prepared std MIR differs from the Cargo pinned compiler')
     require(sha(toolchain / 'lib/rustlib/src/rust/library/Cargo.lock') == identity['lock_sha256'],
             'prepared std MIR uses a different standard-library lockfile')
     artifacts = {}
@@ -161,11 +172,24 @@ def retention_setting(mode, candidate_policy):
 
 def require_candidate_policy(tool, key, candidate_policy):
     require(candidate_policy in CANDIDATE_POLICIES, 'unknown candidate policy')
-    require_export_option(tool, key, CANDIDATE_POLICIES[candidate_policy])
+    capability = CANDIDATE_POLICIES[candidate_policy]
+    if capability is not None:require_export_option(tool, key, capability)
 
 
-def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candidate_std):
+def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candidate_std,
+                        baseline_cargo_key=None, candidate_cargo_key=None):
     require(policy in CANDIDATE_POLICIES, 'unknown candidate policy')
+    if policy == 'cargo-info-cache':
+        require(baseline_key == candidate_key, 'Cargo comparison requires identical tool binaries')
+        require(compiler_key is None, 'Cargo comparison requires the public compiler')
+        require(candidate_std is not None, 'Cargo comparison requires prepared candidate std MIR')
+        require(all(isinstance(k, str) and re.fullmatch('[0-9a-f]{64}', k)
+                    for k in [baseline_cargo_key, candidate_cargo_key])
+                and baseline_cargo_key != candidate_cargo_key,
+                'Cargo comparison requires distinct installed baseline/candidate Cargo keys')
+        return
+    require(baseline_cargo_key is None and candidate_cargo_key is None,
+            'Cargo arguments require cargo-info-cache policy')
     if policy == 'stable-cgu':
         require(baseline_key == candidate_key, 'stable-CGU comparison requires identical tool binaries')
         require(isinstance(compiler_key, str) and re.fullmatch('[0-9a-f]{64}', compiler_key),
@@ -183,7 +207,7 @@ def cgu_setting(mode):
 
 
 def command_for(mode, key, source, work, sample, names=CASE['tests'],
-                candidate_policy=DEFAULT_CANDIDATE_POLICY, compiler_key=None):
+                candidate_policy=DEFAULT_CANDIDATE_POLICY, compiler_key=None, cargo_key=None):
     retention = retention_setting(mode, candidate_policy)
     policy_args = [] if retention is None else ['--query-cache-retention', retention]
     if candidate_policy == 'stable-cgu':
@@ -192,6 +216,12 @@ def command_for(mode, key, source, work, sample, names=CASE['tests'],
         policy_args = ['--compiler-key', compiler_key, '--stable-cgu-partitioning', cgu_setting(mode)]
     else:
         require(compiler_key is None, 'custom compiler requires stable-CGU policy')
+    if candidate_policy == 'cargo-info-cache':
+        require(isinstance(cargo_key, str) and re.fullmatch('[0-9a-f]{64}', cargo_key),
+                'Cargo command requires an installed Cargo key')
+        policy_args = ['--cargo-key', cargo_key]
+    else:
+        require(cargo_key is None, 'Cargo arguments require cargo-info-cache policy')
     command = [sys.executable, ROOT / 'scripts/interpreter.py', '--manifest-path', source / 'Cargo.toml',
         '--package', CASE['package'], '--jobs', str(JOBS), '--tool-key', key,
         '--cache-namespace', work.name + ':' + mode, '--workspace-cache-root', work / 'caches' / mode,
@@ -216,7 +246,7 @@ def measure_command(command, **kwargs):
     return child, stdout, stderr, elapsed, cpu
 
 
-def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None):
+def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, cargo=None):
     retention = retention_setting(mode, candidate_policy)
     expected = dict(tool_key=key, engine='jit', function_cache='auto', borrowck_cache='off',
         jit_persistent_registers=True, jit_resumable_calls=True, inline_leaves=True,
@@ -231,22 +261,30 @@ def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom
             stable_cgu_partitioning=cgu_setting(mode))
     else:
         require(custom is None, 'custom compiler requires stable-CGU policy')
+    if candidate_policy == 'cargo-info-cache':
+        require(cargo is not None, 'Cargo launch requires a validated Cargo')
+        expected['custom_cargo'] = cargo.receipt()
+    else:
+        require(cargo is None, 'Cargo arguments require cargo-info-cache policy')
     return expected
 
 
 def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
-                   candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, prepared_std=None):
+                   candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, prepared_std=None, cargo=None):
     launches = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in stderr.splitlines()
                 if line.startswith('rust-interp-launch: ')]
     require(len(launches) == 1, 'expected exactly one completed launcher report')
     launch = launches[0]
-    expected = launch_settings(mode, key, candidate_policy, custom)
+    expected = launch_settings(mode, key, candidate_policy, custom, cargo)
     require(all(launch.get(k) == v for k, v in expected.items()), 'launcher settings differ')
+    require(custom is not None or 'custom_compiler' not in launch, 'unexpected custom compiler in launcher')
+    require(cargo is not None or 'custom_cargo' not in launch, 'unexpected custom Cargo in launcher')
+    if cargo:require(launch.get('query_cache_retention', 'off') == 'off', 'unexpected retention policy in Cargo comparison')
     require(launch['toolchain_lookup']['mode'] == 'cached'
             and launch['toolchain_lookup']['outcome'] in ({'owned-manifest'} if custom else {'miss', 'hit'}),
             'cached toolchain lookup unavailable')
-    if custom:
-        require(prepared_std is not None, 'stable-CGU launch requires prepared std identity')
+    if custom or cargo:
+        require(prepared_std is not None, 'selected compiler/Cargo launch requires prepared std identity')
     if prepared_std is not None:
         require(launch.get('std_mir') == {k: prepared_std[k] for k in ['key', 'sysroot', 'target']},
                 'launcher used different standard-library MIR')
@@ -313,14 +351,17 @@ def main():
                         default=DEFAULT_CANDIDATE_POLICY)
     parser.add_argument('--std-mir-ready', type=Path, required=True)
     parser.add_argument('--compiler-key', help='same installed compiler for all stable-CGU arms')
+    parser.add_argument('--baseline-cargo-key', help='qualified stock Cargo for baseline and duplicate arms')
+    parser.add_argument('--candidate-cargo-key', help='matched source-only candidate Cargo')
     parser.add_argument('--candidate-std-mir-ready', type=Path,
-                        help='separately prepared stable-CGU on namespace; baseline uses off')
+                        help='separately prepared candidate std namespace for stable-CGU or Cargo policy')
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=45)
     args = parser.parse_args()
     require(__debug__, 'run Python without -O')
     require(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
     validate_comparison(args.candidate_policy, args.baseline_tool_key, args.candidate_tool_key,
-                        args.compiler_key, args.candidate_std_mir_ready)
+                        args.compiler_key, args.candidate_std_mir_ready,
+                        args.baseline_cargo_key, args.candidate_cargo_key)
     source = args.source.absolute()
     work = ROOT / '.work' / args.run_id
     work.mkdir(exist_ok=False)
@@ -331,16 +372,25 @@ def main():
             acquire_lock(lock, args.lock_wait_seconds)
             require_space(work, MINIMUM_GIB)
             env = environment()
+            from custom_compiler import validate_tool_compiler
+            from custom_cargo import load_cargo, validate_matched_pair
             custom = None
             if args.compiler_key is not None:
                 from custom_compiler import load_compiler, validate_tool_compiler
                 custom = load_compiler(ROOT, args.compiler_key)
                 custom.environment(env)
-            std = validate_std_ready(args.std_mir_ready, env, custom, 'off')
+            cargos = dict.fromkeys(MODES)
+            cargo_comparison = None
+            if args.candidate_policy == 'cargo-info-cache':
+                cargos = {mode: load_cargo(ROOT, args.candidate_cargo_key if mode == 'candidate'
+                                          else args.baseline_cargo_key) for mode in MODES}
+                for cargo in cargos.values():cargo.environment(env, TOOLCHAIN)
+                cargo_comparison = validate_matched_pair(cargos['baseline'], cargos['candidate'])
+            std = validate_std_ready(args.std_mir_ready, env, custom, 'off', cargos['baseline'])
             stds = dict.fromkeys(MODES, std)
-            if custom:
-                stds['candidate'] = validate_std_ready(args.candidate_std_mir_ready, env, custom, 'on')
-                require(std['key'] != stds['candidate']['key'], 'stable-CGU std namespaces must differ')
+            if custom or cargo_comparison:
+                stds['candidate'] = validate_std_ready(args.candidate_std_mir_ready, env, custom, 'on', cargos['candidate'])
+                require(std['key'] != stds['candidate']['key'], 'comparison std namespaces must differ')
             revision, marker, changed, original = validate_source(source)
             states = protocol_states(original)
             keys = dict(baseline=args.baseline_tool_key, candidate=args.candidate_tool_key,
@@ -350,6 +400,7 @@ def main():
             require(len({proof['rust-interp-vm'] for proof in manifests.values()}) == 1,
                     'compiler-cache screen requires identical VM binaries')
             for mode, tool in tools.items():
+                if cargo_comparison:validate_tool_compiler(tool, keys[mode], None)
                 if custom:
                     validate_tool_compiler(tool, keys[mode], custom)
                     require_candidate_policy(tool, keys[mode], args.candidate_policy)
@@ -364,6 +415,10 @@ def main():
                      ROOT / 'benchmarks/corpus.json', Path(std['path'])]
             if custom:
                 paths += [Path(stds['candidate']['path']), custom.sysroot.parent / 'ready.json']
+            if cargo_comparison:
+                paths += [Path(stds['candidate']['path']), Path(__file__).with_name('CARGO_INFO_CACHE_SCREEN.md')]
+                for cargo in [cargos['baseline'], cargos['candidate']]:
+                    paths += [cargo.directory / 'ready.json', *sorted((cargo.directory / 'payload').iterdir())]
             paths += sorted((ROOT / 'scripts').glob('*.py'))
             paths += [p for tool in set(tools.values()) for p in tool.iterdir() if p.is_file()]
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
@@ -387,6 +442,11 @@ def main():
                     manifest=str(custom.sysroot.parent / 'ready.json'), identity=custom.identity),
                     std_mir_by_mode=stds, cgu_policy_by_mode={m: cgu_setting(m) for m in MODES},
                     compiler_comparison='same compiler and tool binaries; stable-CGU off/on/off')
+            if cargo_comparison:
+                plan.update(cargo_comparison=cargo_comparison,
+                    cargos_by_mode={mode: cargo.receipt() for mode, cargo in cargos.items()},
+                    std_mir_by_mode=stds,
+                    compiler_comparison='same public compiler/exporter/VM; matched stock/candidate/stock Cargo')
             write_json(work / 'plan.json', plan)
             previous = dict.fromkeys(MODES)
 
@@ -398,6 +458,8 @@ def main():
                         'prepared standard-library artifact changed')
                 if custom:
                     require(load_compiler(ROOT, custom.key) == custom, 'custom compiler changed')
+                for cargo in {c.key: c for c in cargos.values() if c is not None}.values():
+                    require(load_cargo(ROOT, cargo.key) == cargo, 'Cargo installation changed')
                 current = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
                 require(current == tracked, 'tracked source inventory changed')
                 require(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=source, text=True).strip() == revision,
@@ -420,14 +482,17 @@ def main():
                 digest = sha(changed)
                 require(previous[mode] != digest, 'unchanged command entered screen')
                 command = command_for(mode, keys[mode], source, work, sample,
-                                      candidate_policy=args.candidate_policy, compiler_key=args.compiler_key)
+                                      candidate_policy=args.candidate_policy, compiler_key=args.compiler_key,
+                                      cargo_key=cargos[mode].key if cargos[mode] else None)
                 suite_path = work / 'suites' / f"{sample['index']}-{mode}.json"
                 free = shutil.disk_usage(work).free
                 require_space(work, MINIMUM_GIB)
+                receipt = dict(index=sample['index'], phase=sample['phase'], mode=mode,
+                               source_sha256=digest, tool_key=keys[mode])
+                if cargos[mode]:receipt['cargo_key'] = cargos[mode].key
                 child, stdout, stderr, elapsed, cpu = measure_command(command, cwd=source, env=env,
                     receipt_path=work / 'receipts' / f"{sample['index']}-{mode}.json",
-                    receipt=dict(index=sample['index'], phase=sample['phase'], mode=mode,
-                                 source_sha256=digest, tool_key=keys[mode]))
+                    receipt=receipt)
                 row = dict(index=sample['index'], phase=sample['phase'], label=sample['label'], mode=mode,
                     command=command, pid=child.pid, seconds=elapsed,
                     cpu=cpu, returncode=child.returncode, stdout=stdout, stderr=stderr,
@@ -439,7 +504,7 @@ def main():
                 require((child.returncode == 0) == success, 'wrong-edit/passing exit status differs')
                 launch, outcomes, artifacts, suite_sha = checked_launch(
                     stderr, mode, keys[mode], success, suite_path, work / 'caches' / mode,
-                    candidate_policy=args.candidate_policy, custom=custom, prepared_std=stds[mode])
+                    candidate_policy=args.candidate_policy, custom=custom, prepared_std=stds[mode], cargo=cargos[mode])
                 workspace = launch['workspace_path']
                 require(workspaces.get(mode, workspace) == workspace, 'arm workspace changed')
                 workspaces[mode] = workspace

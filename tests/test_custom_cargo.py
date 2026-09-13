@@ -16,6 +16,7 @@ from test_custom_compiler import HOST, fake_install, thaw
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import custom_cargo as cargo_module
+import custom_cargo_libraries as libraries
 import custom_compiler
 import interpreter
 import std_mir
@@ -35,13 +36,16 @@ def fake_cargos(root):
     raw = root / '.work/qualification'; (raw / 'logs').mkdir(parents=True)
     report = dict(owner=str(root), status='passed', candidate_source_restored=True,
                   source_revision='a' * 40, source=str(root / 'source'), supervisor_pid=1,
+                  candidate_tests_passed=3, stock_existing_tests_passed=2, stock_expected_regression_failures=1,
+                  source_only_production_difference='src/util/rustc.rs',
                   compiler=version, environment_overrides=dict(RUSTC=str(rustc), RUSTUP_HOME=str(home)),
                   compiler_files={p.name: cargo_module.file_identity(p) for p in [rustc, builder]},
                   commands=[], tools=[])
     for mode in ['stock', 'candidate']:
         binary = raw / (mode + '-cargo'); binary.write_text(mode); binary.chmod(0o755)
         composition = dict(mode=mode, cargo_sha256=cargo_module.file_digest(binary),
-            source_revision=report['source_revision'], source_inventory={'rustc.rs': 'd' * 64},
+            source_revision=report['source_revision'], source_inventory={
+                'src/util/rustc.rs': ('d' if mode == 'stock' else 'e') * 64, 'same.rs': 'f' * 64},
             compiler=version, compiler_sha256=cargo_module.file_digest(rustc),
             builder_sha256=cargo_module.file_digest(builder),
             environment_overrides=report['environment_overrides'], profile='release', features='default')
@@ -64,9 +68,16 @@ def fake_cargos(root):
                 path = raw / 'logs' / (label + '.' + stream); path.write_text(label + stream)
                 row[stream + '_sha256'] = cargo_module.file_digest(path)
             report['commands'].append(row)
+    report['original_candidate_inventory'] = composition['source_inventory']
     report_path = raw / 'summary.json'; report_path.write_text(json.dumps(report))
-    return [cargo_module.install_qualified_cargo(root, report_path, mode, interpreter.TOOLCHAIN)
-            for mode in ['stock', 'candidate']]
+    library = root / 'fixture-library.dylib'; library.write_bytes(b'library fixture')
+    link = root / 'linked-library.dylib'; link.symlink_to(library.name)
+    closure = dict(platform=libraries.platform_identity(), searches={}, libraries=[dict(
+        logical=str(link), resolved=str(library), bytes=library.stat().st_size,
+        sha256=cargo_module.file_digest(library))])
+    with patch.object(cargo_module, 'library_closure', return_value=(closure, libraries.library_state(closure))):
+        return [cargo_module.install_qualified_cargo(root, report_path, mode, interpreter.TOOLCHAIN)
+                for mode in ['stock', 'candidate']]
 
 
 class CustomCargoTests(unittest.TestCase):
@@ -101,6 +112,46 @@ class CustomCargoTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'build compiler changed'):
             cargo_module.install_qualified_cargo(self.root, self.root / '.work/qualification/summary.json',
                                                 'stock', interpreter.TOOLCHAIN)
+
+    def test_changed_external_library_and_retargeted_homebrew_style_link_are_rejected(self):
+        cargo = self.cargos[0]
+        library = self.root / 'fixture-library.dylib'
+        original = library.stat()
+        library.write_bytes(b'LIBRARY fixture')
+        os.utime(library, ns=(original.st_atime_ns, original.st_mtime_ns))
+        with self.assertRaisesRegex(RuntimeError, 'dynamic library changed'):
+            cargo_module.load_cargo(self.root, cargo.key)
+        replacement = self.root / 'replacement.dylib'; replacement.write_bytes(b'library fixture')
+        link = self.root / 'linked-library.dylib'; link.unlink(); link.symlink_to(replacement.name)
+        with self.assertRaisesRegex(RuntimeError, 'link target changed'):
+            cargo_module.load_cargo(self.root, cargo.key)
+
+    def test_transitive_library_and_rpath_search_are_proved_without_warm_otool(self):
+        directory = self.root / 'macho'; directory.mkdir()
+        executable = directory / 'cargo'; executable.write_bytes(b'executable')
+        direct = directory / 'direct.dylib'; direct.write_bytes(b'direct')
+        nested = directory / 'nested.dylib'; nested.write_bytes(b'nested')
+        missing = directory / 'missing'; missing.mkdir()
+        outputs = {
+            ('cargo', '-L'): f'cargo:\n\t{direct} (compatibility version 1.0.0)\n',
+            ('cargo', '-l'): '',
+            ('direct.dylib', '-L'): 'direct:\n\t@rpath/nested.dylib (compatibility version 1.0.0)\n',
+            ('direct.dylib', '-l'): f'cmd LC_RPATH\n path {missing} (offset 12)\ncmd LC_RPATH\n path {directory} (offset 12)\n',
+            ('nested.dylib', '-L'): 'nested:\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0)\n',
+            ('nested.dylib', '-l'): '',
+        }
+        with patch.object(libraries.sys, 'platform', 'darwin'), \
+             patch.object(libraries.subprocess, 'check_output',
+                side_effect=lambda command, **kw: outputs[Path(command[-1]).name, command[-2]]) as probe:
+            identity, state = libraries.library_closure(executable, HOST)
+            self.assertEqual(len(identity['libraries']), 2)
+            self.assertEqual(probe.call_count, 6)
+            probe.reset_mock()
+            self.assertEqual(libraries.library_state(identity), state)
+            probe.assert_not_called()
+        (missing / 'nested.dylib').write_bytes(b'shadowing library')
+        with self.assertRaisesRegex(RuntimeError, 'search results changed'):
+            libraries.library_state(identity)
 
     def test_environment_pins_public_or_selected_custom_compiler_and_rejects_conflicts(self):
         cargo = self.cargos[0]

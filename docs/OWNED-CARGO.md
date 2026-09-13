@@ -33,6 +33,17 @@ dated compiler installation. This detects accidental local mutations; the
 manifest is not authentication against someone who can rewrite the whole
 installation and its records.
 
+On macOS the importer also walks the non-system dynamic-library closure using
+`otool`, including transitive dependencies and proved runpaths. It records
+logical/resolved paths and full library hashes, and binds reuse to file/link
+stamps plus every runpath candidate's existence. Homebrew library replacements
+and alias retargeting invalidate the installation. Unresolved or ambiguous
+runpaths fail import; relocation must preserve the same proved closure. Warm
+validation never runs `otool`. System dyld-cache libraries are assumed stable
+within the recorded `uname` platform/kernel build identity; they are not hashed
+individually. Other operating systems currently fail this closure import until
+equivalent validation is implemented.
+
 The selected command begins with the absolute installed Cargo path, followed
 directly by `check` or `fetch`. A standalone Cargo binary does not accept
 rustup's `+toolchain` argument. The launcher explicitly sets `RUSTC` to the
