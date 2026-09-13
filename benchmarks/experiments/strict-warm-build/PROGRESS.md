@@ -196,9 +196,16 @@ test rejecting wrapper and foreign-arena identities. All audit checks remain.
 Its actual compiler source `7efc0d9484da82cd327deb3b48616f8ec81eaf8d`
 passed the selected compiler check and all 27 unit tests, with no warnings,
 failures, ignored or filtered tests. All 61 plan/apply/check/unit commands and
-the complete source inventories are archived. Native capture/reuse qualification
-and performance remain pending; the stage1 executable has not been rebuilt for
-this repair.
+the complete source inventories are archived. The stage1 compiler and native
+standard library were subsequently rebuilt for this repair. The tracked-option
+test and complete native fixture passed, but compiletest truncated the later hit
+records, so that original outer attempt remains failed. A separate replay of the
+same unmodified recipe preserved the full output and passed all 14 commands,
+including final source, restored-fixture and runtime checks. It recorded 335
+verified cache hits across 22 names. All tree, journal and poststate audits remain
+required. Stage2 packaging, application integration and performance qualification
+remain pending.
+[Complete native replay and retained original failure](../../../results/hir-arena-native-qualification-01/README.md).
 [Worker-arena repair check and 27-unit evidence](../../../results/hir-arena-identity-check-01/README.md).
 [Complete rebuilt native diagnostic](../../../results/hir-diagnostic-native-01/README.md).
 [Fixture and phase-diagnostic check evidence](../../../results/hir-fixture-phase-check-01/README.md).
@@ -218,6 +225,16 @@ emitted `S`/`E` suffix and exclusive `ItemLocalId` bounds.
 [Seven corrected hit-parser controls](../../../results/hir-native-parser-controls-01/README.md).
 [Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
 [Copied archive guard evidence](../../../results/hir-capture-offline-seed-guards-01/README.md).
+
+The ordinary native baseline for interpreted Cargo build scripts passed all 28
+planned outcomes: 19 successful three-test runs, eight uncalled compilation
+rejections and one deliberate wrong-value test rejection. All fixture sources
+were restored. The histories cover generated files, Cargo directives, input and
+environment changes, unchanged-run freshness, and a helper also used by a native
+proc macro. Both earlier recorder failures and the admission timeout remain
+preserved. This establishes the native comparison; interpreted host-unit routing
+and complete build-script execution still need implementation.
+[Native build-script baseline](../../../results/interpreted-build-scripts-native-baseline-01/README.md).
 
 The [external trait-name index](../../../experiments/external-trait-index/README.md)
 is a reviewed, uncompiled compiler prototype. It preserves ordinary external
