@@ -9,7 +9,7 @@ import stat
 
 from custom_compiler import digest, require, valid_key
 from std_mir_source_paths import (FLAGS, POLICY, SOURCE, command_for, compiler_sources,
-                                  expected_sysroot_files, make_identity)
+                                  expected_sysroot_files, make_identity, selection_for_identity, namespace_for)
 from verified_std_diagnostics import source_span_text
 
 
@@ -84,13 +84,14 @@ def validate_std(std, owner, compiler, mode, read_bytes):
     payload = read_bytes(path)
     ready = json.loads(payload)
     identity = ready['identity']
+    selection = selection_for_identity(identity)
     require(std['path'] == str(path) and std['sha256'] == sha256(payload).hexdigest()
             and std['sysroot'] == str(work / 'sysroot') and ready['owner'] == str(owner)
-            and ready['key'] == key == digest(identity) and std['policy'] == POLICY
+            and ready['key'] == key == digest(identity) and std['policy'] == identity['policy']
             and std['identity'] == identity and std['readiness'] == ready,
             'saved v2 std manifest or physical identity differs')
     compiler_sources(compiler)
-    require(identity == make_identity(compiler, identity['cargo'], 'stable-mono-cgu:' + mode,
+    require(identity == make_identity(compiler, identity['cargo'], namespace_for(selection, 'stable-mono-cgu:' + mode),
                 identity['configuration'], identity['build_environment_sha256'])
             and valid_key(identity['build_environment_sha256'])
             and std['compiler'] == compiler.identity['compiler'] and std['target'] == compiler.host

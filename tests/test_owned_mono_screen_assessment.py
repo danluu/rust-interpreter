@@ -17,6 +17,8 @@ import owned_mono_screen as mono
 import std_mir_source_paths as v2
 from verified_std_diagnostics import source_span_text
 from test_strict_warm_mono_screen import fixture as integration_fixture
+from std_source_observables import validate_source_observables
+from source_observable_transport import POLICY as OBSERVABLE_POLICY, TRANSPORT, COMMANDS
 
 
 def encoded(value):
@@ -27,7 +29,7 @@ def sha(payload):
     return hashlib.sha256(payload).hexdigest()
 
 
-def fixture():
+def fixture(shared=False):
     owner, files = Path('/owned/project'), {}
     source = b'example source\n'
     sources = {name: sha(source) for name in v2.REQUIRED_SOURCES}
@@ -53,7 +55,7 @@ def fixture():
         return entries
 
     def std(mode):
-        identity = v2.make_identity(compiler, cargo, 'stable-mono-cgu:' + mode, {})
+        identity = v2.make_identity(compiler, cargo, v2.SHARED_NAMESPACE if shared else 'stable-mono-cgu:' + mode, {})
         key = custom.digest(identity)
         work = owner / '.work/std-mir' / key
         metadata = {'lib/rustlib/' + host + '/lib/lib' + crate + '-fixture.rmeta': '3' * 64 for crate in v2.CRATES}
@@ -105,9 +107,10 @@ def fixture():
         artifacts = {str(work / 'sysroot' / name): dict(sha256=h, stamp=[1, 2, 10, 1]) for name, h in metadata.items()}
         return dict(path=str(work / 'ready.json'), sha256=sha(encoded(ready)), key=key, artifacts=artifacts,
             compiler=compiler.identity['compiler'], rustc=str(compiler.rustc), rustc_sha256='1' * 64,
-            sysroot=str(work / 'sysroot'), target=host, policy=v2.POLICY, identity=identity, readiness=ready)
+            sysroot=str(work / 'sysroot'), target=host, policy=identity['policy'], identity=identity, readiness=ready)
 
-    off, on = std('off'), std('on')
+    off = std('off')
+    on = copy.deepcopy(off) if shared else std('on')
     plan = dict(owner=str(owner), candidate_policy='stable-mono-cgu', case=json.loads(json.dumps(screen.CASE)),
         source=str(owner / 'source'), states=[dict(index=i) for i in range(9)],
         custom_compiler=dict(key=compiler.key, sysroot=str(compiler.sysroot),
@@ -151,6 +154,37 @@ class OwnedMonoAssessmentTests(unittest.TestCase):
         wrong['std_mir_by_mode']['candidate'] = wrong['std_mir_by_mode']['baseline']
         with self.assertRaises(RuntimeError):
             assess.selection(wrong, snapshot(files))
+
+    def test_shared_std_archive_requires_identical_physical_input_and_keeps_mono_modes(self):
+        plan, compiler, files = fixture(shared=True)
+        with patch.object(Path, 'read_bytes', side_effect=AssertionError('live read')):
+            assess.selection(plan, snapshot(files))
+        std = plan['std_mir']
+        for mode in screen.MODES:
+            command = screen.command_for(mode, plan['tools'][mode], Path(plan['source']), Path('/owned/run'),
+                plan['states'][0], candidate_policy='stable-mono-cgu', compiler_key=compiler.key,
+                prepared_std=std)
+            self.assertEqual(command[command.index('--std-mir-policy') + 1], v2.SHARED_SELECTION)
+            self.assertEqual(command[command.index('--std-mir-key') + 1], std['key'])
+            self.assertEqual(command[command.index('--stable-mono-cgu-partitioning') + 1],
+                             'on' if mode == 'candidate' else 'off')
+            settings = screen.launch_settings(mode, plan['tools'][mode], 'stable-mono-cgu', compiler,
+                mono_wrapper=plan['mono_wrapper'], prepared_std=std)
+            self.assertEqual(settings['std_mir_policy'], v2.SHARED_POLICY)
+            launch = settings | dict(toolchain_lookup=dict(mode='cached', outcome='owned-manifest'))
+            assess.mono_launch_identity(plan, dict(mode=mode, launch=launch), compiler)
+            launch['std_mir_policy'] = v2.POLICY
+            with self.assertRaises(RuntimeError):
+                assess.mono_launch_identity(plan, dict(mode=mode, launch=launch), compiler)
+        wrong = copy.deepcopy(plan)
+        wrong['std_mir_by_mode']['candidate']['sysroot'] += '-different'
+        with self.assertRaises(RuntimeError):
+            assess.selection(wrong, snapshot(files))
+        wrong = copy.deepcopy(plan)
+        old, _, old_files = fixture()
+        wrong['std_mir_by_mode']['candidate'] = old['std_mir_by_mode']['candidate']
+        with self.assertRaisesRegex(RuntimeError, 'mixed MonoItem std policy'):
+            assess.selection(wrong, snapshot(files | old_files))
 
     def test_v2_rejects_self_consistently_rehashed_missing_real_snippet(self):
         plan, compiler, files = fixture()
@@ -250,6 +284,31 @@ class OwnedMonoAssessmentTests(unittest.TestCase):
         for changes in [dict(sha256='0' * 64), dict(bytes=1), dict(utf8='also present')]:
             with self.subTest(changes=changes), self.assertRaises(RuntimeError):
                 assess.member_bytes(item | changes)
+
+    def test_saved_screen_uses_typed_transport_version_gate_after_valid_strict36(self):
+        result, files, put, validate = integration_fixture()
+        checked = validate()
+        owner = Path('/owned/project')
+        observable_path = owner / '.work/observable/result.json'
+        old = dict(status='passed', policy=OBSERVABLE_POLICY, transport_policy=TRANSPORT,
+            guest_negative_controls=4, commands=COMMANDS, owner=str(owner), compiler_key='c'*64,
+            tool_key='a'*64, compiler_sysroot='/compiler/sysroot', std_mir=result['std_mir'],
+            benchmark=False, diagnostics_rewritten=False, source_restored=True, qualification_only=True,
+            unmapped_source_paths='passed', std_only_application_observables='unchanged',
+            application_remap_sensitivity='expected-span-file-only-change',
+            disposable_source_negatives='rejected-by-raw-source-validator')
+        observable = dict(path=str(observable_path))
+        plan = dict(candidate_policy='stable-mono-cgu', owner=str(owner), tools=dict(baseline='a'*64),
+            std_mir_by_mode=dict(baseline=result['std_mir']['off'], candidate=result['std_mir']['on']),
+            compiler_qualification=checked, source_observables=observable)
+        compiler = SimpleNamespace(key='c'*64, sysroot=Path('/compiler/sysroot'))
+        for change in [dict(policy='std-source-observables-v1'), dict(commands=57),
+                       dict(transport_policy='guest-stdout')]:
+            payload = encoded(old | change)
+            def read(path):
+                return payload if path == observable_path else files[str(path.relative_to(owner / '.work/integration'))]
+            with self.subTest(change=change), self.assertRaisesRegex(RuntimeError, 'source prerequisite is missing or uses different'):
+                mono.qualification(plan, compiler, read, source_observables_validator=validate_source_observables)
 
 
 if __name__ == '__main__':

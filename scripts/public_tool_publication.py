@@ -15,7 +15,8 @@ import time
 from custom_compiler import digest, file_digest, require
 from custom_cargo_libraries import library_closure, platform_identity
 from qualified_public_tools import (BINARIES, check_closure, record_file, sha,
-    relative, suite_result, validate_live_inputs, validate_public_tool)
+    relative, suite_result, validate_live_inputs, validate_public_tool, WORKER_BUILD_POLICY, worker_capability,
+    HOST_LIBRARY_BUILD_POLICY, library_capability)
 from toolchain_lookup import _stamp
 from workflow_io import atomic_bytes, capture, require_space, write_json
 
@@ -92,7 +93,7 @@ def command_environment(plan, command, inherited):
 
 
 def run_plan_commands(plan, *, inherited, before_command=None, after_command=None):
-    """Run the frozen eight commands, under a lock already held by the caller.
+    """Run the frozen commands, under a lock already held by the caller.
 
     Hooks capture source/tool/dependency identities at the required boundaries.
     They cannot replace or filter the command list. A hook failure stops the
@@ -161,11 +162,12 @@ def compose_qualified_tools(payload_root, *, public_compiler, public_cargo, qual
     def hashed(name):return file_digest(root / name)
     plan = read('provenance/build-plan.json')
     commands = read('provenance/commands.json')
+    policy = plan.get('qualification_policy')
     results = {}
     for command in commands:
-        if command['label'] in ('rust-workspace-tests', 'launcher-contracts', 'screen-contracts', 'real-histories'):
+        if command['label'] in ('rust-workspace-tests', 'launcher-contracts', 'screen-contracts', 'publication-contracts', 'real-histories'):
             results[command['label']] = suite_result(command['label'], (root / command['stdout']).read_text(),
-                                                    (root / command['stderr']).read_text())
+                                                    (root / command['stderr']).read_text(), policy)
     require(set(qualified_binaries) == set(BINARIES), 'missing pre-history binary identities')
     binaries = {name: file_digest(Path(path)) for name, path in plan['publication']['source_binaries'].items()}
     require(binaries == qualified_binaries, 'tool binary changed during real histories')
@@ -193,18 +195,24 @@ def compose_qualified_tools(payload_root, *, public_compiler, public_cargo, qual
         plan_sha256=build['plan_sha256'], binaries=binaries, compiler_identity_sha256=digest(public_compiler),
         cargo_identity_sha256=digest(public_cargo), library_identity_sha256=digest(libraries),
         capability_stdout_sha256=capability_sha, shared_std=shared_std, results=results, commands=commands)
+    if policy == WORKER_BUILD_POLICY:
+        correctness.update(qualification_policy=policy, qualification_scope='public-build-only')
+    if policy == HOST_LIBRARY_BUILD_POLICY:
+        correctness.update(qualification_policy=policy, qualification_scope='host-library-real-histories')
     output = root / 'provenance/correctness.json'
     require(not output.exists() and not output.is_symlink(), 'correctness receipt already exists')
     write_json(output, correctness)
     paths = list((root / 'provenance').rglob('*'))
     require(not any(p.is_symlink() for p in paths), 'provenance contains symlinks')
     payloads = {str(p.relative_to(root)): file_digest(p) for p in sorted(paths) if p.is_file()}
-    return dict(schema_version=1, kind='qualified-public-toolset-v1',
+    composition = dict(schema_version=1, kind='qualified-public-toolset-v1',
         source=dict(revision=plan['production_source_revision'], source_input_key=plan['source_input_key'],
                     ordered_paths=plan['source_input_paths'], files=plan['workspace_sources']),
         public_compiler=public_compiler, public_cargo=public_cargo, build=build, libraries=libraries,
         binaries=binaries, capability_stdout_sha256=capability_sha,
         correctness_receipt_sha256=payloads['provenance/correctness.json'], payloads=payloads)
+    if policy in (WORKER_BUILD_POLICY, HOST_LIBRARY_BUILD_POLICY):composition['qualification_policy'] = policy
+    return composition
 
 
 def immutable_publish(composition, payload_root, source_binaries, owners):
@@ -263,6 +271,12 @@ def immutable_publish(composition, payload_root, source_binaries, owners):
         commands = json.loads((destination / 'provenance/commands.json').read_bytes())
         capability_command = next(c for c in commands if c['label'] == 'capabilities')
         capability = json.loads((destination / capability_command['stdout']).read_bytes())
+        if composition.get('qualification_policy') == WORKER_BUILD_POLICY:
+            wrapper = next(c for c in commands if c['label'] == 'wrapper-capabilities')
+            worker_capability(capability, (destination / wrapper['stdout']).read_bytes(), composition['binaries'])
+        if composition.get('qualification_policy') == HOST_LIBRARY_BUILD_POLICY:
+            wrapper = next(c for c in commands if c['label'] == 'wrapper-capabilities')
+            library_capability(capability, (destination / wrapper['stdout']).read_bytes(), composition['binaries'])
         capability.update(tool_key=key, exporter_sha256=composition['binaries']['rust-interp-mir-export'])
         write_json(destination / 'capabilities.json', capability)
         publication = dict(schema_version=1, status='published', owner=str(owner), directory=str(destination),
@@ -270,7 +284,8 @@ def immutable_publish(composition, payload_root, source_binaries, owners):
         write_json(destination / 'publication.json', publication)
         ready = (json.dumps(composition['binaries'], indent=2) + '\n').encode()
         validated = validate_public_tool(destination, key,
-            lambda p: ready if p == destination / 'ready.json' else p.read_bytes())
+            lambda p: ready if p == destination / 'ready.json' else p.read_bytes(),
+            qualification_policy=composition.get('qualification_policy'))
         guard = validate_live_inputs(validated, rehash=True)
         write_json(destination / 'publication-guard.json', guard)
         for path in destination.iterdir():
@@ -284,18 +299,29 @@ def immutable_publish(composition, payload_root, source_binaries, owners):
 
 def materialize_screen_command(plan, publication, *, output):
     """Produce argv only after actual publication; never execute the screen."""
+    library = plan.get('qualification_policy') == HOST_LIBRARY_BUILD_POLICY
+    if library:
+        request = plan.get('screen_request', {})
+        require(request.get('candidate_policy') == 'host-library-opt'
+                and request.get('driver') == str(Path(plan['screen_owner']) / 'benchmarks/experiments/strict-warm-build/screen.py')
+                and request.get('std_mir_ready') == plan['shared_std']['path'],
+                'host-library screen request differs from qualified publication')
     output = Path(output)
     require(not output.exists() and not output.is_symlink(), 'screen handoff already exists')
     owner = Path(plan['screen_owner']); key = publication['tool_key']
     require(publication['status'] == 'published' and {p['owner'] for p in publication['installations']} ==
             {plan['owner'], plan['screen_owner']}, 'both owned installations are required')
     tool = owner / '.work/interpreter-tools' / key
-    validated = validate_public_tool(tool, key, Path.read_bytes)
+    validated = validate_public_tool(tool, key, Path.read_bytes, qualification_policy=plan.get('qualification_policy'))
     validate_live_inputs(validated, rehash=True)
     require(validated['plan'] == plan, 'publication belongs to another build plan')
     request = plan['screen_request']
-    for name in ('benchmarks/experiments/strict-warm-build/screen.py',
-                 'benchmarks/experiments/strict-warm-build/HOST_PROC_MACRO_OPT.md'):
+    worker = plan.get('qualification_policy') == WORKER_BUILD_POLICY
+    names = ('benchmarks/experiments/strict-warm-build/screen.py',
+             'benchmarks/experiments/strict-warm-build/HOST_LIBRARY_SCREEN.md' if library else
+             'benchmarks/experiments/strict-warm-build/FRONTEND_WORKERS_SCREEN.md' if worker else
+             'benchmarks/experiments/strict-warm-build/HOST_PROC_MACRO_OPT.md')
+    for name in names:
         require(file_digest(owner / name) == plan['harness'][name], 'screen harness is not integrated')
     require(file_digest(Path(request['std_mir_ready'])) == plan['shared_std']['sha256'], 'shared std changed')
     source = Path(request['source'])
@@ -305,8 +331,33 @@ def materialize_screen_command(plan, publication, *, output):
     argv = [request['python'], request['driver'], '--run-id', request['run_id'], '--source', request['source'],
         '--candidate-policy', request['candidate_policy'], '--baseline-tool-key', key, '--candidate-tool-key', key,
         '--std-mir-ready', request['std_mir_ready'], '--lock-wait-seconds', str(request['lock_wait_seconds'])]
+    qualification = None
+    if library:
+        from host_library_screen import public_build, standard_binding, runtime_harness, CAMPAIGN_LOCK
+        require(Path(plan['workload_admission']['lock']) == CAMPAIGN_LOCK,
+                'host-library screen requires the canonical campaign lock')
+        # Revalidate the explicit scope and actual wrapper association using the
+        # same helper used by real admission and archived assessment.
+        public = public_build(tool, key, Path.read_bytes)
+        shared = plan['shared_std']; compiler = public['composition']['public_compiler']
+        std = dict(shared, rustc=compiler['rustc_path'], rustc_sha256=compiler['rustc_sha256'],
+                   sysroot=str(Path(shared['path']).parent / 'sysroot'))
+        standard_binding(public, std)
+        runtime_harness(public, owner, Path.read_bytes)
+        argv += ['--workload-lock', str(CAMPAIGN_LOCK)]
+    if worker:
+        from frontend_worker_screen import validate_qualification
+        public = validated['composition']['public_compiler']
+        shared = plan['shared_std']
+        std = dict(shared, rustc=public['rustc_path'], rustc_sha256=public['rustc_sha256'],
+                   sysroot=str(Path(shared['path']).parent / 'sysroot'))
+        qualification = validate_qualification(plan['worker_qualification']['result'], key, validated, std, Path.read_bytes)
+        require(qualification['workload_lock'] == plan['workload_admission']['lock'], 'worker qualification used another lock')
+        argv += ['--frontend-worker-qualification', plan['worker_qualification']['result'],
+                 '--workload-lock', plan['workload_admission']['lock']]
     result = dict(schema_version=1, status='ready-for-separate-screen-admission', tool_key=key,
                   plan_sha256=validated['composition']['build']['plan_sha256'], publication=publication,
                   argv=argv, workloads_executed=0, performance_claim=False)
+    if qualification is not None:result['worker_qualification'] = qualification
     write_json(output, result)
     return result

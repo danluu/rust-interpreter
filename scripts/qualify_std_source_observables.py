@@ -15,12 +15,13 @@ from interpreter import ROOT, TOOLCHAIN, installed_tools, require_export_option
 from mono_qualification import decode_record, validate_flags
 from qualify_custom_compiler import environment, diagnostic_records, core_diagnostics, validate_launch
 from standard_diagnostic_mapping import prepare_standard_diagnostic_mapping
-from std_mir_source_paths import SOURCE, load as load_std, tree_files, validate_probe
+from std_mir_source_paths import (SOURCE, SELECTION, SELECTIONS, namespace_for, validate_pair,
+    load as load_std, tree_files, validate_probe)
 from workflow_io import SourceEdit, capture, require_space, write_json
 import stable_mono_cgu
+from source_observable_transport import (POLICY, TRANSPORT, COMMANDS, PHASES, EXPORTED_PHASES,
+    NEGATIVES, expectation, expectation_source, fixture_sources, native_phase, validate_transport)
 
-POLICY = 'std-source-observables-v1'
-PHASES = ('unmapped', 'std-only', 'application-map', 'restored')
 APP_PREFIX = '/owned-source-observable/src'
 COORDINATES = ('byte_start', 'byte_end', 'line_start', 'line_end', 'column_start', 'column_end')
 
@@ -47,29 +48,10 @@ def position_control(original, edited, path, prefix):
 
 
 def fixture(directory):
-    (directory / 'src/core/src').mkdir(parents=True)
-    (directory / 'macros/src').mkdir(parents=True)
-    (directory / 'Cargo.toml').write_text('[package]\nname="std-source-observables"\nversion="0.0.0"\nedition="2024"\nautobins=false\n'
-        '[lib]\npath="src/main.rs"\n'
-        '[workspace]\nmembers=["macros"]\nresolver="2"\n'
-        '[dependencies]\npath-probe={path="macros"}\n'
-        '[profile.dev]\ncodegen-units=2\nincremental=true\n[profile.dev.build-override]\ncodegen-units=2\n')
-    (directory / 'macros/Cargo.toml').write_text('[package]\nname="path-probe"\nversion="0.0.0"\nedition="2024"\n'
-                                               '[lib]\nproc-macro=true\n')
-    (directory / 'macros/src/lib.rs').write_text('extern crate proc_macro;\n'
-        '#[proc_macro] pub fn observe(input: proc_macro::TokenStream) -> proc_macro::TokenStream {\n'
-        ' let span = input.into_iter().next().expect("marker token").span();\n'
-        ' let local = span.local_file().expect("actual source path");\n'
-        ' format!("({:?}, {:?}, {}u32, {}u32)", span.file(), local.to_str().unwrap(), '
-        'span.line(), span.column()).parse().unwrap()\n}\n')
-    (directory / 'src/main.rs').write_text('// phase:000000000000000\n'
-        '#[path="core/src/panic.rs"] mod std_looking;\n'
-        'pub fn show(label: &str, file: &str, value: (&str, &str, u32, u32)) {\n'
-        ' println!("{}|{}|{}|{}|{}|{}", label, file, value.0, value.1, value.2, value.3);\n}\n'
-        'pub fn entry() { show("main", file!(), path_probe::observe!(marker)); std_looking::run(); }\n'
-        'fn main() { entry(); }\n')
-    (directory / 'src/core/src/panic.rs').write_text(
-        'pub fn run() { crate::show("std-looking", file!(), path_probe::observe!(marker)); }\n')
+    for name, text in fixture_sources().items():
+        path = directory / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(text.encode())
 
 
 def cargo_configuration(flags, host):
@@ -127,6 +109,7 @@ def main():
     parser.add_argument('--tool-key', required=True)
     parser.add_argument('--std-mir-off-key', required=True)
     parser.add_argument('--std-mir-on-key', required=True)
+    parser.add_argument('--std-mir-policy', choices=SELECTIONS, default=SELECTION)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=600)
     args = parser.parse_args()
@@ -154,9 +137,10 @@ def main():
             stds, ready = {}, {}
             for mode in ['off', 'on']:
                 selected = load_std(ROOT, getattr(args, 'std_mir_' + mode + '_key'), compiler,
-                                    'stable-mono-cgu:' + mode, rehash=True)
+                                    namespace_for(args.std_mir_policy, 'stable-mono-cgu:' + mode), rehash=True)
                 stds[mode] = dict(key=selected[2], sysroot=str(selected[0]), target=selected[1])
                 ready[mode] = selected[3]
+            validate_pair(args.std_mir_policy, stds)
             source_files = {p[len(SOURCE):]: h for p, h in compiler.identity['files'].items() if p.startswith(SOURCE)}
             (work / 'source-snapshots').mkdir()
             for path in scripts:
@@ -167,7 +151,7 @@ def main():
                 installed_tools(key)
                 require(all(file_digest(Path(p)) == h for p, h in scripts.items()), 'qualification source changed')
                 for mode, std in stds.items():
-                    require(load_std(ROOT, std['key'], compiler, 'stable-mono-cgu:' + mode)[3] == ready[mode],
+                    require(load_std(ROOT, std['key'], compiler, namespace_for(args.std_mir_policy, 'stable-mono-cgu:' + mode))[3] == ready[mode],
                             'prepared standard identity changed')
                 for path, stamps in copy_guards.items():
                     require(tree_stamps(path) == stamps, 'second-prefix copy changed')
@@ -216,7 +200,8 @@ def main():
                     'relocated compiler version differs')
             require(invoke('second-prefix-sysroot', [second_rustc, '--print', 'sysroot'])['stdout'].strip() == str(copies['native']),
                     'relocated compiler uses a different prefix')
-            plan = dict(policy=POLICY, owner=str(ROOT), compiler_key=compiler.key, tool_key=key,
+            plan = dict(policy=POLICY, transport_policy=TRANSPORT, expected_commands=COMMANDS,
+                owner=str(ROOT), compiler_key=compiler.key, tool_key=key, std_mir_policy=args.std_mir_policy,
                 compiler_sysroot=str(compiler.sysroot), compiler=compiler.identity, std_mir=stds, std_readiness=ready,
                 tools=json.loads((tools / 'ready.json').read_text()), mono_wrapper=wrapper, scripts=scripts,
                 copied_sources={k: str(v) for k, v in copies.items()}, copy_proofs=copy_proofs, source_files=source_files,
@@ -294,21 +279,25 @@ def main():
             (application / '.cargo').mkdir()
             config_path = application / '.cargo/config.toml'
             main_source = application / 'src/main.rs'; original_main = main_source.read_bytes()
+            expected_source = application / 'src/expected.rs'; original_expected = expected_source.read_bytes()
+            expectations = work / 'expectations'; expectations.mkdir()
             for mode in ['off', 'on']:
                 policy_flags = ['-Zstable-cgu-partitioning=no', '-Zstable-mono-cgu-partitioning=' + ('yes' if mode == 'on' else 'no')]
                 for route in ['native', 'exported']:
                     values, states = {}, {}
                     cache = work / 'observable-cache' / (mode + '-' + route); cache.mkdir(parents=True)
                     workspace = application
-                    with SourceEdit(main_source, original_main) as edit:
-                        for phase_index, phase in enumerate(PHASES):
+                    with SourceEdit(main_source, original_main) as edit, SourceEdit(expected_source, original_expected) as expected_edit:
+                        for phase in PHASES if route == 'native' else EXPORTED_PHASES:
+                            base_phase = native_phase(phase)
+                            phase_index = PHASES.index(base_phase)
                             # Same-width comments force actual selected recompilation
                             # while preserving every observed source coordinate.
                             edit.replace(original_main.replace(b'000000000000000', (str(phase_index) * 15).encode())
                                          if phase != 'restored' else original_main)
                             controlled_files[main_source] = file_digest(main_source)
-                            flags = [] if phase in ['unmapped', 'restored'] else list(mapping.rustc_flags)
-                            if phase == 'application-map':
+                            flags = [] if base_phase in ['unmapped', 'restored'] else list(mapping.rustc_flags)
+                            if base_phase == 'application-map':
                                 flags += ['--remap-path-prefix=src=' + APP_PREFIX]
                             config_path.write_bytes(cargo_configuration(flags, compiler.host))
                             controlled_files[config_path] = file_digest(config_path)
@@ -334,11 +323,20 @@ def main():
                                 argv_records.append(dict(mode=mode, phase=phase, route=route, command_index=compiler_index,
                                                          argv=rows[compiler_index]['command']))
                             else:
+                                native = next(h for h in observables if h['mode'] == mode and h['route'] == 'native')['states'][base_phase]
+                                native_row = rows[native['command_index']]
+                                table = expectation(mode, phase, native['command_index'], native_row['stdout'], native['values'])
+                                generated = expectation_source(table)
+                                table_path = expectations / (mode + '-' + phase + '.json')
+                                generated_path = expectations / (mode + '-' + phase + '.rs')
+                                write_json(table_path, table); generated_path.write_bytes(generated)
+                                expected_edit.replace(generated)
+                                controlled_files[expected_source] = file_digest(expected_source)
                                 directory = work / 'compiler-argv' / (mode + '-' + phase); directory.mkdir(parents=True)
                                 row = invoke(mode + '-' + phase + '-exported', [sys.executable, ROOT / 'scripts/interpreter.py',
                                     '--manifest-path', application / 'Cargo.toml', '--package', 'std-source-observables', '--entry', 'entry',
                                     '--compiler-key', compiler.key, '--tool-key', key, '--stable-cgu-partitioning', 'off',
-                                    '--stable-mono-cgu-partitioning', mode, '--std-mir', '--std-mir-policy', 'source-paths-v2',
+                                    '--stable-mono-cgu-partitioning', mode, '--std-mir', '--std-mir-policy', args.std_mir_policy,
                                     '--std-mir-key', stds[mode]['key'], '--toolchain-lookup', 'cached',
                                     '--workspace-cache-root', cache, '--cache-namespace', args.run_id,
                                     '--jobs', '2', '--engine', 'jit', '--function-cache', 'auto', '--inline-leaves',
@@ -360,19 +358,31 @@ def main():
                                 require(selected, 'no actual selected compiler argv for observable state')
                                 snapshot = work / (mode + '-' + phase + '.rbc'); snapshot.write_bytes(artifact.read_bytes())
                                 row.update(artifact_sha256=file_digest(snapshot), artifact_snapshot=snapshot.name)
+                                validate_transport(table, generated, native['values'], native['command_index'],
+                                                   native_row['stdout'], mode, phase, row['stdout'])
+                                row['transport'] = dict(policy=TRANSPORT, table=str(table_path.relative_to(work)),
+                                    table_sha256=file_digest(table_path), source=str(generated_path.relative_to(work)),
+                                    source_sha256=file_digest(generated_path), fixture_path='application/src/expected.rs',
+                                    native_command_index=native['command_index'], expected_mask=table['expected_mask'])
                             # The launcher compiles the original manifest cwd;
                             # workspace_path owns artifacts, not copied sources.
-                            values[phase] = observable_values(row['stdout'], application, application)
+                            # Exported values are the independent native basis;
+                            # actual guest byte/coordinate comparisons produce stdout.
+                            values[phase] = (observable_values(row['stdout'], application, application)
+                                             if route == 'native' else copy.deepcopy(native['values']))
                             states[phase] = dict(command_index=len(rows)-1, values=values[phase],
                                 source_sha256=file_digest(main_source), workspace=str(workspace), source_root=str(application),
-                                rustc_flags=flags, configuration_sha256=file_digest(config_path))
+                                rustc_flags=flags, configuration_sha256=file_digest(config_path),
+                                expectation_source_sha256=file_digest(expected_source))
                             for proof in [r for r in argv_records if (r['mode'], r['phase'], r['route']) == (mode, phase, route)]:
                                 actual = proof['argv']
                                 require([a for a in actual if a.startswith('--remap-path-')] == flags,
                                         'actual compiler diagnostic remaps differ from configured flags')
-                        compare_observables(values)
+                        compare_observables({p: values[p] for p in PHASES})
                     require(main_source.read_bytes() == original_main, 'observable source restoration failed')
+                    require(expected_source.read_bytes() == original_expected, 'expectation source restoration failed')
                     controlled_files[main_source] = file_digest(main_source)
+                    controlled_files[expected_source] = file_digest(expected_source)
                     observables.append(dict(mode=mode, route=route, states=states))
                     write_json(work / 'controls.json', controls)
             # Both routes compile the original source tree. Retain raw paths
@@ -392,17 +402,18 @@ def main():
             write_json(work / 'commands.json', rows); write_json(work / 'controls.json', controls)
             evidence = {}
             for path in [*work.glob('*.json'), *work.glob('*.rs'), *work.glob('*.rbc'), *work.glob('*.native'),
-                         *[p for name in ['compiler-argv', 'source-snapshots', 'application', 'source-histories', 'verified-standard-sources']
+                         *[p for name in ['compiler-argv', 'source-snapshots', 'application', 'source-histories', 'verified-standard-sources', 'expectations']
                            for p in (work / name).rglob('*') if p.is_file() and 'incremental' not in p.parts]]:
                 if path.name != 'result.json':
                     evidence[str(path.relative_to(work))] = file_digest(path)
-            result = dict(status='passed', policy=POLICY, owner=str(ROOT), compiler_key=compiler.key, tool_key=key,
+            result = dict(status='passed', policy=POLICY, transport_policy=TRANSPORT,
+                guest_negative_controls=4, owner=str(ROOT), compiler_key=compiler.key, tool_key=key, std_mir_policy=args.std_mir_policy,
                 compiler_sysroot=str(compiler.sysroot), std_mir=stds, benchmark=False, diagnostics_rewritten=False,
                 source_restored=True, qualification_only=True, unmapped_source_paths='passed',
                 std_only_application_observables='unchanged', application_remap_sensitivity='expected-span-file-only-change',
                 disposable_source_negatives='rejected-by-raw-source-validator', commands=len(rows),
                 plan_sha256=file_digest(work / 'plan.json'), evidence_files=evidence)
-            require(len(rows) == 57, 'source-observable prerequisite command contract changed')
+            require(len(rows) == COMMANDS, 'source-observable prerequisite command contract changed')
             write_json(work / 'result.json', result)
             from std_source_observables import validate_source_observables
             validate_source_observables(work / 'result.json', ROOT, compiler.key, key, stds,

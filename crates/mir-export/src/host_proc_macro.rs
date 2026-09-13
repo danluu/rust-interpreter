@@ -1,4 +1,4 @@
-//! Narrow, opt-in native proc-macro codegen policy for the pinned compiler.
+//! Shared argument grammar and checking defaults for native host codegen policies.
 //! No dependency-name or application-source classification belongs here.
 
 #[derive(Default)]
@@ -16,7 +16,40 @@ struct Invocation<'a> {
 /// Return extra arguments only for a definite linked host proc-macro unit.
 /// Unsupported explicit policies are errors, never silently overridden.
 pub fn additions(args: &[String], selected: bool) -> Result<Vec<String>, String> {
-    let fail = |reason: &str| format!("host proc-macro optimization: {reason}");
+    additions_for(args, selected, HostKind::ProcMacro)
+}
+
+pub fn library_additions(args: &[String], selected: bool) -> Result<Vec<String>, String> {
+    additions_for(args, selected, HostKind::Library)
+}
+
+#[derive(Clone, Copy)]
+enum HostKind { ProcMacro, Library }
+
+impl HostKind {
+    fn accepts(self, kind: &str) -> bool {
+        match self {
+            Self::ProcMacro => kind == "proc-macro",
+            Self::Library => matches!(kind, "lib" | "rlib"),
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self { Self::ProcMacro => "proc-macro", Self::Library => "library" }
+    }
+
+    fn preserves_metadata_option(self, option: &str) -> bool {
+        // Cargo can emit separate metadata alongside an ordinary native rlib.
+        // Keep its exact embedding choice; this does not select optimization
+        // or alter checking. The existing proc-macro policy stays unchanged.
+        if !matches!(self, Self::Library) { return false; }
+        let (name, value) = option.split_once('=').map_or((option, None), |(n, v)| (n, Some(v)));
+        name.replace('_', "-") == "embed-metadata" && boolean(value).is_some()
+    }
+}
+
+fn additions_for(args: &[String], selected: bool, kind: HostKind) -> Result<Vec<String>, String> {
+    let fail = |reason: &str| format!("host {} optimization: {reason}", kind.label());
     if args.iter().skip(1).any(|arg| arg.starts_with('@')) {
         return Err(fail("response files are unsupported"));
     }
@@ -87,6 +120,7 @@ pub fn additions(args: &[String], selected: bool) -> Result<Vec<String>, String>
                 } else { Some(tail) };
                 match (option, value) {
                     ('C', Some(value)) => invocation.codegen.push(value),
+                    ('Z', Some(value)) if kind.preserves_metadata_option(value) => {}
                     ('Z', _) | (_, None) => invocation.unsupported = true,
                     _ => {}
                 }
@@ -101,15 +135,15 @@ pub fn additions(args: &[String], selected: bool) -> Result<Vec<String>, String>
     if selected || invocation.target || invocation.probe || invocation.test {
         return Ok(vec![]);
     }
-    if !invocation.crate_types.iter().any(|types| types.split(',').any(|kind| kind == "proc-macro")) {
+    if !invocation.crate_types.iter().any(|types| types.split(',').any(|value| kind.accepts(value))) {
         return Ok(vec![]);
     }
     if !invocation.emits.iter().any(|emits| emits.split(',').any(|emit| emit.split('=').next() == Some("link"))) {
         return Ok(vec![]);
     }
-    if invocation.unsupported || invocation.crate_types != ["proc-macro"] ||
+    if invocation.unsupported || invocation.crate_types.len() != 1 || !kind.accepts(invocation.crate_types[0]) ||
         invocation.emits.len() != 1 || invocation.inputs.len() != 1 || invocation.inputs[0] == "-" {
-        return Err(fail("requires an unambiguous ordinary Cargo host proc-macro invocation"));
+        return Err(fail(&format!("requires an unambiguous ordinary Cargo host {} invocation", kind.label())));
     }
     if invocation.emits[0].split(',').any(|emit| !matches!(emit.split('=').next(),
         Some("dep-info" | "metadata" | "link"))) {

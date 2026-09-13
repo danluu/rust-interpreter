@@ -221,7 +221,7 @@ def argument_parser():
     parser.add_argument('--tool-key', required=True)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=45)
-    parser.add_argument('--std-mir-policy', choices=['v1', 'source-paths-v2'], default='v1')
+    parser.add_argument('--std-mir-policy', choices=['v1', 'source-paths-v2', 'source-paths-v2-shared'], default='v1')
     parser.add_argument('--std-mir-off-key', help='preinstalled v2 off namespace')
     parser.add_argument('--std-mir-on-key', help='preinstalled v2 on namespace')
     parser.add_argument('--diagnostic-comparison', choices=['strict', 'verified-std-source'], default='strict',
@@ -247,10 +247,10 @@ def main():
     mono = args.partitioning_policy == 'stable-mono-cgu'
     std_keys = dict(off=args.std_mir_off_key, on=args.std_mir_on_key)
     if mono:
-        require(args.std_mir_policy == 'source-paths-v2' and all(std_keys.values())
+        require(args.std_mir_policy in ['source-paths-v2', 'source-paths-v2-shared'] and all(std_keys.values())
                 and args.diagnostic_comparison == 'strict', 'per-item qualification requires prepared v2 and strict diagnostics')
     if args.std_mir_policy != 'v1' or any(std_keys.values()):
-        require(args.std_mir_policy == 'source-paths-v2' and all(std_keys.values())
+        require(args.std_mir_policy in ['source-paths-v2', 'source-paths-v2-shared'] and all(std_keys.values())
                 and args.diagnostic_comparison == 'strict',
                 'std v2 requires both explicit prepared keys and strict diagnostics')
     require(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
@@ -331,8 +331,8 @@ def main():
                 ready = json.loads(ready_path.read_text())
                 identity = ready['identity']
                 if args.std_mir_policy != 'v1':
-                    from std_mir_source_paths import load as load_std_v2
-                    loaded = load_std_v2(ROOT, std_keys[mode], compiler, namespace(mono, mode), rehash=True)
+                    from std_mir_source_paths import load as load_std_v2, namespace_for
+                    loaded = load_std_v2(ROOT, std_keys[mode], compiler, namespace_for(args.std_mir_policy, namespace(mono, mode)), rehash=True)
                     require(std == dict(key=loaded[2], sysroot=str(loaded[0]), target=loaded[1]),
                             'std v2 selected key differs')
                     stds[mode], prepared[mode] = std, ready_path
@@ -350,7 +350,11 @@ def main():
                             'std artifact differs')
                 stds[mode] = std
                 prepared[mode] = ready_path
-            require(stds['off']['key'] != stds['on']['key'], 'std policies share a namespace')
+            if args.std_mir_policy == 'v1':
+                require(stds['off']['key'] != stds['on']['key'], 'std policies share a namespace')
+            else:
+                from std_mir_source_paths import validate_pair
+                validate_pair(args.std_mir_policy, stds)
             source = work / 'fixture'
             fixture(source)
             if mono:

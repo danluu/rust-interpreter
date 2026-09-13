@@ -15,7 +15,7 @@ from screen import (CASE, JOBS, SUITE_WORKERS, INSTRUCTIONS, ALLOCATIONS, MINIMU
                     assessment as assess_rows, protocol_states, frozen_input_hash, launch_settings, command_for)
 from suite_reports import read_report, validate_report, validate_runtime_limits
 
-POLICIES = ['stable-cgu', 'stable-mono-cgu', 'cargo-info-cache', 'host-proc-macro-opt']
+POLICIES = ['stable-cgu', 'stable-mono-cgu', 'cargo-info-cache', 'host-proc-macro-opt', 'host-library-opt', 'frontend-workers']
 
 
 def saved_member(path):
@@ -39,6 +39,8 @@ def member_bytes(item):
 def markdown(s):
     title = {'stable-cgu': 'Stable code-generation groups', 'stable-mono-cgu': 'Stable per-MonoItem code-generation groups',
              'cargo-info-cache': 'Cargo compiler-info cache',
+             'frontend-workers': 'Compiler frontend workers',
+             'host-library-opt': 'Host-library code generation',
              'host-proc-macro-opt': 'Host proc-macro code generation'}[s['candidate_policy']]
     medians = s['complete_command_median_seconds']
     lines = ['# ' + title + ' mechanism screen', '',
@@ -80,6 +82,14 @@ def markdown(s):
          'Only eligible host proc-macro targets receive the explicitly recorded code-generation policy; '
          'application profiles and checking remain unchanged.'
          if s['candidate_policy'] == 'host-proc-macro-opt' else
+         'The compiler, Cargo, exporter, VM and prepared standard library are identical for off/on/off. '
+         'Only eligible ordinary native host libraries receive O1 with original effective checks preserved. '
+         'Actual three-history qualification, wrapper/compiler association and all saved input guards were verified. '
+         'Application profiles, guest/build-script executable arguments and build-script environment are unchanged.'
+         if s['candidate_policy'] == 'host-library-opt' else
+         'Only explicit frontend worker counts change (1/2/1). Stock compiler, tool binaries, standard library, '
+         'Cargo jobs, backend/linker policy and checking remain equal. The final public build identity and '
+         'separate actual 30-command worker qualification were verified.' if s['candidate_policy'] == 'frontend-workers' else
          'The matched Cargo executables differ only by the qualified production-source change, with '
          'equal build settings and dynamic libraries. Cargo optimization is isolated from custom compiler policies.'), '',
         '[summary.json](summary.json) retains every pair, command, setup identity and artifact hash. '
@@ -142,6 +152,9 @@ def selection(plan, snapshot):
     require(policy in POLICIES and set(plan['tools']) == set(modes)
             and len(set(plan['tools'].values())) == 1, 'owned screen requires one tool identity')
     require(set(plan['std_mir_by_mode']) == set(modes), 'missing per-arm std identities')
+    if policy != 'host-library-opt':
+        require(not any(k in plan for k in ['host_library_policy_by_mode', 'host_library_public_build_policy',
+                'host_library_capability']), 'unexpected host-library screen policy')
     custom, cargos = None, dict.fromkeys(modes)
     if policy in ['stable-cgu', 'stable-mono-cgu']:
         require('cargo_comparison' not in plan and 'cargos_by_mode' not in plan, 'mixed compiler/Cargo policies')
@@ -185,7 +198,23 @@ def selection(plan, snapshot):
                 'Cargo screen requires distinct actual candidate bytes and identical baseline/duplicate')
         require(cargo_pair(cargos['baseline'], cargos['candidate'], snapshot) == plan['cargo_comparison'],
                 'Cargo matched pair differs')
-    else:
+    elif policy == 'host-library-opt':
+        from host_library_screen import MODES as LIBRARY_MODES, BUILD_POLICY, CAMPAIGN_LOCK, amendment
+        require(not any(k in plan for k in ['custom_compiler', 'cgu_policy_by_mode', 'mono_cgu_policy_by_mode',
+                'cargo_comparison', 'cargos_by_mode', 'proc_macro_policy_by_mode', 'frontend_workers_by_mode',
+                'worker_qualification', 'compiler_qualification', 'source_observables'])
+                and plan['host_library_policy_by_mode'] == LIBRARY_MODES
+                and plan['host_library_public_build_policy'] == BUILD_POLICY,
+                'host-library policy is mixed or differs')
+        require(plan['codegen_policy_amendment'] == amendment(plan['owner'])
+                and Path(plan['workload_lock']) == CAMPAIGN_LOCK, 'host-library policy amendment or lock differs')
+        require(all(plan.get(k) == v for k, v in dict(cargo_jobs=JOBS, suite_workers=SUITE_WORKERS,
+            instruction_limit=INSTRUCTIONS, allocation_limit=ALLOCATIONS, minimum_free_gib=MINIMUM_GIB,
+            guest_rustflags=[], profile_overrides={}, final_qualification=False).items()),
+            'host-library screen changes the original workload settings')
+        public = json.loads(snapshot(Path(plan['owner']) / '.work/interpreter-tools' / plan['tools']['baseline'] /
+                                     'source.json')['utf8'])['composition']['public_compiler']
+    elif policy == 'host-proc-macro-opt':
         require(not any(k in plan for k in ['custom_compiler', 'cgu_policy_by_mode',
                 'cargo_comparison', 'cargos_by_mode']), 'mixed proc-macro/compiler/Cargo policies')
         require(plan['proc_macro_policy_by_mode'] == dict(baseline='off', candidate='on', duplicate='off'),
@@ -200,6 +229,14 @@ def selection(plan, snapshot):
         key = plan['tools']['baseline']
         public = json.loads(snapshot(Path(plan['owner']) / '.work/interpreter-tools' / key /
                                      'source.json')['utf8'])['composition']['public_compiler']
+    elif policy == 'frontend-workers':
+        from frontend_worker_screen import COUNTS, BUILD_POLICY, CAMPAIGN_LOCK
+        require(not any(k in plan for k in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode'])
+                and plan['frontend_workers_by_mode'] == COUNTS
+                and plan['worker_public_build_policy'] == BUILD_POLICY, 'worker policy is mixed or differs')
+        lock = Path(plan['workload_lock'])
+        require(lock == CAMPAIGN_LOCK, 'worker lock identity differs')
+        public = json.loads(snapshot(Path(plan['owner']) / '.work/interpreter-tools' / plan['tools']['baseline'] / 'source.json')['utf8'])['composition']['public_compiler']
     for mode in modes:
         from std_mir import FLAGS, POLICY
         std = plan['std_mir_by_mode'][mode]
@@ -249,7 +286,13 @@ def selection(plan, snapshot):
                     and sha(identity['compiler'].encode()) == public['version_stdout_sha256']
                     and identity['target'] == public['target'], 'std public compiler differs')
     stds = plan['std_mir_by_mode']
-    if policy == 'host-proc-macro-opt':
+    if policy == 'stable-mono-cgu':
+        from std_mir_source_paths import selection_for_identity, validate_pair
+        selection = selection_for_identity(stds['baseline']['identity'])
+        require(stds['baseline'] == stds['duplicate']
+                and selection_for_identity(stds['candidate']['identity']) == selection, 'mixed MonoItem std policy')
+        validate_pair(selection, dict(off=stds['baseline'], on=stds['candidate']))
+    elif policy in ['host-proc-macro-opt', 'host-library-opt', 'frontend-workers']:
         require(stds['baseline'] == stds['candidate'] == stds['duplicate'] == plan['std_mir'],
                 'proc-macro comparison requires one unchanged shared std')
     else:
@@ -265,6 +308,19 @@ def selection(plan, snapshot):
 
 def tool_identity(plan, key, custom, snapshot):
     """Bind the retained exporter capability to its physical compiler prefix."""
+    if plan['candidate_policy'] == 'host-library-opt':
+        from host_library_screen import public_build, standard_binding, runtime_harness
+        tool = Path(plan['owner']) / '.work/interpreter-tools' / key
+        read = lambda path: member_bytes(snapshot(path))
+        validated = public_build(tool, key, read)
+        require(set(plan['binaries']) == set(plan['tools'])
+                and all(validated['composition']['binaries'] == proof for proof in plan['binaries'].values())
+                and plan['host_library_capability'] == validated['capability'],
+                'host-library screen differs from qualified actual binaries/capability')
+        standard_binding(validated, plan['std_mir'])
+        qualified_std(plan, validated, snapshot)
+        runtime_harness(validated, plan['owner'], read)
+        return validated
     if plan['candidate_policy'] == 'host-proc-macro-opt':
         from qualified_public_tools import validate_public_tool
         tool = Path(plan['owner']) / '.work/interpreter-tools' / key
@@ -275,6 +331,21 @@ def tool_identity(plan, key, custom, snapshot):
         return validated
     from custom_compiler import TOOL_POLICY, digest
     tool = Path(plan['owner']) / '.work/interpreter-tools' / key
+    if plan['candidate_policy'] == 'frontend-workers':
+        from frontend_worker_screen import public_build, standard_binding, validate_qualification
+        read = lambda path: member_bytes(snapshot(path))
+        validated = public_build(tool, key, read)
+        from qualified_public_tools import validate_input_guard
+        require(all(validated['composition']['binaries'] == manifest for manifest in plan['binaries'].values())
+                and set(plan['binaries']) == set(plan['tools'])
+                and validated['capability'] == plan['worker_capability'], 'worker tool composition differs')
+        standard_binding(validated, plan['std_mir'])
+        proof = validate_qualification(Path(plan['worker_qualification']['result_path']), key,
+            validated, plan['std_mir'], read)
+        require(proof == plan['worker_qualification'], 'worker qualification differs from screen admission')
+        require(proof['workload_lock'] == plan['workload_lock'], 'worker qualification lock differs')
+        validate_input_guard(validated, plan['public_input_guard'])
+        return validated
     name = 'compiler.json' if custom else 'source.json'
     source = json.loads(snapshot(tool / name)['utf8'])
     composition = source if custom else source['composition']
@@ -387,7 +458,7 @@ def mono_launch_identity(plan, row, custom):
     """Validate every saved effective selector without resolving retired caches."""
     mode, launch = row['mode'], row['launch']
     expected = launch_settings(mode, plan['tools'][mode], 'stable-mono-cgu', custom,
-                               mono_wrapper=plan['mono_wrapper'])
+                               mono_wrapper=plan['mono_wrapper'], prepared_std=plan['std_mir_by_mode'][mode])
     require(all(launch.get(k) == v for k, v in expected.items())
             and launch.get('query_cache_retention', 'off') == 'off'
             and launch.get('host_proc_macro_opt', 'off') == 'off'
@@ -510,6 +581,12 @@ def main():
         mono_qualification = qualification(plan, custom,
             lambda path: member_bytes(linked_snapshot(path)),
             source_observables_validator=validate_source_observables)
+    worker_public = None
+    if plan['candidate_policy'] == 'frontend-workers':
+        worker_public = tool_identity(plan, plan['tools']['baseline'], None, frozen_snapshot)
+    library_public = None
+    if plan['candidate_policy'] == 'host-library-opt':
+        library_public = tool_identity(plan, plan['tools']['baseline'], None, frozen_snapshot)
     artifacts, compact = {}, []
     previous = dict.fromkeys(plan['tools'])
     workspaces = {}
@@ -542,9 +619,27 @@ def main():
                 'query_cache_retention' not in row['launch'],
                 'launcher evidence differs')
         settings = launch_settings(mode, plan['tools'][mode], plan['candidate_policy'], custom, cargos[mode],
-                                   plan.get('mono_wrapper'))
+                                   mono_wrapper=plan.get('mono_wrapper'),
+                                   worker_capability=worker_public['capability'] if worker_public else None,
+                                   library_capability=library_public['capability'] if library_public else None,
+                                   prepared_std=plan['std_mir_by_mode'][mode])
+        if library_public:
+            from host_library_screen import validate_launch_policy
+            validate_launch_policy(row['launch'], mode, library_public['capability'])
+        else:
+            require('host_library_opt' not in row['launch'], 'unexpected host-library launch policy')
         require(custom is not None or 'custom_compiler' not in row['launch'], 'unexpected custom compiler')
         require(cargos[mode] is not None or 'custom_cargo' not in row['launch'], 'unexpected custom Cargo')
+        require(worker_public is not None or 'frontend_workers' not in row['launch'], 'unexpected worker policy')
+        if worker_public:
+            from qualified_public_tools import validate_input_guard
+            for when in ['before', 'after']:
+                path = raw / 'public-input-guards' / f'{index}-{mode}-{when}.json'
+                item = member(path); files[str(path)] = item
+                guard = json.loads(item['utf8'])
+                require(guard['validation'] == 'stat', 'worker guard validation mode differs')
+                validate_input_guard(worker_public, guard)
+            require(row['launch'].get('host_proc_macro_opt', 'off') == 'off', 'worker launch mixes macro policy')
         require(math.isfinite(row['launch']['launcher_seconds']) and
                 0 < row['launch']['launcher_seconds'] <= row['seconds'],
                 'complete-command time excludes part of the launcher')
@@ -569,6 +664,11 @@ def main():
                     and not any(k in row['launch'] for k in ['custom_compiler', 'custom_cargo'])
                     and row['launch'].get('query_cache_retention', 'off') == 'off',
                     'timed proc-macro policy differs')
+        if library_public:
+            require(receipt['host_library_opt'] == plan['host_library_policy_by_mode'][mode]
+                    and receipt['finished_at'] >= receipt['started_at']
+                    and type(row['free_bytes']) is int and row['free_bytes'] >= MINIMUM_GIB * 1024**3,
+                    'host-library timed policy, complete receipt or disk admission differs')
         for item in row['artifacts']:
             p = (ROOT / item['path']).resolve(strict=True)
             require(p.is_relative_to(raw / 'artifacts'), 'artifact snapshot escapes screen')
@@ -627,7 +727,7 @@ def main():
     for key in set(plan['tools'].values()):
         public_validation = tool_identity(plan, key, custom, frozen_snapshot)
     public_guards = None
-    if public_validation:
+    if public_validation and plan['candidate_policy'] in ['host-proc-macro-opt', 'host-library-opt']:
         def guard_snapshot(path):
             item = snapshot(path)
             files[str(path)] = item
@@ -644,7 +744,7 @@ def main():
     if plan['candidate_policy'] == 'stable-mono-cgu':
         frozen_snapshot(Path(__file__).with_name('STABLE_MONO_CGU_SCREEN.md'))
     bundle = dict(schema_version=1,
-                  encoding='exact UTF-8 or base64 members' if mono_qualification else 'exact UTF-8 members',
+                  encoding='exact UTF-8 or base64 members' if mono_qualification or worker_public or library_public else 'exact UTF-8 members',
                   files=list(files.values()),
                   source_symlinks=source_symlinks)
     payload = (json.dumps(bundle, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
@@ -674,7 +774,10 @@ def main():
         holdouts_evaluated=False)
     for key in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode',
                 'proc_macro_policy_by_mode', 'codegen_policy_amendment', 'mono_cgu_policy_by_mode',
-                'mono_wrapper', 'compiler_qualification', 'source_observables']:
+                'mono_wrapper', 'compiler_qualification', 'source_observables',
+                'frontend_workers_by_mode', 'worker_qualification', 'worker_public_build_policy',
+                'worker_capability', 'public_input_guard', 'workload_lock', 'host_library_policy_by_mode',
+                'host_library_public_build_policy', 'host_library_capability']:
         if key in plan:summary[key] = plan[key]
     if mono_qualification:
         summary['mono_qualification_assessment'] = mono_qualification
