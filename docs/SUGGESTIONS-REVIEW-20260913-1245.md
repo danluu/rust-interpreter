@@ -96,3 +96,10 @@ qualification remain pending. A global quarter-arena code quota limits duplicate
 trees, and guarded-body exclusions propagate to ancestors. No timing result or
 adoption claim follows. The six focused runs, including all three early compile
 failures, are archived with 1,202 source bindings and 222 exact source blobs.
+
+The bounded-tree runtime prototype is parked after its 40-command primary: wall
+ratio 0.995499 versus 9.9249% A/A, CPU ratio 1.021747. All 556 workspace controls
+per profile, 119 strict commands and three exact original profiles pass. The
+closure verifies 1,958 inputs, 56 artifacts and 380 source bindings. Full,
+held-out and repeated runs remain unstarted. Review repeated cursor/budget
+adaptation before another materially changed candidate. [Bridge result](TREE-BRIDGE-20260913.md).

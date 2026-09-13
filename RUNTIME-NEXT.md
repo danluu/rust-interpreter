@@ -179,3 +179,10 @@ reactivate the goal, use subagents, or activate AWS offerings.
 [Current suggestion decisions](docs/SUGGESTIONS-REVIEW-20260913-1245.md),
 [full comparison](results/guarded-ranges-admission-resume-01/assessment.md),
 [prior work snapshot](docs/history/RUNTIME-NEXT-20260913-before-guarded-integration.md).
+
+The bounded-tree runtime prototype is parked after its 40-command primary: wall
+ratio 0.995499 versus 9.9249% A/A, CPU ratio 1.021747. All 556 workspace controls
+per profile, 119 strict commands and three exact original profiles pass. The
+closure verifies 1,958 inputs, 56 artifacts and 380 source bindings. Full,
+held-out and repeated runs remain unstarted. Review repeated cursor/budget
+adaptation before another materially changed candidate. [Bridge result](docs/TREE-BRIDGE-20260913.md).
