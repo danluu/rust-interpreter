@@ -174,6 +174,7 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
             user_seconds=12.5, system_seconds=19.0, total_seconds=31.5,
             self=dict(user_seconds=2.5, system_seconds=4.0, total_seconds=6.5),
             children=dict(user_seconds=10.0, system_seconds=15.0, total_seconds=25.0)))
+        self.assertFalse(stats['jit_indirect_calls'])
         self.assertEqual(stats['execution_seconds'], 1000.0)
         self.assertEqual(stats['launcher_seconds'], 1023.0)
         self.assertEqual(stats['call_report_verify_seconds'], 7.0)
@@ -189,6 +190,13 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
             '1234', '--allocation-limit', '23', str(self.artifact), '7', '9'])
         self.assertEqual(cargo[1]['env'], vm[1]['env'])
         self.assertNotIn('RUST_INTERP_LAUNCH_STATS', cargo[1]['env'])
+
+    def test_native_indirect_option_reaches_only_vm_and_is_reported(self):
+        self.assertEqual(self.launch(['--jit-indirect-calls']),0)
+        cargo,vm=self.invocations
+        self.assertNotIn('--jit-indirect-calls',cargo[0])
+        self.assertEqual(vm[0].count('--jit-indirect-calls'),1)
+        self.assertTrue(self.launch_stats()[0]['jit_indirect_calls'])
 
     def test_missing_artifact_does_not_claim_ready_or_start_vm(self):
         self.artifact.unlink()
