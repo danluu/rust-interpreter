@@ -157,7 +157,7 @@ def main():
                     vm_hash = proof.get('vm_sha256') or proof['binaries']['candidate']
                     assert vm_hash == builds[mode]['binaries']['rust-interp-vm']
         assert builds['candidate']['composition']['exporter_and_wrapper_key'] == builds['baseline']['tool_key']
-        assert builds['candidate']['tool_key'] == 'UNBUILT_PAIRED_RUNTIME'
+        assert builds['candidate']['tool_key'] == '7cc4b8989ebefb19c153c33f384a200af392ff228d9c84ab4a4fdc17d7c0891a'
         coverage_path = ROOT / 'results/paired-registers-profile-01/summary.json'
         coverage = json.loads(coverage_path.read_text())
         assert coverage['status'] == 'passed' and coverage['tool_key'] == builds['candidate']['tool_key']

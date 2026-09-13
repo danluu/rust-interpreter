@@ -6,8 +6,9 @@ and its A/A duplicate use f8713aaa; the fixed full-suite anchor is fe9dcae0.
 All tool bytes are checked against build and execution proofs and frozen in the
 run manifest. Lookup caching remains off on every route.
 
-Candidate tool and VM hashes will be inserted after host qualification and
-before the harness is frozen. Require421 debug and release tests,131 Python
+Candidate tool: `7cc4b8989ebefb19c153c33f384a200af392ff228d9c84ab4a4fdc17d7c0891a`.
+VM: `136aae7ddb9b68e1575a5c208145032eda10a48b6456dd1011629cf297a2e670`.
+Both host profiles pass 421 tests with one ignored. Before timing require 131 Python
 checks (123 existing plus8 candidate checks), seven exact original selections,
 nine serial/prepared suite commands,203 strict native/cache checks and three
 current profile replays before timing. Profile replays require identical
