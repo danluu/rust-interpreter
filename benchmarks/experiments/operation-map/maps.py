@@ -3,7 +3,7 @@ from bisect import bisect_right
 from collections import Counter
 import hashlib
 
-KINDS = {'entry', 'budget', 'profile', 'operation', 'flush', 'region_exit',
+KINDS = {'entry', 'range_guard', 'budget', 'profile', 'operation', 'flush', 'region_exit',
          'fault_tail', 'assertion_tail', 'budget_fallback', 'successor_fallback', 'transition'}
 
 
