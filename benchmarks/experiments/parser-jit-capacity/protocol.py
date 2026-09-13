@@ -13,6 +13,29 @@ MODES = ['native', 'custom-a', 'custom-b', 'custom-32']
 LIMITS = {'custom-a': 16777216, 'custom-b': 16777216, 'custom-32': 33554432}
 
 
+def runtime_statistics(report, limit):
+    successful = [t for t in report['tests'] if t['status'] == 'passed']
+    for row in successful:
+        if (type(row.get('jit_bytes')) is not int or not 0 <= row['jit_bytes'] <= limit or
+                type(row.get('jit_declined_functions')) is not int or row['jit_declined_functions'] < 0):
+            raise ValueError('successful test lacks valid bounded runtime statistics')
+    return dict(maximum_owner_code_bytes=max((t['jit_bytes'] for t in successful), default=None),
+        maximum_owner_declines=max((t['jit_declined_functions'] for t in successful), default=None),
+        statistics_tests_available=len(successful), statistics_tests_unavailable=len(report['tests']) - len(successful),
+        statistics_scope='successful test receipts; failures do not expose runtime counters')
+
+
+def validate_prefix(rows, planned):
+    if len(rows) != 5 or len(planned) != 32:
+        raise ValueError('only the audited five-command screen prefix may continue')
+    for index, row in enumerate(rows):
+        if (row['index'] != index or row['returncode'] != (1 if index == 4 else 0) or
+                {k: row[k] for k in planned[index]} != planned[index]):
+            raise ValueError('prefix differs from the frozen schedule')
+    if [(r['state'], r['mode']) for r in rows] != [(0, m) for m in MODES] + [(-1, 'custom-32')]:
+        raise ValueError('unexpected prefix states')
+
+
 def selected_states(original, cycles):
     if type(cycles) is not int or cycles not in [1, 3]:
         raise ValueError('only the declared one- or three-cycle study is supported')

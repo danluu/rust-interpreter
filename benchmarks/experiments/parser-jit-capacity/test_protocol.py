@@ -2,7 +2,7 @@ import copy
 import unittest
 from pathlib import Path
 
-from protocol import MODES, selected_states, schedule, measurement
+from protocol import MODES, selected_states, schedule, measurement, runtime_statistics, validate_prefix
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -15,6 +15,25 @@ def observations(cycles=1):
 
 
 class Protocol(unittest.TestCase):
+    def test_failed_statistics_unavailable_not_zero(self):
+        report = dict(tests=[dict(status='failed', error='guest assertion: wrong'),
+                            dict(status='passed', jit_bytes=7, jit_declined_functions=1)])
+        result = runtime_statistics(report, 16)
+        self.assertEqual(result['statistics_tests_unavailable'], 1)
+        self.assertEqual(result['maximum_owner_code_bytes'], 7)
+        self.assertIsNone(runtime_statistics(dict(tests=report['tests'][:1]), 16)['maximum_owner_declines'])
+        for row in [dict(status='passed'), dict(status='passed', jit_bytes=17, jit_declined_functions=0)]:
+            with self.assertRaises(ValueError): runtime_statistics(dict(tests=[row]), 16)
+
+    def test_prefix_schedule_is_exact(self):
+        original = (ROOT / '.work/sources/pgrust/crates/backend/parser/gram_core/src/parse.rs').read_bytes()
+        planned = schedule(selected_states(original, 1))
+        rows = [dict(r, index=i, returncode=1 if i == 4 else 0) for i, r in enumerate(planned[:5])]
+        validate_prefix(rows, planned)
+        for wrong in [rows[:-1], rows + [rows[-1]], rows[:4] + [dict(rows[4], returncode=0)],
+                      [rows[1], rows[0], *rows[2:]]]:
+            with self.assertRaises(ValueError): validate_prefix(wrong, planned)
+
     def test_schedule_and_production_states(self):
         original = (ROOT / '.work/sources/pgrust/crates/backend/parser/gram_core/src/parse.rs').read_bytes()
         for cycles, count in [(1, 32), (3, 88)]:

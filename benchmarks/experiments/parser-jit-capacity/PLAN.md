@@ -72,6 +72,17 @@ five-edit screen or15-edit full study. The older three-mode helper is unsuitable
 for this four-arm comparison. Original/wrong/restored controls have separately
 recorded orders and supply no timing ratios.
 
+The first screen stopped after five controls, before any valid edited timing:
+its validator expected runtime counters on a failed test. Failed-test receipts
+omit those counters. The original failure and commands remain sealed. A separate
+audit verifies the four original commands and first wrong-source custom32
+command, exact artifacts, source restoration and frozen code before repair.
+The continuation accepts only that exact five-command prefix, retains its Cargo
+histories and completes the remaining27 commands under the original schedule and
+thresholds. It validates the pending wrong outcomes against native. Counters
+are required and bounded on every successful test; unavailable failed-test
+counters remain explicitly unavailable. No successful controls are repeated.
+
 Separately count the reached fraction of this function from the saved profile
 and inspect its frame/register initialization requirements. If full-function
 compilation is too expensive or mostly unused, design reached-region compilation

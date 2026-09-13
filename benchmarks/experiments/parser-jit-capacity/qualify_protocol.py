@@ -29,13 +29,13 @@ def main():
         child, out, err = capture(command, cwd=ROOT, env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'),
                                  receipt_path=work / 'active.json', receipt=dict(label='capacity protocol'))
         (work / 'stdout').write_text(out); (work / 'stderr').write_text(err)
-        assert child.returncode == 0 and re.search(r'Ran 7 tests', err) and err.strip().endswith('OK'), err
+        assert child.returncode == 0 and re.search(r'Ran 9 tests', err) and err.strip().endswith('OK'), err
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
         result = ROOT / 'results' / args.run_id; result.mkdir(exist_ok=False)
-        write(result / 'summary.json', dict(status='passed', tests=7, commands=1, guest_commands=0,
+        write(result / 'summary.json', dict(status='passed', tests=9, commands=1, guest_commands=0,
             raw=str(work.relative_to(ROOT)), inputs_sha256=sha(work / 'inputs.json'),
             command=command, pid=child.pid, stdout_sha256=sha(work / 'stdout'), stderr_sha256=sha(work / 'stderr')))
-        print('PASS: seven schedule/noise/control/CPU/rejection tests', flush=True)
+        print('PASS: nine schedule/noise/control/CPU/statistics/prefix tests', flush=True)
 
 
 if __name__ == '__main__': main()
