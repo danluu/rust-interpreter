@@ -30,6 +30,7 @@ CANDIDATE_POLICIES = {
     'native-host-mir': 'native-host-mir-policy',
     'stable-cgu': 'stable-cgu-partitioning',
     'cargo-info-cache': None,
+    'host-proc-macro-opt': 'host-proc-macro-opt-v1',
 }
 DEFAULT_CANDIDATE_POLICY = 'demand-retention'
 CASE = WORKFLOW_VARIANTS['nushell', 'type-relations']
@@ -195,6 +196,10 @@ def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candi
         require(isinstance(compiler_key, str) and re.fullmatch('[0-9a-f]{64}', compiler_key),
                 'stable-CGU comparison requires an installed compiler key')
         require(candidate_std is not None, 'stable-CGU comparison requires prepared candidate std MIR')
+    elif policy == 'host-proc-macro-opt':
+        require(baseline_key == candidate_key, 'proc-macro comparison requires identical tool binaries')
+        require(compiler_key is None and candidate_std is None,
+                'proc-macro comparison requires the public compiler and one shared prepared std identity')
     else:
         require(baseline_key != candidate_key, 'screen requires distinct tool identities')
         require(compiler_key is None and candidate_std is None,
@@ -202,6 +207,11 @@ def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candi
 
 
 def cgu_setting(mode):
+    require(mode in MODES, 'unknown screen arm')
+    return 'on' if mode == 'candidate' else 'off'
+
+
+def proc_macro_setting(mode):
     require(mode in MODES, 'unknown screen arm')
     return 'on' if mode == 'candidate' else 'off'
 
@@ -222,6 +232,8 @@ def command_for(mode, key, source, work, sample, names=CASE['tests'],
         policy_args = ['--cargo-key', cargo_key]
     else:
         require(cargo_key is None, 'Cargo arguments require cargo-info-cache policy')
+    if candidate_policy == 'host-proc-macro-opt':
+        policy_args = ['--host-proc-macro-opt', proc_macro_setting(mode)]
     command = [sys.executable, ROOT / 'scripts/interpreter.py', '--manifest-path', source / 'Cargo.toml',
         '--package', CASE['package'], '--jobs', str(JOBS), '--tool-key', key,
         '--cache-namespace', work.name + ':' + mode, '--workspace-cache-root', work / 'caches' / mode,
@@ -266,6 +278,8 @@ def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom
         expected['custom_cargo'] = cargo.receipt()
     else:
         require(cargo is None, 'Cargo arguments require cargo-info-cache policy')
+    if candidate_policy == 'host-proc-macro-opt':
+        expected['host_proc_macro_opt'] = proc_macro_setting(mode)
     return expected
 
 
@@ -279,12 +293,16 @@ def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
     require(all(launch.get(k) == v for k, v in expected.items()), 'launcher settings differ')
     require(custom is not None or 'custom_compiler' not in launch, 'unexpected custom compiler in launcher')
     require(cargo is not None or 'custom_cargo' not in launch, 'unexpected custom Cargo in launcher')
-    if cargo:require(launch.get('query_cache_retention', 'off') == 'off', 'unexpected retention policy in Cargo comparison')
+    macro = candidate_policy == 'host-proc-macro-opt'
+    if cargo or macro:
+        require(launch.get('query_cache_retention', 'off') == 'off', 'unexpected retention policy in independent comparison')
+    if not macro:
+        require(launch.get('host_proc_macro_opt', 'off') == 'off', 'unexpected proc-macro policy in independent comparison')
     require(launch['toolchain_lookup']['mode'] == 'cached'
             and launch['toolchain_lookup']['outcome'] in ({'owned-manifest'} if custom else {'miss', 'hit'}),
             'cached toolchain lookup unavailable')
-    if custom or cargo:
-        require(prepared_std is not None, 'selected compiler/Cargo launch requires prepared std identity')
+    if custom or cargo or macro:
+        require(prepared_std is not None, 'selected mechanism launch requires prepared std identity')
     if prepared_std is not None:
         require(launch.get('std_mir') == {k: prepared_std[k] for k in ['key', 'sysroot', 'target']},
                 'launcher used different standard-library MIR')
@@ -400,7 +418,8 @@ def main():
             require(len({proof['rust-interp-vm'] for proof in manifests.values()}) == 1,
                     'compiler-cache screen requires identical VM binaries')
             for mode, tool in tools.items():
-                if cargo_comparison:validate_tool_compiler(tool, keys[mode], None)
+                if cargo_comparison or args.candidate_policy == 'host-proc-macro-opt':
+                    validate_tool_compiler(tool, keys[mode], None)
                 if custom:
                     validate_tool_compiler(tool, keys[mode], custom)
                     require_candidate_policy(tool, keys[mode], args.candidate_policy)
@@ -408,6 +427,32 @@ def main():
                                'trap-unsupported-calls', 'run-try-callbacks']:
                     require_export_option(tool, keys[mode], option)
             require_candidate_policy(tools['candidate'], keys['candidate'], args.candidate_policy)
+            public = None
+            public_guards = None
+            if args.candidate_policy == 'host-proc-macro-opt':
+                from qualified_public_tools import (GUARD_POLICY, validate_input_guard,
+                    validate_live_inputs, validate_public_tool)
+                def public_bytes(path):
+                    require(path.resolve(strict=True) == path and path.is_file(), 'public provenance follows a symlink')
+                    return path.read_bytes()
+
+                public = validate_public_tool(tools['baseline'], keys['baseline'], public_bytes)
+                qualified_std = public['correctness']['shared_std']
+                require(qualified_std['key'] == std['key'] and qualified_std['ready_sha256'] == std['sha256']
+                        and qualified_std['sysroot'] == std['sysroot'], 'screen std differs from qualified public tools')
+                validate_input_guard(public, json.loads((tools['baseline'] / 'publication-guard.json').read_bytes()))
+                guard_directory = work / 'public-input-guards'
+                guard_directory.mkdir(exist_ok=False)
+
+                def public_guard(name, rehash=False):
+                    path = guard_directory / name
+                    require(not path.exists() and not path.is_symlink(), 'public guard output already exists')
+                    write_json(path, validate_live_inputs(public, rehash=rehash))
+                    return dict(path=str(path), sha256=sha(path))
+
+                public_guards = dict(policy=GUARD_POLICY, admission=public_guard('admission.json', True),
+                    directory=str(guard_directory), final_path=str(guard_directory / 'final.json'),
+                    boundaries_per_command=2)
             for directory in [work / 'artifacts', work / 'suites', work / 'receipts',
                               *[work / 'caches' / m for m in MODES]]:
                 directory.mkdir(parents=True, exist_ok=False)
@@ -419,6 +464,11 @@ def main():
                 paths += [Path(stds['candidate']['path']), Path(__file__).with_name('CARGO_INFO_CACHE_SCREEN.md')]
                 for cargo in [cargos['baseline'], cargos['candidate']]:
                     paths += [cargo.directory / 'ready.json', *sorted((cargo.directory / 'payload').iterdir())]
+            if args.candidate_policy == 'host-proc-macro-opt':
+                paths += [Path(__file__).with_name(name) for name in
+                          ['HOST_PROC_MACRO_OPT.md', 'HOST_PROC_MACRO_SCREEN.md']]
+                paths += public['payload_paths'] + [Path(public_guards['admission']['path'])]
+                paths += [p for p in tools['baseline'].rglob('*') if p.is_file() or p.is_symlink()]
             paths += sorted((ROOT / 'scripts').glob('*.py'))
             paths += [p for tool in set(tools.values()) for p in tool.iterdir() if p.is_file()]
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
@@ -447,6 +497,16 @@ def main():
                     cargos_by_mode={mode: cargo.receipt() for mode, cargo in cargos.items()},
                     std_mir_by_mode=stds,
                     compiler_comparison='same public compiler/exporter/VM; matched stock/candidate/stock Cargo')
+            if args.candidate_policy == 'host-proc-macro-opt':
+                plan.update(proc_macro_policy_by_mode={m: proc_macro_setting(m) for m in MODES},
+                    public_input_guards=public_guards,
+                    std_mir_by_mode=stds,
+                    compiler_comparison='same public compiler/Cargo/exporter/VM; host proc-macro codegen off/on/off',
+                    codegen_policy_amendment=dict(path=str(Path(__file__).with_name('HOST_PROC_MACRO_OPT.md')),
+                        capability='host-proc-macro-opt-v1', optimized_role='unselected linked host proc-macro target',
+                        original_opt_level='0 (no explicit optimization flag)', opt_level='1', mir_opt_level=1,
+                        lto='off', preserve_effective_debug_assertions=True, preserve_effective_overflow_checks=True,
+                        application_profiles_changed=False, std_preparation_policy='unchanged and outside application wrapper'))
             write_json(work / 'plan.json', plan)
             previous = dict.fromkeys(MODES)
 
@@ -479,6 +539,8 @@ def main():
 
             def invoke(mode, sample):
                 verify_inputs(sample['source'])
+                ordinal = len(rows)
+                guard_before = public_guard(f'{ordinal:03}-before.json') if public else None
                 digest = sha(changed)
                 require(previous[mode] != digest, 'unchanged command entered screen')
                 command = command_for(mode, keys[mode], source, work, sample,
@@ -490,6 +552,8 @@ def main():
                 receipt = dict(index=sample['index'], phase=sample['phase'], mode=mode,
                                source_sha256=digest, tool_key=keys[mode])
                 if cargos[mode]:receipt['cargo_key'] = cargos[mode].key
+                if args.candidate_policy == 'host-proc-macro-opt':
+                    receipt['host_proc_macro_opt'] = proc_macro_setting(mode)
                 child, stdout, stderr, elapsed, cpu = measure_command(command, cwd=source, env=env,
                     receipt_path=work / 'receipts' / f"{sample['index']}-{mode}.json",
                     receipt=receipt)
@@ -499,6 +563,10 @@ def main():
                     source_sha256=digest, previous_source_sha256=previous[mode], free_bytes=free)
                 rows.append(row)
                 write_json(work / 'records.json', rows)
+                if public:
+                    row['public_input_guards'] = dict(before=guard_before,
+                        after=public_guard(f'{ordinal:03}-after.json'))
+                    write_json(work / 'records.json', rows)
                 verify_inputs(sample['source'])
                 success = sample['phase'] != 'wrong-edit'
                 require((child.returncode == 0) == success, 'wrong-edit/passing exit status differs')
@@ -538,6 +606,8 @@ def main():
             run_state(states[-1])
             verify_inputs(original)
             summary = assessment(rows)
+            if public:
+                summary['final_public_input_guard'] = public_guard('final.json', True)
             summary.update(candidate_policy=args.candidate_policy,
                 raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),
                 records_sha256=sha(work / 'records.json'), source_restored=True, cache_workspaces=workspaces)

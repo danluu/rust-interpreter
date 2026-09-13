@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and archive saved stable-CGU or Cargo-info-cache mechanism screens."""
+"""Validate and archive saved compiler, Cargo and proc-macro mechanism screens."""
 import argparse
 import gzip
 import os
@@ -13,9 +13,12 @@ from assess import require, sha
 from screen import CASE, assessment as assess_rows, protocol_states, frozen_input_hash, launch_settings, command_for
 from suite_reports import read_report, validate_report, validate_runtime_limits
 
+POLICIES = ['stable-cgu', 'cargo-info-cache', 'host-proc-macro-opt']
+
 
 def markdown(s):
-    title = {'stable-cgu': 'Stable code-generation groups', 'cargo-info-cache': 'Cargo compiler-info cache'}[s['candidate_policy']]
+    title = {'stable-cgu': 'Stable code-generation groups', 'cargo-info-cache': 'Cargo compiler-info cache',
+             'host-proc-macro-opt': 'Host proc-macro code generation'}[s['candidate_policy']]
     medians = s['complete_command_median_seconds']
     lines = ['# ' + title + ' mechanism screen', '',
         f"Candidate median: {medians['candidate']:.6f} s; baseline: {medians['baseline']:.6f} s; "
@@ -52,6 +55,10 @@ def markdown(s):
         ('The compiler binary, native std and exporter/VM are identical for off/on/off. '
          'This comparison does not attribute differences from a separately built public compiler to the patch.'
          if s['candidate_policy'] == 'stable-cgu' else
+         'The compiler, Cargo, exporter, VM and prepared standard library are identical for off/on/off. '
+         'Only eligible host proc-macro targets receive the explicitly recorded code-generation policy; '
+         'application profiles and checking remain unchanged.'
+         if s['candidate_policy'] == 'host-proc-macro-opt' else
          'The matched Cargo executables differ only by the qualified production-source change, with '
          'equal build settings and dynamic libraries. Cargo optimization is isolated from custom compiler policies.'), '',
         '[summary.json](summary.json) retains every pair, command, setup identity and artifact hash. '
@@ -110,7 +117,7 @@ def selection(plan, snapshot):
     policy = plan['candidate_policy']
     modes = ['baseline', 'candidate', 'duplicate']
     require(plan['case'] == json.loads(json.dumps(CASE)), 'original workflow and edit recipe differ')
-    require(policy in ['stable-cgu', 'cargo-info-cache'] and set(plan['tools']) == set(modes)
+    require(policy in POLICIES and set(plan['tools']) == set(modes)
             and len(set(plan['tools'].values())) == 1, 'owned screen requires one tool identity')
     require(set(plan['std_mir_by_mode']) == set(modes), 'missing per-arm std identities')
     custom, cargos = None, dict.fromkeys(modes)
@@ -128,7 +135,7 @@ def selection(plan, snapshot):
                 and custom.identity['provenance']['stage'] == 2, 'compiler path or stage differs')
         require(plan['cgu_policy_by_mode'] == dict(baseline='off', candidate='on', duplicate='off'),
                 'stable-CGU policy differs')
-    else:
+    elif policy == 'cargo-info-cache':
         require('custom_compiler' not in plan and 'cgu_policy_by_mode' not in plan, 'mixed compiler/Cargo policies')
         for mode in modes:
             receipt = plan['cargos_by_mode'][mode]
@@ -144,6 +151,21 @@ def selection(plan, snapshot):
                 'Cargo screen requires distinct actual candidate bytes and identical baseline/duplicate')
         require(cargo_pair(cargos['baseline'], cargos['candidate'], snapshot) == plan['cargo_comparison'],
                 'Cargo matched pair differs')
+    else:
+        require(not any(k in plan for k in ['custom_compiler', 'cgu_policy_by_mode',
+                'cargo_comparison', 'cargos_by_mode']), 'mixed proc-macro/compiler/Cargo policies')
+        require(plan['proc_macro_policy_by_mode'] == dict(baseline='off', candidate='on', duplicate='off'),
+                'proc-macro policy differs')
+        require(plan['codegen_policy_amendment'] == dict(
+            path=str(Path(plan['owner']) / 'benchmarks/experiments/strict-warm-build/HOST_PROC_MACRO_OPT.md'),
+            capability='host-proc-macro-opt-v1', optimized_role='unselected linked host proc-macro target',
+            original_opt_level='0 (no explicit optimization flag)', opt_level='1', mir_opt_level=1,
+            lto='off', preserve_effective_debug_assertions=True, preserve_effective_overflow_checks=True,
+            application_profiles_changed=False, std_preparation_policy='unchanged and outside application wrapper'),
+            'proc-macro code-generation amendment differs')
+        key = plan['tools']['baseline']
+        public = json.loads(snapshot(Path(plan['owner']) / '.work/interpreter-tools' / key /
+                                     'source.json')['utf8'])['composition']['public_compiler']
     for mode in modes:
         from std_mir import FLAGS, POLICY
         std = plan['std_mir_by_mode'][mode]
@@ -177,20 +199,36 @@ def selection(plan, snapshot):
                     and identity['lock_sha256'] == custom.identity['files'][
                         'lib/rustlib/src/rust/library/Cargo.lock'],
                     'std compiler/policy differs')
-        else:
+        elif policy == 'cargo-info-cache':
             require(identity['cargo'] == cargos[mode].receipt()
                     and identity['compiler'] == cargos[mode].identity['pinned_compiler']['compiler']
                     and identity['target'] == cargos[mode].identity['pinned_compiler']['host']
                     and not any(k in identity for k in ['compiler_key', 'namespace', 'source_sha256']),
                     'std Cargo differs')
-    require(plan['std_mir_by_mode']['baseline'] == plan['std_mir_by_mode']['duplicate'] and
-            plan['std_mir_by_mode']['baseline']['key'] != plan['std_mir_by_mode']['candidate']['key'],
-            'std namespaces must match baseline/duplicate and isolate candidate')
+        else:
+            require(not any(k in identity for k in ['cargo', 'compiler_key', 'namespace', 'source_sha256'])
+                    and sha(identity['compiler'].encode()) == public['version_stdout_sha256']
+                    and identity['target'] == public['target'], 'std public compiler differs')
+    stds = plan['std_mir_by_mode']
+    if policy == 'host-proc-macro-opt':
+        require(stds['baseline'] == stds['candidate'] == stds['duplicate'] == plan['std_mir'],
+                'proc-macro comparison requires one unchanged shared std')
+    else:
+        require(stds['baseline'] == stds['duplicate'] and stds['baseline']['key'] != stds['candidate']['key'],
+                'std namespaces must match baseline/duplicate and isolate candidate')
     return custom, cargos
 
 
 def tool_identity(plan, key, custom, snapshot):
     """Bind the retained exporter capability to its physical compiler prefix."""
+    if plan['candidate_policy'] == 'host-proc-macro-opt':
+        from qualified_public_tools import validate_public_tool
+        tool = Path(plan['owner']) / '.work/interpreter-tools' / key
+        validated = validate_public_tool(tool, key, lambda path: snapshot(path)['utf8'].encode())
+        require(all(validated['composition']['binaries'] == plan['binaries'][mode]
+                    for mode in plan['tools']), 'qualified public tool binaries differ from screen')
+        qualified_std(plan, validated, snapshot)
+        return validated
     from custom_compiler import TOOL_POLICY, digest
     tool = Path(plan['owner']) / '.work/interpreter-tools' / key
     name = 'compiler.json' if custom else 'source.json'
@@ -210,6 +248,52 @@ def tool_identity(plan, key, custom, snapshot):
                 and capability['compiler_sysroot'] == str(custom.sysroot)
                 and 'stable-cgu-partitioning' in capability['export_options'],
                 'exporter compiler association differs')
+
+
+def qualified_std(plan, validated, snapshot):
+    """Bind the measured shared std to the one used for public-tool qualification."""
+    shared = validated['correctness']['shared_std']
+    measured = plan['std_mir']
+    ready = json.loads(snapshot(Path(measured['path']))['utf8'])
+    require(shared['key'] == measured['key'] and shared['sysroot'] == measured['sysroot']
+            and shared['ready_sha256'] == measured['sha256'] and shared['identity'] == ready['identity'],
+            'measured std differs from public-tool qualification')
+
+
+def public_screen_guards(plan, rows, summary, raw, validated, snapshot):
+    """Check saved input guards without reopening compiler or library binaries."""
+    from qualified_public_tools import validate_input_guard
+    policy = 'qualified-public-input-guard-v1'
+    directory = raw / 'public-input-guards'
+    manifest = plan['public_input_guards']
+    require(manifest['policy'] == policy and manifest['directory'] == str(directory)
+            and manifest['final_path'] == str(directory / 'final.json')
+            and manifest['boundaries_per_command'] == 2 and len(rows) == 27,
+            'public input guard plan differs')
+
+    def read(reference, expected, validation):
+        require(reference['path'] == str(expected), 'public input guard path differs')
+        item = snapshot(expected)
+        require(sha(item['utf8'].encode()) == item['sha256'] == reference['sha256'],
+                'public input guard bytes differ')
+        guard = json.loads(item['utf8'])
+        validate_input_guard(validated, guard)
+        require(guard['validation'] in validation, 'public input guard verification mode differs')
+        return guard
+
+    admission = read(manifest['admission'], directory / 'admission.json', ['sha256'])
+    guards = []
+    for ordinal, row in enumerate(rows):
+        require(set(row['public_input_guards']) == {'before', 'after'}, 'missing public input command boundary')
+        for boundary in ['before', 'after']:
+            guards.append(read(row['public_input_guards'][boundary],
+                directory / f'{ordinal:03d}-{boundary}.json', ['stat', 'sha256']))
+    guards.append(read(summary['final_public_input_guard'], directory / 'final.json', ['sha256']))
+    require(all(all(guard[k] == admission[k] for k in ['schema_version', 'policy', 'tool_key',
+                'platform', 'files', 'searches']) for guard in guards),
+            'public compiler, Cargo, tools or dynamic inputs changed during history')
+    return dict(records_verified=1 + len(guards), commands=len(rows),
+                policy=policy, executable_or_dependency_bytes_read=False)
 
 
 def workspace_identity(row, raw, workspaces):
@@ -261,7 +345,7 @@ def main():
     require(plan['owner'] == str(ROOT) and plan['kind'] == 'mechanism-screen' and
             plan['final_qualification'] is False and original_summary['source_restored'] is True and
             plan['candidate_policy'] == original_summary['candidate_policy'] and
-            plan['candidate_policy'] in ['stable-cgu', 'cargo-info-cache'],
+            plan['candidate_policy'] in POLICIES,
             'expected completed owned mechanism screen')
     require(plan['guest_rustflags'] == [] and plan['profile_overrides'] == {} and
             len(plan['case']['tests']) == 14, 'workload profiles or original test count differ')
@@ -374,6 +458,11 @@ def main():
                 'actual std identity differs')
         if cargos[mode]:
             require(receipt['cargo_key'] == cargos[mode].key, 'timed Cargo identity differs')
+        if plan['candidate_policy'] == 'host-proc-macro-opt':
+            require(receipt['host_proc_macro_opt'] == plan['proc_macro_policy_by_mode'][mode]
+                    and not any(k in row['launch'] for k in ['custom_compiler', 'custom_cargo'])
+                    and row['launch'].get('query_cache_retention', 'off') == 'off',
+                    'timed proc-macro policy differs')
         for item in row['artifacts']:
             p = (ROOT / item['path']).resolve(strict=True)
             require(p.is_relative_to(raw / 'artifacts'), 'artifact snapshot escapes screen')
@@ -428,9 +517,18 @@ def main():
     for p in [Path(__file__).resolve(), Path(__file__).with_name('analyzer.py'),
               Path(__file__).with_name('assess.py')]:
         files[str(p)] = member(p)
+    public_validation = None
     for key in set(plan['tools'].values()):
-        tool_identity(plan, key, custom, lambda path: files[str(path)])
-    if not custom:
+        public_validation = tool_identity(plan, key, custom, frozen_snapshot)
+    public_guards = None
+    if public_validation:
+        def guard_snapshot(path):
+            item = snapshot(path)
+            files[str(path)] = item
+            return item
+        public_guards = public_screen_guards(plan, rows, original_summary, raw,
+                                             public_validation, guard_snapshot)
+    if plan['candidate_policy'] == 'cargo-info-cache':
         for cargo in {c.key: c for c in cargos.values()}.values():
             for name, expected_hash in cargo.identity['files'].items():
                 path = cargo.directory / 'payload' / name
@@ -465,8 +563,11 @@ def main():
         candidate_observations_below_half_second=sum(p['candidate_seconds'] < .5 for p in summary['pairs']),
         adoption='not decided by this single-history mechanism screen', final_latency_gate_qualified=False,
         holdouts_evaluated=False)
-    for key in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode']:
+    for key in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode',
+                'proc_macro_policy_by_mode', 'codegen_policy_amendment']:
         if key in plan:summary[key] = plan[key]
+    if public_guards:
+        summary['public_input_guard_assessment'] = public_guards
     for pair in summary['pairs']:
         for mode in plan['tools']:
             row = next(r for r in rows if r['index'] == pair['index'] and r['mode'] == mode)
