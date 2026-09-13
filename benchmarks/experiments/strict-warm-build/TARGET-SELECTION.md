@@ -28,6 +28,15 @@ investigating rather than a demonstrated removable budget.
 [Edited workflow](../../../results/paired-local-memory-forwarding-corpus-ruff-01/summary.md)
 and [frontend profile](../../../results/frontend-profile-ruff-01/summary.md).
 
+Read-only inspection of the saved Cargo stderr strengthens that choice. All
+three edited profile states and all five edited interpreter workflow states
+report only `Checking ruff_linter`; the five native edits report only
+`Compiling ruff_linter`. No edited host dependency rebuild is observed in these
+histories. This is specific to the recorded registry-body edits, not a claim
+about every possible Ruff edit. The exact raw paths are retained in each
+linked result's `summary.json`. Expansion includes more than procedural-macro
+execution, and post-expansion HIR reuse alone cannot remove that phase.
+
 Oxc's `oxc_linter` is a prospective new development candidate. Its inspected
 manifest has no build dependencies, while `oxc_macros` depends on general macro
 utilities rather than the linter. This suggests a cleaner route for ordinary
