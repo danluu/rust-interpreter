@@ -106,16 +106,16 @@ impl Assembler<'_> {
         if self.tree_bridge_frame.is_none() {return;}
         self.imm(9,(self.current_pc+1) as u64);
         self.store64(9,31,layout::HOST_PC);
-        self.load64(9,19,layout::DEPTH);
+        self.load64(9,19,resumable::BRIDGE+layout::DEPTH);
         self.add_imm(9,9,1);
-        self.store64(9,19,layout::DEPTH);
+        self.store64(9,19,resumable::BRIDGE+layout::DEPTH);
     }
 
     pub(super) fn bridge_leave_tree_frame(&mut self) {
         if self.tree_bridge_frame.is_none() {return;}
-        self.load64(9,19,layout::DEPTH);
+        self.load64(9,19,resumable::BRIDGE+layout::DEPTH);
         self.sub_imm(9,9,1);
-        self.store64(9,19,layout::DEPTH);
+        self.store64(9,19,resumable::BRIDGE+layout::DEPTH);
     }
 
     /// Materialize only on terminal failure, while this function's bounded
@@ -124,14 +124,14 @@ impl Assembler<'_> {
     pub(super) fn bridge_fault_frame(&mut self) -> Result<(),EmitError> {
         let Some((function,registers))=self.tree_bridge_frame else {return Ok(());};
         self.load64(9,31,32); // saved function-entry register pointer
-        self.load64(10,19,layout::REGISTERS);
+        self.load64(10,19,resumable::BRIDGE+layout::REGISTERS);
         self.three(0xcb000000,9,9,10);
         self.emit(0xd340fc00|(4<<16)|(9<<5)|9); // lsr x9,x9,#4: absolute slot base
-        self.load64(10,19,layout::DEPTH);
+        self.load64(10,19,resumable::BRIDGE+layout::DEPTH);
         self.sub_imm(11,10,1);
         self.imm(12,frame::SIZE as u64);
         self.three(0x9b007c00,11,11,12);
-        self.load64(12,19,layout::FRAMES);
+        self.load64(12,19,resumable::BRIDGE+layout::FRAMES);
         self.three(0x8b000000,11,11,12); // prechecked descriptor for this depth
         self.imm(12,function as u64);
         self.store64(12,11,frame::FUNCTION);
@@ -142,13 +142,13 @@ impl Assembler<'_> {
         self.store64(9,11,frame::REGISTER_BASE);
         self.store64(20,11,frame::RETURN_ADDRESS);
         self.emit(0x39000000|((frame::TLS_CALLBACK as u32)<<10)|(11<<5)|31);
-        self.load64(12,19,layout::FAULT_DEPTH);
+        self.load64(12,19,resumable::BRIDGE+layout::FAULT_DEPTH);
         self.cmp(12,31);
         let recorded=self.words.len();self.emit(0x54000001); // b.ne already captured
-        self.store64(10,19,layout::FAULT_DEPTH);
+        self.store64(10,19,resumable::BRIDGE+layout::FAULT_DEPTH);
         self.imm(12,registers as u64);
         self.three(0x8b000000,9,9,12);
-        self.store64(9,19,layout::FAULT_REGISTER_END);
+        self.store64(9,19,resumable::BRIDGE+layout::FAULT_REGISTER_END);
         self.patch_conditional(recorded,self.words.len())?;
         self.bridge_leave_tree_frame();
         Ok(())
@@ -215,12 +215,14 @@ mod tests {
                     frames:frames.as_mut_ptr(),registers:registers.as_mut_ptr(),depth,
                     fault_depth:previous_fault,fault_register_end:37,
                 };
+                let mut cursor=resumable::ResumeCursor::for_tree_probe(cursor);
                 // SAFETY: the only descriptor index is depth-1<6. The saved
                 // register pointer is aligned and lies in the same live array
                 // as the cursor's base. Every host object is distinct, fully
                 // initialized and exclusively owned through this exact probe.
                 let output=unsafe {code.tree_abi_probe(entry,[registers.as_mut_ptr().add(3) as usize,
-                    64,memory.as_mut_ptr() as usize,512,16,0,0,(&mut cursor as *mut BridgeCursor) as usize])};
+                    64,memory.as_mut_ptr() as usize,512,16,0,0,(&mut cursor as *mut resumable::ResumeCursor) as usize])};
+                let cursor=cursor.into_tree_probe();
                 assert_eq!(output[0],Failure::Memory as usize);
                 assert_eq!(&output[1..5],&[0x1357,0x2468,0x3579,0x468a]);
                 assert_eq!(output[5],output[6]);

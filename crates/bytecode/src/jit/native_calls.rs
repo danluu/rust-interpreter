@@ -164,17 +164,24 @@ impl<'a> Jit<'a> {
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
         let mut wrapper = Assembler::default();
-        wrapper.emit(0xa9bf7bf3); // stp x19,lr,[sp,#-16]!
+        wrapper.push_pair(19,30,if self.bridge_trees {32} else {16});
+        if self.bridge_trees { wrapper.store64(22,31,16); }
         wrapper.mov(19, 7);
+        if self.bridge_trees { wrapper.load64(22,19,0); }
         if self.uses_heap { wrapper.mov(7, 5); wrapper.mov(8, 6); }
-        wrapper.emit(0xf940126f); // ldr x15,[x19,#32]: root return destination
+        wrapper.load64(15,19,if self.bridge_trees {resumable::BRIDGE+32} else {32});
         let wrapper_call = wrapper.words.len();
         wrapper.emit(0x94000000); // bl internal entry
-        wrapper.return_to_vm();
+        if self.bridge_trees {
+            wrapper.store64(22,19,0);
+            wrapper.load64(22,31,16);
+            wrapper.pop_pair(19,30,32);
+            wrapper.emit(0xd65f03c0);
+        } else { wrapper.return_to_vm(); }
         let internal = wrapper.words.len();
         wrapper.words[wrapper_call] |= branch_displacement(wrapper_call, internal, 26, CodegenLimit::Jump)?;
-        // The outer wrapper stays 16 bytes; only the internal function owns
-        // saved persistent pairs and establishes its own register assignment.
+        // Bridge external probes save the host budget register. Internal
+        // entries preserve persistent pairs but carry the guest budget in x22.
         wrapper.values = values.as_ref();
         wrapper.tree_push_frame();
         if self.bridge_trees { wrapper.store64(31, 31, tree_bridge::layout::HOST_PC); }
@@ -215,10 +222,14 @@ impl<'a> Jit<'a> {
                 region_start: start, region_end: pc, ..Assembler::default() };
             // The checked whole-tree bound guarantees enough budget for every
             // path, including nested bodies. There is no partial-budget exit.
-            a.emit(0xf9400269);
-            a.imm(10, (pc - start) as u64);
-            a.three(0xcb000000, 9, 9, 10);
-            a.emit(0xf9000269);
+            if self.bridge_trees {
+                a.sub_imm(22,22,pc-start);
+            } else {
+                a.emit(0xf9400269);
+                a.imm(10, (pc - start) as u64);
+                a.three(0xcb000000, 9, 9, 10);
+                a.emit(0xf9000269);
+            }
             if self.profiled {
                 a.emit(0xf940066a);
                 a.imm(11, start as u64 * 8);
@@ -334,7 +345,9 @@ fn terminal(op: &Op) -> bool {
 impl Assembler<'_> {
     pub(super) fn tree_restore_host_frame(&mut self) {
         if !self.tree_caller_is_region { self.save_value_pairs(true, 64); }
-        self.emit(0xa9417bf6); // ldp x22,lr,[sp,#16]
+        if self.tree_bridge_frame.is_some() {
+            self.load64(30,31,24); // x22 carries the consumed guest budget
+        } else { self.emit(0xa9417bf6); } // old tree cursor x22,lr
         let pairs = if self.tree_caller_is_region { 0 } else { self.assigned_count() };
         self.pop_pair(20, 21, 64 + pairs * 16);
     }
@@ -360,13 +373,16 @@ impl Assembler<'_> {
         self.three(0x8b000000, 21, 3, 9);
         self.imm(9, !((callee.frame_align - 1) as u64));
         self.three(0x8a000000, 21, 21, 9); // aligned child base
-        self.imm(9, caller.registers as u64 * 16);
-        self.three(0x8b000000, 22, 0, 9);
+        if self.tree_bridge_frame.is_none() {
+            self.imm(9, caller.registers as u64 * 16);
+            self.three(0x8b000000, 22, 0, 9);
+        }
         self.three(0x8b000000, 11, 2, 3); // old live end as host pointer
         self.imm(9, callee.frame_size.max(1) as u64);
         self.three(0x8b000000, 3, 21, 9); // publish new live end before args
         self.three(0x8b000000, 12, 2, 3);
-        self.zero_range()?;
+        if self.tree_bridge_frame.is_some() { self.clear_call_frame(caller,callee)?; }
+        else { self.zero_range()?; }
         self.emit(0xf9400e69); // ldr x9,[x19,#24]
         self.cmp(3, 9);
         self.emit(0x9a892069); // csel x9,x3,x9,hs: max(new live end, old peak)
@@ -384,11 +400,18 @@ impl Assembler<'_> {
             self.three(0x8b000000, 12, 2, 12);
             self.abi_copy(slot.size)?;
         }
+        let child_register = if self.tree_bridge_frame.is_some() {17} else {22};
+        if self.tree_bridge_frame.is_some() {
+            // Argument helpers may use x17; compute it only after all copies.
+            self.imm(9,caller.registers as u64*16);
+            self.three(0x8b000000,17,0,9);
+        }
         if crate::registers::needs_initial_zeroes(callee) {
-            self.mov(11, 22);
+            self.mov(11, child_register);
             self.imm(12, callee.registers as u64 * 16);
-            self.three(0x8b000000, 12, 22, 12);
-            self.zero_range()?;
+            self.three(0x8b000000, 12, child_register, 12);
+            if self.tree_bridge_frame.is_some() { self.zero_range_at_least(callee.registers*16)?; }
+            else { self.zero_range()?; }
         }
         if self.tree_bridge_frame.is_some() {
             // A faulting argument copy has not pushed the child frame.
@@ -398,10 +421,10 @@ impl Assembler<'_> {
             self.bridge_enter_child();
         }
         self.get(15, destination, false);
-        self.mov(0, 22);
+        self.mov(0, child_register);
         self.mov(1, 21);
         if profiled {
-            self.emit(0xf9401669); // ldr x9,[x19,#40]: profile table
+            self.load64(9,19,if self.tree_bridge_frame.is_some() {resumable::BRIDGE+40} else {40});
             self.imm(10, callee_id as u64 * 8);
             self.three(0x8b000000, 9, 9, 10);
             self.emit(0xf9400129);

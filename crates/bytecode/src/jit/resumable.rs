@@ -94,7 +94,7 @@ impl Entries {
 }
 
 #[repr(C)]
-struct ResumeCursor {
+pub(super) struct ResumeCursor {
     state: State,
     frames: *mut Frame,
     registers: *mut u128,
@@ -113,6 +113,33 @@ struct ResumeCursor {
     bridge_entries: u64,
 }
 
+#[cfg(test)]
+impl ResumeCursor {
+    /// External complete-tree probes use the same private cursor layout as
+    /// real resumable entries. No ordinary admission or dispatch uses this.
+    pub(super) fn for_tree_probe(bridge: tree_bridge::BridgeCursor) -> Self {
+        Self {
+            state: State { remaining: bridge.tree.base.remaining,
+                profile_hits: bridge.tree.base.profile_hits, memory_len: bridge.tree.memory_len,
+                peak_linear: bridge.tree.peak_linear, register_len: 0, frame_len: 0,
+                calls: bridge.tree.calls, returns: 0 },
+            frames: bridge.frames, registers: bridge.registers,
+            entries: std::ptr::null(), profiles: std::ptr::null(), memory_end: 0,
+            register_end: 0, frame_end: 0, working_budget: 0,
+            indirect_layout: std::ptr::null(), indirect_layouts: std::ptr::null(),
+            bridge, bridge_instructions: 0, bridge_calls: 0, bridge_entries: 0,
+        }
+    }
+    pub(super) fn into_tree_probe(mut self) -> tree_bridge::BridgeCursor {
+        self.bridge.tree.base.remaining = self.state.remaining;
+        self.bridge.tree.base.profile_hits = self.state.profile_hits;
+        self.bridge.tree.memory_len = self.state.memory_len;
+        self.bridge.tree.peak_linear = self.state.peak_linear;
+        self.bridge.tree.calls = self.state.calls;
+        self.bridge
+    }
+}
+
 use continuation::layout as state;
 const FRAMES: usize = std::mem::offset_of!(ResumeCursor, frames);
 const REGISTERS: usize = std::mem::offset_of!(ResumeCursor, registers);
@@ -124,7 +151,7 @@ const FRAME_END: usize = std::mem::offset_of!(ResumeCursor, frame_end);
 const WORKING_BUDGET: usize = std::mem::offset_of!(ResumeCursor, working_budget);
 const INDIRECT_LAYOUT: usize = std::mem::offset_of!(ResumeCursor, indirect_layout);
 const INDIRECT_LAYOUTS: usize = std::mem::offset_of!(ResumeCursor, indirect_layouts);
-const BRIDGE: usize = std::mem::offset_of!(ResumeCursor, bridge);
+pub(super) const BRIDGE: usize = std::mem::offset_of!(ResumeCursor, bridge);
 const BRIDGE_INSTRUCTIONS: usize = std::mem::offset_of!(ResumeCursor, bridge_instructions);
 const BRIDGE_CALLS: usize = std::mem::offset_of!(ResumeCursor, bridge_calls);
 const BRIDGE_ENTRIES: usize = std::mem::offset_of!(ResumeCursor, bridge_entries);
@@ -536,7 +563,7 @@ impl Assembler<'_> {
     /// x12. A known 64-byte minimum permits the first batch without a guard;
     /// subsequent batches test the remaining length. The old helper handles
     /// the exact tail, including empty ranges. Small frames emit no extra test.
-    fn zero_range_at_least(&mut self, minimum: usize) -> Result<(), EmitError> {
+    pub(super) fn zero_range_at_least(&mut self, minimum: usize) -> Result<(), EmitError> {
         const BATCH: usize = 64;
         if minimum >= BATCH {
             self.three(0xcb000000, 9, 12, 11);
@@ -605,7 +632,7 @@ impl Assembler<'_> {
     /// Small payloads can use fixed stores even when padding depends on call
     /// history: first clear that exact dynamic prefix, then the fixed payload.
     /// Preserve x16 (callee target), x17 (register cursor), and x22 (budget).
-    fn clear_call_frame(&mut self, caller: &Function, callee: &Function) -> Result<(), EmitError> {
+    pub(super) fn clear_call_frame(&mut self, caller: &Function, callee: &Function) -> Result<(), EmitError> {
         if let Some(size) = fixed_frame_clear_size(caller, callee) {
             self.zero_fixed(size);
         } else if callee.frame_size.max(1) <= 256 {

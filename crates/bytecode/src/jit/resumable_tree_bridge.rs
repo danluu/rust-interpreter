@@ -57,14 +57,14 @@ impl Assembler<'_> {
         }
         self.get(15,destination,false);
         self.resumable_save_pc(pc+1);
-        self.push_pair(19,20,48);
+        // x19 remains the shared resumable cursor. The complete tree saves
+        // and restores x20, so this frame stores the old count/profile instead.
+        self.load64(10,19,state::CALLS);
+        if profiled { self.load64(9,19,8); } else { self.mov(9,31); }
+        self.push_pair(10,9,48);
         self.stack_pair(false,0,1,16);
         self.stack_pair(false,22,30,32);
-        self.store64(22,19,BRIDGE); // budget AFTER outer Call
-        self.store64(3,19,BRIDGE+16);
-        self.load64(9,19,state::PEAK_LINEAR);self.store64(9,19,BRIDGE+24);
-        self.store64(15,19,BRIDGE+32);
-        self.store64(31,19,BRIDGE+48); // successful nested calls
+        self.add_imm(10,10,1);self.store64(10,19,state::CALLS);
         self.add_imm(9,20,frame::SIZE);self.store64(9,19,BRIDGE+bridge::FRAMES);
         self.imm(9,1);self.store64(9,19,BRIDGE+bridge::DEPTH);
         self.store64(31,19,BRIDGE+bridge::FAULT_DEPTH);
@@ -72,31 +72,28 @@ impl Assembler<'_> {
         if profiled {
             self.load64(9,19,BRIDGE+40);
             self.imm(10,id as u64*8);self.three(0x8b000000,9,9,10);
-            self.load64(9,9,0);self.store64(9,19,BRIDGE+8);
+            self.load64(9,9,0);self.store64(9,19,8);
         }
-        self.mov(0,17);self.mov(1,21);self.add_imm(19,19,BRIDGE);
+        self.mov(0,17);self.mov(1,21);
         let at=global_start.checked_add(self.words.len()).ok_or(EmitError::Limit(CodegenLimit::Jump))?;
         if target>=global_start {return Err(EmitError::InvalidRelocation("bridge target is not published"));}
         self.emit(0x94000000|branch_displacement(at,target,26,CodegenLimit::Jump)?);
 
-        // The complete tree restored its own persistent pairs and host frames.
-        // Capture terminal state before recovering the outer cursor and caller.
+        // x22 already contains the consumed guest budget; calls and peak are
+        // in the shared state. Restore only caller pointers/profile and host LR.
         self.mov(16,0);
-        self.load64(22,19,0);
-        self.load64(10,19,48);self.add_imm(10,10,1); // include root Call
-        self.load64(11,19,bridge::FAULT_DEPTH);
-        self.load64(12,19,bridge::FAULT_REGISTER_END);
-        self.load64(13,19,24);
-        self.stack_pair(true,19,20,0);
+        self.load64(10,19,state::CALLS);self.load64(9,31,0);
+        self.three(0xcb000000,10,10,9); // successful nested + root Calls
+        self.load64(11,19,BRIDGE+bridge::FAULT_DEPTH);
+        self.load64(12,19,BRIDGE+bridge::FAULT_REGISTER_END);
         self.load64(9,31,32);self.three(0xcb000000,9,9,22);
         self.load64(14,19,BRIDGE_INSTRUCTIONS);self.three(0x8b000000,9,9,14);
         self.store64(9,19,BRIDGE_INSTRUCTIONS);
         self.load64(9,19,BRIDGE_CALLS);self.three(0x8b000000,9,9,10);self.store64(9,19,BRIDGE_CALLS);
         self.increment_cursor(BRIDGE_ENTRIES);
-        self.load64(9,19,state::CALLS);self.three(0x8b000000,9,9,10);self.store64(9,19,state::CALLS);
         self.three(0xcb000000,14,10,11); // completed returns = pushes - active depth
         self.load64(9,19,state::RETURNS);self.three(0x8b000000,9,9,14);self.store64(9,19,state::RETURNS);
-        self.store64(13,19,state::PEAK_LINEAR);
+        if profiled {self.load64(9,31,8);self.store64(9,19,8);}
         self.stack_pair(true,0,1,16);
         self.load64(30,31,40);
         self.add_imm(31,31,48); // discard only this adapter's host frame

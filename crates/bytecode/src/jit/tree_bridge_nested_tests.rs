@@ -43,13 +43,15 @@ fn run(p: &Program, persistent: bool, profiled: bool) -> Observed {
         frames: frames.as_mut_ptr(), registers: registers.as_mut_ptr(), depth: 1,
         fault_depth: 0, fault_register_end: 0,
     };
+    let mut cursor = resumable::ResumeCursor::for_tree_probe(cursor);
     let entry = jit.trees.as_ref().unwrap().entries[0].as_ref().unwrap().wrapper;
     // SAFETY: validated complete tree; all conservative extents are fully
     // initialized and distinct. The extended cursor and profile arrays outlive
     // the synchronous owned code probe. Root is depth one, register slot five.
     let output = unsafe { jit.code.as_ref().unwrap().tree_abi_probe(entry,
         [registers.as_mut_ptr().add(5) as usize,base,memory.as_mut_ptr() as usize,len,
-         p.data.len(),0,0,(&mut cursor as *mut BridgeCursor) as usize]) };
+         p.data.len(),0,0,(&mut cursor as *mut resumable::ResumeCursor) as usize]) };
+    let cursor = cursor.into_tree_probe();
     assert_eq!(&output[1..5], &[0x1357,0x2468,0x3579,0x468a]);
     assert_eq!(output[5],output[6]);
     assert_eq!(&output[7..], &[0x579b,0x68ac,0x79bd,0x8ace,0x9bdf,0xace0]);
