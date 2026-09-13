@@ -75,12 +75,12 @@ fn branch_arena_scalar_accesses_preserve_bytes_faults_and_address_truncation() {
         Memory {bytes:(0..128).map(|i|(i*43+7) as u8).collect(),heap,
             limit:4096,readonly_end:64,peak:256,auxiliary_bytes:0}
     };
-    for size in 0..=16 { for heap in [false,true] { for write in [false,true] {
+    for size in 0usize..=16 { for heap in [false,true] { for write in [false,true] {
         let p = Program {version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,
             data:vec![0;64],statics:if heap {vec![0;16]} else {vec![]},thread_locals:vec![],
             functions:vec![Function {name:"fixed scalar bounds".into(),frame_size:64,frame_align:16,
                 registers:5,args:vec![],result:Slot {offset:0,size:0},code:vec![
-                    if write {Op::Store {address:0,src:1,size}} else {Op::Load {dst:1,address:0,size}},
+                    if write {Op::Store {address:0,src:1,size:size as u8}} else {Op::Load {dst:1,address:0,size:size as u8}},
                     Op::Imm {dst:2,value:19},Op::Jump {target:3},
                     Op::Unary {dst:3,src:1,bits:128,op:Unary::CountOnes},Op::Return]}]};
         crate::validate(&p).unwrap();
