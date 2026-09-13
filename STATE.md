@@ -10,8 +10,10 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 Guarded native indirect-call specialization is now qualified through 424 Rust
 tests per debug/release profile, 123 harness checks, seven exact real tests,
-nine suite commands and 203 native/cache checks. Current profile replays are
-active; edited-command timing has not started. Tool `9e219e2e` retains the
+nine suite commands and 203 native/cache checks. All three current profiles
+match exact per-PC counts, memory and entropy. Native indirect calls account
+for1,025,924 of1,025,947 calls in the block test and737,989 of843,776 in the
+exhaustive test. The full462-command token/folded/pgrust comparison is active. Tool `9e219e2e` retains the
 wide-operation baseline and complete frontend checking. The first host compile
 failure was two missing test-fixture cursor fields; the corrected second build
 passes. The source remains experimental until full command comparisons finish.
