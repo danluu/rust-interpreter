@@ -180,9 +180,12 @@ RUSTFLAGS alone with Cargo `--target` does not cover host build dependencies.
 Use a generated, owned qualification-fixture `.cargo/config.toml`, copied with
 the fixture, containing top-level `target-applies-to-host=false`, `[unstable]`
 `host-config=true` and `target-applies-to-host=true`, plus the identical argument
-arrays in `[host].rustflags` and `[target.HOST].rustflags`. The pinned Cargo
-supports those flags through its unstable config table. Clear conflicting
-ambient Rustflags and record the exact file/environment. Check verbose argv for
+arrays in `[host].rustflags`, `[host.HOST].rustflags` and
+`[target.HOST].rustflags`. Cargo prefers an existing `[host.HOST]` table over
+`[host]`; explicitly populate the exact selected triple and reject conflicting
+inherited host tables/environment. The pinned Cargo supports those flags through
+its unstable config table. Clear conflicting ambient Rustflags and record the
+exact file/environment. Check verbose argv for
 both real native host and guest roles; do not infer coverage from guest success.
 Direct native probes receive the identical explicit argument list.
 
@@ -256,4 +259,5 @@ process receipts and original failed-attempt retention.
 | Rust `compiler/rustc_session/src/config.rs:1378,2960` | scope parser and source root under effective sysroot |
 | Rust `compiler/rustc_metadata/src/rmeta/decoder.rs:1702,1722,1834` | virtual-prefix guards, local source translation, user remap |
 | Cargo `src/compiler/build_context/target_info.rs:795,906` | explicit-target host flags use host configuration |
+| Cargo `src/context/target.rs:83,101` | unstable host gating and triple-specific table precedence |
 | Cargo `tests/testsuite/config.rs:1235`, `rustflags.rs:1662` | unstable config table and host rustflags controls |
