@@ -23,7 +23,7 @@ pub(super) struct Current<'a> {
     origins: BTreeMap<u32, u32>,
 }
 impl<'a> Current<'a> {
-    pub fn new(candidate: &'a Candidate, start: u32, prefix: &BTreeMap<u32, u32>,
+    pub(super) fn new(candidate: &'a Candidate, start: u32, prefix: &BTreeMap<u32, u32>,
         checked: &'a journal::Checked) -> Option<Self> {
         let invalid = hir::ItemLocalId::INVALID.as_u32();
         if start == 0 || start >= invalid || start != checked.start || *prefix != checked.prefix_bindings
@@ -71,8 +71,8 @@ impl<'a> Current<'a> {
             journal: checked, resolutions, references, locals,
             origins: checked.ast_allocations.iter().map(|(&a, &r)| (r, a)).collect() })
     }
-    pub fn origin(&self, relative: u32) -> Option<u32> { self.origins.get(&relative).copied() }
-    pub fn resolution(&self, ordinal: u32, segment: bool) -> Option<(Res, w::Resolution)> {
+    pub(super) fn origin(&self, relative: u32) -> Option<u32> { self.origins.get(&relative).copied() }
+    pub(super) fn resolution(&self, ordinal: u32, segment: bool) -> Option<(Res, w::Resolution)> {
         let res = *self.resolutions.get(ordinal as usize)?;
         let reference = self.references.get(ordinal as usize)?.clone();
         match (res, reference) {
@@ -92,7 +92,7 @@ pub(super) struct CheckedTree {
     _current_resolutions: BTreeMap<u32, Res>,
     _current_locals: BTreeMap<w::LocalRef, hir::HirId>,
 }
-impl CheckedTree { pub fn tree(&self) -> &w::BodyTree { &self.tree } }
+impl CheckedTree { pub(super) fn tree(&self) -> &w::BodyTree { &self.tree } }
 
 pub(super) fn span(value: &w::SourceSpan, source: &str) -> Option<()> {
     if let w::SourceSpan::Relative { lo, hi } = *value {

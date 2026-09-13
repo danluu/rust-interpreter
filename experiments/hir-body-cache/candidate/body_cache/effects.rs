@@ -86,7 +86,7 @@ pub(super) struct Frame {
 }
 
 impl Frame {
-    pub fn enter(lctx: &LoweringContext<'_, '_>, candidate: &Candidate) -> Option<Self> {
+    pub(super) fn enter(lctx: &LoweringContext<'_, '_>, candidate: &Candidate) -> Option<Self> {
         if lctx.body_trace.is_some() || lctx.tcx.dcx().has_errors().is_some() { return None; }
         let start = lctx.curr_owner.item_local_id_counter.as_u32();
         let mut prefix = BTreeMap::new();
@@ -104,7 +104,7 @@ impl Frame {
             #[cfg(debug_assertions)] debug_nodes: lctx.curr_owner.relowering_checker.body_snapshot()? })
     }
 
-    pub fn validate_exit(&self, lctx: &LoweringContext<'_, '_>, candidate: &Candidate,
+    pub(super) fn validate_exit(&self, lctx: &LoweringContext<'_, '_>, candidate: &Candidate,
         checked: &journal::Checked) -> Option<()> {
         if lctx.tcx.dcx().has_errors().is_some() || unchanged(lctx)? != self.unchanged
             || lctx.curr_owner.item_local_id_counter.as_u32() != checked.end { return None; }
@@ -148,18 +148,18 @@ pub(crate) struct Trace {
     rejected: Option<&'static str>,
 }
 impl Trace {
-    pub fn new() -> Self { Self { events: Vec::new(), rejected: None } }
-    pub fn reject(&mut self, reason: &'static str) { self.rejected.get_or_insert(reason); }
+    pub(super) fn new() -> Self { Self { events: Vec::new(), rejected: None } }
+    pub(crate) fn reject(&mut self, reason: &'static str) { self.rejected.get_or_insert(reason); }
     fn push(&mut self, event: Raw) {
         if self.events.len() >= journal::MAX_EVENTS { self.reject("event-budget"); }
         else if self.rejected.is_none() { self.events.push(event); }
     }
-    pub fn ast(&mut self, id: NodeId, local: hir::ItemLocalId) { self.push(Raw::Ast(id, local.as_u32())); }
-    pub fn synthetic(&mut self, local: hir::ItemLocalId) { self.push(Raw::Synthetic(local.as_u32())); }
-    pub fn binding(&mut self, id: NodeId, old: Option<hir::ItemLocalId>, new: hir::ItemLocalId) {
+    pub(crate) fn ast(&mut self, id: NodeId, local: hir::ItemLocalId) { self.push(Raw::Ast(id, local.as_u32())); }
+    pub(crate) fn synthetic(&mut self, local: hir::ItemLocalId) { self.push(Raw::Synthetic(local.as_u32())); }
+    pub(crate) fn binding(&mut self, id: NodeId, old: Option<hir::ItemLocalId>, new: hir::ItemLocalId) {
         self.push(Raw::Bind(id, old.map(|id| id.as_u32()), new.as_u32()));
     }
-    pub fn finish(self, candidate: &Candidate, start: u32, end: u32, root: hir::HirId)
+    pub(super) fn finish(self, candidate: &Candidate, start: u32, end: u32, root: hir::HirId)
         -> Option<journal::Journal> {
         if self.rejected.is_some() || root.owner != candidate.owner { return None; }
         let mut events = Vec::with_capacity(self.events.len());

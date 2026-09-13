@@ -309,7 +309,7 @@ new file mode 100644
 +}
 +
 +impl Frame {
-+    pub fn enter(lctx: &LoweringContext<'_, '_>, candidate: &Candidate) -> Option<Self> {
++    pub(super) fn enter(lctx: &LoweringContext<'_, '_>, candidate: &Candidate) -> Option<Self> {
 +        if lctx.body_trace.is_some() || lctx.tcx.dcx().has_errors().is_some() { return None; }
 +        let start = lctx.curr_owner.item_local_id_counter.as_u32();
 +        let mut prefix = BTreeMap::new();
@@ -327,7 +327,7 @@ new file mode 100644
 +            #[cfg(debug_assertions)] debug_nodes: lctx.curr_owner.relowering_checker.body_snapshot()? })
 +    }
 +
-+    pub fn validate_exit(&self, lctx: &LoweringContext<'_, '_>, candidate: &Candidate,
++    pub(super) fn validate_exit(&self, lctx: &LoweringContext<'_, '_>, candidate: &Candidate,
 +        checked: &journal::Checked) -> Option<()> {
 +        if lctx.tcx.dcx().has_errors().is_some() || unchanged(lctx)? != self.unchanged
 +            || lctx.curr_owner.item_local_id_counter.as_u32() != checked.end { return None; }
@@ -371,18 +371,18 @@ new file mode 100644
 +    rejected: Option<&'static str>,
 +}
 +impl Trace {
-+    pub fn new() -> Self { Self { events: Vec::new(), rejected: None } }
-+    pub fn reject(&mut self, reason: &'static str) { self.rejected.get_or_insert(reason); }
++    pub(super) fn new() -> Self { Self { events: Vec::new(), rejected: None } }
++    pub(crate) fn reject(&mut self, reason: &'static str) { self.rejected.get_or_insert(reason); }
 +    fn push(&mut self, event: Raw) {
 +        if self.events.len() >= journal::MAX_EVENTS { self.reject("event-budget"); }
 +        else if self.rejected.is_none() { self.events.push(event); }
 +    }
-+    pub fn ast(&mut self, id: NodeId, local: hir::ItemLocalId) { self.push(Raw::Ast(id, local.as_u32())); }
-+    pub fn synthetic(&mut self, local: hir::ItemLocalId) { self.push(Raw::Synthetic(local.as_u32())); }
-+    pub fn binding(&mut self, id: NodeId, old: Option<hir::ItemLocalId>, new: hir::ItemLocalId) {
++    pub(crate) fn ast(&mut self, id: NodeId, local: hir::ItemLocalId) { self.push(Raw::Ast(id, local.as_u32())); }
++    pub(crate) fn synthetic(&mut self, local: hir::ItemLocalId) { self.push(Raw::Synthetic(local.as_u32())); }
++    pub(crate) fn binding(&mut self, id: NodeId, old: Option<hir::ItemLocalId>, new: hir::ItemLocalId) {
 +        self.push(Raw::Bind(id, old.map(|id| id.as_u32()), new.as_u32()));
 +    }
-+    pub fn finish(self, candidate: &Candidate, start: u32, end: u32, root: hir::HirId)
++    pub(super) fn finish(self, candidate: &Candidate, start: u32, end: u32, root: hir::HirId)
 +        -> Option<journal::Journal> {
 +        if self.rejected.is_some() || root.owner != candidate.owner { return None; }
 +        let mut events = Vec::with_capacity(self.events.len());
@@ -405,7 +405,7 @@ diff --git a/compiler/rustc_ast_lowering/src/body_cache/entry.rs b/compiler/rust
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/entry.rs
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,157 @@
 +//! Stable entry inputs that are outside the exact owner/resolver input and
 +//! session option hash. Captured at the real body entry, after normal params.
 +//! List/set accessors deliberately avoid Features::enabled/TRACK_FEATURE.
@@ -492,7 +492,14 @@ new file mode 100644
 +        name: f.gate_name.as_str().to_owned(), stable_since: f.stable_since.map(|s| s.as_str().to_owned()),
 +    }).collect();
 +    let library = features.enabled_lib_features().iter().map(|f| f.gate_name.as_str().to_owned()).collect();
-+    let enabled = features.enabled_features().iter().map(|s| s.as_str().to_owned()).collect();
++    let enabled: BTreeSet<_> = features.enabled_features_iter_stable_order()
++        .map(|(symbol, _)| symbol.as_str().to_owned()).collect();
++    // Stable declarations produce the names; cardinality plus membership
++    // independently proves equality with the actual enabled set. No hash-set
++    // iteration or boolean feature getter (and thus no TRACK_FEATURE) occurs.
++    if enabled.len() != features.enabled_features().len()
++        || features.enabled_features_iter_stable_order()
++            .any(|(symbol, _)| !features.enabled_features().contains(&symbol)) { return None; }
 +    let allowed = Allowed {
 +        contracts: names(&lctx.allow_contracts), try_trait: names(&lctx.allow_try_trait),
 +        gen_future: names(&lctx.allow_gen_future), pattern_type: names(&lctx.allow_pattern_type),
@@ -572,22 +579,22 @@ new file mode 100644
 +use rustc_span::def_id::{DefId, DefPathHash};
 +use rustc_span::{Ident, Span, StableSourceFileId, SyntaxContext, DUMMY_SP};
 +
-+pub const POLICY: &str = "hir-body-input-coverage-v2";
-+pub type Outcome<T> = Result<T, &'static str>;
++pub(super) const POLICY: &str = "hir-body-input-coverage-v2";
++pub(super) type Outcome<T> = Result<T, &'static str>;
 +#[derive(Debug, Encodable)]
-+pub enum Atom {
++pub(super) enum Atom {
 +    Tag(&'static str), Count(usize), Text(String), Value(Vec<u8>),
 +    Span(Option<(u32,u32)>), Node(u32), Def(DefPathHash), Local(u32),
 +}
 +#[derive(Debug, Encodable)]
-+pub struct Input {
++pub(super) struct Input {
 +    pub owner: DefPathHash,
 +    pub file: StableSourceFileId,
 +    pub role: &'static str,
 +    pub owner_source: String,
 +    pub atoms: Vec<Atom>,
 +}
-+pub struct Probe {
++pub(super) struct Probe {
 +    pub input: Input,
 +    pub body_bytes: usize,
 +    pub body_nodes: usize,
@@ -814,7 +821,7 @@ new file mode 100644
 +
 +/// Caller enumerates Fn owners directly from expanded AST; no HIR query needed.
 +/// Accepted means structural input only, never an S/E or replay qualification.
-+pub fn probe<'tcx>(tcx:TyCtxt<'tcx>,resolver:&ResolverAstLowering<'tcx>,owner:ast::NodeId,
++pub(super) fn probe<'tcx>(tcx:TyCtxt<'tcx>,resolver:&ResolverAstLowering<'tcx>,owner:ast::NodeId,
 +    span:Span,f:&ast::Fn,role:&'static str)->Outcome<Probe> {
 +    if tcx.incr_comp_session.is_none() {return Err("no-incremental-session");}
 +    if tcx.dcx().has_errors().is_some() {return Err("prior-errors");}
@@ -924,7 +931,7 @@ new file mode 100644
 +}
 +
 +impl Checked {
-+    pub fn journal(&self) -> &Journal { &self.journal }
++    pub(super) fn journal(&self) -> &Journal { &self.journal }
 +}
 +
 +pub(super) fn check(journal: Journal, entry: &Entry<'_>) -> Option<Checked> {
@@ -1931,7 +1938,7 @@ new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
 @@ -0,0 +1 @@
-+pub(super) const SOURCE_IDENTITY: &str = "111b94b52b3c748bd46f16aed82ea52efb07dee2176d69dc9b3d4ddb0092c74d";
++pub(super) const SOURCE_IDENTITY: &str = "9ec60c2dea9e2c30a30c868dcf17afa030ecaa267d56f17bbfe5e36e5f60515f";
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/storage.rs b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
 new file mode 100644
 --- /dev/null
@@ -2053,7 +2060,7 @@ new file mode 100644
 +    origins: BTreeMap<u32, u32>,
 +}
 +impl<'a> Current<'a> {
-+    pub fn new(candidate: &'a Candidate, start: u32, prefix: &BTreeMap<u32, u32>,
++    pub(super) fn new(candidate: &'a Candidate, start: u32, prefix: &BTreeMap<u32, u32>,
 +        checked: &'a journal::Checked) -> Option<Self> {
 +        let invalid = hir::ItemLocalId::INVALID.as_u32();
 +        if start == 0 || start >= invalid || start != checked.start || *prefix != checked.prefix_bindings
@@ -2101,8 +2108,8 @@ new file mode 100644
 +            journal: checked, resolutions, references, locals,
 +            origins: checked.ast_allocations.iter().map(|(&a, &r)| (r, a)).collect() })
 +    }
-+    pub fn origin(&self, relative: u32) -> Option<u32> { self.origins.get(&relative).copied() }
-+    pub fn resolution(&self, ordinal: u32, segment: bool) -> Option<(Res, w::Resolution)> {
++    pub(super) fn origin(&self, relative: u32) -> Option<u32> { self.origins.get(&relative).copied() }
++    pub(super) fn resolution(&self, ordinal: u32, segment: bool) -> Option<(Res, w::Resolution)> {
 +        let res = *self.resolutions.get(ordinal as usize)?;
 +        let reference = self.references.get(ordinal as usize)?.clone();
 +        match (res, reference) {
@@ -2122,7 +2129,7 @@ new file mode 100644
 +    _current_resolutions: BTreeMap<u32, Res>,
 +    _current_locals: BTreeMap<w::LocalRef, hir::HirId>,
 +}
-+impl CheckedTree { pub fn tree(&self) -> &w::BodyTree { &self.tree } }
++impl CheckedTree { pub(super) fn tree(&self) -> &w::BodyTree { &self.tree } }
 +
 +pub(super) fn span(value: &w::SourceSpan, source: &str) -> Option<()> {
 +    if let w::SourceSpan::Relative { lo, hi } = *value {

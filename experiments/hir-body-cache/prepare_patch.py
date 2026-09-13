@@ -144,7 +144,14 @@ def main():
         inputs[str(path.relative_to(ROOT))] = sha(path.read_bytes())
     adapter = ROOT / 'candidate/input_adapter.rs'
     inputs[str(adapter.relative_to(ROOT))] = sha(adapter.read_bytes())
-    updated['compiler/rustc_ast_lowering/src/body_cache/input.rs'] = gate.decode() + adapter.read_text()
+    # Preserve the exact qualified walk while narrowing its six top-level
+    # exported declarations to the embedding body_cache module. The original
+    # gate bytes above remain hash-checked; each visibility-only anchor is exact.
+    embedded_gate = gate.decode()
+    for declaration in ['const POLICY:', 'type Outcome<T>', 'enum Atom {',
+                        'struct Input {', 'struct Probe {', "fn probe<'tcx>"]:
+        embedded_gate = replace(embedded_gate, 'pub ' + declaration, 'pub(super) ' + declaration)
+    updated['compiler/rustc_ast_lowering/src/body_cache/input.rs'] = embedded_gate + adapter.read_text()
     for name in ['rmake.rs', 'fixture.rs']:
         path = ROOT / 'candidate' / name
         inputs[str(path.relative_to(ROOT))] = sha(path.read_bytes())
