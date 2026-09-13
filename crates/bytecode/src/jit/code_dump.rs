@@ -34,7 +34,7 @@ impl Jit<'_> {
     /// Inspect only published code after execution has returned. The borrowed
     /// arena stays alive through both writes. Directory creation is exclusive;
     /// failures preserve any partial evidence and never replace existing files.
-    pub(crate) fn dump_code(&self, path: &Path) -> Result<(), String> {
+    pub(crate) fn dump_code(&self, path: &Path, operations: bool) -> Result<(), String> {
         let (arena_base, bytes) = self.code.as_ref().map_or((0, &[][..]), |c| c.published());
         if bytes.len() != self.bytes { return Err("native code dump length mismatch".into()); }
         let mut ranges = vec![];
@@ -76,6 +76,7 @@ impl Jit<'_> {
             profiled: self.profiled, native_call_stubs: self.native_call_stubs,
             persistent_registers: self.persistent_registers, resumable_calls: self.resumable.is_some(), ranges,
             note: "Published code from this process after successful execution. Entry ranges include wrappers, failure tails and fallbacks. Native-tree ranges cover whole functions, not individual bytecode operations. Diagnostic I/O is not benchmark evidence." };
+        let operations = operations.then(|| self.operation_map()).transpose()?;
         let write = || -> Result<(), Box<dyn std::error::Error>> {
             std::fs::create_dir(path)?;
             let mut code = std::fs::OpenOptions::new().write(true).create_new(true).open(path.join("code.bin"))?;
@@ -84,6 +85,10 @@ impl Jit<'_> {
             let mut writer = std::io::BufWriter::new(file);
             serde_json::to_writer(&mut writer, &dump)?;
             writer.flush()?;
+            if let Some(operations) = operations {
+                let file = std::fs::OpenOptions::new().write(true).create_new(true).open(path.join("operations.json"))?;
+                operations.write(std::io::BufWriter::new(file))?;
+            }
             Ok(())
         };
         write().map_err(|e| format!("write native code dump: {e}"))

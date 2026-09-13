@@ -60,6 +60,7 @@ impl Entries {
         self.owned[id] = entries;
         self.pointers[id] = self.owned[id].as_ptr();
     }
+    pub(super) fn published(&self, id: usize) -> &[usize] { &self.owned[id] }
 }
 
 #[repr(C)]

@@ -19,6 +19,7 @@ mod native_regions;
 mod resumable;
 mod call_slots;
 mod code_dump;
+mod code_spans;
 mod values;
 mod transfers;
 
@@ -273,12 +274,14 @@ pub(crate) struct Block {
     pub end: usize,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 struct Assertion<'a> {
     message: &'a str,
     function: &'a str,
     kind: FaultKind,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 enum FaultKind { Assertion, Trap }
 
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
@@ -431,8 +434,15 @@ impl<'a> Jit<'a> {
     }
 
     fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
-        let resumable = self.resumable.is_some();
         if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) { return Ok(None); }
+        self.emit_function_inner(f, word_budget, self.assertions.len(), None)
+    }
+
+    // Diagnostic re-emission is allowed only for an already published function.
+    // It reuses admission and original assertion identities without republishing.
+    fn emit_function_inner(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
+        mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        let resumable = self.resumable.is_some();
         let mut words = vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
@@ -495,9 +505,18 @@ impl<'a> Jit<'a> {
                     resumable,
                     ..Assembler::default()
                 };
+                let mut covered = 0;
+                macro_rules! span {
+                    ($kind:ident, $pc:expr) => {{
+                        code_spans::record(&mut spans, words.len(), start, $pc,
+                            code_spans::Kind::$kind, covered, a.words.len())?;
+                        covered = a.words.len();
+                    }};
+                }
                 // External entries preserve the C ABI. Native successors
                 // enter after this prologue and keep the same live storage.
                 let resume = a.external_entry();
+                span!(Entry, None);
                 if resumable { resumes[start] = Some(words.len() + resume); }
                 internal_entries[start] = Some(words.len() + a.words.len());
                 // Every native cycle consumes virtual instructions. When
@@ -511,6 +530,7 @@ impl<'a> Jit<'a> {
                 a.emit(0x54000003); // b.lo budget_exit
                 a.three(0xcb000000, budget, budget, 10);
                 if !resumable { a.emit(0xf9000269); }
+                span!(Budget, None);
                 if self.profiled {
                     // The VM supplies this function's stable counter array.
                     // The emitted offset is a validated PC, never guest data.
@@ -521,12 +541,13 @@ impl<'a> Jit<'a> {
                     a.emit(0x9100056b); // add x11, x11, #1
                     a.emit(0xf900014b); // str x11, [x10]
                 }
+                span!(Profile, None);
                 let terminal = branch(&f.code[pc-1]).then_some(&f.code[pc-1]);
                 let body_end = pc-usize::from(terminal.is_some());
                 for (index, op) in f.code[start..body_end].iter().enumerate() {
                     a.current_pc = start + index;
                     if let Op::Assert { value, expected, message } = op {
-                        let code = assertion_code(self.assertions.len(), assertions.len())?;
+                        let code = assertion_code(assertion_base, assertions.len())?;
                         assertions.push(Assertion { message, function: &f.name, kind: FaultKind::Assertion });
                         a.assertion(*value, *expected, code);
                     } else if let Some(fill) = fills.get(&(start + index)) {
@@ -536,9 +557,13 @@ impl<'a> Jit<'a> {
                     } else {
                         a.lower(op);
                     }
+                    span!(Operation, Some(start + index));
                 }
                 a.flush_facts(start, pc);
+                span!(Flush, None);
                 a.exit(terminal, pc)?;
+                if terminal.is_some() { span!(Operation, Some(pc - 1)); }
+                else { span!(RegionExit, None); }
                 let failures = std::mem::take(&mut a.failures);
                 for kind in [Failure::Memory, Failure::DivisionZero, Failure::DivisionOverflow] {
                     // Retain the existing memory tail. Add arithmetic tails
@@ -549,6 +574,7 @@ impl<'a> Jit<'a> {
                     let target = a.words.len();
                     a.imm(0, kind as u64);
                     a.return_to_vm();
+                    span!(FaultTail, None);
                     for &(at, failure) in &failures {
                         if failure == kind { a.patch_conditional(at, target)?; }
                     }
@@ -560,10 +586,12 @@ impl<'a> Jit<'a> {
                     let target = a.words.len();
                     a.imm(0, code);
                     a.return_to_vm();
+                    span!(AssertionTail, None);
                     a.patch_conditional(at, target)?;
                 }
                 let target = a.words.len();
                 a.return_pc(start);
+                span!(BudgetFallback, None);
                 a.patch_conditional(budget_exit, target)?;
                 // Give each edge a safe VM exit first. After all blocks in
                 // this function are laid out, compiled successors replace
@@ -571,8 +599,10 @@ impl<'a> Jit<'a> {
                 for (at, successor) in std::mem::take(&mut a.links) {
                     let fallback = a.words.len();
                     a.return_pc(successor);
+                    span!(SuccessorFallback, None);
                     links.push((words.len() + at, successor, words.len() + fallback));
                 }
+                debug_assert_eq!(covered, a.words.len());
                 if a.words.len() > word_budget.saturating_sub(words.len()) {
                     return Ok(None);
                 }
@@ -586,6 +616,8 @@ impl<'a> Jit<'a> {
                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
+                    code_spans::record(&mut spans, words.len(), pc, Some(pc),
+                        code_spans::Kind::Transition, 0, a.words.len())?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
                     resumes[pc] = Some(words.len() + resume);
                     internal_entries[pc] = Some(words.len() + internal);
@@ -706,6 +738,7 @@ enum CodegenLimit {
     ConditionalBranch,
     Jump,
     Assertions,
+    OperationMap,
 }
 
 #[derive(Debug, PartialEq, Eq)]

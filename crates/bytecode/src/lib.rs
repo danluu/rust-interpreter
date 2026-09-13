@@ -414,6 +414,9 @@ pub struct Limits {
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
+    /// Reconstruct and verify per-operation spans after execution. Requires a
+    /// code dump and ordinary/resumable JIT; native trees/stubs are unsupported.
+    pub jit_operation_map: bool,
 }
 impl Default for Limits {
     fn default() -> Self {
@@ -428,6 +431,7 @@ impl Default for Limits {
             jit_persistent_registers: false,
             jit_resumable_calls: false,
             jit_code_dump: None,
+            jit_operation_map: false,
         }
     }
 }
@@ -675,6 +679,10 @@ fn execute_observed<const PROFILE: bool>(
     }
     if engine == Engine::Interpreter && limits.jit_code_dump.is_some() {
         return Err("native code dumps require the JIT engine".into());
+    }
+    if limits.jit_operation_map && (engine != Engine::Jit || limits.jit_code_dump.is_none()
+        || limits.jit_native_calls || limits.jit_native_call_stubs) {
+        return Err("operation maps require a code dump and ordinary or resumable JIT".into());
     }
     if engine == Engine::Interpreter && limits.jit_persistent_registers {
         return Err("persistent registers require the JIT engine".into());
@@ -1274,7 +1282,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
         }
     };
     if let Some(path) = &limits.jit_code_dump {
-        jit.as_ref().ok_or("missing JIT for native code dump")?.dump_code(path)?;
+        jit.as_ref().ok_or("missing JIT for native code dump")?.dump_code(path, limits.jit_operation_map)?;
     }
     let tree_stats = jit.as_ref().map_or((0, 0, 0, 0, 0), |j| j.tree_stats());
     Ok(Execution { value, instructions: steps, peak_memory: memory.peak,

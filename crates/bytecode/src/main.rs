@@ -16,7 +16,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut suite_catalog = None;
     let mut suite_workers = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
@@ -46,6 +46,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--jit-native-call-stubs" => limits.jit_native_call_stubs = true,
             "--jit-persistent-registers" => limits.jit_persistent_registers = true,
             "--jit-resumable-calls" => limits.jit_resumable_calls = true,
+            "--jit-operation-map" => {
+                if limits.jit_operation_map { return Err("duplicate operation map option".into()); }
+                limits.jit_operation_map = true;
+            }
             "--jit-code-dump" => {
                 if limits.jit_code_dump.is_some() { return Err("duplicate native code dump path".into()); }
                 limits.jit_code_dump = Some(args.next().ok_or("missing native code dump path")?.into());
@@ -151,7 +155,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     if let Some(mode) = isolated_batch {
         if engine != Engine::Jit || !limits.jit_resumable_calls || limits.jit_native_calls
-            || limits.jit_native_call_stubs || profile_path.is_some() || limits.jit_code_dump.is_some() || !args.is_empty()
+            || limits.jit_native_call_stubs || profile_path.is_some() || limits.jit_code_dump.is_some()
+            || limits.jit_operation_map || !args.is_empty()
         {
             return Err("isolated batches require resumable JIT execution without tree/stub, profile, code dump or entry arguments".into());
         }
