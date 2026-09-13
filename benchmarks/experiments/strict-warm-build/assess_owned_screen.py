@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate and archive saved compiler, Cargo and proc-macro mechanism screens."""
 import argparse
+import base64
 import gzip
 import os
 import json
@@ -10,14 +11,34 @@ import re
 
 from analyzer import ROOT, compressed, identity, member
 from assess import require, sha
-from screen import CASE, assessment as assess_rows, protocol_states, frozen_input_hash, launch_settings, command_for
+from screen import (CASE, JOBS, SUITE_WORKERS, INSTRUCTIONS, ALLOCATIONS, MINIMUM_GIB,
+                    assessment as assess_rows, protocol_states, frozen_input_hash, launch_settings, command_for)
 from suite_reports import read_report, validate_report, validate_runtime_limits
 
-POLICIES = ['stable-cgu', 'cargo-info-cache', 'host-proc-macro-opt']
+POLICIES = ['stable-cgu', 'stable-mono-cgu', 'cargo-info-cache', 'host-proc-macro-opt']
+
+
+def saved_member(path):
+    """Preserve binary qualification artifacts as well as existing UTF-8 evidence."""
+    payload = path.read_bytes()
+    result = dict(path=str(path), bytes=len(payload), sha256=sha(payload))
+    try:
+        result['utf8'] = payload.decode('utf-8')
+    except UnicodeDecodeError:
+        result['base64'] = base64.b64encode(payload).decode('ascii')
+    return result
+
+
+def member_bytes(item):
+    require(('utf8' in item) != ('base64' in item), 'ambiguous archived member encoding')
+    payload = item['utf8'].encode() if 'utf8' in item else base64.b64decode(item['base64'], validate=True)
+    require(len(payload) == item['bytes'] and sha(payload) == item['sha256'], 'archived member differs')
+    return payload
 
 
 def markdown(s):
-    title = {'stable-cgu': 'Stable code-generation groups', 'cargo-info-cache': 'Cargo compiler-info cache',
+    title = {'stable-cgu': 'Stable code-generation groups', 'stable-mono-cgu': 'Stable per-MonoItem code-generation groups',
+             'cargo-info-cache': 'Cargo compiler-info cache',
              'host-proc-macro-opt': 'Host proc-macro code generation'}[s['candidate_policy']]
     medians = s['complete_command_median_seconds']
     lines = ['# ' + title + ' mechanism screen', '',
@@ -54,7 +75,7 @@ def markdown(s):
         s['compiler_comparison'] + '. ' +
         ('The compiler binary, native std and exporter/VM are identical for off/on/off. '
          'This comparison does not attribute differences from a separately built public compiler to the patch.'
-         if s['candidate_policy'] == 'stable-cgu' else
+         if s['candidate_policy'] in ['stable-cgu', 'stable-mono-cgu'] else
          'The compiler, Cargo, exporter, VM and prepared standard library are identical for off/on/off. '
          'Only eligible host proc-macro targets receive the explicitly recorded code-generation policy; '
          'application profiles and checking remain unchanged.'
@@ -64,7 +85,8 @@ def markdown(s):
         '[summary.json](summary.json) retains every pair, command, setup identity and artifact hash. '
         '[evidence.json.gz](evidence.json.gz) contains exact raw records, receipts, suites, source states, '
         'compiler/Cargo/tool provenance and frozen harness snapshots. All archive member hashes were checked. '
-        'Binaries and project caches are not included in this compact archive. No adoption decision or '
+        'Compiler/tool binaries and project caches are not included in this compact archive. Linked '
+        'qualification bytecode is retained where required. No adoption decision or '
         'fresh-project result is implied by packaging this screen.', '']
     return '\n'.join(lines)
 
@@ -121,7 +143,7 @@ def selection(plan, snapshot):
             and len(set(plan['tools'].values())) == 1, 'owned screen requires one tool identity')
     require(set(plan['std_mir_by_mode']) == set(modes), 'missing per-arm std identities')
     custom, cargos = None, dict.fromkeys(modes)
-    if policy == 'stable-cgu':
+    if policy in ['stable-cgu', 'stable-mono-cgu']:
         require('cargo_comparison' not in plan and 'cargos_by_mode' not in plan, 'mixed compiler/Cargo policies')
         frozen = plan['custom_compiler']
         manifest = json.loads(snapshot(Path(frozen['manifest']))['utf8'])
@@ -133,8 +155,20 @@ def selection(plan, snapshot):
         require(Path(frozen['manifest']) == custom.sysroot.parent / 'ready.json'
                 and custom.sysroot == Path(plan['owner']) / '.work/compilers' / custom.key / 'sysroot'
                 and custom.identity['provenance']['stage'] == 2, 'compiler path or stage differs')
-        require(plan['cgu_policy_by_mode'] == dict(baseline='off', candidate='on', duplicate='off'),
+        require(plan['cgu_policy_by_mode'] == (dict.fromkeys(modes, 'off') if policy == 'stable-mono-cgu'
+                else dict(baseline='off', candidate='on', duplicate='off')),
                 'stable-CGU policy differs')
+        if policy == 'stable-mono-cgu':
+            from stable_mono_cgu import OPTION
+            custom.require_option('stable-cgu-partitioning')
+            custom.require_option(OPTION)
+            require(plan.get('mono_cgu_policy_by_mode') == dict(baseline='off', candidate='on', duplicate='off')
+                    and not any(k in plan for k in ['proc_macro_policy_by_mode', 'codegen_policy_amendment',
+                        'public_input_guards', 'frontend_workers']), 'mixed or incorrect MonoItem policy')
+            require(all(plan.get(k) == v for k, v in dict(cargo_jobs=JOBS, suite_workers=SUITE_WORKERS,
+                instruction_limit=INSTRUCTIONS, allocation_limit=ALLOCATIONS, minimum_free_gib=MINIMUM_GIB,
+                guest_rustflags=[], profile_overrides={}, final_qualification=False).items()),
+                'MonoItem screen changes the frozen common workload settings')
     elif policy == 'cargo-info-cache':
         require('custom_compiler' not in plan and 'cgu_policy_by_mode' not in plan, 'mixed compiler/Cargo policies')
         for mode in modes:
@@ -169,6 +203,11 @@ def selection(plan, snapshot):
     for mode in modes:
         from std_mir import FLAGS, POLICY
         std = plan['std_mir_by_mode'][mode]
+        if policy == 'stable-mono-cgu':
+            from owned_mono_screen import validate_std
+            validate_std(std, plan['owner'], custom, plan['mono_cgu_policy_by_mode'][mode],
+                         lambda path: member_bytes(snapshot(path)))
+            continue
         retained = snapshot(Path(std['path']))
         ready = json.loads(retained['utf8'])
         identity = ready['identity']
@@ -216,6 +255,11 @@ def selection(plan, snapshot):
     else:
         require(stds['baseline'] == stds['duplicate'] and stds['baseline']['key'] != stds['candidate']['key'],
                 'std namespaces must match baseline/duplicate and isolate candidate')
+    if policy == 'stable-mono-cgu':
+        require(plan['std_mir'] == stds['baseline'], 'MonoItem default std differs from its baseline')
+        before, after = [stds[mode]['identity'] for mode in ['baseline', 'candidate']]
+        require(set(before) == set(after) and all(before[k] == after[k] for k in before
+                if k not in ['namespace', 'build_environment_sha256']), 'MonoItem std preparation settings differ')
     return custom, cargos
 
 
@@ -248,6 +292,16 @@ def tool_identity(plan, key, custom, snapshot):
                 and capability['compiler_sysroot'] == str(custom.sysroot)
                 and 'stable-cgu-partitioning' in capability['export_options'],
                 'exporter compiler association differs')
+        if plan['candidate_policy'] == 'stable-mono-cgu':
+            from stable_mono_cgu import OPTION, POLICY, WRAPPER
+            expected = dict(policy=POLICY, sha256=binaries[WRAPPER], compiler_sysroot=str(custom.sysroot))
+            require(OPTION in capability['export_options']
+                    and capability.get('stable_mono_cgu_wrapper') == expected == plan.get('mono_wrapper'),
+                    'MonoItem exporter/wrapper capability differs')
+            for std in plan['std_mir_by_mode'].values():
+                cargo = std['identity']['cargo']
+                require(composition['cargo'] == {k: cargo[k] for k in ['executable', 'sha256', 'toolchain', 'version']},
+                        'MonoItem tool/std Cargo identities differ')
 
 
 def qualified_std(plan, validated, snapshot):
@@ -313,7 +367,8 @@ def workspace_identity(row, raw, workspaces):
 def command_identity(plan, row, raw, custom, cargo):
     expected = command_for(row['mode'], plan['tools'][row['mode']], Path(plan['source']), raw,
         plan['states'][row['index']], names=plan['case']['tests'], candidate_policy=plan['candidate_policy'],
-        compiler_key=custom.key if custom else None, cargo_key=cargo.key if cargo else None)
+        compiler_key=custom.key if custom else None, cargo_key=cargo.key if cargo else None,
+        prepared_std=plan['std_mir_by_mode'][row['mode']] if plan['candidate_policy'] == 'stable-mono-cgu' else None)
     # Repackaging may use another Python installation; retain the original
     # interpreter spelling while checking every workload argument and its order.
     require(row['command'] and isinstance(row['command'][0], str), 'missing launcher interpreter')
@@ -326,6 +381,23 @@ def command_identity(plan, row, raw, custom, cargo):
     require(row['seconds'] > 0 and row['cpu']['total_seconds'] > 0 and
             math.isclose(row['cpu']['total_seconds'], row['cpu']['user_seconds'] + row['cpu']['system_seconds'],
                          rel_tol=1e-12, abs_tol=1e-12), 'inconsistent complete-command CPU duration')
+
+
+def mono_launch_identity(plan, row, custom):
+    """Validate every saved effective selector without resolving retired caches."""
+    mode, launch = row['mode'], row['launch']
+    expected = launch_settings(mode, plan['tools'][mode], 'stable-mono-cgu', custom,
+                               mono_wrapper=plan['mono_wrapper'])
+    require(all(launch.get(k) == v for k, v in expected.items())
+            and launch.get('query_cache_retention', 'off') == 'off'
+            and launch.get('host_proc_macro_opt', 'off') == 'off'
+            and launch.get('frontend_workers') is None
+            and launch.get('compiler_argv_record_dir') is None
+            and 'custom_cargo' not in launch,
+            'MonoItem effective launch mixes policies or qualification instrumentation')
+    require(launch['toolchain_lookup']['mode'] == 'cached'
+            and launch['toolchain_lookup']['outcome'] == 'owned-manifest',
+            'MonoItem compiler lookup did not use its owned identity')
 
 
 def main():
@@ -361,8 +433,7 @@ def main():
                 'prior snapshots do not identify this verified screen')
         prior_bundle = json.loads(gzip.decompress(prior_archive.read_bytes()))
         for item in prior_bundle['files']:
-            data = item['utf8'].encode()
-            require(len(data) == item['bytes'] and sha(data) == item['sha256'], 'prior archive member differs')
+            member_bytes(item)
             prior_files[item['path']] = item
         require(prior_files[str(raw / 'plan.json')]['sha256'] == original_summary['plan_sha256'] and
                 prior_files[str(raw / 'records.json')]['sha256'] == original_summary['records_sha256'],
@@ -370,12 +441,28 @@ def main():
 
     def snapshot(path):
         path = str(path)
-        return prior_files[path] if args.snapshots_from else member(Path(path))
+        return prior_files[path] if args.snapshots_from else saved_member(Path(path))
 
     def frozen_snapshot(path):
         item = snapshot(path)
-        require(sha(b'file\0' + item['utf8'].encode()) == plan['frozen'][str(path)],
+        require(sha(b'file\0' + member_bytes(item)) == plan['frozen'][str(path)],
                 'frozen snapshot differs: ' + str(path))
+        files[str(path)] = item
+        return item
+
+    def linked_snapshot(path):
+        # Qualification/setup paths are in the frozen screen inventory. Actual
+        # standard source snippets are additionally bound by compiler/std file
+        # hashes in the pure validator, and may survive a retired setup target.
+        if str(path) in plan['frozen']:
+            return frozen_snapshot(path)
+        from std_mir_source_paths import SOURCE
+        roots = [Path(plan['custom_compiler']['sysroot']) / SOURCE]
+        roots += [Path(std['sysroot']) / SOURCE for std in plan['std_mir_by_mode'].values()]
+        require(any(Path(path).is_relative_to(root) for root in roots),
+                'linked qualification/setup evidence is absent from the frozen inventory')
+        item = snapshot(path)
+        member_bytes(item)
         files[str(path)] = item
         return item
 
@@ -409,7 +496,20 @@ def main():
         if index < len(transitions) - 1:
             expected_before = plan['states'][max(0, index - 1)]['source_sha256']
             require(transition['before'] == expected_before, 'source transition input differs')
-    custom, cargos = selection(plan, frozen_snapshot)
+    custom, cargos = selection(plan, linked_snapshot if plan['candidate_policy'] == 'stable-mono-cgu'
+                              else frozen_snapshot)
+    mono_qualification = None
+    if plan['candidate_policy'] == 'stable-mono-cgu':
+        from owned_mono_screen import qualification
+        # Deliberately fail closed while the independent typed source-observable
+        # validator is still being implemented; the 36-command receipt is not it.
+        try:
+            from std_source_observables import validate_source_observables
+        except ImportError:
+            validate_source_observables = None
+        mono_qualification = qualification(plan, custom,
+            lambda path: member_bytes(linked_snapshot(path)),
+            source_observables_validator=validate_source_observables)
     artifacts, compact = {}, []
     previous = dict.fromkeys(plan['tools'])
     workspaces = {}
@@ -441,7 +541,8 @@ def main():
                 row['launch']['tool_key'] == plan['tools'][mode] and
                 'query_cache_retention' not in row['launch'],
                 'launcher evidence differs')
-        settings = launch_settings(mode, plan['tools'][mode], plan['candidate_policy'], custom, cargos[mode])
+        settings = launch_settings(mode, plan['tools'][mode], plan['candidate_policy'], custom, cargos[mode],
+                                   plan.get('mono_wrapper'))
         require(custom is not None or 'custom_compiler' not in row['launch'], 'unexpected custom compiler')
         require(cargos[mode] is not None or 'custom_cargo' not in row['launch'], 'unexpected custom Cargo')
         require(math.isfinite(row['launch']['launcher_seconds']) and
@@ -458,6 +559,11 @@ def main():
                 'actual std identity differs')
         if cargos[mode]:
             require(receipt['cargo_key'] == cargos[mode].key, 'timed Cargo identity differs')
+        if plan['candidate_policy'] == 'stable-mono-cgu':
+            mono_launch_identity(plan, row, custom)
+            require(receipt['finished_at'] >= receipt['started_at']
+                    and type(row['free_bytes']) is int and row['free_bytes'] >= MINIMUM_GIB * 1024**3,
+                    'MonoItem command lacks complete receipt or disk admission')
         if plan['candidate_policy'] == 'host-proc-macro-opt':
             require(receipt['host_proc_macro_opt'] == plan['proc_macro_policy_by_mode'][mode]
                     and not any(k in row['launch'] for k in ['custom_compiler', 'custom_cargo'])
@@ -535,13 +641,16 @@ def main():
                 if name != 'cargo':
                     item = frozen_snapshot(path)
                     require(item['sha256'] == expected_hash, 'Cargo provenance input differs')
-    bundle = dict(schema_version=1, encoding='exact UTF-8 members', files=list(files.values()),
+    if plan['candidate_policy'] == 'stable-mono-cgu':
+        frozen_snapshot(Path(__file__).with_name('STABLE_MONO_CGU_SCREEN.md'))
+    bundle = dict(schema_version=1,
+                  encoding='exact UTF-8 or base64 members' if mono_qualification else 'exact UTF-8 members',
+                  files=list(files.values()),
                   source_symlinks=source_symlinks)
     payload = (json.dumps(bundle, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
     archive = compressed(payload)
     for item in json.loads(gzip.decompress(archive))['files']:
-        data = item['utf8'].encode()
-        require(len(data) == item['bytes'] and sha(data) == item['sha256'], 'archived member differs')
+        member_bytes(item)
     summary = dict(original_summary)
     summary.update(project=plan['project'], workflow=plan['workflow'], revision=plan['revision'],
         tools=plan['tools'], binaries=plan['binaries'], cargo_jobs=plan['cargo_jobs'],
@@ -564,8 +673,11 @@ def main():
         adoption='not decided by this single-history mechanism screen', final_latency_gate_qualified=False,
         holdouts_evaluated=False)
     for key in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode',
-                'proc_macro_policy_by_mode', 'codegen_policy_amendment']:
+                'proc_macro_policy_by_mode', 'codegen_policy_amendment', 'mono_cgu_policy_by_mode',
+                'mono_wrapper', 'compiler_qualification', 'source_observables']:
         if key in plan:summary[key] = plan[key]
+    if mono_qualification:
+        summary['mono_qualification_assessment'] = mono_qualification
     if public_guards:
         summary['public_input_guard_assessment'] = public_guards
     for pair in summary['pairs']:
