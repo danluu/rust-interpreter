@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import qualified_public_tools as q
 
 
-def archive(change=None):
+def archive(change=None, std_change=None):
     """A complete tiny publication, independent of any installed compiler."""
     data = {}
     def put(name, value):
@@ -22,7 +22,8 @@ def archive(change=None):
                     stamp=[path, 1, 2, 0o100555, len(value), 3, 4, 2, 3, 4])
     owner = '/owned/build'; sysroot = '/public/' + q.TOOLCHAIN
     compiler_version = f'rustc fixture\ncommit-hash: {q.COMPILER_REVISION}\nhost: aarch64-apple-darwin\n'
-    std_identity = dict(compiler=compiler_version, target='aarch64-apple-darwin')
+    std_identity = dict(compiler=compiler_version, target='aarch64-apple-darwin',
+                       policy=q.STD_POLICY, flags=q.STD_FLAGS, lock_sha256='1' * 64)
     std_key = q.sha(json.dumps(std_identity, sort_keys=True).encode())
     std_path = '/owned/screen/.work/std-mir/' + std_key
     env = dict(RUSTC=sysroot + '/bin/rustc', RUSTUP_TOOLCHAIN=q.TOOLCHAIN,
@@ -72,11 +73,14 @@ def archive(change=None):
         put(names['receipt'], receipt); put(names['stdout'], stdout); put(names['stderr'], stderr)
         commands.append(dict(label=label, argv=args, cwd=owner,
             environment_overrides={**env, **expected.get('environment_overrides', {})}, **names))
-    std_record = file(std_path + '/sysroot/core.rmeta')
-    std = dict(identity=std_identity, artifacts={'sysroot/core.rmeta':
-        dict(sha256=std_record['sha256'], stamp=[1, 2, std_record['bytes'], 3])})
+    std_files = {'sysroot/lib/rustlib/aarch64-apple-darwin/lib/lib' + name + '-fixture.rmeta': None
+                 for name in ('core', 'alloc', 'std', 'test', 'proc_macro')}
+    std_files = {name: file(std_path + '/' + name) for name in std_files}
+    std = dict(owner='/owned/screen', identity=std_identity, artifacts={name:
+        dict(sha256=record['sha256'], stamp=[1, 2, record['bytes'], 3]) for name, record in std_files.items()})
+    if std_change:std_change(std)
     ready_sha = put('provenance/std-ready.json', std)
-    plan = dict(schema_version=2, status='not-executed', owner=owner, tool_key=None, screen_command=None,
+    plan = dict(schema_version=2, status='not-executed', owner=owner, screen_owner='/owned/screen', tool_key=None, screen_command=None,
         production_source_revision=q.SOURCE_REVISION, public_compiler_source_revision=q.COMPILER_REVISION,
         workspace_sources=files, tool_sources=files, source_input_paths=list(files), source_input_key=source_key,
         harness=harness, publication=dict(contract=contract, contract_sha256=harness[contract]),
@@ -111,7 +115,7 @@ def archive(change=None):
         cargo_identity_sha256=q.digest(cargo), library_identity_sha256=q.digest(library_binding),
         capability_stdout_sha256=raw_capability_sha, shared_std=dict(key=std_key, identity=std_identity,
             ready_payload='provenance/std-ready.json', ready_sha256=ready_sha, sysroot=std_path + '/sysroot',
-            files={'sysroot/core.rmeta': std_record}))
+            files=std_files))
     composition = dict(schema_version=1, kind=q.KIND, source=dict(revision=q.SOURCE_REVISION,
         files=files, ordered_paths=list(files), source_input_key=source_key), public_compiler=compiler,
         public_cargo=cargo, build=build, libraries=library_binding, binaries=binaries,
@@ -163,6 +167,15 @@ class PublicToolProvenanceTests(unittest.TestCase):
         fixture[2]['capabilities.json'] = json.dumps(capability).encode()
         with self.assertRaisesRegex(RuntimeError, 'capability envelope'):
             self.validate(fixture)
+
+    def test_rekeyed_incomplete_or_differently_owned_std_is_rejected(self):
+        def missing_std(std):
+            del std['artifacts'][next(name for name in std['artifacts'] if '/libstd-' in name)]
+        with self.assertRaisesRegex(RuntimeError, 'unique metadata for std'):
+            self.validate(archive(std_change=missing_std))
+        def wrong_owner(std):std['owner'] = '/another/owner'
+        with self.assertRaisesRegex(RuntimeError, 'shared standard library'):
+            self.validate(archive(std_change=wrong_owner))
 
     def test_live_library_content_and_symlink_changes_fail_closed(self):
         def file_identity(path):

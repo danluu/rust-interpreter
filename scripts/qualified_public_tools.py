@@ -13,6 +13,7 @@ import re
 from custom_compiler import digest, file_digest, require, valid_key
 from custom_cargo_libraries import platform_identity, system_path
 from toolchain_lookup import _stamp
+from std_mir import POLICY as STD_POLICY, FLAGS as STD_FLAGS
 
 KIND = 'qualified-public-toolset-v1'
 GUARD_POLICY = 'qualified-public-input-guard-v1'
@@ -278,14 +279,25 @@ def validate_public_tool(tool, key, read_bytes):
                 and 'tool_key' not in correctness, 'correctness receipt is not bound to this build')
         shared = correctness['shared_std']
         std = load(shared['ready_payload'], shared['ready_sha256'])
+        ready_path = Path(absolute(plan['shared_std']['path']))
+        std_owner = Path(absolute(std['owner']))
         require(shared['ready_payload'] == 'provenance/std-ready.json' and shared['identity'] == std['identity']
                 and shared['key'] == sha(json.dumps(std['identity'], sort_keys=True).encode())
                 and shared['key'] == plan['shared_std']['key'] and shared['identity'] == plan['shared_std']['identity']
                 and shared['ready_sha256'] == plan['shared_std']['sha256']
                 and shared['sysroot'] == str(Path(plan['shared_std']['path']).parent / 'sysroot')
                 and std['identity']['compiler'].encode() == rust_version and std['identity']['target'] == compiler['target']
-                and 'compiler_key' not in std['identity'] and 'cargo' not in std['identity'] and std['artifacts'],
+                and not {'compiler_key', 'cargo', 'namespace', 'source_sha256'} & std['identity'].keys()
+                and std['identity']['policy'] == STD_POLICY and std['identity']['flags'] == STD_FLAGS
+                and valid_key(std['identity']['lock_sha256'])
+                and ready_path == std_owner / '.work/std-mir' / shared['key'] / 'ready.json'
+                and str(std_owner) == plan['screen_owner'] and std['artifacts'],
                 'qualified shared standard library differs')
+        std_lib = 'sysroot/lib/rustlib/' + compiler['target'] + '/lib/'
+        for crate in ('core', 'alloc', 'std', 'test', 'proc_macro'):
+            require(len([name for name in std['artifacts'] if name.startswith(std_lib + 'lib' + crate + '-')
+                         and '/' not in name[len(std_lib):] and name.endswith('.rmeta')]) == 1,
+                    'qualified std lacks unique metadata for ' + crate)
         compiler_inputs = load('provenance/compiler-inputs.json', compiler['input_inventory_sha256'])
         dependencies = load('provenance/dependencies.json', build['dependency_inventory_sha256'])
         require(dependencies['lock_sha256'] == inputs['files']['Cargo.lock'] and dependencies['packages']
