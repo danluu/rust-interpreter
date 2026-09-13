@@ -4,8 +4,11 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: qualify and freeze the full guarded-range comparison. The
-prototype passes478 Rust tests/profile and222 real qualification commands.
+Current action: admit the qualified full guarded-range comparison. The full
+harness passes159 checks; controller01 times out before any benchmark command
+or source edit. All five case namespaces remain unstarted. A new controller
+may run that same frozen protocol; no completed prefix exists to repeat.
+The prototype passes478 Rust tests/profile and222 real qualification commands.
 An offline repair proves the inactive folded profile byte-identical, retaining
 the original overstrict-validator failure without repeating guest execution.
 The40-command changed-source screen passes narrowly: wall−1.84% against1.74%
