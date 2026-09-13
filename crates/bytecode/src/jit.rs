@@ -1590,7 +1590,7 @@ impl Assembler<'_> {
             debug_assert!(immediate < 4096 - u32::from(size == 16));
             // LDRB/LDRH/LDR W zero-extend the whole low word. The low
             // accumulator is overwritten, and a 16-byte load also defines hi.
-            if size <= 8 { self.mov(hi, 31); }
+            if size <= 8 && hi != 31 { self.mov(hi, 31); }
             let opcode = match size {
                 1 => 0x39400000,
                 2 => 0x79400000,
@@ -1604,7 +1604,7 @@ impl Assembler<'_> {
         } else {
             debug_assert_eq!(immediate, 0);
             self.mov(lo, 31);
-            self.mov(hi, 31);
+            if hi != 31 { self.mov(hi, 31); }
             for i in 0..size {
                 self.emit(0x39400000 | ((i as u32) << 10) | (base << 5) | 13);
                 self.emit(
@@ -1691,7 +1691,8 @@ impl Assembler<'_> {
                     self.forward_local_value(value, size as usize, "Load");
                 } else {
                     let immediate = self.memory_address(11, address, size as usize, false);
-                    self.load_mem_at(9, 10, 11, size as usize, immediate);
+                    // put() supplies the narrow result's zero high word below.
+                    self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
                 }
                 self.put(dst, 9, if size <= 8 { 31 } else { 10 });
                 self.remember_local_memory(local, size as usize, dst);

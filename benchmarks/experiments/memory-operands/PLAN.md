@@ -18,7 +18,9 @@ This candidate makes three related instruction-selection changes:
 1. Common-width loads overwrite their entire low temporary; 16-byte loads
    also overwrite the high temporary. Drop those dead clears. Retain a zero
    high temporary for widths <=8 and both accumulator clears for unusual
-   byte-assembled widths, including zero.
+   byte-assembled widths, including zero. A narrow bytecode Load supplies its
+   destination's high zero separately, so it requests no high temporary and
+   skips that clear as well. Copy/call helpers keep their existing contract.
 2. Store never uses its high source temporary for widths <=8. Omit that read,
    retaining the low read's liveness bookkeeping. Do not omit any VM-register
    high-word write or change reused native-callee register initialization.
@@ -52,3 +54,8 @@ ordinary native libtest and mandatory folded/pgrust guards as the paired
 experiment apply. No completed candidate is retimed to seek acceptance.
 Generated code size only confirms a mechanism; edited end-to-end latency
 determines whether the resulting development engine is useful.
+
+The initial build at 6bb1763 passes all 428 tests in both profiles. Before any
+guest corpus or timing run, source review identified the additional unused
+upper temporary in narrow Load. Preserve build01; qualify the refined runtime
+as build02, including the explicit discarded-temporary encoding checks.

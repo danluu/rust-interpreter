@@ -20,6 +20,12 @@ fn memory_loads_define_both_words_without_overwritten_clears() {
             assert_eq!(&a.words[..2], &[zero_lo, zero_hi]);
             assert_eq!(a.words.len(), 2 + size * 2);
         }
+        if size <= 8 {
+            let mut discarded = Assembler::default();
+            discarded.load_mem_at(9, 31, 11, size, 0);
+            assert_eq!(discarded.words.len() + 1, a.words.len());
+            assert!(!discarded.words.contains(&0xaa1f03ff)); // No mov xzr,xzr.
+        }
     }
     let mut a = Assembler::default();
     a.load_mem_at(9, 10, 11, 16, 4094);
