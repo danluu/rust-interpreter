@@ -130,3 +130,21 @@ of a useful measured warm gain. Next confirm runtime boundaries on the current
 integrated artifacts, keeping that compute-heavy investigation separate.
 [Nushell](../results/host-mir-edit-nushell-01/assessment.md),
 [pgrust](../results/host-mir-edit-pgrust-01/assessment.md).
+
+
+### Current runtime profile changes the next implementation
+
+The requested instruction-volume investigation now includes exact profiles of
+current integrated artifacts: six original control/profile commands pass.
+The block-boundary test has4.84million interpreted128-bit bitwise/shift
+operations,71.5% of its interpreted operations. The immediate implementation
+adds these finite arithmetic operations to the custom emitter, before an
+adaptive indirect-call cache or allocator bridge. This is a count-based lead,
+not a time prediction; the full twelve-test command remains the primary test.
+
+Suggestion2.5 remains deferred for a stronger reason than exporter cost alone:
+the prior lifetime-allocation screen also increased the VM stage by183ms.
+Moving its198ms export pass to the VM does not by itself establish a gain.
+A lazy per-function version would need distinct evidence and qualification.
+[Current profile and scope](../results/current-runtime-boundaries-02/assessment.md),
+[earlier allocation result](../results/register-allocation-screen-token-01/assessment.md).
