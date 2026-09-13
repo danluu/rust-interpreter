@@ -87,6 +87,30 @@ class ScreenContracts(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'dynamic-loader'):
                 screen.environment()
 
+    def test_native_policy_keeps_ordinary_commands_and_shared_launch_checks(self):
+        for mode in screen.MODES:
+            args = (mode, 'a' * 64, Path('/owned/source'), Path('/owned/run'), {'index': 3})
+            demand = screen.command_for(*args)
+            native = screen.command_for(*args, candidate_policy='native-host-mir')
+            retention_index = demand.index('--query-cache-retention')
+            self.assertEqual(native, demand[:retention_index] + demand[retention_index + 2:])
+            expected = screen.launch_settings(mode, 'a' * 64)
+            expected.pop('query_cache_retention')
+            self.assertEqual(screen.launch_settings(mode, 'a' * 64, 'native-host-mir'), expected)
+        with self.assertRaisesRegex(RuntimeError, 'unknown candidate policy'):
+            screen.command_for(*args, candidate_policy='unknown')
+
+    def test_candidate_capability_is_required_for_the_selected_policy(self):
+        tool, key = Path('/owned/tool'), 'a' * 64
+        for policy, capability in [('demand-retention', 'query-cache-retention'),
+                                   ('native-host-mir', 'native-host-mir-policy')]:
+            with patch.object(screen, 'require_export_option') as check:
+                screen.require_candidate_policy(tool, key, policy)
+                check.assert_called_once_with(tool, key, capability)
+            with patch.object(screen, 'require_export_option', side_effect=RuntimeError('missing capability')):
+                with self.assertRaisesRegex(RuntimeError, 'missing capability'):
+                    screen.require_candidate_policy(tool, key, policy)
+
     def test_whole_command_clock_encloses_capture_without_stage_subtraction(self):
         events = []
         def clock():
