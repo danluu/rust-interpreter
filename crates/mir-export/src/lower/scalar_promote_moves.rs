@@ -24,6 +24,7 @@ fn rewrite_reads(op:&mut Op,mut map:impl FnMut(&mut Reg)) {
         Op::DescriptorOpen{path,flags,mode,errno,..}=>{for r in [path,flags,errno] {map(r);} if let Some(r)=mode {map(r);}},
         Op::DescriptorWrite{descriptor,address,size,errno,..}=>{for r in [descriptor,address,size,errno] {map(r);}},
         Op::DescriptorClose{descriptor,errno,..}|Op::DescriptorGetFd{descriptor,errno,..}=>{map(descriptor);map(errno);},
+        Op::DescriptorStat{descriptor,address,errno,..}=>{for r in [descriptor,address,errno] {map(r);}},
         Op::CurrentDirectory{address,size,errno,..}=>{for r in [address,size,errno] {map(r);}},
         Op::EnvironmentGet{name,..}=>map(name),
         Op::CpuFeatureQuery{name,output,output_len,new_data,new_len,..}=>{for r in [name,output,output_len,new_data,new_len] {map(r);}},
