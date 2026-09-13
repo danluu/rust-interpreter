@@ -49,7 +49,7 @@ fn guarded_local_facts_preserve_alias_declines_and_unselected_writes() {
             if unselected || address==80 {assert_eq!(expected.value,7);}
             for instructions in 0..=expected.instructions+1 {
                 let limits=Limits {instructions,jit_resumable_calls:true,jit_persistent_registers:persistent,..Limits::default()};
-                let reference=execute_with_engine(&p,&args,limits.clone(),Engine::Interpreter);
+                let reference=execute_with_engine(&p,&args,Limits {instructions,..Limits::default()},Engine::Interpreter);
                 compare(execute_with_engine(&p,&args,limits,Engine::Jit),&reference);
             }
         }}
