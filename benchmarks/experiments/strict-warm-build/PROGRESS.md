@@ -185,8 +185,16 @@ phase-specific rejection diagnostics subsequently passed the selected compiler
 check and all 26 unit controls, with zero warnings, failures, ignored or filtered
 tests. Their actual compiler source is
 `0bc623ee4860082df9d1d2216aefad9abb42990d`; all 61 commands and complete source
-inventories are archived. The stage1 executable has not yet been rebuilt for
-this checkpoint. This is not evidence of a successful capture or reuse hit.
+inventories are archived. The stage1 executable and native standard library
+were subsequently rebuilt for this checkpoint; all three compiler identity
+probes and the direct fixture compile passed. All 24 records rejected the cold
+audit. The produced native binary was not executed and no reuse hit is qualified.
+Source review identified an address mismatch: capture stored the WorkerLocal
+wrapper address while the audit compared the dereferenced worker arena. The
+repair checkpoint `84166943` uses the current worker arena and adds a 27th unit
+test rejecting wrapper and foreign-arena identities. All audit checks remain;
+the repair's compiler check, unit tests and native qualification are pending.
+[Complete rebuilt native diagnostic](../../../results/hir-diagnostic-native-01/README.md).
 [Fixture and phase-diagnostic check evidence](../../../results/hir-fixture-phase-check-01/README.md).
 [Four upgrade-driver controls](../../../results/hir-fixture-phase-upgrade-controls-01/README.md).
 [Direct capture diagnostic and unchanged compiler evidence](../../../results/hir-direct-capture-probe-01/README.md).
