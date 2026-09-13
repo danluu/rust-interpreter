@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "final stage2 compiler/native std built; option-hash and14+1 focused tests passed; packaging and native entrypoint controls pending",
+  "status": "complete stage2 package and focused compiler/native correctness passed; immutable installation/interpreter integration and performance screen are separate pending steps",
   "base_source_commit": "cea272fa356e94bd2ee2cadf376630aa0683867a",
   "source_commit": "73a11f167216d3955c277ed47f9b8cc68208105b",
   "patch_sha256": "26301f52c1e00805502bb3a8d0cfc646ae62c159fd25c2756474712aba986e60",
@@ -37,7 +37,17 @@
     "main_library_files_matching": 2305,
     "backtrace_files_matching": 79,
     "final_installation_owner": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913",
-    "installer": "scripts/custom_compiler.py"
+    "installer": "scripts/custom_compiler.py",
+    "status": "complete and native-qualified",
+    "package_receipt_sha256": "bf611485e0e7e3305a2951cc091cf9e1daca170a8a5d78ca18e5eb819a5756c7",
+    "package_provenance_sha256": "f9064095a8d7746966cb65c48dd492617d59f6c5af5fc8cce1b13ab20951b4bd",
+    "qualified_runtime_files_preserved": 60,
+    "package_files": 6982,
+    "package_files_unchanged_after_native_controls": 6982,
+    "prefix": "/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-build-01/packaged-stage2-05",
+    "provenance_path": "/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-build-01/package-05/provenance.json",
+    "native_control_result_sha256": "39baf5bb34d9e359dbc036903cb29965314561113fbaa57da3cff76f515f6400",
+    "superseded_attempts": "package01 admission timeout; package02 rejected live source link; package03/native01 passed but completeness audit found omitted LLVM native alias; package04 admission timeout; package05/native02 is final"
   },
   "final_stage2": {
     "controls": {
@@ -89,6 +99,23 @@
         "returncode": 0,
         "elapsed_seconds": 93.39055895805359,
         "log_sha256": "a189ee781baa7991e855bc043a41c67abf67ce68e8d7cc222ad89eb69f8afb47"
+      },
+      "stage2-dist-04": {
+        "receipt_sha256": "6fd4f1757959d1c287cd35578340ad7544625382bd13c47821dc592d66f62adc",
+        "command": [
+          "./x",
+          "dist",
+          "--stage",
+          "2",
+          "rustc-dev",
+          "rust-std",
+          "--jobs",
+          "2"
+        ],
+        "returncode": 0,
+        "elapsed_seconds": 34.64967393875122,
+        "lock_wait_seconds": 5.3633339405059814,
+        "log_sha256": "994d299e110c77b27fb7dc0a9ea685c4d19d4773cfd43284d2a15f8774c7f178"
       }
     },
     "unchanged_runtime_files_after_tests": 59,
@@ -96,6 +123,35 @@
       "bin/rustdoc"
     ],
     "rustc_sha256": "d8478814170ccb30b6e16a0763a9b81935be50378b4c7d9e3f29bdc164fd6546",
-    "driver_sha256": "a83fa10ca89ebd39a7d88d862aecd6b6e8209debd005ca798031852373f2ad23"
+    "driver_sha256": "a83fa10ca89ebd39a7d88d862aecd6b6e8209debd005ca798031852373f2ad23",
+    "native_controls": {
+      "states_passed": 15,
+      "commands_passed": 30,
+      "counts": [
+        1,
+        4,
+        64
+      ],
+      "states": [
+        "cold",
+        "edited",
+        "restored",
+        "off",
+        "on"
+      ],
+      "result_sha256": "39baf5bb34d9e359dbc036903cb29965314561113fbaa57da3cff76f515f6400",
+      "compiler_sha256": "d8478814170ccb30b6e16a0763a9b81935be50378b4c7d9e3f29bdc164fd6546",
+      "package_files_unchanged": 6982
+    }
+  },
+  "production_profile": {
+    "status": "source-only follow-on plan; not built",
+    "plan": "PRODUCTION-PLAN.md",
+    "plan_sha256": "d2ea60fea92484877bb0ba283bc769f6f62c6910f77410e677127b172b75c817",
+    "current_compiler_debug_assertions": true,
+    "current_compiler_overflow_checks": true,
+    "current_native_std_debug_assertions": true,
+    "current_native_std_overflow_checks": true,
+    "no_profile_gain_attribution_to_grouping": true
   }
 }

@@ -1,0 +1,9 @@
+# Stable-CGU compiler correctness and provenance
+
+The opt-in compiler experiment passed the tracked-option hash test, all 14 partitioning tests, the run-make edit/reuse history, and 15 actual native binary compile/execute states. This is correctness and setup evidence, not a performance result. The complete build-to-validated-artifact target remains unmeasured for this compiler here.
+
+The compiler is built from the exact pinned base plus the recorded patch, with optimized compiler code, enabled debug/overflow assertions, two jobs, and exact downloaded CI LLVM. Final stage2 runtime/std bytes match the original successful build; only the qualified test-generated rustdoc was added. Stock bootstrap's rustc-dev and rust-std distribution images are bound to exact output inventories, and rust-src is compared file by file with the matching source. The package still goes through the separate immutable installer and full interpreter integration before use in a performance comparison.
+
+The native states cover counts 1, 4 and 64, cold/edit/restoration/off/on transitions, actual main entrypoints, generic/inline code, statics, thread-local values, and empty buckets. The Rust run-make history additionally checks new modules, invalid unused bodies, restored builds, coverage fallback, unmerged fallback, count transitions and source-item placement. The same-width edit in that one grouping fixture is an isolation technique for correctness; real benchmark edits remain unchanged and must include their normal span changes.
+
+The archive contains exact saved logs, receipts, source/config hashes, test output snapshots, original failed setup attempts, and admission-only failures. Runtime binaries, LLVM archives, mutable compiler caches and native test caches are omitted; their hashes remain in the receipts. Setup/build durations include their explicitly recorded lock waits where stated and are not warm-build measurements. No peer workloads or caches were changed.

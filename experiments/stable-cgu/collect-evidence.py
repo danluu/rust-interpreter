@@ -20,6 +20,8 @@ package = json.loads((build / 'package-05/receipt.json').read_text())
 package_provenance = json.loads((build / 'package-05/provenance.json').read_text())
 native = json.loads((build / 'native-entry-02/result.json').read_text())
 assert native['status'] == 'passed' and len(native['histories']) == 15
+assert native['package_provenance_sha256'] == digest(build / 'package-05/provenance.json')
+assert native['compiler_sha256'] == package['files']['bin/rustc']
 assert native['compiler_unchanged'] and native['package_files_unchanged'] == len(package['files'])
 assert package_provenance['package_receipt_sha256'] == digest(build / 'package-05/receipt.json')
 controls = {}
@@ -61,7 +63,7 @@ for path in sorted((root / 'experiments/stable-cgu').iterdir()):
 inventory = {name: {'size': path.stat().st_size, 'sha256': digest(path)}
              for name, path in sorted(members.items())}
 archive = out / 'evidence.tar.xz'
-# A16MiB dictionary deduplicates repeated exact compiler-source inventories
+# A 16MiB dictionary deduplicates repeated exact compiler-source inventories
 # across receipts while preserving every original receipt byte.
 with tarfile.open(archive, mode='w:xz', preset=7) as tar:
     for name, path in sorted(members.items()):
@@ -86,6 +88,7 @@ summary = {
     'native_control_result_sha256': digest(build / 'native-entry-02/result.json'),
     'native_control_compiler_sha256': native['compiler_sha256'],
     'package_file_count': len(package['files']),
+    'qualified_runtime_files_preserved': package['qualified_runtime_files_preserved'],
     'package_files_unchanged_after_native_controls': native['package_files_unchanged'],
     'ordinary_std_uplift': 'Stock bootstrap stage2 distribution uses the matching stage1-built std; no manual stage mixing.',
     'failed_attempts': [
@@ -93,7 +96,7 @@ summary = {
         'stage1: missing dynamic LLVM after external-path setup; fixed by stock managed CI LLVM',
         'stage2-dist, stage2-dist-02, stage2-dist-03: admission-only timeouts; no build child',
         'package-01: admission-only timeout; no package copied; original helper and supplemental observation retained',
-        'package-04: admission-only600-second timeout; no package copied',
+        'package-04: admission-only 600-second timeout; no package copied',
         'package-02: rejected bootstrap live compiler-source directory symlink; partial package preserved; final package uses inventoried rustc-dev sources'],
     'superseded_package': 'Package03/native01 passed 15 native states, but final completeness audit found omitted host libLLVM alias; complete package05/native02 supersedes it.',
     'preliminary_stage1_note': '14 partition tests and 1 run-make history passed before final omit-git-hash=false config; kept separate from final stage2 qualification.',
