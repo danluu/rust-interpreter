@@ -70,6 +70,32 @@ fn effective_check_defaults_and_explicit_values_use_the_shared_parser() {
 }
 
 #[test]
+fn cargo_metadata_embedding_is_preserved_without_accepting_other_unstable_options() {
+    for option in ["embed-metadata", "embed-metadata=no", "embed_metadata=false",
+                   "embed-metadata=yes", "embed-metadata=on", "embed-metadata=n"] {
+        for flags in [vec!["-Z".to_owned(), option.to_owned()], vec![format!("-Z{option}")]] {
+            let borrowed: Vec<_> = flags.iter().map(String::as_str).collect();
+            let mut env = environment();
+            env.host_library_opt = None;
+            let original = library(&borrowed, &env).unwrap();
+            env.host_library_opt = Some("on".into());
+            let optimized = library(&borrowed, &env).unwrap();
+            assert_eq!(&optimized.args[..original.args.len()], original.args);
+            assert!(optimized.args.iter().any(|arg| arg == "-Copt-level=1"));
+        }
+    }
+    for option in ["embed-metadata=", "embed-metadata=0", "embed-metadata=unknown",
+                   "embed-source=no", "mir-opt-level=1", "ub-checks=no"] {
+        assert!(library(&["-Z", option], &environment()).is_err(), "{option}");
+    }
+    let mut macro_env = environment();
+    macro_env.host_library_opt = None;
+    macro_env.host_proc_macro_opt = Some("on".into());
+    assert!(invoke(&["--crate-type=proc-macro", "--emit=link", "macro.rs",
+                     "-Z", "embed-metadata=no"], &macro_env).is_err());
+}
+
+#[test]
 fn guest_macro_build_executable_probe_metadata_and_selected_export_keep_arguments() {
     for flags in [
         &["--crate-type", "rlib", "--emit=dep-info,metadata,link", "--target=aarch64-apple-darwin", "dep.rs"][..],
