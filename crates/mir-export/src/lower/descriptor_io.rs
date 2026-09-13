@@ -87,7 +87,7 @@ impl<'tcx> Lower<'_, 'tcx> {
             return Ok(false);
         }
         for (index, field) in fields.iter().enumerate() {
-            let field_ty = field.ty(self.tcx(), args);
+            let field_ty = tcx.normalize_erasing_regions(env(), field.ty(tcx, args));
             if layout.fields.offset(index).bytes() != offsets[index] { return Ok(false); }
             if index < types.len() {
                 if field_ty != types[index] { return Ok(false); }

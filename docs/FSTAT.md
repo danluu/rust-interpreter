@@ -1,6 +1,10 @@
 # Darwin fstat
 
-Source-only checkpoint: nothing in this change has been compiled or executed.
+Qualification remains incomplete. Metadata attempt01 stopped at the selected
+C compiler/SDK guard. Attempt02 completed metadata, then failed while compiling
+the exporter because the pinned field.ty() API returns an unnormalized type;
+no tests ran. This checkpoint normalizes that type through the existing rustc
+API. The next qualification must use a fresh target and retain both failures.
 The proposed primitive does not establish complete filesystem, stdio or Cargo
 build-script support.
 
