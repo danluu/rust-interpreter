@@ -1,0 +1,3 @@
+pub const GATE_SHA256: &str = "96742edd5e6713948e0b89a02066630dccfdf96ea9614e85d995d3bc27a2a17e";
+pub const PATCH_SHA256: &str = "2ccd87aa8614413ba53015dfd0c94b6e9dcf15bc526f32f51117315e04c7e481";
+pub const PUBLIC_COMMIT: &str = "cea272fa356e94bd2ee2cadf376630aa0683867a";
