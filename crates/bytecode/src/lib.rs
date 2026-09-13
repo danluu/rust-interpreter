@@ -31,6 +31,8 @@ mod tls;
 mod forwarding;
 #[cfg(test)]
 mod memory_tests;
+#[cfg(test)]
+mod indirect_trace;
 pub use float::{FloatBinary, FloatUnary, FloatConversion};
 pub use profile::{ExecutionProfile, FunctionProfile};
 pub use prepared::PreparedJit;
@@ -1186,6 +1188,13 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                             {
                                 return Err("guest function pointer signature mismatch".into());
                             }
+                            #[cfg(test)]
+                            indirect_trace::record(
+                                frame.function, frame.pc - 1, id,
+                                jit.as_ref().is_some_and(|j| j.blocks[id].first().is_some_and(Option::is_some)),
+                                jit.as_ref().is_some_and(|j| j.blocks[frame.function].get(frame.pc).is_some_and(Option::is_some)),
+                                local_call_arguments[frame.function][frame.pc - 1],
+                            );
                             id
                         }
                         _ => unreachable!(),
