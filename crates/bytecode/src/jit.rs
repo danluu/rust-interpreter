@@ -21,6 +21,7 @@ mod call_slots;
 mod code_dump;
 mod values;
 mod transfers;
+mod direct_operands;
 
 #[cfg(test)]
 mod limit_tests;
@@ -1772,6 +1773,7 @@ impl Assembler<'_> {
                     self.wide_binary(dst, overflow, op, a, b, signed);
                     return;
                 }
+                if self.direct_binary(dst, overflow, op, a, b, bits) { return; }
                 self.get(9, a, false);
                 self.get(10, b, false);
                 self.mask(9, bits);
