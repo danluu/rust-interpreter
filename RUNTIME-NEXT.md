@@ -10,13 +10,15 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Inspect redundant local-memory traffic in the adopted emitter before choosing
-   another runtime mechanism. In particular, distinguish a virtual register's
-   redefinition from a real clobber of the native bits that previously held its
-   value. Any retained memory-value fact must still be tied to exact unchanged
-   bytes, native-register identity and conservative alias/control-flow handling.
-   Start with an offline census against existing exact code/maps and profiles;
-   avoid repeating the negligible source-to-destination transfer experiment.
+1. Inspect final-operation liveness in register flushing. An already consumed
+   last use may be retained by the current live-before-or-after rule. First
+   reconstruct exact saved flush spans and classify eligible values with full
+   CFG liveness; preserve branch operands and unexecuted tree-call tails.
+   Scratch-register forwarding remains a possible composition component: its
+   additional Load spans cover50/1,651 and19/1,439 saved generated samples, but
+   most are only three words and include required result publication. Do not
+   time it alone or claim a speedup from availability counts.
+   [Scratch census and scope](results/scratch-local-values-census-01/assessment.md).
 
 The native boundary memory bundle is parked after its40-command primary screen:
 wall−0.66% versus3.30% A/A, CPU−2.18% versus2.79% A/A. All519 workspace checks per
