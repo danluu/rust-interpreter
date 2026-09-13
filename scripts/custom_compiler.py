@@ -56,8 +56,8 @@ def tree_stamps(directory):
     result = {}
 
     def record(relative, info):
-        require(not stat.S_ISLNK(info.st_mode),
-                'compiler installation contains a symlink: ' + str(directory / relative))
+        if stat.S_ISLNK(info.st_mode):
+            raise RuntimeError('compiler installation contains a symlink: ' + str(directory / relative))
         require(stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode),
                 'unsupported compiler installation entry')
         result[relative] = [info.st_dev, info.st_ino, info.st_mode,
@@ -84,9 +84,9 @@ def tree_stamps(directory):
     # so a path redirected to the same descendants cannot reuse stale stamps.
     for path, relative in directories:
         info = os.stat(path, follow_symlinks=False)
-        require([info.st_dev, info.st_ino, info.st_mode, info.st_size,
-                 info.st_mtime_ns, info.st_ctime_ns] == result[relative],
-                'compiler installation changed during inspection: ' + str(path))
+        if [info.st_dev, info.st_ino, info.st_mode, info.st_size,
+                info.st_mtime_ns, info.st_ctime_ns] != result[relative]:
+            raise RuntimeError('compiler installation changed during inspection: ' + str(path))
     return result
 
 
