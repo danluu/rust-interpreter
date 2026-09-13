@@ -18,6 +18,13 @@ all retained admissions and the paused goal state.
    fault/copy semantics and current body optimizations. The old cursor/host ABI
    cannot be enabled by merely combining flags. Capacity credit stays parked.
 
+The bridge prototype now passes 556 workspace controls per profile on its
+experiment branch, including full native ABI, limits, fault publication and
+profile reconciliation. The explicit option is disabled; duplicate tree code
+is globally capped at one quarter of the 16 MiB arena. Strict/cache controls
+and real original workload profiles precede any changed-source screen. The
+runtime change is not adopted. [Prototype status](docs/TREE-BRIDGE-20260913.md).
+
 Five existing tree-proof controls pass per profile. The diagnostic includes
 interpreter fixtures, but no benchmark execution or native-code publication.
 The closures need 23 / 26 functions absent from the saved captures, and two

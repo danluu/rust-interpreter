@@ -87,3 +87,12 @@ samples (0.97% / 1.39% of generated-code samples, before guard/padding costs).
 Defer runtime clear elision; large eligible call counts do not establish savings.
 This closes the diagnostic without repeating any timing or changing the adopted
 runtime. Continue reviewing broader remaining costs within runtime ownership.
+
+Follow-up through 16:34: the requested file still has the same hash. Bounded-tree
+coverage justified a new resumable bridge, retaining full type/borrow checking,
+ordinary admission fallback and checked fault publication. The experiment now
+passes 556 workspace controls per profile; strict/cache and real-workload
+qualification remain pending. A global quarter-arena code quota limits duplicate
+trees, and guarded-body exclusions propagate to ancestors. No timing result or
+adoption claim follows. The six focused runs, including all three early compile
+failures, are archived with 1,202 source bindings and 222 exact source blobs.
