@@ -40,6 +40,7 @@ fn every_opaque_memory_effect_clears_local_bytes_but_preserves_value_registers()
         Op::Allocate{dst:9,size:1,align:2,zeroed:true},Op::Deallocate{pointer:0,size:1,align:2},
         Op::Reallocate{dst:9,pointer:0,old_size:1,align:2,new_size:3},Op::ResetThreadLocals,
         Op::RandomBytes{dst:9,address:0,size:1},Op::CpuFeatureQuery{dst:9,name:0,output:1,output_len:2,new_data:3,new_len:4},
+        Op::CurrentDirectory{dst:9,address:0,size:1,errno:2},
         Op::CAllocate{dst:9,count:1,size:2,errno:0,zeroed:true},Op::CDeallocate{pointer:0},
         Op::CReallocate{dst:9,pointer:0,size:1,errno:2},Op::CAlignedAllocate{dst:9,output:0,align:1,size:2},
         Op::RegisterTlsDestructor{callback:1,argument:0},

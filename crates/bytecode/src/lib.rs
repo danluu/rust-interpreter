@@ -28,6 +28,7 @@ mod cpu;
 mod environment;
 mod c_allocator;
 mod descriptor_io;
+mod getcwd;
 mod tls;
 mod forwarding;
 #[cfg(test)]
@@ -268,6 +269,8 @@ pub enum Op {
     DescriptorWrite { dst: Reg, descriptor: Reg, address: Reg, size: Reg, errno: Reg },
     DescriptorClose { dst: Reg, descriptor: Reg, errno: Reg },
     DescriptorGetFd { dst: Reg, descriptor: Reg, errno: Reg },
+    /// Opt-in Darwin getcwd; NULL allocates an owned guest C buffer.
+    CurrentDirectory { dst: Reg, address: Reg, size: Reg, errno: Reg },
 }
 
 fn mask(bits: u8) -> u128 {
@@ -416,6 +419,8 @@ pub struct Limits {
     pub allocations: usize,
     /// Experimental opened-descriptor-only I/O. No inherited or standard streams.
     pub guest_descriptor_io: bool,
+    /// Experimental current-directory lookup; independent of descriptor access.
+    pub guest_getcwd: bool,
     pub instructions: u64,
     pub frames: usize,
     /// Native code budget, at most 16 MiB. Declined functions use our interpreter.
@@ -442,6 +447,7 @@ impl Default for Limits {
             memory: 64 * 1024 * 1024,
             allocations: DEFAULT_ALLOCATION_LIMIT,
             guest_descriptor_io: false,
+            guest_getcwd: false,
             instructions: 100_000_000,
             frames: 4096,
             jit_code_bytes: jit::MAX_CODE_BYTES,
@@ -762,6 +768,7 @@ struct ExecutionMetadata {
     local_call_arguments: Vec<Vec<bool>>,
     environment: Option<environment::Snapshot>,
     has_descriptor_io: bool,
+    has_getcwd: bool,
 }
 impl ExecutionMetadata {
     fn new(program: &Program, jit: Option<&jit::Jit<'_>>, resumable: bool, memory_limit: usize) -> Result<Self, String> {
@@ -775,6 +782,7 @@ impl ExecutionMetadata {
             local_call_arguments: calls::local_arguments(program),
             environment,
             has_descriptor_io: program.functions.iter().any(|f| f.code.iter().any(descriptor_io::is_descriptor_op)),
+            has_getcwd: program.functions.iter().any(|f| f.code.iter().any(|op| matches!(op, Op::CurrentDirectory { .. }))),
         })
     }
 }
@@ -793,6 +801,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
     }
     // Scan the complete program before any guest instruction, including for
     // prepared invocations whose runtime capability may have changed.
+    if metadata.has_getcwd { getcwd::admit(program, &limits)?; }
     let mut descriptors = if metadata.has_descriptor_io { descriptor_io::State::new(program, &limits)? } else { None };
     let descriptor_bytes = descriptors.as_ref().map_or(0, |state| state.charged_bytes());
     let mut jit_instructions = 0;
@@ -993,6 +1002,10 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                 Op::DescriptorGetFd { dst, descriptor, errno } => {
                     r[*dst as usize] = descriptors.as_mut().ok_or("missing guest descriptor table")?
                         .get_fd(&mut memory, r[*descriptor as usize], r[*errno as usize])?;
+                }
+                Op::CurrentDirectory { dst, address, size, errno } => {
+                    r[*dst as usize] = memory.getcwd(r[*address as usize], r[*size as usize],
+                        r[*errno as usize], register_bytes)?;
                 }
                 Op::EnvironmentGet { dst, name } => {
                     r[*dst as usize] = metadata.environment.as_ref().ok_or("missing environment snapshot")?
@@ -1443,6 +1456,9 @@ pub fn validate(program: &Program) -> Result<(), String> {
             }
         };
         for op in &f.code {
+            if matches!(op, Op::CurrentDirectory { .. }) && program.target != "aarch64-apple-darwin" {
+                return Err("getcwd requires the Darwin guest contract".into());
+            }
             if descriptor_io::is_descriptor_op(op) && program.target != "aarch64-apple-darwin" {
                 return Err("descriptor operations require the Darwin guest contract".into());
             }
@@ -1469,6 +1485,9 @@ pub fn validate(program: &Program) -> Result<(), String> {
                     for r in [dst, output, align, size] { reg(*r)?; }
                 }
                 Op::RandomBytes { dst, address, size } => { reg(*dst)?; reg(*address)?; reg(*size)?; }
+                Op::CurrentDirectory { dst, address, size, errno } => {
+                    for r in [dst, address, size, errno] { reg(*r)?; }
+                }
                 Op::DescriptorOpen { dst, path, flags, mode, errno } => {
                     for r in [dst, path, flags, errno] { reg(*r)?; }
                     if let Some(mode) = mode { reg(*mode)?; }

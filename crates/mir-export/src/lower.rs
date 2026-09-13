@@ -26,6 +26,7 @@ mod caller;
 mod system;
 mod c_allocator;
 mod descriptor_io;
+mod getcwd;
 mod tls;
 mod reachability;
 mod allocation;

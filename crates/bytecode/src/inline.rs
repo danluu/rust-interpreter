@@ -133,6 +133,7 @@ fn local_sites(program: &Program, caller: &Function) -> Vec<Site> {
             | Op::RandomBytes { dst, .. }
             | Op::DescriptorOpen { dst, .. } | Op::DescriptorWrite { dst, .. }
             | Op::DescriptorClose { dst, .. } | Op::DescriptorGetFd { dst, .. }
+            | Op::CurrentDirectory { dst, .. }
             | Op::EnvironmentGet { dst, .. }
             | Op::CpuFeatureQuery { dst, .. }
             | Op::CAllocate { dst, .. } | Op::CReallocate { dst, .. } | Op::CAlignedAllocate { dst, .. }
