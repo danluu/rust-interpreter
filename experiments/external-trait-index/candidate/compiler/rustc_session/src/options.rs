@@ -2985,6 +2985,8 @@ written to standard error output)"),
     #[rustc_lint_opt_deny_field_access("use `Session::verbose_internals` instead of this field")]
     verbose_internals: bool = (false, parse_bool, [TRACKED_NO_CRATE_HASH],
         "in general, enable more debug printouts (default: no)"),
+    verify_external_trait_item_index: bool = (false, parse_bool, [TRACKED],
+        "verify indexed external trait names against the original predicate (default: no)"),
     #[rustc_lint_opt_deny_field_access("use `Session::verify_llvm_ir` instead of this field")]
     verify_llvm_ir: bool = (false, parse_bool, [TRACKED],
         "verify LLVM IR (default: no)"),

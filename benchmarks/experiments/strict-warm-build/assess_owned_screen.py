@@ -286,7 +286,13 @@ def selection(plan, snapshot):
                     and sha(identity['compiler'].encode()) == public['version_stdout_sha256']
                     and identity['target'] == public['target'], 'std public compiler differs')
     stds = plan['std_mir_by_mode']
-    if policy in ['host-proc-macro-opt', 'host-library-opt', 'frontend-workers']:
+    if policy == 'stable-mono-cgu':
+        from std_mir_source_paths import selection_for_identity, validate_pair
+        selection = selection_for_identity(stds['baseline']['identity'])
+        require(stds['baseline'] == stds['duplicate']
+                and selection_for_identity(stds['candidate']['identity']) == selection, 'mixed MonoItem std policy')
+        validate_pair(selection, dict(off=stds['baseline'], on=stds['candidate']))
+    elif policy in ['host-proc-macro-opt', 'host-library-opt', 'frontend-workers']:
         require(stds['baseline'] == stds['candidate'] == stds['duplicate'] == plan['std_mir'],
                 'proc-macro comparison requires one unchanged shared std')
     else:
@@ -452,7 +458,7 @@ def mono_launch_identity(plan, row, custom):
     """Validate every saved effective selector without resolving retired caches."""
     mode, launch = row['mode'], row['launch']
     expected = launch_settings(mode, plan['tools'][mode], 'stable-mono-cgu', custom,
-                               mono_wrapper=plan['mono_wrapper'])
+                               mono_wrapper=plan['mono_wrapper'], prepared_std=plan['std_mir_by_mode'][mode])
     require(all(launch.get(k) == v for k, v in expected.items())
             and launch.get('query_cache_retention', 'off') == 'off'
             and launch.get('host_proc_macro_opt', 'off') == 'off'
@@ -615,7 +621,8 @@ def main():
         settings = launch_settings(mode, plan['tools'][mode], plan['candidate_policy'], custom, cargos[mode],
                                    mono_wrapper=plan.get('mono_wrapper'),
                                    worker_capability=worker_public['capability'] if worker_public else None,
-                                   library_capability=library_public['capability'] if library_public else None)
+                                   library_capability=library_public['capability'] if library_public else None,
+                                   prepared_std=plan['std_mir_by_mode'][mode])
         if library_public:
             from host_library_screen import validate_launch_policy
             validate_launch_policy(row['launch'], mode, library_public['capability'])

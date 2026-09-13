@@ -60,7 +60,12 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
         return read_bytes(selected)
     original = read(path)
     result = json.loads(original)
+    from std_mir_source_paths import (SELECTION, SELECTIONS, SHARED_SELECTION,
+        namespace_for, policy_for, validate_pair)
+    std_selection = result.get('std_mir_policy', SELECTION)
+    require(std_selection in SELECTIONS, 'unknown source prerequisite std policy')
     expected_std = {m: {k: stds[m][k] for k in ['key', 'sysroot', 'target']} for m in ['off', 'on']}
+    validate_pair(std_selection, expected_std)
     expected = dict(status='passed', policy=POLICY, transport_policy=TRANSPORT, guest_negative_controls=4,
         owner=str(owner), compiler_key=compiler_key, tool_key=tool_key,
         compiler_sysroot=str(compiler_sysroot), std_mir=expected_std, benchmark=False, diagnostics_rewritten=False,
@@ -88,6 +93,10 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
             'source prerequisite plan identities differ')
     require(plan.get('policy') == POLICY and plan.get('transport_policy') == TRANSPORT
             and plan.get('expected_commands') == COMMANDS, 'source prerequisite transport plan differs')
+    require(plan.get('std_mir_policy', SELECTION) == std_selection, 'source prerequisite std selection differs')
+    if std_selection == SHARED_SELECTION:
+        require(plan['std_readiness']['off'] == plan['std_readiness']['on'],
+                'shared source prerequisite uses different readiness')
     validate_fixture(payloads)
     sources = {p[len(SOURCE):]: h for p, h in plan['compiler']['files'].items() if p.startswith(SOURCE)}
     require(sources and sources == plan['source_files'], 'source prerequisite compiler source inventory differs')
@@ -95,7 +104,8 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
         ready = plan['std_readiness'][mode]
         identity = ready['identity']
         require(digest(identity) == std['key'] and identity['compiler_key'] == compiler_key
-                and identity['namespace'] == 'stable-mono-cgu:' + mode
+                and identity['namespace'] == namespace_for(std_selection, 'stable-mono-cgu:' + mode)
+                and identity['policy'] == policy_for(std_selection)
                 and identity['source_files'] == sources and ready['full_presentation_qualified'] is False,
                 'source prerequisite prepared std provenance differs')
     require(set(plan['copy_proofs']) == set(controls['second_prefix_final']) == {'native', 'off', 'on'},
@@ -288,7 +298,7 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
                 artifact = Path(launch['artifact_path'])
                 require(launch['tool_key'] == tool_key and launch['custom_compiler'] == expected_compiler
                         and launch['std_mir'] == expected_std[history['mode']]
-                        and launch['std_mir_policy'] == 'metadata-sysroot-v2-source-paths-release-backtrace'
+                        and launch['std_mir_policy'] == policy_for(std_selection)
                         and launch['toolchain_lookup'] == dict(mode='cached', outcome='owned-manifest')
                         and launch['workspace_path'] == str(cache)
                         and cache.is_relative_to(path.parent / 'observable-cache' / (history['mode'] + '-exported'))

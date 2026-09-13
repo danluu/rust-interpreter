@@ -2388,8 +2388,12 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                 if let ty::FnDef(def, _) = *self.operand_ty(func).kind() {
                     if let Some(name) = panic_function(self.tcx(), def) {
                         if block.statements.iter().all(panic_preparation) {
-                            let location = self.tcx().sess.source_map().span_to_diagnostic_string(
+                            // This string is embedded in bytecode and later shown at
+                            // runtime. Honor the same remap scope as file!/caller
+                            // locations, rather than compiler diagnostic paths.
+                            let location = self.tcx().sess.source_map().span_to_string(
                                 block.terminator().source_info.span.source_callsite(),
+                                rustc_span::RemapPathScopeComponents::MACRO,
                             );
                             self.code.push(Op::Trap {
                                 message: format!("{name} at {location}"),
@@ -2539,8 +2543,9 @@ impl<'a, 'tcx> Lower<'a, 'tcx> {
                         continue;
                     }
                     if let Some(name) = panic_function(self.tcx(), def) {
-                        let location = self.tcx().sess.source_map().span_to_diagnostic_string(
+                        let location = self.tcx().sess.source_map().span_to_string(
                             block.terminator().source_info.span.source_callsite(),
+                            rustc_span::RemapPathScopeComponents::MACRO,
                         );
                         self.code.push(Op::Trap {
                             message: format!("{name} at {location}"),

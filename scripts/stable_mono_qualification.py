@@ -9,7 +9,8 @@ from pathlib import Path, PurePosixPath
 import re
 
 POLICY = 'stable-mono-cgu-integration-v1'
-STD_POLICY = 'metadata-sysroot-v2-source-paths-release-backtrace'
+from std_mir_source_paths import (POLICY as STD_POLICY, SELECTION, SHARED_SELECTION, SELECTIONS,
+                                  policy_for, validate_pair)
 
 
 def require(condition, message):
@@ -62,13 +63,15 @@ def validate_qualification(path, owner, compiler_key, tool_key, stds, *, compile
                 'qualification follows a symlink')
     result_bytes = read_bytes(path)
     result = json.loads(result_bytes)
+    std_selection = result.get('std_mir_policy')
+    require(std_selection in SELECTIONS, 'unknown qualification std policy')
     expected = dict(status='passed', kind='real-custom-compiler-integration', benchmark=False,
         qualification_policy=POLICY, diagnostic_comparison='strict',
         qualification_scope='strict-integration', full_presentation_qualified=True,
         diagnostic_presentation='strict-structured-match', presentation_gap_count=0,
         semantic_controls='passed', source_restored=True, compiler_key=compiler_key,
         tool_key=tool_key, commands=36, launcher_commands=22, public_commands=11,
-        expected_rejections=24, std_mir_policy='source-paths-v2',
+        expected_rejections=24, std_mir_policy=std_selection,
         module_policy_by_mode=dict(off='off', on='off'), mono_policy_by_mode=dict(off='off', on='on'))
     require(all(result.get(k) == v for k, v in expected.items()),
             'strict MonoItem qualification is incomplete or uses different policy/tools')
@@ -76,6 +79,7 @@ def validate_qualification(path, owner, compiler_key, tool_key, stds, *, compile
     expected_std = {mode: {k: stds[mode][k] for k in ['key', 'sysroot', 'target']}
                     for mode in ['off', 'on']}
     require(result.get('std_mir') == expected_std, 'qualification used different prepared std')
+    validate_pair(std_selection, expected_std)
     evidence = result.get('evidence_files')
     require(isinstance(evidence, dict) and evidence, 'qualification lacks exact retained evidence')
     payloads, files = {}, {str(path): hashlib.sha256(result_bytes).hexdigest()}
@@ -95,6 +99,7 @@ def validate_qualification(path, owner, compiler_key, tool_key, stds, *, compile
     require({'plan.json', 'commands.json'} <= evidence.keys(), 'qualification lacks plan/commands')
     require(result.get('plan_sha256') == evidence['plan.json'], 'qualification plan hash differs')
     plan = json.loads(payloads['plan.json'])
+    require(plan.get('std_mir_policy', SELECTION) == std_selection, 'qualification std selection differs')
     require(plan.get('compiler_key') == compiler_key and plan.get('tool_key') == tool_key,
             'qualification plan uses different tools')
     commands = json.loads(payloads['commands.json'])
@@ -123,6 +128,10 @@ def validate_qualification(path, owner, compiler_key, tool_key, stds, *, compile
                     and row.get('artifact_sha256') == evidence[name] == launch.get('artifact_sha256')
                     and launch.get('tool_key') == tool_key and payloads[name],
                     'qualification bytecode differs from its successful command receipt')
+            if std_selection == SHARED_SELECTION:
+                require(launch.get('std_mir_policy') == policy_for(std_selection)
+                        and launch.get('std_mir') == expected_std[mode],
+                        'shared std qualification launcher routing differs')
             artifacts[state, mode] = payloads[name]
     for state in ['original', 'edited', 'restored']:
         require(artifacts[state, 'off'] == artifacts[state, 'on'],

@@ -33,7 +33,7 @@ program compares all ten fields and returns their bitmask. Generated source,
 native rows, actual bytecode and actual output are bound by the same typed
 validator. The old stdout-based57-command policy cannot qualify this screen.
 
-Both prepared std directories must use `source-paths-v2` and the authoritative
+Historical per-mode prepared std directories use `source-paths-v2` and the authoritative
 `std_mir_source_paths.load` validator, in `stable-mono-cgu:off` and
 `stable-mono-cgu:on` namespaces. Their source-containing sysroots, compiler/Cargo
 configuration and setup evidence are verified before admission and guarded at
@@ -42,8 +42,19 @@ source inventory. Std preparation remains outside the application placement
 policy; its `full_presentation_qualified: false` smoke-only scope is retained.
 Only the separate real strict integration receipt qualifies diagnostic behavior.
 
-After importing the exact qualified tools/compiler and preparing both std keys,
-the command template is:
+The explicit `source-paths-v2-shared` amendment is documented in
+[SHARED-IMMUTABLE-STD.md](../../../experiments/stable-cgu/SHARED-IMMUTABLE-STD.md).
+It prepares one immutable std directory under its new shared policy and namespace,
+then gives that exact readiness/key/path to all three arms. This is permitted
+because application MonoItem placement is absent from std preparation. The
+application off/on/off selectors, independent Cargo histories and all 36/61/27
+controls remain required. The loader, qualification receipts, measured launch
+receipts and saved assessor distinguish shared readiness from historical per-mode
+v2 readiness; mixed policies and same-key/different-path substitutions fail.
+The old per-mode cold failure remains a failed result.
+
+After importing the exact qualified tools/compiler and preparing the selected std
+policy, the command template is:
 
 ```sh
 python3 benchmarks/experiments/strict-warm-build/screen.py \

@@ -37,6 +37,13 @@ def main():
     name = 'compiler/rustc_resolve/src/lib.rs'
     original = sources[name]
     candidate = replace_once(original,
+        "type ResolutionTable<'ra> = FxIndexMap<BindingKey, NameResolutionRef<'ra>>;",
+        """type ResolutionTable<'ra> = FxIndexMap<BindingKey, NameResolutionRef<'ra>>;
+
+fn external_trait_item_names<'a>(keys: impl Iterator<Item = &'a BindingKey>) -> FxHashSet<(Symbol, Namespace)> {
+    keys.map(|key| (key.ident.name, key.ns)).collect()
+}""")
+    candidate = replace_once(candidate,
         "    Extern(OnceLock<ResolutionTable<'ra>>),",
         """    Extern {
         table: OnceLock<ResolutionTable<'ra>>,
@@ -63,9 +70,17 @@ def main():
                     // The original predicate intentionally ignores hygiene and
                     // disambiguators. Preserve that exact conservative projection,
                     // including keys without a current best declaration.
-                    assoc_item_names
-                        .get_or_init(|| resolutions.keys().map(|key| (key.ident.name, key.ns)).collect())
-                        .contains(&(name, ns))
+                    let indexed = assoc_item_names
+                        .get_or_init(|| external_trait_item_names(resolutions.keys()))
+                        .contains(&(name, ns));
+                    if self.tcx.sess.opts.unstable_opts.verify_external_trait_item_index {
+                        // Explicit qualification-only shadow work. This option
+                        // stays off in every performance observation.
+                        assert_eq!(indexed,
+                            resolutions.iter().any(|(key, _)| key.ns == ns && key.ident.name == name),
+                            "external trait item index differs from the original predicate");
+                    }
+                    indexed
                 } else {
                     // Local modules can gain bindings during expansion/import
                     // resolution. Never memoize their membership or a miss.
@@ -81,6 +96,7 @@ def main():
     candidate = replace_once(candidate,
         '            Resolutions::Extern(_) => {',
         '            Resolutions::Extern { .. } => {')
+    candidate += '\n' + (HERE / 'controls/projection.rs').read_text()
     updated = {name: candidate}
     name = 'compiler/rustc_session/src/options.rs'
     updated[name] = replace_once(sources[name],
@@ -88,12 +104,20 @@ def main():
         '    index_external_trait_items: bool = (false, parse_bool, [TRACKED],\n'
         '        "index immutable external trait item names during resolution (default: no)"),\n'
         '    indirect_branch_cs_prefix: bool =')
+    updated[name] = replace_once(updated[name],
+        '    #[rustc_lint_opt_deny_field_access("use `Session::verify_llvm_ir` instead of this field")]\n'
+        '    verify_llvm_ir: bool =',
+        '    verify_external_trait_item_index: bool = (false, parse_bool, [TRACKED],\n'
+        '        "verify indexed external trait names against the original predicate (default: no)"),\n'
+        '    #[rustc_lint_opt_deny_field_access("use `Session::verify_llvm_ir` instead of this field")]\n'
+        '    verify_llvm_ir: bool =')
 
     name = 'compiler/rustc_interface/src/tests.rs'
     updated[name] = replace_once(sources[name],
         '    tracked!(incremental_ignore_spans, true);',
         '    tracked!(incremental_ignore_spans, true);\n'
-        '    tracked!(index_external_trait_items, true);')
+        '    tracked!(index_external_trait_items, true);\n'
+        '    tracked!(verify_external_trait_item_index, true);')
 
     patch = ''.join(''.join(difflib.unified_diff(sources[name].splitlines(keepends=True),
                     data.splitlines(keepends=True), fromfile='a/' + name, tofile='b/' + name))
@@ -103,6 +127,9 @@ def main():
     manifest = {'schema_version': 1, 'base': BASE, 'applied': False, 'compiled': False,
         'benchmarked': False, 'policy': 'external-trait-item-name-index-v1',
         'flag': '-Zindex-external-trait-items=yes', 'default': False,
+        'qualification_shadow_flag': '-Zverify-external-trait-item-index=yes',
+        'qualification_shadow_default': False,
+        'projection_test_sha256': hashlib.sha256((HERE / 'controls/projection.rs').read_bytes()).hexdigest(),
         'option_tracking': 'TRACKED',
         'patch_sha256': hashlib.sha256(output.read_bytes()).hexdigest(), 'files': {}}
     for name, data in updated.items():

@@ -115,6 +115,35 @@ class StdSourcePathsTests(unittest.TestCase):
         other = v2.make_identity(self.compiler, self.cargo, 'stable-cgu:on', {})
         self.assertNotEqual(custom.digest(identity), custom.digest(other))
 
+    def test_shared_preparation_is_new_immutable_identity_and_modes_load_same_bytes(self):
+        shared = v2.make_identity(self.compiler, self.cargo, v2.SHARED_NAMESPACE, {})
+        old = v2.make_identity(self.compiler, self.cargo, 'stable-mono-cgu:off', {})
+        self.assertEqual(shared['recipe'], old['recipe'])
+        self.assertEqual(shared['flags'], old['flags'])
+        self.assertEqual(shared['source_files'], old['source_files'])
+        self.assertNotEqual(custom.digest(shared), custom.digest(old))
+        result = v2.prepare(self.root, self.compiler, v2.SHARED_NAMESPACE, 'shared-one', self.lock, 0)
+        command_count = len(self.commands)
+        with patch.object(std_mir, 'ROOT', self.root):
+            for mode in ['off', 'on']:
+                self.assertEqual(std_mir.checked_std_mir(v2.TOOLCHAIN, custom=self.compiler,
+                    namespace='stable-mono-cgu:' + mode, policy=v2.SHARED_SELECTION,
+                    prepared_key=result[2]), result)
+                with self.assertRaisesRegex(RuntimeError, 'namespace'):
+                    std_mir.checked_std_mir(v2.TOOLCHAIN, custom=self.compiler,
+                        namespace='stable-mono-cgu:' + mode, policy=v2.SELECTION,
+                        prepared_key=result[2])
+        self.assertEqual(len(self.commands), command_count)
+        self.assertEqual(v2.selection_for_identity(result[3]['identity']), v2.SHARED_SELECTION)
+        self.assertFalse(result[3]['full_presentation_qualified'])
+        with self.assertRaises(RuntimeError):
+            v2.selection_for_identity(old | {'namespace': v2.SHARED_NAMESPACE})
+        pair = dict(key=result[2], sysroot=str(result[0]), target=result[1])
+        v2.validate_pair(v2.SHARED_SELECTION, dict(off=pair, on=pair.copy()))
+        for changed in [pair | {'sysroot': '/other/prefix'}, pair | {'key': 'f' * 64}]:
+            with self.assertRaisesRegex(RuntimeError, 'one exact'):
+                v2.validate_pair(v2.SHARED_SELECTION, dict(off=pair, on=changed))
+
     def test_old_unmapped_compiler_and_unreviewed_cargo_are_rejected(self):
         identity = copy.deepcopy(self.compiler.identity)
         del identity['provenance']['std_source_paths']
