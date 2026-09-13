@@ -45,8 +45,12 @@ assertions, wrong edits, restoration and artifact identity checks pass.
 The full harness passes159 checks. After two zero-command admission failures,
 controller03 completes the154-command primary: wall−2.55%, CPU−1.43%, with
 2.275%/1.730% A/A. It narrowly passes the incremental wall gate; all original
-assertions, artifacts and source restoration pass. The remaining four cases
-and final serialized audit are mandatory before adoption.
+assertions, artifacts and source restoration pass. Folded matching, pgrust and
+private rg-aot also pass, completing594 commands. Nushell was refused before
+its case started because of disk admission. A qualified continuation has
+audited the prefix and now runs only its132 commands after owned public-cache
+cleanup. Nushell and the final serialized audit remain mandatory for adoption.
+[Retained prefix and admission](results/guarded-ranges-full-03-admission/assessment.md).
 [Full primary](results/guarded-ranges-edit-token-01/assessment.md).
 [Complete qualification](results/guarded-ranges-validation-repair-01/assessment.md),
 [screen and limits](results/guarded-ranges-screen-token-01/assessment.md).
