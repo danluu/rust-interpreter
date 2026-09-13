@@ -25,6 +25,10 @@ that compiler.
 The pinned driver finishes resolution before `after_expansion`. The callback
 borrows both `Steal` values immutably, visits them, and drops the visitor and guards
 before returning `Compilation::Continue`. The original query providers are kept.
+Native `TimePassesCallbacks::config` preserves trimmed diagnostic paths; logger,
+ICE/ctrl-C setup and the stock time-pass total condition are retained. The public
+external-driver API does not expose rustc's private fatal-signal installer; normal
+platform fatal-signal behavior remains, matching the existing native driver adapter.
 It does not steal the resolver, consume lint/disambiguator state, request HIR or
 analysis, mutate AST nodes, or stop compilation. The gate's local `def_path_hash`
 read does not force HIR. Early lints and all later checking/codegen/linking remain

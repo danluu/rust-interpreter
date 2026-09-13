@@ -17,14 +17,15 @@ use std::hash::Hasher;
 use std::io::Write as _;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use rustc_ast as ast;
 use rustc_ast::node_id::NodeSet;
 use rustc_ast::visit::{self, Visitor};
 use rustc_data_structures::fingerprint::Fingerprint;
 use rustc_data_structures::stable_hash::StableHasher;
-use rustc_driver::{Callbacks, Compilation};
+use rustc_data_structures::profiling::{TimePassesFormat, get_resident_set_size, print_time_passes_entry};
+use rustc_driver::{Callbacks, Compilation, TimePassesCallbacks};
 use rustc_interface::interface;
 use rustc_middle::middle::resolve::ResolverAstLowering;
 use rustc_middle::ty::TyCtxt;
@@ -185,9 +186,13 @@ impl<'ast> Visitor<'ast> for Walk<'_, '_> {
 }
 
 #[derive(Default)]
-struct Diagnostic { report: Option<Report>, after_analysis: bool, effective_sysroot: String }
+struct Diagnostic { standard: TimePassesCallbacks, time_passes: Option<TimePassesFormat>,
+    report: Option<Report>, after_analysis: bool, effective_sysroot: String }
 impl Callbacks for Diagnostic {
     fn config(&mut self, config: &mut interface::Config) {
+        self.standard.config(config); // Includes native rustc's trimmed diagnostic paths.
+        self.time_passes = (config.opts.prints.is_empty() && config.opts.unstable_opts.time_passes)
+            .then_some(config.opts.unstable_opts.time_passes_format);
         // A relocated driver executable must use the same default as its linked
         // stock compiler. Explicit --sysroot and every other caller option survive.
         config.opts.sysroot.default = PathBuf::from(env!("HIR_COVERAGE_PUBLIC_SYSROOT"));
@@ -249,10 +254,13 @@ impl Diagnostic {
     }
 }
 fn main() -> ExitCode {
+    let started = Instant::now();
+    let start_rss = get_resident_set_size();
     let start = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let early = rustc_session::EarlyDiagCtxt::new(rustc_session::config::ErrorOutputType::default());
     rustc_driver::init_rustc_env_logger(&early);
     rustc_driver::install_ice_hook(rustc_driver::DEFAULT_BUG_REPORT_URL, |_| ());
+    rustc_driver::install_ctrlc_handler();
     let linked_version = rustc_interface::util::rustc_version_str().unwrap_or("");
     // The full binary/compiler identity is an external build-admission receipt.
     // This additional linked-library check rejects the existing custom compiler.
@@ -278,6 +286,9 @@ fn main() -> ExitCode {
     if !directory.is_dir() { eprintln!("HIR coverage output directory is absent"); return ExitCode::from(2); }
     let mut diagnostic = Diagnostic::default();
     let result = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(&args, &mut diagnostic));
+    if let Some(format) = diagnostic.time_passes {
+        print_time_passes_entry("total", started.elapsed(), start_rss, get_resident_set_size(), format);
+    }
     let compiler_ok = result.is_ok();
     let output = diagnostic.output(&args, start, compiler_ok);
     let path = directory.join(format!("hir-owner-coverage-{}-{start}.json", std::process::id()));
