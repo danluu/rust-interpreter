@@ -1,7 +1,12 @@
-These are source-only regression controls for the two runtime `Op::Trap`
-location strings in `crates/mir-export/src/lower.rs`. They have not been built
-or executed. They change no exporter, VM, compiler, benchmark, or source-map
-policy. The caller must serialize every build/run under
+These are regression controls for the two runtime `Op::Trap` location strings
+in `crates/mir-export/src/lower.rs`. The first real attempt passed the complete
+67-command artifact/scope test. The diagnostic test's first 15 commands retained
+matching full native/exported diagnostics, then its additional filename check
+failed because it looked only at top-level spans: E0080's application callsite
+is in a nested expansion span. That failed attempt remains preserved. The
+narrow recursive span-check correction has not yet been executed; the complete
+two-test qualification is still pending. These tests change no exporter, VM,
+compiler, benchmark, or source-map policy. The caller must serialize every build/run under
 `/Users/danluu/dev/rust-interp/.work/benchmark.lock` and retain the outer process
 receipt. The tests never acquire a nested lock or build tools themselves.
 
