@@ -90,7 +90,11 @@ class CustomCompilerTests(unittest.TestCase):
     def test_partial_components_stage1_and_wrong_ownership_are_rejected(self):
         files = self.compiler.identity['files'].copy()
         del files['lib/rustlib/' + HOST + '/lib/librustc_middle-fixture.rmeta']
-        with self.assertRaisesRegex(RuntimeError, 'missing rustc-dev rustc_middle'):
+        with self.assertRaisesRegex(RuntimeError, 'missing or ambiguous rustc-dev rustc_middle'):
+            custom.require_complete(files, HOST)
+        files = self.compiler.identity['files'].copy()
+        files['lib/rustlib/' + HOST + '/lib/libstd-other-stage.rlib'] = 'f' * 64
+        with self.assertRaisesRegex(RuntimeError, 'ambiguous native std'):
             custom.require_complete(files, HOST)
         with self.assertRaisesRegex(RuntimeError, 'stage2'):
             custom.install_compiler(self.root, self.root / 'packaged', dict(PROVENANCE, stage=1))

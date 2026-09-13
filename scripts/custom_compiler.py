@@ -61,14 +61,19 @@ def require_complete(files, host):
     require('bin/rustc' in files, 'custom compiler is missing rustc')
     require('bin/cargo' not in files, 'compiler installation must not shadow the separately selected Cargo')
     lib = 'lib/rustlib/' + host + '/lib/'
+    names = [p[len(lib):] for p in files if p.startswith(lib) and '/' not in p[len(lib):]]
+    def crate_files(crate, suffixes):
+        return [name for name in names if name.startswith('lib' + crate + '-')
+                and any(name.endswith(suffix) for suffix in suffixes)]
     for crate in ['core', 'alloc', 'std', 'test', 'proc_macro']:
-        require(any(p.startswith(lib + 'lib' + crate + '-') and p.endswith('.rlib') for p in files),
-                'custom compiler is missing native ' + crate)
+        require(len(crate_files(crate, ['.rlib'])) == 1,
+                'custom compiler has missing or ambiguous native ' + crate)
     for crate in PRIVATE_CRATES:
-        require(any(p.startswith(lib + 'lib' + crate + '-') and p.endswith(('.rlib', '.rmeta'))
-                    for p in files), 'custom compiler is missing rustc-dev ' + crate)
-    require(any(p.startswith('lib/librustc_driver-') and p.endswith(('.dylib', '.so', '.dll'))
-                for p in files), 'custom compiler is missing its driver library')
+        require(len({p.rsplit('.', 1)[0] for p in crate_files(crate, ['.rlib', '.rmeta'])}) == 1,
+                'custom compiler has missing or ambiguous rustc-dev ' + crate)
+    require(len([p for p in files if p.startswith('lib/librustc_driver-')
+                 and p.endswith(('.dylib', '.so', '.dll'))]) == 1,
+            'custom compiler has missing or ambiguous driver library')
     source = 'lib/rustlib/src/rust/library/'
     for name in ['Cargo.toml', 'Cargo.lock', 'core/src/lib.rs', 'std/src/lib.rs', 'proc_macro/src/lib.rs']:
         require(source + name in files, 'custom compiler is missing rust-src ' + name)
@@ -217,6 +222,9 @@ def install_compiler(root, source, provenance):
     require(Path(reported).resolve() == sysroot, 'installed compiler reports another sysroot')
     hosts = [line[6:] for line in compiler.splitlines() if line.startswith('host: ')]
     require(len(hosts) == 1, 'installed compiler has no unique host')
+    commits = [line.removeprefix('commit-hash: ') for line in compiler.splitlines()
+               if line.startswith('commit-hash: ')]
+    require(commits == [provenance['source_commit']], 'compiler version does not match its source commit')
     help_text = subprocess.check_output([str(sysroot / 'bin/rustc'), '-Zhelp'], env=env, text=True)
     require(re.search(r'\bstable-cgu-partitioning\b', help_text) is not None,
             'custom compiler lacks stable-CGU support')

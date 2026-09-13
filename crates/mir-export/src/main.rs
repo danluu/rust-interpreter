@@ -270,7 +270,8 @@ fn main() -> std::process::ExitCode {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache"]}));
+            "compiler_sysroot":env!("RUST_INTERP_SYSROOT"),
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning"]}));
         return std::process::ExitCode::SUCCESS;
     }
     let environment = wrapper_route::Environment::read();
@@ -278,6 +279,10 @@ fn main() -> std::process::ExitCode {
         eprintln!("{error}");
         std::process::exit(2);
     });
+    if let Err(error) = route.check_compiler(Path::new(env!("RUST_INTERP_SYSROOT"))) {
+        eprintln!("{error}");
+        return std::process::ExitCode::from(2);
+    }
     let use_driver = route.requires_exporter();
     let borrowck_mode = route.borrowck_cache;
     args = route.args;
@@ -285,12 +290,6 @@ fn main() -> std::process::ExitCode {
     let wants_test = environment.export_test;
     if !route.export {
         if use_driver {
-            let expected = Path::new(env!("RUST_INTERP_SYSROOT")).join("bin/rustc").canonicalize();
-            let supplied = Path::new(&args[0]).canonicalize();
-            if !matches!((&expected, &supplied), (Ok(a), Ok(b)) if a == b) {
-                eprintln!("borrowck cache requires the pinned toolchain's rustc executable");
-                std::process::exit(2);
-            }
             if !args.iter().any(|arg| arg == "--sysroot" || arg.starts_with("--sysroot=")) {
                 args.extend(["--sysroot".into(), env!("RUST_INTERP_SYSROOT").into()]);
             }
