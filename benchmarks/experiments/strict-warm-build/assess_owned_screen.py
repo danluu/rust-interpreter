@@ -10,7 +10,7 @@ import re
 
 from analyzer import ROOT, compressed, identity, member
 from assess import require, sha
-from screen import assessment as assess_rows, protocol_states, frozen_input_hash, launch_settings, command_for
+from screen import CASE, assessment as assess_rows, protocol_states, frozen_input_hash, launch_settings, command_for
 from suite_reports import read_report, validate_report, validate_runtime_limits
 
 
@@ -109,6 +109,7 @@ def selection(plan, snapshot):
     from custom_cargo import Cargo, POLICY as CARGO_POLICY
     policy = plan['candidate_policy']
     modes = ['baseline', 'candidate', 'duplicate']
+    require(plan['case'] == CASE, 'original workflow and edit recipe differ')
     require(policy in ['stable-cgu', 'cargo-info-cache'] and set(plan['tools']) == set(modes)
             and len(set(plan['tools'].values())) == 1, 'owned screen requires one tool identity')
     require(set(plan['std_mir_by_mode']) == set(modes), 'missing per-arm std identities')
@@ -122,7 +123,9 @@ def selection(plan, snapshot):
                 and manifest['identity']['policy'] == COMPILER_POLICY,
                 'custom compiler manifest differs')
         custom = Compiler(frozen['key'], Path(frozen['sysroot']), frozen['identity'])
-        require(Path(frozen['manifest']) == custom.sysroot.parent / 'ready.json', 'compiler path differs')
+        require(Path(frozen['manifest']) == custom.sysroot.parent / 'ready.json'
+                and custom.sysroot == Path(plan['owner']) / '.work/compilers' / custom.key / 'sysroot'
+                and custom.identity['provenance']['stage'] == 2, 'compiler path or stage differs')
         require(plan['cgu_policy_by_mode'] == dict(baseline='off', candidate='on', duplicate='off'),
                 'stable-CGU policy differs')
     else:
@@ -142,21 +145,85 @@ def selection(plan, snapshot):
         require(cargo_pair(cargos['baseline'], cargos['candidate'], snapshot) == plan['cargo_comparison'],
                 'Cargo matched pair differs')
     for mode in modes:
+        from std_mir import FLAGS, POLICY
         std = plan['std_mir_by_mode'][mode]
-        ready = json.loads(snapshot(Path(std['path']))['utf8'])
-        key = sha(json.dumps(ready['identity'], sort_keys=True).encode())
-        require(key == std['key'] and Path(std['path']).parent.name == key
-                and ready['owner'] == plan['owner'], 'std manifest differs')
+        retained = snapshot(Path(std['path']))
+        ready = json.loads(retained['utf8'])
+        identity = ready['identity']
+        key = sha(json.dumps(identity, sort_keys=True).encode())
+        path = Path(plan['owner']) / '.work/std-mir' / key / 'ready.json'
+        require(key == std['key'] and Path(std['path']) == path and ready['owner'] == plan['owner']
+                and sha(retained['utf8'].encode()) == retained['sha256'] == std['sha256']
+                and std['sysroot'] == str(path.parent / 'sysroot') and identity['policy'] == POLICY
+                and identity['flags'] == FLAGS and std['target'] == identity['target']
+                and std['compiler'] == identity['compiler'], 'std manifest or actual routing differs')
+        artifacts = {}
+        for name, proof in ready['artifacts'].items():
+            artifact = path.parent / name
+            require(not Path(name).is_absolute() and artifact.is_relative_to(path.parent / 'sysroot')
+                    and str(artifact) == os.path.normpath(str(artifact)), 'std artifact path escapes sysroot')
+            artifacts[str(artifact)] = proof
+        require(artifacts and artifacts == std['artifacts'], 'std artifact proof differs')
+        for crate in ['core', 'alloc', 'std', 'test', 'proc_macro']:
+            library = path.parent / 'sysroot/lib/rustlib' / identity['target'] / 'lib'
+            require(sum(Path(p).parent == library and Path(p).match('lib' + crate + '-*.rmeta')
+                        for p in artifacts) == 1, 'missing or ambiguous prepared std artifact')
         if custom:
-            require(ready['identity']['compiler_key'] == custom.key
-                    and ready['identity']['namespace'] == 'stable-cgu:' + plan['cgu_policy_by_mode'][mode],
+            require(identity['compiler_key'] == custom.key and 'cargo' not in identity
+                    and identity['namespace'] == 'stable-cgu:' + plan['cgu_policy_by_mode'][mode]
+                    and identity['compiler'] == custom.identity['compiler']
+                    and identity['target'] == custom.host
+                    and identity['source_sha256'] == custom.identity['source_sha256']
+                    and identity['lock_sha256'] == custom.identity['files'][
+                        'lib/rustlib/src/rust/library/Cargo.lock'],
                     'std compiler/policy differs')
         else:
-            require(ready['identity']['cargo'] == cargos[mode].receipt(), 'std Cargo differs')
+            require(identity['cargo'] == cargos[mode].receipt()
+                    and identity['compiler'] == cargos[mode].identity['pinned_compiler']['compiler']
+                    and identity['target'] == cargos[mode].identity['pinned_compiler']['host']
+                    and not any(k in identity for k in ['compiler_key', 'namespace', 'source_sha256']),
+                    'std Cargo differs')
     require(plan['std_mir_by_mode']['baseline'] == plan['std_mir_by_mode']['duplicate'] and
             plan['std_mir_by_mode']['baseline']['key'] != plan['std_mir_by_mode']['candidate']['key'],
             'std namespaces must match baseline/duplicate and isolate candidate')
     return custom, cargos
+
+
+def tool_identity(plan, key, custom, snapshot):
+    """Bind the retained exporter capability to its physical compiler prefix."""
+    from custom_compiler import TOOL_POLICY, digest
+    tool = Path(plan['owner']) / '.work/interpreter-tools' / key
+    name = 'compiler.json' if custom else 'source.json'
+    source = json.loads(snapshot(tool / name)['utf8'])
+    composition = source if custom else source['composition']
+    binaries = composition['binaries']
+    require(digest(composition) == key and all(binaries == plan['binaries'][m] for m in plan['tools'])
+            and binaries == json.loads(snapshot(tool / 'ready.json')['utf8']), 'tool composition differs')
+    capability = json.loads(snapshot(tool / 'capabilities.json')['utf8'])
+    require(capability['schema_version'] == 1 and capability['bytecode_version'] == 5
+            and capability['tool_key'] == key
+            and capability['exporter_sha256'] == binaries['rust-interp-mir-export'],
+            'tool capability association differs')
+    if custom:
+        require(composition['kind'] == TOOL_POLICY and composition['compiler_key'] == custom.key
+                and composition['compiler_sysroot'] == str(custom.sysroot)
+                and capability['compiler_sysroot'] == str(custom.sysroot)
+                and 'stable-cgu-partitioning' in capability['export_options'],
+                'exporter compiler association differs')
+
+
+def workspace_identity(row, raw, workspaces):
+    """Validate saved paths without requiring retired project caches to exist."""
+    mode = row['mode']
+    workspace = Path(row['launch']['workspace_path'])
+    artifact = Path(row['launch']['artifact_path'])
+    require(all(p.is_absolute() and str(p) == os.path.normpath(str(p)) for p in [workspace, artifact])
+            and workspace.is_relative_to(raw / 'caches' / mode)
+            and workspace != raw / 'caches' / mode and artifact.is_relative_to(workspace / 'target'),
+            'actual workspace or artifact escapes its arm cache')
+    require(workspaces.setdefault(mode, workspace) == workspace,
+            'actual workspace changed within an arm')
+    require(len(set(workspaces.values())) == len(workspaces), 'actual arm caches are not independent')
 
 
 def command_identity(plan, row, raw, custom, cargo):
@@ -261,10 +328,12 @@ def main():
     custom, cargos = selection(plan, frozen_snapshot)
     artifacts, compact = {}, []
     previous = dict.fromkeys(plan['tools'])
+    workspaces = {}
     for row in rows:
         index, mode = row['index'], row['mode']
         expected = plan['states'][index]
         command_identity(plan, row, raw, custom, cargos[mode])
+        workspace_identity(row, raw, workspaces)
         require(row['phase'] == expected['phase'] and row['source_sha256'] == expected['source_sha256'] and
                 row['previous_source_sha256'] == previous[mode], 'command source history differs')
         previous[mode] = row['source_sha256']
@@ -360,16 +429,7 @@ def main():
               Path(__file__).with_name('assess.py')]:
         files[str(p)] = member(p)
     for key in set(plan['tools'].values()):
-        tool = ROOT / '.work/interpreter-tools' / key
-        name = 'compiler.json' if custom else 'source.json'
-        source = json.loads(files[str(tool / name)]['utf8'])
-        composition = source if custom else source['composition']
-        require(sha(json.dumps(composition, sort_keys=True, separators=(',', ':')).encode()) == key
-                and all(composition['binaries'] == plan['binaries'][m] for m in plan['tools'])
-                and composition['binaries'] == json.loads(files[str(tool / 'ready.json')]['utf8']),
-                'tool composition differs')
-        if custom:
-            require(composition['compiler_key'] == custom.key, 'exporter compiler association differs')
+        tool_identity(plan, key, custom, lambda path: files[str(path)])
     if not custom:
         for cargo in {c.key: c for c in cargos.values()}.values():
             for name, expected_hash in cargo.identity['files'].items():
