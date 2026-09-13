@@ -103,6 +103,12 @@ def main():
         acquire_lock(lock, 45)
         admission = 12 if project == 'fre' else 6
         require_space(ROOT, admission)
+        harness_path = ROOT / 'results/wide-bitwise-python-tests-02/summary.json'
+        harness = json.loads(harness_path.read_text())
+        assert harness['status'] == 'passed' and harness['tests'] == 106
+        harness_inputs = ROOT / harness['raw'] / 'inputs.json'
+        assert sha(harness_inputs) == harness['inputs_sha256']
+        assert all(sha(ROOT / p) == h for p, h in json.loads(harness_inputs.read_text()).items())
         source = ROOT / '.work/sources' / project
         reference_path = ROOT / 'results' / reference / 'summary.json'
         ref = json.loads(reference_path.read_text())
@@ -160,7 +166,8 @@ def main():
         states = list(protocol_states(original.decode(), case))
         assert len(states) == 21 and len(case['edits']) == 5
         paths = [Path(__file__), Path(__file__).with_name('WORKFLOW.md'), Path(__file__).with_name('PLAN.md'),
-                 reference_path, marker, listing_path, coverage_path, *build_paths.values(), *proofs, *control_proofs]
+                 reference_path, marker, listing_path, coverage_path, harness_path, harness_inputs,
+                 *build_paths.values(), *proofs, *control_proofs]
         paths += [ROOT / 'scripts' / name for name in ['interpreter.py', 'workspace_cache.py', 'std_mir.py',
             'test_discovery.py', 'workflow_cases.py', 'workflow_controls.py', 'workflow_measurements.py',
             'workflow_io.py', 'suite_reports.py', 'native_suite.py', 'compare_saved_runtime.py']]
