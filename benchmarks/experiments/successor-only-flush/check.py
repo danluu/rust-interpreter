@@ -32,7 +32,7 @@ def main():
         write(work / 'inputs.json', hashes)
         child, out, err = capture([sys.executable, '-m', 'unittest', 'test_screen', '-v'],
             cwd=Path(__file__).parent, env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'),
-            receipt_path=work / 'active.json', receipt=dict(stage='local-fact screen protocol'))
+            receipt_path=work / 'active.json', receipt=dict(stage='successor-only flush screen protocol'))
         (work / 'stdout').write_text(out); (work / 'stderr').write_text(err)
         assert child.returncode == 0 and 'Ran 12 tests' in err and err.rstrip().endswith('OK')
         assert all(sha(ROOT / p) == h for p, h in hashes.items())
