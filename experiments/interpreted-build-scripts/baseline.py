@@ -13,7 +13,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
-WORK = ROOT / '.work/interpreted-build-scripts-native-01'
+WORK = ROOT / '.work/interpreted-build-scripts-native-02'
 FIXTURE = HERE / 'fixture'
 APP = WORK / 'fixture'
 HOST = 'aarch64-apple-darwin'
@@ -220,8 +220,25 @@ def output_snapshot(out_dir):
             for name in OUTPUTS if (out_dir / name).exists()}
 
 
+def script_run_files(out_dir, target):
+    # Cargo 3c0b5347: CompilationFiles uses the same package/unit for out and
+    # Layout::build_script_execution's sibling run directory. Its default new
+    # layout writes stdout/stderr/root-output there (custom_build.rs:1461).
+    require(out_dir.is_dir() and out_dir.resolve(strict=True) == out_dir
+            and out_dir.is_relative_to(target), 'unowned OUT_DIR')
+    parts = out_dir.relative_to(target).parts
+    require(len(parts) == 6 and parts[:4] == (HOST, 'debug', 'build', 'ibs-fixture-app')
+            and re.fullmatch('[0-9a-f]{16}', parts[4]) and parts[5] == 'out',
+            'unexpected pinned Cargo unit OUT_DIR layout')
+    directory = out_dir.parent / 'run'
+    require(directory.is_dir() and directory.resolve(strict=True) == directory, 'unowned Cargo run directory')
+    files = {name: ordinary(directory / name) for name in ['stdout', 'stderr', 'root-output']}
+    require(files['root-output'].read_bytes() == os.fsencode(out_dir), 'Cargo run files belong to another OUT_DIR')
+    return files
+
+
 def script_outputs(case, out_dir, target, before, version):
-    require(out_dir.resolve(strict=True) == out_dir and out_dir.is_relative_to(target), 'unowned OUT_DIR')
+    run_files = script_run_files(out_dir, target)
     current = output_snapshot(out_dir)
     if case['error'] or case['label'] == 'unchanged':
         require(current == before, 'script effects occurred during compile failure or freshness reuse')
@@ -240,8 +257,8 @@ def script_outputs(case, out_dir, target, before, version):
         'cargo::rerun-if-env-changed=IBS_FIXTURE_SEED', 'cargo::rustc-check-cfg=cfg(ibs_seed_even)']
     if seed % 2 == 0: directives.append('cargo::rustc-cfg=ibs_seed_even')
     directives.append(f'cargo::rustc-env=IBS_GENERATED_CONTEXT=input={case["input"]};seed={seed};mode={mode}')
-    require((out_dir.parent / 'output').read_text().splitlines() == directives, 'actual directive ordering differs')
-    require((out_dir.parent / 'stderr').read_text() == f'build-script input={case["input"]} seed={seed} mode={mode} value={value}\n', 'actual script stderr differs')
+    require(run_files['stdout'].read_text().splitlines() == directives, 'actual directive ordering differs')
+    require(run_files['stderr'].read_text() == f'build-script input={case["input"]} seed={seed} mode={mode} value={value}\n', 'actual script stderr differs')
     if case['group'] == 'unsupported':
         require(current['before-unsupported.txt']['text'] == 'script already executed\n'
                 and current['child-version.txt']['text'] == version, 'actual subprocess marker/stdout differs')
@@ -338,7 +355,7 @@ def freeze_sources(destination, frozen):
 def main():
     parser = argparse.ArgumentParser(__doc__); parser.add_argument('stage', choices=['plan', 'run'])
     parser.add_argument('--plan', type=Path, required=True); parser.add_argument('--plan-sha256')
-    args = parser.parse_args(); work = ROOT / '.work' / ('interpreted-build-scripts-plan-01' if args.stage == 'plan' else WORK.name)
+    args = parser.parse_args(); work = ROOT / '.work' / ('interpreted-build-scripts-plan-02' if args.stage == 'plan' else WORK.name)
     work.mkdir(parents=True, exist_ok=False)
     receipt = dict(status='waiting', pid=os.getpid(), parent_pid=os.getppid(), started_at=time.time(), commands=[],
         canonical_lock=str(CANONICAL_LOCK), lock_wait_seconds=600, native_baseline_only=True, interpreted_scripts=False, performance_claim=False)
@@ -414,7 +431,7 @@ def main():
                             paths = {Path(p) for r in records if r.get('reason') == 'compiler-artifact' for p in r['filenames']}
                             paths.update(Path(r['executable']) for r in records if r.get('reason') == 'compiler-artifact' and r.get('executable'))
                             paths.update(out_dir / n for n in OUTPUTS if (out_dir / n).exists())
-                            paths.update(out_dir.parent / n for n in ['output', 'stderr'] if (out_dir.parent / n).exists())
+                            paths.update(script_run_files(out_dir, target).values())
                             for path in sorted(paths):
                                 contained(path, target); disk(ROOT); dest = directory / 'artifacts' / path.relative_to(target)
                                 dest.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(path, dest)

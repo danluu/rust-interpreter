@@ -57,7 +57,10 @@ class NativeBuildScriptBaselineTests(unittest.TestCase):
 
     def test_actual_script_history_and_nested_stdout_are_not_invented(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary).resolve(); target = root / 'target'; out = target / 'build/unit/out'; out.mkdir(parents=True)
+            root = Path(temporary).resolve(); target = root / 'target'
+            out = target / b.HOST / 'debug/build/ibs-fixture-app/0123456789abcdef/out'; out.mkdir(parents=True)
+            run_dir = out.parent / 'run'; run_dir.mkdir()
+            (run_dir / 'root-output').write_bytes(os.fsencode(out))
             case = b.cases()[-1]; version = 'rustc actual-pinned-version\n'
             values = {'generated.rs':'pub const GENERATED_VALUE: u64 = 36;\npub const GENERATED_INPUT: u64 = 11;\npub const GENERATED_SEED: u64 = 3;\n',
                 'history.txt':'input=11;seed=3;mode=script-only;value=36\n',
@@ -65,10 +68,10 @@ class NativeBuildScriptBaselineTests(unittest.TestCase):
                     HOST=b.HOST,TARGET=b.HOST,PROFILE='debug',OPT_LEVEL='0',DEBUG='true',NUM_JOBS='2').items())+'\n',
                 'before-unsupported.txt':'script already executed\n','child-version.txt':version}
             for n,text in values.items(): (out/n).write_text(text)
-            (out.parent/'output').write_text('\n'.join(['cargo::rerun-if-changed=build.rs','cargo:rerun-if-changed=input.txt',
+            (run_dir/'stdout').write_text('\n'.join(['cargo::rerun-if-changed=build.rs','cargo:rerun-if-changed=input.txt',
                 'cargo::rerun-if-env-changed=IBS_FIXTURE_SEED','cargo::rustc-check-cfg=cfg(ibs_seed_even)',
                 'cargo::rustc-env=IBS_GENERATED_CONTEXT=input=11;seed=3;mode=script-only'])+'\n')
-            (out.parent/'stderr').write_text('build-script input=11 seed=3 mode=script-only value=36\n')
+            (run_dir/'stderr').write_text('build-script input=11 seed=3 mode=script-only value=36\n')
             with patch.object(b, 'APP', root):
                 result = b.script_outputs(case, out, target, {}, version)
                 self.assertIsNone(result['nested_child']['pid']); self.assertEqual(result['actual_runs'], 1)
@@ -79,6 +82,26 @@ class NativeBuildScriptBaselineTests(unittest.TestCase):
                 (out/'history.txt').write_text(values['history.txt'])
                 (out/'child-version.txt').write_text('fabricated version\n')
                 with self.assertRaises(RuntimeError): b.script_outputs(case, out, target, {}, version)
+
+    def test_current_cargo_run_files_are_bound_to_actual_unit_out_dir(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary).resolve()
+            out = target / b.HOST / 'debug/build/ibs-fixture-app/0123456789abcdef/out'
+            out.mkdir(parents=True); run_dir = out.parent / 'run'; run_dir.mkdir()
+            for name in ['stdout', 'stderr']: (run_dir / name).write_text('actual-' + name)
+            (run_dir / 'root-output').write_bytes(os.fsencode(out))
+            # An old-layout decoy is never selected or used as a fallback.
+            (out.parent / 'output').write_text('wrong unit output')
+            files = b.script_run_files(out, target)
+            self.assertEqual(files['stdout'], run_dir / 'stdout')
+            self.assertEqual(files['stdout'].read_text(), 'actual-stdout')
+            (run_dir / 'root-output').write_bytes(os.fsencode(out.parent / 'other-out'))
+            with self.assertRaisesRegex(RuntimeError, 'another OUT_DIR'): b.script_run_files(out, target)
+            (run_dir / 'root-output').write_bytes(os.fsencode(out))
+            (run_dir / 'stdout').unlink()
+            with self.assertRaises((RuntimeError, FileNotFoundError)): b.script_run_files(out, target)
+            (run_dir / 'stdout').symlink_to(out.parent / 'output')
+            with self.assertRaises(RuntimeError): b.script_run_files(out, target)
 
     def test_shared_macro_requires_real_link_emission_and_rlib_extern(self):
         with tempfile.TemporaryDirectory() as temporary:

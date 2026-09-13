@@ -1,7 +1,11 @@
 # Ordinary native baseline controller
 
-`baseline.py` is a source-only controller for the fixture's 28 native Cargo
-commands. Neither its controls, metadata plan nor Cargo histories have run yet.
+`baseline.py` is a controller for the fixture's 28 native Cargo commands. Its
+original six pure controls and metadata plan passed on source `8b4422b1`. Native
+attempt01 ran one successful Cargo command and all three original fixture tests,
+then failed in the controller's old-layout output lookup. Its source restored
+successfully. It does not qualify the complete 28-command baseline. The corrected
+seven controls, metadata plan02 and fresh native02 below have not run yet.
 It does not implement interpreted build scripts or claim a speedup. The exact
 three app tests, default profiles/features, libtest concurrency and two Cargo
 workers are preserved. Eight uncalled compilation failures and the one wrong
@@ -49,7 +53,26 @@ call: native linkage may use its MIR. Cargo artifacts and generated outputs are
 copied before the next edit. All original fixture bytes are restored with the
 existing staged-restoration helper, including on a failed command or check.
 
-After source review, the six pure controls may run under the canonical supervisor:
+The narrow correction follows exact pinned Cargo `3c0b5347` source:
+`compiler/layout.rs:493–498` puts build-script execution files in the unit's
+`run` directory; `compiler/custom_build.rs:1461–1468` names them `stdout`,
+`stderr`, and `root-output`; line688 writes the exact OUT_DIR path bytes into
+`root-output`. `workspace/features.rs:844,1595` enables this layout by default;
+its temporary opt-out is absent from the sanitized environment. The controller
+derives that single same-unit directory from Cargo's actual OUT_DIR and verifies
+the recorded root bytes before reading or retaining outputs. It never searches
+for a passing alternative or falls back to the old layout. The new control
+rejects another OUT_DIR, a missing stdout despite an old-layout decoy, and a
+symlinked output file.
+
+Preserved attempt01 evidence is `.work/interpreted-build-scripts-native-01`
+and its `native-supervisor-01` record. Cargo child52828 exited0; controller
+supervisor42794/helper42797 failed afterward. Plan01 remains committed with
+SHA256 `10d4672786196ce090d07d800b804cb193bfc61906d0b498612aa9e7ed20eaa2`.
+Attempt02 changes only controller output association and fresh owned paths;
+the same original fixture, 28 cases, checks, features and profiles remain.
+
+After source review, the seven pure controls may run under the canonical supervisor:
 
 ```text
 python3 -B -m unittest discover -s tests -p test_interpreted_build_scripts_baseline.py -v
@@ -58,13 +81,13 @@ python3 -B -m unittest discover -s tests -p test_interpreted_build_scripts_basel
 Only after those controls and source review, materialize the native plan:
 
 ```text
-python3 -B scripts/supervise_experiment.py --run-id interpreted-build-scripts-plan-supervisor-01 -- python3 -B experiments/interpreted-build-scripts/baseline.py plan --plan <owned-worktree>/experiments/interpreted-build-scripts/planned-native-01.json
+python3 -B scripts/supervise_experiment.py --run-id interpreted-build-scripts-plan-supervisor-02 -- python3 -B experiments/interpreted-build-scripts/baseline.py plan --plan <owned-worktree>/experiments/interpreted-build-scripts/planned-native-02.json
 ```
 
 Then review the actual identities and the full plan SHA before admitting:
 
 ```text
-python3 -B scripts/supervise_experiment.py --run-id interpreted-build-scripts-native-supervisor-01 -- python3 -B experiments/interpreted-build-scripts/baseline.py run --plan <owned-worktree>/experiments/interpreted-build-scripts/planned-native-01.json --plan-sha256 <reviewed-sha256>
+python3 -B scripts/supervise_experiment.py --run-id interpreted-build-scripts-native-supervisor-02 -- python3 -B experiments/interpreted-build-scripts/baseline.py run --plan <owned-worktree>/experiments/interpreted-build-scripts/planned-native-02.json --plan-sha256 <reviewed-sha256>
 ```
 
 Plan and run destinations are fresh and fixed. Failures remain intact; a reviewed
