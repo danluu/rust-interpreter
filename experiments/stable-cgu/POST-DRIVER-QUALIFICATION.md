@@ -103,7 +103,9 @@ counts. It checks the installed tools and original target binaries before and
 after. Repository `.cargo` files and explicit absence of both discovery filenames
 are part of the frozen snapshot; ambient doctest flags are rejected, including
 empty values. It does not publish tools or replace strict36. Its four pure boundary
-tests are prepared but unexecuted.
+tests passed at source `868c29d6`, with exact source snapshots and receipts in
+[`results/host-library-and-custom-workspace-source-tests-01`](../../results/host-library-and-custom-workspace-source-tests-01/README.md).
+The real custom-compiler workspace command remains unexecuted.
 
 Stdv2 setup preserves `-Zalways-encode-mir=yes -Zforce-unstable-if-unmarked`, the
 backtrace feature, release profile, pinned Cargo3c0 binary/version/library proof,
