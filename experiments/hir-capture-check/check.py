@@ -65,17 +65,27 @@ def input_paths():
     names = ['origin.json', 'capture.patch', 'patch.json', 'bootstrap.toml']
     require(sorted(p.name for p in (HERE / 'inputs').iterdir()) == sorted(names), 'unknown checkpoint input')
     return [Path(__file__), HERE / 'README.md', *(HERE / 'inputs' / name for name in names),
-            ROOT / 'experiments/stable-cgu/owned_stage.py', ROOT / 'scripts/supervise_experiment.py']
+            ROOT / 'experiments/stable-cgu/owned_stage.py', ROOT / 'scripts/supervise_experiment.py',
+            ROOT / 'tests/test_hir_capture_check.py']
 
 
 def configurations():
     paths = {Path(os.environ.get('CARGO_HOME', str(Path.home() / '.cargo'))) / n
              for n in ['config', 'config.toml']}
-    # SOURCE's own configuration is tracked in its exact Git inventory after
-    # prepare. It does not exist when this prospective plan is frozen.
-    for parent in [*SOURCE.parents, ROOT, *ROOT.parents]:
+    # Pinned bootstrap.py:1062 and builder/cargo.rs:638 both set Cargo cwd to
+    # SOURCE. Also guard the prospective build and selected manifest directories
+    # explicitly; their absence must not become an untracked configuration.
+    invocation_dirs = [SOURCE, SOURCE / 'build', SOURCE / 'src/bootstrap',
+                       SOURCE / 'compiler/rustc', SOURCE / 'compiler/rustc_ast_lowering', ROOT]
+    for parent in {p for directory in invocation_dirs for p in [directory, *directory.parents]}:
         paths.update(parent / '.cargo' / n for n in ['config', 'config.toml'])
-    return {str(p): sha(p) if p.is_file() else None for p in sorted(paths)}
+    result = {}
+    for path in sorted(paths):
+        require(not path.is_symlink() and not any(p.is_symlink() for p in path.parents),
+                'Cargo configuration contains a symlink: ' + str(path))
+        require(not path.exists() or path.is_file(), 'Cargo configuration is not an ordinary file')
+        result[str(path)] = sha(path) if path.is_file() else None
+    return result
 
 
 def frozen_plan():
