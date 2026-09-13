@@ -57,3 +57,15 @@ Evidence: [adopted runtime and compiler](../results/guarded-local-facts-main-fin
 
 Budget-specific cross-check: [prior fusion plan](../benchmarks/experiments/scalar-copy-budget/PLAN.md),
 [qualified failed screen](../results/scalar-copy-budget-screen-token-01/assessment.md).
+
+Follow-up through14:46: the renewed read has the same suggestions hash. The
+memory-pair census found only30/13 affected saved samples and remains deferred;
+the counter/flush composition failed its40-command wall and CPU gates. Neither
+is retimed. The exact indirect-call diagnostic now supports a general native
+transition:1,025,947/843,776 validated calls, only20/23 unprepared callee entries,
+and all caller continuations ready. Proceed with complete signature/layout
+metadata and ordinary VM fallback, then measure real changed-source commands.
+The explicit observer feature uses a main-thread executable; its rejected
+libtest replay and all earlier failures remain closed evidence. Setup durations
+are now recorded by tool for the counter experiment. Compiler/Cargo suggestions
+remain with the other workstream; no ownership or worker-count changes follow.
