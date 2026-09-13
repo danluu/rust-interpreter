@@ -1,0 +1,5 @@
+# Passing cold-audit compiler check and units
+
+The warning-fixed 60d5 checkpoint passed its plan, apply, compiler check and unit stages. All 22 selected-crate unit controls passed with no skips or filtered tests, and check/unit emitted no warnings or errors. This qualifies the selected compiler crate and unit controls; it is not an executed native capture history, cache-hit qualification or performance result.
+
+The archive retains all 61 original command receipts and raw outputs, four supervisors, the exact source/plan/completion records, all 24 patched source files, and parent/new Git history. An independent guard rechecked every one of the 62,707 compiler and 102 backtrace entries twice, with ownership, HEAD/parent, configuration absences and all original/copied seed archives. The complete preceding 318-member failed-history archive was read back and verified and is referenced without duplicating its payloads; it retains the original 158-member failure reference. Old receipts and compiler source remain unchanged. All new archive members were read back and hash verified.
