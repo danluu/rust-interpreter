@@ -32,6 +32,14 @@ fn generic<T: Copy>(x: T) -> T { x }
 fn borrowed(x: &u32) -> u32 { *x }
 fn raw(x: &u32) -> *const u32 { &raw const *x }
 fn uninitialized(x: u32) -> u32 { let y; y = x; y }
+fn arithmetic(mut x: u32) -> u32 {
+    x += 1; x -= 1; x *= 2; x /= 2; x %= 100; x ^= 1; x &= 255; x |= 2; x <<= 1; x >>= 1; x
+}
+fn literals() -> (bool, u8, char, u128, f64, &'static str, &'static [u8], &'static core::ffi::CStr) {
+    (true, b'a', 'λ', 340282366920938463463374607431768211455_u128,
+        1.25e2_f64, r#"raw λ"#, br#"bytes"#, c"nul")
+}
+fn unsafe_block(x: *const u32) -> u32 { unsafe { *x } }
 fn body_type(x: &u32) -> u32 { let y: &u32 = x; *y }
 fn nested() -> u32 { fn child() -> u32 { 1 } child() }
 fn closure() -> u32 { let f = || 1; f() }
@@ -53,6 +61,12 @@ fn main() {
     assert_eq!(borrowed(&4), 4);
     assert_eq!(unsafe { *raw(&4) }, 4);
     assert_eq!(uninitialized(4), 4);
+    assert_eq!(arithmetic(4), 7);
+    let literals = literals();
+    assert_eq!(literals.0, true); assert_eq!(literals.1, b'a'); assert_eq!(literals.2, 'λ');
+    assert_eq!(literals.3, u128::MAX); assert_eq!(literals.4, 125.0);
+    assert_eq!(literals.5, "raw λ"); assert_eq!(literals.6, b"bytes"); assert_eq!(literals.7, c"nul");
+    assert_eq!(unsafe_block(&4), 4);
     assert_eq!(body_type(&4), 4);
     assert_eq!(nested(), 1);
     assert_eq!(closure(), 1);
