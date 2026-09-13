@@ -109,6 +109,9 @@ fn remap(f: &Function, plan: &Plan) -> Function {
             Op::DescriptorClose { dst, descriptor, errno } | Op::DescriptorGetFd { dst, descriptor, errno } => {
                 for value in [dst, descriptor, errno] { r(value); }
             }
+            Op::CurrentDirectory { dst, address, size, errno } => {
+                for value in [dst, address, size, errno] { r(value); }
+            }
             Op::EnvironmentGet { dst, name } => { r(dst); r(name); }
             Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
                 for value in [dst, name, output, output_len, new_data, new_len] { r(value); }

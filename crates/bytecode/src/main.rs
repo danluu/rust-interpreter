@@ -16,7 +16,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut suite_catalog = None;
     let mut suite_workers = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--guest-descriptor-io] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--guest-descriptor-io] [--guest-getcwd] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
@@ -41,6 +41,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--suite-catalog" => {
                 if suite_catalog.is_some() { return Err("duplicate suite catalog path".into()); }
                 suite_catalog = Some(args.next().ok_or("missing suite catalog path")?);
+            }
+            "--guest-getcwd" => {
+                if limits.guest_getcwd { return Err("duplicate guest getcwd option".into()); }
+                limits.guest_getcwd = true;
             }
             "--guest-descriptor-io" => {
                 if limits.guest_descriptor_io { return Err("duplicate guest descriptor I/O option".into()); }

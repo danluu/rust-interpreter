@@ -141,7 +141,7 @@ impl Assembler<'_> {
             | Op::CompareBytes {..} | Op::FloatBinary {..} | Op::FloatUnary {..} | Op::FloatConvert {..} => {},
             Op::Call {..} | Op::CallIndirect {..} | Op::CopyDynamic {..} | Op::FillBytes {..}
             | Op::Allocate {..} | Op::Deallocate {..} | Op::Reallocate {..} | Op::RandomBytes {..}
-            | Op::DescriptorOpen {..} | Op::DescriptorWrite {..} | Op::DescriptorClose {..} | Op::DescriptorGetFd {..}
+            | Op::DescriptorOpen {..} | Op::DescriptorWrite {..} | Op::DescriptorClose {..} | Op::DescriptorGetFd {..} | Op::CurrentDirectory {..}
             | Op::CpuFeatureQuery {..} | Op::EnvironmentGet {..} | Op::CAllocate {..} | Op::CDeallocate {..}
             | Op::CReallocate {..} | Op::CAlignedAllocate {..} | Op::RegisterTlsDestructor {..}
             | Op::ResetThreadLocals => {
