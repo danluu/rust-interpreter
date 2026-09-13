@@ -37,13 +37,16 @@ profile,18 focused guest tests across interpreter/JIT modes and78 existing
 dynamic/closure/cache/strict Cargo commands pass. Tool `15574904` retains the
 exact adopted VM and wrapper. Sized dynamic bytecode matches the prior control.
 [Receiver fix](results/boxed-fnonce-after-01/assessment.md).
-The full original pgrust SQL-parser target passes all114 native tests. Its
-custom build now gets past the callback but stops at the10,000-function
-expansion limit before guest execution. No tests are excluded; all4,918 frozen
-inputs verify. Next: diagnose graph growth and resource limits.
-[Parser support limit](results/pgrust-parser-support-02/assessment.md).
-Preserve pgrust's profile
-choices and use matched incremental settings for any later warm comparison.
+The full original pgrust SQL-parser target now passes all 114 native and custom
+JIT tests, including C reference vectors. General function-capacity, environment
+read and checked C-string support remove the subsequent blockers; these changes
+remain experimental pending existing-project edit qualification and performance
+checks. The workspace passes 484 tests per profile, the final exporter passes
+89 per profile, and 119 focused/cache/strict Cargo commands pass. All 4,918 parser
+inputs verify; source and assertions are unchanged.
+[Complete parser support](results/pgrust-parser-support-04/assessment.md).
+Next measure complete parser edit/build/test commands with explicit matched
+incremental controls, preserving pgrust's other profile choices.
 The actual-emitter local-value census is a separate next optimization candidate.
 The automatic tool cache now includes its selected toolchain identifier: the
 retained regression fails before the fix, and 123 runnable root tests pass after

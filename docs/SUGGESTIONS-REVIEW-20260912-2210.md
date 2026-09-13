@@ -163,3 +163,11 @@ Evidence: [complete composition](../results/memory-lookup-complete-01/assessment
 [binary identity](../results/memory-lookup-main-identity-01/summary.json),
 [retained driver failure](../results/memory-lookup-main-projects-01-failure/summary.json),
 [revised qualification](../benchmarks/experiments/memory-lookup-main/QUALIFICATION.md).
+
+The complete original pgrust parser now passes all 114 tests in native and custom
+execution, including its reference vectors. The general FnOnce, capacity and
+environment/C-string work broadens compatibility without filtering assertions.
+This advances the coverage constraint behind suggestions 4.5/5.2. Next qualify
+existing edits and compare full parser changed-source commands with matched
+incremental settings; support-build durations are not speedup evidence.
+[Parser coverage proof](../results/pgrust-parser-support-04/assessment.md).
