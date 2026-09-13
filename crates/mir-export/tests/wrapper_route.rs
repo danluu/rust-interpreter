@@ -2,7 +2,7 @@
 #[path = "../src/wrapper_route.rs"]
 mod wrapper_route;
 
-use wrapper_route::{Environment, Route, route};
+use wrapper_route::{BorrowckCacheMode, Environment, Route, route};
 
 fn selected() -> Environment {
     Environment {
@@ -205,4 +205,112 @@ fn standalone_export_does_not_apply_cargo_transformations() {
     assert!(!route.wrapper);
     assert!(route.export);
     assert_eq!(route.args, args);
+}
+
+#[test]
+fn borrowck_cache_modes_require_explicit_valid_values() {
+    assert_eq!(BorrowckCacheMode::parse(None).unwrap(), BorrowckCacheMode::Off);
+    for (value, expected) in [
+        ("off", BorrowckCacheMode::Off),
+        ("verify", BorrowckCacheMode::Verify),
+        ("reuse", BorrowckCacheMode::Reuse),
+    ] {
+        let env = Environment {
+            borrowck_cache: Some(value.into()),
+            ..Environment::default()
+        };
+        assert_eq!(invoke(&["source.rs"], &env).unwrap().borrowck_cache, expected);
+    }
+    for value in ["", "auto", "Verify", "reuse ", "/some/cache"] {
+        let env = Environment {
+            borrowck_cache: Some(value.into()),
+            ..Environment::default()
+        };
+        // Invalid configuration fails even on a probe or an export selection.
+        assert!(invoke(&["-vV"], &env).err().unwrap().contains("must be off, verify, or reuse"));
+        assert!(invoke(&["source.rs"], &env).is_err());
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn borrowck_cache_rejects_non_unicode_environment_values() {
+    use std::os::unix::ffi::OsStringExt;
+    let env = Environment {
+        borrowck_cache: Some(std::ffi::OsString::from_vec(vec![255])),
+        ..Environment::default()
+    };
+    assert!(invoke(&["source.rs"], &env).is_err());
+}
+
+#[test]
+fn opt_in_routes_all_compilation_units_without_selecting_their_export() {
+    for value in ["verify", "reuse"] {
+        let env = Environment {
+            borrowck_cache: Some(value.into()),
+            ..Environment::default()
+        };
+        for kind in ["lib", "rlib", "bin", "proc-macro", "cdylib"] {
+            let route = invoke(&["--crate-type", kind, "source.rs"], &env).unwrap();
+            assert!(!route.export);
+            assert!(route.requires_exporter(), "{value}: {kind}");
+        }
+        for input in ["-", "source", "path with spaces.rs", "@compiler-args"] {
+            let route = invoke(&[input], &env).unwrap();
+            assert!(!route.export);
+            assert!(route.requires_exporter(), "{value}: {input}");
+        }
+    }
+    for value in [None, Some("off")] {
+        let env = Environment {
+            borrowck_cache: value.map(Into::into),
+            ..Environment::default()
+        };
+        assert!(!invoke(&["source.rs"], &env).unwrap().requires_exporter());
+    }
+    assert!(invoke(&["--crate-type", "lib", "source.rs"], &selected()).unwrap().requires_exporter());
+}
+
+#[test]
+fn opt_in_keeps_known_rustc_metadata_probes_on_the_light_route() {
+    let env = Environment {
+        borrowck_cache: Some("reuse".into()),
+        ..Environment::default()
+    };
+    for extra in [
+        &["-vV"][..],
+        &["--version"],
+        &["--print", "cfg"],
+        &["--print=sysroot"],
+        &["-", "--crate-type", "bin", "--print=file-names", "--print=sysroot", "--print=split-debuginfo", "--print=crate-name", "--print=cfg"],
+    ] {
+        let route = invoke(extra, &env).unwrap();
+        assert!(!route.export);
+        assert!(!route.requires_exporter(), "{extra:?}");
+    }
+}
+
+#[test]
+fn compilation_outputs_and_ambiguous_queries_keep_requested_callbacks() {
+    let env = Environment {
+        borrowck_cache: Some("verify".into()),
+        ..Environment::default()
+    };
+    for extra in [
+        &["source.rs", "--emit=metadata", "--print=cfg"][..],
+        &["source.rs", "--emit", "link", "--print", "cfg"],
+        &["source.rs", "--print=link-args"],
+        &["source.rs", "--print=native-static-libs"],
+        &["--print=cfg", "--print=unknown"],
+        &["--print=cfg", "@compiler-args"],
+        &["source.rs", "--print=cfg"],
+        &["--out-dir", "--print=cfg", "source.rs"],
+        &["--sysroot", "--print=cfg", "source.rs"],
+        &["--", "--print=cfg"],
+        &["--print"],
+    ] {
+        let route = invoke(extra, &env).unwrap();
+        assert!(!route.export);
+        assert!(route.requires_exporter(), "{extra:?}");
+    }
 }

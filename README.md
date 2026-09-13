@@ -86,6 +86,12 @@ this example. The five-case comparison passes all726 commands: token improves
 The rebuilt full tool passes428 Rust tests per profile,104 harness tests and
 263 cache/Cargo/project commands. [Integration and exact identities](results/memory-lookup-main-complete-01/assessment.md).
 
+`--borrowck-cache verify|reuse` experimentally reconstructs successful empty
+borrow-check results when rustc proves their dependencies unchanged. It needs
+no application edits and preserves ordinary checking. The default is `off`;
+no Nushell build-time improvement is established. See the
+[mechanism, correctness coverage and limits](docs/BORROWCK-REUSE.md).
+
 Use `--workspace-cache-root EXISTING_DIRECTORY` to place project Cargo outputs
 and bytecode sidecars on an existing scratch disk. The launcher creates a
 marked namespace for this checkout, then separates tool builds and

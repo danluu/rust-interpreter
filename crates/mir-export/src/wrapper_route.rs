@@ -1,7 +1,28 @@
 //! Cargo invocation routing shared by the standalone exporter and light wrapper.
 //! Keep this module independent of rustc_driver and of exporter dependencies.
-use std::ffi::OsString;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum BorrowckCacheMode {
+    #[default]
+    Off,
+    Verify,
+    Reuse,
+}
+
+impl BorrowckCacheMode {
+    /// An explicit input keeps environment validation identical in both tools
+    /// and lets route tests avoid mutating the process environment.
+    pub fn parse(value: Option<&OsStr>) -> Result<Self, String> {
+        match value.map(OsStr::to_str) {
+            None | Some(Some("off")) => Ok(Self::Off),
+            Some(Some("verify")) => Ok(Self::Verify),
+            Some(Some("reuse")) => Ok(Self::Reuse),
+            _ => Err("RUST_INTERP_BORROWCK_CACHE must be off, verify, or reuse".into()),
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct Environment {
@@ -14,6 +35,7 @@ pub struct Environment {
     pub package: Option<String>,
     pub primary_package: bool,
     pub manifest: Option<OsString>,
+    pub borrowck_cache: Option<OsString>,
 }
 
 impl Environment {
@@ -28,6 +50,7 @@ impl Environment {
             package: std::env::var("CARGO_PKG_NAME").ok(),
             primary_package: std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some(),
             manifest: std::env::var_os("CARGO_MANIFEST_DIR"),
+            borrowck_cache: std::env::var_os("RUST_INTERP_BORROWCK_CACHE"),
         }
     }
 }
@@ -37,9 +60,65 @@ pub struct Route {
     pub args: Vec<String>,
     pub wrapper: bool,
     pub export: bool,
+    pub borrowck_cache: BorrowckCacheMode,
+}
+
+impl Route {
+    pub fn requires_exporter(&self) -> bool {
+        self.export || borrowck_driver_required(&self.args, self.borrowck_cache)
+    }
+}
+
+/// Only bypass the driver for a narrow grammar of Cargo's metadata probes.
+/// Cargo can include stdin and a crate name in these queries. Unknown options,
+/// source paths and response files conservatively retain cache callbacks.
+pub fn borrowck_driver_required(args: &[String], mode: BorrowckCacheMode) -> bool {
+    if mode == BorrowckCacheMode::Off {
+        return false;
+    }
+    // Keep this list deliberately narrow. In particular, link-args and
+    // native-static-libs are compilation outputs, not informational probes.
+    let metadata_print = |value: &str| {
+        matches!(value, "cfg" | "sysroot" | "target-list" | "target-libdir" |
+            "file-names" | "crate-name" | "split-debuginfo" | "host-tuple")
+    };
+    let mut args = args.iter().skip(1);
+    let mut query = false;
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "-vV" | "-V" | "--version" | "-h" | "--help" => query = true,
+            "--print" => {
+                if !args.next().is_some_and(|value| metadata_print(value)) {
+                    return true;
+                }
+                query = true;
+            }
+            "--crate-name" | "--crate-type" | "--target" | "--sysroot" => {
+                // Consume values before scanning for queries. An option value
+                // resembling --print must never suppress a real compilation.
+                if args.next().is_none() {
+                    return true;
+                }
+            }
+            "-" | "-Zalways-encode-mir=yes" => {}
+            _ => {
+                if let Some(value) = arg.strip_prefix("--print=") {
+                    if !metadata_print(value) {
+                        return true;
+                    }
+                    query = true;
+                } else if !["--crate-name=", "--crate-type=", "--target=", "--sysroot="]
+                    .iter().any(|prefix| arg.starts_with(prefix)) {
+                    return true;
+                }
+            }
+        }
+    }
+    !query
 }
 
 pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> {
+    let borrowck_cache = BorrowckCacheMode::parse(env.borrowck_cache.as_deref())?;
     // Preserve the existing wrapper convention, including standalone exports.
     let wrapper = args
         .get(1)
@@ -107,5 +186,6 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
         args,
         wrapper,
         export,
+        borrowck_cache,
     })
 }

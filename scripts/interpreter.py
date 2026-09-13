@@ -246,6 +246,7 @@ def _main(resources):
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
     parser.add_argument('--function-cache',choices=['off','reuse','auto'],default='off',help='experimental compiler-validated function cache: reuse requires incremental tracking; auto uses full lowering when tracking is disabled; strict checking always runs (default: off)')
+    parser.add_argument('--borrowck-cache',choices=['off','verify','reuse'],default='off',help='experimental compiler-validated borrow-check query cache for all compiled Cargo units; verify compares cached results while checking; reuse retains strict checking (default: off)')
     parser.add_argument('--workspace-cache-root',type=Path,help='existing cache parent; create a separate namespace for this checkout (default: .work/interpreter-workspaces)')
     parser.add_argument('--inline-leaves',action='store_true',help='experimental bounded bytecode leaf inlining at export; intended for JIT comparisons')
     parser.add_argument('--trap-unsupported-calls',action='store_true',help='experimental: stop execution at unavailable direct foreign calls and catch_unwind intrinsics instead of rejecting their export')
@@ -334,6 +335,7 @@ def _main(resources):
     stage=time.perf_counter()
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
     if args.function_cache!='off':require_export_option(tools,key,'function-cache-'+args.function_cache)
+    if args.borrowck_cache!='off':require_export_option(tools,key,'borrowck-cache')
     if listing:require_export_option(tools,key,'list-tests')
     if filtered:require_export_option(tools,key,'filtered-tests')
     if args.inline_leaves:require_export_option(tools,key,'inline-leaves')
@@ -343,6 +345,7 @@ def _main(resources):
     timings['tools_seconds']=time.perf_counter()-stage
     if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
     if stats:timings['function_cache']=args.function_cache
+    if stats:timings['borrowck_cache']=args.borrowck_cache
     std=None
     if args.std_mir:
         from std_mir import checked_std_mir
@@ -359,6 +362,11 @@ def _main(resources):
     if args.test_target is not None:identity_input+='\0integration-targets-v1'
     if std:identity_input+='\0std-mir:'+std[2]
     if args.cache_namespace:identity_input+='\0'+args.cache_namespace
+    # Keep mode changes from reusing Cargo freshness or incremental artifacts
+    # generated without the requested compiler callbacks. The default identity
+    # remains compatible with existing workspaces.
+    if args.borrowck_cache!='off':
+        identity_input='borrowck-cache-v1\0'+args.borrowck_cache+'\0'+identity_input
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
     if args.workspace_cache_root is None:
         work=cache_base/key/identity
@@ -428,8 +436,10 @@ def _main(resources):
     if stats:cargo_cpu_started=cpu_usage(resource.RUSAGE_CHILDREN)
     stage=time.perf_counter()
     cargo_env=env
-    if args.function_cache!='off':
-        cargo_env=dict(env,RUST_INTERP_FUNCTION_CACHE=args.function_cache)
+    if args.function_cache!='off' or args.borrowck_cache!='off':
+        cargo_env=env.copy()
+        if args.function_cache!='off':cargo_env['RUST_INTERP_FUNCTION_CACHE']=args.function_cache
+        if args.borrowck_cache!='off':cargo_env['RUST_INTERP_BORROWCK_CACHE']=args.borrowck_cache
     result=subprocess.run(command,cwd=manifest.parent,env=cargo_env,stdout=subprocess.PIPE,text=True)
     timings['cargo_seconds']=time.perf_counter()-stage
     if stats:timings['cargo_cpu']=cpu_since(resource.RUSAGE_CHILDREN,cargo_cpu_started)
