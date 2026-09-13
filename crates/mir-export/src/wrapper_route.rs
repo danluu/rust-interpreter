@@ -5,6 +5,13 @@ use std::path::{Path, PathBuf};
 #[path = "host_proc_macro.rs"]
 mod host_proc_macro;
 
+pub fn frontend_worker_capability() -> String {
+    format!(
+        r#"{{"schema_version":1,"policy":"frontend-workers-v1","counts":[1,2],"flag":"-Zthreads","compiler_commit":"{}"}}"#,
+        option_env!("RUST_INTERP_RUSTC_COMMIT").unwrap_or("unknown"),
+    )
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum BorrowckCacheMode {
     #[default]
@@ -43,6 +50,8 @@ pub struct Environment {
     pub stable_mono_cgu_partitioning: Option<OsString>,
     pub frontend_workers: Option<OsString>,
     pub host_proc_macro_opt: Option<OsString>,
+    pub frontend_compiler: Option<OsString>,
+    pub conflicting_frontend_policy: bool,
 }
 
 impl Environment {
@@ -63,6 +72,14 @@ impl Environment {
             stable_mono_cgu_partitioning: std::env::var_os("RUST_INTERP_STABLE_MONO_CGU_PARTITIONING"),
             frontend_workers: std::env::var_os("RUST_INTERP_FRONTEND_WORKERS"),
             host_proc_macro_opt: std::env::var_os("RUST_INTERP_HOST_PROC_MACRO_OPT"),
+            frontend_compiler: option_env!("RUST_INTERP_SYSROOT").map(|root| {
+                Path::new(root)
+                    .join(format!("bin/rustc{}", std::env::consts::EXE_SUFFIX))
+                    .into_os_string()
+            }),
+            conflicting_frontend_policy: std::env::var_os("RUST_INTERP_COMPILER_RUSTC").is_some()
+                || ["RUST_INTERP_STABLE_CGU_PARTITIONING", "RUST_INTERP_HOST_PROC_MACRO_OPT"]
+                    .iter().any(|name| std::env::var_os(name).is_some_and(|value| value != "off")),
         }
     }
 }
@@ -229,6 +246,37 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
             }
         }
         _ => return Err("custom compiler and stable-CGU policy require a complete Cargo wrapper invocation".into()),
+    }
+    if let Some(workers) = &env.frontend_workers {
+        if !matches!(workers.to_str(), Some("1" | "2")) {
+            return Err("RUST_INTERP_FRONTEND_WORKERS must be 1 or 2".into());
+        }
+        if !wrapper || env.frontend_compiler.as_deref() != Some(OsStr::new(&args[0])) {
+            return Err("frontend workers require Cargo's pinned rustc executable".into());
+        }
+        if env.conflicting_frontend_policy || env.compiler_rustc.is_some()
+            || env.stable_mono_cgu_partitioning.is_some() || host_proc_macro_opt
+            || env.stable_cgu_partitioning.as_deref().is_some_and(|p| p != OsStr::new("off"))
+            || borrowck_cache != BorrowckCacheMode::Off {
+            return Err("frontend workers cannot be combined with another compiler, macro, or borrowck policy".into());
+        }
+        for (index, arg) in args.iter().enumerate().skip(1) {
+            let zoption = if arg == "-Z" {
+                args.get(index + 1).map(String::as_str)
+            } else {
+                arg.strip_prefix("-Z")
+            };
+            let zname = zoption.map(|value| value.split('=').next().unwrap().replace('_', "-"));
+            if arg.starts_with('@') || arg == "--jobs" || arg.starts_with("--jobs=")
+                || arg.starts_with("-j") || arg == "--jobs-frontend"
+                || arg.starts_with("--jobs-frontend=")
+                || matches!(zname.as_deref(), Some("threads" | "stable-cgu-partitioning"
+                    | "stable-mono-cgu-partitioning" | "proc-macro-execution-strategy" | "cache-proc-macros"))
+            {
+                return Err("frontend worker policy conflicts with a compiler flag or response file".into());
+            }
+        }
+        args.push(format!("-Zthreads={}", workers.to_str().unwrap()));
     }
     if wrapper && let Some(sysroot) = &env.std_sysroot {
         let value = |flag: &str| {

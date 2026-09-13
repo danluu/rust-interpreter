@@ -14,6 +14,10 @@ fn main() -> ExitCode {
         println!("stable-mono-cgu-routing-v1\n{}", env!("RUST_INTERP_SYSROOT"));
         return ExitCode::SUCCESS;
     }
+    if original.len() == 2 && original[1] == "--rust-interp-frontend-worker-capability" {
+        println!("{}", wrapper_route::frontend_worker_capability());
+        return ExitCode::SUCCESS;
+    }
     let route = match wrapper_route::route(original.clone(), &wrapper_route::Environment::read()) {
         Ok(route) if route.wrapper => route,
         Ok(_) => {

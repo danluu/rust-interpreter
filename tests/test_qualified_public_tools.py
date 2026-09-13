@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import qualified_public_tools as q
 
 
-def archive(change=None, std_change=None):
+def archive(change=None, std_change=None, *, worker=False):
     """A complete tiny publication, independent of any installed compiler."""
     data = {}
     def put(name, value):
@@ -36,8 +36,12 @@ def archive(change=None, std_change=None):
     platform = dict(system='Darwin', release='fixture', version='fixture', machine='arm64')
     capability = dict(schema_version=1, bytecode_version=5, compiler_sysroot=sysroot,
                       export_options=['host-proc-macro-opt-v1'])
+    if worker:
+        from frontend_workers import CAPABILITY
+        capability['frontend_workers'] = CAPABILITY
+        capability['export_options'] = ['frontend-workers-v1']
     labels = ['public-rustc-identity', 'public-cargo-identity', 'rust-workspace-tests', 'release-tools',
-              'launcher-contracts', 'screen-contracts', 'capabilities', 'real-histories']
+              'launcher-contracts', 'screen-contracts', 'capabilities', 'wrapper-capabilities' if worker else 'real-histories']
     commands, planned, results = [], [], {}
     work = owner + '/.work/build'; target = work + '/target'
     common = ['--release', '--locked', '--offline', '--jobs', '2', '--target-dir', target]
@@ -46,9 +50,11 @@ def archive(change=None, std_change=None):
         if label == 'rust-workspace-tests':args = [sysroot + '/bin/cargo', 'test', *common, '--workspace']
         if label == 'release-tools':args = [sysroot + '/bin/cargo', 'build', *common,
             '-p', 'rust-interp-bytecode', '-p', 'rust-interp-mir-export', '--bins']
+        if label == 'wrapper-capabilities':args = [target + '/release/rust-interp-rustc-wrapper', '--rust-interp-frontend-worker-capability']
         if label == 'capabilities':args = [target + '/release/rust-interp-mir-export', '--rust-interp-capabilities']
         patterns = {'launcher-contracts': 'test_host_proc_macro_launcher.py',
                     'screen-contracts': 'test_strict_warm*screen.py', 'real-histories': 'test_host_proc_macro_native.py'}
+        if worker:patterns = {'launcher-contracts': 'test_frontend_workers.py', 'screen-contracts': 'test_frontend_worker_screen.py'}
         if label in patterns:args = ['/python', '-m', 'unittest', 'discover', '-s', 'tests', '-p', patterns[label], '-v']
         expected = dict(label=label, argv=args, cwd=owner, receipt=work + '/' + label + '-process.json')
         if label == 'real-histories':
@@ -61,13 +67,14 @@ def archive(change=None, std_change=None):
         stdout, stderr = b'', b''
         if label == 'public-rustc-identity':stdout = compiler_version.encode()
         elif label == 'public-cargo-identity':stdout = b'cargo fixture\n'
+        elif label == 'wrapper-capabilities':stdout = json.dumps(CAPABILITY).encode() + b'\n'
         elif label == 'capabilities':stdout = json.dumps(capability).encode() + b'\n'
         elif label == 'rust-workspace-tests':stdout = b'test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured;\n'
         elif label in ('launcher-contracts', 'screen-contracts', 'real-histories'):
-            count = 24 if label == 'screen-contracts' else 3
+            count = (8 if label == 'screen-contracts' else 7) if worker else (24 if label == 'screen-contracts' else 3)
             stderr = f'Ran {count} tests in 0.001s\n\nOK\n'.encode()
         if label in ('rust-workspace-tests', 'launcher-contracts', 'screen-contracts', 'real-histories'):
-            results[label] = q.suite_result(label, stdout.decode(), stderr.decode())
+            results[label] = q.suite_result(label, stdout.decode(), stderr.decode(), q.WORKER_BUILD_POLICY if worker else None)
         names = dict(receipt='provenance/receipts/' + label + '.json',
                      stdout='provenance/logs/' + label + '.stdout', stderr='provenance/logs/' + label + '.stderr')
         put(names['receipt'], receipt); put(names['stdout'], stdout); put(names['stderr'], stderr)
@@ -86,6 +93,7 @@ def archive(change=None, std_change=None):
         harness=harness, publication=dict(contract=contract, contract_sha256=harness[contract]),
         clean_environment=dict(overrides=env), commands=planned,
         shared_std=dict(path=std_path + '/ready.json', key=std_key, identity=std_identity, sha256=ready_sha))
+    if worker:plan['qualification_policy'] = q.WORKER_BUILD_POLICY
     compiler = dict(toolchain=q.TOOLCHAIN, target=std_identity['target'], source_revision=q.COMPILER_REVISION,
         sysroot=sysroot, rustc_path=env['RUSTC'], rustc_sha256=q.sha(b'fixture'),
         version_stdout_sha256=q.sha(compiler_version.encode()), input_inventory_sha256=
@@ -116,16 +124,19 @@ def archive(change=None, std_change=None):
         capability_stdout_sha256=raw_capability_sha, shared_std=dict(key=std_key, identity=std_identity,
             ready_payload='provenance/std-ready.json', ready_sha256=ready_sha, sysroot=std_path + '/sysroot',
             files=std_files))
+    if worker:correctness.update(qualification_policy=q.WORKER_BUILD_POLICY, qualification_scope='public-build-only')
     composition = dict(schema_version=1, kind=q.KIND, source=dict(revision=q.SOURCE_REVISION,
         files=files, ordered_paths=list(files), source_input_key=source_key), public_compiler=compiler,
         public_cargo=cargo, build=build, libraries=library_binding, binaries=binaries,
         capability_stdout_sha256=raw_capability_sha,
         correctness_receipt_sha256=put('provenance/correctness.json', correctness))
+    if worker:composition['qualification_policy'] = q.WORKER_BUILD_POLICY
     if change:change(composition, data)
     composition['payloads'] = {p: q.sha(b) for p, b in data.items()}
     key = q.digest(composition); tool = Path('/owned/screen/.work/interpreter-tools') / key
     put('source.json', dict(tool_key=key, composition=composition))
     put('ready.json', binaries)
+    if worker:capability['frontend_worker_wrapper'] = dict(sha256=binaries['rust-interp-rustc-wrapper'], capability=CAPABILITY)
     put('capabilities.json', dict(capability, tool_key=key, exporter_sha256=binaries['rust-interp-mir-export']))
     put('publication.json', dict(schema_version=1, status='published', owner='/owned/screen', directory=str(tool),
         tool_key=key, binaries={name: file(str(tool / name), name.encode()) for name in q.BINARIES}))

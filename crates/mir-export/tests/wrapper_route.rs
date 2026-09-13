@@ -4,6 +4,83 @@ mod wrapper_route;
 
 use wrapper_route::{BorrowckCacheMode, Environment, Route, route};
 
+fn frontend_env(workers: &str) -> Environment {
+    Environment {
+        frontend_workers: Some(workers.into()),
+        frontend_compiler: Some("/toolchain/bin/rustc".into()),
+        ..selected()
+    }
+}
+
+#[test]
+fn frontend_workers_reach_every_cargo_role_without_changing_backend_flags() {
+    for workers in ["1", "2"] {
+        for kind in ["rlib", "bin", "proc-macro", "cdylib"] {
+            for guest in [false, true] {
+                let mut flags = vec!["--crate-type", kind, "--jobs-backend=2", "--jobs-linker=1",
+                    "-Copt-level=1", "-Ccodegen-units=16", "source.rs"];
+                if guest { flags.push("--target=aarch64-apple-darwin"); }
+                let result = invoke(&flags, &frontend_env(workers)).unwrap();
+                assert_eq!(&result.args[3..3 + flags.len()], flags);
+                assert_eq!(result.args.iter().filter(|arg| arg.starts_with("-Zthreads=")).count(), 1);
+                assert!(result.args.contains(&format!("-Zthreads={workers}")));
+                assert_eq!(result.export, kind == "rlib");
+            }
+        }
+    }
+}
+
+#[test]
+fn frontend_policy_rejects_conflicting_flags_response_files_and_unpinned_routes() {
+    for flags in [
+        &["-Zthreads=1"][..], &["-Z", "threads=2"], &["--jobs-frontend=2"],
+        &["--jobs-frontend", "1"], &["--jobs=2"], &["-j2"], &["-j", "2"],
+        &["@arguments"], &["-Zstable-cgu-partitioning=no"],
+        &["-Zstable-mono-cgu-partitioning=yes"], &["-Z", "proc_macro_execution_strategy=cross-thread"],
+        &["-Zcache-proc-macros=yes"],
+    ] {
+        assert!(invoke(flags, &frontend_env("2")).is_err(), "{flags:?}");
+    }
+    for workers in ["", "0", "3", "sync", "01"] {
+        assert!(invoke(&["-vV"], &frontend_env(workers)).is_err());
+    }
+    let mut env = frontend_env("2");
+    env.frontend_compiler = Some("/other/rustc".into());
+    assert!(invoke(&["source.rs"], &env).is_err());
+    assert!(route(vec!["exporter".into(), "source.rs".into()], &frontend_env("2")).is_err());
+}
+
+#[test]
+fn frontend_policy_preserves_selection_and_requires_no_exporter_for_native_work() {
+    let mut env = frontend_env("2");
+    env.primary_package = false;
+    for flags in [&["-vV"][..], &["--crate-type", "bin", "source.rs"],
+        &["--crate-type", "rlib", "source.rs"]] {
+        let result = invoke(flags, &env).unwrap();
+        assert!(!result.export);
+        assert!(!result.requires_exporter());
+    }
+    let mut ordinary = frontend_env("2");
+    ordinary.primary_package = false;
+    ordinary.frontend_workers = None;
+    for flags in [&["-vV"][..], &["--print=sysroot"],
+        &["-", "--crate-type", "rlib", "--print=file-names", "--print=cfg"]] {
+        let baseline = invoke(flags, &ordinary).unwrap();
+        let mut result = invoke(flags, &env).unwrap();
+        result.args.retain(|arg| arg != "-Zthreads=2");
+        assert_eq!(result.args, baseline.args, "metadata probe MIR policy changed");
+        assert!(!result.requires_exporter());
+    }
+    env.conflicting_frontend_policy = true;
+    assert!(invoke(&["-vV"], &env).is_err());
+    env.conflicting_frontend_policy = false;
+    env.borrowck_cache = Some("verify".into());
+    assert!(invoke(&["source.rs"], &env).is_err());
+    env.borrowck_cache = None;
+    env.stable_mono_cgu_partitioning = Some("off".into());
+    assert!(invoke(&["source.rs"], &env).is_err());
+}
+
 fn selected() -> Environment {
     Environment {
         export_package: Some("example".into()),
