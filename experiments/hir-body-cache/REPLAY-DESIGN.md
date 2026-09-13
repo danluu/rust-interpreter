@@ -3,7 +3,18 @@
 Design only, against typed capture checkpoint `2e60d5fb` and exact compiler
 `58e1e1f5311f4424ea81def4763081f6da62d9b3`. No replay implementation or workload
 is added by this document. The historical journal checkpoint's actual compiler
-check remains a separate prerequisite; its result cannot qualify this new codec.
+check remains separate: its first attempt failed on three borrowed-key API
+errors, now corrected in the prepared-value checkpoint. That failed result
+cannot qualify this new codec or a future replay implementation.
+
+The later capture-side `prepared.rs` checkpoint implements an owned typed-value
+conversion prerequisite: it revalidates the supplied tree against the exact
+current input, checks current S/E/prefix/local/resolution bindings, and prepares
+actual pinned enum/ID/numeric values and checked absolute span recipes without
+HIR/symbol/span interning. Its private `PreparedBody` token is intentionally
+weaker than the `ReadyHit` below. It owns no exclusive context and provides no
+vacancy/effect preflight, current-span materializer or commit. Both saved and
+cold evidence must pass this conversion; every invocation still lowers stock.
 
 ## Proposed API and miss boundary
 
@@ -63,15 +74,17 @@ frame's pointer comparisons still check the implementation during capture;
 they are not a cross-session key. Allowed-feature arrays must be covered by
 tracked options or normalized by stable content, never by Arc pointer value.
 Disambiguator/new-definition/override/impl-trait/lint/move state keeps its current
-conservative guard. There is no permission here to weaken one to a length check.
+conservative guard. Exact state is required; a length check is insufficient.
 
 ## Crate features and ambient-state audit
 
-The current capture key is **not sufficient as a future replay entry key**.
-`Options::dep_tracking_hash(false)` covers command-line settings, but active
+The journal/tree checkpoint `2e60d5fb` omitted active crate features. The new
+`entry.rs` capture-key component addresses that part of this audit; a complete
+future replay entry proof remains outstanding. `Options::dep_tracking_hash(false)`
+covers command-line settings, but active
 `#![feature(...)]` values come from current crate attributes and are fed into
 `features_query` separately (interface/passes.rs1020; expand/config.rs47).
-Before a hit path, add a versioned normalized entry record containing:
+The versioned normalized feature/array entry record now contains:
 
 - Language features from `tcx.features().enabled_lang_features()`: sorted
   `(gate_name.as_str(), stable_since.map(as_str))` records, preserving duplicates.
@@ -123,7 +136,8 @@ manufacture a scope fingerprint. `index_ast` forces early lints before stealing
 AST/resolver inputs (lib.rs583–587); interface/passes.rs1133/1225/1245 retains
 delayed-lint emission, late lint checking and expectation checking afterward.
 
-Tiny additional planned controls, all with byte-identical function bodies:
+Additional controls, all with byte-identical function bodies (crate-feature,
+crate-lint and CLI variants now prepared in run-make; module variant planned):
 
 1. Cold/repeated anchor, then add/remove crate `#![feature(async_fn_track_caller)]`;
    require the normalized language-feature key and allowed-feature-array input
@@ -138,8 +152,8 @@ Tiny additional planned controls, all with byte-identical function bodies:
    Capture stderr without the optional cache-info logs. Also switch `-A` to
    `-D unused_variables` to require the existing session-option key to miss.
 
-These are planned invalidation/presentation controls, not executed tests or an
-assertion that the current capture checkpoint already serializes this entry.
+These invalidation/presentation controls are unrun. The capture record now binds
+features/allow arrays; it does not yet provide the complete `ReadyHit` contract.
 
 ## Commit effects and materialization
 

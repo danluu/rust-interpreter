@@ -23,7 +23,7 @@ fn success(source: &str, repeated_anchor: bool) {
     assert_eq!(ordinary, run("body_journal_test").stdout_utf8());
     let mode = if repeated_anchor { "same-tree-and-journal-after-stock-lowering" } else { "cold-tree-and-journal-after-stock-lowering" };
     assert!(diagnostics.contains(&format!("[hir-body-capture] anchor {mode}")), "{diagnostics}");
-    assert!(diagnostics.contains("cache_hits=0 body_codec=1 materializer=0"), "{diagnostics}");
+    assert!(diagnostics.contains("cache_hits=0 body_codec=1 prepared_values=1 materializer=0"), "{diagnostics}");
     for name in ["add", "field", "method", "double", "selected", "shadow", "generic",
         "conditional", "array_index", "uninitialized", "raw", "arithmetic", "literals", "unsafe_block"] {
         assert!(["cold-tree-and-journal-after-stock-lowering", "same-tree-and-journal-after-stock-lowering",
@@ -39,6 +39,48 @@ fn records(root: &Path, output: &mut Vec<PathBuf>) {
         else if path.file_name().unwrap().to_string_lossy().starts_with("hir-body-capture-v2-")
             && path.extension().is_some_and(|ext| ext == "json") { output.push(path); }
     }
+}
+
+// No diagnostics are filtered or rewritten. Cache-info probes are separate
+// ordinary compilations so exact JSON comparisons keep their original bytes.
+fn raw_control(source: &str, flags: &[&str], fails: bool) {
+    rfs::write("input.rs", source);
+    let compile = |enabled| {
+        let mut command = compiler(enabled, false);
+        command.arg("--error-format=json");
+        for flag in flags { command.arg(flag); }
+        if fails { command.run_fail().stderr_utf8() } else { command.run().stderr_utf8() }
+    };
+    let ordinary = compile(false);
+    if !fails { run("body_journal_test"); }
+    let candidate = compile(true);
+    assert_eq!(ordinary, candidate);
+    if fails { assert!(candidate.contains("unused_variables"), "{candidate}"); }
+    else { run("body_journal_test"); }
+}
+
+fn entry_context_controls() {
+    // Owner source stays byte-identical as language and library declarations
+    // change outside it. The source path and ordinary compiler flags stay fixed.
+    let anchor = "fn anchor() -> u32 { 3 }\nfn main() { assert_eq!(anchor(), 3); }\n";
+    raw_control(anchor, &[], false);
+    for feature in ["async_fn_track_caller", "iter_next_chunk"] {
+        let source = format!("#![feature({feature})]\n{anchor}");
+        rfs::write("input.rs", &source);
+        // Neither new feature state has a previous matching record.
+        let info = compiler(true, true).run().stderr_utf8();
+        assert!(info.contains("[hir-body-capture] anchor cold-tree-and-journal-after-stock-lowering"), "{info}");
+        run("body_journal_test");
+        raw_control(&source, &[], false);
+        raw_control(anchor, &[], false);
+    }
+    let body = "fn anchor() -> u32 { let unused = 1; 0 }\nfn main() { assert_eq!(anchor(), 0); }\n";
+    raw_control(&format!("#![allow(unused_variables)]\n{body}"), &[], false);
+    raw_control(&format!("#![deny(unused_variables)]\n{body}"), &[], true);
+    raw_control(&format!("#![allow(unused_variables)]\n{body}"), &[], false);
+    raw_control(body, &["-A", "unused_variables"], false);
+    raw_control(body, &["-D", "unused_variables"], true);
+    raw_control(body, &["-A", "unused_variables"], false);
 }
 
 fn main() {
@@ -69,4 +111,7 @@ fn main() {
     for path in paths { rfs::write(path, b"{\"truncated\":"); }
     success(&original.replace("x + 3", "x + 29"), false);
     success(&original, true);
+    entry_context_controls();
+    rfs::write("input.rs", &original);
+    compiler(false, false).run(); compiler(true, false).run();
 }

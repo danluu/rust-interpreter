@@ -18,8 +18,26 @@ archive, copied into the new source's own cache. Keep the production bootstrap
 configuration byte-identical: two jobs, assertions off, source remapping on,
 no downloaded compiler and no bootstrap submodule updates. Cargo runs offline
 with the locked dependency graph. The new serde/serde_json edges use versions
-already present in that graph. Missing archives or dependencies fail closed;
-this plan does not authorize downloads.
+already present in that graph. One exact cache-path mapping drives copying,
+plan metadata, and validation of all six copied seeds immediately before each
+`./x` command and after completion. Missing, non-file, symlinked (including
+ancestor directories), or hash-mismatched archives fail before bootstrap starts.
+The original archives are independently checked at each stage too.
+
+`RUSTUP_DIST_SERVER=file:///dev/null` constrains **distribution** fallback only.
+Pinned Python bootstrap reads this variable at `bootstrap.py:596` and delegates
+a missing component to curl with that local URL. Pinned Rust bootstrap reads it
+at `core/download.rs:837`; its downloader rejects `file` at line 1028 before the
+HTTP path. This intentionally makes an unexpected distribution request fail,
+rather than replacing any required component or changing build flags.
+
+CI LLVM uses the baked `src/stage0` artifact server directly
+(`core/download.rs:371-392`) and has no supported environment server override.
+The matching seeded CI archive prevents its ordinary download path; this driver
+is **not a complete network sandbox**, nor a protection against concurrent cache
+mutation after preflight. No bootstrap/compiler source or production bootstrap
+configuration is changed. Downloads remain outside the authorized check scope;
+missing Cargo dependencies fail through `CARGO_NET_OFFLINE=true`.
 
 The first two actual commands are:
 

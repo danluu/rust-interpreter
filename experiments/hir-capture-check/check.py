@@ -23,6 +23,10 @@ CHECKPOINT = '3f3e9c28704a7866f72ad0974336d79671714ae9'
 BACKTRACE = 'd902726a1dcdc1e1c66f73d1162181b5423c645b'
 UPSTREAM = 'cea272fa356e94bd2ee2cadf376630aa0683867a'
 HOST = 'aarch64-apple-darwin'
+# Both stage0 downloaders honor this for distribution components. Python
+# attempts a local file path; Rust rejects the unsupported protocol before HTTP.
+# CI LLVM uses a separate, non-overridable server in pinned src/stage0.
+DIST_SERVER = 'file:///dev/null'
 LLVM = Path('/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-setup-01/rust-dev-nightly-aarch64-apple-darwin.tar.xz')
 ARCHIVES = {
     str(DONOR / 'build/cache/2026-08-30/rustc-beta-aarch64-apple-darwin.tar.xz'):
@@ -57,8 +61,33 @@ def environment():
                'CARGO_HOME', 'RUSTUP_HOME', 'SDKROOT', 'DEVELOPER_DIR', 'MACOSX_DEPLOYMENT_TARGET']
     env = {k: os.environ[k] for k in allowed if k in os.environ}
     env.update(CARGO_BUILD_JOBS='2', CARGO_INCREMENTAL='0', RUST_TEST_THREADS='2',
-               CARGO_NET_OFFLINE='true', CARGO_TERM_COLOR='never')
+               CARGO_NET_OFFLINE='true', CARGO_TERM_COLOR='never', RUSTUP_DIST_SERVER=DIST_SERVER)
     return env
+
+
+def copied_archives():
+    result = {}
+    for original, expected in ARCHIVES.items():
+        archive = Path(original)
+        key = 'llvm-' + HOST + '-' + UPSTREAM + '-false' if archive == LLVM else '2026-08-30'
+        destination = SOURCE / 'build/cache' / key / archive.name
+        require(str(destination) not in result, 'duplicate copied archive destination')
+        result[str(destination)] = dict(source=original, sha256=expected)
+    return result
+
+
+def verify_archives(archives):
+    for name, expected in archives.items():
+        path = Path(name)
+        require(path.is_absolute() and not path.is_symlink()
+                and not any(parent.is_symlink() for parent in path.parents),
+                'offline archive path contains a symlink or is not absolute: ' + name)
+        require(path.is_file(), 'offline archive missing or not an ordinary file: ' + name)
+        require(sha(path) == expected, 'offline archive content changed: ' + name)
+
+
+def verify_copied_archives():
+    verify_archives({path: row['sha256'] for path, row in copied_archives().items()})
 
 
 def input_paths():
@@ -99,10 +128,10 @@ def frozen_plan():
         donor=str(DONOR), base=BASE, checkpoint=CHECKPOINT, backtrace=BACKTRACE,
         run_id='hir-capture-check-01', stages=STAGES, commands=COMMANDS,
         canonical_lock=str(CANONICAL_LOCK), lock_wait_seconds=600, initial_free_gib=24,
-        running_floor_gib=8, archives=ARCHIVES, environment=environment(),
+        running_floor_gib=8, archives=ARCHIVES, copied_archives=copied_archives(), environment=environment(),
         configurations=configurations(), inputs={str(p): sha(p) for p in sorted(input_paths())},
         python=dict(path=sys.executable, sha256=sha(sys.executable), version=sys.version),
-        downloads='not authorized; exact archives seeded and Cargo offline',
+        downloads='original and copied seeds checked before ./x; Cargo offline; distribution fallback local-only; CI LLVM has no network override',
         scope='compile and actual selected-crate unit tests only; no capture runtime or cache-hit qualification')
 
 
@@ -140,8 +169,7 @@ def execute(args):
         with workload_lock(CANONICAL_LOCK, 600):
             receipt.update(admitted_at=time.time(), free_bytes_before=disk(ROOT, 24 if args.stage == 'prepare' else 8))
             require(plan == frozen_plan(), 'frozen check plan, environment or helper inputs changed')
-            require(all(Path(p).is_file() and not Path(p).is_symlink() and sha(p) == h
-                        for p, h in ARCHIVES.items()), 'required offline archive changed or missing')
+            verify_archives(ARCHIVES)
             completed_path = work / 'completed.json'
             completed = json.loads(completed_path.read_text()) if completed_path.exists() else {}
             require(set(completed) == set(STAGES[:STAGES.index(args.stage)]), 'limited stages out of order')
@@ -151,6 +179,8 @@ def execute(args):
             env = plan['environment']
             def command(argv, cwd=SOURCE):
                 require(plan == frozen_plan(), 'check inputs changed before child')
+                if argv[0] == './x':
+                    verify_copied_archives()
                 directory = out / 'commands' / f'{len(receipt["commands"]):03d}'
                 ref = dict(path=str(directory / 'receipt.json'), command=list(map(str, argv)))
                 receipt['commands'].append(ref)
@@ -189,13 +219,12 @@ def execute(args):
                 command(['git', 'add', '--', *manifest['files']])
                 command(['git', 'commit', '-m', 'Add capture-only HIR body journal checkpoint'])
                 shutil.copy2(HERE / 'inputs/bootstrap.toml', SOURCE / 'bootstrap.toml')
-                for original, expected in ARCHIVES.items():
-                    archive = Path(original)
-                    target = (SOURCE / 'build/cache' / ('llvm-' + HOST + '-' + UPSTREAM + '-false') / archive.name
-                              if archive == LLVM else SOURCE / 'build/cache/2026-08-30' / archive.name)
+                for destination, item in copied_archives().items():
+                    archive = Path(item['source'])
+                    target = Path(destination)
                     target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(archive, target)
-                    require(sha(target) == expected, 'seeded archive differs')
+                verify_copied_archives()
                 state = dict(revision=command(['git', 'rev-parse', 'HEAD'])['stdout'].strip(),
                     files=inventory(command, SOURCE), backtrace_files=inventory(command, SOURCE / 'library/backtrace'),
                     config_sha256=sha(SOURCE / 'bootstrap.toml'), plan_sha256=sha(plan_path))
@@ -217,6 +246,7 @@ def execute(args):
                             'frozen compiler source changed')
                 source_guard()
                 result = command(COMMANDS[args.stage])
+                verify_copied_archives()
                 source_guard()
                 if args.stage == 'unit':
                     text = result['stdout'] + result['stderr']

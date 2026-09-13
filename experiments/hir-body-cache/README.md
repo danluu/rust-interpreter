@@ -3,9 +3,15 @@
 This is an **uncompiled, unrun capture checkpoint**, generated against compiler
 `58e1e1f5311f4424ea81def4763081f6da62d9b3`. The compiler checkout was read only.
 The patch contains a closed typed body wire codec, actual cold HIR capture,
-effect journal and tree/reference validator. **No body materializer or hit path
+effect journal, tree/reference validator and current typed-value preparation.
+**No body materializer or hit path
 exists.** Every invocation executes stock body lowering and ordinary checks.
 The earlier journal-only checkpoint remains immutable at `3f3e9c28`.
+Its separate actual compiler check failed with three `E0308` errors in
+`effects.rs`: the pinned unordered-map sorting API requires a borrowed key.
+This checkpoint corrects all three projections, retaining numeric ordering
+(including a stored numeric key for `NodeId`, which lacks `StableCompare`).
+That historical failure does not qualify this new, still-uncompiled checkpoint.
 
 `capture-body-journals.patch` adds `-Zhir-body-cache-capture`, default off and
 tracked by the normal incremental option hash. It prepares inputs for ordinary
@@ -84,9 +90,27 @@ allocating HIR or interning symbols. These checks prove wire/tree/effect
 closure for a cold stock-lowered result; they do not replace ordinary lowering
 or type checking as the semantic producer. They are not yet a hit admission API.
 
+`prepared.rs` adds an opaque, owned `PreparedBody` token. Its sole constructor
+repeats full tree/order/reference validation against the **exact supplied
+current input**, rather than transferring a `CheckedTree` proof between
+contexts. It checks S/E, the complete parameter/body binding map (including
+unused bindings), current-owner identities and resolution/reference pairs.
+`Current::new` now requires root hygiene and an owner span whose byte length
+equals the exact UTF-8 source. Preparation checks source-base/length and every
+absolute `BytePos` addition, including overflow and UTF-8 boundaries.
+
+The token contains current `HirId`/`Res` values, actual pinned operator/binding/
+borrow/block/type-suffix enums, parsed `u128` integers, exact float spelling and
+owned string/byte data. Spans remain checked current-owner coordinate recipes;
+no `Span`, `Symbol`, `ByteSymbol` or HIR node is interned or allocated. All wire
+fields are converted explicitly. The existing read and cold-capture paths both
+require preparation, then discard the token and retain stock lowering's HIR.
+It is not `ReadyHit`: no exclusive context, effect/vacancy preflight, HIR
+materializer or commit operation exists. No token can construct HIR on its own.
+
 ## Persistence and remaining work
 
-Typed records use a fresh `hir-body-capture-v2-tree-1` namespace inside rustc's
+Typed records use a fresh `hir-body-capture-v2-tree-prepared-1` namespace inside rustc's
 existing locked incremental session, bounded fallible JSON decoding, an exact
 input key/checksum and fresh-inode publication. Old hardlinked sessions remain
 intact. Missing, corrupt, mismatched, oversized or unwritable records fall back.
@@ -95,21 +119,47 @@ version, assertions configuration and generated identity of the entire patch.
 It uses ordinary incremental session compatibility, with immutable compiler
 byte identity audited separately during build/install qualification.
 
+The final record key also binds `entry.rs`'s normalized **actual body-entry**
+context, obtained after ordinary parameter lowering and `Frame::enter` rather
+than from the earlier owner preparation. It sorts the language/library feature
+lists while retaining categories, duplicates and language stabilization text,
+checks their union against the actual enabled set, and preserves every ordered
+symbol name in all eight named `allow_*` arrays. The public list/set accessors
+avoid boolean getters and their `TRACK_FEATURE` side effects. Ordinary context
+construction and feature/lint checks remain unchanged. Empty/oversized or
+inconsistent normalized data rejects capture before reading a sidecar; the
+complete key stays under the existing record budget. This implements the
+feature/array part of the future entry proof, not a `ReadyHit` contract.
+
 Even a valid saved tree is compared only **after another stock lowering**.
 Logs say `same-tree-and-journal-after-stock-lowering` and
-`cache_hits=0 body_codec=1 materializer=0`. Typed captures do not establish hits,
+`cache_hits=0 body_codec=1 prepared_values=1 materializer=0`. These fields identify
+the implemented capture checks, not cache-hit or eligibility counts. Typed captures do not establish hits,
 replay correctness, useful effect/output coverage or a speed improvement.
 
 Prepared source tests cover duplicate/missing/out-of-range/wrong-kind tree IDs,
 journal/tree order disagreement, actual ID sentinel and prefix boundaries,
 current parameter/local/nonlocal resolution binding, UTF-8 span boundaries,
-typed literal domains, lowered assignment operator spelling, and malformed/
+typed literal domains, pinned assignment operator spelling, feature-list category/
+duplicate/version changes, allowed-array order/field association, union/key
+boundaries, and malformed/
 checksum/key/oversized storage with old-hardlink preservation. The run-make
 fixture retains ordinary/edit/restoration, shadowing, fields/methods/traits,
 generic headers, parenthesis/empty syntax, Unicode prefix relocation and raw
-uncalled type/borrow/const/panic diagnostic controls. All are **unrun**.
+uncalled type/borrow/const/panic diagnostic controls. New run-make controls add
+and remove language/library features around the same anchor, require first
+new-feature states to be cold, and compare exact raw current diagnostics for
+crate allow/deny and CLI `-A`/`-D` unused-variable settings. Native cold-state
+controls do not isolate key-field causality; the pure normalization tests cover
+those individual changes. All are **unrun**.
 
-Still required: normalized persistent entry-state proof, complete current-span
+Four additional prepared-value controls cover current coordinate relocation,
+UTF-8/exclusive-end/overflow boundaries, S/source/kind mismatches against an
+earlier checked tree, complete unused-prefix/current-owner/resolution binding,
+all pinned assignment/suffix enums and `u128` overflow. These are also unrun.
+
+Still required: normalized persistent entry-state proof, exclusive current-context
+preflight/commit, complete current-span
 reconstruction and body materialization, prevalidated effect replay through
 ordinary allocation/binding/trait/child/debug semantics, then actual
 cold/hit/edit/error/restoration/corruption/relocation qualification. The current

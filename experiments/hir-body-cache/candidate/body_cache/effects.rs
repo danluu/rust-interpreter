@@ -58,7 +58,7 @@ fn unchanged(lctx: &LoweringContext<'_, '_>) -> Option<Unchanged> {
             hir::MaybeOwner::NonOwner(id) => Child::NonOwner(*id),
         };
         (id.local_def_index.as_u32(), value)
-    }).into_sorted_stable_ord_by_key(|x| x.0).into_iter().collect();
+    }).into_sorted_stable_ord_by_key(|x| &x.0).into_iter().collect();
     let allowed_features = [allow_contracts, allow_try_trait, allow_gen_future, allow_pattern_type,
         allow_async_gen, allow_async_iterator, allow_for_await, allow_async_fn_traits]
         .into_iter().map(|value| Arc::as_ptr(value) as *const () as usize).collect();
@@ -73,7 +73,7 @@ fn unchanged(lctx: &LoweringContext<'_, '_>) -> Option<Unchanged> {
 fn traits(lctx: &LoweringContext<'_, '_>) -> BTreeMap<u32, (usize, usize)> {
     lctx.curr_owner.trait_map.items().map(|(id, value)|
         (id.as_u32(), (value.as_ptr() as usize, value.len())))
-        .into_sorted_stable_ord_by_key(|x| x.0).into_iter().collect()
+        .into_sorted_stable_ord_by_key(|x| &x.0).into_iter().collect()
 }
 
 pub(super) struct Frame {
@@ -93,7 +93,8 @@ impl Frame {
         let bindings = lctx.curr_owner.ident_and_label_to_local_id.clone();
         // Every current binding must belong to the normally lowered parameter
         // prefix. Hidden caller/closure bindings are an unsupported context.
-        for (id, local) in bindings.items().into_sorted_stable_ord_by_key(|x| x.0.as_u32()) {
+        for (_, (id, local)) in bindings.items().map(|(id, local)| (id.as_u32(), (id, local)))
+            .into_sorted_stable_ord_by_key(|x| &x.0) {
             let ordinal = *candidate.ordinals.get(id)?;
             let node = candidate.nodes.get(ordinal as usize)?;
             if node.body || !node.binding || local.as_u32() == 0 || local.as_u32() >= start { return None; }
