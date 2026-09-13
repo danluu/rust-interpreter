@@ -92,7 +92,7 @@ fn native_indirect_full_handles_and_signatures_reject_after_warming() {
 fn native_indirect_budget_memory_depth_and_code_capacity_boundaries() {
     let mut p=fixture(4);
     // The second call has a warm native target even in one-shot profiled runs.
-    p.functions[0].code.insert(7,p.functions[0].code[6].clone());
+    let repeated=p.functions[0].code[6].clone();p.functions[0].code.insert(7,repeated);
     let total=execute_with_engine(&p,&[pointer(1)],Limits::default(),Engine::Interpreter).unwrap().instructions;
     for instructions in 0..=total+1 {same(&p,&[pointer(1)],Limits{instructions,..Limits::default()});}
     for frames in 0..=3 {for memory in [0,16,64,128,175,176,200,255,256,4096] {
