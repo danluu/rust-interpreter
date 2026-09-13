@@ -5,7 +5,9 @@ use crate::{Execution, ExecutionMetadata, Limits, Program, jit};
 ///
 /// This owner stays on its creating thread. Every invocation gets fresh data,
 /// statics, heap, registers, frames, TLS and continuation state, even after a
-/// preceding invocation failed. Only code and immutable analyses are retained.
+/// preceding invocation failed. Code, immutable analyses and any environment
+/// input snapshot are retained. Environment values are copied into fresh
+/// readonly guest storage on each invocation; later host changes are not seen.
 /// Resumable calls are required; diagnostic profiling uses the one-shot API.
 pub struct PreparedJit<'program> {
     program: &'program Program,
