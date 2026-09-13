@@ -1,29 +1,23 @@
 # Next work
 
-The guarded-runtime campaign and complete-tool correctness qualification pass.
-The exact qualified runtime/helper sources are published on main (`4dcc889`),
-preserving the newer compiler work. Continue manual work with the goal paused.
-[Integration and identities](results/guarded-ranges-main-qualification-01/assessment.md).
+The guarded local-value/scalar-Copy composition and current compiler are adopted.
+All726 performance commands and five gates pass; token improves4.73% wall/3.83%
+CPU and remains1.641 times ordinary native. The exact measured VM is preserved
+in tool35df4077. Current compiler qualification passes513 Rust tests/profile,
+130 internal remapping controls,119 strict/cache/Cargo commands,40 exact project
+histories and all114 original parser tests. The merged launcher passes334 Python
+contracts (16 declared skips). No timing is repeated; preserve the16 MiB default,
+all retained admissions and the paused goal state.
+[Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-The selected-toolchain cache regression is fixed and passes 123 runnable root
-checks, with 10 existing skips. Archived backend crates are not custom-tool
-dependencies and remain excluded; explicit immutable tool keys remain usable.
-[Cache fix](results/toolchain-cache-after-01/assessment.md).
-
-1. Integrate the guarded local-value composition with current main compiler
-   sources. All five gates and726 commands now pass:594 retained plus132 new
-   Nushell commands, with zero repeats. Token improves4.73% wall/3.83% CPU and
-   remains1.641 times ordinary native. Nushell is effectively unchanged against
-   the prior custom runtime and passes its frozen guard. All9,005 final inputs
-   verify and all114 original parser tests pass. Keep the16 MiB code default.
-   Reuse the exact measured VM only after complete source identity checks;
-   qualify newer exporter/wrapper/launcher code, original/wrong/restored project
-   histories and the full parser before publication. No second timing campaign.
-   Preserve the earlier admissions and verified cache-retirement evidence.
-   The runtime is qualified for integration; the saved goal stays paused.
-   [Primary](results/guarded-local-facts-edit-token-01/assessment.md),
-   [Complete result](results/guarded-local-facts-full-continuation-01/assessment.md),
-   [Original admission](results/guarded-local-facts-full-admission-01/summary.json).
+1. Implement the test-only local-value-transfer observer from the reviewed
+   [design](benchmarks/experiments/local-value-transfer/DESIGN.md). Reconstruct
+   all three saved candidate317 code/maps with the observer disabled, then count
+   actual lost Cached-source references, width-compatible transfers, exclusions,
+   new/lost forwarding, emitted bytes and spill/flush changes. Preserve bounded
+   fact order and existing cache ownership. No guest execution or executable
+   publication is needed for this diagnostic. A useful result is required before
+   another runtime screen. Do not restore values from an evicted register slot.
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
