@@ -1,0 +1,37 @@
+{
+  "status": "source-checks-only",
+  "compiler_base_commit": "58e1e1f5311f4424ea81def4763081f6da62d9b3",
+  "patch_sha256": "9b6c691413ef044ba32ad0bcd817c955d380e796adca0ffef1b0973ebe17adad",
+  "patch_files": 17,
+  "patch_bytes": 62635,
+  "qualified_gate_sha256": "6df8b5b4fe1c0c88f6c21acbbf0514a61b48173bd037456b7563755c50ca15d1",
+  "checks": [
+    {
+      "command": "prepare_patch.py --source /Users/danluu/dev/rustc-stable-mono-production-20260913",
+      "exit": 0,
+      "scope": "Read-only exact Git/base-byte checks; generated patch in experiment directory only"
+    },
+    {
+      "command": "Python ast.parse(prepare_patch.py)",
+      "status": "passed"
+    },
+    {
+      "command": "git apply --check capture-body-journals.patch",
+      "exit": 0,
+      "cwd": "read-only pinned compiler checkout"
+    },
+    {
+      "command": "git diff --check -- experiments/hir-body-cache :(exclude)experiments/hir-body-cache/capture-body-journals.patch",
+      "exit": 0,
+      "note": "Unified diff context blank lines retain their required single-space marker; those are not Rust source whitespace"
+    }
+  ],
+  "review": "Parent identified ItemLocalId reserved range; corrected to INVALID=0xFFFF_FF00 with exclusive E and prepared boundary tests. Peer source review found no remaining concrete hook/order/API blocker.",
+  "rust_compiler_builds": 0,
+  "tests_run": 0,
+  "benchmarks_run": 0,
+  "compiler_checkout_modified": false,
+  "hir_body_codec_implemented": false,
+  "hit_path_implemented": false,
+  "next_required": "Compile/API validation and prepared capture controls after admission; typed output codec, reference-closure validation and materialization remain separate work."
+}
