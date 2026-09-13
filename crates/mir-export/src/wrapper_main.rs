@@ -1,5 +1,6 @@
 //! A std-only Cargo wrapper. Ordinary rustc invocations never load rustc_driver
-//! in this process. Selected exports exec the adjacent, installed exporter.
+//! in this process. Selected exports and opt-in compiler query caching exec
+//! the adjacent, installed exporter.
 mod wrapper_route;
 
 use std::process::{Command, ExitCode};
@@ -17,7 +18,7 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
-    let mut command = if route.export {
+    let mut command = if route.requires_exporter() {
         let executable = match std::env::current_exe() {
             Ok(path) => path.with_file_name("rust-interp-mir-export"),
             Err(error) => {

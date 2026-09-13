@@ -1,0 +1,43 @@
+test_cached_unchanged_bodies_need_no_borrowcheck_value (test_borrowck_cache.BorrowckCacheTests.test_cached_unchanged_bodies_need_no_borrowcheck_value) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_cached_unchanged_bodies_need_no_borrowcheck_value-a1wbjh_1
+ok
+test_dependency_edits_preserve_output_and_invalidate_changed_semantics (test_borrowck_cache.BorrowckCacheTests.test_dependency_edits_preserve_output_and_invalidate_changed_semantics) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_dependency_edits_preserve_output_and_invalidate_changed_semantics-ogauluk_
+ok
+test_metadata_only_library_uses_same_compiler_checks (test_borrowck_cache.BorrowckCacheTests.test_metadata_only_library_uses_same_compiler_checks) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_metadata_only_library_uses_same_compiler_checks-lfyi75se
+ok
+test_newly_reachable_bodies_reconstruct_only_empty_results (test_borrowck_cache.BorrowckCacheTests.test_newly_reachable_bodies_reconstruct_only_empty_results) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_newly_reachable_bodies_reconstruct_only_empty_results-tydaztrg
+ok
+test_no_incremental_and_explicit_mir_dump_use_original_provider (test_borrowck_cache.BorrowckCacheTests.test_no_incremental_and_explicit_mir_dump_use_original_provider) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_no_incremental_and_explicit_mir_dump_use_original_provider-judyw0i7
+
+  test_no_incremental_and_explicit_mir_dump_use_original_provider (test_borrowck_cache.BorrowckCacheTests.test_no_incremental_and_explicit_mir_dump_use_original_provider) (flag='with_polonius') ... FAIL
+test_opaque_results_and_disabled_intervening_compilation (test_borrowck_cache.BorrowckCacheTests.test_opaque_results_and_disabled_intervening_compilation) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_opaque_results_and_disabled_intervening_compilation-mbabcg3x
+ok
+test_selected_export_cached_and_inlined_value_demands (test_borrowck_cache.BorrowckCacheTests.test_selected_export_cached_and_inlined_value_demands) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_selected_export_cached_and_inlined_value_demands-pj2lmm4r
+
+  test_selected_export_cached_and_inlined_value_demands (test_borrowck_cache.BorrowckCacheTests.test_selected_export_cached_and_inlined_value_demands) (profile='cached', mode='verify', value=11) ... FAIL
+test_uncalled_errors_are_rejected_and_restoration_is_current (test_borrowck_cache.BorrowckCacheTests.test_uncalled_errors_are_rejected_and_restoration_is_current) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_uncalled_errors_are_rejected_and_restoration_is_current-xwp5yvr4
+ok
+test_warnings_and_lint_expectations_are_preserved (test_borrowck_cache.BorrowckCacheTests.test_warnings_and_lint_expectations_are_preserved) ... borrowck correctness artifacts: /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/borrowck-cache-qualification-03/fixtures/test_warnings_and_lint_expectations_are_preserved-n_r5thhl
+ok
+
+======================================================================
+FAIL: test_no_incremental_and_explicit_mir_dump_use_original_provider (test_borrowck_cache.BorrowckCacheTests.test_no_incremental_and_explicit_mir_dump_use_original_provider) (flag='with_polonius')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/tests/test_borrowck_cache.py", line 352, in test_no_incremental_and_explicit_mir_dump_use_original_provider
+    self.assertTrue(report["disabled_reason"], report)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None is not true : {'checking': 'ordinary rustc analysis; only proven-green successful empty query values reconstructed', 'compilation': {'crate_name': 'with_polonius', 'test': False}, 'counter_scope': 'calls observed by this override; bypassed providers are not counted', 'disabled_reason': None, 'fingerprint_matches': 0, 'fingerprint_misses': 0, 'green_candidates': 0, 'mode': 'reuse', 'persistent_sidecar': False, 'process_id': 18214, 'proof': 'previous rustc result fingerprint and already-green dependency node', 'provider_calls': 4, 'provider_wrapped': True, 'reused': 0, 'schema_version': 1, 'verified': 0}
+
+======================================================================
+FAIL: test_selected_export_cached_and_inlined_value_demands (test_borrowck_cache.BorrowckCacheTests.test_selected_export_cached_and_inlined_value_demands) (profile='cached', mode='verify', value=11)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/tests/test_borrowck_cache.py", line 305, in test_selected_export_cached_and_inlined_value_demands
+    self.assertEqual(report["provider_calls"], 1, report)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 4 != 1 : {'checking': 'ordinary rustc analysis; only proven-green successful empty query values reconstructed', 'compilation': {'crate_name': 'selected_export_cached', 'test': True}, 'counter_scope': 'calls observed by this override; bypassed providers are not counted', 'disabled_reason': None, 'fingerprint_matches': 0, 'fingerprint_misses': 0, 'green_candidates': 0, 'mode': 'verify', 'persistent_sidecar': False, 'process_id': 18406, 'proof': 'previous rustc result fingerprint and already-green dependency node', 'provider_calls': 4, 'provider_wrapped': True, 'reused': 0, 'schema_version': 1, 'verified': 0}
+
+----------------------------------------------------------------------
+Ran 9 tests in 15.920s
+
+FAILED (failures=2)
