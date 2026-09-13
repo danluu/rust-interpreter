@@ -20,17 +20,19 @@ Two candidates remain in qualification:
   compatibility tests passed. Build01 passed 504 Rust tests and two of three
   native histories; the third rejected Cargo's ordinary metadata-embedding
   flag. The corrected parser preserves that flag, with a new regression test.
-  Fresh build02 qualification and the off/on/off Nushell screen are pending.
+  Fresh build02 qualification is admitted to the shared workload queue;
+  the off/on/off Nushell screen remains pending.
   [Source checks](../../../results/host-library-screen-source-tests-01/README.md).
 - Stable per-MonoItem code-generation placement using an optimized compiler
   build. All twelve bootstrap/package stages passed for compiler source
   `58e1e1f5311f4424ea81def4763081f6da62d9b3`, including option tracking,
-  partitioning, native entry and stripping controls. Installation and the first
-  matched interpreter-tool build passed. The workspace helper failed before
-  any tests because it passed a JSON string to a path-based hashing API; that
-  helper is corrected. Updated tools/workspace tests, both standard-library preparations,
+  partitioning, native entry and stripping controls. Installation and the updated matched interpreter-tool build passed.
+  After correcting an initial path-conversion failure before any test ran,
+  workspace02 passed 505 Rust tests with two existing ignored tests; all five
+  workspace-helper controls passed. Both standard-library preparations,
   strict diagnostics/source-observable qualification and the Nushell screen
-  are separate remaining gates.
+  remain separate gates. The first std preparation is queued.
+  [Compiler build evidence](../../../results/mono-production-compiler-complete-01/README.md).
   [Required post-build sequence](../../../experiments/stable-cgu/POST-DRIVER-QUALIFICATION.md).
 
 A separate source experiment investigates reuse of unchanged HIR lowering.
