@@ -52,3 +52,51 @@ checks, actual macro/build-script outputs, cold/edit/restore exports, and compil
 argv for host/guest roles. Use the existing shared publisher later; its host
 library capability hook is `host_library_opt.bind_wrapper_capability`. No new
 publication or performance harness is introduced here.
+
+## Prepared real controls
+
+`tests/test_host_library_native.py` reuses the existing proc-macro fixture,
+command logger, strict diagnostic comparison and Cargo/std/VM workflow without
+changing the original macro tests. Its three histories cover:
+
+- Pinned native, wrapper off and wrapper on compilation of uncalled type,
+  borrow, const-evaluation and unconditional-panic errors with source-position
+  changes and a valid restoration after each rejection. Full structured
+  diagnostics retain spans and snippets; only rendered text is ignored.
+- Native libraries consumed by an ordinary native executable, checking default
+  and explicit debug/overflow combinations, `cfg(ub_checks)` without invoking
+  undefined behavior, generic/inline calls and observable drop effects.
+- The shared library used by both an actual proc macro and a native build
+  script, with macro-body, shared-library, declared-file-input and source-position
+  edits, a generated type error, then exact restoration. Every valid state runs
+  public native tests and off/on bytecode. Off/on bytecode must match, edits must
+  change it, and restoration must match the original bytes. Source snapshots,
+  bytecode histories and commands remain in the owned fixture directory.
+
+The last history uses function-cache `auto` after ordinary analysis. Both build
+scripts retain `OPT_LEVEL=0`/`DEBUG=true`; the selected test checks the actual
+shared-library value from the native build script. Proc-macro call-site file,
+line and column become constants checked by both native and interpreted tests.
+Cold Cargo records must include a host shared library, guest shared library,
+proc-macro dylib, build-script executable and selected export. Every actual
+compile is matched by PID to the existing final compiler-argv recorder. The
+complete forwarded argv must equal the original plus existing std/MIR routing
+and, only for eligible on-arm libraries, the explicit O1/check-preserving flags.
+The same final-argv check covers successful and failed direct library compiles.
+
+No history has run yet. After a caller acquires the canonical workload lock and
+freezes one supporting public exporter/wrapper/VM plus a complete prepared std
+sysroot, the focused commands are:
+
+```sh
+cargo +nightly-2026-09-08 test --release --locked --offline --jobs 2 -p rust-interp-mir-export --test host_library --test host_proc_macro --test wrapper_route
+python3 -B -m unittest discover -s tests -p test_host_library_launcher.py -v
+python3 -B -m unittest discover -s tests -p test_host_library_native.py -v
+```
+
+The final command requires `RUST_INTERP_TEST_EXPORTER`,
+`RUST_INTERP_TEST_WRAPPER`, `RUST_INTERP_TEST_VM`,
+`RUST_INTERP_TEST_STD_SYSROOT` and an owned `RUST_INTERP_TEST_ARTIFACT_DIR`.
+`RUST_INTERP_TEST_RUSTC` may name the exact public compiler explicitly. These
+are correctness controls, not timing or publication qualification; the future
+existing publisher must bind their inputs and receipts to its final tool key.
