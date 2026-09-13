@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Replay the three current controls with the qualified guarded-range VM."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -69,6 +70,16 @@ def verify_range_checks(mapping, code, require_active=True):
         all_speculative_branches_and_region_cache_scopes_verified=True)
 
 
+def verify_profile_mechanism(mapping,code,index,adopted):
+    checks=verify_range_checks(mapping,code,require_active=index!=2)
+    unchanged=False
+    if checks['guards']==0:
+        control,=[r for r in adopted['comparisons'] if r['index']==index]
+        assert hashlib.sha256(code).hexdigest()==control['code_sha256'], 'inactive control changed generated code'
+        unchanged=True
+    return checks,unchanged
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build', type=Path, required=True)
@@ -92,6 +103,9 @@ def main():
             digest = proof.get('vm_sha256') or proof.get('binaries', {}).get('candidate')
             assert digest == sha(vm) if digest else proof['tool_key'] == build['tool_key']
         reference_path = ROOT / 'results/current-runtime-boundaries-02/summary.json'
+        adopted_path = ROOT / 'results/operation-map-real-01/summary.json'
+        adopted = json.loads(adopted_path.read_text())
+        assert adopted['status']=='passed' and adopted['exact_adopted_code'] and adopted['exact_per_pc_profiles']
         reference = json.loads(reference_path.read_text())
         assert reference['status'] == 'passed' and reference['commands'] == 6
         assert reference['exact_logical_counts_memory_and_entropy']
@@ -107,7 +121,7 @@ def main():
         entropy = json.loads(entropy_path.read_text()); assert entropy['status'] == 'passed'
         library = ROOT / entropy['library']; assert sha(library) == entropy['library_sha256']
         paths = [Path(__file__), Path(__file__).with_name('PLAN.md'), build_path, vm,
-            reference_path, raw / 'records.json', wide_path, wide_raw / 'records.json', entropy_path, library, *proofs,
+            reference_path, adopted_path, raw / 'records.json', wide_path, wide_raw / 'records.json', entropy_path, library, *proofs,
             ROOT / 'benchmarks/experiments/operation-map/maps.py']
         paths += [ROOT / 'scripts' / name for name in ['workflow_io.py', 'compare_saved_runtime.py',
             'profile_vm_transitions.py', 'summarize_owned_sample.py', 'sample_owned_vm.py', 'interpreter.py']]
@@ -169,9 +183,10 @@ def main():
             operation_map = json.loads(operation_map_path.read_text())
             checked = validate_operation_map(operation_map, dump, (dump_path / 'code.bin').read_bytes(), current_profile, child.pid)
             assert operation_map['reconstructed_bytes_match']
-            range_checks = verify_range_checks(operation_map, (dump_path / 'code.bin').read_bytes(), require_active=index != 2)
+            range_checks, inactive_identity = verify_profile_mechanism(operation_map, (dump_path / 'code.bin').read_bytes(), index, adopted)
             del current_profile, checked, operation_map
             comparison = dict(index=index, name=item['name'], profile_sha256=sha(profile_path),range_checks=range_checks,
+                inactive_code_byte_identical_to_adopted=inactive_identity,
                 baseline_interpreted=previous['candidate_interpreted'],
                 candidate_interpreted=attribution['interpreted_instructions'],
                 baseline_by_variant=previous['candidate_by_variant'], candidate_by_variant=attribution['by_rendered_variant'],

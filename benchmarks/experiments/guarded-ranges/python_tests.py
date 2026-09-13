@@ -25,7 +25,7 @@ with (ROOT / '.work/benchmark.lock').open('a') as lock:
     write(work / 'inputs.json', frozen)
     records = []
     for label, folder, expected in [('existing', 'tests', 128),
-            ('screen', 'benchmarks/experiments/guarded-ranges', 15),
+            ('screen', 'benchmarks/experiments/guarded-ranges', 16),
             ('maps', 'benchmarks/experiments/operation-map', 9)]:
         child, out, err = capture([sys.executable, '-m', 'unittest', 'discover',
             '-s', folder, '-p', 'test_*.py'], cwd=ROOT,

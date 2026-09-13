@@ -42,7 +42,7 @@ def main():
         adopted_path=ROOT/'results/operation-map-real-01/summary.json'
         adopted=json.loads(adopted_path.read_text());assert adopted['exact_adopted_code'] and adopted['exact_per_pc_profiles']
         harness_path=ROOT/'results/guarded-ranges-python-tests-02/summary.json'
-        harness=json.loads(harness_path.read_text());assert harness['status']=='passed' and harness['tests']==142 and harness['skipped']==10
+        harness=json.loads(harness_path.read_text());assert harness['status']=='passed' and harness['tests']==143 and harness['skipped']==10
         harness_inputs=ROOT/harness['raw']/'inputs.json';assert sha(harness_inputs)==harness['inputs_sha256']
         assert all(sha(ROOT/p)==h for p,h in json.loads(harness_inputs.read_text()).items())
         paths=[Path(__file__),Path(__file__).with_name('profile.py'),failure_path,archived,
@@ -77,12 +77,7 @@ def main():
             regions=json.loads((dump/'map.json').read_text());mapping=json.loads((dump/'operations.json').read_text())
             assert len(code)==stats['jit_bytes']
             profile.validate_operation_map(mapping,regions,code,current,row['pid'])
-            checks=profile.verify_range_checks(mapping,code,require_active=index!=2)
-            unchanged=False
-            if checks['guards']==0:
-                control,=[r for r in adopted['comparisons'] if r['index']==index]
-                assert sha(dump/'code.bin')==control['code_sha256']
-                unchanged=True
+            checks,unchanged=profile.verify_profile_mechanism(mapping,code,index,adopted)
             comparisons.append(dict(index=index,name=item['name'],profile_sha256=sha(raw/f'{index}-profile.json'),
                 range_checks=checks,inactive_code_byte_identical_to_adopted=unchanged,
                 baseline_interpreted=prior['candidate_interpreted'],candidate_interpreted=attribution['interpreted_instructions'],

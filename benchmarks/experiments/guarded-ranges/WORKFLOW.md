@@ -40,7 +40,7 @@ and additional margin above the8GiB reserve. Recheck the independent disk
 sampler before launching; do not assume other workloads leave space constant.
 Do not control other sessions or perform host cleanup in this runner.
 
-Prerequisites:478 Rust tests per profile,142 passing harness checks (ten separately qualified opt-in tests skipped), seven exact real
+Prerequisites:478 Rust tests per profile,143 passing harness checks (ten separately qualified opt-in tests skipped), seven exact real
 test replays, nine suite commands,203 strict native/cache checks and three
 profiles with unchanged per-PC logical work. These are correctness and
 mechanism checks, not additional timing pairs.

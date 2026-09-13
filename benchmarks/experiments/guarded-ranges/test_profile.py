@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import importlib.util
 from pathlib import Path
 import unittest
@@ -73,6 +74,16 @@ class ProfileTests(unittest.TestCase):
         words=list(struct.unpack('<8I',code));words[5]=0xd503201f
         got=profile.verify_range_checks(mapping,struct.pack('<8I',*words),require_active=False)
         self.assertEqual((got['guards'],got['cached_base_reloads']),(0,0))
+
+    def test_only_the_inactive_folded_control_can_reuse_identical_adopted_code(self):
+        mapping,code=self.range_fixture();mapping['functions'][0]['spans'][0]['kind']='entry'
+        words=list(struct.unpack('<8I',code));words[5]=0xd503201f;code=struct.pack('<8I',*words)
+        adopted=dict(comparisons=[dict(index=2,code_sha256=hashlib.sha256(code).hexdigest())])
+        self.assertTrue(profile.verify_profile_mechanism(mapping,code,2,adopted)[1])
+        for index in [0,1]:
+            with self.assertRaises(AssertionError):profile.verify_profile_mechanism(mapping,code,index,adopted)
+        words[4]^=1
+        with self.assertRaises(AssertionError):profile.verify_profile_mechanism(mapping,struct.pack('<8I',*words),2,adopted)
 
 
 if __name__ == '__main__':unittest.main()

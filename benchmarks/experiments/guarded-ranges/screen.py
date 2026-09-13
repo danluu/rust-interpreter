@@ -142,7 +142,7 @@ def main():
         require_space(ROOT, admission)
         harness_path = ROOT / 'results/guarded-ranges-python-tests-02/summary.json'
         harness = json.loads(harness_path.read_text())
-        assert harness['status'] == 'passed' and harness['tests'] == 142 and harness['skipped'] == 10
+        assert harness['status'] == 'passed' and harness['tests'] == 143 and harness['skipped'] == 10
         integration_path = ROOT / 'results/memory-lookup-main-complete-01/summary.json'
         integration = json.loads(integration_path.read_text())
         assert integration['status'] == 'passed' and integration['new_cache_cargo_commands'] == 223
