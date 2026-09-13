@@ -1,7 +1,9 @@
 # Register transfers after the indirect-call comparison
 
-The paired-transfer candidate is qualified and its full edited-command
-comparison is active. It preserves the wide-operation runtime's VM counts and
+The paired-transfer candidate completes all 462 expected edited-command
+outcomes. Token gains only 0.71% wall, below 1.77% A/A; both held-out guards
+pass. Keep the candidate experimental without retiming.
+[Complete comparison](../results/paired-registers-complete-01/assessment.md). It preserves the wide-operation runtime's VM counts and
 native regions, retaining both 64-bit words of every register transfer. Static
 generated size falls on the three current profiled artifacts and seven saved
 unprofiled qualification artifacts. Neither observation establishes latency.
