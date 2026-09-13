@@ -10,16 +10,16 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Partition the current native Call/Return emitter with test-only labels for
-   admission, charging/spills, frame clearing, argument address/copy, frame
-   publication, result transfer and dispatch. Reconstruct the two already
-   sampled unprofiled code/maps exactly, then attribute their saved PCs to these
-   parts. No new guest execution is needed. Native Call/Return accounts for
-   26.23% /34.68% of generated samples and flushes add8.18% /12.51%; these partial
-   windows guide diagnosis rather than establish timing gains. Keep runtime
-   guards and failure ordering. Select a compatible protocol mechanism from
-   the finer attribution, then require a primary screen and all adoption gates.
-   [Current evidence](results/adopted-runtime-sampling-01/assessment.md).
+1. Implement one native boundary memory composition: wider exact frame clears,
+   pair-at-a-time large ABI copies, and the compatible previously qualified
+   paired private-register transfers. The finer diagnostic reconciles all433/499
+   transition samples with zero unassigned. Frame clearing covers110/100 samples;
+   exact ABI byte loops account for13/89, including136-/304-byte transfers in
+   exhaustive. Keep every initialization, check, overlap rule and fault order.
+   Qualify the bundle, then use one fresh40-command primary screen before any
+   full adoption study. No isolated tiny-component retiming.
+   [Evidence](results/native-protocol-census-01/assessment.md),
+   [implementation plan](benchmarks/experiments/native-boundary-memory/PLAN.md).
 
 The local-value-transfer hypothesis is parked. Its observer passes408 bytecode
 checks/profile and reconstructs all three baseline maps exactly, but saves only
