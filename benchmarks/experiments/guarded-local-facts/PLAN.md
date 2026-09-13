@@ -55,3 +55,16 @@ bytes before the first store. The new guarded-retention check remains after
 the immediate write. This is a distinct test-only composition, not retiming of
 the unchanged earlier scalar-copy candidate. Reconstruct the original saved
 baseline again, expose all changed categories, and run no guests in this census.
+
+The selected composition now enters correctness qualification. Its prospective
+40-command primary screen uses the existing four-custom-mode rotation and
+alternates native placement. Current baseline/duplicate/candidate use the exact
+b08f39e2 compiler and wrapper; baseline and duplicate use its qualified c55befb8
+VM. The historical anchor remains separately identified. Native executable bytes
+are captured from structured Cargo output and retained before cache replacement.
+Only five valid edited states enter ratios. Require median candidate/baseline
+wall < 1 minus the maximum absolute A/A deviation; require median CPU <= 1 and
+median CPU plus its A/A deviation <= 1.05. These are the existing token screen
+criteria, not the separate parser-capacity screen's criteria. Initial admission
+requires 14 GiB (6 GiB allowance plus 8 GiB reserve); every command rechecks8 GiB.
+Correctness/profile and nine protocol checks must pass before screen admission.
