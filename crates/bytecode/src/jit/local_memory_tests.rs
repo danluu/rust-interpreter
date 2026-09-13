@@ -282,6 +282,37 @@ fn observe_unpublished_function_emission() {
 }
 
 #[test]
+#[ignore = "Offline initialization diagnosis; requires a bound artifact and function ID"]
+fn observe_function_initialization_shape() {
+    let input = std::env::var("EMISSION_INPUT").unwrap();
+    let output = std::env::var("EMISSION_OUTPUT").unwrap();
+    let id: usize = std::env::var("EMISSION_FUNCTION").unwrap().parse().unwrap();
+    let bytes = std::fs::read(&input).unwrap();
+    assert!(bytes.len() <= 128 * 1024 * 1024);
+    let p: Program = bincode::deserialize(&bytes).unwrap();
+    crate::validate(&p).unwrap();
+    let f = &p.functions[id];
+    let mut incoming_to_zero = vec![];
+    let mut returns = vec![];
+    for (pc, op) in f.code.iter().enumerate() {
+        match op {
+            Op::Jump { target: 0 } => incoming_to_zero.push(pc),
+            Op::Switch { cases, otherwise, .. }
+                if *otherwise == 0 || cases.iter().any(|(_, target)| *target == 0) => incoming_to_zero.push(pc),
+            Op::Return => returns.push(pc),
+            _ => {}
+        }
+    }
+    let file = std::fs::OpenOptions::new().write(true).create_new(true).open(output).unwrap();
+    serde_json::to_writer(file, &serde_json::json!({"function":id,"name":f.name,
+        "operations":f.code.len(),"registers":f.registers,"frame_size":f.frame_size,
+        "frame_align":f.frame_align,"register_bytes":f.registers*std::mem::size_of::<u128>(),
+        "needs_initial_register_zeroes":crate::registers::needs_initial_zeroes(f),
+        "explicit_branches_to_pc_zero":incoming_to_zero,"return_pcs":returns,
+        "guest_commands":0,"executable_code_publications":0})).unwrap();
+}
+
+#[test]
 fn forwarded_copy_fault_writes_only_the_preceding_store() {
     for heap in [false,true] { for profiled in [false,true] { for bad in [0,1,63,569,576,u64::MAX] {
         let mut p=program(vec![Op::Local {dst:0,offset:128},Op::Imm {dst:1,value:WIDE},Op::Store {address:0,src:1,size:8},
