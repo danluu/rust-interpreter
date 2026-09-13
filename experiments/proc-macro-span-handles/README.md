@@ -22,3 +22,10 @@ Four unit controls are included in the patch and passed in the [standalone contr
 Before timing or adoption, real proc-macro qualification is still required: span/token round trips, `span-api-tests`, `span-preservation`, `mixed-site-span`, `subspan`, `expand-expr` (including its nested-symbol regression), and panic controls with ordinary same-thread and forced cross-thread execution. A small side-effect fixture should perform ordered environment reads, tracked path reads, file writes and diagnostic emissions around repeated span calls; compare cold/edit/restore output, dep-info, raw diagnostic spans/snippets and native/exported results. Preserve uncalled type/borrow/const rejection. Use a memory-intensive token-tree case and interleaved macro clients to exercise table growth and handle separation. No result caching or changes to application code are needed.
 
 Any eventual experiment needs a separately identified compiler/tool/sysroot and truthful patched rust-src inventory. `compiler/rustc_proc_macro/Cargo.toml:13` points at `library/proc_macro/src/lib.rs`, so this is a compiler-server change as well as a standard-library source change. The frozen production MonoItem compiler/package and its full public/custom library-source equality prerequisite cannot simply be relabeled for this patch. Preserve the old identities and qualify the changed source configuration explicitly; the current proposal does not alter those checks.
+
+Concrete, unrun bridge and real proc-macro fixtures are now in
+[integration/README.md](integration/README.md). They use the real public
+Client/Dispatcher/HandleStore path and an ordinary macro dylib/caller; four new
+Rust transport tests and four pure expectation controls are prepared. These
+source additions do not change the candidate patch or extend its passing status
+beyond the four historical standalone container tests.
