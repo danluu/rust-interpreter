@@ -66,5 +66,13 @@ class ProfileTests(unittest.TestCase):
         mapping['functions'][0]['spans'][0]['kind']='entry'
         with self.assertRaises(AssertionError):profile.verify_range_checks(mapping,code)
 
+    def test_inactive_control_requires_both_guard_and_cache_counts_to_be_zero(self):
+        mapping,code=self.range_fixture()
+        mapping['functions'][0]['spans'][0]['kind']='entry'
+        with self.assertRaises(AssertionError):profile.verify_range_checks(mapping,code,require_active=False)
+        words=list(struct.unpack('<8I',code));words[5]=0xd503201f
+        got=profile.verify_range_checks(mapping,struct.pack('<8I',*words),require_active=False)
+        self.assertEqual((got['guards'],got['cached_base_reloads']),(0,0))
+
 
 if __name__ == '__main__':unittest.main()

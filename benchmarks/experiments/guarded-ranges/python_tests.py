@@ -9,7 +9,7 @@ from workflow_io import capture, write_json as write, require_space
 with (ROOT / '.work/benchmark.lock').open('a') as lock:
     acquire_lock(lock, 45)
     require_space(ROOT, 8)
-    work = ROOT / '.work/guarded-ranges-python-tests-01'
+    work = ROOT / '.work/guarded-ranges-python-tests-02'
     work.mkdir(exist_ok=False)
     frozen = {str(p.relative_to(ROOT)): sha(p)
               for base in ['scripts', 'tests']
@@ -25,7 +25,7 @@ with (ROOT / '.work/benchmark.lock').open('a') as lock:
     write(work / 'inputs.json', frozen)
     records = []
     for label, folder, expected in [('existing', 'tests', 128),
-            ('screen', 'benchmarks/experiments/guarded-ranges', 14),
+            ('screen', 'benchmarks/experiments/guarded-ranges', 15),
             ('maps', 'benchmarks/experiments/operation-map', 9)]:
         child, out, err = capture([sys.executable, '-m', 'unittest', 'discover',
             '-s', folder, '-p', 'test_*.py'], cwd=ROOT,
@@ -43,7 +43,7 @@ with (ROOT / '.work/benchmark.lock').open('a') as lock:
         write(work / 'records.json', records)
         assert child.returncode == 0 and records[-1]['tests'] == expected and skipped == (10 if label == 'existing' else 0), err
     assert all(sha(ROOT / p) == h for p, h in frozen.items())
-    destination = ROOT / 'results/guarded-ranges-python-tests-01'
+    destination = ROOT / 'results/guarded-ranges-python-tests-02'
     destination.mkdir(exist_ok=False)
     result = dict(status='passed', tests=sum(r['tests'] - r['skipped'] for r in records), skipped=sum(r['skipped'] for r in records),
         raw=str(work.relative_to(ROOT)), inputs_sha256=sha(work / 'inputs.json'),

@@ -28,7 +28,7 @@ def exact_profile_counts(profile, baseline):
     return True
 
 
-def verify_range_checks(mapping, code):
+def verify_range_checks(mapping, code, require_active=True):
     """Every speculative failure targets its unchanged-entry fallback."""
     assert len(code) == mapping['code_bytes']
     guards = reloads = 0
@@ -63,7 +63,8 @@ def verify_range_checks(mapping, code):
                 assert row['kind'] == 'operation' and row['pc'] is not None
                 assert row['region_pc'] in guarded and guarded[row['region_pc']]['end'] <= offset
                 assert word & 31 in [11,12], 'unexpected cached address destination'
-    assert guards > 0 and reloads > 0
+    assert bool(guards) == bool(reloads), 'guard/cache presence disagrees'
+    if require_active: assert guards > 0
     return dict(guards=guards,cached_base_reloads=reloads,
         all_speculative_branches_and_region_cache_scopes_verified=True)
 
@@ -168,7 +169,7 @@ def main():
             operation_map = json.loads(operation_map_path.read_text())
             checked = validate_operation_map(operation_map, dump, (dump_path / 'code.bin').read_bytes(), current_profile, child.pid)
             assert operation_map['reconstructed_bytes_match']
-            range_checks = verify_range_checks(operation_map, (dump_path / 'code.bin').read_bytes())
+            range_checks = verify_range_checks(operation_map, (dump_path / 'code.bin').read_bytes(), require_active=index != 2)
             del current_profile, checked, operation_map
             comparison = dict(index=index, name=item['name'], profile_sha256=sha(profile_path),range_checks=range_checks,
                 baseline_interpreted=previous['candidate_interpreted'],
