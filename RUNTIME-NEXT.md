@@ -4,8 +4,10 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: qualify direct native operands for modular arithmetic and
-bitwise operations on the adopted runtime. The immediate shift/rotate screen
+Current action: run the full direct-operand comparison in token/folded/
+pgrust/private/Nushell order. The433-test candidate passes its40-command screen:
+wall−5.49% and CPU−4.66% versus adopted main, beyond3.73%/3.11% A/A. Its123-check
+full harness stops on a failed case and requires all five gates for adoption. The immediate shift/rotate screen
 completed40 commands with all original outcomes and artifacts matching, but
 wall+0.90%/CPU+1.19% gives no gain against3.07%/3.00% A/A. Keep that runtime
 experimental and cancel its unstarted guards; do not retime the screen. Current samples show
@@ -15,6 +17,8 @@ context, but only4.83ms to indexing. Park the positions-table rewrite; lazy MIR
 must avoid work rather than move it between phases. Runtime candidates use
 predeclared screens and cancel unstarted guards on primary failure; adoption
 still requires every declared guard.
+[Direct-operand screen](results/direct-operands-screen-token-01/assessment.md),
+[Full protocol](benchmarks/experiments/direct-operands/FULL.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Binding decision](results/replay-costs-token-02/assessment.md),
 [current native regions](results/current-runtime-costs-01/assessment.md),
