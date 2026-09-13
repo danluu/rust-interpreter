@@ -203,10 +203,13 @@ def require_candidate_policy(tool, key, candidate_policy):
 
 
 def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candidate_std,
-                        baseline_cargo_key=None, candidate_cargo_key=None, compiler_qualification=None, worker_qualification=None):
+                        baseline_cargo_key=None, candidate_cargo_key=None, compiler_qualification=None,
+                        source_observables=None, worker_qualification=None):
     require(policy in CANDIDATE_POLICIES, 'unknown candidate policy')
     require((compiler_qualification is not None) == (policy == 'stable-mono-cgu'),
             'strict MonoItem qualification is required only for stable-mono-cgu policy')
+    require((source_observables is not None) == (policy == 'stable-mono-cgu'),
+            'source-observable qualification is required only for stable-mono-cgu policy')
     if policy == 'frontend-workers':
         require(baseline_key == candidate_key, 'worker comparison requires identical actual tool binaries')
         require(compiler_key is None and candidate_std is None and baseline_cargo_key is None
@@ -444,6 +447,8 @@ def main():
     parser.add_argument('--compiler-key', help='same installed compiler for all stable-CGU arms')
     parser.add_argument('--compiler-qualification', type=Path,
                         help='passed strict stable-mono-cgu integration result.json')
+    parser.add_argument('--source-observables', type=Path,
+                        help='passed separate standard source and proc-macro observable result.json')
     parser.add_argument('--baseline-cargo-key', help='qualified stock Cargo for baseline and duplicate arms')
     parser.add_argument('--candidate-cargo-key', help='matched source-only candidate Cargo')
     parser.add_argument('--frontend-worker-qualification', type=Path,
@@ -458,7 +463,9 @@ def main():
     require(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
     validate_comparison(args.candidate_policy, args.baseline_tool_key, args.candidate_tool_key,
                         args.compiler_key, args.candidate_std_mir_ready,
-                        args.baseline_cargo_key, args.candidate_cargo_key, args.compiler_qualification, args.frontend_worker_qualification)
+                        args.baseline_cargo_key, args.candidate_cargo_key, args.compiler_qualification,
+                        source_observables=args.source_observables,
+                        worker_qualification=args.frontend_worker_qualification)
     if args.candidate_policy == 'frontend-workers':
         from frontend_worker_screen import CAMPAIGN_LOCK
         require(args.workload_lock == CAMPAIGN_LOCK
@@ -539,16 +546,20 @@ def main():
                 public_guards = dict(policy=GUARD_POLICY, admission=public_guard('admission.json', True),
                     directory=str(guard_directory), final_path=str(guard_directory / 'final.json'),
                     boundaries_per_command=2)
-            mono_qualification, mono_wrapper = None, None
+            mono_qualification, mono_wrapper, source_observables = None, None, None
             if args.candidate_policy == 'stable-mono-cgu':
                 from stable_mono_cgu import require_tool_capability, OPTION
                 from stable_mono_qualification import validate_qualification
+                from std_source_observables import validate_source_observables
                 custom.require_option('stable-cgu-partitioning')
                 custom.require_option(OPTION)
                 mono_wrapper = require_tool_capability(tools['baseline'], custom)
                 require(all(require_tool_capability(tool, custom) == mono_wrapper for tool in tools.values()),
                         'MonoItem wrapper capabilities differ between arms')
                 mono_qualification = validate_qualification(args.compiler_qualification.absolute(), ROOT,
+                    custom.key, keys['baseline'], dict(off=stds['baseline'], on=stds['candidate']),
+                    compiler_sysroot=custom.sysroot)
+                source_observables = validate_source_observables(args.source_observables.absolute(), ROOT,
                     custom.key, keys['baseline'], dict(off=stds['baseline'], on=stds['candidate']),
                     compiler_sysroot=custom.sysroot)
             worker_public, worker_proof, worker_files = None, None, {}
@@ -580,6 +591,7 @@ def main():
                 paths += [Path(stds['candidate']['path']), custom.sysroot.parent / 'ready.json']
             if mono_qualification:
                 paths += [Path(p) for p in mono_qualification['evidence_files']]
+                paths += [Path(p) for p in source_observables['evidence_files']]
                 paths += [Path(__file__).with_name('STABLE_MONO_CGU_SCREEN.md')]
                 for prepared_std in [stds['baseline'], stds['candidate']]:
                     prepared = Path(prepared_std['path']).parent
@@ -602,6 +614,10 @@ def main():
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
             paths += [source / name for name in tracked if name and source / name != changed]
             frozen = {str(p): frozen_input_hash(p) for p in paths}
+            for qualification in [mono_qualification, source_observables]:
+                if qualification:
+                    require(all(frozen[p] == h for p, h in qualification['evidence_files'].items()),
+                            'qualification evidence changed between validation and freezing')
             require(all(frozen.get(path) == digest for path,digest in worker_files.items()),
                     'worker proof or public payload changed while freezing screen inputs')
             plan = dict(schema_version=1, kind='mechanism-screen', owner=str(ROOT), project='nushell',
@@ -639,6 +655,7 @@ def main():
                         application_profiles_changed=False, std_preparation_policy='unchanged and outside application wrapper'))
             if mono_qualification:
                 plan.update(compiler_qualification=mono_qualification, mono_wrapper=mono_wrapper,
+                    source_observables=source_observables,
                     cgu_policy_by_mode=dict.fromkeys(MODES, 'off'),
                     mono_cgu_policy_by_mode={m: cgu_setting(m) for m in MODES},
                     compiler_comparison='same compiler and tool binaries; module off/off/off; MonoItem off/on/off')

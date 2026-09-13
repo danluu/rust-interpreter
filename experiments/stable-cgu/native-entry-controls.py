@@ -1,22 +1,28 @@
 #!/usr/bin/env python3
-"""Validate actual native entrypoints while stable CGU merging is active."""
+"""Validate actual native entrypoints under the explicitly selected CGU policy."""
 import argparse
-import fcntl
+import atexit
+from contextlib import ExitStack
 import hashlib
 import json
 import os
 from pathlib import Path
 import shutil
-import signal
 import subprocess
 import time
+
+from owned_stage import CANONICAL_LOCK, workload_lock
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--compiler', type=Path, required=True)
 parser.add_argument('--package-provenance', type=Path, required=True)
 parser.add_argument('--receipt', type=Path, required=True)
 parser.add_argument('--lock-wait-seconds', type=int, default=45)
+parser.add_argument('--lock-fd', type=int)
+parser.add_argument('--partitioning-policy', choices=['stable-cgu', 'stable-mono-cgu'], default='stable-cgu')
 args = parser.parse_args()
+if not __debug__:
+    raise RuntimeError('native controls require Python assertion checking')
 assert 0 < args.lock_wait_seconds <= 1800
 args.compiler = args.compiler.resolve(strict=True)
 args.package_provenance = args.package_provenance.resolve(strict=True)
@@ -34,6 +40,7 @@ record = {'schema_version': 1, 'supervisor_pid': os.getpid(), 'started_at': time
           'compiler_sha256': hashlib.sha256(args.compiler.read_bytes()).hexdigest(),
           'package_provenance_sha256': hashlib.sha256(args.package_provenance.read_bytes()).hexdigest(),
           'runner_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+          'partitioning_policy': args.partitioning_policy, 'inherited_lock_fd': args.lock_fd,
           'lock_wait_limit_seconds': args.lock_wait_seconds,
           'status': 'waiting for shared lock', 'commands': [], 'histories': []}
 
@@ -43,21 +50,15 @@ def save():
 
 
 save()
-lock = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock').open('a+')
-def admission_timeout(signum, frame):
-    raise TimeoutError('shared resource admission deadline')
-previous_alarm = signal.signal(signal.SIGALRM, admission_timeout)
-signal.alarm(args.lock_wait_seconds)
+lock_scope = ExitStack()
+atexit.register(lock_scope.close)
 print('Owned native-control supervisor', os.getpid(), 'waiting for shared slot', flush=True)
 try:
-    fcntl.flock(lock, fcntl.LOCK_EX)
+    lock_scope.enter_context(workload_lock(CANONICAL_LOCK, args.lock_wait_seconds, args.lock_fd))
 except TimeoutError:
     record.update(status='lock admission timed out; no compiler started', finished_at=time.time())
     save()
     raise SystemExit(1)
-finally:
-    signal.alarm(0)
-    signal.signal(signal.SIGALRM, previous_alarm)
 assert shutil.disk_usage(args.receipt).free >= 9 * 2**30
 for name, expected in package['files'].items():
     assert hashlib.sha256((prefix / name).read_bytes()).hexdigest() == expected, name
@@ -119,8 +120,12 @@ for count in [1, 4, 64]:
                 '-Zunstable-options', '--jobs-backend=2',
                 '-o', 'native-entry', f'-Ccodegen-units={count}', '-Cdebuginfo=2',
                 f'-Cincremental=cache-{count}', '-Zhuman-readable-cgu-names',
-                '-Zprint-mono-items=yes', '-Zquery-dep-graph',
-                f'-Zstable-cgu-partitioning={str(enabled).lower()}']
+                '-Zprint-mono-items=yes', '-Zquery-dep-graph']
+        if args.partitioning_policy == 'stable-mono-cgu':
+            argv += ['-Zstable-cgu-partitioning=no',
+                     '-Zstable-mono-cgu-partitioning=' + ('yes' if enabled else 'no')]
+        else:
+            argv += [f'-Zstable-cgu-partitioning={str(enabled).lower()}']
         output = command(argv)
         reuse = {}; occupied = set()
         for line in output.splitlines():
@@ -131,15 +136,23 @@ for count in [1, 4, 64]:
                 units = line.split(' @@ ', 1)[1]
                 occupied.update(unit.split('[', 1)[0] for unit in units.split())
         assert len(reuse) == count, reuse
-        assert any('stable-cgu-v1' in name for name in reuse) == enabled
-        if enabled and count == 64:
+        marker = ('stable-mono-cgu-v1' if args.partitioning_policy == 'stable-mono-cgu'
+                  else 'stable-cgu-v1')
+        assert any(marker in name for name in reuse) == enabled
+        if args.partitioning_policy == 'stable-mono-cgu':
+            assert not any('stable-cgu-v1' in name for name in reuse), 'module policy unexpectedly active'
+        if enabled and count == 64 and args.partitioning_policy == 'stable-cgu':
             assert len(occupied) < count, 'empty CGU coverage was not exercised'
+        # Per-item roots include entrypoint, statics and generic support code;
+        # unlike module buckets, they need not leave any of these 64 buckets
+        # empty. Exact-root empty-bucket coverage belongs to run-make controls.
         expected = 65 * 20 + 65 * 64 // 2 + (100 if edited else 0)
         assert command([str(args.receipt / 'native-entry')]).strip() == str(expected)
         record['histories'].append({'count': count, 'state': state, 'enabled': enabled,
                                     'source_sha256': hashlib.sha256((args.receipt / 'main.rs').read_bytes()).hexdigest(),
                                     'binary_sha256': hashlib.sha256((args.receipt / 'native-entry').read_bytes()).hexdigest(),
                                     'reuse': reuse, 'occupied_cgus': len(occupied),
+                                    'partitioning_policy': args.partitioning_policy,
                                     'expected_output': expected})
         save()
 

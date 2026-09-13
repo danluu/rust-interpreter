@@ -41,7 +41,8 @@ class WorkerScreenContracts(unittest.TestCase):
         a, b, q = 'a' * 64, 'b' * 64, Path('/qualification/result.json')
         screen.validate_comparison('frontend-workers', a, a, None, None, worker_qualification=q)
         for change in [dict(candidate_key=b), dict(compiler_key=b), dict(candidate_std=Path('/std/other')),
-                       dict(baseline_cargo_key=b), dict(candidate_cargo_key=b), dict(worker_qualification=None)]:
+                       dict(baseline_cargo_key=b), dict(candidate_cargo_key=b), dict(worker_qualification=None),
+                       dict(compiler_qualification=q), dict(source_observables=q)]:
             args = dict(policy='frontend-workers', baseline_key=a, candidate_key=a, compiler_key=None,
                         candidate_std=None, worker_qualification=q) | change
             with self.assertRaises(RuntimeError):screen.validate_comparison(**args)

@@ -81,12 +81,13 @@ class MonoScreenContracts(unittest.TestCase):
     def test_comparison_and_all_27_commands_keep_exact_common_work(self):
         key, compiler, std, receipt = 'a' * 64, 'c' * 64, Path('/std/on/ready.json'), Path('/owned/result.json')
         screen.validate_comparison('stable-mono-cgu', key, key, compiler, std,
-                                   compiler_qualification=receipt)
+                                   compiler_qualification=receipt, source_observables=receipt)
         for changes in [dict(candidate_key='b' * 64), dict(compiler_key=None),
-                        dict(candidate_std=None), dict(compiler_qualification=None),
+                        dict(candidate_std=None), dict(compiler_qualification=None), dict(source_observables=None),
                         dict(baseline_cargo_key='f' * 64)]:
             arguments = dict(policy='stable-mono-cgu', baseline_key=key, candidate_key=key,
-                             compiler_key=compiler, candidate_std=std, compiler_qualification=receipt)
+                             compiler_key=compiler, candidate_std=std, compiler_qualification=receipt,
+                             source_observables=receipt)
             with self.assertRaises(RuntimeError):
                 screen.validate_comparison(**(arguments | changes))
         for index in range(9):
