@@ -1,7 +1,9 @@
 # Next compute-bound candidate: guarded indirect calls
 
-This is an implementation design, not an executed experiment. The launcher
-comparison remains the active measurement. No runtime source is changed here.
+The first implementation and five new Rust tests are now written on
+`experiment/guarded-indirect-20260912`; they have not yet been built or executed.
+The launcher comparison remains the active measurement, against frozen tools.
+Runtime qualification waits until it releases the shared benchmark lock.
 
 The current-artifact census found1,025,947 interpreted indirect calls in the
 token block-boundary test and843,776 in the exhaustive test. The block test's
