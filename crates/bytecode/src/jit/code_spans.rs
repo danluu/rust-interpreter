@@ -16,6 +16,8 @@ mod scratch_census;
 #[cfg(test)]
 mod flush_census;
 #[cfg(test)]
+mod indirect_flush;
+#[cfg(test)]
 mod memory_parts;
 #[cfg(test)]
 mod continuation_census;

@@ -57,6 +57,8 @@ mod flush_census;
 #[cfg(test)]
 mod memory_parts;
 #[cfg(test)]
+mod successor_flush_tests;
+#[cfg(test)]
 mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
@@ -376,6 +378,8 @@ pub(crate) struct Jit<'a> {
     #[cfg(test)]
     observe_flush: bool,
     #[cfg(test)]
+    omit_dead_exit_spills: Option<bool>,
+    #[cfg(test)]
     observe_memory_parts: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
@@ -415,6 +419,8 @@ impl<'a> Jit<'a> {
             observe_scratch_locals: false,
             #[cfg(test)]
             observe_flush: false,
+            #[cfg(test)]
+            omit_dead_exit_spills: None,
             #[cfg(test)]
             observe_memory_parts: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
@@ -659,7 +665,11 @@ impl<'a> Jit<'a> {
                 }
                 #[cfg(test)]
                 { a.flush_tail_consumed = terminal.is_none(); }
-                a.flush_facts(start, pc);
+                #[cfg(test)]
+                let retain_tail_reads = !self.omit_dead_exit_spills.unwrap_or(self.indirect.is_some());
+                #[cfg(not(test))]
+                let retain_tail_reads = self.indirect.is_none();
+                a.flush_facts(start, pc, retain_tail_reads);
                 span!(Flush, None);
                 a.exit(terminal, pc)?;
                 if terminal.is_some() { span!(Operation, Some(pc - 1)); }
@@ -1075,6 +1085,8 @@ struct Assembler<'a> {
     #[cfg(test)]
     observe_flush: bool,
     #[cfg(test)]
+    omit_dead_exit_spills: Option<bool>,
+    #[cfg(test)]
     flush_tail_consumed: bool,
     #[cfg(test)]
     flush_spans: Vec<flush_census::Span>,
@@ -1118,6 +1130,8 @@ impl Default for Assembler<'_> {
             protocol_spans: Default::default(),
             scratch: Default::default(),
             observe_flush: false,
+            #[cfg(test)]
+            omit_dead_exit_spills: None,
             flush_tail_consumed: false,
             flush_spans: vec![],
             memory_parts: Default::default(),
@@ -1555,7 +1569,7 @@ impl Assembler<'_> {
             }
         }
     }
-    fn flush_facts(&mut self, start: usize, end: usize) {
+    fn flush_facts(&mut self, start: usize, end: usize, retain_tail_reads: bool) {
         // Registers are not guest-addressable. A value used only inside this
         // straight-line region needs no spill. Conservatively retain every
         // value read elsewhere. Also retain values read before their first
@@ -1564,7 +1578,11 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
+                // exit() still reads branch operands from these same facts. This
+                // loop neither discards facts nor overwrites their x5/x6 values.
+                // Native tree-call tails retain their original contract.
+                return (values.live.after(end - 1, reg)
+                    || retain_tail_reads && values.live.at(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))
