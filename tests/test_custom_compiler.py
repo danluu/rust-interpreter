@@ -133,12 +133,36 @@ class CustomCompilerTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'binary mismatch'):
             custom.validate_tool_compiler(tools, key, self.compiler)
 
-    def test_macos_audit_rejects_live_build_library_paths(self):
+    def audit_commands(self, commands):
+        output = 'fixture:\n' + ''.join(
+            f'Load command {index}\n          cmd {kind}\n      cmdsize 128\n'
+            f'         {"path" if kind == "LC_RPATH" else "name"} {name} (offset 24)\n'
+            for index, (kind, name) in enumerate(commands))
         with patch.object(custom.sys, 'platform', 'darwin'), \
-             patch.object(custom.subprocess, 'check_output', return_value=
-                'rustc:\n\t/live/build/libLLVM.dylib (compatibility version 0.0.0, current version 0.0.0)\n'):
-            with self.assertRaisesRegex(RuntimeError, 'outside its installation'):
-                custom.audit_macos_libraries(self.compiler.sysroot)
+             patch.object(custom.subprocess, 'check_output', return_value=output) as probe:
+            custom.audit_macos_libraries(self.compiler.sysroot)
+        self.assertTrue(all(call.args[0][1] == '-l' for call in probe.call_args_list))
+
+    def test_macos_audit_accepts_dylib_self_identity_without_treating_it_as_a_load(self):
+        self.audit_commands([('LC_ID_DYLIB', '/live/build/libmacro.dylib'),
+                             ('LC_LOAD_DYLIB', '/usr/lib/libSystem.B.dylib')])
+
+    def test_macos_audit_rejects_live_paths_for_every_actual_load_kind(self):
+        for kind in ['LC_LOAD_DYLIB', 'LC_LOAD_WEAK_DYLIB', 'LC_REEXPORT_DYLIB',
+                     'LC_LOAD_UPWARD_DYLIB', 'LC_LAZY_LOAD_DYLIB']:
+            with self.subTest(kind=kind), self.assertRaisesRegex(RuntimeError, 'outside its installation'):
+                self.audit_commands([('LC_ID_DYLIB', '/live/build/libmacro.dylib'),
+                                     (kind, '/live/build/libLLVM.dylib')])
+
+    def test_macos_audit_preserves_internal_library_and_rpath_checks(self):
+        self.audit_commands([('LC_LOAD_DYLIB', '@rpath/librustc_driver-fixture.dylib'),
+                             ('LC_RPATH', '@executable_path/../lib')])
+        with self.assertRaisesRegex(RuntimeError, 'absent from installation'):
+            self.audit_commands([('LC_LOAD_DYLIB', '@rpath/libMissing.dylib')])
+        with self.assertRaisesRegex(RuntimeError, 'search path escapes'):
+            self.audit_commands([('LC_RPATH', '/live/build')])
+        with self.assertRaisesRegex(RuntimeError, 'unrecognized'):
+            self.audit_commands([('LC_UNKNOWN_DYLIB', '/usr/lib/libSystem.B.dylib')])
 
 
 if __name__ == '__main__':

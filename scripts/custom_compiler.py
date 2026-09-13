@@ -170,12 +170,36 @@ def audit_macos_libraries(sysroot):
         if path.startswith('@executable_path/'):
             return sysroot / 'bin' / path.removeprefix('@executable_path/')
         return None
+    load_commands = {'LC_LOAD_DYLIB', 'LC_LOAD_WEAK_DYLIB', 'LC_REEXPORT_DYLIB',
+                     'LC_LOAD_UPWARD_DYLIB', 'LC_LAZY_LOAD_DYLIB'}
     for binary in files:
-        links = subprocess.check_output(['/usr/bin/otool', '-L', str(binary)], text=True)
-        for line in links.splitlines()[1:]:
-            if not line.startswith('\t'):
+        commands = subprocess.check_output(['/usr/bin/otool', '-l', str(binary)], text=True)
+        blocks = re.split(r'(?m)^Load command \d+\s*$', commands)[1:]
+        require(blocks, 'compiler binary has no readable Mach-O load commands: ' + str(binary))
+        for block in blocks:
+            match = re.search(r'(?m)^\s*cmd (LC_\w+)\s*$', block)
+            require(match is not None, 'malformed compiler Mach-O load command')
+            kind = match[1]
+            # `otool -L` includes LC_ID_DYLIB, which names this library rather
+            # than loading anything. Only actual load edges affect closure.
+            if kind == 'LC_ID_DYLIB':
                 continue
-            path = line.strip().split(' (compatibility version ', 1)[0]
+            require(not kind.endswith('_DYLIB') or kind in load_commands,
+                    'unrecognized compiler library load command: ' + kind)
+            if kind == 'LC_RPATH':
+                match = re.search(r'(?m)^\s*path (.+) \(offset \d+\)\s*$', block)
+                require(match is not None, 'malformed compiler loader search path')
+                path = match[1]
+                resolved = local(path, binary)
+                require(system(path) or (resolved is not None
+                        and resolved.resolve(strict=True).is_relative_to(sysroot)),
+                        'compiler loader search path escapes installation: ' + path)
+                continue
+            if kind not in load_commands:
+                continue
+            match = re.search(r'(?m)^\s*name (.+) \(offset \d+\)\s*$', block)
+            require(match is not None, 'malformed compiler library dependency')
+            path = match[1]
             if system(path):
                 continue
             if path.startswith('@rpath/'):
@@ -186,17 +210,6 @@ def audit_macos_libraries(sysroot):
             resolved = local(path, binary)
             require(resolved is not None and resolved.resolve(strict=True).is_relative_to(sysroot),
                     'compiler library refers outside its installation: ' + path)
-        commands = subprocess.check_output(['/usr/bin/otool', '-l', str(binary)], text=True)
-        rpath = False
-        for line in commands.splitlines():
-            if line.strip().startswith('cmd '):
-                rpath = line.strip() == 'cmd LC_RPATH'
-            elif rpath and (match := re.match(r'\s*path (.+) \(offset \d+\)', line)):
-                path = match[1]
-                resolved = local(path, binary)
-                require(system(path) or (resolved is not None
-                        and resolved.resolve(strict=True).is_relative_to(sysroot)),
-                        'compiler loader search path escapes installation: ' + path)
 
 
 def install_compiler(root, source, provenance):
