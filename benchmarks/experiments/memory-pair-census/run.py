@@ -2,6 +2,7 @@
 from collections import Counter
 from pathlib import Path
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -21,6 +22,7 @@ from workflow_io import capture, require_space, write_json as write
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--reuse-controls-from')
     args = parser.parse_args()
     assert re.fullmatch(r'memory-pair-census-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -57,7 +59,33 @@ def main():
             ('inspect', ['/usr/bin/otool', '-s', '__TEXT', '__text', str(work / 'control.o')]),
             ('decoder-tests', [sys.executable, '-B', '-m', 'unittest', 'test_decoder', '-v'])]
         records = []
-        for label, command in commands:
+        if args.reuse_controls_from:
+            assert args.reuse_controls_from == 'memory-pair-census-01'
+            prior = ROOT / '.work' / args.reuse_controls_from
+            terminal_path = ROOT / '.work/experiments' / args.reuse_controls_from / 'status.json'
+            terminal = json.loads(terminal_path.read_text())
+            assert terminal['status'] == 'finished' and terminal['returncode'] == 1
+            log_path = terminal_path.with_name('command.log')
+            assert sha(log_path) == terminal['log_sha256']
+            assert "TypeError: dict() got multiple values for keyword argument 'offset'" in log_path.read_text()
+            old_plan = json.loads((prior/'plan.json').read_text())
+            for path, digest in old_plan['frozen'].items():
+                if path == str(Path(__file__).relative_to(ROOT)):
+                    original = subprocess.check_output(['git','show',old_plan['source_revision']+':'+path])
+                    assert hashlib.sha256(original).hexdigest() == digest
+                else: assert sha(ROOT/path) == digest, path
+            records = json.loads((prior/'records.json').read_text())
+            assert [(r['label'],r['returncode']) for r in records] == [('assemble',0),('inspect',0),('decoder-tests',0)]
+            assert 'Ran 3 tests' in records[-1]['stderr'] and records[-1]['stderr'].rstrip().endswith('OK')
+            words = [int(w,16) for line in records[1]['stdout'].splitlines() if re.match(r'^[0-9a-f]{16}\s',line) for w in line.split()[1:]]
+            assert len(words) == 12
+            for i in range(0,12,3): assert pair(*words[i:i+2])['word'] == words[i+2]
+            for p in [prior/'plan.json',prior/'records.json',terminal_path,log_path]:
+                frozen[str(p.relative_to(ROOT))] = sha(p)
+            plan = json.loads((work/'plan.json').read_text()); plan['frozen'] = frozen
+            plan['retained_controls_from'] = args.reuse_controls_from
+            write(work/'plan.json',plan);write(work/'records.json',records)
+        for label, command in ([] if args.reuse_controls_from else commands):
             require_space(ROOT, 8)
             child, out, err = capture(command, cwd=Path(__file__).parent, env=env,
                 receipt_path=work / 'active.json', receipt=dict(label=label))
@@ -105,7 +133,7 @@ def main():
                         key = s['operation'] + '/' + s['part']
                         static[key] += 1; weighted[key] += hits
                         site = dict(function=fid, name=f['name'], pc=s['pc'],
-                            offset=offset, operation=s['operation'], hits=hits, samples=0, **decoded)
+                            code_offset=offset, operation=s['operation'], hits=hits, samples=0, **decoded)
                         for pc in [offset, offset + 4]:
                             assert pc not in by_pc; by_pc[pc] = len(sites)
                         sites.append(site); offset += 8
@@ -139,7 +167,8 @@ def main():
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
         result = ROOT / 'results' / args.run_id; result.mkdir(exist_ok=False)
         write(result / 'summary.json', dict(status='passed', cases=cases, decoder_tests=3,
-            assembler_controls=4, guest_commands=0, executable_code_publications=0,
+            assembler_controls=4, retained_control_commands=3 if args.reuse_controls_from else 0,
+            new_control_commands=0 if args.reuse_controls_from else 3, guest_commands=0, executable_code_publications=0,
             performance_measurement=False, raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work/'plan.json'), records_sha256=sha(work/'records.json'),
             reports={label:sha(work/(label+'.json')) for label in ['block','exhaustive']},
