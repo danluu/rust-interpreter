@@ -49,3 +49,22 @@ Compiler validation, std readiness, Cargo, export validation, and execution rema
 inside their ordinary launcher boundaries. A same-toolset off/on screen still
 needs a frozen plan, independent caches, actual edits, and correctness controls;
 installing these tools makes no performance claim.
+
+Before a workload comparison, qualify the real installed pair in the same
+checkout where it will run:
+
+```sh
+python3 scripts/qualify_custom_compiler.py --compiler-key COMPILER_KEY --tool-key TOOL_KEY --run-id custom-integration-01
+```
+
+The harness requires the tool build's Rust sources and Cargo identity to match,
+prepares and verifies both std-MIR namespaces, and runs 22 complete launcher
+commands on a fresh local path-only workspace. It checks shared native/guest
+dependencies, a native build script and proc macro, changed computed values,
+16 expected uncalled-error rejections, and compiled restoration. Cargo verbose
+receipts establish the actual compiler paths and host/guest roles. Passing
+off/on bytecode must agree; restored bytecode must match the original. All
+commands, outputs, selected bytecode, and failed runs are retained under the
+explicit run ID. This tests correctness; its small fixture and times are not
+performance evidence or a holdout. The caller must configure this checkout's
+`.work/benchmark.lock` to the campaign's shared lock before admitting work.
