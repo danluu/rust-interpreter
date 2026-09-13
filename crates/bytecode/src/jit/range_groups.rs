@@ -19,6 +19,8 @@ struct State {
     slots: BTreeMap<usize, Value>,
     dirty: Vec<(usize, usize)>,
     all_dirty: bool,
+    disjoint_mode: bool,
+    protected_root: Option<Root>,
 }
 
 impl State {
@@ -32,10 +34,31 @@ impl State {
         }
     }
     fn load_slot(&self, offset: usize) -> Value {
-        if let Some(&value) = self.slots.get(&offset) { return value; }
-        if self.all_dirty || self.dirty.iter().any(|&(lo, hi)| lo < offset + 8 && offset < hi) {
+        let value = if let Some(&value) = self.slots.get(&offset) { value }
+        else if self.all_dirty || self.dirty.iter().any(|&(lo, hi)| lo < offset + 8 && offset < hi) {
             Value::Opaque
-        } else { Value::Pointer(Root::FrameSlot(offset), 0) }
+        } else { Value::Pointer(Root::FrameSlot(offset), 0) };
+        // Only this root may inherit the frame-disjoint assumption. A different
+        // root or a loaded constant must not silently acquire that dependency.
+        match self.protected_root {
+            Some(root) if !matches!(value,Value::Pointer(r,_) if r == root) => Value::Opaque,
+            _ => value,
+        }
+    }
+    fn write_address(&mut self, address: Reg, size: usize, value: Value, frame: usize) {
+        let local = self.local(address,size,frame);
+        if local.is_none() && self.disjoint_mode && (1..=128).contains(&size) {
+            if let Value::Pointer(root,_) = self.get(address) {
+                let protected = *self.protected_root.get_or_insert(root);
+                if protected == root {
+                    // CONDITIONAL: every modeled write through this root is
+                    // within the group's range, which a future guard must prove
+                    // disjoint from the whole active frame. No execution changes.
+                    return;
+                }
+            }
+        }
+        self.write(local,size,value);
     }
     fn write(&mut self, offset: Option<usize>, size: usize, value: Value) {
         if size == 0 { return; }
@@ -97,11 +120,11 @@ impl State {
         };
         // Read source values before any destination or aliased register changes.
         match *op {
-            Op::Store {address,src,size} => self.write(self.local(address,size.into(),frame),size.into(),self.get(src)),
+            Op::Store {address,src,size} => self.write_address(address,size.into(),self.get(src),frame),
             Op::Copy {dst,src,size} => {
                 let value = if size == 8 { self.local(src,8,frame).map_or(Value::Opaque,|o| self.load_slot(o)) }
                     else {Value::Opaque};
-                self.write(self.local(dst,size,frame),size,value);
+                self.write_address(dst,size,value,frame);
             }
             Op::Imm {..}|Op::Local {..}|Op::Load {..}|Op::Binary {..}|Op::Unary {..}|Op::Cast {..}
             |Op::Select {..}|Op::Jump {..}|Op::Switch {..}|Op::Assert {..}|Op::Return|Op::Trap {..}
@@ -121,10 +144,15 @@ const KEYS: [&str; 7] = ["fixed_addresses","local_addresses","unknown_addresses"
     "entry_pointer_addresses","all_group_addresses","best_group_addresses","best_group_redundant_checks"];
 
 fn function(f: &Function, intervals: &[(usize,usize,u64)], budget: &mut usize) -> Option<serde_json::Value> {
+    function_with_mode(f,intervals,budget,false)
+}
+
+fn function_with_mode(f: &Function, intervals: &[(usize,usize,u64)], budget: &mut usize,
+    disjoint: bool) -> Option<serde_json::Value> {
     if f.code.len() > MAX_ITEMS || f.registers > MAX_ITEMS {return None;}
-    let mut totals=[0u64;7];let mut groups=vec![];
+    let mut totals=[0u64;7];let mut conditional=[0u64;2];let mut groups=vec![];
     for &(start,end,hits) in intervals {
-        let mut state=State::default();let mut by_root=BTreeMap::<Root,Group>::new();
+        let mut state=State {disjoint_mode:disjoint,..State::default()};let mut by_root=BTreeMap::<Root,Group>::new();
         for pc in start..end {
             let op=&f.code[pc];
             let mut operands=1usize;
@@ -162,37 +190,65 @@ fn function(f: &Function, intervals: &[(usize,usize,u64)], budget: &mut usize) -
             let count=g.accesses as u64;
             totals[5]=totals[5].checked_add(hits.checked_mul(count)?)?;
             totals[6]=totals[6].checked_add(hits.checked_mul(count-1)?)?;
-            groups.push(serde_json::json!({"start":start,"end":end,"hits":hits,"root":root,
+            let mut group=serde_json::json!({"start":start,"end":end,"hits":hits,"root":root,
                 "minimum_offset":g.low,"maximum_end":g.high,"span":g.high-g.low,"writes":g.writes,
                 "accesses":count,"conditional_redundant_checks":hits.checked_mul(count-1)?,"sites":g.sites,
-                "sites_truncated":g.accesses>g.sites.len()}));
+                "sites_truncated":g.accesses>g.sites.len()});
+            if disjoint {
+                let needed=state.protected_root==Some(*root);
+                group["requires_frame_disjoint"]=needed.into();
+                if needed {
+                    conditional[0]=conditional[0].checked_add(hits.checked_mul(count)?)?;
+                    conditional[1]=conditional[1].checked_add(hits.checked_mul(count-1)?)?;
+                }
+            }
+            groups.push(group);
         }
     }
     groups.sort_by_key(|g|std::cmp::Reverse(g["conditional_redundant_checks"].as_u64().unwrap()));groups.truncate(10);
-    let counts:serde_json::Map<_,_>=KEYS.into_iter().zip(totals.map(serde_json::Value::from)).map(|(k,v)|(k.into(),v)).collect();
+    let mut counts:serde_json::Map<_,_>=KEYS.into_iter().zip(totals.map(serde_json::Value::from)).map(|(k,v)|(k.into(),v)).collect();
+    if disjoint {
+        counts.insert("frame_disjoint_group_addresses".into(),conditional[0].into());
+        counts.insert("frame_disjoint_redundant_checks".into(),conditional[1].into());
+    }
     Some(serde_json::json!({"counts":counts,"top_groups":groups}))
 }
 
 pub(super) fn census(program:&Program,bytes:&[u8])->Result<serde_json::Value,String> {
+    census_with_mode(program,bytes,false)
+}
+
+pub(super) fn disjoint_census(program:&Program,bytes:&[u8])->Result<serde_json::Value,String> {
+    census_with_mode(program,bytes,true)
+}
+
+fn census_with_mode(program:&Program,bytes:&[u8],disjoint:bool)->Result<serde_json::Value,String> {
     crate::validate(program)?;
     let profile=super::register_width_profile::parse(program,bytes)?;
     let mut remaining=MAX_WORK;let mut rows=vec![];let mut declined=vec![];
     for (id,(f,p)) in program.functions.iter().zip(&profile.functions).enumerate() {
         let intervals:Vec<_>=p.intervals().collect();if intervals.is_empty(){continue;}
         let allowance=remaining.min(MAX_FUNCTION_WORK);let mut budget=allowance;
-        let result=function(f,&intervals,&mut budget);remaining-=allowance-budget;
+        let result=if disjoint {function_with_mode(f,&intervals,&mut budget,true)} else {function(f,&intervals,&mut budget)};
+        remaining-=allowance-budget;
         if let Some(mut row)=result {row["function"]=id.into();row["name"]=f.name.clone().into();rows.push(row);}
         else {declined.push(serde_json::json!({"function":id,"reason":"analysis or counter bound","opportunities":null}));}
     }
     let mut totals=serde_json::Map::new();
-    for key in KEYS {
+    let mut keys=KEYS.to_vec();
+    if disjoint {keys.extend(["frame_disjoint_group_addresses","frame_disjoint_redundant_checks"]);}
+    for key in keys {
         let total=rows.iter().try_fold(0u64,|sum,r|sum.checked_add(r["counts"][key].as_u64().unwrap())).ok_or("range-group count overflow")?;
         totals.insert(key.into(),total.into());
     }
     rows.sort_by_key(|r|std::cmp::Reverse(r["counts"]["best_group_redundant_checks"].as_u64().unwrap()));
-    Ok(serde_json::json!({"schema_version":1,"status":"counted","counts":totals,"functions":rows,
+    let mut result=serde_json::json!({"schema_version":1,"status":"counted","counts":totals,"functions":rows,
         "declined_functions":declined,"analysis_work":MAX_WORK-remaining,"guest_instructions_executed":0,"emitter_changed":false,
-        "scope":"Conditional entry-root groups in exact native intervals, at least three fixed accesses and at most4KiB extent. Best one group per interval reported separately. Not an implemented guard, measured guard hit rate, emitted saving or latency estimate."}))
+        "scope":"Conditional entry-root groups in exact native intervals, at least three fixed accesses and at most4KiB extent. Best one group per interval reported separately. Not an implemented guard, measured guard hit rate, emitted saving or latency estimate."});
+    if disjoint {
+        result["frame_disjoint_assumption"]="At most one entry root per interval may preserve its frame-slot identity across its modeled writes, only if the entire guarded range is disjoint from the active frame. Other roots and unmodeled effects invalidate slots. This is a conditional census, not a proof the guard passes.".into();
+    }
+    Ok(result)
 }
 
 #[cfg(test)]

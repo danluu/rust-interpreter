@@ -124,6 +124,15 @@ the first write; ignoring aliasing is not a valid optimization. Count this
 separately before implementation, keeping original-path fallback mandatory.
 [Range groups and limitations](../results/range-groups-census-01/assessment.md).
 
+
+The conditional disjointness census now completes thirteen offline controls,
+with all three prior CLI outputs byte-identical and no analysis exclusions.
+The block test expands to265.03M conditional redundant checks;229.94M are in
+36-/108-access generic SipHash regions over32 bytes. This justifies implementing
+a bounded guarded region, with complete range/alias proofs and original ordered
+fallback, under suggestion2.5. It does not establish guard hit rate or speedup.
+[Conditional census and next qualification](../results/disjoint-frame-census-01/assessment.md).
+
 Original integration checkpoint (subsequently completed): the rebuilt VM matches
 the measured runtime exactly;428 Rust tests per profile
 and223 new cache/Cargo commands pass. The first project qualification stopped
