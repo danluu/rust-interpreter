@@ -388,6 +388,8 @@ def _main(resources):
     if stats:timings['function_cache']=args.function_cache
     if stats:timings['borrowck_cache']=args.borrowck_cache
     if stats:timings['host_proc_macro_opt']=args.host_proc_macro_opt
+    if stats and args.compiler_argv_record_dir is not None:
+        timings['compiler_argv_record_dir']=str(args.compiler_argv_record_dir)
     if custom:
         timings['custom_compiler']=dict(key=custom.key,rustc=str(custom.rustc),
             rustc_sha256=custom.identity['files']['bin/rustc'],compiler=custom.identity['compiler'],
