@@ -4,8 +4,15 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current priority: qualify and prospectively measure a composition of memory
-operands and compiler-identity lookup caching. The memory-only comparison
+Current action: integrate the memory/lookup composition from current main and
+qualify the complete rebuilt tool before merging. All five prospective gates
+and all 726 expected commands pass. Final source and frozen-input verification
+is complete; the timing controller is terminal. Preserve the exact measured
+tools and the separate unapplied binding-observer draft.
+[Complete result](results/memory-lookup-complete-01/assessment.md).
+
+Completed comparison context: the new composition combines memory operands
+and compiler-identity lookup caching. The earlier memory-only comparison
 completes all462 token/folded/pgrust commands. Its refined runtime passes428 Rust
 tests per profile,131 harness checks,7 exact tests,9 suite commands,203 strict
 native/cache checks and3 profiles. Logical work at every PC is identical to
@@ -17,10 +24,9 @@ while retaining the measured token component. It needs new full-command
 measurements and large/private guards, not multiplied historical ratios.
 [Mechanism and qualification](results/memory-operands-profile-01/assessment.md).
 The new composition passes 138 harness tests and 20 strict real Cargo checks.
-Its 726-command controller is active, with Nushell first, then private rg-aot,
-token, folded and pgrust. Finish every mandatory case and assess the frozen
-rules before importing runtime source or changing defaults. No other own
-build, test or profile runs alongside the timed comparison.
+Its 726-command controller completed Nushell, private rg-aot, token, folded and
+pgrust. Every mandatory case and the final frozen-input checks passed before
+source integration. No other own build, test or profile ran alongside timing.
 [Prospective comparison](benchmarks/experiments/memory-lookup/WORKFLOW.md).
 Nushell now completes 132 expected commands and passes its regression margin;
 its 0.93% wall change is inside 5.73% A/A and is not an established speedup.
@@ -28,8 +34,8 @@ Private rg-aot also completes 132 expected commands and passes, improving
 wall 12.55% and CPU 11.53% beyond 2.46%/1.61% A/A. Both large/private guards
 pass. Token completes all 154 commands and passes: wall improves 7.66% and CPU
 6.78% versus wide, with 5.25%/3.94% A/A; wall improves 18.35% versus the fixed
-anchor. It still takes 1.894 times ordinary native Cargo. Finish folded and
-pgrust without retiming any completed case.
+anchor. It still takes 1.894 times ordinary native Cargo. Folded and pgrust
+also pass their guards. No completed case will be retimed.
 
 1. **Keep the completed host-MIR decision.** Wrapper466c60a2 completed all264
    Nushell/pgrust commands with matching artifacts and original assertions.

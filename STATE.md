@@ -9,8 +9,19 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
+The complete memory/lookup composition passes all five predeclared gates and
+all 726 expected commands. Token improves 7.66% wall and 6.78% CPU versus wide,
+and 18.35% wall versus the fixed anchor; it remains 1.894 times ordinary native
+Cargo. Nushell, private rg-aot, folded and pgrust all pass their guards. Pgrust
+improves 5.47% wall and 4.73% CPU with about 1.6% A/A. Final shared-lock
+verification confirms 8,996 case inputs and 440 harness inputs unchanged and
+all sources restored. The timed controller is terminal. Next integrate and
+verify the complete tool from current main; runtime source is not yet merged.
+The separate binding observer remains an unapplied draft.
+[Complete decision](results/memory-lookup-complete-01/assessment.md).
+
 The memory/lookup composition is qualified and its five-case comparison is
-running under one serialized controller. The unchanged memory runtime is
+complete under one serialized controller. The unchanged memory runtime is
 paired with cached compiler-identity discovery; wide-runtime controls use
 fresh discovery. The new harness passes 138 tests and the combined Cargo
 fixture passes all 20 expected commands, including strict rejection of
@@ -34,7 +45,7 @@ improves 7.66% and CPU 6.78% versus wide, with 5.25% wall/3.94% CPU A/A.
 Versus the fixed anchor, wall improves 18.35% and CPU 17.88%; the candidate
 still takes 1.894 times ordinary native Cargo. Its median VM stage is 3.077 s
 and lowering is 0.612 s, including 0.124 s binding. Folded and pgrust remain
-mandatory before adoption; folded is running.
+mandatory before adoption; both now pass in the complete result above.
 [Token result](results/memory-lookup-edit-token-01/stage-assessment.md).
 
 Guarded native indirect-call specialization passes424 Rust tests per profile,
