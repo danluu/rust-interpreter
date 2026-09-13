@@ -17,6 +17,7 @@ from custom_compiler import require
 from qualified_public_tools import (BINARIES, COMPILER_REVISION, HOST_LIBRARY_BUILD_POLICY,
                                     STD_FLAGS, STD_POLICY, TOOLCHAIN, planned_commands)
 from workflow_io import write_json
+from host_library_screen import SCREEN_FILES
 
 LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
 
@@ -54,10 +55,14 @@ def freeze(args):
         *sorted(p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py', '.md']),
         ROOT / 'benchmarks/experiments/host-proc-macro/build.py',
         ROOT / 'docs/HOST-LIBRARY-OPT.md',
+        ROOT / 'benchmarks/corpus.json',
+        *[ROOT / name for name in SCREEN_FILES],
         *[ROOT / 'tests' / name for name in ['test_host_library_launcher.py', 'test_host_library_publication.py',
             'test_host_library_native.py', 'test_host_proc_macro_launcher.py', 'test_host_proc_macro_native.py',
             'test_borrowck_cache.py', 'test_qualified_public_tools.py', 'test_public_tool_publication.py',
-            'test_frontend_worker_publication.py']]]
+            'test_frontend_worker_publication.py', 'test_host_library_screen.py',
+            'test_owned_host_library_screen.py', 'test_strict_warm_screen.py',
+            'test_owned_screen_assessment.py', 'test_custom_cargo.py', 'test_custom_compiler.py']]]
     all_paths = sorted(set([*workspace, *tool_paths, *harness]))
     require(all(p.resolve(strict=True) == p and p.is_file() for p in all_paths),
             'source inventory contains a symlink or non-file')
@@ -108,9 +113,18 @@ def freeze(args):
             tool_build_minimum_free_gib=12, per_command_minimum_free_gib=8),
         publication=dict(composition_kind='qualified-public-toolset-v1', contract=str(contract.relative_to(ROOT)),
             contract_sha256=sha(contract), source_binaries={name: str(target / 'release' / name) for name in BINARIES}),
+        project_preparation=dict(destination=str(owner / '.work/sources/nushell-host-library'),
+            revision='9d3157963241cf89447119d34d6e887859f5e7e8',
+            owner_marker=dict(owner=str(owner), revision='9d3157963241cf89447119d34d6e887859f5e7e8')),
+        screen_request=dict(python=sys.executable,
+            driver=str(owner / 'benchmarks/experiments/strict-warm-build/screen.py'),
+            run_id='strict-warm-host-library-screen-01', source=str(owner / '.work/sources/nushell-host-library'),
+            candidate_policy='host-library-opt', std_mir_ready=str(ready_path), lock_wait_seconds=45,
+            materialize_to=str(work / 'screen-command.json')),
         implementation_contract_tests=dict(status='not-executed', patterns=['test_qualified_public_tools.py',
-            'test_public_tool_publication.py', 'test_frontend_worker_publication.py', 'test_host_library_publication.py'],
-            expected_tests=[5, 5, 2, 5], canonical_lock_required=True),
+            'test_public_tool_publication.py', 'test_frontend_worker_publication.py', 'test_host_library_publication.py',
+            'test_host_library_screen.py', 'test_owned_host_library_screen.py'],
+            expected_tests=[5, 5, 2, 5, 5, 4], canonical_lock_required=True),
         final_qualification=False, performance_claim=False, screen_ready=False, workloads_executed=0)
     planned_commands(plan, {'rustc_path': env['RUSTC']}, {'path': str(public / 'bin/cargo')}, HOST_LIBRARY_BUILD_POLICY)
     write_json(args.output, plan)

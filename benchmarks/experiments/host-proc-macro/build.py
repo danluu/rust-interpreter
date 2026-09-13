@@ -282,16 +282,16 @@ def execute(plan_path):
                                         [ROOT, Path(plan['screen_owner'])])
         write_json(work / 'published.json', publication)
         status = 'public-build-published-worker-qualification-pending' if policy == WORKER_BUILD_POLICY else 'qualified-and-published'
-        entry = ROOT / 'experiments/frontend-workers/build.py' if policy == WORKER_BUILD_POLICY else Path(__file__).resolve()
+        entry = ROOT / 'experiments/host-library-opt/build.py' if policy == HOST_LIBRARY_BUILD_POLICY else \
+            ROOT / 'experiments/frontend-workers/build.py' if policy == WORKER_BUILD_POLICY else Path(__file__).resolve()
         write_json(work / 'result.json', dict(status=status, source_input_key=plan['source_input_key'],
             tool_key=publication['tool_key'], commands=len(commands), publication=publication,
-            materialize_argv=([sys.executable, str(entry), '--plan', str(plan_path),
-                              '--materialize', str(work / 'published.json')]
-                if policy != HOST_LIBRARY_BUILD_POLICY else None),
+            materialize_argv=[sys.executable, str(entry), '--plan', str(plan_path),
+                              '--materialize', str(work / 'published.json')],
             performance_claim=False, screen_executed=False,
             qualification_argv=([sys.executable, str(entry), '--plan', str(plan_path), '--qualify', str(work / 'published.json')]
                 if policy == WORKER_BUILD_POLICY else None),
-            pending='host library real histories qualified; separate screen implementation and admission remain required'
+            pending='host library real histories qualified; integrate exact screen harness and prepare owned source, then materialize'
                 if policy == HOST_LIBRARY_BUILD_POLICY else
                 'integrate exact source/harness; worker build additionally requires external30 qualification before screen'
                 if policy == WORKER_BUILD_POLICY else 'integrate exact screen harness and prepare owned source, then materialize'))

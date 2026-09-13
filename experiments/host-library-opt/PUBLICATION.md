@@ -81,14 +81,18 @@ python3 experiments/host-library-opt/build.py \
 ```
 
 Before that build, the five shared archive tests, five shared publisher tests,
-two existing worker-publication tests and five new library-publication tests
+two existing worker-publication tests, five new library-publication tests,
+five host-library screen tests and four saved host-library assessor tests
 are the focused compatibility selection. These tests are prepared, not run.
 The full build adds five launcher checks and three real histories; counts and
 every result must come from actual retained output.
 
-This handoff makes no performance claim. A later host-library screen still
-needs an explicit off/on/off policy, same newly qualified tool key, source and
-std guards, fresh isolated caches, complete build-to-validated-artifact timing,
-and saved assessment. `materialize_screen_command` rejects this new policy
-until that separate screen implementation and review are complete. Source
-integration into PRIMARY and any timing admission remain root-owned steps.
+This handoff makes no performance claim. The source-only host-library screen
+extension uses explicit off/on/off, the same actual qualified key, source/std
+guards, fresh isolated caches, complete build-to-validated-artifact timing and
+saved assessment. Its contract is
+[HOST_LIBRARY_SCREEN.md](../../benchmarks/experiments/strict-warm-build/HOST_LIBRARY_SCREEN.md).
+After publication, `build.py --plan PLAN --materialize PUBLISHED_JSON` validates
+the final key and integrated runtime harness, then writes the reviewed screen
+command without running it. Source integration, owned source preparation,
+actual qualification and timing admission remain root-owned steps.
