@@ -127,7 +127,8 @@ part of every compilation that requires it.
 
 ## Planned first native baseline
 
-No executable runner or admission plan is provided yet. Before running, freeze
+`baseline.py` and [BASELINE.md](BASELINE.md) now provide a source-only native
+controller and its review/admission procedure. No plan or workload has run. Before running, freeze
 this whole fixture, controller source, actual public Cargo/rustc hashes and
 versions, compiler closure, manifest/config discovery, full commands/environment
 and original source bytes in a fresh owned run directory. Use existing owned
@@ -140,7 +141,10 @@ Cargo and rustc from `nightly-2026-09-08`, the ordinary native std, and an expli
 `--target aarch64-apple-darwin` so host and target roles are observable. Clear
 inherited RUSTFLAGS/encoded flags, rustc/workspace wrappers, RUSTDOCFLAGS/encoded
 doc flags, Cargo build/profile/target overrides and interpreter variables;
-record the resulting environment and reject unbound Cargo configuration. Keep
+record the resulting environment and reject unbound Cargo configuration. The
+reviewed baseline adds its own transparent exec-only compiler recorder, preserving
+the actual public RUSTC, argv, output streams and jobserver FDs; its timings are
+not performance evidence. Keep
 fixture-default features/profile and default libtest concurrency. Set
 `RUSTC` to that exact public compiler and `CARGO_TARGET_DIR` to the owned target.
 The baseline command template is:
@@ -172,8 +176,9 @@ groups below. All are correctness controls, not performance samples.
   artifact used by its native linker; test output alone is insufficient.
 * Unsupported case,1 command in another fresh target, adding
   `--features unsupported-build-operation`: all3 native tests pass, with one
-  actual script execution and one rustc-version child. Record that nested child,
-  exact stdout and both marker files. Restore all source and feature selection.
+  actual script execution and one rustc-version child. Retain that nested child's actual
+  stdout and both marker files. Its PID is not exposed by the unchanged fixture;
+  record that limitation explicitly without fabricating a process receipt. Restore all source and feature selection.
 
 Record the exact three test names and native outcomes, all Cargo JSON/diagnostic
 records, actual compiler argv, script output paths, context/history/generated
