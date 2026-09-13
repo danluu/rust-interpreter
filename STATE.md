@@ -26,10 +26,14 @@ operations now pass433 Rust tests per profile,123 current harness checks and
 and CPU4.66%, beyond3.73%/3.11% A/A. Its full token comparison then passes all
 154 expected outcomes but fails the performance gate: wall+0.78%/CPU+0.06%,
 inside4.84%/2.25% A/A. Keep the runtime experimental; the other four cases
-remain unstarted. Next is post-execution operation attribution of the adopted
-runtime's hot generated code. No goal-state change, unrelated process control or
+remain unstarted. The post-execution operation map now passes436 Rust tests per
+profile,103 harness checks and10 real-test commands. All three current code
+dumps and per-PC profiles match adopted main exactly. Next are two fresh
+same-process native samples for operation attribution.
+No goal-state change, unrelated process control or
 new billing path is authorized.
 [Direct-operand final decision](results/direct-operands-full-01/assessment.md),
+[Verified operation maps](results/operation-map-validation-01/assessment.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Refined binding result](results/replay-costs-token-02/assessment.md),
 [current runtime attribution](results/current-runtime-costs-01/assessment.md),

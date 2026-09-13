@@ -4,8 +4,10 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: qualify post-execution operation spans for the adopted runtime
-and attribute new same-process samples to operations and entry/exit machinery.
+Current action: attribute two new same-process samples to verified operations
+and entry/exit machinery. Post-execution maps pass436 Rust tests per profile,
+103 harness checks and10 real-test commands; all three current generated code
+dumps and per-PC profiles match the adopted runtime exactly.
 The433-test direct-operand candidate passed its40-command screen, but the full
 154-command token comparison finds wall+0.78%/CPU+0.06%, inside4.84%/2.25% A/A.
 Its primary gate fails. Keep the runtime experimental and the other four cases
@@ -20,6 +22,7 @@ must avoid work rather than move it between phases. Runtime candidates use
 predeclared screens and cancel unstarted guards on primary failure; adoption
 still requires every declared guard.
 [Direct-operand final decision](results/direct-operands-full-01/assessment.md),
+[Verified operation maps](results/operation-map-validation-01/assessment.md),
 [Full protocol](benchmarks/experiments/direct-operands/FULL.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Binding decision](results/replay-costs-token-02/assessment.md),
