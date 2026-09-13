@@ -65,6 +65,82 @@ tracked options or normalized by stable content, never by Arc pointer value.
 Disambiguator/new-definition/override/impl-trait/lint/move state keeps its current
 conservative guard. There is no permission here to weaken one to a length check.
 
+## Crate features and ambient-state audit
+
+The current capture key is **not sufficient as a future replay entry key**.
+`Options::dep_tracking_hash(false)` covers command-line settings, but active
+`#![feature(...)]` values come from current crate attributes and are fed into
+`features_query` separately (interface/passes.rs1020; expand/config.rs47).
+Before a hit path, add a versioned normalized entry record containing:
+
+- Language features from `tcx.features().enabled_lang_features()`: sorted
+  `(gate_name.as_str(), stable_since.map(as_str))` records, preserving duplicates.
+- Library features from `enabled_lib_features()`: sorted gate-name strings,
+  preserving duplicates. Both categories matter; do not serialize only language
+  feature methods or the handful of features seen in the current fixture.
+- Check the union of names equals the current `enabled_features()` set. The
+  pinned private set is maintained as that union (feature/unstable.rs47–100).
+  Unknown future state requires a source-policy decision, not silent omission.
+- Each of the eight named `LoweringContext::allow_*` arrays: its **ordered symbol
+  names**, including repetitions, tagged by field name. `allow_gen_future` is
+  selected by `async_fn_track_caller` in `LoweringContext::new` (lib.rs347–369).
+  Existing in-process Arc identity checks do not provide this persistent input.
+
+Feature attribute spans are deliberately excluded from these boolean-input
+records: no admitted skipped body branch reads feature-declaration locations,
+and all feature-declaration diagnostics still run on current source. Feature
+`stable_since` is retained as stable text. If the grammar later admits a path
+that emits such a diagnostic, this narrower normalization is insufficient.
+
+Do not obtain the snapshot by calling every boolean feature getter:
+`Features::enabled` invokes `TRACK_FEATURE` when true (feature/unstable.rs114),
+which records a `QuerySideEffect::CheckFeature` dependency (interface/callbacks.rs55).
+The list/set accessors do not. Keep the ordinary `LoweringContext::new` call,
+its `async_fn_track_caller` read and all normal frontend feature checks. A future
+skipped feature read needs its normal dependency/side-effect replay in addition
+to a correct key; fingerprinting alone does not replay that effect.
+
+This is the bounded admitted-path audit on exact Cmono58:
+
+| Read or branch | Current coverage / required condition |
+| --- | --- |
+| `tcx.features()` inside body helpers | The body-local type branch for `impl_trait_in_bindings` (block.rs84), explicit generic/return-notation branches (path.rs293/528), move/match/range/coroutine branches (expr.rs305/746/887/1425/1597) are excluded. Preserve those exclusions; capture acceptance is not proof for widening them. |
+| `lower_qpath` async trait mapping/allowed features | Requires the whole value path to resolve to `Res::Def(Trait)` (path.rs49/75), which the gate excludes. No qself, bound modifier, unresolved projection or explicit generic argument is admitted. Path-segment lifetime lookup returns `None` by the gate (path.rs421–433). |
+| Call metadata/attributes | The bare external call's legacy-const-generics metadata read is excluded. Local calls return before it (lib.rs406–437). Method lookup remains later ordinary type checking. |
+| Body attributes, tools, AttrId and delayed lints | Body attributes are empty; `lower_attrs_with_extra` returns before `AttributeParser` (lib.rs1188). Paren attrs are also excluded. Attribute alias sources must be empty. Constructor/tool registration, enclosing attributes and all earlier/later lint work remain ordinary. |
+| Edition and spans | `Options.edition` is tracked (session/options.rs417). The gate requires root hygiene and exact current owner source/resolution. Use current SourceMap/parent lowering; remap options are included by `dep_tracking_hash(false)`. Do not replace this with a token-only key. |
+| Environment/configuration | No direct runtime environment read occurs in the admitted stock helpers. Expansion, cfg stripping, includes and environment macros run normally; their actual resolved AST is keyed. `unstable_features` and `-Zallow-features` are tracked; retain the existing forced-version rejection. An unknown future env read requires explicit invalidation/fallback. |
+| Literal conversion / block safety / bindings | Successful literal conversion is determined by the exact token kind/text/suffix, with no ambient read; invalid literals cannot be stored. User unsafe/default blocks, raw/reference borrows and simple binding modes map directly. Source/AST errors still run normally. |
+
+Command-line `lint_opts` and `lint_cap` are `TRACKED_NO_CRATE_HASH`, which
+`dep_tracking_hash(false)` includes (session/options.rs43/348). Crate/module
+`allow`/`deny`/`expect` attributes are **not** covered by that hash. This subset
+never consults lint levels while lowering the body and creates no delayed-lint
+callback, so those scopes need not be encoded into a body replay key. Their
+current HIR attributes and all ordinary lint queries/checks must remain live.
+Do not ask a HIR-dependent lint-level query from inside AST lowering just to
+manufacture a scope fingerprint. `index_ast` forces early lints before stealing
+AST/resolver inputs (lib.rs583–587); interface/passes.rs1133/1225/1245 retains
+delayed-lint emission, late lint checking and expectation checking afterward.
+
+Tiny additional planned controls, all with byte-identical function bodies:
+
+1. Cold/repeated anchor, then add/remove crate `#![feature(async_fn_track_caller)]`;
+   require the normalized language-feature key and allowed-feature-array input
+   to change and the first run in each feature state to miss. Compare ordinary
+   raw diagnostics in each state. Repeat with `#![feature(iter_next_chunk)]`,
+   a pinned library feature (library/core/src/iter/traits/iterator.rs111), to
+   exercise the separate library list; restore the original source afterward.
+2. On an unchanged `fn anchor() -> u32 { let unused = 1; 0 }`, change crate or
+   enclosing-module `#![allow(unused_variables)]` to `#![deny(unused_variables)]`
+   and back. A reused body is permitted, but compilation must now emit exactly
+   the ordinary current-scope lint error; no cached success/diagnostic is valid.
+   Capture stderr without the optional cache-info logs. Also switch `-A` to
+   `-D unused_variables` to require the existing session-option key to miss.
+
+These are planned invalidation/presentation controls, not executed tests or an
+assertion that the current capture checkpoint already serializes this entry.
+
 ## Commit effects and materialization
 
 The event plan records concrete current AST NodeIds, current owner/parameter
