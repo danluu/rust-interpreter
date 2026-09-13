@@ -32,10 +32,12 @@ history. Main's compiler observers/query reuse and validator fixes are preserved
 Borrow-check reuse remains off by default; execution options remain explicit.
 [Integration](results/guarded-ranges-main-qualification-01/assessment.md).
 
-Next: probe the full original pgrust
-SQL-parser library target before declaring new edit timings. Static source
-inspection finds 113 parser tests and one tree-parity test; actual native
-inventory and custom support remain unverified. Preserve pgrust's profile
+The full original pgrust SQL-parser target passes all114 native tests. The
+custom exporter fails before guest execution on boxed `FnOnce` virtual-call
+lowering. The same114 tests were selected; none are excluded. All4,914 frozen
+inputs and the failed command receipts verify without a rerun.
+[Support failure](results/pgrust-parser-support-01-failure/assessment.md).
+Next: qualify a general by-value trait-object receiver fix. Preserve pgrust's profile
 choices and use matched incremental settings for any later warm comparison.
 The actual-emitter local-value census is a separate next optimization candidate.
 The automatic tool cache now includes its selected toolchain identifier: the
