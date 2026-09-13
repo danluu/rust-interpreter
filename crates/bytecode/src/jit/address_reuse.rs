@@ -99,8 +99,8 @@ fn interval(f: &Function, start: usize, end: usize, hits: u64, counts: &mut Coun
     for pc in start..end {
         let op = &f.code[pc];
         let access = match *op {
-            Op::Load { address, size, .. } => Some((address, size, false)),
-            Op::Store { address, size, .. } => Some((address, size, true)),
+            Op::Load { address, size, .. } => Some((address, usize::from(size), false)),
+            Op::Store { address, size, .. } => Some((address, usize::from(size), true)),
             _ => None,
         };
         if let Some((reg, size, write)) = access.filter(|(_, size, _)| *size != 0) {
