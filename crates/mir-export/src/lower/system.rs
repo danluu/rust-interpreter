@@ -8,10 +8,42 @@ impl<'tcx> Lower<'_, 'tcx> {
         if self.c_allocator_function(instance, args, destination)? { return Ok(true); }
         if self.tls_registration(instance, args)? { return Ok(true); }
         let symbol = tcx.symbol_name(instance).name;
-        if !matches!(symbol, "abort" | "CCRandomGenerateBytes" | "sysctlbyname" | "getenv") { return Ok(false); }
+        if !matches!(symbol, "abort" | "CCRandomGenerateBytes" | "sysctlbyname" | "getenv" | "strlen") { return Ok(false); }
         let sig = tcx.fn_sig(instance.def_id()).instantiate(tcx, instance.args);
         let sig = tcx.normalize_erasing_regions(env(), sig);
         let sig = tcx.instantiate_bound_regions_with_erased(sig);
+        if symbol == "strlen" {
+            let inputs = sig.inputs();
+            if sig.abi() != (ExternAbi::C { unwind: false }) || sig.c_variadic()
+                || inputs.len() != 1 || args.len() != 1 || sig.output() != tcx.types.usize
+                || !matches!(inputs[0].kind(), ty::RawPtr(pointee, rustc_hir::Mutability::Not)
+                    if *pointee == tcx.types.i8 || *pointee == tcx.types.u8)
+                || self.layout(inputs[0])?.size.bytes() != 8 {
+                return Err("invalid strlen signature".into());
+            }
+            // Scan with ordinary checked guest loads and charged bytecode
+            // instructions. No host strlen sees a guest address; a missing
+            // terminator reaches the normal memory or instruction limit.
+            let address = self.scalar(&args[0].node)?;
+            let zero = self.imm(0);
+            let one = self.imm(1);
+            let cursor = self.bin(Binary::Add, address, zero, 64, false).0;
+            let length = self.imm(0);
+            let start = self.code.len();
+            let byte = self.load(cursor, 1)?;
+            let branch = self.code.len();
+            self.code.push(Op::Switch { value: byte, cases: vec![(0, 0)], otherwise: branch + 1 });
+            let overflow = self.reg();
+            self.code.push(Op::Binary { dst: cursor, overflow, op: Binary::Add, a: cursor, b: one, bits: 64, signed: false });
+            self.code.push(Op::Binary { dst: length, overflow, op: Binary::Add, a: length, b: one, bits: 64, signed: false });
+            self.code.push(Op::Jump { target: start });
+            let end = self.code.len();
+            let Op::Switch { cases, .. } = &mut self.code[branch] else { unreachable!() };
+            cases[0].1 = end;
+            let destination = self.place(destination)?;
+            self.store(destination.address, length, 8)?;
+            return Ok(true);
+        }
         if symbol == "getenv" {
             let inputs = sig.inputs();
             if sig.abi() != (ExternAbi::C { unwind: false }) || sig.c_variadic()
