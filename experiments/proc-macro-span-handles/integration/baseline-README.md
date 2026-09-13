@@ -1,4 +1,9 @@
-# Native stock-store bridge baseline (prepared, unrun)
+# Native stock-store bridge baseline
+
+The frozen `63f70679` source subsequently passed all four Python boundary
+controls and the two native commands, with all four real bridge tests passing
+in one unfiltered serial process. The earlier zero-test Python identity setup
+failure is retained. See the [complete baseline evidence](../../../results/span-bridge-native-baseline-01/README.md).
 
 `baseline.py` prepares a narrow execution path for the unchanged `c964a9e0`
 fixture. It uses the already installed complete Cmono58 compiler
@@ -65,7 +70,9 @@ dep-info, compiler identity and all fixture sources remain under the new work
 directory. Future compact publication should retain the binary hash and exact
 raw results without presenting the binary as a patched compiler artifact.
 
-Four focused Python boundary controls are prepared in `test_baseline.py`:
+Four focused Python boundary controls are provided in `test_baseline.py`:
 exact unfiltered result validation, two-command native routing, environment
-isolation, and rejection of changed native span-store source. They have not run
-for this source checkpoint. The two native commands have not run either.
+isolation, and rejection of changed native span-store source. Both these tests
+and the native baseline passed on the frozen source recorded above. The
+original source-only manifest and snapshots retain their historical unrun
+status; the linked execution receipts establish the subsequent result.
