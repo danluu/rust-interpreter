@@ -62,11 +62,22 @@ def capture_command(base,label,command,cwd,env):
 def source_inventory(source,base,env,label):
     names=capture_command(base,label+'-files',['git','-C',source,'ls-files','-z'],ROOT,env).split('\0')
     result={}
+    tracked=set(names)
     for name in names:
         if not name:continue
         path=source/name
-        require(path.is_file() and not path.is_symlink(),'unexpected tracked source entry: '+name)
-        result[name]={'sha256':sha(path),'bytes':path.stat().st_size}
+        if path.is_symlink():
+            link=os.readlink(path)
+            target=path.resolve(strict=True)
+            require(not Path(link).is_absolute() and target.is_relative_to(source)
+                    and target.is_file() and str(target.relative_to(source)) in tracked,
+                    'source symlink is not an in-checkout tracked regular file: '+name)
+            result[name]={'kind':'symlink','link_text':link,'sha256':hashlib.sha256(os.fsencode(link)).hexdigest(),
+                          'resolved_relative':str(target.relative_to(source)),
+                          'resolved_sha256':sha(target),'resolved_bytes':target.stat().st_size}
+        else:
+            require(path.is_file(),'unexpected tracked source entry: '+name)
+            result[name]={'kind':'file','sha256':sha(path),'bytes':path.stat().st_size}
     return result
 
 
@@ -106,7 +117,7 @@ def tools(rehash=True):
 
 
 def prepare(args):
-    out=ROOT/'.work/hir-owner-development-setup-01'
+    out=ROOT/f'.work/hir-owner-development-setup-{args.setup_attempt}'
     out.mkdir(parents=True,exist_ok=False)
     env=environment()
     receipt={'status':'waiting','pid':os.getpid(),'parent_pid':os.getppid(),'started_at':time.time(),
@@ -117,15 +128,28 @@ def prepare(args):
         with workload_lock(LOCK,600):
             receipt.update(status='running',lock_acquired_at=time.time(),free_bytes=disk(ROOT))
             write_json(out/'result.json',receipt)
-            require(not DESTINATION.exists(),'source destination already exists')
+            previous=None
+            if args.reuse_source_setup:
+                previous=args.reuse_source_setup.resolve(strict=True)
+                old=json.loads(previous.read_text())
+                require(old['status']=='failed' and old['cargo_commands']==0
+                        and old['destination']==str(DESTINATION) and old['donor']==str(DONOR),
+                        'previous source-only attempt is not this owned clone')
+                require(DESTINATION.is_dir(),'previous clone is absent')
+                receipt['previous_source_setup']={'path':str(previous),'sha256':sha(previous)}
+            else:
+                require(not DESTINATION.exists(),'source destination already exists')
             marker=json.loads((DONOR/'.rust-interp-owned.json').read_text())
             require(marker['revision']==REVISION and marker['owner']==str(DONOR.parents[2]),'donor ownership mismatch')
             require(capture_command(out,'donor-head',['git','-C',DONOR,'rev-parse','HEAD'],ROOT,env).strip()==REVISION,
                     'donor revision differs')
             capture_command(out,'donor-tracked-clean',['git','-C',DONOR,'diff','--exit-code','HEAD','--'],ROOT,env)
-            DESTINATION.parent.mkdir(parents=True,exist_ok=True)
-            capture_command(out,'clone',['git','clone','--no-local','--no-hardlinks','--no-checkout',DONOR,DESTINATION],ROOT,env)
-            capture_command(out,'checkout',['git','-C',DESTINATION,'checkout','--detach',REVISION],ROOT,env)
+            if previous is None:
+                DESTINATION.parent.mkdir(parents=True,exist_ok=True)
+                capture_command(out,'clone',['git','clone','--no-local','--no-hardlinks','--no-checkout',DONOR,DESTINATION],ROOT,env)
+                capture_command(out,'checkout',['git','-C',DESTINATION,'checkout','--detach',REVISION],ROOT,env)
+            require(capture_command(out,'source-head',['git','-C',DESTINATION,'rev-parse','HEAD'],ROOT,env).strip()==REVISION,
+                    'owned source revision differs')
             require(not (DESTINATION/'.git/objects/info/alternates').exists(),'clone depends on alternate objects')
             require(not capture_command(out,'clean',['git','-C',DESTINATION,'status','--porcelain'],ROOT,env).strip(),'clone not clean')
             inventory=source_inventory(DESTINATION,out,env,'source')
@@ -141,6 +165,7 @@ def prepare(args):
             for directory in (QUALIFIED/'source',HELPERS):
                 proofs.update({str(p):sha(p) for p in sorted(directory.rglob('*')) if p.is_file() and '__pycache__' not in p.parts})
             plan={'policy':'development-native-hir-input-coverage-v1','status':'prepared-awaiting-retirement-handoff',
+                'source_setup':str(out),'previous_source_setup':receipt.get('previous_source_setup'),
                 'source':str(DESTINATION),'source_revision':REVISION,'source_inventory_sha256':sha(out/'source-inventory.json'),
                 'compiler_commit':'cea272fa356e94bd2ee2cadf376630aa0683867a','driver':tool['path'],'driver_sha256':DRIVER_SHA,
                 'command':command,'cwd':str(DESTINATION),'environment':cargo_env,'target':str(target),'reports':str(reports),
@@ -186,7 +211,7 @@ def aggregate(reports):
 
 def execute(args):
     require(args.retirement_receipt is not None,'explicit completed retirement receipt is required before Cargo admission')
-    setup=ROOT/'.work/hir-owner-development-setup-01'
+    setup=ROOT/f'.work/hir-owner-development-setup-{args.setup_attempt}'
     require(sha(setup/'plan.json')==args.plan_sha256,'prepared admission hash differs')
     retirement=args.retirement_receipt.resolve(strict=True)
     retired=json.loads(retirement.read_text())
@@ -234,8 +259,11 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('stage',choices=['prepare','run'])
     parser.add_argument('--plan-sha256')
+    parser.add_argument('--setup-attempt',default='01')
+    parser.add_argument('--reuse-source-setup',type=Path)
     parser.add_argument('--retirement-receipt',type=Path)
     args=parser.parse_args()
+    require(args.setup_attempt.isdigit() and len(args.setup_attempt)==2,'invalid setup attempt')
     (prepare if args.stage=='prepare' else execute)(args)
 
 if __name__=='__main__':main()
