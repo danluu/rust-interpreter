@@ -9,6 +9,29 @@
 use crate::{Binary, Function, Op, Program, Reg, Unary};
 use std::collections::{BTreeMap, BTreeSet};
 
+// Labels exist only in offline test builds. The expression and emitted words
+// are identical when observation is disabled or compiled out.
+macro_rules! memory_part {
+    ($a:expr, $part:literal, $body:expr) => {{
+        #[cfg(test)]
+        let previous_part = std::mem::replace(&mut $a.memory_parts.part, $part);
+        let value = $body;
+        #[cfg(test)]
+        { $a.memory_parts.part = previous_part; }
+        value
+    }};
+}
+macro_rules! memory_access {
+    ($a:expr, $access:literal, $body:expr) => {{
+        #[cfg(test)]
+        let previous_access = std::mem::replace(&mut $a.memory_parts.access, $access);
+        let value = $body;
+        #[cfg(test)]
+        { $a.memory_parts.access = previous_access; }
+        value
+    }};
+}
+
 // The bounded-call experiment is staged independently of ordinary regions.
 // Its metadata becomes live when the opt-in native transition is connected.
 #[allow(dead_code)]
@@ -30,6 +53,8 @@ mod limit_tests;
 mod scratch_locals;
 #[cfg(test)]
 mod flush_census;
+#[cfg(test)]
+mod memory_parts;
 #[cfg(test)]
 mod memory_operand_tests;
 
@@ -301,6 +326,8 @@ struct CompiledFunction<'a> {
     #[cfg(test)]
     flush_spans: Vec<flush_census::Span>,
     #[cfg(test)]
+    memory_spans: Vec<memory_parts::Span>,
+    #[cfg(test)]
     retained_local_writes: Vec<(usize, Reg, usize, usize)>,
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
@@ -346,6 +373,8 @@ pub(crate) struct Jit<'a> {
     observe_scratch_locals: bool,
     #[cfg(test)]
     observe_flush: bool,
+    #[cfg(test)]
+    observe_memory_parts: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -384,6 +413,8 @@ impl<'a> Jit<'a> {
             observe_scratch_locals: false,
             #[cfg(test)]
             observe_flush: false,
+            #[cfg(test)]
+            observe_memory_parts: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -485,6 +516,8 @@ impl<'a> Jit<'a> {
         let mut scratch_hits = vec![];
         #[cfg(test)]
         let mut flush_spans = vec![];
+        #[cfg(test)]
+        let mut memory_spans = vec![];
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
@@ -546,6 +579,8 @@ impl<'a> Jit<'a> {
                     scratch: scratch_locals::State::new(self.observe_scratch_locals),
                     #[cfg(test)]
                     observe_flush: self.observe_flush,
+                    #[cfg(test)]
+                    memory_parts: memory_parts::State::new(self.observe_memory_parts),
                     heap: self.uses_heap,
                     reads: &reads,
                     frame_size: f.frame_size,
@@ -603,18 +638,22 @@ impl<'a> Jit<'a> {
                 let body_end = pc-usize::from(terminal.is_some());
                 for (index, op) in f.code[start..body_end].iter().enumerate() {
                     a.current_pc = start + index;
+                    #[cfg(test)]
+                    a.memory_parts.begin(op, start + index, start, pc, a.heap);
                     if let Op::Assert { value, expected, message } = op {
                         let code = assertion_code(assertion_base, assertions.len())?;
                         assertions.push(Assertion { message, function: &f.name, kind: FaultKind::Assertion });
                         a.assertion(*value, *expected, code);
                     } else if let Some(fill) = fills.get(&(start + index)) {
-                        a.local_fill(*fill);
+                        memory_part!(a, "fused_fill", a.local_fill(*fill));
                     } else if resumable && transfers::supported(op) {
                         a.copy_transfer(op)?;
                     } else {
                         a.lower(op);
                     }
                     span!(Operation, Some(start + index));
+                    #[cfg(test)]
+                    a.memory_parts.finish();
                 }
                 #[cfg(test)]
                 { a.flush_tail_consumed = terminal.is_none(); }
@@ -676,6 +715,11 @@ impl<'a> Jit<'a> {
                         span.end += words.len() * 4;
                         flush_spans.push(span);
                     }
+                    for mut span in a.memory_parts.spans {
+                        span.offset += words.len() * 4;
+                        span.end += words.len() * 4;
+                        memory_spans.push(span);
+                    }
                     retained_local_writes.extend(a.retained_local_writes);
                 }
                 words.extend(a.words);
@@ -721,6 +765,7 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+            #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
             #[cfg(test)] local_forwarding,
@@ -1026,6 +1071,8 @@ struct Assembler<'a> {
     flush_tail_consumed: bool,
     #[cfg(test)]
     flush_spans: Vec<flush_census::Span>,
+    #[cfg(test)]
+    memory_parts: memory_parts::State,
     words: Vec<u32>,
     links: Vec<(usize, usize)>,
     failures: Vec<(usize, Failure)>,
@@ -1066,6 +1113,7 @@ impl Default for Assembler<'_> {
             observe_flush: false,
             flush_tail_consumed: false,
             flush_spans: vec![],
+            memory_parts: Default::default(),
             words: Default::default(),
             links: Default::default(),
             failures: Default::default(),
@@ -1170,6 +1218,8 @@ impl Assembler<'_> {
     fn emit(&mut self, word: u32) {
         #[cfg(test)]
         self.scratch.observe_word(word);
+        #[cfg(test)]
+        self.memory_parts.word(self.words.len() * 4);
         self.words.push(word);
     }
     fn imm(&mut self, rd: u32, value: u64) {
@@ -1525,11 +1575,13 @@ impl Assembler<'_> {
     }
     fn address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) {
         if let Some(offset) = self.guarded_displacement(reg, size, write) {
-            self.guarded_base(rd);
-            if offset != 0 {
-                self.imm(14, offset as u64);
-                self.three(0x8b000000, rd, rd, 14);
-            }
+            memory_part!(self, "guarded_address", {
+                self.guarded_base(rd);
+                if offset != 0 {
+                    self.imm(14, offset as u64);
+                    self.three(0x8b000000, rd, rd, 14);
+                }
+            });
             return;
         }
         if let Some(Fact::Local(offset)) = self.facts.get(&reg).copied() {
@@ -1537,12 +1589,14 @@ impl Assembler<'_> {
                 // The VM has allocated the complete active frame above the
                 // read-only prefix. Supported regions cannot call or allocate,
                 // so their frame storage cannot move or shrink during entry.
-                self.materialize(rd, Fact::Local(offset), false);
-                self.three(0x8b000000, rd, 2, rd);
+                memory_part!(self, "frame_address", {
+                    self.materialize(rd, Fact::Local(offset), false);
+                    self.three(0x8b000000, rd, 2, rd);
+                });
                 return;
             }
         }
-        self.get(rd, reg, false);
+        memory_part!(self, "address_value", self.get(rd, reg, false));
         self.checked_address(rd, size, write);
     }
     /// Return the unsigned, size-scaled memory immediate. Only already proven
@@ -1553,7 +1607,7 @@ impl Assembler<'_> {
             if let Some(offset) = self.guarded_displacement(reg, size, write) {
                 let scale = size.min(8);
                 if offset % scale == 0 && offset / scale < 4096 - usize::from(size == 16) {
-                    self.guarded_base(rd);
+                    memory_part!(self, "guarded_address", self.guarded_base(rd));
                     return (offset / scale) as u32;
                 }
             }
@@ -1565,7 +1619,7 @@ impl Assembler<'_> {
                 if offset % scale == 0 && immediate < 4096 - usize::from(size == 16) {
                     // x1 is the current logical frame base; x2 is the current
                     // linear-memory base. Neither can move inside this region.
-                    self.three(0x8b000000, rd, 2, 1);
+                    memory_part!(self, "frame_address", self.three(0x8b000000, rd, 2, 1));
                     return immediate as u32;
                 }
             }
@@ -1605,50 +1659,59 @@ impl Assembler<'_> {
     fn checked_address(&mut self, address: u32, size: usize, write: bool) {
         if size == 0 {
             // Nothing dereferences this address for a zero-byte operation.
-            self.mov(address, 2);
+            memory_part!(self, "empty_address", self.mov(address, 2));
             return;
         }
         if self.heap {
-            self.imm(14, crate::heap::TAG as u64);
-            self.cmp(address, 14);
-            self.three(0xcb000000, 13, address, 14); // heap-relative offset
-            // All four CSELs use the original unsigned address < heap tag.
-            for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8), (14, 4, 31)]
-            {
-                self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (stack << 5) | dst);
-            }
-            self.cmp(address, 31);
-            self.fail(0);
-            self.cmp(address, 15);
-            self.fail(8);
-            self.three(0xcb000000, 15, 15, address);
-            self.imm(13, size as u64);
-            self.cmp(15, 13);
-            self.fail(3);
-            if write {
+            memory_part!(self, "address_space_selection", {
+                self.imm(14, crate::heap::TAG as u64);
                 self.cmp(address, 14);
+                self.three(0xcb000000, 13, address, 14); // heap-relative offset
+                // All four CSELs use the original unsigned address < heap tag.
+                for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8), (14, 4, 31)] {
+                    self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (stack << 5) | dst);
+                }
+            });
+            memory_part!(self, "bounds_check", {
+                self.cmp(address, 31);
+                self.fail(0);
+                self.cmp(address, 15);
+                self.fail(8);
+                self.three(0xcb000000, 15, 15, address);
+                self.imm(13, size as u64);
+                self.cmp(15, 13);
                 self.fail(3);
+            });
+            if write {
+                memory_part!(self, "readonly_check", {
+                    self.cmp(address, 14);
+                    self.fail(3);
+                });
             }
-            self.three(0x8b000000, address, 17, address);
+            memory_part!(self, "host_address", self.three(0x8b000000, address, 17, address));
             return;
         }
         // address and len comparisons avoid overflow in address+size. The
         // interpreter permits a null pointer only for zero-sized accesses.
-        if size != 0 {
-            self.cmp(address, 31);
-            self.fail(0);
-        }
-        self.cmp(address, 3);
-        self.fail(8); // hi: address > length
-        self.three(0xcb000000, 15, 3, address);
-        self.imm(14, size as u64);
-        self.cmp(15, 14);
-        self.fail(3); // lo: remaining < size
+        memory_part!(self, "bounds_check", {
+            if size != 0 {
+                self.cmp(address, 31);
+                self.fail(0);
+            }
+            self.cmp(address, 3);
+            self.fail(8); // hi: address > length
+            self.three(0xcb000000, 15, 3, address);
+            self.imm(14, size as u64);
+            self.cmp(15, 14);
+            self.fail(3); // lo: remaining < size
+        });
         if write && size != 0 {
-            self.cmp(address, 4);
-            self.fail(3);
+            memory_part!(self, "readonly_check", {
+                self.cmp(address, 4);
+                self.fail(3);
+            });
         }
-        self.three(0x8b000000, address, 2, address);
+        memory_part!(self, "host_address", self.three(0x8b000000, address, 2, address));
     }
     // Count is nonzero here. Check a complete read range without forming
     // address+count, which may overflow. Scratch x13/x14/x15/x17 leaves both
@@ -1775,6 +1838,8 @@ impl Assembler<'_> {
         self.load_mem_at(lo, hi, base, size, 0);
     }
     fn load_mem_at(&mut self, lo: u32, hi: u32, base: u32, size: usize, immediate: u32) {
+        #[cfg(test)]
+        let previous_part = std::mem::replace(&mut self.memory_parts.part, "load_data");
         // Use byte assembly for unusual scalar widths (e.g. enum layouts).
         if [1, 2, 4, 8, 16].contains(&size) {
             debug_assert!(immediate < 4096 - u32::from(size == 16));
@@ -1806,11 +1871,15 @@ impl Assembler<'_> {
                 );
             }
         }
+        #[cfg(test)]
+        { self.memory_parts.part = previous_part; }
     }
     fn store_mem(&mut self, lo: u32, hi: u32, base: u32, size: usize) {
         self.store_mem_at(lo, hi, base, size, 0);
     }
     fn store_mem_at(&mut self, lo: u32, hi: u32, base: u32, size: usize, immediate: u32) {
+        #[cfg(test)]
+        let previous_part = std::mem::replace(&mut self.memory_parts.part, "store_data");
         if [1, 2, 4, 8, 16].contains(&size) {
             debug_assert!(immediate < 4096 - u32::from(size == 16));
             let opcode = match size {
@@ -1831,6 +1900,8 @@ impl Assembler<'_> {
                 self.emit(0x39000000 | ((i as u32) << 10) | (base << 5) | 13);
             }
         }
+        #[cfg(test)]
+        { self.memory_parts.part = previous_part; }
     }
     fn local_fill(&mut self, fill: LocalFill) {
         self.invalidate_local_memory(Some(fill.offset), fill.size);
@@ -1905,20 +1976,22 @@ impl Assembler<'_> {
                     }
                     self.forward_local_value(value, size as usize, "Load");
                 } else {
-                    let immediate = self.memory_address(11, address, size as usize, false);
+                    let immediate = memory_access!(self, "source", self.memory_address(11, address, size as usize, false));
                     // put() supplies the narrow result's zero high word below.
                     self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
                 }
-                self.put(dst, 9, if size <= 8 { 31 } else { 10 });
+                memory_part!(self, "register_publication", self.put(dst, 9, if size <= 8 { 31 } else { 10 }));
                 self.remember_local_memory(local, size as usize, dst);
                 #[cfg(test)]
                 self.scratch.capture(self.current_pc, local, size as usize, "Load");
             }
             Op::Store { address, src, size } => {
                 let local = self.local_range(address, size as usize);
-                let immediate = self.memory_address(11, address, size as usize, true);
-                self.get(9, src, false);
-                if size > 8 { self.get(10, src, true); }
+                let immediate = memory_access!(self, "destination", self.memory_address(11, address, size as usize, true));
+                memory_part!(self, "register_value", {
+                    self.get(9, src, false);
+                    if size > 8 { self.get(10, src, true); }
+                });
                 self.store_mem_at(9, 10, 11, size as usize, immediate);
                 let retain = self.preserve_guarded_local_write(local, address, size as usize);
                 if !retain { self.invalidate_local_memory(local, size as usize); }
@@ -1950,8 +2023,8 @@ impl Assembler<'_> {
                     self.scratch.capture(self.current_pc, destination_local, size, "Copy");
                     return;
                 }
-                if forwarded.is_none() { self.address(11, src, size, false); }
-                self.address(12, dst, size, true);
+                if forwarded.is_none() { memory_access!(self, "source", self.address(11, src, size, false)); }
+                memory_access!(self, "destination", self.address(12, dst, size, true));
                 // Read all bytes before writing so even overlapping copies
                 // preserve the interpreter's memmove behavior.
                 if let Some((_, value)) = forwarded {
