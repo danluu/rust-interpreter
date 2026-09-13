@@ -23,7 +23,7 @@ fn success(source: &str, repeated_anchor: bool) {
     assert_eq!(ordinary, run("body_journal_test").stdout_utf8());
     let mode = if repeated_anchor { "same-tree-and-journal-after-stock-lowering" } else { "cold-tree-and-journal-after-stock-lowering" };
     assert!(diagnostics.contains(&format!("[hir-body-capture] anchor {mode}")), "{diagnostics}");
-    assert!(diagnostics.contains("cache_hits=0 body_codec=1 materializer=0"), "{diagnostics}");
+    assert!(diagnostics.contains("cache_hits=0 body_codec=1 prepared_values=1 materializer=0"), "{diagnostics}");
     for name in ["add", "field", "method", "double", "selected", "shadow", "generic",
         "conditional", "array_index", "uninitialized", "raw", "arithmetic", "literals", "unsafe_block"] {
         assert!(["cold-tree-and-journal-after-stock-lowering", "same-tree-and-journal-after-stock-lowering",

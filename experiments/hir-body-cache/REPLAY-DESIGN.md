@@ -3,7 +3,18 @@
 Design only, against typed capture checkpoint `2e60d5fb` and exact compiler
 `58e1e1f5311f4424ea81def4763081f6da62d9b3`. No replay implementation or workload
 is added by this document. The historical journal checkpoint's actual compiler
-check remains a separate prerequisite; its result cannot qualify this new codec.
+check remains separate: its first attempt failed on three borrowed-key API
+errors, now corrected in the prepared-value checkpoint. That failed result
+cannot qualify this new codec or a future replay implementation.
+
+The later capture-side `prepared.rs` checkpoint implements an owned typed-value
+conversion prerequisite: it revalidates the supplied tree against the exact
+current input, checks current S/E/prefix/local/resolution bindings, and prepares
+actual pinned enum/ID/numeric values and checked absolute span recipes without
+HIR/symbol/span interning. Its private `PreparedBody` token is intentionally
+weaker than the `ReadyHit` below. It owns no exclusive context and provides no
+vacancy/effect preflight, current-span materializer or commit. Both saved and
+cold evidence must pass this conversion; every invocation still lowers stock.
 
 ## Proposed API and miss boundary
 
