@@ -1,0 +1,119 @@
+{
+  "status": "passed",
+  "source_commit": "3ff8bc56429c7e4d8c1d24c37c52874b7c5a08cd",
+  "tool_key": "ce6bfeeb3887e7ed22fc24d8d4a1a37672e1fc5a37088e640fda45b8885271b8",
+  "binaries": {
+    "rust-interp-vm": "91580b39b3428d7764f5848b1a20129bebf3d60f758229812efddbb437828e48",
+    "rust-interp-mir-export": "cf4b3499912506b9ebaed30e6f84e250fccba2d343558dd8cccc847e8a0be96d",
+    "rust-interp-rustc-wrapper": "45bca4f272e994bff2564c8f5ccbd7f0d2e52cd4235a3105b4af5764e8ed7fc5"
+  },
+  "composition": {
+    "kind": "branch-spaces-flush-composition",
+    "schema_version": 1,
+    "source_commit": "3ff8bc56429c7e4d8c1d24c37c52874b7c5a08cd",
+    "compiler_source_key": "35df4077b5cfb466cf1a7155374abb867fb8fadeb4f5dbedffe766d5b3621bc1",
+    "binaries": {
+      "rust-interp-vm": "91580b39b3428d7764f5848b1a20129bebf3d60f758229812efddbb437828e48",
+      "rust-interp-mir-export": "cf4b3499912506b9ebaed30e6f84e250fccba2d343558dd8cccc847e8a0be96d",
+      "rust-interp-rustc-wrapper": "45bca4f272e994bff2564c8f5ccbd7f0d2e52cd4235a3105b4af5764e8ed7fc5"
+    }
+  },
+  "tests": {
+    "test-debug": 532,
+    "test-release": 532
+  },
+  "commands": [
+    {
+      "label": "assemble-control",
+      "command": [
+        "/usr/bin/clang",
+        "-target",
+        "arm64-apple-macos11",
+        "-c",
+        "/Users/danluu/dev/rust-interp/benchmarks/experiments/branch-spaces-flush/selector.s",
+        "-o",
+        "/Users/danluu/dev/rust-interp/.work/branch-spaces-flush-build-02/selector.o"
+      ],
+      "pid": 65394,
+      "returncode": 0
+    },
+    {
+      "label": "inspect-control",
+      "command": [
+        "/usr/bin/otool",
+        "-s",
+        "__TEXT",
+        "__text",
+        "/Users/danluu/dev/rust-interp/.work/branch-spaces-flush-build-02/selector.o"
+      ],
+      "pid": 65397,
+      "returncode": 0
+    },
+    {
+      "label": "test-debug",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/fixed-frame-clear-combined-build-01/target",
+        "--workspace"
+      ],
+      "pid": 65399,
+      "returncode": 0,
+      "started_at": 1789330295.5492759,
+      "finished_at": 1789330358.31393
+    },
+    {
+      "label": "test-release",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/fixed-frame-clear-combined-build-01/target",
+        "--workspace"
+      ],
+      "pid": 82123,
+      "returncode": 0,
+      "started_at": 1789330358.314334,
+      "finished_at": 1789330410.326942
+    },
+    {
+      "label": "build-release",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/fixed-frame-clear-combined-build-01/target",
+        "-p",
+        "rust-interp-bytecode",
+        "--bin",
+        "rust-interp-vm"
+      ],
+      "pid": 89147,
+      "returncode": 0,
+      "started_at": 1789330410.327252,
+      "finished_at": 1789330410.366715
+    }
+  ],
+  "source_manifest": ".work/branch-spaces-flush-build-02/plan.json",
+  "source_manifest_sha256": "53ff420fd3c1930e2456c1cd82589c4e673522f014e7c3f057a5c4b12c6f0fed",
+  "raw": ".work/branch-spaces-flush-build-02",
+  "performance_measurement": false
+}
