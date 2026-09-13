@@ -60,3 +60,34 @@ audit; reject other source changes. Keep timings and schedule unchanged, record
 prefix/new command counts separately, and preserve all native executable versions
 as well as bytecode/catalogs. A separate incremental profile remains a new66-command
 experiment. No edited timing has been collected in the stopped prefix.
+
+## Revised incremental comparison: preserve compiler-history differences
+
+The original incremental experiment remains failed at command22 under its
+cross-cycle byte-identity rule. A separate eight-command diagnostic reproduces
+its exact cold and restored artifacts with function-template reuse disabled.
+Observer-off/on byte identity holds. Four qualified origin inspections show
+one/one/two/two exact initialized string allocations, with distinct compiler IDs
+before exporter layout. Keep those identities; do not normalize bytecode.
+
+The separately identified continuation uses `--artifact-history paired-cycle`
+and the sealed22-command prefix. It retains every completed timing and runs44
+unstarted commands in the same cache namespaces, schedule, profiles and limits.
+Skip completed states without rewriting their sources. Check every retained
+command against its template, logs, artifacts, source hash and frozen schedule.
+Bind the revised rule to the successful allocation-origin proof and unchanged
+tool. Native assertion outcomes, wrong controls and restoration remain mandatory.
+
+Custom A/B must still produce byte-identical artifacts/catalogs at every matching
+cycle and source state. Cross-cycle identities are explicitly recorded rather
+than required; this models the observed compiler cache history. Original and
+wrong states remain excluded from timing ratios. Keep the same15-pair statistics
+and A/A variation report. This is a corrected baseline measurement protocol,
+not an optimization acceptance gate or a change to the failed study's verdict.
+The repository-profile result keeps its original stricter identity proof.
+This continuation admits at16GiB because all three compiler namespaces already
+exist and are checked before launch. It adds44 warm commands and preserved
+artifacts, with no new native/custom namespace. The8GiB per-command floor stays
+unchanged; fresh-profile experiments retain their18GiB admission. The preceding
+audited retirement removes only completed public compiler intermediates and
+preserves all evidence; its reclaimed space is not assumed to remain available.

@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 from benchmark import ratios
-from states import native_outcomes, source_states, custom_export_ran, check_prefix_schedule
+from states import native_outcomes, source_states, custom_export_ran, check_prefix_schedule, artifact_state_key
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -93,6 +93,25 @@ class ProtocolTests(unittest.TestCase):
                     [dict(rows[0], source_sha256='different'), rows[1]],
                     [rows[0], dict(rows[1], returncode=1)]]:
             with self.assertRaises(ValueError): check_prefix_schedule(bad, schedule, 'repository')
+
+    def test_revised_incremental_prefix_keeps_pairs_exact_without_merging_histories(self):
+        orders = [['native', 'custom-a', 'custom-b'], ['custom-b', 'custom-a', 'native'],
+                  ['native', 'custom-a', 'custom-b'], ['native', 'custom-b', 'custom-a'],
+                  ['custom-a', 'native', 'custom-b'], ['custom-b', 'native', 'custom-a'],
+                  ['custom-a', 'custom-b', 'native']]
+        schedule = [dict(cycle=0, state=state, mode=mode, source_sha256=str(state))
+                    for state, order in zip([0, -1, 1, 2, 3, 4, 5], orders) for mode in order]
+        schedule += [dict(cycle=1, state=0, mode='custom-a', source_sha256='0')]
+        schedule += [dict(unstarted=i) for i in range(44)]
+        rows = [dict(s, index=i, returncode=(0 if s['state'] != -1 else (101 if s['mode'] == 'native' else 1)))
+                for i, s in enumerate(schedule[:22])]
+        check_prefix_schedule(rows, schedule, 'incremental')
+        for bad in [rows[:-1], rows[::-1], rows[:21] + [dict(rows[21], source_sha256='changed')],
+                    rows[:3] + [dict(rows[3], returncode=0)] + rows[4:]]:
+            with self.assertRaises(ValueError): check_prefix_schedule(bad, schedule, 'incremental')
+        self.assertEqual(artifact_state_key(0, 1, 'artifact', 'cross-cycle'), artifact_state_key(1, 1, 'artifact', 'cross-cycle'))
+        self.assertNotEqual(artifact_state_key(0, 1, 'artifact', 'paired-cycle'), artifact_state_key(1, 1, 'artifact', 'paired-cycle'))
+        with self.assertRaises(ValueError): artifact_state_key(0, 1, 'artifact', 'ignore')
 
 
 if __name__ == '__main__':

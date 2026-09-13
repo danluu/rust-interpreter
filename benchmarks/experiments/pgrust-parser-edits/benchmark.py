@@ -21,7 +21,7 @@ from workflow_io import SourceEdit, capture, require_space, write_json as write
 from workflow_measurements import child_usage, child_cpu_since, mode_order
 from workflow_controls import exporter_seconds
 from bench_e2e_workflow import build_metrics
-from states import source_states, native_outcomes, custom_export_ran, check_prefix_schedule
+from states import source_states, native_outcomes, custom_export_ran, check_prefix_schedule, artifact_state_key
 
 MODES = ['native', 'custom-a', 'custom-b']
 
@@ -55,14 +55,16 @@ def main():
     parser.add_argument('--profile', choices=['repository', 'incremental'], required=True)
     parser.add_argument('--harness', type=Path, required=True)
     parser.add_argument('--prefix-proof', type=Path)
+    parser.add_argument('--artifact-history', choices=['cross-cycle', 'paired-cycle'], default='cross-cycle')
     args = parser.parse_args()
     assert __debug__ and args.run_id.startswith('pgrust-parser-edits-') and Path(args.run_id).name == args.run_id
+    initial_gib = 16 if args.prefix_proof and args.profile == 'incremental' and args.artifact_history == 'paired-cycle' else 18
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
-        require_space(ROOT, 18)
+        require_space(ROOT, initial_gib)
         harness_path = args.harness.resolve(strict=True)
         harness = json.loads(harness_path.read_text())
-        assert harness['status'] == 'passed' and harness['tests'] == 9
+        assert harness['status'] == 'passed' and harness['tests'] == 10
         inputs_path = ROOT / harness['raw'] / 'inputs.json'
         assert sha(inputs_path) == harness['inputs_sha256']
         assert all(sha(ROOT / p) == h for p, h in json.loads(inputs_path.read_text()).items())
@@ -106,14 +108,18 @@ def main():
         if args.prefix_proof:
             prefix_path = args.prefix_proof.resolve(strict=True)
             prefix = json.loads(prefix_path.read_text())
-            assert prefix['status'] == 'two-command prefix verified; validator mismatch retained'
-            assert prefix['commands'] == 2 and prefix['edited_commands'] == 0 and prefix['source_restored']
+            expected_status = {'repository': 'two-command prefix verified; validator mismatch retained',
+                               'incremental': 'repeated-original artifact mismatch'}[args.profile]
+            expected_count = {'repository': 2, 'incremental': 22}[args.profile]
+            assert prefix['status'] == expected_status and prefix['commands'] == expected_count and prefix['source_restored']
+            assert (args.profile == 'incremental') == (args.artifact_history == 'paired-cycle')
             old = ROOT / prefix['raw']
             assert sha(old / 'plan.json') == prefix['plan_sha256']
-            assert sha(old / 'records.json') == prefix['original_records_sha256']
+            assert sha(old / 'records.json') == prefix.get('original_records_sha256', prefix.get('records_sha256'))
             assert sha(old / 'audited-prefix.json') == prefix['audited_prefix_sha256']
             old_plan = json.loads((old / 'plan.json').read_text())
-            assert old_plan['tool_key'] == key and old_plan['profile'] == args.profile == 'repository'
+            assert old_plan['tool_key'] == key and old_plan['profile'] == args.profile
+            assert (old / 'native').is_dir(), 'retained native cache is absent'
             allowed = {str(Path(__file__).relative_to(ROOT)),
                        *[str(Path(__file__).with_name(n).relative_to(ROOT)) for n in ['states.py', 'test_protocol.py', 'check.py', 'PLAN.md']]}
             for path, expected in old_plan['frozen'].items():
@@ -130,11 +136,28 @@ def main():
                     if kind in row: assert sha(ROOT / row[kind]['path']) == row[kind]['sha256']
                 row['log_raw'] = prefix['raw']
                 row['outcomes'] = [tuple(outcome) for outcome in row['outcomes']]
+                if row['mode'] != 'native':
+                    row['stages'] = exporter_seconds((old / f"{row['index']}.stderr").read_text())
+                    row['build'] = build_metrics(row['launch'])
+                    assert Path(row['launch']['workspace_path']).is_dir(), 'retained custom cache is absent'
             cache_scope = old.name
             prefix_details = dict(proof=str(prefix_path.relative_to(ROOT)), proof_sha256=sha(prefix_path),
-                                  retained_commands=2, old_raw=prefix['raw'], old_plan_sha256=prefix['plan_sha256'])
+                                  retained_commands=len(prefix_rows), old_raw=prefix['raw'], old_plan_sha256=prefix['plan_sha256'])
             frozen.update({str(p.relative_to(ROOT)): fingerprint(p) for p in
                            [prefix_path, old / 'plan.json', old / 'records.json', old / 'audited-prefix.json']})
+        if args.artifact_history == 'paired-cycle':
+            assert args.profile == 'incremental' and prefix_details and len(prefix_rows) == 22
+            origins_path = ROOT / 'results/parser-allocation-origins-01/summary.json'
+            origins = json.loads(origins_path.read_text())
+            assert origins['status'] == 'passed' and origins['guest_commands'] == 0
+            assert [s['exact_literal_allocations'] for s in origins['states']] == [1, 1, 2, 2]
+            assert origins['states'][0]['artifact_sha256'] == prefix_rows[1]['artifact']['sha256']
+            assert origins['states'][3]['artifact_sha256'] == prefix_rows[21]['artifact']['sha256']
+            trace_path = ROOT / 'results/parser-allocation-history-01/summary.json'
+            trace = json.loads(trace_path.read_text())
+            assert trace['status'] == 'passed' and trace['commands'] == 8 and trace['observer_byte_identity']
+            for state in origins['states']: assert sha(ROOT / state['report']) == state['report_sha256']
+            frozen.update({str(p.relative_to(ROOT)): fingerprint(p) for p in [origins_path, trace_path]})
         work.mkdir(exist_ok=False)
         artifacts = work / 'artifacts'; artifacts.mkdir()
         for row in prefix_rows:
@@ -168,31 +191,39 @@ def main():
         assert len(schedule) == 66
         if prefix_rows:
             check_prefix_schedule(prefix_rows, schedule, args.profile)
-            assert prefix_rows[0]['command'] == native, 'retained native command differs'
-            expected_custom = custom.copy()
-            for option, value in [('--suite-report', str(ROOT / prefix_details['old_raw'] / '1-suite.json')),
-                                  ('--cache-namespace', cache_scope + ':custom-a')]:
-                assert expected_custom.count(option) == 1
-                expected_custom[expected_custom.index(option) + 1] = value
-            assert prefix_rows[1]['command'] == expected_custom, 'retained custom command differs'
+            for row in prefix_rows:
+                expected = native.copy() if row['mode'] == 'native' else custom.copy()
+                if row['mode'] != 'native':
+                    for option, value in [('--suite-report', str(ROOT / prefix_details['old_raw'] / f"{row['index']}-suite.json")),
+                                          ('--cache-namespace', cache_scope + ':' + row['mode'])]:
+                        assert expected.count(option) == 1
+                        expected[expected.index(option) + 1] = value
+                assert row['command'] == expected, 'retained command differs'
         write(work / 'plan.json', dict(owner=str(ROOT), revision=PIN, tool_key=key, binaries=binaries,
             source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
             profile=args.profile, cargo_incremental=env.get('CARGO_INCREMENTAL', 'project defaults'),
             frozen=frozen, original_source_sha256=hashlib.sha256(original).hexdigest(),
             schedule=schedule, native_command_template=native, custom_command_template=custom,
             commands=66, new_commands=66-len(prefix_rows), prefix=prefix_details, cache_scope=cache_scope,
+            artifact_history=args.artifact_history,
             cycles=3, original_tests=114, cargo_jobs=2, custom_workers=2,
             native_threads='libtest default', initial_free_bytes=shutil.disk_usage(ROOT).free,
-            minimum_child_gib=8, initial_minimum_gib=18, performance_measurement=True))
+            minimum_child_gib=8, initial_minimum_gib=initial_gib, performance_measurement=True))
         records, by_state = prefix_rows, {}
         for row in prefix_rows:
             if row['mode'] != 'native':
-                for kind in ['artifact', 'entry_catalog']: by_state[row['state'], kind] = row[kind]['sha256']
+                for kind in ['artifact', 'entry_catalog']:
+                    history_key = artifact_state_key(row['cycle'], row['state'], kind, args.artifact_history)
+                    prior_digest = by_state.setdefault(history_key, row[kind]['sha256'])
+                    assert prior_digest == row[kind]['sha256'], 'retained paired artifact differs'
         with SourceEdit(changed, original) as edit:
             for state in states:
-                edit.replace(state['source'])
                 selected = [s for s in schedule if (s['cycle'], s['state']) == (state['cycle'], state['state'])]
                 current = [r for r in records if (r['cycle'], r['state']) == (state['cycle'], state['state'])]
+                if len(current) == 3:
+                    assert current[0]['outcomes'] == current[1]['outcomes'] == current[2]['outcomes']
+                    continue
+                edit.replace(state['source'])
                 for scheduled in selected[len(current):]:
                     index = len(records); mode = scheduled['mode']
                     assert sha(changed) == scheduled['source_sha256']
@@ -244,7 +275,8 @@ def main():
                             if not saved.exists(): shutil.copy2(path, saved)
                             assert sha(saved) == digest
                             row[kind] = dict(path=str(saved.relative_to(ROOT)), sha256=digest)
-                            prior_digest = by_state.setdefault((state['state'], kind), digest)
+                            history_key = artifact_state_key(state['cycle'], state['state'], kind, args.artifact_history)
+                            prior_digest = by_state.setdefault(history_key, digest)
                             assert prior_digest == digest, 'custom A/A or repeated-state artifact differs'
                     assert sha(changed) == scheduled['source_sha256']
                     current.append(row); write(work / 'records.json', records)
@@ -255,8 +287,11 @@ def main():
         assert all(fingerprint(ROOT / p) == h for p, h in frozen.items())
         assert len(records) == 66
         result = ROOT / 'results' / args.run_id; result.mkdir(exist_ok=False)
-        write(result / 'summary.json', dict(status='passed', commands=66, new_commands=66-(2 if prefix_details else 0),
+        retained = prefix_details['retained_commands'] if prefix_details else 0
+        histories = [dict(cycle=r['cycle'], state=r['state'], sha256=r['artifact']['sha256']) for r in records if r['mode'] == 'custom-a']
+        write(result / 'summary.json', dict(status='passed', commands=66, new_commands=66-retained,
             prefix=prefix_details, original_tests=114,
+            artifact_history=args.artifact_history, artifact_histories=histories,
             profile=args.profile, tool_key=key, source_restored=True, frozen_inputs_verified=len(frozen),
             original_assertions_unchanged=True, exact_native_test_outcomes=True,
             raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),

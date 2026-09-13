@@ -27,13 +27,13 @@ def main():
             cwd=Path(__file__).parent, env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'),
             receipt_path=work / 'active.json', receipt=dict(stage='parser benchmark protocol'))
         (work / 'stdout').write_text(out); (work / 'stderr').write_text(err)
-        assert child.returncode == 0 and 'Ran 9 tests' in err and err.rstrip().endswith('OK')
+        assert child.returncode == 0 and 'Ran 10 tests' in err and err.rstrip().endswith('OK')
         assert all(sha(ROOT / p) == h for p, h in hashes.items())
         result = ROOT / 'results' / args.run_id; result.mkdir(exist_ok=False)
-        write(result / 'summary.json', dict(status='passed', tests=9, commands=1,
+        write(result / 'summary.json', dict(status='passed', tests=10, commands=1,
             raw=str(work.relative_to(ROOT)), inputs_sha256=sha(work / 'inputs.json'),
             guest_commands=0, performance_measurement=False))
-        print('PASS: nine full-parser protocol controls', flush=True)
+        print('PASS: ten full-parser protocol controls', flush=True)
 
 
 if __name__ == '__main__':

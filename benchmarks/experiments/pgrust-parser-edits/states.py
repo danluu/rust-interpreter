@@ -31,14 +31,21 @@ def custom_export_ran(stderr):
 
 
 def check_prefix_schedule(rows, schedule, profile):
-    if profile != 'repository' or len(rows) != 2 or len(schedule) != 66:
-        raise ValueError('only the audited two-command repository prefix may continue')
-    for index, mode in enumerate(['native', 'custom-a']):
-        row = rows[index]
-        if (row['index'], row['cycle'], row['state'], row['mode'], row['returncode']) != (index, 0, 0, mode, 0):
-            raise ValueError('prefix is reordered, failed or contains edited observations')
+    expected = {'repository': 2, 'incremental': 22}.get(profile)
+    if len(rows) != expected or len(schedule) != 66:
+        raise ValueError('only the two specifically audited prefixes may continue')
+    for index, row in enumerate(rows):
+        code = 0 if row['state'] != -1 else (101 if row['mode'] == 'native' else 1)
+        if row['index'] != index or row['returncode'] != code:
+            raise ValueError('prefix is reordered or has an unexpected command outcome')
         if {k: row[k] for k in schedule[index]} != schedule[index]:
             raise ValueError('prefix does not match the frozen schedule')
+
+
+def artifact_state_key(cycle, state, kind, history):
+    if history == 'cross-cycle': return state, kind
+    if history == 'paired-cycle': return cycle, state, kind
+    raise ValueError('unknown artifact-history comparison')
 
 
 def source_states(original, cycles=3):
