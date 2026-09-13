@@ -32,6 +32,7 @@ CANDIDATE_POLICIES = {
     'stable-mono-cgu': 'stable-mono-cgu-partitioning',
     'cargo-info-cache': None,
     'host-proc-macro-opt': 'host-proc-macro-opt-v1',
+    'host-library-opt': 'host-library-opt-v1',
     'frontend-workers': 'frontend-workers-v1',
 }
 DEFAULT_CANDIDATE_POLICY = 'demand-retention'
@@ -247,7 +248,7 @@ def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candi
         require(isinstance(compiler_key, str) and re.fullmatch('[0-9a-f]{64}', compiler_key),
                 'stable-CGU comparison requires an installed compiler key')
         require(candidate_std is not None, 'stable-CGU comparison requires prepared candidate std MIR')
-    elif policy == 'host-proc-macro-opt':
+    elif policy in ['host-proc-macro-opt', 'host-library-opt']:
         require(baseline_key == candidate_key, 'proc-macro comparison requires identical tool binaries')
         require(compiler_key is None and candidate_std is None,
                 'proc-macro comparison requires the public compiler and one shared prepared std identity')
@@ -291,6 +292,9 @@ def command_for(mode, key, source, work, sample, names=CASE['tests'],
         require(cargo_key is None, 'Cargo arguments require cargo-info-cache policy')
     if candidate_policy == 'host-proc-macro-opt':
         policy_args = ['--host-proc-macro-opt', proc_macro_setting(mode)]
+    if candidate_policy == 'host-library-opt':
+        from host_library_screen import MODES as LIBRARY_MODES
+        policy_args = ['--host-library-opt', LIBRARY_MODES[mode]]
     require(prepared_std is None or candidate_policy == 'stable-mono-cgu',
             'explicit prepared std command argument requires MonoItem policy')
     if candidate_policy == 'frontend-workers':
@@ -321,7 +325,7 @@ def measure_command(command, **kwargs):
 
 
 def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, cargo=None,
-                    mono_wrapper=None, worker_capability=None):
+                    mono_wrapper=None, worker_capability=None, library_capability=None):
     retention = retention_setting(mode, candidate_policy)
     expected = dict(tool_key=key, engine='jit', function_cache='auto', borrowck_cache='off',
         jit_persistent_registers=True, jit_resumable_calls=True, inline_leaves=True,
@@ -357,21 +361,33 @@ def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom
         expected['frontend_workers'] = receipt(COUNTS[mode], worker_capability)
     else:
         require(worker_capability is None, 'worker capability requires frontend-workers policy')
+    if candidate_policy == 'host-library-opt':
+        from host_library_opt import receipt
+        require(library_capability is not None, 'host-library launch requires bound wrapper capability')
+        if mode == 'candidate':expected['host_library_opt'] = receipt(library_capability)
+    else:
+        require(library_capability is None, 'library capability requires host-library policy')
     return expected
 
 
 def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
                    candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, prepared_std=None, cargo=None,
-                   mono_wrapper=None, worker_capability=None):
+                   mono_wrapper=None, worker_capability=None, library_capability=None):
     launches = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in stderr.splitlines()
                 if line.startswith('rust-interp-launch: ')]
     require(len(launches) == 1, 'expected exactly one completed launcher report')
     launch = launches[0]
-    expected = launch_settings(mode, key, candidate_policy, custom, cargo, mono_wrapper, worker_capability)
+    expected = launch_settings(mode, key, candidate_policy, custom, cargo, mono_wrapper, worker_capability, library_capability)
     require(all(launch.get(k) == v for k, v in expected.items()), 'launcher settings differ')
     require(custom is not None or 'custom_compiler' not in launch, 'unexpected custom compiler in launcher')
     require(cargo is not None or 'custom_cargo' not in launch, 'unexpected custom Cargo in launcher')
     macro = candidate_policy == 'host-proc-macro-opt'
+    library = candidate_policy == 'host-library-opt'
+    if library:
+        from host_library_screen import validate_launch_policy
+        validate_launch_policy(launch, mode, library_capability)
+    else:
+        require('host_library_opt' not in launch, 'unexpected host-library policy')
     if cargo or macro:
         require(launch.get('query_cache_retention', 'off') == 'off', 'unexpected retention policy in independent comparison')
     if not macro:
@@ -391,7 +407,7 @@ def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
     require(launch['toolchain_lookup']['mode'] == 'cached'
             and launch['toolchain_lookup']['outcome'] in ({'owned-manifest'} if custom else {'miss', 'hit'}),
             'cached toolchain lookup unavailable')
-    if custom or cargo or macro:
+    if custom or cargo or macro or library:
         require(prepared_std is not None, 'selected mechanism launch requires prepared std identity')
     if prepared_std is not None:
         require(launch.get('std_mir') == {k: prepared_std[k] for k in ['key', 'sysroot', 'target']},
@@ -468,7 +484,7 @@ def main():
     parser.add_argument('--frontend-worker-qualification', type=Path,
                         help='actual external 30-command qualification bound to the published worker tool key')
     parser.add_argument('--workload-lock', type=Path,
-                        help='explicit existing campaign lock; required for the prepared worker policy')
+                        help='explicit existing campaign lock; required for worker or host-library policy')
     parser.add_argument('--candidate-std-mir-ready', type=Path,
                         help='separately prepared candidate std namespace for stable-CGU or Cargo policy')
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=45)
@@ -480,13 +496,13 @@ def main():
                         args.baseline_cargo_key, args.candidate_cargo_key, args.compiler_qualification,
                         source_observables=args.source_observables,
                         worker_qualification=args.frontend_worker_qualification)
-    if args.candidate_policy == 'frontend-workers':
+    if args.candidate_policy in ['frontend-workers', 'host-library-opt']:
         from frontend_worker_screen import CAMPAIGN_LOCK
         require(args.workload_lock == CAMPAIGN_LOCK
                 and args.workload_lock.resolve(strict=True) == args.workload_lock
-                and args.workload_lock.is_file(), 'worker screen requires the existing explicit campaign lock')
+                and args.workload_lock.is_file(), 'screen requires the existing explicit campaign lock')
     else:
-        require(args.workload_lock is None, 'explicit workload-lock argument currently belongs to worker policy')
+        require(args.workload_lock is None, 'explicit workload-lock argument belongs to worker or host-library policy')
     source = args.source.absolute()
     work = ROOT / '.work' / args.run_id
     work.mkdir(exist_ok=False)
@@ -525,7 +541,7 @@ def main():
             require(len({proof['rust-interp-vm'] for proof in manifests.values()}) == 1,
                     'compiler-cache screen requires identical VM binaries')
             for mode, tool in tools.items():
-                if cargo_comparison or args.candidate_policy == 'host-proc-macro-opt':
+                if cargo_comparison or args.candidate_policy in ['host-proc-macro-opt', 'host-library-opt']:
                     validate_tool_compiler(tool, keys[mode], None)
                 if custom:
                     validate_tool_compiler(tool, keys[mode], custom)
@@ -536,18 +552,31 @@ def main():
             require_candidate_policy(tools['candidate'], keys['candidate'], args.candidate_policy)
             public = None
             public_guards = None
-            if args.candidate_policy == 'host-proc-macro-opt':
+            public_files = {}
+            library_capability = None
+            if args.candidate_policy in ['host-proc-macro-opt', 'host-library-opt']:
                 from qualified_public_tools import (GUARD_POLICY, validate_input_guard,
                     validate_live_inputs, validate_public_tool)
                 def public_bytes(path):
                     require(path.resolve(strict=True) == path and path.is_file(), 'public provenance follows a symlink')
-                    return path.read_bytes()
+                    data = path.read_bytes()
+                    digest = hashlib.sha256(b'file\0' + data).hexdigest()
+                    require(public_files.setdefault(str(path), digest) == digest,
+                            'public proof changed between reads')
+                    return data
 
-                public = validate_public_tool(tools['baseline'], keys['baseline'], public_bytes)
+                if args.candidate_policy == 'host-library-opt':
+                    from host_library_screen import public_build, standard_binding, runtime_harness
+                    public = public_build(tools['baseline'], keys['baseline'], public_bytes)
+                    standard_binding(public, std)
+                    runtime_harness(public, ROOT, public_bytes)
+                    library_capability = public['capability']
+                else:
+                    public = validate_public_tool(tools['baseline'], keys['baseline'], public_bytes)
                 qualified_std = public['correctness']['shared_std']
                 require(qualified_std['key'] == std['key'] and qualified_std['ready_sha256'] == std['sha256']
                         and qualified_std['sysroot'] == std['sysroot'], 'screen std differs from qualified public tools')
-                validate_input_guard(public, json.loads((tools['baseline'] / 'publication-guard.json').read_bytes()))
+                validate_input_guard(public, json.loads(public_bytes(tools['baseline'] / 'publication-guard.json')))
                 guard_directory = work / 'public-input-guards'
                 guard_directory.mkdir(exist_ok=False)
 
@@ -555,7 +584,8 @@ def main():
                     path = guard_directory / name
                     require(not path.exists() and not path.is_symlink(), 'public guard output already exists')
                     write_json(path, validate_live_inputs(public, rehash=rehash))
-                    return dict(path=str(path), sha256=sha(path))
+                    data = public_bytes(path) if name == 'admission.json' else path.read_bytes()
+                    return dict(path=str(path), sha256=hashlib.sha256(data).hexdigest())
 
                 public_guards = dict(policy=GUARD_POLICY, admission=public_guard('admission.json', True),
                     directory=str(guard_directory), final_path=str(guard_directory / 'final.json'),
@@ -615,10 +645,11 @@ def main():
                 paths += [Path(stds['candidate']['path']), Path(__file__).with_name('CARGO_INFO_CACHE_SCREEN.md')]
                 for cargo in [cargos['baseline'], cargos['candidate']]:
                     paths += [cargo.directory / 'ready.json', *sorted((cargo.directory / 'payload').iterdir())]
-            if args.candidate_policy == 'host-proc-macro-opt':
-                paths += [Path(__file__).with_name(name) for name in
-                          ['HOST_PROC_MACRO_OPT.md', 'HOST_PROC_MACRO_SCREEN.md']]
+            if public:
+                names = ['HOST_LIBRARY_SCREEN.md'] if library_capability else ['HOST_PROC_MACRO_OPT.md', 'HOST_PROC_MACRO_SCREEN.md']
+                paths += [Path(__file__).with_name(name) for name in names]
                 paths += public['payload_paths'] + [Path(public_guards['admission']['path'])]
+                paths += [Path(path) for path in public_files]
                 paths += [p for p in tools['baseline'].rglob('*') if p.is_file() or p.is_symlink()]
             paths += sorted((ROOT / 'scripts').glob('*.py'))
             paths += [Path(path) for path in worker_files]
@@ -628,6 +659,8 @@ def main():
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
             paths += [source / name for name in tracked if name and source / name != changed]
             frozen = {str(p): frozen_input_hash(p) for p in paths}
+            require(all(frozen.get(path) == digest for path, digest in public_files.items()),
+                    'public proof or runtime harness changed while freezing screen inputs')
             verify_qualification_freeze([mono_qualification, source_observables], frozen)
             require(all(frozen.get(path) == digest for path,digest in worker_files.items()),
                     'worker proof or public payload changed while freezing screen inputs')
@@ -664,6 +697,13 @@ def main():
                         original_opt_level='0 (no explicit optimization flag)', opt_level='1', mir_opt_level=1,
                         lto='off', preserve_effective_debug_assertions=True, preserve_effective_overflow_checks=True,
                         application_profiles_changed=False, std_preparation_policy='unchanged and outside application wrapper'))
+            if library_capability:
+                from host_library_screen import MODES as LIBRARY_MODES, BUILD_POLICY, amendment
+                plan.update(host_library_policy_by_mode=LIBRARY_MODES,
+                    host_library_public_build_policy=BUILD_POLICY, host_library_capability=library_capability,
+                    public_input_guards=public_guards, std_mir_by_mode=stds,
+                    workload_lock=str(args.workload_lock), codegen_policy_amendment=amendment(ROOT),
+                    compiler_comparison='same public compiler/Cargo/exporter/VM/std; host-library codegen off/on/off')
             if mono_qualification:
                 plan.update(compiler_qualification=mono_qualification, mono_wrapper=mono_wrapper,
                     source_observables=source_observables,
@@ -737,6 +777,8 @@ def main():
                 if cargos[mode]:receipt['cargo_key'] = cargos[mode].key
                 if args.candidate_policy == 'host-proc-macro-opt':
                     receipt['host_proc_macro_opt'] = proc_macro_setting(mode)
+                if library_capability:
+                    receipt['host_library_opt'] = LIBRARY_MODES[mode]
                 child, stdout, stderr, elapsed, cpu = measure_command(command, cwd=source, env=env,
                     receipt_path=work / 'receipts' / f"{sample['index']}-{mode}.json",
                     receipt=receipt)
@@ -757,7 +799,8 @@ def main():
                     stderr, mode, keys[mode], success, suite_path, work / 'caches' / mode,
                     candidate_policy=args.candidate_policy, custom=custom, prepared_std=stds[mode], cargo=cargos[mode],
                     mono_wrapper=mono_wrapper,
-                    worker_capability=worker_public['capability'] if worker_public else None)
+                    worker_capability=worker_public['capability'] if worker_public else None,
+                    library_capability=library_capability)
                 workspace = launch['workspace_path']
                 require(workspaces.get(mode, workspace) == workspace, 'arm workspace changed')
                 workspaces[mode] = workspace

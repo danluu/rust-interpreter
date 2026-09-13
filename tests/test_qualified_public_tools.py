@@ -35,7 +35,9 @@ def archive(change=None, std_change=None, *, worker=False, library=False):
     source_key = hashlib.sha256(b''.join(p.encode() + b'\0' + b for p, b in source_bytes.items())).hexdigest()
     contract = 'contract.md'; harness = {contract: put('provenance/harness/' + contract, b'fixture contract\n')}
     if library:
-        harness.update({name: put('provenance/harness/' + name, b'fixture source\n') for name in q.HOST_LIBRARY_HARNESS})
+        from host_library_screen import SCREEN_FILES
+        harness.update({name: put('provenance/harness/' + name, b'fixture source\n')
+                        for name in [*q.HOST_LIBRARY_HARNESS, *SCREEN_FILES, 'scripts/host_library_screen.py']})
     binaries = {name: q.sha(name.encode()) for name in q.BINARIES}
     platform = dict(system='Darwin', release='fixture', version='fixture', machine='arm64')
     capability = dict(schema_version=1, bytecode_version=5, compiler_sysroot=sysroot,

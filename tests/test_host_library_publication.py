@@ -35,7 +35,7 @@ class HostLibraryPublicationTests(unittest.TestCase):
                                 (archive(), q.HOST_LIBRARY_BUILD_POLICY)]:
             with self.subTest(policy=policy), self.assertRaisesRegex(RuntimeError, 'qualification policy'):
                 self.validate(fixture, policy)
-        with self.assertRaisesRegex(RuntimeError, 'screen policy'):
+        with self.assertRaisesRegex(RuntimeError, 'host-library screen request'):
             materialize_screen_command({'qualification_policy': q.HOST_LIBRARY_BUILD_POLICY}, {}, output='/unused')
 
     def test_rehashed_wrapper_probe_cannot_change_compiled_sysroot_or_policy(self):

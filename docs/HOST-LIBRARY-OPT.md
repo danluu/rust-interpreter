@@ -52,7 +52,9 @@ checks, actual macro/build-script outputs, cold/edit/restore exports, and compil
 argv for host/guest roles. The shared publisher's explicit host-library handoff
 is prepared in [PUBLICATION.md](../experiments/host-library-opt/PUBLICATION.md).
 Its recorded wrapper binder is also used by the existing automatic publisher.
-No host-library performance screen has been implemented.
+The source-only strict screen integration is documented in
+[HOST_LIBRARY_SCREEN.md](../benchmarks/experiments/strict-warm-build/HOST_LIBRARY_SCREEN.md);
+it has not been executed.
 
 ## Prepared real controls
 

@@ -299,8 +299,13 @@ def immutable_publish(composition, payload_root, source_binaries, owners):
 
 def materialize_screen_command(plan, publication, *, output):
     """Produce argv only after actual publication; never execute the screen."""
-    require(plan.get('qualification_policy') != HOST_LIBRARY_BUILD_POLICY,
-            'host library screen policy has not been implemented or qualified')
+    library = plan.get('qualification_policy') == HOST_LIBRARY_BUILD_POLICY
+    if library:
+        request = plan.get('screen_request', {})
+        require(request.get('candidate_policy') == 'host-library-opt'
+                and request.get('driver') == str(Path(plan['screen_owner']) / 'benchmarks/experiments/strict-warm-build/screen.py')
+                and request.get('std_mir_ready') == plan['shared_std']['path'],
+                'host-library screen request differs from qualified publication')
     output = Path(output)
     require(not output.exists() and not output.is_symlink(), 'screen handoff already exists')
     owner = Path(plan['screen_owner']); key = publication['tool_key']
@@ -313,6 +318,7 @@ def materialize_screen_command(plan, publication, *, output):
     request = plan['screen_request']
     worker = plan.get('qualification_policy') == WORKER_BUILD_POLICY
     names = ('benchmarks/experiments/strict-warm-build/screen.py',
+             'benchmarks/experiments/strict-warm-build/HOST_LIBRARY_SCREEN.md' if library else
              'benchmarks/experiments/strict-warm-build/FRONTEND_WORKERS_SCREEN.md' if worker else
              'benchmarks/experiments/strict-warm-build/HOST_PROC_MACRO_OPT.md')
     for name in names:
@@ -326,6 +332,19 @@ def materialize_screen_command(plan, publication, *, output):
         '--candidate-policy', request['candidate_policy'], '--baseline-tool-key', key, '--candidate-tool-key', key,
         '--std-mir-ready', request['std_mir_ready'], '--lock-wait-seconds', str(request['lock_wait_seconds'])]
     qualification = None
+    if library:
+        from host_library_screen import public_build, standard_binding, runtime_harness, CAMPAIGN_LOCK
+        require(Path(plan['workload_admission']['lock']) == CAMPAIGN_LOCK,
+                'host-library screen requires the canonical campaign lock')
+        # Revalidate the explicit scope and actual wrapper association using the
+        # same helper used by real admission and archived assessment.
+        public = public_build(tool, key, Path.read_bytes)
+        shared = plan['shared_std']; compiler = public['composition']['public_compiler']
+        std = dict(shared, rustc=compiler['rustc_path'], rustc_sha256=compiler['rustc_sha256'],
+                   sysroot=str(Path(shared['path']).parent / 'sysroot'))
+        standard_binding(public, std)
+        runtime_harness(public, owner, Path.read_bytes)
+        argv += ['--workload-lock', str(CAMPAIGN_LOCK)]
     if worker:
         from frontend_worker_screen import validate_qualification
         public = validated['composition']['public_compiler']
