@@ -1,6 +1,6 @@
 # Opt-in Darwin current-directory primitive
 
-This uncompiled source checkpoint adds the actual `getcwd(char *, size_t)` C
+This implementation adds the actual `getcwd(char *, size_t)` C
 ABI for an AArch64 Darwin guest and host. Execution requires the separate
 `Limits.guest_getcwd` capability or `--guest-getcwd`; descriptor access does not
 imply permission to obtain the current directory. Any program containing the
@@ -46,7 +46,14 @@ the same checked operation. This work adds no chdir, subprocess, standard
 streams, complete std::fs or Cargo interpreted-host routing, and makes no
 latency or complete build-script support claim.
 
-## Reviewable qualification recipe (unexecuted)
+## Completed qualification
+
+Source `c176cc5c` passed the release workspace suite: 540 tests passed, 10 were
+ignored, and none failed or were filtered. Both native comparison tests and
+all 33 child commands passed. Complete source snapshots, command/output
+receipts and native comparisons are retained in the
+[qualification archive](../results/getcwd-native-qualification-01/README.md).
+The integrated production sources match that tested checkpoint.
 
 Before execution, freeze the complete source and helper/test inputs, an actual
 public compiler/loader closure, prepared std, sanitized environment and fresh
@@ -73,6 +80,6 @@ Both engines must match native across six cases and a deliberately wrong
 expected path. Disabled and invalid guest pointer/size cases do not invoke a
 native invalid-pointer control. Four incompatible foreign ABIs must fail export.
 
-All tests above are prepared, not run. A future unchanged-build.rs export-only
+The sequence above completed successfully. A future unchanged-build.rs export-only
 census must use the newly built and qualified tools to observe any next blocker;
 the earlier census's exact `libc::unix::getcwd` reports stay historical.

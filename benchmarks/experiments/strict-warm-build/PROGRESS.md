@@ -252,6 +252,18 @@ standard-library file/stream support and interpreted Cargo host-unit routing
 remain pending. No build-time improvement is claimed from these checks.
 [Integrated descriptor correctness evidence](../../../results/descriptor-io-integrated-qualification-01/README.md).
 
+Three strict lowering audits of the unchanged native-qualified build script
+reported the same first blocker: `libc::unix::getcwd`. The four compiler commands
+passed; no build script or guest program executed.
+[Original export support census](../../../results/build-script-export-census-02/README.md).
+The subsequent opt-in Darwin `getcwd` implementation passed 540 release
+workspace tests (10 ignored, none failed or filtered), both native comparison
+tests and all 33 child commands. It supports native NULL allocation semantics,
+checked guest buffers, shared allocation budgets and errno preservation. The
+integrated production source matches that tested checkpoint. Later build-script
+blockers and any latency improvement remain unknown.
+[Getcwd correctness evidence](../../../results/getcwd-native-qualification-01/README.md).
+
 The [external trait-name index](../../../experiments/external-trait-index/README.md)
 is a reviewed, uncompiled compiler prototype. It preserves ordinary external
 table construction, retains the exact name/namespace projection, and keeps local
