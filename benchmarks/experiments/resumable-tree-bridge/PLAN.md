@@ -17,3 +17,12 @@ Use the existing shared target with two Cargo workers, 45-second shared-lock
 admission, 16 GiB initial free disk and 8 GiB per child. Freeze exact sources and
 retain all command results and setup times. No benchmark, subagent or AWS action
 is part of this focused primitive qualification.
+
+The next stage enables the extended tree ABI only in focused native fixtures.
+A shared region partition excludes any function with a guarded ordinary body,
+then propagates exclusion to all ancestors. No VM runtime option enables it.
+Run four controls per profile, including the previous primitives, nested
+success/fault materialization and transitive guarded-body exclusion. Nested
+fixtures cover both profiling modes and persistent-register modes, failed
+arguments, faults after completed children, arithmetic, assertion, trap and
+memory failures, with independently specified active descriptors and ABI checks.

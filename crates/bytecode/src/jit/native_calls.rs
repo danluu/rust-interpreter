@@ -71,7 +71,7 @@ impl<'a> Jit<'a> {
         if self.trees.is_none() {
             let started = std::time::Instant::now();
             let n = self.program.functions.len();
-            self.trees = Some(State { plans: analyze(self.program), prepared: vec![false; n],
+            self.trees = Some(State { plans: if self.bridge_trees { tree_bridge::plans(self.program) } else { analyze(self.program) }, prepared: vec![false; n],
                 entries: (0..n).map(|_| None).collect(), bytes: 0, operations: 0,
                 compiled: 0, declined: 0, compile_nanos: 0, profile_pending: vec![] });
             let elapsed = started.elapsed().as_nanos();
@@ -171,6 +171,7 @@ impl<'a> Jit<'a> {
         // saved persistent pairs and establishes its own register assignment.
         wrapper.values = values.as_ref();
         wrapper.tree_push_frame();
+        if self.bridge_trees { wrapper.store64(31, 31, tree_bridge::layout::HOST_PC); }
         wrapper.load_values();
         if self.profiled {
             wrapper.emit(0xf9400669); // ldr x9,[x19,#8]
@@ -185,6 +186,7 @@ impl<'a> Jit<'a> {
         let mut links = vec![];
         starts[0] = true;
         for (pc, op) in f.code.iter().enumerate() {
+            if self.bridge_trees && matches!(op, Op::Call { .. } | Op::Return | Op::Trap { .. }) { starts[pc] = true; }
             match op {
                 Op::Jump { target } => starts[*target] = true,
                 Op::Switch { cases, otherwise, .. } => {
@@ -203,6 +205,7 @@ impl<'a> Jit<'a> {
             entries[start] = Some(words.len());
             ends[start] = Some(pc);
             let mut a = Assembler { heap: self.uses_heap, reads: &reads, values: values.as_ref(), frame_size: f.frame_size,
+                tree_bridge_frame: self.bridge_trees.then_some((id, f.registers)),
                 region_start: start, region_end: pc, ..Assembler::default() };
             // The checked whole-tree bound guarantees enough budget for every
             // path, including nested bodies. There is no partial-budget exit.
@@ -246,7 +249,7 @@ impl<'a> Jit<'a> {
                     let code = assertion_code(self.assertions.len(), assertions.len())?;
                     assertions.push(Assertion { message, function: &f.name, kind: FaultKind::Trap });
                     a.imm(0, code);
-                    a.tree_epilogue();
+                    a.tree_fault_epilogue()?;
                 }
                 _ => a.exit(tail, pc)?,
             }
@@ -255,13 +258,13 @@ impl<'a> Jit<'a> {
                 if !failures.iter().any(|(_, k)| *k == kind) { continue; }
                 let target = a.words.len();
                 a.imm(0, kind as u64);
-                a.tree_epilogue();
+                a.tree_fault_epilogue()?;
                 for &(at, failure) in &failures { if failure == kind { a.patch_conditional(at, target)?; } }
             }
             for (at, code) in std::mem::take(&mut a.assertions) {
                 let target = a.words.len();
                 a.imm(0, code);
-                a.tree_epilogue();
+                a.tree_fault_epilogue()?;
                 a.patch_conditional(at, target)?;
             }
             links.extend(a.links.iter().map(|(at, successor)| (words.len() + at, *successor)));
@@ -295,6 +298,7 @@ impl<'a> Jit<'a> {
         profile_table: *const *mut u64, registers: *mut u128, base: usize,
         memory: *mut u8, len: usize, readonly: usize, heap: *mut u8, heap_len: usize,
     ) -> Result<Option<TreeRun>, String> {
+        if self.bridge_trees { return Err("bridge trees require the extended cursor".into()); }
         let Some(tree) = &self.trees else { return Ok(None); };
         let Some(entry) = &tree.entries[id] else { return Ok(None); };
         let plan = tree.plans[id].map_err(|_| "published native tree has no plan")?;
@@ -336,6 +340,12 @@ impl Assembler<'_> {
         else { self.emit(0xd65f03c0); }
     }
 
+    fn tree_fault_epilogue(&mut self) -> Result<(), EmitError> {
+        self.bridge_fault_frame()?;
+        self.tree_epilogue();
+        Ok(())
+    }
+
     pub(super) fn tree_call(&mut self, caller: &Function, callee: &Function, callee_id: usize,
         args: &[Reg], destination: Reg, profiled: bool, global_start: usize, target: usize,
     ) -> Result<(), EmitError> {
@@ -355,9 +365,11 @@ impl Assembler<'_> {
         self.cmp(3, 9);
         self.emit(0x9a892069); // csel x9,x3,x9,hs: max(new live end, old peak)
         self.emit(0xf9000e69);
-        self.emit(0xf9401a69); // ldr x9,[x19,#48]: nested calls
-        self.emit(0x91000529);
-        self.emit(0xf9001a69);
+        if self.tree_bridge_frame.is_none() {
+            self.emit(0xf9401a69); // old standalone-tree accounting
+            self.emit(0x91000529);
+            self.emit(0xf9001a69);
+        }
         for (source, slot) in args.iter().zip(&callee.args) {
             self.address(11, *source, slot.size, false);
             self.imm(12, slot.offset as u64);
@@ -371,6 +383,13 @@ impl Assembler<'_> {
             self.imm(12, callee.registers as u64 * 16);
             self.three(0x8b000000, 12, 22, 12);
             self.zero_range()?;
+        }
+        if self.tree_bridge_frame.is_some() {
+            // A faulting argument copy has not pushed the child frame.
+            self.emit(0xf9401a69);
+            self.emit(0x91000529);
+            self.emit(0xf9001a69);
+            self.bridge_enter_child();
         }
         self.get(15, destination, false);
         self.mov(0, 22);
@@ -390,7 +409,7 @@ impl Assembler<'_> {
         self.cmp(0, 31);
         let success = self.words.len();
         self.emit(0x54000000); // b.eq restore caller
-        self.tree_epilogue(); // fault: no copy or further guest operation
+        self.tree_fault_epilogue()?; // fault: no copy or further guest operation
         self.patch_conditional(success, self.words.len())?;
         self.emit(0xa94207e0); // ldp x0,x1,[sp,#32]
         if profiled {
@@ -410,6 +429,7 @@ impl Assembler<'_> {
         self.abi_copy(f.result.size)?;
         self.mov(3, 1); // Return retains alignment padding before this frame.
         self.mov(0, 31);
+        self.bridge_leave_tree_frame();
         self.tree_epilogue();
         Ok(())
     }

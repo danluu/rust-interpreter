@@ -5,6 +5,48 @@ use crate::frames::{Frame,layout as frame};
 use crate::native_continuation::{Capacity,State};
 use native_calls::TreeCursor;
 
+/// Exclude every guarded ordinary body and all its ancestors. A bridge must
+/// not discard an adopted body optimization or use its VM-returning decline.
+/// Region boundaries and work limits are shared with the ordinary emitter.
+pub(super) fn plans(program: &Program) -> Vec<Result<trees::Plan, trees::Decline>> {
+    let mut plans = trees::analyze(program);
+    let mut parents = vec![vec![]; program.functions.len()];
+    let mut declined = std::collections::VecDeque::new();
+    for (id, f) in program.functions.iter().enumerate() {
+        for op in &f.code {
+            if let Op::Call { function, .. } = op { parents[*function].push(id); }
+        }
+        if plans[id].is_err() { continue; }
+        let fills = local_fills(f);
+        let native = |pc| supported(&f.code[pc]) || fills.contains_key(&pc) || transfers::supported(&f.code[pc]);
+        let starts = region_starts(f, &native);
+        let mut work = 4_000_000;
+        let mut pc = 0;
+        while pc < f.code.len() {
+            let end = region_end(f, pc, &starts, &native);
+            if end > pc && range_groups::runtime_plan(f, pc, end, &mut work).is_some() {
+                plans[id] = Err(trees::Decline::UnsupportedOperation);
+                declined.push_back(id);
+                break;
+            }
+            pc = end.max(pc + 1);
+        }
+    }
+    while let Some(child) = declined.pop_front() {
+        for &parent in &parents[child] {
+            if plans[parent].is_ok() {
+                plans[parent] = Err(trees::Decline::UnavailableDependency);
+                declined.push_back(parent);
+            }
+        }
+    }
+    plans
+}
+
+#[cfg(all(test, target_arch="aarch64", target_os="macos"))]
+#[path="tree_bridge_nested_tests.rs"]
+mod nested;
+
 #[repr(C)]
 pub(super) struct BridgeCursor {
     pub tree: TreeCursor,

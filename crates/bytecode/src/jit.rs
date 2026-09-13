@@ -360,6 +360,8 @@ pub(crate) struct Jit<'a> {
     pub compile_nanos: u128,
     assertions: Vec<Assertion<'a>>,
     trees: Option<native_calls::State>,
+    // Private bridge ABI; currently enabled only by focused native tests.
+    bridge_trees: bool,
     native_call_stubs: bool,
     pub region_plans: Vec<native_regions::RegionPlan>,
     pub call_stubs: usize,
@@ -407,7 +409,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, indirect: None,
+            assertions: vec![], trees: None, bridge_trees: false, native_call_stubs, call_stubs: 0, resumable: None, indirect: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -543,38 +545,11 @@ impl<'a> Jit<'a> {
         // The extra null entry handles a caller's one-past-code continuation.
         let mut resumes = if resumable { vec![None; f.code.len() + 1] } else { vec![] };
         let mut links = vec![];
-        let mut starts = vec![false; f.code.len()];
-        starts[0] = true;
-        for (pc, op) in f.code.iter().enumerate() {
-            match op {
-                Op::Jump { target } => starts[*target] = true,
-                Op::Switch {
-                    cases, otherwise, ..
-                } => {
-                    starts[*otherwise] = true;
-                    for (_, target) in cases {
-                        starts[*target] = true;
-                    }
-                }
-                _ => {}
-            }
-            if (!native(pc) || branch(op)) && pc + 1 < f.code.len() {
-                starts[pc + 1] = true;
-            }
-        }
+        let starts = region_starts(f, &native);
         let mut pc = 0;
         while pc < f.code.len() {
             let start = pc;
-            while pc < f.code.len()
-                // Bound straight-line regions. Large constant/table
-                // initializers otherwise put the shared memory-failure
-                // return beyond AArch64's conditional branch range.
-                && pc - start < 1024
-                && (pc == start || !starts[pc])
-                && native(pc)
-            {
-                pc += 1;
-            }
+            pc = region_end(f, start, &starts, &native);
             if pc - start >= if resumable { 1 } else { 3 } {
                 let offset = words.len() * 4;
                 let mut a = Assembler {
@@ -970,6 +945,32 @@ fn read_registers(f: &Function) -> Vec<Option<(usize, usize)>> {
         crate::registers::visit_registers(op, &mut mark, |_| {});
     }
     used
+}
+// Keep the ordinary and bridge eligibility partitions identical.
+fn region_starts(f: &Function, native: &impl Fn(usize) -> bool) -> Vec<bool> {
+    let mut starts = vec![false; f.code.len()];
+    starts[0] = true;
+    for (pc, op) in f.code.iter().enumerate() {
+        match op {
+            Op::Jump { target } => starts[*target] = true,
+            Op::Switch { cases, otherwise, .. } => {
+                starts[*otherwise] = true;
+                for (_, target) in cases {
+                    starts[*target] = true;
+                }
+            }
+            _ => {}
+        }
+        if (!native(pc) || branch(op)) && pc + 1 < f.code.len() {
+            starts[pc + 1] = true;
+        }
+    }
+    starts
+}
+fn region_end(f: &Function, start: usize, starts: &[bool], native: &impl Fn(usize) -> bool) -> usize {
+    let mut pc = start;
+    while pc < f.code.len() && pc - start < 1024 && (pc == start || !starts[pc]) && native(pc) { pc += 1; }
+    pc
 }
 fn branch(op: &Op) -> bool {
     matches!(op, Op::Jump {..} | Op::Switch {..})
