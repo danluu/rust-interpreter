@@ -48,6 +48,8 @@ impl Assembler<'_> {
     }
 
     pub(super) fn forward_local_value(&mut self, fact: Fact, size: usize, _kind: &'static str) {
+        #[cfg(test)]
+        let previous_part = std::mem::replace(&mut self.memory_parts.part, "forwarded_value");
         // This extra use must not alter the original cache replacement order.
         // The owner is still available; no new register-array read is needed.
         let recent = self.cache_recent;
@@ -56,6 +58,8 @@ impl Assembler<'_> {
         self.mask(9, (size * 8) as u8);
         #[cfg(test)]
         self.observe_forwarded_fact(fact, _kind);
+        #[cfg(test)]
+        { self.memory_parts.part = previous_part; }
     }
 
     #[cfg(test)]
@@ -97,7 +101,7 @@ impl Assembler<'_> {
         if let Some(value) = forwarded {
             // Preserve destination validation before materializing the captured
             // value, including the original cache replacement order.
-            let immediate = self.memory_address(12, dst, size, true);
+            let immediate = memory_access!(self, "destination", self.memory_address(12, dst, size, true));
             self.forward_local_value(value, size, "Copy");
             self.store_mem_at(9, 31, 12, size, immediate);
             return;
@@ -110,14 +114,14 @@ impl Assembler<'_> {
                 // Both complete ranges are already proven in the same active
                 // frame. Share its host base; only the memory displacements
                 // differ. Neither load overwrites this base.
-                self.three(0x8b000000, 11, 2, 1);
+                memory_access!(self, "both", memory_part!(self, "shared_frame_address", self.three(0x8b000000, 11, 2, 1)));
                 (source, 11, destination)
             }
             _ => {
                 // Preserve source-before-destination checks and validate both
                 // entire ranges before touching any bytes.
-                let source = self.memory_address(11, src, size, false);
-                let destination = self.memory_address(12, dst, size, true);
+                let source = memory_access!(self, "source", self.memory_address(11, src, size, false));
+                let destination = memory_access!(self, "destination", self.memory_address(12, dst, size, true));
                 (source, 12, destination)
             }
         };
