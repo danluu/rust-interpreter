@@ -1,15 +1,18 @@
 # Next work
 
 Use [STATUS.md](STATUS.md) for measured controls and
-[the September12 review](docs/SUGGESTIONS-REVIEW-20260912.md) for every new
+[the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: integrate the memory/lookup composition from current main and
-qualify the complete rebuilt tool before merging. All five prospective gates
-and all 726 expected commands pass. Final source and frozen-input verification
-is complete; the timing controller is terminal. Preserve the exact measured
-tools and the separate unapplied binding-observer draft.
-[Complete result](results/memory-lookup-complete-01/assessment.md).
+Current action: publish the qualified memory/lookup integration, then inspect
+current guest attribution and run the bounded binding-cost observer separately.
+Tool e729a493 passes428 Rust tests per profile,104 harness tests and263 new
+cache/Cargo/project qualification commands; exact VM profile evidence is reused.
+The726-command timing comparison is complete with all five gates passed.
+Future runtime candidates use a predeclared primary-first screen and cancel
+unstarted guards on primary failure; full adoption still requires every guard.
+[Integration](results/memory-lookup-main-complete-01/assessment.md),
+[complete timing result](results/memory-lookup-complete-01/assessment.md).
 
 Completed comparison context: the new composition combines memory operands
 and compiler-identity lookup caching. The earlier memory-only comparison

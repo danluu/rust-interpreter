@@ -3,22 +3,23 @@
 Manual work continues indefinitely; the saved goal record remains paused.
 The objective is to improve the custom Rust development engine
 using real source-edit/build/test benchmarks. Every item in `suggestions.txt`
-has an [explicit decision](docs/SUGGESTIONS-REVIEW-20260912.md); that user-owned
+has an [explicit decision](docs/SUGGESTIONS-REVIEW-20260912-2210.md); that user-owned
 file remains unchanged and untracked. Local commits, private GitHub publication and regular pushes of qualified changes to main are authorized.
 Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-The complete memory/lookup composition passes all five predeclared gates and
-all 726 expected commands. Token improves 7.66% wall and 6.78% CPU versus wide,
-and 18.35% wall versus the fixed anchor; it remains 1.894 times ordinary native
-Cargo. Nushell, private rg-aot, folded and pgrust all pass their guards. Pgrust
-improves 5.47% wall and 4.73% CPU with about 1.6% A/A. Final shared-lock
-verification confirms 8,996 case inputs and 440 harness inputs unchanged and
-all sources restored. The timed controller is terminal. Next integrate and
-verify the complete tool from current main; runtime source is not yet merged.
-The separate binding observer remains an unapplied draft.
-[Complete decision](results/memory-lookup-complete-01/assessment.md).
+The memory/lookup composition is fully qualified for main. Its726-command
+comparison passes all five gates; token gains18.35% wall versus the fixed
+anchor and still takes1.894 times ordinary native. The rebuilt complete tool
+`e729a493` passes428 Rust tests per profile,104 harness tests,223 cache/Cargo
+commands and40 real-project history commands. It preserves the exact measured
+VM and wrapper; the newly built exporter has matching project artifacts.
+Two repaired driver failures remain recorded. Sources and frozen inputs are
+verified. Next inspect current guest costs and apply the separate bounded
+binding observer; use primary-first screens for future runtime candidates.
+[Integration proof](results/memory-lookup-main-complete-01/assessment.md),
+[complete comparison](results/memory-lookup-complete-01/assessment.md).
 
 The memory/lookup composition is qualified and its five-case comparison is
 complete under one serialized controller. The unchanged memory runtime is

@@ -65,6 +65,27 @@ semantics are not implemented by this mode.
 Use `--engine interpreter` for the reference engine. Some standard-library paths
 require `--std-mir`, which prepares a reusable metadata sysroot.
 
+The qualified development configuration uses the memory-operand JIT, prepared
+test isolation, two explicit workers, function reuse and cached toolchain
+discovery. For the measured fre token selection:
+
+```sh
+python3 scripts/interpreter.py --manifest-path .work/sources/fre/Cargo.toml \
+  --package fre-kernels --test-body --test-filter 'token_phrase::tests::' \
+  --std-mir --engine jit --jit-resumable-calls --jit-persistent-registers \
+  --isolated-batch prepared --suite-workers 2 --jobs 2 \
+  --function-cache auto --toolchain-lookup cached --inline-leaves \
+  --trap-unsupported-calls --run-try-callbacks --allocation-limit 150000 \
+  --instruction-limit 100000000000 --suite-report token-suite.json
+```
+
+Type and borrow checking still complete before execution; cached discovery
+only avoids repeated compiler-identity lookup. Defaults remain explicit in
+this example. The five-case comparison passes all726 commands: token improves
+18.35% versus its fixed custom anchor, but remains1.894 times ordinary native.
+The rebuilt full tool passes428 Rust tests per profile,104 harness tests and
+263 cache/Cargo/project commands. [Integration and exact identities](results/memory-lookup-main-complete-01/assessment.md).
+
 Use `--workspace-cache-root EXISTING_DIRECTORY` to place project Cargo outputs
 and bytecode sidecars on an existing scratch disk. The launcher creates a
 marked namespace for this checkout, then separates tool builds and
@@ -162,7 +183,7 @@ The [build index](benchmarks/tool-builds.json) maps source commits to exact tool
 keys and verified binary hashes; regenerate it with `python3 scripts/tool_source_index.py`.
 
 Every suggestion from the external review has an explicit
-[decision](docs/SUGGESTIONS-REVIEW-20260911.md). The original
+[current decision](docs/SUGGESTIONS-REVIEW-20260912-2210.md). The original
 [plan](PLAN.md), [five persona rounds](persona-reviews.md), earlier
 [native-cache/publication results](RESULTS.md), and
 [implementation history](docs/history/README-20260910-before-review.md) remain
