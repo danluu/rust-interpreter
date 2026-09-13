@@ -49,6 +49,7 @@ pub(crate) fn local_arguments(program: &Program) -> Vec<Vec<bool>> {
                 | Op::Cast { dst, .. } | Op::Select { dst, .. } | Op::CompareBytes { dst, .. }
                 | Op::Allocate { dst, .. } | Op::Reallocate { dst, .. } | Op::RandomBytes { dst, .. }
                 | Op::CpuFeatureQuery { dst, .. }
+                | Op::EnvironmentGet { dst, .. }
                 | Op::CAllocate { dst, .. } | Op::CReallocate { dst, .. } | Op::CAlignedAllocate { dst, .. }
                 | Op::FloatBinary { dst, .. } | Op::FloatUnary { dst, .. } | Op::FloatConvert { dst, .. } => {
                     locals[*dst as usize].0 = 0;

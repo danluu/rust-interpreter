@@ -21,6 +21,7 @@ fn rewrite_reads(op:&mut Op,mut map:impl FnMut(&mut Reg)) {
         Op::Reallocate{pointer,old_size,align,new_size,..}=>{map(pointer);map(old_size);map(align);map(new_size);},
         Op::FillBytes{address,value,size}=>{map(address);map(value);map(size);},
         Op::RandomBytes{address,size,..}=>{map(address);map(size);},
+        Op::EnvironmentGet{name,..}=>map(name),
         Op::CpuFeatureQuery{name,output,output_len,new_data,new_len,..}=>{for r in [name,output,output_len,new_data,new_len] {map(r);}},
         Op::CAllocate{count,size,errno,..}=>{for r in [count,size,errno] {map(r);}},
         Op::CDeallocate{pointer}=>map(pointer),

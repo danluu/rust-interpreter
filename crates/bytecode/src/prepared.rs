@@ -25,7 +25,7 @@ impl<'program> PreparedJit<'program> {
         Self::check_mode(limits)?;
         crate::validate(program)?;
         let jit = crate::create_jit::<false, true, false, true>(program, limits)?;
-        let metadata = ExecutionMetadata::new(program, jit.as_ref(), true);
+        let metadata = ExecutionMetadata::new(program, jit.as_ref(), true, limits.memory)?;
         Ok(Self { program, jit, metadata, code_bytes: limits.jit_code_bytes,
             persistent_registers: limits.jit_persistent_registers,
             preparation_nanos: started.elapsed().as_nanos() })

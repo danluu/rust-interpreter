@@ -25,6 +25,7 @@ mod inline_graph;
 mod whole_call_inline_tests;
 mod calls;
 mod cpu;
+mod environment;
 mod c_allocator;
 mod tls;
 mod forwarding;
@@ -255,6 +256,8 @@ pub enum Op {
     CReallocate { dst: Reg, pointer: Reg, size: Reg, errno: Reg },
     CAlignedAllocate { dst: Reg, output: Reg, align: Reg, size: Reg },
     RegisterTlsDestructor { callback: Reg, argument: Reg },
+    /// Read a C name from guest memory; return an immutable guest value pointer.
+    EnvironmentGet { dst: Reg, name: Reg },
 }
 
 fn mask(bits: u8) -> u128 {
@@ -717,7 +720,7 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
         return Err(format!("live allocation limit exceeds supported maximum of {MAX_ALLOCATION_LIMIT}"));
     }
     let mut jit = create_jit::<PROFILE, USE_JIT, CALL_STUBS, RESUMABLE>(program, &limits)?;
-    let metadata = ExecutionMetadata::new(program, jit.as_ref(), RESUMABLE);
+    let metadata = ExecutionMetadata::new(program, jit.as_ref(), RESUMABLE, limits.memory)?;
     execute_prepared_impl::<PROFILE, USE_JIT, NATIVE_CALLS, CALL_STUBS, RESUMABLE>(
         program, program.entry, arguments, limits, profile, &mut jit, &metadata)
 }
@@ -744,15 +747,20 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
 struct ExecutionMetadata {
     needs_register_zeroes: Vec<bool>,
     local_call_arguments: Vec<Vec<bool>>,
+    environment: Option<environment::Snapshot>,
 }
 impl ExecutionMetadata {
-    fn new(program: &Program, jit: Option<&jit::Jit<'_>>, resumable: bool) -> Self {
-        Self {
+    fn new(program: &Program, jit: Option<&jit::Jit<'_>>, resumable: bool, memory_limit: usize) -> Result<Self, String> {
+        let environment = if program.functions.iter().any(|f| f.code.iter().any(|op| matches!(op, Op::EnvironmentGet {..}))) {
+            Some(environment::Snapshot::capture(memory_limit)?)
+        } else { None };
+        Ok(Self {
             needs_register_zeroes: if resumable {
                 jit.unwrap().resumable_register_zeroes().to_vec()
             } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() },
             local_call_arguments: calls::local_arguments(program),
-        }
+            environment,
+        })
     }
 }
 
@@ -801,6 +809,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
         auxiliary_bytes: 0,
     };
     memory.bytes.resize(memory.bytes.len().max(16), 0);
+    let environment_base = metadata.environment.as_ref().map(|snapshot| snapshot.install(&mut memory)).transpose()?;
     let base = memory.reserve_frame(entry.frame_size, entry.frame_align)?;
     let mut register_bytes = entry
         .registers
@@ -946,6 +955,10 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                 }
                 Op::RandomBytes { dst, address, size } => {
                     r[*dst as usize] = memory.random_bytes(r[*address as usize] as usize, r[*size as usize] as usize)?;
+                }
+                Op::EnvironmentGet { dst, name } => {
+                    r[*dst as usize] = metadata.environment.as_ref().ok_or("missing environment snapshot")?
+                        .get(&memory, environment_base.ok_or("missing guest environment")?, r[*name as usize])?;
                 }
                 Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
                     r[*dst as usize] = memory.cpu_feature_query(r[*name as usize] as usize,
@@ -1408,6 +1421,7 @@ pub fn validate(program: &Program) -> Result<(), String> {
                     for r in [dst, output, align, size] { reg(*r)?; }
                 }
                 Op::RandomBytes { dst, address, size } => { reg(*dst)?; reg(*address)?; reg(*size)?; }
+                Op::EnvironmentGet { dst, name } => { reg(*dst)?; reg(*name)?; }
                 Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
                     for r in [dst, name, output, output_len, new_data, new_len] { reg(*r)?; }
                 }

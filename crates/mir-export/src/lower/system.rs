@@ -8,10 +8,28 @@ impl<'tcx> Lower<'_, 'tcx> {
         if self.c_allocator_function(instance, args, destination)? { return Ok(true); }
         if self.tls_registration(instance, args)? { return Ok(true); }
         let symbol = tcx.symbol_name(instance).name;
-        if !matches!(symbol, "abort" | "CCRandomGenerateBytes" | "sysctlbyname") { return Ok(false); }
+        if !matches!(symbol, "abort" | "CCRandomGenerateBytes" | "sysctlbyname" | "getenv") { return Ok(false); }
         let sig = tcx.fn_sig(instance.def_id()).instantiate(tcx, instance.args);
         let sig = tcx.normalize_erasing_regions(env(), sig);
         let sig = tcx.instantiate_bound_regions_with_erased(sig);
+        if symbol == "getenv" {
+            let inputs = sig.inputs();
+            if sig.abi() != (ExternAbi::C { unwind: false }) || sig.c_variadic()
+                || inputs.len() != 1 || args.len() != 1
+                || !matches!(inputs[0].kind(), ty::RawPtr(pointee, rustc_hir::Mutability::Not)
+                    if *pointee == tcx.types.i8 || *pointee == tcx.types.u8)
+                || !matches!(sig.output().kind(), ty::RawPtr(pointee, rustc_hir::Mutability::Mut)
+                    if *pointee == tcx.types.i8 || *pointee == tcx.types.u8)
+                || self.layout(inputs[0])?.size.bytes() != 8 || self.layout(sig.output())?.size.bytes() != 8 {
+                return Err("invalid getenv signature".into());
+            }
+            let name = self.scalar(&args[0].node)?;
+            let dst = self.reg();
+            self.code.push(Op::EnvironmentGet { dst, name });
+            let destination = self.place(destination)?;
+            self.store(destination.address, dst, 8)?;
+            return Ok(true);
+        }
         if symbol == "abort" {
             if sig.abi() != (ExternAbi::C { unwind: false }) || sig.c_variadic()
                 || !sig.inputs().is_empty() || !sig.output().is_never() || !args.is_empty() {
