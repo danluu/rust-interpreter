@@ -38,8 +38,16 @@ the full726-command campaign then passes every expected outcome and the final
 pgrust and private rg-aot pass. Nushell's wall margin1.09305 exceeds1.05 with
 10.53% A/A, despite a−1.22% point estimate. Keep the runtime experimental and do
 not retime it. Main retains the qualified operation-map/memory/lookup runtime.
-The next step is the bounded reuse-miss/current-MIR diagnostic, preserving
-strict checks and existing cache/query behavior. Saved Cargo interval attribution
+The reuse-miss/current-MIR diagnostic now passes83 exporter tests per profile,
+14 harness tests and44 fixture/project commands with exact retained artifacts.
+In the five valid token edits,172 recurring green functions lack a supported
+recipe; only34/33/32/1/30 red entries need fresh lowering. Declined lowering costs
+22.88ms, and body-free replay context only4.55ms. Park standalone lazy-MIR and
+broad recipe expansion as the immediate next candidates; return to the measured
+Copy/budget guest costs. The observer remains experimental pending integration
+with the other session's newly published opt-in compiler-query reuse.
+[Diagnostic evidence](results/reuse-misses-analysis-01/assessment.md).
+Saved Cargo interval attribution
 finds4.780s reported-unit coverage inside5.260s historical Nushell Cargo;0.469s
 without an active reported unit stays unattributed. The suggestions remain
 unchanged; their review records the evidence behind these priorities.

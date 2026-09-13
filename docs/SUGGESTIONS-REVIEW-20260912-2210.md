@@ -74,6 +74,17 @@ include three distinct nu-protocol labels. Prioritize the actual unit/argument
 graph and encoding/query costs over assuming Cargo startup dominates.
 [Saved Cargo interval evidence](../results/cargo-residual-nushell-01/assessment.md). [New operation evidence](../results/operation-map-sampling-01/assessment.md).
 
+The reuse-miss diagnostic3.1 now reconciles all five valid token edits. The204
+lowered functions in edit3 are172 green functions with unsupported recipes and
+32 red entries with prior templates. Declined lowering costs22.88ms; body-free
+current-MIR context costs4.55ms. Park standalone lazy-MIR and broad recipe
+expansion for now; those are bounded small opportunities. The scalar-copy full
+comparison passes the primary and three guards but fails Nushell's frozen wall
+margin, so that runtime stays experimental. A new runtime composition must
+change the mechanism, use a fresh prospective screen and retain every full
+adoption guard; do not repeat scalar-copy timings unchanged.
+[Reuse diagnostic and limits](../results/reuse-misses-analysis-01/assessment.md).
+
 Original integration checkpoint (subsequently completed): the rebuilt VM matches
 the measured runtime exactly;428 Rust tests per profile
 and223 new cache/Cargo commands pass. The first project qualification stopped
