@@ -25,12 +25,13 @@ def validate(operation_map, regions, code, profile, pid):
         assert operation_map[key] == regions[key], ('option mismatch', key)
     for key in ['profiled', 'persistent_registers', 'resumable_calls']:
         assert type(operation_map[key]) is bool
+    assert operation_map.get('indirect_calls',False)==regions.get('indirect_calls',False)
     integer(operation_map['arena_base'])
     assert bool(operation_map['arena_base']) == bool(code)
     region_by_key, expected = {}, set()
     cursor = 0
     for row in regions['ranges']:
-        assert row['kind'] in {'ordinary_region', 'resumable_region', 'resumable_call', 'resumable_return'}
+        assert row['kind'] in {'ordinary_region', 'resumable_region', 'resumable_call', 'resumable_indirect_call', 'resumable_return'}
         assert row['offset'] == cursor and integer(row['end']) > cursor and row['end'] % 4 == 0
         fid, pc, pc_end = [integer(row[k]) for k in ['function', 'pc', 'pc_end']]
         f = profile['functions'][fid]
@@ -75,7 +76,8 @@ def validate(operation_map, regions, code, profile, pid):
                 variant = f['operations'][pc].split(' ', 1)[0]
                 assert variant and variant.isalnum(), 'invalid retained opcode rendering'
                 if row['kind'] == 'transition':
-                    assert variant in {'Call', 'Return'} and operation_map['resumable_calls']
+                    assert variant in {'Call', 'CallIndirect', 'Return'} and operation_map['resumable_calls']
+                    if variant=='CallIndirect':assert operation_map.get('indirect_calls') is True
                 label = row['kind'] + ':' + variant
             words = (row['end'] - cursor) // 4
             static[label] += words

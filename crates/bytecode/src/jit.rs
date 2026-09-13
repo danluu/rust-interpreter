@@ -40,6 +40,7 @@ mod trees;
 mod native_calls;
 mod native_regions;
 mod resumable;
+mod indirect;
 mod call_slots;
 mod code_dump;
 mod code_spans;
@@ -361,6 +362,7 @@ pub(crate) struct Jit<'a> {
     pub call_stubs: usize,
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
+    indirect: Option<indirect::Metadata<'a>>,
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
@@ -400,7 +402,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, indirect: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -727,7 +729,12 @@ impl<'a> Jit<'a> {
                 operations += pc - start;
             }
             if pc == start {
-                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
+                if resumable && (matches!(f.code[pc], Op::Call { .. } | Op::Return)
+                    || match &f.code[pc] {
+                        Op::CallIndirect {arg_sizes,result_size,..} => self.indirect.as_ref()
+                            .and_then(|m|m.signature(arg_sizes,*result_size)).is_some(),
+                        _ => false,
+                    }) {
                     let offset = words.len() * 4;
                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),

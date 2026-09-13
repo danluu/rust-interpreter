@@ -421,6 +421,9 @@ pub struct Limits {
     /// Experimental native Calls/Returns with exact guest-frame continuations.
     /// Requires JIT and cannot be combined with the tree/stub experiment.
     pub jit_resumable_calls: bool,
+    /// Experimental native indirect Calls with exact signature/layout metadata.
+    /// Requires resumable calls; disabled by default.
+    pub jit_indirect_calls: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -440,6 +443,7 @@ impl Default for Limits {
             jit_native_call_stubs: false,
             jit_persistent_registers: false,
             jit_resumable_calls: false,
+            jit_indirect_calls: false,
             jit_code_dump: None,
             jit_operation_map: false,
         }
@@ -697,6 +701,9 @@ fn execute_observed<const PROFILE: bool>(
     if engine == Engine::Interpreter && limits.jit_persistent_registers {
         return Err("persistent registers require the JIT engine".into());
     }
+    if limits.jit_indirect_calls && !limits.jit_resumable_calls {
+        return Err("native indirect calls require resumable calls".into());
+    }
     if limits.jit_resumable_calls {
         if engine != Engine::Jit { return Err("resumable calls require the JIT engine".into()); }
         if limits.jit_native_calls || limits.jit_native_call_stubs {
@@ -744,7 +751,10 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
             jit::Jit::new(program, PROFILE, limits.jit_code_bytes)?
         })
     } else { None };
-    if let Some(jit) = &mut jit { jit.compile_nanos = started.elapsed().as_nanos(); }
+    if let Some(jit) = &mut jit {
+        if limits.jit_indirect_calls { jit.enable_indirect_calls(); }
+        jit.compile_nanos = started.elapsed().as_nanos();
+    }
     Ok(jit)
 }
 
