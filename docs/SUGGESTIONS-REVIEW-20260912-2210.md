@@ -163,3 +163,35 @@ Evidence: [complete composition](../results/memory-lookup-complete-01/assessment
 [binary identity](../results/memory-lookup-main-identity-01/summary.json),
 [retained driver failure](../results/memory-lookup-main-projects-01-failure/summary.json),
 [revised qualification](../benchmarks/experiments/memory-lookup-main/QUALIFICATION.md).
+
+The complete original pgrust parser now passes all 114 tests in native and custom
+execution, including its reference vectors. The general FnOnce, capacity and
+environment/C-string work broadens compatibility without filtering assertions.
+This advances the coverage constraint behind suggestions 4.5/5.2. Next qualify
+existing edits and compare full parser changed-source commands with matched
+incremental settings; support-build durations are not speedup evidence.
+[Parser coverage proof](../results/pgrust-parser-support-04/assessment.md).
+
+The full original parser edit comparisons are now complete: custom/native wall
+ratios are1.1578 with repository incremental disabled and1.2303 with matched
+incremental enabled. This supports prioritizing guest runtime under2.1/2.3;
+faster frontend reuse alone does not win the complete command. The latter study
+retains its earlier cross-cycle identity failure and22 audited observations;
+only44 unstarted commands run under a revised within-cycle A/B identity rule.
+Paired bounded traces with template reuse disabled locate the layout difference
+in rustc literal allocation sharing. Do not normalize constants to hide it.
+All40 existing-project correctness commands preserve artifacts/outcomes, so
+capacity and environment support can proceed to publication audit. Investigate
+the parser's dominant reference-vector test and early JIT decline before code
+capacity changes; the local-value census remains a separate candidate.
+[Matched incremental parser result](../results/pgrust-parser-edits-incremental-history-01/assessment.md).
+
+The combined current compiler qualification now passes98 exporter/wrapper tests
+per profile,119 strict controls,40 exact project histories and all114 original
+parser tests. Its final source/tool audit passes. The next2.1/2.3 finding is
+specific: one routine accounts for94.13% of interpreted operations in the
+reference-vector profile and needs16,554,488 native bytes by itself. Compare an
+explicit bounded capacity option before a larger reached-region redesign; retain
+the16 MiB default and require real changed-source evidence for a speedup.
+[Combined qualification](../results/environment-main-final-audit-01/assessment.md),
+[emitter diagnosis](../results/parser-offline-emission-01/assessment.md).

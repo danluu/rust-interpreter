@@ -313,8 +313,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     let mut replay_declines = BTreeMap::<String, usize>::new();
     let mut functions: Vec<Option<Function>> = vec![];
     while let Some(index) = exporter.pending.pop_front() {
-        if exporter.instances.len() >= 10_000 {
-            return Err("function expansion limit reached".into());
+        if exporter.instances.len() > crate::limits::MAX_FUNCTIONS {
+            return Err(exporter.expansion_error(&functions, index, None));
         }
         let instance = exporter.instances[index];
         let name = tcx.def_path_str(instance.def_id());
@@ -461,8 +461,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         if let Some(costs) = &mut function_costs {
             costs.record(index, &f, prepare, elapsed, mir_locals, mir_blocks, bindings, dependency)?;
         }
-        if exporter.instances.len() > 10_000 {
-            return Err("function expansion limit reached".into());
+        if exporter.instances.len() > crate::limits::MAX_FUNCTIONS {
+            return Err(exporter.expansion_error(&functions, index, Some(&f)));
         }
         functions.resize_with(exporter.instances.len(), || None);
         functions[index] = Some(f);
@@ -662,6 +662,47 @@ struct Exporter<'tcx> {
     byte_writes: Vec<scalar_frame::byte_writes::Observation>,
 }
 impl<'tcx> Exporter<'tcx> {
+    fn expansion_error(&self, functions: &[Option<Function>], current: usize, staged: Option<&Function>) -> String {
+        // Failure-only census: keep the admission limit and discovery order
+        // unchanged. An address-taken function may also be called directly;
+        // these counts describe sets, not causes of reachability.
+        let inspected = self.instances.len().min(100_000);
+        let mut definitions = BTreeMap::<String, usize>::new();
+        let mut crates = BTreeMap::<String, usize>::new();
+        let mut kinds = BTreeMap::<String, usize>::new();
+        for instance in &self.instances[..inspected] {
+            let def = instance.def_id();
+            *definitions.entry(self.tcx.def_path_str(def)).or_default() += 1;
+            *crates.entry(self.tcx.crate_name(def.krate).to_string()).or_default() += 1;
+            *kinds.entry(format!("{:?}", self.tcx.def_kind(def))).or_default() += 1;
+        }
+        let distinct_definitions = definitions.len();
+        let mut definitions: Vec<_> = definitions.into_iter().collect();
+        definitions.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        definitions.truncate(32);
+        let required = self.needs_body.iter().filter(|&&needed| needed).count();
+        let lowered = functions.iter().filter(|function| function.is_some()).count();
+        eprintln!("rust-interp-function-expansion: {}", serde_json::json!({
+            "schema_version": 1, "limit": crate::limits::MAX_FUNCTIONS,
+            "registered": self.instances.len(), "body_required": required,
+            "completed_bodies_before_current": lowered, "pending": self.pending.len(),
+            "current_body_completed": staged.is_some(),
+            "current_body_operations": staged.map(|f| f.code.len()),
+            "address_taken": self.pointer_shapes.len(),
+            "address_taken_required": self.pointer_shapes.keys().filter(|&&id| self.needs_body[id]).count(),
+            "address_taken_unknown_shape": self.pointer_shapes.values().filter(|shape| shape.is_none()).count(),
+            "indirect_call_shapes": self.indirect_shapes.len(),
+            "inspected": inspected, "complete_counts": inspected == self.instances.len(),
+            "distinct_definitions": distinct_definitions, "crates": crates, "definition_kinds": kinds,
+            "top_definitions": definitions,
+            "current_index": current,
+            "current_definition": self.tcx.def_path_str(self.instances[current].def_id()),
+            "operations_before_current": functions.iter().flatten().map(|f| f.code.len()).sum::<usize>(),
+            "scope": "registered instances at admission failure; sets overlap; top32 definitions; no generic argument values"
+        }));
+        "function expansion limit reached".into()
+    }
+
     fn note_allocation_kind(&mut self, id: AllocId, kind: Option<PointerKind>) {
         if let Some(targets) = &mut self.relocation_targets {
             targets.insert(id, kind);

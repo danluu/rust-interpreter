@@ -247,6 +247,41 @@ fn observe_local_forwarding_in_original_artifact() {
 }
 
 #[test]
+#[ignore = "Offline emission diagnosis; requires a bound artifact and function ID"]
+fn observe_unpublished_function_emission() {
+    let input = std::env::var("EMISSION_INPUT").unwrap();
+    let output = std::env::var("EMISSION_OUTPUT").unwrap();
+    let id: usize = std::env::var("EMISSION_FUNCTION").unwrap().parse().unwrap();
+    let bytes = std::fs::read(&input).unwrap();
+    assert!(bytes.len() <= 128 * 1024 * 1024);
+    let p: Program = bincode::deserialize(&bytes).unwrap();
+    crate::validate(&p).unwrap();
+    let f = &p.functions[id];
+    let mut rows = vec![];
+    for profiled in [false, true] {
+        let jit = Jit::new_resumable(&p, profiled, MAX_CODE_BYTES, true).unwrap();
+        assert!(jit.resumable.as_ref().unwrap().fits(f.code.len()));
+        // The larger allowance applies only to unexecuted staging words.
+        // No arena, entry or native instruction is published or run here.
+        for bytes in [MAX_CODE_BYTES, MAX_CODE_BYTES * 4] {
+            let outcome = match jit.emit_function_inner(f, bytes / 4, 0, None) {
+                Ok(Some(staged)) => serde_json::json!({"status":"emitted",
+                    "code_bytes":staged.words.len()*4,"operations":staged.operations,
+                    "entries":staged.entries.iter().filter(|r|r.is_some()).count()}),
+                Ok(None) => serde_json::json!({"status":"code-budget-declined"}),
+                Err(error) => serde_json::json!({"status":"emitter-error","reason":format!("{error:?}")}),
+            };
+            assert!(jit.code.is_none() && jit.bytes == 0 && jit.assertions.is_empty());
+            rows.push(serde_json::json!({"profiled":profiled,"word_budget_bytes":bytes,"outcome":outcome}));
+        }
+    }
+    let file = std::fs::OpenOptions::new().write(true).create_new(true).open(output).unwrap();
+    serde_json::to_writer(file, &serde_json::json!({"function":id,"name":f.name,
+        "operations":f.code.len(),"registers":f.registers,"frame_size":f.frame_size,
+        "fresh_resume_table_fits":true,"published_or_executed":false,"observations":rows})).unwrap();
+}
+
+#[test]
 fn forwarded_copy_fault_writes_only_the_preceding_store() {
     for heap in [false,true] { for profiled in [false,true] { for bad in [0,1,63,569,576,u64::MAX] {
         let mut p=program(vec![Op::Local {dst:0,offset:128},Op::Imm {dst:1,value:WIDE},Op::Store {address:0,src:1,size:8},

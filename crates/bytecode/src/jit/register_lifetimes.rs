@@ -100,6 +100,7 @@ fn remap(f: &Function, plan: &Plan) -> Function {
             Op::FillBytes { address, value, size } => { r(address); r(value); r(size); }
             Op::FloatBinary { dst, a, b, .. } => { r(dst); r(a); r(b); }
             Op::RandomBytes { dst, address, size } => { r(dst); r(address); r(size); }
+            Op::EnvironmentGet { dst, name } => { r(dst); r(name); }
             Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
                 for value in [dst, name, output, output_len, new_data, new_len] { r(value); }
             }
