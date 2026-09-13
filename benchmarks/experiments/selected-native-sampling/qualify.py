@@ -14,6 +14,7 @@ def main():
     kinds.add_argument('--composed-candidate',action='store_true',help='qualify the 393-test corrected composed runtime against the same serial reference inputs')
     kinds.add_argument('--call-protocol-candidate',action='store_true',help='qualify the 395-test call-protocol runtime')
     kinds.add_argument('--operation-map-candidate', action='store_true', help='qualify the 436-test operation-map diagnostic runtime')
+    kinds.add_argument('--scalar-copy-budget-candidate', action='store_true', help='qualify the 456-test scalar Copy and budget runtime')
     kinds.add_argument('--scalar-copy-operands-candidate', action='store_true', help='qualify the 441-test scalar Copy operand runtime')
     kinds.add_argument('--direct-operands-candidate', action='store_true', help='qualify the 433-test direct operand runtime')
     kinds.add_argument('--immediate-shifts-candidate', action='store_true', help='qualify the 432-test immediate shift runtime')
@@ -23,8 +24,9 @@ def main():
     kinds.add_argument('--wide-bitwise-candidate', action='store_true', help='qualify the 419-test wide integer emitter')
     kinds.add_argument('--capacity-credit-candidate', action='store_true', help='qualify the 422-test capacity-credit runtime')
     kinds.add_argument('--main-integration-candidate',action='store_true',help='qualify the 418-test compiler/runtime integration')
-    args=parser.parse_args();assert re.fullmatch(r'(scalar-copy-operands|operation-map|direct-operands|immediate-shifts|memory-operands|paired-registers|guarded-indirect|wide-bitwise|call-capacity-credit|call-protocol-main|resumable-call-protocol|composed-development|parallel-suites|selected-native)-qualification-\d{2}',args.run_id)
+    args=parser.parse_args();assert re.fullmatch(r'(scalar-copy-budget|scalar-copy-operands|operation-map|direct-operands|immediate-shifts|memory-operands|paired-registers|guarded-indirect|wide-bitwise|call-capacity-credit|call-protocol-main|resumable-call-protocol|composed-development|parallel-suites|selected-native)-qualification-\d{2}',args.run_id)
     assert args.run_id.startswith('operation-map')==args.operation_map_candidate
+    assert args.run_id.startswith('scalar-copy-budget')==args.scalar_copy_budget_candidate
     assert args.run_id.startswith('scalar-copy-operands')==args.scalar_copy_operands_candidate
     assert args.run_id.startswith('direct-operands')==args.direct_operands_candidate
     assert args.run_id.startswith('immediate-shifts')==args.immediate_shifts_candidate
@@ -38,9 +40,9 @@ def main():
     assert args.run_id.startswith('parallel-suites')==args.parallel_suite_candidate
     assert args.run_id.startswith('composed-development')==args.composed_candidate
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45);require_space(ROOT,8 if args.operation_map_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 3.5)
+        acquire_lock(lock,45);require_space(ROOT,8 if args.operation_map_candidate or args.scalar_copy_budget_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 3.5)
         build_path=args.build.resolve(strict=True);build=json.loads(build_path.read_text())
-        expected_tests=436 if args.operation_map_candidate else 441 if args.scalar_copy_operands_candidate else 433 if args.direct_operands_candidate else 432 if args.immediate_shifts_candidate else 428 if args.memory_operands_candidate else 421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393 if args.composed_candidate else 365 if args.parallel_suite_candidate else 360
+        expected_tests=436 if args.operation_map_candidate else 456 if args.scalar_copy_budget_candidate else 441 if args.scalar_copy_operands_candidate else 433 if args.direct_operands_candidate else 432 if args.immediate_shifts_candidate else 428 if args.memory_operands_candidate else 421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393 if args.composed_candidate else 365 if args.parallel_suite_candidate else 360
         assert build['status']=='passed' and build['tests']['test-debug']==build['tests']['test-release']==dict(passed=expected_tests,ignored=1)
         tools,key=installed_tools(build['tool_key']);vm=tools/'rust-interp-vm';assert sha(vm)==build['binaries']['rust-interp-vm']
         reference_path=ROOT/'results/suite-profiling-real-01/summary.json';reference=json.loads(reference_path.read_text());assert reference['status']=='passed' and reference['exact_logical_counts_and_entropy']
@@ -51,6 +53,7 @@ def main():
             ROOT/'scripts/workflow_io.py',ROOT/'scripts/interpreter.py',ROOT/'scripts/workspace_cache.py',ROOT/'scripts/compare_saved_runtime.py']
         if args.parallel_suite_candidate:paths.append(ROOT/'benchmarks/experiments/parallel-suites/PLAN.md')
         if args.operation_map_candidate:paths.append(ROOT/'benchmarks/experiments/operation-map/PLAN.md')
+        if args.scalar_copy_budget_candidate:paths.append(ROOT/'benchmarks/experiments/scalar-copy-budget/PLAN.md')
         if args.scalar_copy_operands_candidate:paths.append(ROOT/'benchmarks/experiments/scalar-copy-operands/PLAN.md')
         if args.direct_operands_candidate:paths.append(ROOT/'benchmarks/experiments/direct-operands/PLAN.md')
         if args.immediate_shifts_candidate:paths.append(ROOT/'benchmarks/experiments/immediate-shifts/PLAN.md')
@@ -69,12 +72,12 @@ def main():
             inputs.append(dict(case=case,artifact=str(artifact),catalog=str(catalog),tape=str(tape),tape_sha256=sha(tape)))
             paths += [artifact,catalog,tape,profile]
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths};work=ROOT/'.work'/args.run_id;work.mkdir(exist_ok=False)
-        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,inputs=inputs,vm_sha256=sha(vm),minimum_free_gib=8 if args.operation_map_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 3,performance_measurement=False))
+        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,inputs=inputs,vm_sha256=sha(vm),minimum_free_gib=8 if args.operation_map_candidate or args.scalar_copy_budget_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 3,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_'))};assert not any(k.startswith('DYLD_') for k in env)
         env.update(DYLD_INSERT_LIBRARIES=str(library),RUST_INTERP_ENTROPY_MODE='replay',RUST_INTERP_VM_STATS='1')
         rows=[]
         for item in inputs:
-            require_space(ROOT,8 if args.operation_map_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 3);case=item['case'];selected=dict(env,RUST_INTERP_ENTROPY_TAPE=item['tape'])
+            require_space(ROOT,8 if args.operation_map_candidate or args.scalar_copy_budget_candidate or args.scalar_copy_operands_candidate or args.direct_operands_candidate or args.immediate_shifts_candidate or args.memory_operands_candidate else 3);case=item['case'];selected=dict(env,RUST_INTERP_ENTROPY_TAPE=item['tape'])
             command=[str(vm),'--engine','jit','--jit-resumable-calls','--jit-persistent-registers','--select-test',case['name'],'--suite-catalog',item['catalog'],
                 '--instruction-limit',str(case['limits']['instructions']),'--allocation-limit',str(case['limits']['allocations']),item['artifact']]
             child,stdout,stderr=capture(command,cwd=ROOT,env=selected,receipt_path=work/'active.json',receipt=dict(index=case['index']))
