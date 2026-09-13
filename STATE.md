@@ -17,9 +17,13 @@ checks,26 Cargo commands and16 current-token off/on history commands. Refined
 binding medians are93.32ms MIR-context preparation,4.83ms immediate indexing,
 28.15ms event resolution and1.15ms patching. Park the positions-table rewrite.
 Current samples put93%/86% of the two token windows inside generated code.
-Next qualify constant shift/rotate operand emission and use a primary-first
-changed-source screen. No goal-state change, unrelated process control or
+The constant shift/rotate candidate passes432 tests per profile,107 harness
+checks and222 real correctness/profile commands. Its40-command primary screen
+finds wall+0.90%/CPU+1.19%, inside3.07%/3.00% A/A; no useful gain. Park it and
+cancel unstarted guards. Next qualify direct operands for modular arithmetic
+and bitwise operations on the adopted baseline. No goal-state change, unrelated process control or
 new billing path is authorized.
+[Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Refined binding result](results/replay-costs-token-02/assessment.md),
 [current runtime attribution](results/current-runtime-costs-01/assessment.md),
 [composition integration](results/memory-lookup-main-complete-01/assessment.md).
