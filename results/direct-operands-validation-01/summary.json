@@ -1,0 +1,81 @@
+{
+  "status": "passed",
+  "raw": ".work/direct-operands-validation-01",
+  "plan_sha256": "d88a661df715181169e852e5d64cd347e603f4f8149d1388683d63819fe18031",
+  "records_sha256": "43f22f405e76126b5bec22e00ed9d97a0e5288887fdc4c10562de65bf1c22ea7",
+  "stages": [
+    {
+      "stage": "qualification",
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "benchmarks/experiments/selected-native-sampling/qualify.py",
+        "--direct-operands-candidate",
+        "--build",
+        "results/direct-operands-build-01/summary.json",
+        "--run-id",
+        "direct-operands-qualification-01"
+      ],
+      "pid": 62789,
+      "returncode": 0,
+      "stdout_sha256": "29e8e5887595c710b10b9ee9edaa20518e93163177f1fe951e87d9f2770b9fc1",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "6b142c96beefdf57fa3cbaccb3ca9f3cd294d37b363dc45316c5737f6d8460d2"
+    },
+    {
+      "stage": "serial",
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "benchmarks/experiments/parallel-suites/compare.py",
+        "--direct-operands-candidate",
+        "--phase",
+        "serial",
+        "--selection-qualification",
+        "results/direct-operands-qualification-01/summary.json",
+        "--build",
+        "results/direct-operands-build-01/summary.json",
+        "--run-id",
+        "direct-operands-serial-01"
+      ],
+      "pid": 65814,
+      "returncode": 0,
+      "stdout_sha256": "7f9a4629063ad4eef78318bdd8de0180523381d06a8d303aeebc371c5f71fd43",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "b14b2e3de2db7984fb66627ef9963d6977fbcfdab4251d8ee123a209b08450a2"
+    },
+    {
+      "stage": "cache",
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "benchmarks/experiments/composed-development/qualify_cache.py",
+        "--direct-operands-candidate",
+        "--automatic-cache",
+        "--build",
+        "results/direct-operands-build-01/summary.json",
+        "--run-id",
+        "direct-operands-cache-01"
+      ],
+      "pid": 71950,
+      "returncode": 0,
+      "stdout_sha256": "fafbe0ab706cc0e1e5eb6687a7c9383155c990585d440cfcf41848af3fd0b802",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "e28d70b72aadbe892248376fcd9fdcc839284314d165cf8e2aff127a26ed5f11"
+    },
+    {
+      "stage": "profile",
+      "command": [
+        "/Users/danluu/.pyenv/versions/3.9.18/bin/python3",
+        "benchmarks/experiments/direct-operands/profile.py",
+        "--build",
+        "results/direct-operands-build-01/summary.json",
+        "--run-id",
+        "direct-operands-profile-01"
+      ],
+      "pid": 75521,
+      "returncode": 0,
+      "stdout_sha256": "1e4626f5fa69d814e8a4298c622a99cf4288038e28bc9bdc5ab6614edd5d6782",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "a48325ef91b91786871f7da2a80f7bd39df18374b44a12b9e3334c3f5efcf3e9"
+    }
+  ],
+  "performance_measurement": false
+}
