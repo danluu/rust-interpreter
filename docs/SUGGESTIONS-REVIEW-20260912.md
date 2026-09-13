@@ -148,3 +148,15 @@ Moving its198ms export pass to the VM does not by itself establish a gain.
 A lazy per-function version would need distinct evidence and qualification.
 [Current profile and scope](../results/current-runtime-boundaries-02/assessment.md),
 [earlier allocation result](../results/register-allocation-screen-token-01/assessment.md).
+
+
+### First current wide-operation end-to-end result
+
+The full twelve-test token comparison passes all154 original/wrong/edit/
+restoration commands and its prospective performance gate. The component
+improves paired wall4.55% and CPU3.25%, beyond2.39% wall/1.70% CPU A/A. The
+full stack improves12.05% wall and12.66% CPU against the fixed selected-suite
+anchor. This is measured composition with a useful sub8% component gain; none
+of the earlier failed decisions is relabeled. It still takes1.957× ordinary
+native, and folded/pgrust guards remain outstanding before adoption.
+[Token assessment](../results/wide-bitwise-edit-token-01/stage-assessment.md).

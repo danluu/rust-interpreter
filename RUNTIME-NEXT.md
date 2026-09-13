@@ -28,8 +28,10 @@ suggestion. Historical experiments retain their original decisions.
    now handles And/Or/Xor/Shl/Shr. All419 tests/profile,106 harness checks, seven exact selections, nine suite
    commands and203 native/cache checks pass. Three current profile replays
    reduce block interpreted operations from6.77million to1.93million with
-   exact logical work/memory/entropy. The full fifteen-pair/A/A comparison
-   is running, with mandatory folded/pgrust guards. Keep the exhaustive token test in the selection;
+   exact logical work/memory/entropy. Token completes154 commands and passes: wall−4.55%, CPU−3.25% versus
+   integrated baseline; wall−12.05% versus fixed anchor; wall A/A2.39%. It
+   remains1.957× ordinary native. Finish mandatory folded/pgrust guards
+   before adoption. Keep the exhaustive token test in the selection;
    it has far fewer such operations. Counts do not predict a time saving.
    [Current census](results/current-runtime-boundaries-02/assessment.md),
    [qualification plan](benchmarks/experiments/wide-bitwise/PLAN.md).
