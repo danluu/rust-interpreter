@@ -1,0 +1,81 @@
+{
+  "status": "passed",
+  "raw": ".work/scalar-copy-operands-validation-01",
+  "plan_sha256": "6b9d315c9f75819aa7e812a6d91d68031c45bd5d1e9e12835cb0d20788084dce",
+  "records_sha256": "7258f2c1e00a8c52920321443ee268c9dfffa17daaa09bd27c6aabf69dd72ed7",
+  "stages": [
+    {
+      "stage": "qualification",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "benchmarks/experiments/selected-native-sampling/qualify.py",
+        "--scalar-copy-operands-candidate",
+        "--build",
+        "results/scalar-copy-operands-build-02/summary.json",
+        "--run-id",
+        "scalar-copy-operands-qualification-01"
+      ],
+      "pid": 55024,
+      "returncode": 0,
+      "stdout_sha256": "29e8e5887595c710b10b9ee9edaa20518e93163177f1fe951e87d9f2770b9fc1",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "9d0e8c5ef9def97cf14dca16a8d25167f86ed52f23e895d9cf32d2d2a8b53ea2"
+    },
+    {
+      "stage": "serial",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "benchmarks/experiments/parallel-suites/compare.py",
+        "--scalar-copy-operands-candidate",
+        "--phase",
+        "serial",
+        "--selection-qualification",
+        "results/scalar-copy-operands-qualification-01/summary.json",
+        "--build",
+        "results/scalar-copy-operands-build-02/summary.json",
+        "--run-id",
+        "scalar-copy-operands-serial-01"
+      ],
+      "pid": 55377,
+      "returncode": 0,
+      "stdout_sha256": "800c0c13fa8a5bbd86afa9aca34208b9005ffe20735d6f6215d8d74c5da5662b",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "c504cbe22d77ec2dbf51760f1a6f7c6a6e5d07e4bfbf8d69b3e8386864f09309"
+    },
+    {
+      "stage": "cache",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "benchmarks/experiments/composed-development/qualify_cache.py",
+        "--scalar-copy-operands-candidate",
+        "--automatic-cache",
+        "--build",
+        "results/scalar-copy-operands-build-02/summary.json",
+        "--run-id",
+        "scalar-copy-operands-cache-01"
+      ],
+      "pid": 56058,
+      "returncode": 0,
+      "stdout_sha256": "fafbe0ab706cc0e1e5eb6687a7c9383155c990585d440cfcf41848af3fd0b802",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "d184ed06b2b291a2eba71d41099c3da6fd2333b6916113c12ebbb86822df05a4"
+    },
+    {
+      "stage": "profile",
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "benchmarks/experiments/scalar-copy-operands/profile.py",
+        "--build",
+        "results/scalar-copy-operands-build-02/summary.json",
+        "--run-id",
+        "scalar-copy-operands-profile-01"
+      ],
+      "pid": 56850,
+      "returncode": 0,
+      "stdout_sha256": "1e4626f5fa69d814e8a4298c622a99cf4288038e28bc9bdc5ab6614edd5d6782",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "summary_sha256": "0a0b6dc13210830272a1da27adb10c593ae6075aedee822d75ce429b671d2f43"
+    }
+  ],
+  "performance_measurement": false
+}
