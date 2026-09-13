@@ -1,6 +1,8 @@
 """Close all current-compiler qualification receipts without executing guests."""
+import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 from component import ROOT, require_build
@@ -91,13 +93,29 @@ def main():
         assert sha(hashes) == harness['inputs_sha256']
         assert all(sha(ROOT / p) == h for p, h in json.loads(hashes.read_text()).items())
         evidence[str(harness_path.relative_to(ROOT))] = sha(harness_path)
+        source_revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        source_bindings = []
+        for path, identity in sorted(inputs.items()):
+            prefix = '.work/publication-main/'
+            revision = build['source_commit'] if path.startswith(prefix) else source_revision
+            relative = path[len(prefix):] if path.startswith(prefix) else path
+            if not (relative.startswith(('crates/', 'scripts/', 'tests/', 'benchmarks/experiments/'))
+                    or relative in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml']):
+                continue
+            spec = revision + ':' + relative
+            blob = subprocess.check_output(['git', 'show', spec], cwd=ROOT)
+            assert hashlib.sha256(blob).hexdigest() == identity['sha256'], path
+            source_bindings.append(dict(path=path, git_source=spec, sha256=identity['sha256']))
         result = ROOT / 'results/guarded-local-facts-main-final-audit-01'
         result.mkdir(exist_ok=False)
+        write(result / 'source-bindings.json', source_bindings)
         write(result / 'summary.json', dict(status='passed', guest_commands=0, tool_key=build['tool_key'],
             binaries=build['binaries'], workspace_tests_per_profile=513, ordinary_ignored_tests=5,
             explicit_remap_tests=2, remap_internal_commands=130, strict_commands=119,
             project_commands=40, complete_parser_tests=114, unique_frozen_inputs=len(inputs),
             project_artifact_identity=artifact_identity, evidence=evidence,
+            qualification_source_revision=source_revision, git_bound_source_files=len(source_bindings),
+            source_bindings_sha256=sha(result / 'source-bindings.json'), auditor_sha256=sha(Path(__file__)),
             all_frozen_inputs_verified=True, private_details_redacted=True, performance_measurement=False))
         print('PASS: source/tool/evidence audit,130 remap and159 strict/project controls;114 parser tests', flush=True)
 
