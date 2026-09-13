@@ -43,7 +43,9 @@ fn fixture(registers: usize) -> Program {
         child.args = vec![Slot { offset: 0, size: if add == 3 { 16 } else { 8 } }];
         children.push(child);
     }
-    program([vec![caller], children].concat())
+    let p = program([vec![caller], children].concat());
+    crate::validate(&p).unwrap();
+    p
 }
 
 fn limits(persistent: bool, capacity: usize) -> Limits {

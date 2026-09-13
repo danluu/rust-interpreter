@@ -151,7 +151,14 @@ impl<'a> Jit<'a> {
     /// is confined to the owning thread between synchronous native entries.
     /// A target mismatch, exhausted code budget or unready callee always keeps
     /// the original interpreter path. No executable caller code is rewritten.
+    #[inline]
     pub(crate) fn prepare_indirect(&mut self, caller: usize, pc: usize, callee: usize) -> Result<bool, String> {
+        if !self.resumable.as_ref()
+            .and_then(|tables| tables.indirect.get(caller))
+            .and_then(|table| table.attempted.get(pc))
+            .is_some_and(|attempted| !attempted) {
+            return Ok(false);
+        }
         let Some(f) = self.program.functions.get(caller) else { return Ok(false); };
         let Some(Op::CallIndirect { arg_sizes, result_size, .. }) = f.code.get(pc) else { return Ok(false); };
         let Some(target) = self.program.functions.get(callee) else { return Ok(false); };
@@ -159,11 +166,7 @@ impl<'a> Jit<'a> {
             || target.args.iter().zip(arg_sizes).any(|(slot, size)| slot.size != *size) {
             return Ok(false);
         }
-        let Some(attempted) = self.resumable.as_mut()
-            .and_then(|tables| tables.indirect.get_mut(caller))
-            .and_then(|table| table.attempted.get_mut(pc)) else { return Ok(false); };
-        if *attempted { return Ok(false); }
-        *attempted = true;
+        self.resumable.as_mut().unwrap().indirect[caller].attempted[pc] = true;
         let started = std::time::Instant::now();
         let result = self.compile_indirect(caller, pc, callee);
         self.compile_nanos += started.elapsed().as_nanos();
