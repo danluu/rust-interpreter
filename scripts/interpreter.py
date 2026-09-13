@@ -251,11 +251,13 @@ def _main(resources):
     parser.add_argument('--trap-unsupported-calls',action='store_true',help='experimental: stop execution at unavailable direct foreign calls and catch_unwind intrinsics instead of rejecting their export')
     parser.add_argument('--run-try-callbacks',action='store_true',help='experimental: execute catch_unwind try callbacks; actual panic/unwinding still fails; requires --trap-unsupported-calls')
     parser.add_argument('--std-mir',action='store_true',help='use reusable standard-library metadata with complete MIR')
+    parser.add_argument('--toolchain-lookup',choices=['fresh','cached'],default='fresh',help='experimental dated-rustup identity cache; requires --std-mir (default: fresh)')
     parser.add_argument('--timings',action='store_true',help='write Cargo\'s compilation timing report for this command')
     parser.add_argument('--test-body',action='store_true',help='invoke a function from the library unit-test target directly; libtest attributes are not implemented')
     parser.add_argument('--test-target',help='select a named Cargo integration-test target; requires --test-body')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    if args.toolchain_lookup!='fresh' and not args.std_mir:parser.error('--toolchain-lookup=cached requires --std-mir')
     if args.test_target is not None:
         if not args.test_body:parser.error('--test-target requires --test-body')
         if not args.test_target or any(c in args.test_target for c in '\x00\r\n'):
@@ -345,8 +347,10 @@ def _main(resources):
     if args.std_mir:
         from std_mir import checked_std_mir
         stage=time.perf_counter()
-        std=checked_std_mir(TOOLCHAIN)
+        lookup_stats={}
+        std=checked_std_mir(TOOLCHAIN,lookup=args.toolchain_lookup,lookup_stats=lookup_stats)
         timings['std_mir_seconds']=time.perf_counter()-stage
+        if stats:timings['toolchain_lookup']=lookup_stats
     selection=args.entry[0] if len(args.entry)==1 else json.dumps(args.entry,separators=(',',':'))
     identity_input='shared-entries-v1\0'+str(manifest)+'\0'+args.package+'\0'+str(args.test_body)
     # Cargo already separates selected test units by target identity. Share

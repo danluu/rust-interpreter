@@ -30,15 +30,17 @@ def source_digest(directory):
     return h.hexdigest()
 
 
-def checked_std_mir(toolchain,fetch=False):
+def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None):
     """Install a frozen source snapshot once; validate metadata stamps on reuse."""
     (ROOT/'.work').mkdir(exist_ok=True)
     lock=(ROOT/'.work/std-mir.lock').open('a')
     fcntl.flock(lock,fcntl.LOCK_EX)
     started=time.perf_counter()
-    compiler=subprocess.check_output(['rustc','+'+toolchain,'-vV'],text=True)
+    from toolchain_lookup import compiler_identity
+    if lookup not in ['fresh','cached']:raise ValueError('unknown toolchain lookup mode')
+    compiler,original,outcome=compiler_identity(toolchain,ROOT/'.work/toolchain-lookup' if lookup=='cached' else None)
+    if lookup_stats is not None:lookup_stats.update(mode=lookup,outcome=outcome)
     target=next(line.removeprefix('host: ') for line in compiler.splitlines() if line.startswith('host: '))
-    original=Path(subprocess.check_output(['rustc','+'+toolchain,'--print','sysroot'],text=True).strip())
     source=original/'lib/rustlib/src/rust/library'
     identity=dict(policy=POLICY,compiler=compiler,target=target,flags=FLAGS,
                   lock_sha256=hashlib.sha256((source/'Cargo.lock').read_bytes()).hexdigest())
