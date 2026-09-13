@@ -8,22 +8,25 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-Guarded native indirect-call specialization is now qualified through 424 Rust
-tests per debug/release profile, 123 harness checks, seven exact real tests,
-nine suite commands and 203 native/cache checks. All three current profiles
-match exact per-PC counts, memory and entropy. Native indirect calls account
-for1,025,924 of1,025,947 calls in the block test and737,989 of843,776 in the
-exhaustive test. The first token timing stopped at its8GiB disk floor after
-52 commands, with no performance verdict. Completed public compiler caches
-were safely retired outside timers, with protected hashes unchanged. A fresh
-full462-command token/folded/pgrust comparison is active as controller02;
-its initial free space was about31GiB. No partial pairs are reused.
-[Storage recovery](results/guarded-indirect-storage-recovery-01/assessment.md). Tool `9e219e2e` retains the
-wide-operation baseline and complete frontend checking. The first host compile
-failure was two missing test-fixture cursor fields; the corrected second build
-passes. The source remains experimental until full command comparisons finish.
-[Design and qualification](docs/INDIRECT-CALL-NEXT.md),
-[build](results/guarded-indirect-build-02/summary.json).
+Guarded native indirect-call specialization passes424 Rust tests per profile,
+123 harness checks, seven exact real tests, nine suite commands and203 strict
+native/cache checks. Three current profiles preserve every logical PC count,
+memory peak and entropy; over1.0million/0.7million indirect calls become native
+in the two dominant tests. The complete token comparison passes154 expected
+commands but misses its prospective performance gate: wall−1.44%, CPU−0.97%
+against the wide-operation baseline, versus4.75% wall A/A. The full stack gains
+12.44% wall/13.98% CPU over the fixed anchor and takes1.768× ordinary native.
+The runtime remains experimental. Folded's first admission timed out after45s
+with zero commands; another workload owns the shared lock. Folded and pgrust
+remain mandatory and will run only after admission becomes available.
+[Token result](results/guarded-indirect-edit-token-02/stage-assessment.md),
+[design and qualification](docs/INDIRECT-CALL-NEXT.md).
+
+The first token attempt stopped at its8GiB disk floor after52 commands and has
+no performance verdict. Completed public compiler caches were retired outside
+timers, preserving protected hashes. The complete token comparison started
+fresh with the same rules and no partial-pair reuse. No process remains
+suspended. [Storage recovery](results/guarded-indirect-storage-recovery-01/assessment.md).
 
 The optional toolchain lookup cache now passes115 launcher/harness tests and20
 real Cargo checks. Cache hits preserve the same standard-MIR key and bytecode;

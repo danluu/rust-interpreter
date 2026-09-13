@@ -9,12 +9,25 @@ with 23 published thunks; the exhaustive test executes 737,989 of 843,776 with
 21 thunks. Folded has only 28 native indirect calls and is an overhead guard.
 [Current profiles](../results/guarded-indirect-profile-01/assessment.md).
 
-Tool `9e219e2e` retains the wide-operation exporter/wrapper. The full changed-
-source token/folded/pgrust comparison is now active, 154 commands per case.
-The first token attempt stopped after52 commands at its disk floor. Cleanup
-preserved protected artifacts, and a fresh complete comparison is active with
-the same frozen rules. No partial pairs are reused. These counts do not
-establish a latency gain; no timing result is available yet.
+Tool `9e219e2e` retains the wide-operation exporter/wrapper. The complete
+154-command token comparison changes paired wall−1.44% and CPU−0.97%, below
+4.75% wall A/A, so it misses its prospective component gate. The full stack
+improves12.44% wall against the fixed anchor but takes1.768× ordinary native.
+Keep this runtime experimental and do not retime it to seek a pass. Folded and
+pgrust remain mandatory; folded first encountered a zero-command lock timeout.
+[Completed token](../results/guarded-indirect-edit-token-02/stage-assessment.md).
+
+The earlier52-command token attempt stopped at its disk floor and was kept
+without a verdict. Cleanup preserved protected artifacts; the completed run
+used fresh caches, the same frozen rules and no partial-pair reuse.
+
+Prepared qualification also shows fewer VM entries, so first-target retention
+has not eliminated all benefit in that mode. Its fresh and prepared contexts
+have different logical totals; those receipts alone cannot establish a
+controlled test-order effect. Avoid another cache-size experiment until current
+sampling identifies a material cost. Re-examine generated instruction work and
+host-side allocation/binding costs before choosing another implementation.
+[Prepared counts](../results/guarded-indirect-prepared-counts-01/assessment.md).
 
 The first host build stopped at two existing test fixture initializers missing
 the new cursor pointer. Both fixtures were corrected; the failed receipt stays
