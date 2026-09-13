@@ -52,11 +52,20 @@ rustdoc (`test.rs` RunMake dependency). The fixture does not request in-tree Car
 The third command adds only `--no-capture` to expose successful run-make
 subprocess output (its verbose subprocess output is already enabled by bootstrap).
 The driver requires a real verified cache-hit line as well as the one-test pass;
-no-capture test-name/output/`ok` interleaving is accepted. No build dependency,
+every hit must include the emitted `S=<start> E=<end>` suffix with
+`0 < S < E <= 0xFFFF_FF00`, the pinned exclusive `ItemLocalId::INVALID` limit.
+No-capture test-name/output/`ok` interleaving is accepted. No build dependency,
 warning, compiler flag, profile, test state or source error
 is skipped. The two new options remain default-off outside the recipe's explicit
 capture/reuse arms; native hits run its ordinary output/raw diagnostic comparisons
 and always-on tree/journal/post-state checks.
+
+The initial native history at `8b83ddd7` failed before any capture or hit record:
+compiletest supplied `RUSTC_FORCE_RUSTC_VERSION`, which the production cache
+deliberately rejects. This parser correction does not repair that recipe or
+qualify the failed history. The seven Python controls include exact suffix,
+range-boundary and malformed-marker cases; they have not been run at this
+source checkpoint.
 
 Three recorded compiler identity probes (`-vV`, `--print sysroot`, `-Zhelp`) follow
 the build. They verify the truthful source commit, actual stage1 location and both
