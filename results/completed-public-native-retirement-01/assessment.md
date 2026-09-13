@@ -1,0 +1,3 @@
+Retired compiler intermediates from 18 exact native/check cache roots in the completed guarded-ranges and scalar-copy-operands token, folded and pgrust histories. Both final 726-command receipts, source restoration, pins, command targets and saved bytecode were revalidated. All 2,983 protected files, including executables and raw measurement evidence, remain byte-identical. No private or current-campaign cache was selected.
+
+Removed 52,414 files containing 9,086,367,492 logical bytes. Free space increased by 3,623,116,800 bytes during the cleanup. APFS sharing and concurrent work prevent exclusive physical-space attribution; this is storage maintenance, with no timing claim.
