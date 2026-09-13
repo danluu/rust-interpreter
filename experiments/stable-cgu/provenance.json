@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "status": "final stage2 compiler/native std built; option-hash and14+1 focused tests passed; packaging and native entrypoint controls pending",
+  "base_source_commit": "cea272fa356e94bd2ee2cadf376630aa0683867a",
+  "source_commit": "73a11f167216d3955c277ed47f9b8cc68208105b",
+  "patch_sha256": "26301f52c1e00805502bb3a8d0cfc646ae62c159fd25c2756474712aba986e60",
+  "bootstrap_sha256": "1962bcb231d2136d1d87ad081329d88348e921b56bc06675170d9f38378034a2",
+  "files": {
+    "compiler/rustc_interface/src/tests.rs": "f16132a089375730571e8ea392406eacf95c5ae4f59ccd55ade33edb69efa26c",
+    "compiler/rustc_monomorphize/src/partitioning.rs": "32fde9be24d9a3d3855f5593e6d5ec81871a4f1d4dc93fa718e9bfb980a32912",
+    "compiler/rustc_session/src/options.rs": "eff7fd9f79db90a57828f3f35ae0f722b53d9a3acad2f8c85231656cbcd90ab1",
+    "tests/codegen-units/partitioning/stable-merging.rs": "811af8b7b746d950fc176173db33935ea5980b18aa5d288c39b564f6b2c5f013",
+    "tests/run-make/stable-cgu-partitioning/rmake.rs": "24ba649acc941e59a5dbffd1ee3bc3b4c73daaf1ec3129a2373b12675d6e94ed"
+  },
+  "llvm": {
+    "url": "https://ci-artifacts.rust-lang.org/rustc-builds/cea272fa356e94bd2ee2cadf376630aa0683867a/rust-dev-nightly-aarch64-apple-darwin.tar.xz",
+    "sha256": "0035445cb01c652999862c240d3c8ce663247abdc410482dde10f9e9c264bf8f",
+    "version": "23.1.1-rust-1.100.0-nightly"
+  },
+  "bootstrap_stage0": "src/stage0 pinned beta2026-08-30",
+  "scope": "owned local experimental compiler; no upstream publication",
+  "setup_receipts": {
+    "fetch-receipt.json": "10cb555e9afdb16f2dec55e2843f77ce6c371a20aa4985af8a1a6210910e987f",
+    "prepare-receipt.json": "aae534b7e028531996b193de9a1b758e2b2c149c81cd9b5c62e029bd734056c9"
+  },
+  "preliminary_stage1": {
+    "config_sha256": "8c44b3232f6a8d93d96ed6fb81ce6f2dd80d519c411483788470a9801fec87df",
+    "rustc_commit_reporting": "unknown due ordinary dev-channel omit-git-hash default; final config explicitly disables omission",
+    "partition_tests_passed": 14,
+    "run_make_histories_passed": 1,
+    "build_receipt_sha256": "dbec11a4c6c2ede88b1148e94ffb116b5e92b61779e84343bdbf03210433819a",
+    "test_receipt_sha256": "9b1b66e05465205d3e45ee84f0ccea60326a5d927642390f8654ca92fa939c33"
+  },
+  "packaging": {
+    "strategy": "assembled stage2 runtime plus stock dist rustc-dev/rust-std images, matching installed pinned rust-src",
+    "source_comparison_sha256": "46160272f465df0be132b1302ad92118b400c47c0b06c44aa5128a9e161779b0",
+    "main_library_files_matching": 2305,
+    "backtrace_files_matching": 79,
+    "final_installation_owner": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913",
+    "installer": "scripts/custom_compiler.py"
+  },
+  "final_stage2": {
+    "controls": {
+      "stage2": {
+        "receipt_sha256": "2f5619beadda1b1da11d61076c2942368c75349e222294c4e13e81c4a16db0a0",
+        "command": [
+          "./x",
+          "build",
+          "--stage",
+          "2",
+          "compiler/rustc",
+          "library",
+          "--jobs",
+          "2"
+        ],
+        "returncode": 0,
+        "elapsed_seconds": 813.6222369670868,
+        "log_sha256": "dc8e527c1cce5e9850846d53100d88bee58c0a036b74b27815fffa8253629d5c"
+      },
+      "stage2-option-hash": {
+        "receipt_sha256": "5c33e34308cfa31c73c1da7be89e42e5250ea0b6c2ff2b4ff1163556f7ec2331",
+        "command": [
+          "./x",
+          "test",
+          "--stage",
+          "2",
+          "compiler/rustc_interface",
+          "--test-args",
+          "test_unstable_options_tracking_hash",
+          "--jobs",
+          "2"
+        ],
+        "returncode": 0,
+        "elapsed_seconds": 454.15469574928284,
+        "log_sha256": "73295a29b69b900dccbc5d64c4a82d51efd926b9869cbe1bb00b84d510d5add9"
+      },
+      "stage2-tests": {
+        "receipt_sha256": "32ae16b5363f474fa25d3c9298a59326224b5f7efda02eb97d714fff4c40b67b",
+        "command": [
+          "./x",
+          "test",
+          "--stage",
+          "2",
+          "tests/codegen-units/partitioning",
+          "tests/run-make/stable-cgu-partitioning",
+          "--jobs",
+          "2"
+        ],
+        "returncode": 0,
+        "elapsed_seconds": 93.39055895805359,
+        "log_sha256": "a189ee781baa7991e855bc043a41c67abf67ce68e8d7cc222ad89eb69f8afb47"
+      }
+    },
+    "unchanged_runtime_files_after_tests": 59,
+    "test_setup_added_files": [
+      "bin/rustdoc"
+    ],
+    "rustc_sha256": "d8478814170ccb30b6e16a0763a9b81935be50378b4c7d9e3f29bdc164fd6546",
+    "driver_sha256": "a83fa10ca89ebd39a7d88d862aecd6b6e8209debd005ca798031852373f2ad23"
+  }
+}
