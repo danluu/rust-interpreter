@@ -39,6 +39,12 @@ class IsolatedLauncherValidation(unittest.TestCase):
             with self.subTest(extra=extra):
                 self.rejected(['--entry','first','--jit-indirect-calls',*extra])
 
+    def test_tree_bridge_requires_compatible_execution_before_tools(self):
+        for extra in [[], ['--engine','jit'], ['--jit-resumable-calls'],
+                      ['--engine','jit','--jit-resumable-calls','--jit-native-calls']]:
+            with self.subTest(extra=extra):
+                self.rejected(['--entry','first','--jit-tree-bridge',*extra])
+
     def test_worker_counts_require_a_bounded_isolated_suite(self):
         self.rejected(['--entry', 'first', '--suite-workers', '2'])
         with tempfile.TemporaryDirectory() as directory:

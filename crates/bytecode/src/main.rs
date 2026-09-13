@@ -45,6 +45,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--jit-native-calls" => limits.jit_native_calls = true,
             "--jit-native-call-stubs" => limits.jit_native_call_stubs = true,
             "--jit-indirect-calls" => limits.jit_indirect_calls = true,
+            "--jit-tree-bridge" => limits.jit_tree_bridge = true,
             "--jit-persistent-registers" => limits.jit_persistent_registers = true,
             "--jit-resumable-calls" => limits.jit_resumable_calls = true,
             "--jit-operation-map" => {

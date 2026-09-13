@@ -169,3 +169,83 @@ fn emitted_bridge_preflight_matches_wide_integer_bounds_without_side_effects() {
         }}
     }
 }
+
+#[test]
+fn bridge_code_quota_leaves_space_for_ordinary_functions() {
+    let p=program((0..80).map(|_|function(vec![Op::Local {dst:0,offset:0},
+        Op::Imm {dst:1,value:7},Op::Store {address:0,src:1,size:8},Op::Return])).collect());
+    crate::validate(&p).unwrap();
+    let mut jit=Jit::new_resumable(&p,false,8192,true).unwrap();jit.enable_tree_bridge();
+    let mut ready=0;
+    for id in 1..p.functions.len() {ready+=usize::from(jit.ensure_tree(id).unwrap().is_some());}
+    assert!(ready>0 && ready<79);assert!(jit.tree_stats().0<=8192/4);
+    assert!(jit.ensure_function(0).unwrap());assert!(jit.blocks[0][0].is_some());
+    assert!(jit.bytes<=8192);
+}
+
+#[test]
+fn full_adapter_preserves_native_abi_and_prepared_bounds_on_every_exit() {
+    let mut bridge_entries=0;
+    for fault in [false,true] {
+        let mut p=bounded();
+        if fault {p.functions[2].code=vec![Op::Trap {message:"adapter ABI fault".into()}];}
+        crate::validate(&p).unwrap();
+        for persistent in [false,true] {for profiled in [false,true] {
+            let mut jit=Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,persistent).unwrap();
+            jit.enable_tree_bridge();jit.ensure_function(0).unwrap();
+            let mut hits:Vec<_>=p.functions.iter().map(|f|vec![0u64;f.code.len()]).collect();
+            let mut tree_hits=hits.clone();
+            let profiles:Vec<_>=hits.iter_mut().map(|row|row.as_mut_ptr()).collect();
+            let tree_profiles:Vec<_>=tree_hits.iter_mut().map(|row|row.as_mut_ptr()).collect();
+            for (frame_end,memory_end,register_end,working_budget) in [
+                (1,256,24,1024),(2,256,24,1024),(3,256,24,1024),
+                (3,48,24,1024),(3,256,8,1024),(3,256,24,200)] {
+                for budget in 0..=64 {
+                    for row in hits.iter_mut().chain(&mut tree_hits) {row.fill(0);}
+                    let mut memory=vec![0u8;288];memory[256..].fill(0xad);
+                    let mut registers=vec![0u128;32];registers[24..].fill(u128::MAX-7);
+                    let root=Frame {function:0,pc:0,base:16,register_base:0,return_address:0,tls_callback:false};
+                    let canary=Frame {function:99,pc:99,base:99,register_base:99,return_address:99,tls_callback:true};
+                    let mut frames=[root,Frame::default(),Frame::default(),canary];
+                    let mut cursor=ResumeCursor {
+                        state:State {remaining:budget,profile_hits:profiles[0],memory_len:48,peak_linear:48,
+                            register_len:8,frame_len:1,calls:0,returns:0},
+                        frames:frames.as_mut_ptr(),registers:registers.as_mut_ptr(),
+                        entries:jit.resumable.as_ref().unwrap().pointers.as_ptr(),profiles:profiles.as_ptr(),
+                        memory_end,register_end,frame_end,working_budget,
+                        indirect_layout:std::ptr::null(),indirect_layouts:std::ptr::null(),
+                        bridge:tree_bridge::BridgeCursor::new(registers.as_mut_ptr(),tree_profiles.as_ptr()),
+                        bridge_instructions:0,bridge_calls:0,bridge_entries:0,
+                    };
+                    // SAFETY: all backing prefixes are initialized, distinct
+                    // and frozen for this synchronous validated native entry.
+                    let output=unsafe {jit.code.as_ref().unwrap().tree_abi_probe(jit.blocks[0][0].unwrap().offset,
+                        [registers.as_mut_ptr() as usize,16,memory.as_mut_ptr() as usize,48,16,0,0,
+                         (&mut cursor as *mut ResumeCursor) as usize])};
+                    assert_eq!(&output[1..5],&[0x1357,0x2468,0x3579,0x468a]);assert_eq!(output[5],output[6]);
+                    assert_eq!(&output[7..],&[0x579b,0x68ac,0x79bd,0x8ace,0x9bdf,0xace0]);
+                    assert_eq!(frames[3],canary);assert!(memory[256..].iter().all(|&b|b==0xad));
+                    assert!(registers[24..].iter().all(|&r|r==u128::MAX-7));
+                    assert_eq!(cursor.bridge.depth,0);assert!(cursor.state.remaining<=budget);
+                    assert!(cursor.state.frame_len<=frame_end && cursor.state.memory_len<=memory_end
+                        && cursor.state.register_len<=register_end);
+                    assert_eq!(1+cursor.state.calls-cursor.state.returns,cursor.state.frame_len as u64);
+                    let top=frames[cursor.state.frame_len-1];let f=&p.functions[top.function];
+                    assert!(top.base+f.frame_size<=cursor.state.memory_len);
+                    assert_eq!(top.register_base+f.registers,cursor.state.register_len);
+                    let mut charged=0;
+                    for (id,row) in hits.iter().enumerate() {for (pc,&n) in row.iter().enumerate().filter(|(_,n)|**n>0) {
+                        charged+=n*(jit.blocks[id][pc].unwrap().end-pc) as u64;
+                    }}
+                    for (id,row) in tree_hits.iter().enumerate() {for (pc,&n) in row.iter().enumerate().filter(|(_,n)|**n>0) {
+                        charged+=n*(jit.trees.as_ref().unwrap().entries[id].as_ref().unwrap().ends[pc].unwrap()-pc) as u64;
+                    }}
+                    if profiled {assert_eq!(charged,budget-cursor.state.remaining);} else {assert_eq!(charged,0);}
+                    bridge_entries+=cursor.bridge_entries;
+                    if cursor.bridge_entries>0 {assert_eq!(output[0] as u64>=FAILURE_MIN,fault);}
+                }
+            }
+        }}
+    }
+    assert!(bridge_entries>0);
+}

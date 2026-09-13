@@ -106,7 +106,13 @@ impl<'a> Jit<'a> {
                 Op::Call { function, .. } => self.trees.as_ref().unwrap().entries[*function].is_some(),
                 _ => true,
             });
-            let staged = if available { self.emit_tree(id, (self.capacity - self.bytes) / 4) } else { Ok(None) };
+            // Speculative duplicate tree bodies must not consume the entire
+            // ordinary arena. This is one global bridge quota, not per tree.
+            let remaining = self.capacity - self.bytes;
+            let remaining = if self.bridge_trees {
+                remaining.min((self.capacity / 4).saturating_sub(self.trees.as_ref().unwrap().bytes))
+            } else { remaining };
+            let staged = if available { self.emit_tree(id, remaining / 4) } else { Ok(None) };
             let staged = match staged {
                 Ok(Some(s)) => s,
                 Ok(None) | Err(EmitError::Limit(_)) => {

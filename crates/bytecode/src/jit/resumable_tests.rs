@@ -323,8 +323,8 @@ fn retained_call_targets_cover_small_and_large_register_accesses_and_live_spills
         let p = program(vec![root, child]);
         let reference = execute_with_engine(&p, &[], Limits::default(), Engine::Interpreter).unwrap();
         assert_eq!(reference.value, wide);
-        for persistent in [false, true] {
-            let limits = || Limits { jit_resumable_calls: true, jit_persistent_registers: persistent, ..Limits::default() };
+        for bridge in [false,true] {for persistent in [false, true] {
+            let limits = || Limits { jit_tree_bridge: bridge, jit_resumable_calls: true, jit_persistent_registers: persistent, ..Limits::default() };
             let actual = execute_with_engine(&p, &[], limits(), Engine::Jit).unwrap();
             assert_eq!((actual.value, actual.instructions, actual.peak_memory),
                 (reference.value, reference.instructions, reference.peak_memory));
@@ -333,7 +333,7 @@ fn retained_call_targets_cover_small_and_large_register_accesses_and_live_spills
                 equal_result(execute_with_engine(&p, &[], Limits { instructions, ..limits() }, Engine::Jit),
                     &execute_with_engine(&p, &[], Limits { instructions, ..Limits::default() }, Engine::Interpreter));
             }
-        }
+        }}
     }
 }
 fn binary(dst: Reg, op: Binary, a: Reg, b: Reg) -> Op {

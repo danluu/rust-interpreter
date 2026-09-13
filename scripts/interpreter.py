@@ -250,6 +250,7 @@ def _main(resources):
     parser.add_argument('--jit-native-call-stubs',action='store_true',help='experimental Calls linked with ordinary regions; requires --jit-native-calls')
     parser.add_argument('--jit-resumable-calls',action='store_true',help='experimental native Calls over guest frames; requires JIT, excludes tree/stub calls')
     parser.add_argument('--jit-indirect-calls',action='store_true',help='experimental native indirect Calls with exact signature metadata; requires --jit-resumable-calls')
+    parser.add_argument('--jit-tree-bridge',action='store_true',help='experimental bounded native trees entered from resumable Calls; requires --jit-resumable-calls')
     parser.add_argument('--jit-persistent-registers',action='store_true',help='experimental full-width values retained across native block edges; requires --engine=jit')
     parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
@@ -306,6 +307,7 @@ def _main(resources):
             parser.error('--test-target must be a nonempty Cargo target name')
     if args.jit_native_call_stubs and not args.jit_native_calls:parser.error('--jit-native-call-stubs requires --jit-native-calls')
     if args.jit_indirect_calls and not args.jit_resumable_calls:parser.error('--jit-indirect-calls requires --jit-resumable-calls')
+    if args.jit_tree_bridge and not args.jit_resumable_calls:parser.error('--jit-tree-bridge requires --jit-resumable-calls')
     if args.jit_persistent_registers and args.engine != 'jit':parser.error('--jit-persistent-registers requires --engine=jit')
     if args.jit_resumable_calls and args.engine != 'jit':parser.error('--jit-resumable-calls requires --engine=jit')
     if args.jit_resumable_calls and (args.jit_native_calls or args.jit_native_call_stubs):parser.error('--jit-resumable-calls cannot be combined with native tree/stub calls')
@@ -329,7 +331,7 @@ def _main(resources):
         if (not args.test_body or args.arguments or args.engine!='interpreter' or
                 args.instruction_limit is not None or args.allocation_limit is not None or
                 args.isolated_batch is not None or args.suite_report is not None or args.jit_native_calls or
-                args.jit_native_call_stubs or args.jit_resumable_calls or args.jit_indirect_calls or args.jit_persistent_registers or
+                args.jit_native_call_stubs or args.jit_resumable_calls or args.jit_indirect_calls or args.jit_tree_bridge or args.jit_persistent_registers or
                 args.inline_leaves or args.trap_unsupported_calls or args.run_try_callbacks or
                 args.allocation_trace or args.retain_audit_bodies):
             parser.error('--list-tests requires --test-body without execution or lowering options')
@@ -410,7 +412,7 @@ def _main(resources):
     if args.run_try_callbacks:require_export_option(tools,key,'run-try-callbacks')
     if args.allocation_trace:require_export_option(tools,key,'allocation-trace')
     timings['tools_seconds']=time.perf_counter()-stage
-    if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_indirect_calls=args.jit_indirect_calls,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
+    if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_indirect_calls=args.jit_indirect_calls,jit_tree_bridge=args.jit_tree_bridge,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
     if stats:timings['function_cache']=args.function_cache
     if stats:timings['borrowck_cache']=args.borrowck_cache
     if stats:timings['host_proc_macro_opt']=args.host_proc_macro_opt
@@ -639,6 +641,7 @@ def _main(resources):
     vm_command=[str(tools/'rust-interp-vm'),'--engine',args.engine]
     if args.jit_resumable_calls:vm_command.append('--jit-resumable-calls')
     if args.jit_indirect_calls:vm_command.append('--jit-indirect-calls')
+    if args.jit_tree_bridge:vm_command.append('--jit-tree-bridge')
     if args.jit_persistent_registers:vm_command.append('--jit-persistent-registers')
     if args.jit_native_calls:vm_command.append('--jit-native-calls')
     if args.jit_native_call_stubs:vm_command.append('--jit-native-call-stubs')

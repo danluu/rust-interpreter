@@ -198,6 +198,13 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
         self.assertEqual(vm[0].count('--jit-indirect-calls'),1)
         self.assertTrue(self.launch_stats()[0]['jit_indirect_calls'])
 
+    def test_tree_bridge_option_reaches_only_vm_and_is_reported(self):
+        self.assertEqual(self.launch(['--jit-tree-bridge']),0)
+        cargo,vm=self.invocations
+        self.assertNotIn('--jit-tree-bridge',cargo[0])
+        self.assertEqual(vm[0].count('--jit-tree-bridge'),1)
+        self.assertTrue(self.launch_stats()[0]['jit_tree_bridge'])
+
     def test_missing_artifact_does_not_claim_ready_or_start_vm(self):
         self.artifact.unlink()
         with self.assertRaisesRegex(RuntimeError, 'did not select a valid bytecode sidecar'):

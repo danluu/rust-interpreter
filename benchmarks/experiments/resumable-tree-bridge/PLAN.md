@@ -37,3 +37,10 @@ preflight is compared with the independent wide arithmetic contract. Full-VM
 controls cover profiles, fresh prepared reuse, every short budget, code/depth/
 working-memory limits, original alias/copy cases, nested faults and unavailable
 cyclic/unsupported trees. No CLI/benchmark invocation is enabled by this stage.
+
+Full qualification now includes the CLI and launcher flag, explicit forwarding
+and option validation, a global quarter-arena tree quota, a full-adapter ABI/
+prepared-bound probe and existing large-register cases with bridge both on/off.
+Follow QUALIFICATION.md; the first full build expects 556 workspace controls
+per profile. Earlier focused controllers retain their original stage counts
+and must not be reused against later source as if unchanged.
