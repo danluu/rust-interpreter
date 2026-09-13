@@ -109,7 +109,7 @@ def selection(plan, snapshot):
     from custom_cargo import Cargo, POLICY as CARGO_POLICY
     policy = plan['candidate_policy']
     modes = ['baseline', 'candidate', 'duplicate']
-    require(plan['case'] == CASE, 'original workflow and edit recipe differ')
+    require(plan['case'] == json.loads(json.dumps(CASE)), 'original workflow and edit recipe differ')
     require(policy in ['stable-cgu', 'cargo-info-cache'] and set(plan['tools']) == set(modes)
             and len(set(plan['tools'].values())) == 1, 'owned screen requires one tool identity')
     require(set(plan['std_mir_by_mode']) == set(modes), 'missing per-arm std identities')
