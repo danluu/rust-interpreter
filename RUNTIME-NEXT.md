@@ -10,11 +10,21 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Measure current bounded call-tree eligibility and protocol-cost coverage
-   before designing a bridge into the resumable engine. The old whole-tree
-   option uses a different cursor, budget register and host-stack convention;
-   enabling both flags is insufficient. Capacity-credit batching already has a
-   parked implementation and will not be recreated or retimed unchanged.
+1. Prototype an explicit bounded-tree bridge from resumable Calls. The current
+   exact planner admits 55.85% / 74.45% of native calls, whose Call spans contain
+   141 / 189 saved samples; eligible Return functions add a separate 54 / 86
+   sample upper bound. This broader coverage justifies a correctness prototype,
+   not a speed claim. Preserve ordinary fallback before progress, all limits,
+   fault/copy semantics and current body optimizations. The old cursor/host ABI
+   cannot be enabled by merely combining flags. Capacity credit stays parked.
+
+Five existing tree-proof controls pass per profile. The diagnostic includes
+interpreter fixtures, but no benchmark execution or native-code publication.
+The closures need 23 / 26 functions absent from the saved captures, and two
+eligible functions use current guarded ranges. Preparation, duplicate code,
+actual call-time storage admission and bridge costs remain unmeasured. Keep the
+16 MiB default. The audit verifies 47 inputs and 174 Git bindings.
+[Bridge scope and limitations](results/bounded-tree-bridge-coverage-01/assessment.md).
 
 Local-write elision is also deferred. Its six controls/profile and independent
 10,000-history byte oracle pass, but 1,580 / 1,925 typed candidates cover only
