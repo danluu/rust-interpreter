@@ -963,7 +963,7 @@ enum Fact {
     Physical { lo: u32 },
 }
 
-#[derive(Default)]
+#[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
     #[cfg(test)]
     observe_guarded_local_retention: bool,
@@ -1000,6 +1000,40 @@ struct Assembler<'a> {
     region_start: usize,
     region_end: usize,
     current_pc: usize,
+}
+
+#[cfg(test)]
+impl Default for Assembler<'_> {
+    fn default() -> Self {
+        Self {
+            observe_guarded_local_retention: true,
+            observe_static_local_facts: true,
+            observe_scalar_copy: true,
+            guarded_range: Default::default(),
+            values: Default::default(),
+            tree_caller_is_region: Default::default(),
+            resumable: Default::default(),
+            local_values: Default::default(),
+            local_forwarding: Default::default(),
+            local_fact_events: Default::default(),
+            retained_local_writes: Default::default(),
+            words: Default::default(),
+            links: Default::default(),
+            failures: Default::default(),
+            assertions: Default::default(),
+            heap: Default::default(),
+            frame_size: Default::default(),
+            reads: Default::default(),
+            facts: Default::default(),
+            defined: Default::default(),
+            live_in: Default::default(),
+            cached: Default::default(),
+            cache_recent: Default::default(),
+            region_start: Default::default(),
+            region_end: Default::default(),
+            current_pc: Default::default(),
+        }
+    }
 }
 impl Assembler<'_> {
     fn assertion(&mut self, value: Reg, expected: bool, code: u64) {

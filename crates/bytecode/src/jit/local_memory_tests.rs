@@ -127,21 +127,29 @@ fn repeated_local_loads_and_register_address_aliases_keep_old_values() {
 
 #[test]
 fn partial_and_unknown_alias_writes_invalidate_the_right_ranges() {
-    for unknown in [false,true] { for delta in [0,1,3,7,8,15] { for size in [1,2,4,8,16] {
+    for address_kind in ["local","forwarded","opaque"] { for delta in [0,1,3,7,8,15] { for size in [1,2,4,8,16] {
         let mut bytes=[0u8;40];bytes[..8].copy_from_slice(&(WIDE as u64).to_le_bytes());
         bytes[delta..delta+size].copy_from_slice(&(!WIDE).to_le_bytes()[..size]);
         let expected=u64::from_le_bytes(bytes[..8].try_into().unwrap()) as u128;
         let mut code=vec![Op::Local {dst:0,offset:128},Op::Imm {dst:1,value:WIDE},Op::Store {address:0,src:1,size:8},
             Op::Local {dst:2,offset:128+delta},Op::Imm {dst:3,value:!WIDE}];
-        let address=if unknown {
-            code.extend([Op::Local {dst:4,offset:112},Op::Store {address:4,src:2,size:8},Op::Load {dst:5,address:4,size:8}]);5
-        } else {2};
+        let address=match address_kind {
+            "forwarded" => {code.extend([Op::Local {dst:4,offset:112},Op::Store {address:4,src:2,size:8},Op::Load {dst:5,address:4,size:8}]);5},
+            "opaque" => {code.extend([Op::Local {dst:4,offset:16},Op::Load {dst:5,address:4,size:8}]);5},
+            _ => 2,
+        };
         code.push(Op::Store {address,src:3,size:size as u8});
         let load=code.len();code.push(Op::Load {dst:6,address:0,size:8});output(&mut code,6);
-        let p=program(code,31,0);check(&p,&[],Some(expected),18);
-        // Exact same-width replacement can itself be forwarded.
-        if unknown {assert!(!events(&p).contains(&(load,"Load")));}
-        if !unknown && delta>=8 {assert!(events(&p).contains(&(load,"Load")));}
+        let opaque=address_kind=="opaque";
+        let p=program(code,31,usize::from(opaque));
+        let args=if opaque {vec![(p.data.len()+128+delta) as u128]} else {vec![]};
+        check(&p,&args,Some(expected),18);
+        // A full-width local-pointer roundtrip now preserves its exact fact.
+        // The argument-supplied pointer remains opaque even when its runtime
+        // address happens to match; it must still invalidate all local values.
+        if opaque {assert!(!events(&p).contains(&(load,"Load")));}
+        else if delta>=8 {assert!(events(&p).contains(&(load,"Load")));}
+        else if delta!=0 || size!=8 {assert!(!events(&p).contains(&(load,"Load")));}
     }}}
 }
 

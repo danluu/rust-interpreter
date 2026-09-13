@@ -40,13 +40,13 @@ fn guarded_local_facts_preserve_alias_declines_and_unselected_writes() {
             let staged=jit.emit_function(&p.functions[0],MAX_CODE_BYTES/4).unwrap().unwrap();
             assert!(!staged.retained_local_writes.is_empty(),"positive retention path must be exercised");
         }
-        // Static bytes are outside the frame; 112 is its local slot and 113
-        // overlaps that slot partially. All are valid initialized addresses.
-        for address in [80,112,113] { for persistent in [false,true] {
-            let args=[address,112];
+        // Mutable statics are tagged heap bytes; 80 is the frame-local slot
+        // and 81 overlaps it partially. All are initialized valid addresses.
+        for address in [crate::heap::TAG+16,80,81] { for persistent in [false,true] {
+            let args=[address as u128,80];
             let expected=execute_with_engine(&p,&args,Limits::default(),Engine::Interpreter).unwrap();
-            if !unselected && address==80 {assert_eq!(expected.value,23);}
-            if unselected || address==112 {assert_eq!(expected.value,7);}
+            if !unselected && address==crate::heap::TAG+16 {assert_eq!(expected.value,23);}
+            if unselected || address==80 {assert_eq!(expected.value,7);}
             for instructions in 0..=expected.instructions+1 {
                 let limits=Limits {instructions,jit_resumable_calls:true,jit_persistent_registers:persistent,..Limits::default()};
                 let reference=execute_with_engine(&p,&args,limits.clone(),Engine::Interpreter);
