@@ -21,6 +21,7 @@ from compare_saved_runtime import acquire_lock, lock_wait_seconds
 from custom_compiler import digest, file_digest, load_compiler, require, validate_tool_compiler
 from interpreter import ROOT, TOOLCHAIN, installed_tools, require_export_option
 from std_mir import FLAGS, POLICY, stamp
+from verified_std_diagnostics import VerifiedStandardSources
 from workflow_io import SourceEdit, capture, require_space, write_json
 
 
@@ -209,17 +210,35 @@ def public_command(source, host, target):
         '--message-format=json']
 
 
-def main():
+def argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler-key', required=True)
     parser.add_argument('--tool-key', required=True)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=45)
-    args = parser.parse_args()
+    parser.add_argument('--diagnostic-comparison', choices=['strict', 'verified-std-source'], default='strict',
+        help='Explicit preliminary mechanism mode may compare verified std source aliases; '
+             'missing snippets remain an unresolved presentation gap, never final qualification.')
+    return parser
+
+
+def qualification_scope(mode, gaps):
+    preliminary = mode == 'verified-std-source'
+    return dict(diagnostic_comparison=mode,
+        qualification_scope='preliminary-mechanism-only' if preliminary else 'strict-integration',
+        diagnostic_presentation='incomplete' if gaps else
+            ('not-qualified-in-mechanism-mode' if preliminary else 'strict-structured-match'),
+        full_presentation_qualified=False if preliminary else None,
+        presentation_gap_count=len(gaps), final_target_eligible=False, adoption_eligible=False)
+
+
+def main():
+    args = argument_parser().parse_args()
     require(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
     work = ROOT / '.work' / args.run_id
     work.mkdir(parents=True, exist_ok=False)
     rows = []
+    standard_sources = None
     try:
         require((ROOT / '.work/benchmark.lock').is_file(), 'configure the shared campaign lock before qualification')
         with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -244,6 +263,7 @@ def main():
                 compiler_key=compiler.key, tool_key=key, compiler=compiler.identity,
                 tool_composition=composition, environment_sha256=digest(env), scripts=frozen,
                 modes=MODES, benchmark=False, retries='none', minimum_free_gib=8,
+                **qualification_scope(args.diagnostic_comparison, []),
                 lock_path=str(Path(lock.name).resolve()), public_reference=public_identity))
 
             def invoke(label, command, cwd=ROOT, actual_env=None):
@@ -261,7 +281,7 @@ def main():
                 print(label, child.returncode, flush=True)
                 return row
 
-            stds = {}
+            stds, prepared = {}, {}
             for mode in MODES:
                 row = invoke('std-' + mode, [sys.executable, ROOT / 'scripts/std_mir.py',
                     '--compiler-key', compiler.key, '--stable-cgu-partitioning', mode])
@@ -283,9 +303,14 @@ def main():
                     require(stamp(path) == proof['stamp'] and file_digest(path) == proof['sha256'],
                             'std artifact differs')
                 stds[mode] = std
+                prepared[mode] = ready_path
             require(stds['off']['key'] != stds['on']['key'], 'std policies share a namespace')
             source = work / 'fixture'
             fixture(source)
+            if args.diagnostic_comparison == 'verified-std-source':
+                standard_sources = VerifiedStandardSources(compiler,
+                    public_rustc.parent.parent / 'lib/rustlib/src/rust/library', prepared)
+                write_json(work / 'standard-source-comparison.json', standard_sources.evidence())
             row = invoke('lockfile', ['cargo', '+' + TOOLCHAIN, 'generate-lockfile',
                 '--offline', '--manifest-path', source / 'Cargo.toml'], source)
             require(row['returncode'] == 0, 'local fixture lockfile failed')
@@ -294,6 +319,15 @@ def main():
             caches = work / 'caches'
             caches.mkdir()
             workspaces, artifacts, diagnostics = {}, {}, {}
+
+            def comparison(row, core, messages):
+                if standard_sources is None:
+                    return core
+                result = core_diagnostics(standard_sources.comparison(
+                    messages, row['label'], [source, *workspaces.values()]), ROOT)
+                row['source_derived_diagnostics'] = result
+                write_json(work / 'standard-source-comparison.json', standard_sources.evidence())
+                return result
 
             def public(label, value=None, code=None):
                 require(file_digest(public_rustc) == public_identity['sha256'], 'public rustc changed')
@@ -316,7 +350,8 @@ def main():
                     require(any(d['code'] == code and d['level'] == 'error' for d in core),
                             'retained public diagnostics lack the expected error')
                     row['diagnostic_outputs'] = files
-                    diagnostics[label, 'public'] = core
+                    row['diagnostics'] = core
+                    diagnostics[label, 'public'] = comparison(row, core, messages)
                 else:
                     require(row['returncode'] == 0 and output == str(3 * (value + 55)),
                             'ordinary native execution produced a wrong result')
@@ -345,8 +380,9 @@ def main():
                     require(any(d['code'] == code and d['level'] == 'error' for d in core),
                             'retained compiler diagnostics lack the expected error')
                     row.update(diagnostics=core, diagnostic_outputs=files)
-                    diagnostics[label, mode] = core
-                    require(core == diagnostics[label, 'public'], 'structured public/custom diagnostics differ')
+                    compared = comparison(row, core, messages)
+                    diagnostics[label, mode] = compared
+                    require(compared == diagnostics[label, 'public'], 'structured public/custom diagnostics differ')
                 else:
                     report, artifact = validate_launch(row, compiler, mode, key, stds[mode], caches)
                     require(row['stdout'] == str(3 * (value + 55)) + '\n', 'host/guest computed a stale or wrong value')
@@ -400,15 +436,25 @@ def main():
                         'edit/restoration artifact control failed')
             require(cargo_identity() == composition['cargo'], 'Cargo changed during qualification')
             installed_tools(key)
+            if standard_sources is not None:
+                standard_sources.recheck()
+                write_json(work / 'standard-source-comparison.json', standard_sources.evidence())
             result = dict(status='passed', kind='real-custom-compiler-integration', benchmark=False,
                 compiler_key=compiler.key, tool_key=key, std_mir=stds, commands=len(rows),
                 launcher_commands=22, public_commands=11, expected_rejections=24, source_restored=True,
-                public_reference=public_identity)
+                public_reference=public_identity, semantic_controls='passed',
+                **qualification_scope(args.diagnostic_comparison, standard_sources.gaps if standard_sources else []))
             write_json(work / 'result.json', result)
             print(json.dumps(result))
     except BaseException as error:
+        # Preserve raw records even when a comparison or source proof fails
+        # after the child receipt was initially written.
+        write_json(work / 'commands.json', rows)
+        if standard_sources is not None:
+            write_json(work / 'standard-source-comparison.json', standard_sources.evidence())
         write_json(work / 'result.json', dict(status='failed', error=str(error), completed_commands=len(rows),
-                   kind='real-custom-compiler-integration', benchmark=False))
+            kind='real-custom-compiler-integration', benchmark=False, semantic_controls='not-qualified',
+            **qualification_scope(args.diagnostic_comparison, standard_sources.gaps if standard_sources else [])))
         raise
 
 
