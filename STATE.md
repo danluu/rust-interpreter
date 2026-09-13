@@ -28,9 +28,13 @@ accesses in admitted functions; the excluded NFA builder remains explicitly
 bounded in the report. Park local rematerialization. The subsequent range-group census passes 466
 Rust tests/profile and twelve offline controls, with no exclusions. Its strict
 best-group model covers 24.34M /0.383M /0.993M conditional redundant checks.
-Next count an explicit pointee/current-frame disjointness condition: writes
-otherwise invalidate later frame-slot pointer loads, sharply limiting SipHash
-coverage. No unchecked or guarded execution change is implemented.
+The conditional frame-disjoint census now passes 470 Rust tests/profile and
+thirteen offline controls. It expands the block test to265.03M conditional
+redundant checks, including229.94M in two generic SipHash regions. Proceed with
+a bounded guarded prototype on the existing resumable path, with original
+ordered interpreter fallback on preflight failure. No execution change or
+latency gain is established by these counts.
+[Conditional evidence](results/disjoint-frame-census-01/assessment.md).
 [Range-group evidence](results/range-groups-census-01/assessment.md).
 [Region-fact decision](results/region-facts-census-01/assessment.md).
 [Qualification](results/checked-addresses-validation-01/assessment.md),
