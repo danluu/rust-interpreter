@@ -1,0 +1,3 @@
+Revalidated all 594 completed commands from the original full comparison: token, folded, pgrust and the private guard. All four gates, source restoration and saved executable/artifact hashes pass. Nushell has no case directory or completed command. No guest command was rerun.
+
+The continuation harness passes 27 protocol checks. It retains this exact prefix and permits only the original 132-command Nushell guard, under the unchanged 47.03 GiB cache admission and eight-GiB child floor. The candidate remains experimental until the fifth gate and final combined audit pass. The first prefix audit attempt timed out waiting for the shared lock and performed no audit; its receipt is retained separately.
