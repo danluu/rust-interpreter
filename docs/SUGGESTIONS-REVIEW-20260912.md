@@ -175,3 +175,11 @@ identity invalidation must be qualified before changed-source comparisons on
 short workflows. This is separate from the runtime result and does not reopen
 its failed folded guard. The newly published local-export screen also remains
 parked: its1.99% build-to-ready gain missed its own5% threshold.
+
+The optional lookup implementation now passes115 harness checks and20 actual
+Cargo commands with exact identity/artifact parity and strict uncalled errors.
+Seven driver checks also pass. A first driver admission timed out before any
+test; the failed receipt remains. After a later read-only lock availability
+check, only those unstarted tests ran. The frozen pgrust/rg-aot/Nushell comparison
+is active; all three cases are mandatory and no result has been inferred from
+the eliminated subprocesses.
