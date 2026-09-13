@@ -95,6 +95,8 @@ def main():
                     and 'stable-cgu-partitioning' in capabilities.get('export_options', []),
                     'exporter was not built against the selected compiler')
             capabilities.update(tool_key=key, exporter_sha256=binaries['rust-interp-mir-export'])
+            from stable_mono_cgu import bind_wrapper_capability
+            bind_wrapper_capability(directory, binaries, capabilities, compiler, env)
             write_json(directory / 'compiler.json', composition)
             write_json(directory / 'capabilities.json', capabilities)
             write_json(directory / 'ready.json', binaries)

@@ -38,6 +38,9 @@ pub struct Environment {
     pub borrowck_cache: Option<OsString>,
     pub compiler_rustc: Option<OsString>,
     pub stable_cgu_partitioning: Option<OsString>,
+    pub stable_mono_cgu_partitioning: Option<OsString>,
+    pub frontend_workers: Option<OsString>,
+    pub host_proc_macro_opt: Option<OsString>,
 }
 
 impl Environment {
@@ -55,6 +58,9 @@ impl Environment {
             borrowck_cache: std::env::var_os("RUST_INTERP_BORROWCK_CACHE"),
             compiler_rustc: std::env::var_os("RUST_INTERP_COMPILER_RUSTC"),
             stable_cgu_partitioning: std::env::var_os("RUST_INTERP_STABLE_CGU_PARTITIONING"),
+            stable_mono_cgu_partitioning: std::env::var_os("RUST_INTERP_STABLE_MONO_CGU_PARTITIONING"),
+            frontend_workers: std::env::var_os("RUST_INTERP_FRONTEND_WORKERS"),
+            host_proc_macro_opt: std::env::var_os("RUST_INTERP_HOST_PROC_MACRO_OPT"),
         }
     }
 }
@@ -143,6 +149,20 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
         args.remove(0);
     }
     let custom_compiler = env.compiler_rustc.is_some();
+    let mono_value = match env.stable_mono_cgu_partitioning.as_deref().map(OsStr::to_str) {
+        None => None,
+        Some(Some("off")) => Some("no"),
+        Some(Some("on")) => Some("yes"),
+        _ => return Err("RUST_INTERP_STABLE_MONO_CGU_PARTITIONING must be off or on".into()),
+    };
+    if mono_value.is_some() && (env.compiler_rustc.is_none()
+        || env.stable_cgu_partitioning.as_deref() != Some(OsStr::new("off"))
+        || borrowck_cache != BorrowckCacheMode::Off
+        || env.frontend_workers.is_some()
+        || env.host_proc_macro_opt.as_deref().is_some_and(|value| value != OsStr::new("off")))
+    {
+        return Err("stable-MonoItem policy requires a custom compiler with module, worker, macro and borrowck policies off".into());
+    }
     match (&env.compiler_rustc, &env.stable_cgu_partitioning) {
         (None, None) => {}
         (Some(compiler), Some(policy)) if wrapper => {
@@ -163,9 +183,19 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
                     else { option.strip_prefix("-Z") };
                 if let Some(unstable) = unstable {
                     let unstable = unstable.replace('_', "-");
-                    if unstable.split('=').next() == Some("stable-cgu-partitioning") {
+                    if matches!(unstable.split('=').next(),
+                        Some("stable-cgu-partitioning" | "stable-mono-cgu-partitioning")) {
                         return Err("custom compiler policy conflicts with an explicit stable-CGU flag".into());
                     }
+                    if mono_value.is_some() && matches!(unstable.split('=').next(),
+                        Some("threads" | "proc-macro-execution-strategy")) {
+                        return Err("stable-MonoItem policy conflicts with another compiler experiment".into());
+                    }
+                }
+                if mono_value.is_some() && (option == "--jobs" || option.starts_with("--jobs=")
+                    || option.starts_with("-j") || option == "--jobs-frontend"
+                    || option.starts_with("--jobs-frontend=")) {
+                    return Err("stable-MonoItem policy conflicts with frontend worker flags".into());
                 }
                 let sysroot = if option == "--sysroot" { options.next().map(String::as_str) }
                     else { option.strip_prefix("--sysroot=") };
@@ -179,6 +209,9 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
                 }
             }
             args.push(format!("-Zstable-cgu-partitioning={value}"));
+            if let Some(value) = mono_value {
+                args.push(format!("-Zstable-mono-cgu-partitioning={value}"));
+            }
         }
         _ => return Err("custom compiler and stable-CGU policy require a complete Cargo wrapper invocation".into()),
     }

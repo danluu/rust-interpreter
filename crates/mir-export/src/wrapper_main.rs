@@ -7,6 +7,12 @@ use std::process::{Command, ExitCode};
 
 fn main() -> ExitCode {
     let original: Vec<String> = std::env::args().collect();
+    if original.len() == 2 && original[1] == "--rust-interp-stable-mono-capability" {
+        // A publication-only, std-only protocol also binds this physical
+        // wrapper's compiled sysroot. Normal Cargo routing stays unchanged.
+        println!("stable-mono-cgu-routing-v1\n{}", env!("RUST_INTERP_SYSROOT"));
+        return ExitCode::SUCCESS;
+    }
     let route = match wrapper_route::route(original.clone(), &wrapper_route::Environment::read()) {
         Ok(route) if route.wrapper => route,
         Ok(_) => {

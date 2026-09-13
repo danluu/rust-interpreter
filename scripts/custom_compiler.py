@@ -42,6 +42,14 @@ def valid_key(key):
     return isinstance(key, str) and re.fullmatch(r'[0-9a-f]{64}', key) is not None
 
 
+def compiler_options(help_text):
+    """Record actual imported compiler help, never infer support from a version."""
+    supported = sorted(set(re.findall(
+        r'(?m)^\s*(?:-Z\s+)?(stable-(?:mono-)?cgu-partitioning)\s*=', help_text)))
+    return dict(schema_version=1, probe='-Zhelp', output=help_text,
+                sha256=hashlib.sha256(help_text.encode()).hexdigest(), supported=supported)
+
+
 def tree_stamps(directory):
     require(directory.resolve(strict=True) == directory and directory.is_dir(),
             'compiler installation must be an ordinary directory')
@@ -112,6 +120,13 @@ class Compiler:
     def host(self):
         return self.identity['host']
 
+    def require_option(self, option):
+        proof = self.identity.get('unstable_options')
+        require(isinstance(proof, dict) and isinstance(proof.get('output'), str)
+                and proof == compiler_options(proof['output'])
+                and option in proof['supported'],
+                'custom compiler has no recorded -Zhelp support for ' + option)
+
     def environment(self, environment):
         env = environment.copy()
         require(not any(k.startswith(('LD_', 'DYLD_')) for k in env),
@@ -135,6 +150,11 @@ def load_compiler(root, key):
                 'custom compiler ownership or identity mismatch')
         require(identity['policy'] == POLICY and identity['provenance']['stage'] == 2,
                 'custom compiler must be a complete stage2 installation')
+        if 'unstable_options' in identity:
+            proof = identity['unstable_options']
+            require(isinstance(proof, dict) and isinstance(proof.get('output'), str)
+                    and proof == compiler_options(proof['output']),
+                    'invalid recorded compiler option support')
         require(all(valid_key(value) for value in identity['files'].values()),
                 'invalid compiler file digest')
         require_complete(identity['files'], identity['host'])
@@ -254,12 +274,14 @@ def install_compiler(root, source, provenance):
                if line.startswith('commit-hash: ')]
     require(commits == [provenance['source_commit']], 'compiler version does not match its source commit')
     help_text = subprocess.check_output([str(sysroot / 'bin/rustc'), '-Zhelp'], env=env, text=True)
-    require(re.search(r'\bstable-cgu-partitioning\b', help_text) is not None,
+    options = compiler_options(help_text)
+    require('stable-cgu-partitioning' in options['supported'],
             'custom compiler lacks stable-CGU support')
     files = {str(p.relative_to(sysroot)): file_digest(p) for p in sorted(sysroot.rglob('*')) if p.is_file()}
     require_complete(files, hosts[0])
     require_executable_programs(sysroot, hosts[0])
     identity = dict(policy=POLICY, provenance=provenance, compiler=compiler, host=hosts[0], files=files,
+                    unstable_options=options,
                     source_sha256=digest({p: h for p, h in files.items()
                         if p.startswith('lib/rustlib/src/rust/library/')}))
     key = digest(identity)
