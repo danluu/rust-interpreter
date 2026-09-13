@@ -1,0 +1,21 @@
+[package]
+name = "ibs-fixture-app"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+build = "build.rs"
+
+[features]
+default = []
+# A library used only by interpreted host work in the default case now also
+# becomes necessary to a native proc-macro dylib. It must retain native output.
+native-shared-helper = ["ibs-fixture-macros/shared-helper"]
+# This operation is intentionally outside the first proposed runtime policy.
+unsupported-build-operation = []
+
+[dependencies]
+ibs-fixture-helper = { path = "../helper" }
+ibs-fixture-macros = { path = "../macros" }
+
+[build-dependencies]
+ibs-fixture-helper = { path = "../helper" }
