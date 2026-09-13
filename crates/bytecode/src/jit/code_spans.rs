@@ -11,6 +11,8 @@ const MAX_OUTPUT_BYTES: usize = 256 * 1024 * 1024;
 mod local_census;
 #[cfg(test)]
 mod protocol_census;
+#[cfg(test)]
+mod scratch_census;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
