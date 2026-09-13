@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--jit-native-call-stubs', action='store_true')
     parser.add_argument('--jit-resumable-calls', action='store_true')
     parser.add_argument('--dump-code', action='store_true', help='save emitted code from each sampled process after execution')
+    parser.add_argument('--jit-operation-map', action='store_true', help='also reconstruct and verify per-operation spans after execution')
     parser.add_argument('--select-test', help='run one exact catalog test without instruction profiling')
     parser.add_argument('--suite-catalog', type=Path)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=0)
@@ -49,6 +50,8 @@ def main():
         parser.error('--jit-resumable-calls cannot be combined with native tree/stub calls')
     if args.jit_native_call_stubs and not args.jit_native_calls:
         parser.error('--jit-native-call-stubs requires --jit-native-calls')
+    if args.jit_operation_map and (not args.dump_code or args.jit_native_calls or args.jit_native_call_stubs):
+        parser.error('--jit-operation-map requires --dump-code and ordinary/resumable execution')
     if sys.platform != 'darwin':
         parser.error('this diagnostic requires macOS sample and vmmap')
     if Path(args.run_id).name != args.run_id or args.run_id in ('.', '..'):
@@ -95,6 +98,7 @@ def main():
         instruction_limit=args.instruction_limit, allocation_limit=args.allocation_limit,
         jit_persistent_registers=args.jit_persistent_registers, jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
         jit_resumable_calls=args.jit_resumable_calls,
+        jit_operation_map=args.jit_operation_map,
         dump_code=args.dump_code, selection=selection,
         minimum_free_bytes=args.minimum_free_bytes,
         performance_measurement=False))
@@ -130,6 +134,8 @@ def main():
             command.append('--jit-resumable-calls')
         if args.dump_code:
             command += ['--jit-code-dump', str(run / 'jit-code')]
+        if args.jit_operation_map:
+            command.append('--jit-operation-map')
         if selection:
             command += ['--select-test', selection['name'], '--suite-catalog', selection['catalog']]
         command.append(str(artifact))

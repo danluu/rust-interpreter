@@ -30,6 +30,13 @@ def runtime_options(plan, commands):
         for option, enabled in options.items():
             require(('--' + option.replace('_', '-') in command) == enabled,
                     'sampled runtime option differs from plan')
+        require(type(plan.get('jit_operation_map', False)) is bool, 'invalid operation map option')
+        require(('--jit-operation-map' in command) == plan.get('jit_operation_map', False),
+                'sampled operation map option differs from plan')
+    if plan.get('jit_operation_map', False):
+        require(plan['dump_code'] and not options['jit_native_calls'] and not options['jit_native_call_stubs'],
+                'incompatible operation map options')
+        options['jit_operation_map'] = True
     return options
 
 
@@ -92,6 +99,9 @@ def summarize(folder):
                 category = 'generated_code' if mapped else 'unresolved_unknown_binary'
                 if not mapped:
                     unknown.append(dict(count=count, frame=frame))
+            elif any('rust_interp_bytecode' in f and any(name in f for name in
+                     ['code_spans', 'operation_map', 'code_dump']) for f in (*ancestors, frame)):
+                category = 'post_execution_diagnostic'
             elif 'rust_interp_bytecode' in frame and ('execute_impl' in frame or 'execute_observed' in frame):
                 category = 'dispatcher_self'
             elif any(name in frame for name in
