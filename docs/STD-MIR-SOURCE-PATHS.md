@@ -101,6 +101,8 @@ offline policy and profile selection remain intact. Setup jobs2 is recorded
 separately and receives no warm-performance credit. Ambient conflicting flags,
 trim/root overrides or inherited Cargo rustflags are rejected. Other existing
 Cargo configuration is bound by file identities and absent-path guards.
+Top-level Cargo `include` is rejected, including optional/table forms: the
+initial policy does not track the transitive included-file configuration.
 
 Publication contains every metadata file and a complete materialized source
 copy at `W/sysroot/lib/rustlib/src/rust/library`. The immutable compiler source
