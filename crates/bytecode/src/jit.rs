@@ -2075,6 +2075,11 @@ pub fn range_group_census(program: &Program, profile: &[u8]) -> Result<serde_jso
     range_groups::census(program, profile)
 }
 
+/// Offline opportunities conditional on one pointee range not aliasing the frame.
+pub fn disjoint_frame_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
+    range_groups::disjoint_census(program, profile)
+}
+
 /// Offline normal-entry must-facts; does not alter or authorize native entries.
 pub fn region_fact_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
     region_facts::census(program, profile)

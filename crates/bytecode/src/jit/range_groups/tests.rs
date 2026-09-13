@@ -104,3 +104,48 @@ fn site_report_truncation_keeps_counts_and_exhaustion_drops_partial_results() {
     assert!(function(&f,&[(0,70,1)],&mut 1).is_none());
     assert!(function(&f,&[(0,70,u64::MAX)],&mut MAX_FUNCTION_WORK.clone()).is_none());
 }
+
+#[test]
+fn disjoint_mode_preserves_only_its_selected_root_after_pointee_writes() {
+    let code=vec![Op::Local {dst:0,offset:0},load(1,0),Op::Store {address:1,src:7,size:8},
+        load(2,0),load(7,2),load(3,0),load(7,3)];
+    let strict=run(code.clone());assert_eq!(strict["counts"]["best_group_addresses"],0);
+    let f=function_input(code);
+    let guarded=function_with_mode(&f,&[(0,f.code.len(),5)],&mut MAX_FUNCTION_WORK.clone(),true).unwrap();
+    assert_eq!(guarded["counts"]["best_group_addresses"],15);
+    assert_eq!(guarded["counts"]["frame_disjoint_group_addresses"],15);
+    assert_eq!(guarded["top_groups"][0]["requires_frame_disjoint"],true);
+}
+
+#[test]
+fn another_root_and_unmodeled_writes_still_invalidate_conditional_slot_loads() {
+    for effect in [Op::Store {address:6,src:7,size:8},
+        Op::Copy {dst:1,src:1,size:129},Op::Call {function:0,args:vec![0],destination:0}] {
+        let mut state=State {disjoint_mode:true,..State::default()};
+        apply(&mut state,&[Op::Local {dst:0,offset:0},load(1,0),Op::Store {address:1,src:7,size:8},effect,load(2,0)]);
+        assert_eq!(state.get(2),Value::Opaque);
+        assert_eq!(state.get(1),Value::Pointer(Root::FrameSlot(0),0));
+    }
+}
+
+#[test]
+fn disjoint_mode_does_not_launder_other_slot_roots_or_constants() {
+    let mut state=State {disjoint_mode:true,..State::default()};
+    apply(&mut state,&[Op::Local {dst:0,offset:0},load(1,0),Op::Local {dst:2,offset:16},
+        Op::Imm {dst:5,value:8},Op::Store {address:2,src:5,size:8},Op::Store {address:1,src:7,size:8},
+        load(3,2),Op::Local {dst:2,offset:32},load(4,2)]);
+    assert_eq!(state.get(3),Value::Opaque);assert_eq!(state.get(4),Value::Opaque);
+    // A known write into the root's own slot also invalidates its entry value.
+    apply(&mut state,&[Op::Local {dst:2,offset:4},Op::Store {address:2,src:5,size:4},load(3,0)]);
+    assert_eq!(state.get(3),Value::Opaque);
+}
+
+#[test]
+fn disjoint_assumptions_reset_at_each_native_region() {
+    let mut state=State {disjoint_mode:true,..State::default()};
+    apply(&mut state,&[Op::Store {address:0,src:7,size:8}]);
+    assert_eq!(state.protected_root,Some(Root::Register(0)));
+    let fresh=State {disjoint_mode:true,..State::default()};
+    assert_eq!(fresh.protected_root,None);
+    assert_eq!(fresh.load_slot(0),Value::Pointer(Root::FrameSlot(0),0));
+}
