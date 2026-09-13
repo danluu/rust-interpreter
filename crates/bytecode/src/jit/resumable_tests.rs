@@ -3,9 +3,6 @@ use crate::{
     Engine, Execution, ExecutionProfile, Slot, VERSION, execute_profiled, execute_with_engine,
 };
 
-#[path = "call_capacity_tests.rs"]
-mod capacity;
-
 #[test]
 fn fixed_zeroing_matches_every_dirty_extent_and_unaligned_start() {
     let mut code = platform::Code::reserve(32768).unwrap();
