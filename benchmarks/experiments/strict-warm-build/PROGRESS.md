@@ -122,20 +122,26 @@ bytes. A reviewed [source-only capture checkpoint](../../../experiments/hir-body
 now records the actual lowering ID/effect journal and a typed HIR body tree,
 validating the complete observed context boundary and tree/reference/allocation
 closure after stock lowering. It remains uncompiled and has no materializer or
-hit path. Sixteen prepared unit controls and the native run-make sequence remain
+hit path. Twenty prepared unit controls and the native run-make sequence remain
 unrun; structural input counts are not measured reusable-body coverage.
 The latest capture key also binds active language/library feature declarations
 and all eight ordered allow-lists at the actual body-lowering entry. This covers
 inputs outside the session-option hash without invoking boolean feature getters.
 It remains capture-only and does not skip ordinary lowering or feature checks.
+An opaque prepared-value converter now validates current IDs, resolutions,
+operator/type enums, integer values and source coordinates without constructing
+HIR or interning symbols. It is still not a reusable-body admission API.
 [Native controls](../../../results/hir-body-coverage-native-01/README.md),
 [complete development coverage](../../../results/hir-body-development-coverage-01/README.md).
 A separate [limited compiler check driver](../../../experiments/hir-capture-check/README.md)
 freezes the earlier journal-only checkpoint `3f3e9c28`; its two configuration
 guards and subsequent six configuration/archive controls passed with no skips.
-The actual independent compiler checkout, selected
-crate check and unit tests still await the planned 24 GiB free-space baseline.
-They cannot qualify the newer typed codec or a cache hit.
+The independent checkout preparation passed after the 24 GiB free-space gate.
+The actual selected-crate check then failed with three `E0308` borrowed-key API
+errors in the journal's sorting calls; no unit stage ran. Those projections are
+corrected in the new full typed/prepared checkpoint, preserving numeric order.
+Its new check and all twenty unit controls remain pending. The original failed
+journal-only check cannot qualify the newer codec or a cache hit.
 [Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
 [Copied archive guard evidence](../../../results/hir-capture-offline-seed-guards-01/README.md).
 
@@ -169,6 +175,10 @@ The three failed first MonoItem screen targets were subsequently retired after
 retaining and rechecking their source, artifacts and compiler dependency proofs.
 The observed recovery was 6.57 GiB; original failed-screen evidence remains
 available. [Exact retirement evidence](../../../results/mono-failed-screen-target-retirement-01/README.md).
+The completed second MonoItem screen's three targets were subsequently retired,
+recovering an observed 8.36 GiB. All 27 commands, 14 tests per source state,
+artifact parity and the negative performance assessment remain preserved.
+[Completed screen retirement](../../../results/mono-screen02-target-retirement-01/README.md).
 
 The unchanged [protocol](PROTOCOL.md) requires all fifteen final Nushell edits
 below 0.500 seconds, then frozen fresh-project checks for generalization. These
