@@ -26,3 +26,14 @@ success/fault materialization and transitive guarded-body exclusion. Nested
 fixtures cover both profiling modes and persistent-register modes, failed
 arguments, faults after completed children, arithmetic, assertion, trap and
 memory failures, with independently specified active descriptors and ABI checks.
+
+The wiring stage exposes only an explicit disabled `Limits.jit_tree_bridge`
+option requiring resumable execution. The normal Call remains after stronger
+bridge guards; prepared owners bind the option. Tree and ordinary counters have
+separate arrays and exact ends; tree Calls exclude the outer bridge Call.
+Run 17 controls per profile: four bridge primitives/nested cases, six full-VM
+wiring controls and seven unchanged standalone-tree controls. The emitted
+preflight is compared with the independent wide arithmetic contract. Full-VM
+controls cover profiles, fresh prepared reuse, every short budget, code/depth/
+working-memory limits, original alias/copy cases, nested faults and unavailable
+cyclic/unsupported trees. No CLI/benchmark invocation is enabled by this stage.

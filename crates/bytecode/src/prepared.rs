@@ -16,6 +16,7 @@ pub struct PreparedJit<'program> {
     code_bytes: usize,
     persistent_registers: bool,
     indirect_calls: bool,
+    tree_bridge: bool,
     preparation_nanos: u128,
 }
 
@@ -32,12 +33,16 @@ impl<'program> PreparedJit<'program> {
         Ok(Self { program, jit, metadata, code_bytes: limits.jit_code_bytes,
             persistent_registers: limits.jit_persistent_registers,
             indirect_calls: limits.jit_indirect_calls,
+            tree_bridge: limits.jit_tree_bridge,
             preparation_nanos: started.elapsed().as_nanos() })
     }
 
     fn check_mode(limits: &Limits) -> Result<(), String> {
         if !limits.jit_resumable_calls || limits.jit_native_calls || limits.jit_native_call_stubs {
             return Err("prepared JIT requires resumable calls without native tree/stub modes".into());
+        }
+        if limits.jit_tree_bridge && limits.jit_operation_map {
+            return Err("operation maps do not support the native tree bridge".into());
         }
         Ok(())
     }
@@ -61,7 +66,7 @@ impl<'program> PreparedJit<'program> {
     pub fn execute_entry(&mut self, entry: usize, arguments: &[u128], limits: Limits) -> Result<Execution, String> {
         Self::check_mode(&limits)?;
         if limits.jit_code_bytes != self.code_bytes || limits.jit_persistent_registers != self.persistent_registers
-            || limits.jit_indirect_calls != self.indirect_calls {
+            || limits.jit_indirect_calls != self.indirect_calls || limits.jit_tree_bridge != self.tree_bridge {
             return Err("prepared JIT code-generation options changed".into());
         }
         let before = self.jit.as_ref().unwrap().compile_nanos;

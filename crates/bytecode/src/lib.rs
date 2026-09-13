@@ -424,6 +424,9 @@ pub struct Limits {
     /// Experimental native indirect Calls with exact signature/layout metadata.
     /// Requires resumable calls; disabled by default.
     pub jit_indirect_calls: bool,
+    /// Experimental bounded complete trees entered from resumable native Calls.
+    /// Requires resumable calls; disabled by default.
+    pub jit_tree_bridge: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -444,6 +447,7 @@ impl Default for Limits {
             jit_persistent_registers: false,
             jit_resumable_calls: false,
             jit_indirect_calls: false,
+            jit_tree_bridge: false,
             jit_code_dump: None,
             jit_operation_map: false,
         }
@@ -695,7 +699,7 @@ fn execute_observed<const PROFILE: bool>(
         return Err("native code dumps require the JIT engine".into());
     }
     if limits.jit_operation_map && (engine != Engine::Jit || limits.jit_code_dump.is_none()
-        || limits.jit_native_calls || limits.jit_native_call_stubs) {
+        || limits.jit_native_calls || limits.jit_native_call_stubs || limits.jit_tree_bridge) {
         return Err("operation maps require a code dump and ordinary or resumable JIT".into());
     }
     if engine == Engine::Interpreter && limits.jit_persistent_registers {
@@ -703,6 +707,9 @@ fn execute_observed<const PROFILE: bool>(
     }
     if limits.jit_indirect_calls && !limits.jit_resumable_calls {
         return Err("native indirect calls require resumable calls".into());
+    }
+    if limits.jit_tree_bridge && !limits.jit_resumable_calls {
+        return Err("native tree bridge requires resumable calls".into());
     }
     if limits.jit_resumable_calls {
         if engine != Engine::Jit { return Err("resumable calls require the JIT engine".into()); }
@@ -753,6 +760,7 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
     } else { None };
     if let Some(jit) = &mut jit {
         if limits.jit_indirect_calls { jit.enable_indirect_calls(); }
+        if limits.jit_tree_bridge { jit.enable_tree_bridge(); }
         jit.compile_nanos = started.elapsed().as_nanos();
     }
     Ok(jit)
@@ -794,8 +802,12 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
     let mut jit_entries = 0;
     let mut resumable_calls = 0;
     let mut resumable_returns = 0;
+    let (mut bridge_instructions, mut bridge_calls, mut bridge_entries) = (0,0,0);
     let resumable_profiles: Vec<_> = if RESUMABLE && PROFILE {
         profile.as_deref_mut().unwrap().functions.iter_mut().map(|f| f.jit_blocks.as_mut_ptr()).collect()
+    } else { vec![] };
+    let tree_profiles: Vec<_> = if RESUMABLE && PROFILE && limits.jit_tree_bridge {
+        profile.as_deref_mut().unwrap().functions.iter_mut().map(|f| f.jit_tree_blocks.as_mut_ptr()).collect()
     } else { vec![] };
     let mut native = if NATIVE_CALLS { Some(native_execution::Context::new(profile.as_deref_mut())) } else { None };
     if limits.frames == 0 {
@@ -875,12 +887,15 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                     // survives the call; descendants may become the new top.
                     let run = unsafe { jit.run_resumable(block, limits.instructions - steps,
                         &limits, &mut memory, &mut registers, &mut frames, &mut register_bytes,
-                        &resumable_profiles) }?;
+                        &resumable_profiles, &tree_profiles) }?;
                     steps += run.instructions;
                     jit_instructions += run.instructions;
                     jit_entries += 1;
                     resumable_calls += run.calls;
                     resumable_returns += run.returns;
+                    bridge_instructions += run.tree_instructions;
+                    bridge_calls += run.tree_calls;
+                    bridge_entries += run.tree_entries;
                     if steps >= limits.instructions { return Err("interpreter instruction limit exceeded".into()); }
                 }
             }
@@ -1328,9 +1343,9 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
         jit_compiled_functions: jit.as_ref().map_or(0, |j| j.compiled_functions),
         jit_declined_functions: jit.as_ref().map_or(0, |j| j.declined_functions),
         jit_compile_nanos: jit.as_ref().map_or(0, |j| j.compile_nanos), jit_instructions, jit_entries,
-        jit_tree_entries: native.as_ref().map_or(0, |n| n.entries),
-        jit_tree_calls: native.as_ref().map_or(0, |n| n.calls),
-        jit_tree_instructions: native.as_ref().map_or(0, |n| n.instructions),
+        jit_tree_entries: native.as_ref().map_or(bridge_entries, |n| n.entries),
+        jit_tree_calls: native.as_ref().map_or(bridge_calls, |n| n.calls),
+        jit_tree_instructions: native.as_ref().map_or(bridge_instructions, |n| n.instructions),
         jit_tree_bytes: tree_stats.0, jit_tree_operations: tree_stats.1,
         jit_tree_compiled_functions: tree_stats.2, jit_tree_declined_functions: tree_stats.3,
         jit_tree_compile_nanos: tree_stats.4,
@@ -1351,6 +1366,7 @@ fn prepare_jit<const PROFILE: bool>(jit: &mut Option<jit::Jit<'_>>, function: us
             for (end, block) in row.jit_block_ends.iter_mut().zip(&jit.blocks[function]) {
                 *end = block.map_or(0, |block| block.end);
             }
+            jit.sync_tree_profile(profile.as_deref_mut().unwrap());
         }
     }
     Ok(())

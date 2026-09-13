@@ -107,6 +107,10 @@ struct ResumeCursor {
     working_budget: usize,
     indirect_layout: *const indirect::Layout,
     indirect_layouts: *const indirect::Layout,
+    bridge: tree_bridge::BridgeCursor,
+    bridge_instructions: u64,
+    bridge_calls: u64,
+    bridge_entries: u64,
 }
 
 use continuation::layout as state;
@@ -120,6 +124,10 @@ const FRAME_END: usize = std::mem::offset_of!(ResumeCursor, frame_end);
 const WORKING_BUDGET: usize = std::mem::offset_of!(ResumeCursor, working_budget);
 const INDIRECT_LAYOUT: usize = std::mem::offset_of!(ResumeCursor, indirect_layout);
 const INDIRECT_LAYOUTS: usize = std::mem::offset_of!(ResumeCursor, indirect_layouts);
+const BRIDGE: usize = std::mem::offset_of!(ResumeCursor, bridge);
+const BRIDGE_INSTRUCTIONS: usize = std::mem::offset_of!(ResumeCursor, bridge_instructions);
+const BRIDGE_CALLS: usize = std::mem::offset_of!(ResumeCursor, bridge_calls);
+const BRIDGE_ENTRIES: usize = std::mem::offset_of!(ResumeCursor, bridge_entries);
 const _: () = {
     assert!(std::mem::offset_of!(ResumeCursor, state) == 0);
 };
@@ -131,7 +139,8 @@ const _: () = {
     assert!(MEMORY_END == 96 && REGISTER_END == 104 && FRAME_END == 112);
     assert!(WORKING_BUDGET == 120);
     assert!(INDIRECT_LAYOUT == 128 && INDIRECT_LAYOUTS == 136);
-    assert!(std::mem::size_of::<ResumeCursor>() == 144);
+    assert!(BRIDGE == 144 && BRIDGE_INSTRUCTIONS == 264 && BRIDGE_CALLS == 272 && BRIDGE_ENTRIES == 280);
+    assert!(std::mem::size_of::<ResumeCursor>() == 288);
 };
 
 impl<'a> Jit<'a> {
@@ -150,6 +159,11 @@ impl<'a> Jit<'a> {
         if let Some(entries)=&self.resumable {
             self.indirect=indirect::Metadata::new(self.program,&entries.zeroes);
         }
+    }
+
+    pub(crate) fn enable_tree_bridge(&mut self) {
+        assert!(self.resumable.is_some() && self.trees.is_none() && self.bytes == 0);
+        self.bridge_trees = true;
     }
 
     pub(crate) fn resumable_register_zeroes(&self) -> &[bool] {
@@ -176,6 +190,7 @@ impl<'a> Jit<'a> {
         frames: &mut Frames,
         register_bytes: &mut usize,
         profiles: &[*mut u64],
+        tree_profiles: &[*mut u64],
     ) -> Result<Run, String> {
         let entry = *frames.last().ok_or("missing resumable entry frame")?;
         if !self.blocks[entry.function]
@@ -227,6 +242,9 @@ impl<'a> Jit<'a> {
         } else {
             std::ptr::null_mut()
         };
+        if self.bridge_trees && self.profiled && tree_profiles.len() != self.program.functions.len() {
+            return Err("invalid bridge profile table".into());
+        }
         let boundary = Boundary::new(
             self.program,
             memory,
@@ -254,6 +272,14 @@ impl<'a> Jit<'a> {
             working_budget,
             indirect_layout: std::ptr::null(),
             indirect_layouts: self.indirect.as_ref().map_or(std::ptr::null(),|m|m.layouts.as_ptr()),
+            bridge: tree_bridge::BridgeCursor {
+                tree: native_calls::TreeCursor { base: Cursor { remaining: 0, profile_hits: std::ptr::null_mut() },
+                    memory_len: 0, peak_linear: 0, return_address: 0, profile_table: tree_profiles.as_ptr(),
+                    calls: 0, tree_instructions: 0, regions_ready: 0, stub_calls: 0 },
+                frames: std::ptr::null_mut(), registers: registers.as_mut_ptr(), depth: 0,
+                fault_depth: 0, fault_register_end: 0,
+            },
+            bridge_instructions: 0, bridge_calls: 0, bridge_entries: 0,
         };
         // SAFETY: all preparation precedes these fresh exclusive pointers.
         // Native guards bound every push, zero/copy and profile/table access.
@@ -278,7 +304,7 @@ impl<'a> Jit<'a> {
         } else {
             return Err("invalid resumable native status".into());
         };
-        let run = boundary.finish(
+        let mut run = boundary.finish(
             self.program,
             memory,
             registers,
@@ -290,6 +316,15 @@ impl<'a> Jit<'a> {
         if let Exit::Fault(code) = run.exit {
             return Err(self.fault_message(code)?);
         }
+        if cursor.bridge.depth != 0 || cursor.bridge_instructions > run.instructions
+            || cursor.bridge_calls > run.calls || cursor.bridge_entries > cursor.bridge_calls {
+            return Err("invalid native bridge accounting".into());
+        }
+        run.tree_instructions = cursor.bridge_instructions;
+        // Tree profiles contain descendant Calls; the root Call belongs to
+        // the caller's ordinary profile and is represented by tree_entries.
+        run.tree_calls = cursor.bridge_calls - cursor.bridge_entries;
+        run.tree_entries = cursor.bridge_entries;
         Ok(run)
     }
 
@@ -300,6 +335,7 @@ impl<'a> Jit<'a> {
         reads: &'b [Option<(usize, usize)>],
         values: Option<&'b values::Allocation>,
         slots: Option<&[Option<usize>]>,
+        global_start: usize,
     ) -> Result<(Assembler<'b>, usize, usize), EmitError> {
         let mut a = Assembler {
             heap: self.uses_heap,
@@ -326,6 +362,13 @@ impl<'a> Jit<'a> {
                 destination,
             } => {
                 let callee = &self.program.functions[*function];
+                if self.bridge_trees {
+                    if let Some((plan, target)) = self.ready_tree(*function) {
+                        a.resumable_tree_call(f, pc, *function, callee, args, slots, *destination,
+                            self.resumable.as_ref().unwrap().zeroes[*function], self.profiled,
+                            plan, target / 4, global_start)?;
+                    }
+                }
                 a.resumable_call(
                     f,
                     pc,
@@ -783,3 +826,6 @@ mod tests;
 
 #[path = "resumable_indirect.rs"]
 mod indirect_call;
+
+#[path = "resumable_tree_bridge.rs"]
+mod tree_call_bridge;

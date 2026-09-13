@@ -360,7 +360,7 @@ pub(crate) struct Jit<'a> {
     pub compile_nanos: u128,
     assertions: Vec<Assertion<'a>>,
     trees: Option<native_calls::State>,
-    // Private bridge ABI; currently enabled only by focused native tests.
+    // Explicit resumable-to-complete-tree bridge; separate from old tree mode.
     bridge_trees: bool,
     native_call_stubs: bool,
     pub region_plans: Vec<native_regions::RegionPlan>,
@@ -452,6 +452,12 @@ impl<'a> Jit<'a> {
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
+        if self.bridge_trees {
+            let callees: BTreeSet<_> = self.program.functions[id].code.iter().filter_map(|op| match op {
+                Op::Call { function, .. } => Some(*function), _ => None,
+            }).collect();
+            for callee in callees { self.ensure_tree(callee)?; }
+        }
         let remaining = (self.capacity - self.bytes) / 4;
         let staged = self.emit_function(&self.program.functions[id], remaining);
         self.finish_preparation(id, staged)
@@ -722,7 +728,12 @@ impl<'a> Jit<'a> {
                         _ => false,
                     }) {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
+                    let (mut a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice), self.bytes / 4 + words.len())?;
+                    for (at, successor) in std::mem::take(&mut a.links) {
+                        let fallback = a.words.len();
+                        a.return_pc(successor);
+                        links.push((words.len() + at, successor, words.len() + fallback));
+                    }
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
                         code_spans::Kind::Transition, 0, a.words.len())?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }

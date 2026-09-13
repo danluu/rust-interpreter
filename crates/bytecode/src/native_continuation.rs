@@ -84,6 +84,9 @@ pub(crate) struct Run {
     pub instructions: u64,
     pub calls: u64,
     pub returns: u64,
+    pub tree_instructions: u64,
+    pub tree_calls: u64,
+    pub tree_entries: u64,
 }
 
 pub(crate) struct Boundary {
@@ -286,6 +289,7 @@ impl Boundary {
             instructions,
             calls: state.calls,
             returns: state.returns,
+            tree_instructions: 0, tree_calls: 0, tree_entries: 0,
         })
     }
 }
