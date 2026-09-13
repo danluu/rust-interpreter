@@ -2,6 +2,8 @@
 //! Keep this module independent of rustc_driver and of exporter dependencies.
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+#[path = "host_proc_macro.rs"]
+mod host_proc_macro;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum BorrowckCacheMode {
@@ -38,6 +40,7 @@ pub struct Environment {
     pub borrowck_cache: Option<OsString>,
     pub compiler_rustc: Option<OsString>,
     pub stable_cgu_partitioning: Option<OsString>,
+    pub host_proc_macro_opt: Option<OsString>,
 }
 
 impl Environment {
@@ -55,6 +58,7 @@ impl Environment {
             borrowck_cache: std::env::var_os("RUST_INTERP_BORROWCK_CACHE"),
             compiler_rustc: std::env::var_os("RUST_INTERP_COMPILER_RUSTC"),
             stable_cgu_partitioning: std::env::var_os("RUST_INTERP_STABLE_CGU_PARTITIONING"),
+            host_proc_macro_opt: std::env::var_os("RUST_INTERP_HOST_PROC_MACRO_OPT"),
         }
     }
 }
@@ -66,6 +70,7 @@ pub struct Route {
     pub export: bool,
     pub borrowck_cache: BorrowckCacheMode,
     pub custom_compiler: bool,
+    pub host_proc_macro_opt: bool,
 }
 
 impl Route {
@@ -74,7 +79,7 @@ impl Route {
     }
 
     pub fn check_compiler(&self, sysroot: &Path) -> Result<(), String> {
-        if self.wrapper && (self.custom_compiler || self.requires_exporter()) {
+        if self.wrapper && (self.custom_compiler || self.host_proc_macro_opt || self.requires_exporter()) {
             let expected = sysroot.join("bin/rustc").canonicalize();
             let supplied = Path::new(&self.args[0]).canonicalize();
             if !matches!((&expected, &supplied), (Ok(a), Ok(b)) if a == b) {
@@ -143,6 +148,18 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
         args.remove(0);
     }
     let custom_compiler = env.compiler_rustc.is_some();
+    let host_proc_macro_opt = match env.host_proc_macro_opt.as_deref().map(OsStr::to_str) {
+        None | Some(Some("off")) => false,
+        Some(Some("on")) => true,
+        _ => return Err("RUST_INTERP_HOST_PROC_MACRO_OPT must be off or on".into()),
+    };
+    if host_proc_macro_opt && (!wrapper || custom_compiler || borrowck_cache != BorrowckCacheMode::Off ||
+        env.std_sysroot.as_ref().is_none_or(String::is_empty) || env.std_target.as_ref().is_none_or(String::is_empty)) {
+        return Err("host proc-macro optimization requires public compiler Cargo wrapping with complete std-MIR context and borrowck cache off".into());
+    }
+    // Policy conflicts concern original Cargo/user flags, not sysroot/MIR
+    // additions that this shared router may make below.
+    let host_proc_macro_args = host_proc_macro_opt.then(|| args.clone());
     match (&env.compiler_rustc, &env.stable_cgu_partitioning) {
         (None, None) => {}
         (Some(compiler), Some(policy)) if wrapper => {
@@ -238,11 +255,15 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
             || (env.export_package.is_some() && !env.export_test && !library)
             || wrong_manifest
             || (env.export_test && !test_compilation));
+    if let Some(original) = host_proc_macro_args {
+        args.extend(host_proc_macro::additions(&original, export)?);
+    }
     Ok(Route {
         args,
         wrapper,
         export,
         borrowck_cache,
         custom_compiler,
+        host_proc_macro_opt,
     })
 }
