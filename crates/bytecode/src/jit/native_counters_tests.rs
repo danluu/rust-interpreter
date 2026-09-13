@@ -1,7 +1,7 @@
 use super::*;
 
 fn leaf(calls: usize, returns: usize) -> platform::Code {
-    let reads = [None; 8];
+    let reads = [Some((0, 2)); 8];
     let mut a = Assembler { resumable: true, reads: &reads, ..Assembler::default() };
     // Same host preservation and counter lifetime as an external entry; this
     // leaf needs no guest Frame and exercises the real VM-return publication.
@@ -12,6 +12,7 @@ fn leaf(calls: usize, returns: usize) -> platform::Code {
     for _ in 0..calls { assert!(a.increment_native_counter(state::CALLS)); }
     a.lower(&Op::Copy { dst: 1, src: 0, size: 128 }); // writes v0..v7
     a.lower(&Op::Unary { dst: 3, src: 2, bits: 64, op: Unary::CountOnes }); // writes v0
+    a.lower(&Op::Store { address: 4, src: 3, size: 8 });
     a.imm(11, 0x1234);
     a.emit(0x9e670170); // guarded-range d16 cache, independent of counters
     for _ in 0..returns { assert!(a.increment_native_counter(state::RETURNS)); }
@@ -49,8 +50,11 @@ fn native_counter_lanes_wrap_without_cross_lane_or_adjacent_state_writes() {
                         expected[start + state::RETURNS / 8] = cursor[start + state::RETURNS / 8].wrapping_add(if invalid { 0 } else { returns as u64 });
                         let mut memory: Vec<u8> = (0..640).map(|i| (i * 71 + entry) as u8).collect();
                         let mut reference = memory.clone();
-                        if !invalid { reference.copy_within(64..192, 256); }
-                        let mut registers = [if invalid { 640 } else { 64 }, 256, 0x1234_5678_9abc_def0, 0, 0, 0, 0, 0];
+                        if !invalid {
+                            reference.copy_within(64..192, 256);
+                            reference[512..520].copy_from_slice(&32u64.to_le_bytes());
+                        }
+                        let mut registers = [if invalid { 640 } else { 64 }, 256, 0x1234_5678_9abc_def0, 0, 512, 0, 0, 0];
                         // SAFETY: emitted code validates guest Copy bounds.
                         // Cursor, registers and memory are stable initialized
                         // owned arrays; all host writes stay in their bounds.
@@ -60,7 +64,6 @@ fn native_counter_lanes_wrap_without_cross_lane_or_adjacent_state_writes() {
                         assert_eq!(result, if invalid { Failure::Memory as u64 } else { 0 });
                         assert_eq!(cursor, expected, "start={start}, entry={entry}, invalid={invalid}");
                         assert_eq!(memory, reference);
-                        if !invalid { assert_eq!(registers[3], 32); }
                         // Change both lanes between entries; retaining stale
                         // vector values across the host boundary would fail.
                         cursor[start + state::CALLS / 8] ^= 0xfedc_ba98_7654_3210;
