@@ -9,6 +9,16 @@ fn number(value: &Value, key: &str) -> usize {
 #[test]
 #[ignore = "Requires a bound artifact, saved operation map and exact native code"]
 fn observe_saved_local_facts() {
+    observe(false);
+}
+
+#[test]
+#[ignore = "Requires the bound adopted artifact, saved operation map and exact native code"]
+fn observe_saved_local_transfers() {
+    observe(true);
+}
+
+fn observe(transfers: bool) {
     let artifact = std::fs::read(std::env::var("LOCAL_CENSUS_ARTIFACT").unwrap()).unwrap();
     assert!(artifact.len() <= 128 * 1024 * 1024);
     let program: Program = bincode::deserialize(&artifact).unwrap();
@@ -25,19 +35,20 @@ fn observe_saved_local_facts() {
     assert_eq!(number(&mapping, "code_bytes"), bytes.len());
     assert_eq!(mapping["code_sha256"], format!("{:x}", Sha256::digest(&bytes)));
     let mut baseline = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap();
-    baseline.observe_guarded_local_retention = false;
-    baseline.observe_static_local_facts = false;
-    baseline.observe_scalar_copy = false;
+    baseline.observe_guarded_local_retention = transfers;
+    baseline.observe_static_local_facts = transfers;
+    baseline.observe_scalar_copy = transfers;
     let mut alternative = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap();
     alternative.observe_guarded_local_retention = true;
+    alternative.observe_local_transfer = transfers;
     let static_facts = match std::env::var("LOCAL_CENSUS_STATIC_FACTS").ok().as_deref() {
         None | Some("0") => false, Some("1") => true, _ => panic!("invalid static-fact census option"),
     };
-    alternative.observe_static_local_facts = static_facts;
+    alternative.observe_static_local_facts = transfers || static_facts;
     let scalar_copy = match std::env::var("LOCAL_CENSUS_SCALAR_COPY").ok().as_deref() {
         None | Some("0") => false, Some("1") => true, _ => panic!("invalid scalar-copy census option"),
     };
-    alternative.observe_scalar_copy = scalar_copy;
+    alternative.observe_scalar_copy = transfers || scalar_copy;
     let mut output = vec![];
     let (mut cursor, mut assertions, mut candidate_bytes) = (0, 0, 0);
     let mut seen = BTreeSet::new();
@@ -71,10 +82,11 @@ fn observe_saved_local_facts() {
                        candidate.entries.iter().map(|r|r.map(|r|r.end)).collect::<Vec<_>>());
             candidate_bytes += candidate.words.len()*4;
             json!({"status":"emitted","bytes":candidate.words.len()*4,
-                "forwarding":candidate.local_fact_events,"retained_writes":candidate.retained_local_writes,
+                "forwarding":candidate.local_fact_events,"transfers":candidate.local_transfer_events,"retained_writes":candidate.retained_local_writes,
                 "spans":candidate_map.rows,"words_equal":control.words==candidate.words})
         } else { json!({"status":"declined"}) };
-        assert!(control.retained_local_writes.is_empty());
+        if !transfers { assert!(control.retained_local_writes.is_empty()); }
+        assert!(control.local_transfer_events.is_empty());
         // Control spans are global offsets; candidate spans are function-relative.
         output.push(json!({"function":id,"name":f.name,"baseline_offset":offset,"baseline_end":end,
             "assertion_base":assertions,"baseline_forwarding":control.local_fact_events,"candidate":candidate}));
@@ -86,6 +98,6 @@ fn observe_saved_local_facts() {
     let file = std::fs::OpenOptions::new().write(true).create_new(true)
         .open(std::env::var("LOCAL_CENSUS_OUTPUT").unwrap()).unwrap();
     serde_json::to_writer(file, &json!({"status":"passed","baseline_bytes":bytes.len(),
-        "candidate_bytes":candidate_bytes,"static_fact_preservation":static_facts,"scalar_copy":scalar_copy,"functions":output,"exact_baseline_reconstruction":true,
+        "candidate_bytes":candidate_bytes,"local_value_transfers":transfers,"static_fact_preservation":static_facts,"scalar_copy":scalar_copy,"functions":output,"exact_baseline_reconstruction":true,
         "guest_commands":0,"executable_code_publications":0,"capacity":MAX_CODE_BYTES})).unwrap();
 }

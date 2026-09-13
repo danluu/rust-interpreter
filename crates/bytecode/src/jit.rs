@@ -294,6 +294,8 @@ struct CompiledFunction<'a> {
     local_fact_events: Vec<(usize, &'static str, &'static str)>,
     #[cfg(test)]
     retained_local_writes: Vec<(usize, Reg, usize, usize)>,
+    #[cfg(test)]
+    local_transfer_events: Vec<local_memory::TransferEvent>,
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
     resumes: Vec<Option<usize>>,
@@ -334,6 +336,8 @@ pub(crate) struct Jit<'a> {
     observe_static_local_facts: bool,
     #[cfg(test)]
     observe_scalar_copy: bool,
+    #[cfg(test)]
+    observe_local_transfer: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -368,6 +372,8 @@ impl<'a> Jit<'a> {
             observe_static_local_facts: true,
             #[cfg(test)]
             observe_scalar_copy: true,
+            #[cfg(test)]
+            observe_local_transfer: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -465,6 +471,8 @@ impl<'a> Jit<'a> {
         let mut local_forwarding = vec![];
         #[cfg(test)]
         let (mut local_fact_events, mut retained_local_writes) = (vec![], vec![]);
+        #[cfg(test)]
+        let mut local_transfer_events = vec![];
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
@@ -522,6 +530,8 @@ impl<'a> Jit<'a> {
                     observe_static_local_facts: self.observe_static_local_facts,
                     #[cfg(test)]
                     observe_scalar_copy: self.observe_scalar_copy,
+                    #[cfg(test)]
+                    observe_local_transfer: self.observe_local_transfer,
                     heap: self.uses_heap,
                     reads: &reads,
                     frame_size: f.frame_size,
@@ -645,6 +655,7 @@ impl<'a> Jit<'a> {
                     local_forwarding.extend(a.local_forwarding);
                     local_fact_events.extend(a.local_fact_events);
                     retained_local_writes.extend(a.retained_local_writes);
+                    local_transfer_events.extend(a.local_transfer_events);
                 }
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
@@ -693,7 +704,8 @@ impl<'a> Jit<'a> {
             liveness_declined: self.persistent_registers && values.is_none(),
             #[cfg(test)] local_forwarding,
             #[cfg(test)] local_fact_events,
-            #[cfg(test)] retained_local_writes }))
+            #[cfg(test)] retained_local_writes,
+            #[cfg(test)] local_transfer_events }))
     }
     /// Execute a region and any linked successors in the same guest function.
     ///
@@ -971,6 +983,8 @@ struct Assembler<'a> {
     observe_static_local_facts: bool,
     #[cfg(test)]
     observe_scalar_copy: bool,
+    #[cfg(test)]
+    observe_local_transfer: bool,
     guarded_range: Option<range_groups::Plan>,
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
@@ -982,6 +996,8 @@ struct Assembler<'a> {
     local_fact_events: Vec<(usize, &'static str, &'static str)>,
     #[cfg(test)]
     retained_local_writes: Vec<(usize, Reg, usize, usize)>,
+    #[cfg(test)]
+    local_transfer_events: Vec<local_memory::TransferEvent>,
     words: Vec<u32>,
     links: Vec<(usize, usize)>,
     failures: Vec<(usize, Failure)>,
@@ -1009,6 +1025,8 @@ impl Default for Assembler<'_> {
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,
             observe_scalar_copy: true,
+            #[cfg(test)]
+            observe_local_transfer: false,
             guarded_range: Default::default(),
             values: Default::default(),
             tree_caller_is_region: Default::default(),
@@ -1017,6 +1035,7 @@ impl Default for Assembler<'_> {
             local_forwarding: Default::default(),
             local_fact_events: Default::default(),
             retained_local_writes: Default::default(),
+            local_transfer_events: Default::default(),
             words: Default::default(),
             links: Default::default(),
             failures: Default::default(),
@@ -1822,7 +1841,11 @@ impl Assembler<'_> {
             }
             Op::Load { dst, address, size } => {
                 let local = self.local_range(address, size as usize);
-                if let Some((_, value)) = self.local_value(local, size as usize) {
+                #[cfg(test)]
+                let mut transfer = None;
+                if let Some((_source, value)) = self.local_value(local, size as usize) {
+                    #[cfg(test)]
+                    { transfer = self.capture_local_transfer(_source, dst, size as usize, value); }
                     #[cfg(test)]
                     let preserve_static = self.observe_static_local_facts;
                     #[cfg(not(test))]
@@ -1850,6 +1873,8 @@ impl Assembler<'_> {
                     self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
                 }
                 self.put(dst, 9, if size <= 8 { 31 } else { 10 });
+                #[cfg(test)]
+                self.finish_local_transfer(transfer);
                 self.remember_local_memory(local, size as usize, dst);
             }
             Op::Store { address, src, size } => {

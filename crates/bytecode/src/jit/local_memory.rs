@@ -3,10 +3,86 @@ use super::*;
 
 const MAX_VALUES: usize = 16;
 
+#[cfg(test)]
+#[path = "local_memory/transfer_tests.rs"]
+mod transfer_tests;
+
+#[cfg_attr(test, derive(Clone, Copy, Debug, PartialEq, Eq))]
 pub(super) struct Value {
     offset: usize,
     size: usize,
     source: Reg,
+}
+
+#[cfg(test)]
+#[derive(serde::Serialize)]
+pub(super) struct TransferEvent {
+    pc: usize,
+    source: Reg,
+    destination: Reg,
+    width: usize,
+    outcome: &'static str,
+    retained: usize,
+    transferred: usize,
+    too_wide: usize,
+}
+
+#[cfg(test)]
+pub(super) struct TransferSnapshot {
+    source: Reg,
+    destination: Reg,
+    width: usize,
+    before: Vec<Value>,
+}
+
+#[cfg(test)]
+impl Assembler<'_> {
+    pub(super) fn capture_local_transfer(&mut self, source: Reg, destination: Reg,
+        width: usize, fact: Fact) -> Option<TransferSnapshot> {
+        if !self.observe_local_transfer { return None; }
+        let excluded = match fact {
+            Fact::Imm(_) => Some("immediate-source"),
+            Fact::Local(_) => Some("local-pointer-source"),
+            Fact::Physical {..} => Some("physical-source"),
+            Fact::Cached {..} if source == destination => Some("same-register"),
+            Fact::Cached {..} if self.reads[destination as usize].is_none() => Some("dead-destination"),
+            Fact::Cached {..} => None,
+        };
+        if let Some(outcome) = excluded {
+            self.local_transfer_events.push(TransferEvent { pc:self.current_pc, source, destination,
+                width, outcome, retained:0, transferred:0, too_wide:0 });
+            return None;
+        }
+        assert!([1,2,4,8].contains(&width) && self.local_values.len() <= MAX_VALUES);
+        Some(TransferSnapshot { source, destination, width, before:self.local_values.clone() })
+    }
+
+    pub(super) fn finish_local_transfer(&mut self, snapshot: Option<TransferSnapshot>) {
+        let Some(TransferSnapshot {source, destination, width, before}) = snapshot else { return; };
+        // put() may only remove existing metadata. No guest write occurs between
+        // capture and this point. Preserve the exact order of every survivor.
+        assert!(before.iter().filter(|v| self.local_values.contains(v)).eq(self.local_values.iter()));
+        let available = self.facts.contains_key(&destination);
+        let retained = before.iter().filter(|v| v.source == source && self.local_values.contains(v)).count();
+        let missing: Vec<_> = before.iter().filter(|v| v.source == source && !self.local_values.contains(v)).collect();
+        let too_wide = missing.iter().filter(|v| v.size > width).count();
+        let transferred = if available { missing.len() - too_wide } else { 0 };
+        if transferred != 0 {
+            let survivors = std::mem::take(&mut self.local_values);
+            self.local_values = before.into_iter().filter_map(|mut value| {
+                if survivors.contains(&value) { Some(value) }
+                else if value.source == source && value.size <= width {
+                    value.source = destination;
+                    Some(value)
+                } else { None }
+            }).collect();
+            assert!(self.local_values.len() <= MAX_VALUES);
+        }
+        let outcome = if !available {"unavailable-destination"} else if transferred != 0 {"transferred"}
+                      else if too_wide != 0 {"incompatible-width"} else {"source-survived"};
+        self.local_transfer_events.push(TransferEvent {pc:self.current_pc, source, destination,
+            width, outcome, retained, transferred, too_wide});
+    }
 }
 
 impl Assembler<'_> {
