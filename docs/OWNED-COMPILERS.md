@@ -6,7 +6,11 @@ custom-compiler baseline; it is not interchangeable with an earlier stock
 compiler measurement. Stock launcher defaults and legacy tool keys are unchanged.
 
 Prepare a complete stage2 installation prefix containing matching `rustc`,
-native standard libraries, `rustc-dev`, and `rust-src`. Use the compiler's
+native standard libraries, `rustc-dev`, `rust-src`, and compiler support tools.
+On Darwin, normal stripping also requires an executable
+`lib/rustlib/HOST/bin/rust-objcopy` from the compiler's LLVM distribution; a
+bootstrap configured with `llvm-tools = false` can omit it. Include that tool in
+the package inventory and provenance. Use the compiler's
 distribution components: bootstrap may put compiler-private libraries in the
 build compiler's sysroot rather than its resulting stage2 sysroot. Never copy
 arbitrary stage1 private libraries into stage2. The prefix must not include Cargo
