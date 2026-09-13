@@ -1,5 +1,6 @@
 """Publication failures use dummy bytes only; never execute a tool or workload."""
 import json
+import importlib.util
 from pathlib import Path
 import sys
 import tempfile
@@ -8,6 +9,13 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import public_tool_publication as p
+
+
+def build_driver():
+    path = Path(__file__).resolve().parents[1] / 'benchmarks/experiments/host-proc-macro/build.py'
+    spec = importlib.util.spec_from_file_location('macro_build_driver_test', path)
+    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+    return module
 
 
 class PublicToolPublicationTests(unittest.TestCase):
@@ -67,6 +75,33 @@ class PublicToolPublicationTests(unittest.TestCase):
             with patch.object(p, 'retained_command') as command:
                 with self.assertRaisesRegex(RuntimeError, 'frozen build input differs'):
                     p.run_plan_commands(plan, inherited={})
+                command.assert_not_called()
+
+    def test_registry_source_drift_is_rejected_without_running_cargo(self):
+        driver = build_driver()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); package = root / 'registry/fixture'; package.mkdir(parents=True)
+            manifest = package / 'Cargo.toml'; manifest.write_text('[package]\nname="fixture"\nversion="1.0.0"\n')
+            (root / 'Cargo.lock').write_text('version = 4\n[[package]]\nname="fixture"\nversion="1.0.0"\n'
+                'source="registry+fixture"\nchecksum="' + '1' * 64 + '"\n')
+            (package / '.cargo-checksum.json').write_text(json.dumps(dict(package='1' * 64,
+                files={'Cargo.toml': '0' * 64})))
+            metadata = dict(resolve=dict(nodes=[dict(id='fixture-id', features=[])]),
+                packages=[dict(id='fixture-id', name='fixture', version='1.0.0', source='registry+fixture',
+                               manifest_path=str(manifest))])
+            with patch.object(driver, 'ROOT', root), patch.object(driver, 'retained_command') as command:
+                with self.assertRaisesRegex(RuntimeError, 'registry source differs'):
+                    driver.dependency_inventory(metadata, {}, {})
+                command.assert_not_called()
+
+    def test_cargo_config_wrapper_override_fails_before_any_command(self):
+        driver = build_driver()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); cargo_home = root / 'cargo-home'; cargo_home.mkdir()
+            (cargo_home / 'config.toml').write_text('[build]\nrustc-wrapper="/unreviewed/wrapper"\n')
+            with patch.object(driver, 'ROOT', root), patch.object(driver, 'retained_command') as command:
+                with self.assertRaisesRegex(RuntimeError, 'unreviewed compiler'):
+                    driver.configuration({'CARGO_HOME': str(cargo_home)})
                 command.assert_not_called()
 
 
