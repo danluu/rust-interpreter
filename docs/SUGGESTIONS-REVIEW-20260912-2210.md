@@ -92,6 +92,19 @@ Inspect complete checked-address sequences next, before a broad memory-model
 redesign; retain tag classification, overflow-safe bounds and fault ordering.
 [Complete screen decision](../results/scalar-copy-budget-screen-token-01/assessment.md).
 
+The checked-address candidate also completes qualification but establishes no
+useful primary gain: paired wall +0.086%, CPU −0.177%, with 20.416%/17.969% A/A.
+Retain the high variation and cancel the unstarted full comparison. Current code
+shrinks 1.69–2.99%; that does not establish latency. Next inspect whether facts
+lost at native-region boundaries account for meaningful checked accesses or
+register traffic. Any inference needs typed CFG, initialization and clobber
+proofs; an earlier Local/constant definition or sampled value is insufficient.
+Suggestion4.1 also now has the other session's full Nushell compiler-unit
+attribution on main. It confirms separate required host/target/selected units;
+its instrumented four-worker observations are diagnostic, not new two-worker
+performance controls. Preserve that work and avoid duplicating its diagnosis.
+[Checked-address decision](../results/checked-addresses-screen-token-01/assessment.md).
+
 Original integration checkpoint (subsequently completed): the rebuilt VM matches
 the measured runtime exactly;428 Rust tests per profile
 and223 new cache/Cargo commands pass. The first project qualification stopped
