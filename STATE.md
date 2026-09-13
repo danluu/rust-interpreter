@@ -31,8 +31,11 @@ new boundary checks are committed on `experiment/paired-registers-20260912`.
 All 421 Rust tests per profile, 131 harness checks, seven exact real tests,
 nine suite commands, 203 strict cache/native checks and three profile replays
 pass. Every VM operation count and native interval matches the wide control.
-The complete token/folded/pgrust comparison is active; no speedup or adoption
-is yet established. [Scope and next constraints](docs/REGISTER-TRANSFER-NEXT.md).
+The complete comparison passes all 462 expected outcomes. Token gains 0.71%
+wall and 0.09% CPU, below 1.77% wall A/A; folded and pgrust guards pass. Keep
+the runtime experimental without retiming. The next step is an offline typed
+census of repeated address validation, before changing the emitter.
+[Complete comparison](results/paired-registers-complete-01/assessment.md). [Scope and next constraints](docs/REGISTER-TRANSFER-NEXT.md).
 [Token result](results/guarded-indirect-edit-token-02/stage-assessment.md),
 [design and qualification](docs/INDIRECT-CALL-NEXT.md).
 
