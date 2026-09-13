@@ -23,8 +23,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--phase', choices=['before', 'after'], required=True)
     parser.add_argument('--key', default=CONTROL)
+    parser.add_argument('--run-id', required=True)
     args = parser.parse_args()
-    run = 'boxed-fnonce-' + args.phase + '-01'
+    run = args.run_id
+    assert re.fullmatch('boxed-fnonce-' + args.phase + r'-\d{2}', run)
     fixture = Path(__file__).parent / 'fixture'
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
@@ -78,8 +80,8 @@ def main():
                   executable_sha256=sha(executable), fixture={str(p.relative_to(ROOT)): sha(p) for p in fixture.rglob('*') if p.is_file()}))
             modes = [('jit', ['--engine', 'jit'], 101)]
         else:
-            before = ROOT / '.work/boxed-fnonce-before-01'
-            proof = json.loads((ROOT / 'results/boxed-fnonce-before-01/summary.json').read_text())
+            before = ROOT / '.work/boxed-fnonce-before-02'
+            proof = json.loads((ROOT / 'results/boxed-fnonce-before-02/summary.json').read_text())
             assert proof['status'] == 'expected lowering failure verified'
             assert sha(before / 'native.json') == proof['native_sha256']
             native = json.loads((before / 'native.json').read_text())
@@ -117,7 +119,7 @@ def main():
               commands=len(rows), native_tests=6, guest_tests=0 if args.phase == 'before' else 18,
               tool_key=args.key, raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),
               records_sha256=sha(work / 'records.json'), performance_measurement=False,
-              native_sha256=sha((work if args.phase == 'before' else ROOT / '.work/boxed-fnonce-before-01') / 'native.json')))
+              native_sha256=sha((work if args.phase == 'before' else ROOT / '.work/boxed-fnonce-before-02') / 'native.json')))
 
 
 if __name__ == '__main__':

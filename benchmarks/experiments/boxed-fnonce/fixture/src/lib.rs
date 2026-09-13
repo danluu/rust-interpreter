@@ -68,7 +68,7 @@ mod tests {
     #[test]
     fn nested_boxed_callback_return() {
         let text = String::from("nested");
-        let outer: Box<dyn FnOnce(u64) -> Box<dyn FnOnce(u64) -> (String, u64)>>> =
+        let outer: Box<dyn FnOnce(u64) -> Box<dyn FnOnce(u64) -> (String, u64)>> =
             Box::new(move |a| Box::new(move |b| (text, a + b)));
         let inner = black_box(outer)(17);
         assert_eq!(black_box(inner)(29), (String::from("nested"), 46));
