@@ -69,12 +69,26 @@ def source_inventory(source,base,env,label):
         if path.is_symlink():
             link=os.readlink(path)
             target=path.resolve(strict=True)
-            require(not Path(link).is_absolute() and target.is_relative_to(source)
-                    and target.is_file() and str(target.relative_to(source)) in tracked,
-                    'source symlink is not an in-checkout tracked regular file: '+name)
-            result[name]={'kind':'symlink','link_text':link,'sha256':hashlib.sha256(os.fsencode(link)).hexdigest(),
-                          'resolved_relative':str(target.relative_to(source)),
-                          'resolved_sha256':sha(target),'resolved_bytes':target.stat().st_size}
+            require(not Path(link).is_absolute() and target.is_relative_to(source),
+                    'source symlink is not relative and in-checkout: '+name)
+            record={'kind':'symlink','link_text':link,'sha256':hashlib.sha256(os.fsencode(link)).hexdigest(),
+                    'resolved_relative':str(target.relative_to(source))}
+            if target.is_dir():
+                members={}
+                for member in sorted(target.rglob('*')):
+                    require(not member.is_symlink(),'nested symlink in directory alias: '+name)
+                    relative=str(member.relative_to(source))
+                    require(member.is_dir() or (member.is_file() and relative in tracked),
+                            'untracked/nonregular directory alias member: '+relative)
+                    members[str(member.relative_to(target))]=({'kind':'directory'} if member.is_dir() else
+                        {'kind':'file','sha256':sha(member),'bytes':member.stat().st_size})
+                require(members,'empty directory alias has no tracked source proof: '+name)
+                record.update(resolved_kind='directory',resolved_members=members)
+            else:
+                require(target.is_file() and str(target.relative_to(source)) in tracked,
+                        'source symlink target is not a tracked regular file: '+name)
+                record.update(resolved_kind='file',resolved_sha256=sha(target),resolved_bytes=target.stat().st_size)
+            result[name]=record
         else:
             require(path.is_file(),'unexpected tracked source entry: '+name)
             result[name]={'kind':'file','sha256':sha(path),'bytes':path.stat().st_size}
