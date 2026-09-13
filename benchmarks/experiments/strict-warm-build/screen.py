@@ -59,6 +59,20 @@ def frozen_input_hash(path):
     return hashlib.sha256(data).hexdigest()
 
 
+def verify_qualification_freeze(qualifications, frozen):
+    """Bind raw evidence digests to the screen's file-tagged frozen digests."""
+    for qualification in qualifications:
+        if qualification:
+            for name, digest in qualification['evidence_files'].items():
+                path = Path(name)
+                require(path.resolve(strict=True) == path and path.is_file(),
+                        'qualification evidence is linked or missing')
+                data = path.read_bytes()
+                require(hashlib.sha256(data).hexdigest() == digest
+                        and hashlib.sha256(b'file\0' + data).hexdigest() == frozen.get(name),
+                        'qualification evidence changed between validation and freezing')
+
+
 def protocol_states(original, case=CASE):
     """Each of five cumulative valid edits is new in every arm's cache."""
     states = list(source_states(original.decode(), case, 1, MODES, True))
@@ -556,10 +570,7 @@ def main():
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
             paths += [source / name for name in tracked if name and source / name != changed]
             frozen = {str(p): frozen_input_hash(p) for p in paths}
-            for qualification in [mono_qualification, source_observables]:
-                if qualification:
-                    require(all(frozen[p] == h for p, h in qualification['evidence_files'].items()),
-                            'qualification evidence changed between validation and freezing')
+            verify_qualification_freeze([mono_qualification, source_observables], frozen)
             plan = dict(schema_version=1, kind='mechanism-screen', owner=str(ROOT), project='nushell',
                 workflow='type-relations', candidate_policy=args.candidate_policy,
                 revision=revision, source=str(source), case=CASE,
