@@ -22,8 +22,12 @@ map reconstruction. Its 40-command changed-source screen passes every expected
 outcome but establishes no useful gain: paired wall +0.086%, CPU −0.177%, against
 20.416%/17.969% observed A/A variation. Keep the runtime experimental and cancel
 its unstarted full comparison. Do not repeat the screen or infer a small gain
-from code size. Next investigate bounded known-value facts across JIT region
-boundaries before choosing another emitter change.
+from code size. The follow-up region-fact census passes 457 Rust tests/profile
+and eleven offline commands. It finds only 1,794 / 15,106 / 2 additional local
+accesses in admitted functions; the excluded NFA builder remains explicitly
+bounded in the report. Park local rematerialization and next count related
+pointer-access groups before implementing guarded region fast paths.
+[Region-fact decision](results/region-facts-census-01/assessment.md).
 [Qualification](results/checked-addresses-validation-01/assessment.md),
 [screen decision](results/checked-addresses-screen-token-01/assessment.md).
 

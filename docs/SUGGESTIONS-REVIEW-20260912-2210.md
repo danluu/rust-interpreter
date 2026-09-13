@@ -105,6 +105,16 @@ its instrumented four-worker observations are diagnostic, not new two-worker
 performance controls. Preserve that work and avoid duplicating its diagnosis.
 [Checked-address decision](../results/checked-addresses-screen-token-01/assessment.md).
 
+The bounded whole-CFG local-fact census is now complete: three saved profiles,
+no guest execution, only 1,794 /15,106 /2 additional in-frame accesses among
+admitted functions. One excluded NFA builder is reported with conservative
+coverage bounds; it is not treated as zero. Park immediate local rematerialization.
+The next memory-design investigation counts related pointer-access groups,
+requiring original-path fallback whenever a proposed wider preflight fails.
+This is conditional work under2.5, not permission to remove checks, change
+partial-write semantics or claim all Copy time as checking.
+[Typed census and scope](../results/region-facts-census-01/assessment.md).
+
 Original integration checkpoint (subsequently completed): the rebuilt VM matches
 the measured runtime exactly;428 Rust tests per profile
 and223 new cache/Cargo commands pass. The first project qualification stopped
