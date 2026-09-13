@@ -1,9 +1,17 @@
 # Next compute-bound candidate: guarded indirect calls
 
-The first implementation and five new Rust tests are now written on
-`experiment/guarded-indirect-20260912`; they have not yet been built or executed.
-The launcher comparison remains the active measurement, against frozen tools.
-Runtime qualification waits until it releases the shared benchmark lock.
+The guarded implementation on `experiment/guarded-indirect-20260912` now
+passes 424 debug and release tests, 123 Python checks, seven exact real tests,
+nine suite commands and 203 native/cache checks. The three current profile
+replays are active. Tool `9e219e2e` retains the wide-operation exporter/wrapper;
+no new runtime performance result is available yet.
+
+The first host build stopped at two existing test fixture initializers missing
+the new cursor pointer. Both fixtures were corrected; the failed receipt stays
+recorded alongside the successful second build.
+[Build](../results/guarded-indirect-build-02/summary.json),
+[exact selections](../results/guarded-indirect-qualification-01/summary.json),
+[strict controls](../results/guarded-indirect-cache-01/summary.json).
 
 The current-artifact census found1,025,947 interpreted indirect calls in the
 token block-boundary test and843,776 in the exhaustive test. The block test's
@@ -58,7 +66,8 @@ the interpreter and independent native Rust expectations using valid programs;
 all mismatch/failure behavior must preserve the original VM semantics.
 
 Then replay the exact current saved assertions and entropy streams. Record
-installations, hits, mismatches, compile cost and code size; a single-target
+published thunks, native hits, remaining VM calls, compile cost and code size;
+the VM count combines first use, mismatches and other declines. a single-target
 assumption must be measured, not inferred from the function name. Only a
 qualified implementation proceeds to full changed-source token comparisons,
 including both dominant tests and all mandatory held-outs. Freeze a fresh

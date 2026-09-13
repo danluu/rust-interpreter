@@ -44,13 +44,17 @@ suggestion. Historical experiments retain their original decisions.
    bodies do not make session-local compiler allocations reusable unchanged.
    The optional compiler-identity lookup cache passes115 harness checks,
    20 real Cargo checks and seven driver tests. Its fixed pgrust/rg-aot/
-   Nushell comparison is running, with identical runtime/compiler binaries
+   Nushell comparison completes396 commands, with identical runtime/compiler binaries
    and strict checking in every custom arm. Pgrust passes with wall−5.96%
    and CPU−5.16%. Private rg-aot improves13.18% wall/11.67% CPU but misses
-   its3% CPU-noise limit (observed3.67%). Keep that failed gate, finish
-   Nushell and review the complete evidence without retiming.
+   its3% CPU-noise limit (observed3.67%). Nushell changes wall−0.54% and
+   CPU−0.91%, with6.56% wall noise exceeding4%. Keep the failed overall
+   adoption decision and do not retime.
    The next compute-bound design is bounded guarded indirect-call
-   specialization; [design](docs/INDIRECT-CALL-NEXT.md), no implementation yet. Full-catalog selection remains later work;
+   specialization; [design](docs/INDIRECT-CALL-NEXT.md). It passes424 tests
+   per profile,123 harness checks, seven exact tests, nine suite commands and
+   203 strict native/cache checks. Current profiles precede full edited-command
+   comparisons against the wide-operation baseline and fixed anchor. Full-catalog selection remains later work;
    original checking and artifact identity requirements remain intact.
 5. **Use the stronger native controls already established.** Every current
    comparison uses matched two-worker Cargo and ordinary native libtest
