@@ -39,7 +39,7 @@ def load():
              'environment-main-qualification-01', 'environment-main-projects-01', 'environment-main-final-audit-01',
              'guarded-local-facts-build-03', 'guarded-local-facts-qualification-01',
              'guarded-local-facts-real-controls-01', 'guarded-local-facts-profile-01',
-             'guarded-local-facts-screen-token-01']
+             'guarded-local-facts-screen-token-continuation-01']
     paths = [ROOT / 'results' / name / 'summary.json' for name in names]
     proofs = [json.loads(p.read_text()) for p in paths]
     assert validate_baseline(*proofs[:5])

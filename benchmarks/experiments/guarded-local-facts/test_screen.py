@@ -1,10 +1,43 @@
 import copy
+import json
+from pathlib import Path
+import tempfile
 import unittest
 
 import screen
 
 
 class ScreenTests(unittest.TestCase):
+    def artifact(self, library, executable, test=True, kind='lib'):
+        return json.dumps(dict(reason='compiler-artifact', profile=dict(test=test), executable=str(executable),
+                               target=dict(kind=[kind], src_path=str(library))))
+
+    def test_native_artifact_accepts_nested_workspace_library_and_ignores_test_text(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve(); source=root/'source'; target=root/'target'
+            library=source/'crates/package/src/lib.rs'; library.parent.mkdir(parents=True); library.write_text('')
+            target.mkdir(); executable=target/'unit-test'; executable.write_bytes(b'native control')
+            text='{ordinary test output\n'+self.artifact(library,executable,False)+'\n'+self.artifact(library,executable)
+            self.assertEqual(screen.native_executable(text,source,target),executable)
+
+    def test_native_artifact_rejects_missing_duplicate_and_non_library_tests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve(); source=root/'source'; target=root/'target'
+            source.mkdir(); target.mkdir(); library=source/'lib.rs'; library.write_text('')
+            executable=target/'unit-test'; executable.write_bytes(b'native control')
+            unit=self.artifact(library,executable)
+            for text in ['',unit+'\n'+unit,self.artifact(library,executable,False),self.artifact(library,executable,kind='bin')]:
+                with self.assertRaises(AssertionError): screen.native_executable(text,source,target)
+
+    def test_native_artifact_requires_checkout_source_and_exact_target_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory).resolve(); source=root/'source'; target=root/'target'
+            source.mkdir(); target.mkdir(); library=source/'lib.rs'; library.write_text('')
+            executable=target/'unit-test'; executable.write_bytes(b'native control')
+            outside=root/'outside'; outside.write_bytes(b'unrelated')
+            for lib,exe in [(outside,executable),(library,outside)]:
+                with self.assertRaises(AssertionError): screen.native_executable(self.artifact(lib,exe),source,target)
+
     def control_proofs(self):
         build=dict(status='passed',tool_key=screen.BASELINE_KEY,
             binaries={'rust-interp-vm':'vm','rust-interp-mir-export':'exporter','rust-interp-rustc-wrapper':'wrapper'},

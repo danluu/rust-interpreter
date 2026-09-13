@@ -74,6 +74,26 @@ def native_outcomes(stdout, names, success):
     return [(name, 'passed' if statuses[name] == 'ok' else 'failed') for name in names]
 
 
+def native_executable(stdout, source, target):
+    """Cargo --package/--lib selects one test artifact, including workspace members."""
+    targets = []
+    for line in stdout.splitlines():
+        if not line.startswith('{'): continue
+        try:
+            unit = json.loads(line)
+        except json.JSONDecodeError:
+            continue  # ordinary captured test output is not Cargo JSON
+        if unit.get('reason') == 'compiler-artifact' and unit.get('profile', {}).get('test') and unit.get('executable'):
+            if unit['target']['kind'] == ['lib']:
+                library = Path(unit['target']['src_path']).resolve(strict=True)
+                executable = Path(unit['executable']).resolve(strict=True)
+                assert library.is_relative_to(source.resolve())
+                assert executable.is_relative_to(target.resolve())
+                targets.append(executable)
+    assert len(targets) == 1, 'missing or ambiguous library-test executable'
+    return targets[0]
+
+
 def protocol_states(original, case):
     """One complete edit history; rotate custom order and alternate native placement."""
     orders = ['0132', '1203', '2310', '3021']
@@ -129,8 +149,10 @@ def main():
     parser.add_argument('--cache-qualification', type=Path, required=True)
     parser.add_argument('--profile', type=Path, required=True)
     parser.add_argument('--harness', type=Path, required=True)
+    parser.add_argument('--retained-prefix', type=Path)
     args = parser.parse_args()
-    assert re.fullmatch('guarded-local-facts-screen-' + args.case + r'-\d{2}', args.run_id)
+    assert re.fullmatch('guarded-local-facts-screen-' + args.case + r'-(?:continuation-)?\d{2}', args.run_id)
+    assert ('-continuation-' in args.run_id) == bool(args.retained_prefix)
     project, variant, pattern, reference = CASES[args.case]
     case = WORKFLOWS[project] if variant is None else WORKFLOW_VARIANTS[project, variant]
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -139,7 +161,7 @@ def main():
         require_space(ROOT, admission)
         harness_path = args.harness.resolve(strict=True)
         harness = json.loads(harness_path.read_text())
-        assert harness['status'] == 'passed' and harness['tests'] == 9
+        assert harness['status'] == 'passed' and harness['tests'] == 12
         integration_path = ROOT / 'results/environment-read-build-02/summary.json'
         integration = json.loads(integration_path.read_text())
         harness_inputs = ROOT / harness['raw'] / 'inputs.json'
@@ -205,6 +227,42 @@ def main():
         paths += [tool / name for tool in tools.values() for name in builds['candidate']['binaries']]
         paths += [source / p for p in subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
                   if p and source / p != changed]
+        paths.append(Path(__file__).with_name('SCREEN-REPAIR.md'))
+        retained = None
+        native_target = ROOT / '.work' / args.run_id / 'native'
+        if args.retained_prefix:
+            prefix_path = args.retained_prefix.resolve(strict=True)
+            prefix = json.loads(prefix_path.read_text())
+            assert prefix['status'] == 'audited native-control parser failure'
+            assert prefix['commands'] == 1 and prefix['edited_pairs'] == prefix['candidate_commands'] == 0
+            assert prefix['source_restored'] and prefix['native_tests'] == len(names)
+            prefix_raw = ROOT / prefix['raw']
+            audit_inputs = prefix_raw / 'inputs.json'
+            audited_rows = prefix_raw / 'audited-records.json'
+            assert sha(audit_inputs) == prefix['inputs_sha256']
+            assert sha(audited_rows) == prefix['audited_records_sha256']
+            assert all(sha(ROOT / p) == h for p, h in json.loads(audit_inputs.read_text()).items())
+            retained, = json.loads(audited_rows.read_text())
+            prior_raw = ROOT / prefix['original_raw']
+            assert sha(prior_raw / 'plan.json') == prefix['original_plan_sha256']
+            assert sha(prior_raw / 'records.json') == prefix['original_records_sha256']
+            old_plan = json.loads((prior_raw / 'plan.json').read_text())
+            assert old_plan['tools'] == {m: b['tool_key'] for m, b in builds.items()}
+            assert old_plan['revision'] == ref['revision'] and old_plan['names'] == names
+            for path, digest in old_plan['frozen'].items():
+                if sha(ROOT / path) != digest:
+                    assert path == str(Path(__file__).relative_to(ROOT))
+                    original_driver = subprocess.check_output(['git', 'show', '85b42a59:' + path], cwd=ROOT)
+                    assert hashlib.sha256(original_driver).hexdigest() == digest
+            native_target = ROOT / prefix['native_cache']
+            expected_command = native_command(TOOLCHAIN, source / 'Cargo.toml', case['package'], native_target, 2, 'default', names)
+            expected_command.insert(expected_command.index('--'), '--message-format=json')
+            assert retained['command'] == list(map(str, expected_command))
+            assert retained['source_sha256'] == sha(changed) and retained['mode'] == 'native'
+            executable = native_executable(retained['stdout'], source, native_target)
+            assert sha(executable) == retained['native_executable']['sha256']
+            paths += [prefix_path, audit_inputs, audited_rows, prior_raw / 'plan.json', prior_raw / 'records.json',
+                      ROOT / retained['native_executable']['path']]
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
@@ -227,6 +285,8 @@ def main():
             timings='complete commands; native suite time from rounded libtest output, residual is not pure compilation',
             gate='candidate/baseline wall<1-AA wall; CPU<=1 and CPU+AA CPU<=1.05; screen admission only, not adoption; A/A is maximum absolute individual pair deviation, not a confidence interval',
             stop='retain any failure; no partial-pair splicing, automatic retry, or repeat to cross a gate')
+        plan.update(retained_commands=int(retained is not None), new_commands=39 if retained else 40,
+                    native_target=str(native_target.relative_to(ROOT)))
         write(work / 'plan.json', plan)
         env = {k: v for k, v in os.environ.items()
                if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
@@ -255,6 +315,16 @@ def main():
             cycle, state = sample['cycle'], sample['state']
             success = state != -1
             digest = sha(changed)
+            if retained is not None and cycle == 0 and state == 0 and mode == 'native':
+                assert not rows and previous[mode] is None and retained['source_sha256'] == digest
+                rows.append(retained)
+                previous[mode] = digest
+                space.append(dict(cycle=cycle, state=state, mode=mode, retained=True,
+                                  free_bytes=json.loads((prior_raw / 'space.json').read_text())[0]['free_bytes']))
+                write(work / 'space.json', space)
+                write(work / 'records.json', rows)
+                print('retained original native control; no command repeated', flush=True)
+                return retained
             assert previous[mode] != digest, 'an unchanged build entered the edit benchmark'
             suite_path = work / f'{cycle}-{state}-{mode}-suite.json'
             if mode in CUSTOM:
@@ -273,7 +343,7 @@ def main():
                 command += lookup_args(mode)
                 selected_env = guest
             else:
-                command = native_command(TOOLCHAIN, source / 'Cargo.toml', case['package'], work / mode,
+                command = native_command(TOOLCHAIN, source / 'Cargo.toml', case['package'], native_target,
                                          2, 'default', names)
                 command.insert(command.index('--'), '--message-format=json')
                 selected_env = env
@@ -334,16 +404,7 @@ def main():
                     row['function_cache'] = reports[0]
             else:
                 row['outcomes'] = native_outcomes(stdout, names, success)
-                targets=[]
-                for line in stdout.splitlines():
-                    if not line.startswith('{'): continue
-                    unit=json.loads(line)
-                    if unit.get('reason')=='compiler-artifact' and unit.get('profile',{}).get('test') and unit.get('executable'):
-                        target=unit['target']
-                        if target['kind']==['lib'] and Path(target['src_path']).resolve()==(source/'src/lib.rs').resolve():
-                            targets.append(Path(unit['executable']).resolve(strict=True))
-                executable,=targets
-                assert executable.is_relative_to((work/'native').resolve())
+                executable = native_executable(stdout, source, native_target)
                 row['native_executable']=snapshot(executable)
                 (ROOT/row['native_executable']['path']).chmod(executable.stat().st_mode & 0o777)
                 row['native_build_executable']=str(executable.relative_to(ROOT))
@@ -373,6 +434,7 @@ def main():
         assert not subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=source).strip()
         result = assessment(rows, args.case)
         result.update(status='passed', case=args.case, commands=len(rows), test_count=len(names), tests=names,
+            retained_commands=int(retained is not None), new_commands=39 if retained else 40,
             source_restored=True, test_source_unchanged=True,
             native_assertion_outcomes_match=True, candidate_control_bytecode_matches=True,
             tool_keys=plan['tools'], raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),

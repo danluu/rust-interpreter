@@ -19,7 +19,7 @@ def main():
         acquire_lock(lock, 45)
         require_space(ROOT, 8)
         work = ROOT / '.work' / args.run_id; work.mkdir(exist_ok=False)
-        paths = list(Path(__file__).parent.glob('*.py')) + [Path(__file__).with_name('PLAN.md'),Path(__file__).with_name('QUALIFICATION.md')]
+        paths = list(Path(__file__).parent.glob('*.py')) + [Path(__file__).with_name(name) for name in ['PLAN.md','QUALIFICATION.md','SCREEN-REPAIR.md']]
         paths += list((ROOT / 'scripts').glob('*.py'))
         hashes = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'inputs.json', hashes)
@@ -27,13 +27,13 @@ def main():
             cwd=Path(__file__).parent, env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'),
             receipt_path=work / 'active.json', receipt=dict(stage='local-fact screen protocol'))
         (work / 'stdout').write_text(out); (work / 'stderr').write_text(err)
-        assert child.returncode == 0 and 'Ran 9 tests' in err and err.rstrip().endswith('OK')
+        assert child.returncode == 0 and 'Ran 12 tests' in err and err.rstrip().endswith('OK')
         assert all(sha(ROOT / p) == h for p, h in hashes.items())
         result = ROOT / 'results' / args.run_id; result.mkdir(exist_ok=False)
-        write(result / 'summary.json', dict(status='passed', tests=9, commands=1,
+        write(result / 'summary.json', dict(status='passed', tests=12, commands=1,
             raw=str(work.relative_to(ROOT)), inputs_sha256=sha(work / 'inputs.json'),
             guest_commands=0, performance_measurement=False))
-        print('PASS: nine current-baseline screen controls', flush=True)
+        print('PASS: twelve current-baseline and native-artifact screen controls', flush=True)
 
 
 if __name__ == '__main__':
