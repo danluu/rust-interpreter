@@ -10,12 +10,20 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Evaluate a stronger bounded frame-initialization proof using typed bytecode.
-   The saved call-cost join is complete: copy precondition checks lead both
-   captures, with costs spread across many helpers. First test CFG definite
-   initialization and conservative direct-callee memory-effect summaries, then
-   measure coverage against the exact retained clearing PCs. Do not remove
-   runtime clearing or infer safety from rendered operation names.
+1. Extend the typed initialization diagnostic to constant-length memory
+   operations and bounded Local-plus-constant offsets. The first CFG/callee
+   summary version covers zero of the 110 / 100 saved clearing samples, despite
+   admitting 1,629,854 / 1,152,565 native calls. No runtime elision follows.
+   Its declines include explicit constant FillBytes and an in-frame constant
+   address offset; prove these forms and remeasure coverage before deciding.
+
+The initial diagnostic passes eight controls per profile, including 6,400
+independent byte-mask oracle cases. It examines 5,468 functions; 342 are confined
+and 635 pass the combined initialization proof. The failed first standalone
+compile executed no tests and is retained. The coverage audit verifies 53 frozen
+inputs and 313 source bindings. Controllers require the original
+`experiment/frame-initialization-cfg-20260913` source boundary.
+[Coverage and limitations](results/frame-initialization-cfg-coverage-01/assessment.md).
 
 The saved call-cost join reconciles 66,403,920 / 70,368,216 native direct calls
 and all 433 / 499 transition samples. Two join controls pass; 26 frozen inputs
