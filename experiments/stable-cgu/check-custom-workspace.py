@@ -24,6 +24,11 @@ def command_for(cargo, target):
             '--jobs', '2', '--target-dir', str(target)]
 
 
+def validate_cargo_file(cargo):
+    require(file_digest(Path(cargo['executable'])) == cargo['sha256'],
+            'workspace Cargo executable changed')
+
+
 def test_results(returncode, stdout):
     tests = [dict(passed=int(a), failed=int(b), ignored=int(c)) for a, b, c in re.findall(
         r'test result: .*? (\d+) passed; (\d+) failed; (\d+) ignored;', stdout)]
@@ -124,8 +129,8 @@ def main():
             def guard():
                 require(load_compiler(ROOT, compiler.key) == compiler, 'installed compiler changed')
                 installed_tools(key)
-                require(source_files() == frozen and file_digest(cargo['executable']) == cargo['sha256'],
-                        'workspace source or Cargo changed')
+                require(source_files() == frozen, 'workspace source changed')
+                validate_cargo_file(cargo)
                 require(all(file_digest(target / 'release' / name) == h for name, h in binaries.items()),
                         'custom target tool binaries differ from the installed toolset')
 

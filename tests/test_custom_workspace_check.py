@@ -17,6 +17,16 @@ SPEC.loader.exec_module(check)
 
 
 class CustomWorkspaceCheckTests(unittest.TestCase):
+    def test_json_cargo_path_accepts_matching_bytes_and_rejects_replacement(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'cargo'
+            path.write_bytes(b'qualified Cargo fixture')
+            cargo = {'executable': str(path), 'sha256': check.file_digest(path)}
+            check.validate_cargo_file(cargo)
+            path.write_bytes(b'different Cargo fixture')
+            with self.assertRaisesRegex(RuntimeError, 'Cargo executable changed'):
+                check.validate_cargo_file(cargo)
+
     def test_exact_custom_release_command(self):
         self.assertEqual(check.command_for('/pinned/cargo', Path('/owned/target')),
             ['/pinned/cargo', 'test', '--workspace', '--release', '--locked', '--offline',
