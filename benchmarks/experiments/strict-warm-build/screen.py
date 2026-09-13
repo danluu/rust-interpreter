@@ -556,6 +556,10 @@ def main():
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
             paths += [source / name for name in tracked if name and source / name != changed]
             frozen = {str(p): frozen_input_hash(p) for p in paths}
+            for qualification in [mono_qualification, source_observables]:
+                if qualification:
+                    require(all(frozen[p] == h for p, h in qualification['evidence_files'].items()),
+                            'qualification evidence changed between validation and freezing')
             plan = dict(schema_version=1, kind='mechanism-screen', owner=str(ROOT), project='nushell',
                 workflow='type-relations', candidate_policy=args.candidate_policy,
                 revision=revision, source=str(source), case=CASE,
