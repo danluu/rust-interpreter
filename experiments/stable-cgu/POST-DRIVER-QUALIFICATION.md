@@ -100,7 +100,9 @@ composition/current source, uses the same compiler-key Cargo target and ordinary
 release/jobs2 flags, selects matching installed rustdoc for doctests, retains
 raw version/test outputs and source snapshots, and reports the actual test
 counts. It checks the installed tools and original target binaries before and
-after. It does not publish tools or replace strict36. Its three pure boundary
+after. Repository `.cargo` files and explicit absence of both discovery filenames
+are part of the frozen snapshot; ambient doctest flags are rejected, including
+empty values. It does not publish tools or replace strict36. Its four pure boundary
 tests are prepared but unexecuted.
 
 Stdv2 setup preserves `-Zalways-encode-mir=yes -Zforce-unstable-if-unmarked`, the
