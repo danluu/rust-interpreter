@@ -221,3 +221,12 @@ include required stores. Apply suggestion1.4: keep it as a possible component,
 without an isolated timing screen. Inspect dead final-operation flushes next,
 using exact native spans and CFG liveness under2.1/2.4. No runtime is adopted.
 [Scratch evidence](../results/scratch-local-values-census-01/assessment.md).
+
+The exact flush census redirects the proposal: consumed last uses cover only8/8
+samples, while terminal branch operands dead on all successors cover112/157.
+The branch emitter can still read its retained facts after flushing. Implement
+successor-only flushing for ordinary regions, keeping tree-call tails and missing
+liveness conservative, then qualify and screen under1.2/1.3. This uses2.4 actual
+emission evidence without a new sample or premature arena redesign. Scratch
+forwarding stays parked; the larger mechanism has a smaller implementation.
+[Flush evidence](../results/consumed-flush-values-census-01/assessment.md).
