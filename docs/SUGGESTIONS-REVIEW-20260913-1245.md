@@ -79,3 +79,11 @@ logical/backend counts and remove only proved dead spill words. Next join the
 existing typed direct-call targets to saved protocol samples and adopted profiles
 to choose a mechanism from actual remaining costs. No compiler-workstream or
 worker-count change follows from this review.
+
+Follow-up through 15:49: the requested file still has the same hash. The call-cost
+join led to bounded CFG and constant-memory initialization diagnostics. The
+extension passes ten controls per profile but covers only 16 / 20 clearing
+samples (0.97% / 1.39% of generated-code samples, before guard/padding costs).
+Defer runtime clear elision; large eligible call counts do not establish savings.
+This closes the diagnostic without repeating any timing or changing the adopted
+runtime. Continue reviewing broader remaining costs within runtime ownership.
