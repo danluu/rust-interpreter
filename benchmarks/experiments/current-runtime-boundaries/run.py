@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Confirm interpreted boundaries on current, previously measured artifacts."""
+import argparse
 import json
 import os
 from pathlib import Path
@@ -13,7 +14,6 @@ from profile_vm_transitions import counts
 from suite_reports import read_report, validate_report, validate_runtime_limits
 from workflow_io import capture, require_space, write_json as write
 
-RUN = 'current-runtime-boundaries-01'
 KEY = '49746a2218dbfdccacac0031f47e7a13b0440489c226979ff3374f6f899e09f9'
 CASES = [
     ('token', 'call-capacity-credit-edit-token-02', [
@@ -25,6 +25,10 @@ CASES = [
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--run-id', required=True)
+    args = parser.parse_args()
+    assert re.fullmatch(r'[a-z0-9][a-z0-9-]*', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 8)
@@ -73,7 +77,7 @@ def main():
                     catalog=str(catalog.relative_to(ROOT)), catalog_sha256=sha(catalog),
                     limits=suite['runtime_limits']))
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in frozen_paths}
-        work = ROOT / '.work' / RUN
+        work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(owner=str(ROOT), tool_key=KEY, frozen=frozen,
             inputs=inputs, expected_commands=6, performance_measurement=False))
@@ -138,7 +142,7 @@ def main():
             assert all(sha(ROOT / p) == h for p,h in frozen.items())
             write(work / 'profiles.json', summaries)
             print(index, item['name'], 'PASS', pair['profile']['instructions'], 'logical instructions', flush=True)
-        result = ROOT / 'results' / RUN
+        result = ROOT / 'results' / args.run_id
         result.mkdir(exist_ok=False)
         write(result / 'summary.json', dict(status='passed', commands=len(records), profiled_tests=len(summaries),
             tool_key=KEY, vm_sha256=sha(vm), exact_logical_counts_memory_and_entropy=True,
