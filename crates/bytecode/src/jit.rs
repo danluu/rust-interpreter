@@ -2068,6 +2068,12 @@ mod constant_arguments;
 
 mod address_reuse;
 mod region_facts;
+mod range_groups;
+
+/// Offline conditional pointer-range groups; never changes generated code.
+pub fn range_group_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
+    range_groups::census(program, profile)
+}
 
 /// Offline normal-entry must-facts; does not alter or authorize native entries.
 pub fn region_fact_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {

@@ -115,6 +115,15 @@ This is conditional work under2.5, not permission to remove checks, change
 partial-write semantics or claim all Copy time as checking.
 [Typed census and scope](../results/region-facts-census-01/assessment.md).
 
+The entry-root range census now has full analysis coverage and twelve passing
+offline controls. Its narrow best-group model covers 24.34M /0.383M /0.993M
+conditional redundant checks. The next question is whether an explicit
+pointee/current-frame disjointness guard safely preserves pointer-slot identity
+across pointee writes. The strict model currently loses that identity after
+the first write; ignoring aliasing is not a valid optimization. Count this
+separately before implementation, keeping original-path fallback mandatory.
+[Range groups and limitations](../results/range-groups-census-01/assessment.md).
+
 Original integration checkpoint (subsequently completed): the rebuilt VM matches
 the measured runtime exactly;428 Rust tests per profile
 and223 new cache/Cargo commands pass. The first project qualification stopped

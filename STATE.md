@@ -25,8 +25,13 @@ its unstarted full comparison. Do not repeat the screen or infer a small gain
 from code size. The follow-up region-fact census passes 457 Rust tests/profile
 and eleven offline commands. It finds only 1,794 / 15,106 / 2 additional local
 accesses in admitted functions; the excluded NFA builder remains explicitly
-bounded in the report. Park local rematerialization and next count related
-pointer-access groups before implementing guarded region fast paths.
+bounded in the report. Park local rematerialization. The subsequent range-group census passes 466
+Rust tests/profile and twelve offline controls, with no exclusions. Its strict
+best-group model covers 24.34M /0.383M /0.993M conditional redundant checks.
+Next count an explicit pointee/current-frame disjointness condition: writes
+otherwise invalidate later frame-slot pointer loads, sharply limiting SipHash
+coverage. No unchecked or guarded execution change is implemented.
+[Range-group evidence](results/range-groups-census-01/assessment.md).
 [Region-fact decision](results/region-facts-census-01/assessment.md).
 [Qualification](results/checked-addresses-validation-01/assessment.md),
 [screen decision](results/checked-addresses-screen-token-01/assessment.md).
