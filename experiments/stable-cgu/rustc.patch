@@ -1,0 +1,341 @@
+diff --git a/compiler/rustc_interface/src/tests.rs b/compiler/rustc_interface/src/tests.rs
+index 41ce4fb75..bb49834c5 100644
+--- a/compiler/rustc_interface/src/tests.rs
++++ b/compiler/rustc_interface/src/tests.rs
+@@ -895,6 +895,7 @@ macro_rules! tracked {
+     tracked!(small_data_threshold, Some(16));
+     tracked!(split_lto_unit, Some(true));
+     tracked!(src_hash_algorithm, Some(SourceFileHashAlgorithm::Sha1));
++    tracked!(stable_cgu_partitioning, true);
+     tracked!(stack_protector, StackProtector::All);
+     tracked!(staticlib_hide_internal_symbols, true);
+     tracked!(staticlib_rename_internal_symbols, true);
+diff --git a/compiler/rustc_monomorphize/src/partitioning.rs b/compiler/rustc_monomorphize/src/partitioning.rs
+index 29b624afd..ff3ddfc6d 100644
+--- a/compiler/rustc_monomorphize/src/partitioning.rs
++++ b/compiler/rustc_monomorphize/src/partitioning.rs
+@@ -95,11 +95,14 @@
+ use std::cmp;
+ use std::collections::hash_map::Entry;
+ use std::fs::{self, File};
++use std::hash::Hash;
+ use std::io::Write;
+ use std::path::{Path, PathBuf};
+ 
+ use rustc_data_structures::either::Either;
++use rustc_data_structures::fingerprint::Fingerprint;
+ use rustc_data_structures::fx::{FxIndexMap, FxIndexSet};
++use rustc_data_structures::stable_hash::StableHasher;
+ use rustc_data_structures::sync::par_join;
+ use rustc_data_structures::unord::{UnordMap, UnordSet};
+ use rustc_hir::attrs::lang_items::LangItem;
+@@ -169,7 +172,15 @@ fn partition<'tcx, I>(
+     // estimates.
+     {
+         let _prof_timer = tcx.prof.generic_activity("cgu_partitioning_merge_cgus");
+-        merge_codegen_units(cx, &mut codegen_units);
++        if tcx.sess.opts.unstable_opts.stable_cgu_partitioning
++            && tcx.sess.opts.incremental.is_some()
++            && !tcx.sess.instrument_coverage()
++            && codegen_units.len() > tcx.sess.codegen_units().as_usize()
++        {
++            merge_codegen_units_stably(cx, &mut codegen_units);
++        } else {
++            merge_codegen_units(cx, &mut codegen_units);
++        }
+         debug_dump(tcx, "MERGE", &codegen_units);
+     }
+ 
+@@ -313,6 +324,53 @@ fn get_reachable_inlined_items<'tcx>(
+     }
+ }
+ 
++fn merge_codegen_units_stably<'tcx>(
++    cx: &PartitioningCx<'_, 'tcx>,
++    codegen_units: &mut Vec<CodegenUnit<'tcx>>,
++) {
++    let count = cx.tcx.sess.codegen_units().as_usize();
++    assert!(count >= 1);
++    assert!(codegen_units.is_sorted_by(|a, b| a.name().as_str() <= b.name().as_str()));
++
++    let mut name_builder = CodegenUnitNameBuilder::new(cx.tcx);
++    let mut buckets: Vec<_> = (0..count)
++        .map(|index| {
++            let name = name_builder.build_cgu_name(
++                LOCAL_CRATE,
++                ["stable-cgu-v1"],
++                Some(format!("{count}-{index}")),
++            );
++            let mut cgu = CodegenUnit::new(name);
++            cgu.set_symbol_name(Symbol::intern(&rustc_symbol_mangling::mangle_cgu(
++                cx.tcx,
++                LOCAL_CRATE,
++                Either::Right(cgu.name().as_str()),
++            )));
++            cgu
++        })
++        .collect();
++
++    for mut source in codegen_units.drain(..) {
++        let mut hasher = StableHasher::new();
++        source.name().as_str().hash(&mut hasher);
++        let hash: Fingerprint = hasher.finish();
++        let index = (hash.to_smaller_hash().as_u64() % count as u64) as usize;
++        let destination = &mut buckets[index];
++        for (item, data) in source.items_mut().drain(..) {
++            if let Some(previous) = destination.items_mut().insert(item, data) {
++                assert!(previous.inlined && data.inlined);
++                assert_eq!(previous, data);
++            }
++        }
++    }
++
++    for cgu in &mut buckets {
++        cgu.compute_size_estimate();
++    }
++    buckets.sort_by(|a, b| a.name().as_str().cmp(b.name().as_str()));
++    *codegen_units = buckets;
++}
++
+ // This function requires the CGUs to be sorted by name on input, and ensures
+ // they are sorted by name on return, for deterministic behaviour.
+ fn merge_codegen_units<'tcx>(
+diff --git a/compiler/rustc_session/src/options.rs b/compiler/rustc_session/src/options.rs
+index 8fd9c4da9..34b188fb9 100644
+--- a/compiler/rustc_session/src/options.rs
++++ b/compiler/rustc_session/src/options.rs
+@@ -2879,6 +2879,8 @@ pub(crate) fn parse_rust_version(slot: &mut Option<RustcVersion>, v: Option<&str
+         "enable LTO unit splitting (default: no)"),
+     src_hash_algorithm: Option<SourceFileHashAlgorithm> = (None, parse_src_file_hash, [TRACKED],
+         "hash algorithm of source files in debug info (`md5`, `sha1`, or `sha256`)"),
++    stable_cgu_partitioning: bool = (false, parse_bool, [TRACKED],
++        "merge incremental codegen units into stable hash buckets (default: no)"),
+     #[rustc_lint_opt_deny_field_access("use `Session::stack_protector` instead of this field")]
+     stack_protector: StackProtector = (StackProtector::None, parse_stack_protector, [TRACKED] { MITIGATION: StackProtector },
+         "control stack smash protection strategy (`rustc --print stack-protector-strategies` for details)"),
+diff --git a/tests/codegen-units/partitioning/stable-merging.rs b/tests/codegen-units/partitioning/stable-merging.rs
+new file mode 100644
+index 000000000..f8e622137
+--- /dev/null
++++ b/tests/codegen-units/partitioning/stable-merging.rs
+@@ -0,0 +1,26 @@
++//@ incremental
++//@ compile-flags: -Copt-level=0 -Ccodegen-units=1 -Zstable-cgu-partitioning
++
++#![crate_type = "rlib"]
++
++pub mod first {
++    //~ MONO_ITEM fn first::value @@ stable_merging-stable-cgu-v1.1-0[External]
++    pub fn value(x: u64) -> u64 {
++        super::shared::twice(x)
++    }
++}
++
++pub mod second {
++    //~ MONO_ITEM fn second::value @@ stable_merging-stable-cgu-v1.1-0[External]
++    pub fn value(x: u64) -> u64 {
++        super::shared::twice(x) + 1
++    }
++}
++
++pub mod shared {
++    //~ MONO_ITEM fn shared::twice @@ stable_merging-stable-cgu-v1.1-0[Internal]
++    #[inline(always)]
++    pub fn twice(x: u64) -> u64 {
++        x * 2
++    }
++}
+diff --git a/tests/run-make/stable-cgu-partitioning/rmake.rs b/tests/run-make/stable-cgu-partitioning/rmake.rs
+new file mode 100644
+index 000000000..b21f6cc10
+--- /dev/null
++++ b/tests/run-make/stable-cgu-partitioning/rmake.rs
+@@ -0,0 +1,188 @@
++//@ ignore-cross-compile
++//@ ignore-backends: gcc
++
++use std::collections::{BTreeMap, BTreeSet};
++
++use run_make_support::{Rustc, rfs, run, rustc};
++
++#[derive(Debug)]
++struct Partition {
++    items: BTreeMap<String, String>,
++    reuse: BTreeMap<String, String>,
++}
++
++fn compiler(count: usize, enabled: bool, cache: &str, coverage: bool) -> Rustc {
++    let mut command = rustc();
++    command
++        .input("library.rs")
++        .crate_name("stable_test")
++        .crate_type("rlib")
++        .output("libstable_test.rlib")
++        .metadata("stable_cgu_partitioning_test")
++        .codegen_units(count)
++        .incremental(cache)
++        .arg("-Cdebuginfo=2")
++        .arg("-Zhuman-readable-cgu-names")
++        .arg("-Zprint-mono-items=yes")
++        .arg("-Zquery-dep-graph")
++        .arg(format!("-Zstable-cgu-partitioning={enabled}"));
++    if coverage {
++        command.arg("-Cinstrument-coverage");
++    }
++    command
++}
++
++fn compile(count: usize, enabled: bool, cache: &str, coverage: bool) -> Partition {
++    let output = compiler(count, enabled, cache, coverage).run().stdout_utf8();
++    let mut result = Partition { items: BTreeMap::new(), reuse: BTreeMap::new() };
++    for line in output.lines() {
++        if let Some(item) = line.strip_prefix("MONO_ITEM ") {
++            let (name, units) = item.split_once(" @@ ").unwrap();
++            result.items.insert(name.to_owned(), units.to_owned());
++        } else if let Some(reuse) = line.strip_prefix("CGU_REUSE ") {
++            let (name, kind) = reuse.split_once(' ').unwrap();
++            result.reuse.insert(name.to_owned(), kind.to_owned());
++        }
++    }
++    assert!(!result.items.is_empty());
++    assert!(!result.reuse.is_empty());
++    result
++}
++
++fn source(modules: usize, edited: bool, added: bool) -> String {
++    let mut source = String::from(
++        "#![allow(dead_code)]\n\
++         pub static VALUE: u64 = 9;\n\
++         pub static REFERENCE: &u64 = &VALUE;\n\
++         #[inline(always)] pub fn twice<T: Into<u64>>(x: T) -> u64 { x.into() * 2 }\n\
++         std::thread_local! { static LOCAL: std::cell::Cell<u64> = const { std::cell::Cell::new(7) }; }\n",
++    );
++    for index in 0..modules {
++        let body = if edited && index == 0 {
++            format!("{} super::twice(x) + 100", "let x = std::hint::black_box(x);".repeat(60))
++        } else if index == 0 {
++            "let x = std::hint::black_box(x); super::twice(x)".to_owned()
++        } else {
++            format!("super::twice(x) + {index}")
++        };
++        source += &format!(
++            "pub mod m{index} {{ #[inline(never)] pub fn value(x: u64) -> u64 {{ {body:4096} }} }}\n",
++        );
++    }
++    source += "pub fn evaluate() -> u64 { assert_eq!(*REFERENCE, 9); LOCAL.with(|v| { assert_eq!(v.replace(8), 7); v.set(7); }); 0";
++    for index in 0..modules {
++        source += &format!(" + m{index}::value(10)");
++    }
++    source += " }\n";
++    if added {
++        source += "pub mod added { pub fn value(x: u64) -> u64 { x + 73 } }\n";
++    }
++    source
++}
++
++fn execute(expected: usize) {
++    rfs::write(
++        "main.rs",
++        format!(
++            "extern crate stable_test; fn main() {{ assert_eq!(stable_test::evaluate(), {expected}); }}\n"
++        ),
++    );
++    rustc().input("main.rs").extern_("stable_test", "libstable_test.rlib").run();
++    run("main");
++}
++
++fn main() {
++    let modules = 12;
++    let expected = modules * 20 + modules * (modules - 1) / 2;
++    for count in [1, 2, 4, 8] {
++        let cache = format!("incr-{count}");
++        rfs::write("library.rs", source(modules, false, false));
++        let original = compile(count, true, &cache, false);
++        execute(expected);
++        assert_eq!(original.reuse.len(), count);
++
++        rfs::write("library.rs", source(modules, true, false));
++        let edited = compile(count, true, &cache, false);
++        execute(expected + 100);
++        assert_eq!(original.items, edited.items);
++        assert_eq!(
++            original.reuse.keys().collect::<Vec<_>>(),
++            edited.reuse.keys().collect::<Vec<_>>()
++        );
++        assert!(edited.reuse.values().any(|kind| kind == "No"));
++        if count > 1 {
++            assert!(edited.reuse.values().any(|kind| kind != "No"));
++        }
++
++        rfs::write("library.rs", source(modules, true, true));
++        let added = compile(count, true, &cache, false);
++        execute(expected + 100);
++        for (item, units) in &edited.items {
++            assert_eq!(added.items.get(item), Some(units));
++        }
++        assert!(added.items.keys().any(|item| item.contains("added::value")));
++
++        rfs::write("library.rs", source(modules, false, false));
++        let restored = compile(count, true, &cache, false);
++        execute(expected);
++        assert_eq!(original.items, restored.items);
++
++        compile(count, false, &cache, false);
++        execute(expected);
++        compile(count, true, &cache, false);
++        execute(expected);
++    }
++
++    rfs::write("library.rs", source(65, false, false));
++    let empty = compile(64, true, "empty", false);
++    execute(65 * 20 + 65 * 64 / 2);
++    assert_eq!(empty.reuse.len(), 64);
++    let occupied: BTreeSet<_> = empty
++        .items
++        .values()
++        .flat_map(|units| units.split_whitespace().map(|unit| unit.split_once('[').unwrap().0))
++        .collect();
++    assert!(occupied.len() < 64);
++    compile(64, true, "empty", false);
++
++    rfs::write("library.rs", source(modules, false, false));
++    let ordinary = compile(4, false, "coverage-off", true);
++    let fallback = compile(4, true, "coverage-on", true);
++    assert_eq!(ordinary.items, fallback.items);
++
++    for (bad_body, code) in [
++        ("fn unused() { let _: u32 = \"bad\"; }", "E0308"),
++        ("fn unused() { let v = vec![1]; let r = &v; drop(v); println!(\"{:?}\", r); }", "E0505"),
++    ] {
++        rfs::write("library.rs", source(modules, false, false) + bad_body);
++        compiler(4, true, "incr-4", false).run_fail().assert_stderr_contains(code);
++        rfs::write("library.rs", source(modules, false, false));
++        compile(4, true, "incr-4", false);
++        execute(expected);
++    }
++
++    let changed_count = compile(2, true, "incr-4", false);
++    assert_eq!(changed_count.reuse.len(), 2);
++    execute(expected);
++
++    let unmerged_off = compile(256, false, "unmerged-off", false);
++    let unmerged_on = compile(256, true, "unmerged-on", false);
++    assert_eq!(unmerged_off.items, unmerged_on.items);
++
++    let mut outputs = Vec::new();
++    for enabled in [false, true] {
++        outputs.push(
++            rustc()
++                .input("library.rs")
++                .crate_name("stable_test")
++                .crate_type("rlib")
++                .codegen_units(4)
++                .arg("-Zhuman-readable-cgu-names")
++                .arg("-Zprint-mono-items=yes")
++                .arg(format!("-Zstable-cgu-partitioning={enabled}"))
++                .run()
++                .stdout_utf8(),
++        );
++    }
++    assert_eq!(outputs[0], outputs[1]);
++}

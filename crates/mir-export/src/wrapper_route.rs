@@ -2,6 +2,8 @@
 //! Keep this module independent of rustc_driver and of exporter dependencies.
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+#[path = "host_proc_macro.rs"]
+mod host_proc_macro;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum BorrowckCacheMode {
@@ -36,6 +38,9 @@ pub struct Environment {
     pub primary_package: bool,
     pub manifest: Option<OsString>,
     pub borrowck_cache: Option<OsString>,
+    pub compiler_rustc: Option<OsString>,
+    pub stable_cgu_partitioning: Option<OsString>,
+    pub host_proc_macro_opt: Option<OsString>,
 }
 
 impl Environment {
@@ -51,6 +56,9 @@ impl Environment {
             primary_package: std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some(),
             manifest: std::env::var_os("CARGO_MANIFEST_DIR"),
             borrowck_cache: std::env::var_os("RUST_INTERP_BORROWCK_CACHE"),
+            compiler_rustc: std::env::var_os("RUST_INTERP_COMPILER_RUSTC"),
+            stable_cgu_partitioning: std::env::var_os("RUST_INTERP_STABLE_CGU_PARTITIONING"),
+            host_proc_macro_opt: std::env::var_os("RUST_INTERP_HOST_PROC_MACRO_OPT"),
         }
     }
 }
@@ -61,11 +69,24 @@ pub struct Route {
     pub wrapper: bool,
     pub export: bool,
     pub borrowck_cache: BorrowckCacheMode,
+    pub custom_compiler: bool,
+    pub host_proc_macro_opt: bool,
 }
 
 impl Route {
     pub fn requires_exporter(&self) -> bool {
         self.export || borrowck_driver_required(&self.args, self.borrowck_cache)
+    }
+
+    pub fn check_compiler(&self, sysroot: &Path) -> Result<(), String> {
+        if self.wrapper && (self.custom_compiler || self.host_proc_macro_opt || self.requires_exporter()) {
+            let expected = sysroot.join("bin/rustc").canonicalize();
+            let supplied = Path::new(&self.args[0]).canonicalize();
+            if !matches!((&expected, &supplied), (Ok(a), Ok(b)) if a == b) {
+                return Err("compiler executable does not match the exporter's build toolchain".into());
+            }
+        }
+        Ok(())
     }
 }
 
@@ -126,6 +147,58 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
     if wrapper {
         args.remove(0);
     }
+    let custom_compiler = env.compiler_rustc.is_some();
+    let host_proc_macro_opt = match env.host_proc_macro_opt.as_deref().map(OsStr::to_str) {
+        None | Some(Some("off")) => false,
+        Some(Some("on")) => true,
+        _ => return Err("RUST_INTERP_HOST_PROC_MACRO_OPT must be off or on".into()),
+    };
+    if host_proc_macro_opt && (!wrapper || custom_compiler || borrowck_cache != BorrowckCacheMode::Off ||
+        env.std_sysroot.as_ref().is_none_or(String::is_empty) || env.std_target.as_ref().is_none_or(String::is_empty)) {
+        return Err("host proc-macro optimization requires public compiler Cargo wrapping with complete std-MIR context and borrowck cache off".into());
+    }
+    // Policy conflicts concern original Cargo/user flags, not sysroot/MIR
+    // additions that this shared router may make below.
+    let host_proc_macro_args = host_proc_macro_opt.then(|| args.clone());
+    match (&env.compiler_rustc, &env.stable_cgu_partitioning) {
+        (None, None) => {}
+        (Some(compiler), Some(policy)) if wrapper => {
+            if Path::new(compiler) != Path::new(&args[0]) || !Path::new(compiler).is_absolute() {
+                return Err("custom compiler setting does not match Cargo's rustc executable".into());
+            }
+            let value = match policy.to_str() {
+                Some("off") => "no",
+                Some("on") => "yes",
+                _ => return Err("RUST_INTERP_STABLE_CGU_PARTITIONING must be off or on".into()),
+            };
+            if args.iter().any(|arg| arg.starts_with('@')) {
+                return Err("custom compiler policy does not support response files".into());
+            }
+            let mut options = args.iter().skip(1);
+            while let Some(option) = options.next() {
+                let unstable = if option == "-Z" { options.next().map(String::as_str) }
+                    else { option.strip_prefix("-Z") };
+                if let Some(unstable) = unstable {
+                    let unstable = unstable.replace('_', "-");
+                    if unstable.split('=').next() == Some("stable-cgu-partitioning") {
+                        return Err("custom compiler policy conflicts with an explicit stable-CGU flag".into());
+                    }
+                }
+                let sysroot = if option == "--sysroot" { options.next().map(String::as_str) }
+                    else { option.strip_prefix("--sysroot=") };
+                if let Some(sysroot) = sysroot {
+                    let native = Path::new(compiler).parent().and_then(Path::parent);
+                    let explicit_target = args.iter().any(|arg| arg == "--target" || arg.starts_with("--target="));
+                    let guest = explicit_target.then(|| env.std_sysroot.as_deref().map(Path::new)).flatten();
+                    if Some(Path::new(sysroot)) != native && Some(Path::new(sysroot)) != guest {
+                        return Err("custom compiler conflicts with an explicit sysroot".into());
+                    }
+                }
+            }
+            args.push(format!("-Zstable-cgu-partitioning={value}"));
+        }
+        _ => return Err("custom compiler and stable-CGU policy require a complete Cargo wrapper invocation".into()),
+    }
     if wrapper && let Some(sysroot) = &env.std_sysroot {
         let value = |flag: &str| {
             args.iter().enumerate().find_map(|(index, arg)| {
@@ -182,10 +255,15 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
             || (env.export_package.is_some() && !env.export_test && !library)
             || wrong_manifest
             || (env.export_test && !test_compilation));
+    if let Some(original) = host_proc_macro_args {
+        args.extend(host_proc_macro::additions(&original, export)?);
+    }
     Ok(Route {
         args,
         wrapper,
         export,
         borrowck_cache,
+        custom_compiler,
+        host_proc_macro_opt,
     })
 }

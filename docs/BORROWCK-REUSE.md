@@ -99,8 +99,10 @@ that fixture does not establish a gain for those Nushell runs.
 This change targets work inside compiler processes. It does not
 eliminate Cargo's downstream invocations, macro expansion, native build scripts
 or all query recomputation. Further compiler-level reuse remains necessary to
-approach the proposed 0.5 s complete warm-build target. The earlier instruction
-not to run new benchmarks remains in force; performance qualification is open.
+approach the proposed 0.5 s complete warm-build target. The user clarified that
+the restriction on new benchmarks applied only to the initial report. The
+[active optimization protocol](../benchmarks/experiments/strict-warm-build/PROTOCOL.md)
+allows benchmarking; performance qualification of this feature remains open.
 
 In particular, a wrapper cannot safely suppress downstream compilation using
 only a public-signature hash: exported generics, constants, macros, trait

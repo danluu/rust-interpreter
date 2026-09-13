@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "status": "stage2 runtime and complete required Darwin strip support qualified; immutable installation/full interpreter integration and performance screen are separate steps",
+  "base_source_commit": "cea272fa356e94bd2ee2cadf376630aa0683867a",
+  "source_commit": "73a11f167216d3955c277ed47f9b8cc68208105b",
+  "patch_sha256": "26301f52c1e00805502bb3a8d0cfc646ae62c159fd25c2756474712aba986e60",
+  "bootstrap_sha256": "1962bcb231d2136d1d87ad081329d88348e921b56bc06675170d9f38378034a2",
+  "files": {
+    "compiler/rustc_interface/src/tests.rs": "f16132a089375730571e8ea392406eacf95c5ae4f59ccd55ade33edb69efa26c",
+    "compiler/rustc_monomorphize/src/partitioning.rs": "32fde9be24d9a3d3855f5593e6d5ec81871a4f1d4dc93fa718e9bfb980a32912",
+    "compiler/rustc_session/src/options.rs": "eff7fd9f79db90a57828f3f35ae0f722b53d9a3acad2f8c85231656cbcd90ab1",
+    "tests/codegen-units/partitioning/stable-merging.rs": "811af8b7b746d950fc176173db33935ea5980b18aa5d288c39b564f6b2c5f013",
+    "tests/run-make/stable-cgu-partitioning/rmake.rs": "24ba649acc941e59a5dbffd1ee3bc3b4c73daaf1ec3129a2373b12675d6e94ed"
+  },
+  "llvm": {
+    "url": "https://ci-artifacts.rust-lang.org/rustc-builds/cea272fa356e94bd2ee2cadf376630aa0683867a/rust-dev-nightly-aarch64-apple-darwin.tar.xz",
+    "sha256": "0035445cb01c652999862c240d3c8ce663247abdc410482dde10f9e9c264bf8f",
+    "version": "23.1.1-rust-1.100.0-nightly"
+  },
+  "bootstrap_stage0": "src/stage0 pinned beta2026-08-30",
+  "scope": "owned local experimental compiler; no upstream publication",
+  "setup_receipts": {
+    "fetch-receipt.json": "10cb555e9afdb16f2dec55e2843f77ce6c371a20aa4985af8a1a6210910e987f",
+    "prepare-receipt.json": "aae534b7e028531996b193de9a1b758e2b2c149c81cd9b5c62e029bd734056c9"
+  },
+  "preliminary_stage1": {
+    "config_sha256": "8c44b3232f6a8d93d96ed6fb81ce6f2dd80d519c411483788470a9801fec87df",
+    "rustc_commit_reporting": "unknown due ordinary dev-channel omit-git-hash default; final config explicitly disables omission",
+    "partition_tests_passed": 14,
+    "run_make_histories_passed": 1,
+    "build_receipt_sha256": "dbec11a4c6c2ede88b1148e94ffb116b5e92b61779e84343bdbf03210433819a",
+    "test_receipt_sha256": "9b1b66e05465205d3e45ee84f0ccea60326a5d927642390f8654ca92fa939c33"
+  },
+  "packaging": {
+    "strategy": "assembled stage2 runtime plus stock dist rustc-dev/rust-std images, matching installed pinned rust-src",
+    "source_comparison_sha256": "46160272f465df0be132b1302ad92118b400c47c0b06c44aa5128a9e161779b0",
+    "main_library_files_matching": 2305,
+    "backtrace_files_matching": 79,
+    "final_installation_owner": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913",
+    "installer": "scripts/custom_compiler.py",
+    "status": "runtime plus exact CI objcopy support package qualified; full interpreter integration remains separate",
+    "package_receipt_sha256": "6af17f3f09f6c00599053d0172a55ff325d39edbfedfcdeb4c5352df8ad939b6",
+    "package_provenance_sha256": "560112aa9c86d59eb7fc07cb174c01e10e089565ae842cb3dcc9a34175a9f28f",
+    "qualified_runtime_files_preserved": 60,
+    "package_files": 6983,
+    "package_files_unchanged_after_native_controls": 6983,
+    "prefix": "/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-build-01/packaged-stage2-06",
+    "provenance_path": "/Users/danluu/dev/rust-interp-stable-cgu-20260913/.work/stable-cgu-compiler-build-01/package-06/provenance.json",
+    "superseded_attempts": "package01 admission timeout; package02 rejected live source link; package03/native01 passed but completeness audit found omitted LLVM native alias; package04 admission timeout; package05/native02 is final; package05 passed limited native checks but lacked normal Darwin strip support; package06 adds only verified rust-objcopy and passes6 focused native strip/proc-macro states",
+    "original_native_control_result_sha256": "39baf5bb34d9e359dbc036903cb29965314561113fbaa57da3cff76f515f6400",
+    "previous_package_files_preserved": 6982,
+    "strip_control_result_sha256": "e32b5c82be4c0d394982d594473b901ade64d9518d8cd205957db6d2330b47cb",
+    "support_tool": {
+      "path": "lib/rustlib/aarch64-apple-darwin/bin/rust-objcopy",
+      "sha256": "41f770659a8429c0d1239b103da688041df424998529775bfa9b6d97a0011e95",
+      "size": 244992
+    },
+    "llvm_source_proof_sha256": "199ac9113be91efcf6e3d5225a96966c1d36834e05fc1dadb150ca1d05762dd6"
+  },
+  "final_stage2": {
+    "controls": {
+      "stage2": {
+        "receipt_sha256": "2f5619beadda1b1da11d61076c2942368c75349e222294c4e13e81c4a16db0a0",
+        "command": [
+          "./x",
+          "build",
+          "--stage",
+          "2",
+          "compiler/rustc",
+          "library",
+          "--jobs",
+          "2"
+        ],
+        "returncode": 0,
+        "elapsed_seconds": 813.6222369670868,
+        "log_sha256": "dc8e527c1cce5e9850846d53100d88bee58c0a036b74b27815fffa8253629d5c"
+      },
+      "stage2-option-hash": {
+        "receipt_sha256": "5c33e34308cfa31c73c1da7be89e42e5250ea0b6c2ff2b4ff1163556f7ec2331",
+        "command": [
+          "./x",
+          "test",
+          "--stage",
+          "2",
+          "compiler/rustc_interface",
+          "--test-args",
+          "test_unstable_options_tracking_hash",
+          "--jobs",
+          "2"
+        ],
+        "returncode": 0,
+        "elapsed_seconds": 454.15469574928284,
+        "log_sha256": "73295a29b69b900dccbc5d64c4a82d51efd926b9869cbe1bb00b84d510d5add9"
+      },
+      "stage2-tests": {
+        "receipt_sha256": "32ae16b5363f474fa25d3c9298a59326224b5f7efda02eb97d714fff4c40b67b",
+        "command": [
+          "./x",
+          "test",
+          "--stage",
+          "2",
+          "tests/codegen-units/partitioning",
+          "tests/run-make/stable-cgu-partitioning",
+          "--jobs",
+          "2"
+        ],
+        "returncode": 0,
+        "elapsed_seconds": 93.39055895805359,
+        "log_sha256": "a189ee781baa7991e855bc043a41c67abf67ce68e8d7cc222ad89eb69f8afb47"
+      },
+      "stage2-dist-04": {
+        "receipt_sha256": "6fd4f1757959d1c287cd35578340ad7544625382bd13c47821dc592d66f62adc",
+        "command": [
+          "./x",
+          "dist",
+          "--stage",
+          "2",
+          "rustc-dev",
+          "rust-std",
+          "--jobs",
+          "2"
+        ],
+        "returncode": 0,
+        "elapsed_seconds": 34.64967393875122,
+        "lock_wait_seconds": 5.3633339405059814,
+        "log_sha256": "994d299e110c77b27fb7dc0a9ea685c4d19d4773cfd43284d2a15f8774c7f178"
+      }
+    },
+    "unchanged_runtime_files_after_tests": 59,
+    "test_setup_added_files": [
+      "bin/rustdoc"
+    ],
+    "rustc_sha256": "d8478814170ccb30b6e16a0763a9b81935be50378b4c7d9e3f29bdc164fd6546",
+    "driver_sha256": "a83fa10ca89ebd39a7d88d862aecd6b6e8209debd005ca798031852373f2ad23",
+    "native_controls": {
+      "states_passed": 15,
+      "commands_passed": 30,
+      "counts": [
+        1,
+        4,
+        64
+      ],
+      "states": [
+        "cold",
+        "edited",
+        "restored",
+        "off",
+        "on"
+      ],
+      "result_sha256": "39baf5bb34d9e359dbc036903cb29965314561113fbaa57da3cff76f515f6400",
+      "compiler_sha256": "d8478814170ccb30b6e16a0763a9b81935be50378b4c7d9e3f29bdc164fd6546",
+      "package_files_unchanged": 6982
+    }
+  },
+  "production_profile": {
+    "status": "source-only follow-on plan; not built",
+    "plan": "PRODUCTION-PLAN.md",
+    "plan_sha256": "ef09c515de93a3536a7afdaa312e315c67308d698b0509baebab8282b3f5ca40",
+    "current_compiler_debug_assertions": true,
+    "current_compiler_overflow_checks": true,
+    "current_native_std_debug_assertions": true,
+    "current_native_std_overflow_checks": true,
+    "no_profile_gain_attribution_to_grouping": true,
+    "previous_plan_sha256": "d2ea60fea92484877bb0ba283bc769f6f62c6910f77410e677127b172b75c817",
+    "source_paths_plan": "SOURCE-PATHS-PLAN.md",
+    "source_paths_plan_sha256": "5d1ef6f9965c6ca4fa90848fccd2b01adf56735912d711e1b165e7787e524801",
+    "proposed_bootstrap": "bootstrap-production-source-paths.toml",
+    "proposed_bootstrap_sha256": "71b495da8fc35ca1321322f56065eb149ecd82fa3c8ff7ef4d4c10ec53f0df9b",
+    "source_path_repair_requires_rebuild": true,
+    "strict_actual_diagnostics_required": true
+  },
+  "support_controls": {
+    "states_passed": 6,
+    "commands_passed": 15,
+    "strip_modes": [
+      "none",
+      "debuginfo",
+      "symbols"
+    ],
+    "kinds": [
+      "binary",
+      "proc-macro"
+    ],
+    "symbol_stats": {
+      "binary": {
+        "none": {
+          "symbols": 6144,
+          "debug_symbols": 4123
+        },
+        "debuginfo": {
+          "symbols": 2021,
+          "debug_symbols": 0
+        },
+        "symbols": {
+          "symbols": 70,
+          "debug_symbols": 0
+        }
+      },
+      "proc-macro": {
+        "none": {
+          "symbols": 6470,
+          "debug_symbols": 4394
+        },
+        "debuginfo": {
+          "symbols": 2076,
+          "debug_symbols": 0
+        },
+        "symbols": {
+          "symbols": 62,
+          "debug_symbols": 0
+        }
+      }
+    },
+    "result_sha256": "e32b5c82be4c0d394982d594473b901ade64d9518d8cd205957db6d2330b47cb",
+    "all_package_files_unchanged": 6983
+  }
+}

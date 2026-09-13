@@ -18,6 +18,10 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    if let Err(error) = route.check_compiler(std::path::Path::new(env!("RUST_INTERP_SYSROOT"))) {
+        eprintln!("{error}");
+        return ExitCode::from(2);
+    }
     let mut command = if route.requires_exporter() {
         let executable = match std::env::current_exe() {
             Ok(path) => path.with_file_name("rust-interp-mir-export"),
