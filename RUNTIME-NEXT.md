@@ -4,17 +4,17 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: complete the primary-first scalar Copy comparison. The emitter
-uses existing proven local ranges and reduces local Copy8 from seven words to
-three. It passes441 Rust tests per profile,125 current harness checks and222
-real correctness/profile commands. Its40-command screen passes with wall−5.46%
-and CPU−3.47%, beyond4.84%/2.57% A/A. Four full cases now pass594 commands. Token gains5.11% wall/3.91% CPU beyond
-3.62%/2.45% A/A; all three completed guards pass within variation. Nushell
-refused storage admission before any case command. Retire exact completed
-public caches and resume only that unstarted case, preserving the594 commands.
-No adoption until all required gates and final audits pass. The
-selection came from current Copy sample shares of24.34%/18.26%, with all3,985
-generated samples assigned. Keep the original screen separate from full pairs.
+Current action: qualify the bounded reuse-miss/current-MIR observer. The scalar
+Copy candidate is now parked: all726 commands and the final8,999-input audit
+pass correctness, token improves5.11% wall/3.91% CPU beyond3.62%/2.45% A/A, and
+three other guards pass. Nushell's wall margin1.09305 fails the1.05 bound because
+A/A is10.53%; its point estimate is−1.22%, not an observed slowdown. Keep every
+result and do not rerun the unchanged candidate. The emitter change remains
+experimental despite441 Rust tests/profile,125 harness checks, five continuation
+checks and222 real correctness/profile commands. Current Copy sample shares
+24.34%/18.26% explain its implementation, but do not override the complete gate.
+The new diagnostic joins cache payload absence/redness to lowering costs and
+classifies already-decoded replay recipes; it changes no checking or reuse.
 Post-execution maps pass436 Rust tests per profile,
 103 harness checks and10 real-test commands; all three current generated code
 dumps and per-PC profiles match the adopted runtime exactly.
@@ -35,7 +35,7 @@ still requires every declared guard.
 [Verified operation maps](results/operation-map-validation-01/assessment.md),
 [Operation attribution](results/operation-map-sampling-01/assessment.md),
 [Scalar-copy screen](results/scalar-copy-operands-screen-token-01/assessment.md),
-[Four-case result](results/scalar-copy-operands-full-01-admission/assessment.md),
+[Complete scalar-copy decision](results/scalar-copy-operands-admission-resume-01/assessment.md),
 [Full protocol](benchmarks/experiments/scalar-copy-operands/FULL.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Binding decision](results/replay-costs-token-02/assessment.md),

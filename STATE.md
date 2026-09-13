@@ -31,23 +31,25 @@ profile,103 harness checks and10 real-test commands. All three current code
 dumps and per-PC profiles match adopted main exactly. Two fresh same-process
 samples now assign all3,985 generated samples: Copy accounts for24.34%/18.26% of
 block/exhaustive generated samples. An offline Copy8 audit identifies redundant
-local address calculations. The scalar-copy candidate passes441 Rust tests per
-profile,125 current harness checks and222 real correctness/profile commands.
-Its40-command screen passes: wall−5.46%/CPU−3.47%, beyond4.84%/2.57% A/A.
-The full comparison completes594 commands with all four admitted cases passing.
-Token improves5.11% wall/3.91% CPU beyond3.62%/2.45% A/A. Folded, pgrust and
-private rg-aot pass regression margins with changes inside variation. Nushell
-is unstarted after storage admission refusal; preserve the completed cases and
-resume only Nushell after safe cache retirement. The runtime remains experimental
-until all five gates and final audits pass. The suggestions file
-is unchanged; its review records the evidence behind this priority.
+local address calculations. The scalar-copy candidate passes441 Rust tests per profile,125 current harness
+checks and222 real correctness/profile commands. Its40-command screen passes;
+the full726-command campaign then passes every expected outcome and the final
+8,999-input audit. Token gains5.11% wall/3.91% CPU beyond3.62%/2.45% A/A. Folded,
+pgrust and private rg-aot pass. Nushell's wall margin1.09305 exceeds1.05 with
+10.53% A/A, despite a−1.22% point estimate. Keep the runtime experimental and do
+not retime it. Main retains the qualified operation-map/memory/lookup runtime.
+The next step is the bounded reuse-miss/current-MIR diagnostic, preserving
+strict checks and existing cache/query behavior. Saved Cargo interval attribution
+finds4.780s reported-unit coverage inside5.260s historical Nushell Cargo;0.469s
+without an active reported unit stays unattributed. The suggestions remain
+unchanged; their review records the evidence behind these priorities.
 No goal-state change, unrelated process control or
 new billing path is authorized.
 [Direct-operand final decision](results/direct-operands-full-01/assessment.md),
 [Verified operation maps](results/operation-map-validation-01/assessment.md),
 [Operation attribution](results/operation-map-sampling-01/assessment.md),
 [Scalar-copy screen](results/scalar-copy-operands-screen-token-01/assessment.md),
-[Four-case result](results/scalar-copy-operands-full-01-admission/assessment.md),
+[Complete scalar-copy decision](results/scalar-copy-operands-admission-resume-01/assessment.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Refined binding result](results/replay-costs-token-02/assessment.md),
 [current runtime attribution](results/current-runtime-costs-01/assessment.md),
