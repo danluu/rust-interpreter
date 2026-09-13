@@ -4,14 +4,18 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: qualify direct immediate shift/rotate emission on the adopted
-runtime, then use a primary-first changed-source screen. Current samples show
+Current action: qualify direct native operands for modular arithmetic and
+bitwise operations on the adopted runtime. The immediate shift/rotate screen
+completed40 commands with all original outcomes and artifacts matching, but
+wall+0.90%/CPU+1.19% gives no gain against3.07%/3.00% A/A. Keep that runtime
+experimental and cancel its unstarted guards; do not retime the screen. Current samples show
 generated code dominates both token tests. The separate binding diagnostic
 passes complete off/on artifact histories and attributes93.32ms to current-MIR
 context, but only4.83ms to indexing. Park the positions-table rewrite; lazy MIR
 must avoid work rather than move it between phases. Runtime candidates use
 predeclared screens and cancel unstarted guards on primary failure; adoption
 still requires every declared guard.
+[Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Binding decision](results/replay-costs-token-02/assessment.md),
 [current native regions](results/current-runtime-costs-01/assessment.md),
 [adopted composition](results/memory-lookup-main-complete-01/assessment.md).
