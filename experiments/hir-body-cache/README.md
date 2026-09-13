@@ -1,11 +1,22 @@
 # HIR body-v2: exclusive, verified body replay
 
-This is an **uncompiled, unrun fixture successor** to replay checkpoint
-`5cd6acd3`, generated against compiler
+This is an **uncompiled, unrun diagnostic successor** to fixture checkpoint
+`75b5a567` and replay checkpoint `5cd6acd3`, generated against compiler
 `58e1e1f5311f4424ea81def4763081f6da62d9b3`. The compiler checkout was read only.
 The production guard, grammar, flags, replay implementation and 26 unit tests
-are unchanged. Only the run-make fixture and consequent complete-patch source
-identity change.
+are unchanged. This keeps the fixture environment repair and adds a suffix to
+body-tree rejection reports identifying the first failed boundary: current
+input, capture, validation, preparation, cold audit or post-audit exit. Every
+check, its order, publication condition and ordinary-lowering fallback remain
+unchanged. Reports still require `-Zincremental-info`.
+
+The existing compiler's separate direct probe used its real version identity.
+It compiled the unchanged fixture successfully but emitted 24 body-tree
+rejections and no successful captures or hits. A subsequent HIR dump showed
+the minimal literal function had the expected IDs and visible spans. The new
+phase labels are diagnostic instrumentation, not a claimed fix or speedup.
+[Direct probe evidence](../../results/hir-direct-capture-probe-01/README.md)
+retains the original rejection reports and unchanged source/compiler guards.
 
 The frozen predecessor passed its selected compiler check, all 26 unit tests,
 stage1 compiler build, identity probes and tracked-option unit. Its native

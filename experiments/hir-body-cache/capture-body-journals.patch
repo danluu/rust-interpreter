@@ -1309,7 +1309,7 @@ diff --git a/compiler/rustc_ast_lowering/src/body_cache/mod.rs b/compiler/rustc_
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
-@@ -0,0 +1,183 @@
+@@ -0,0 +1,190 @@
 +//! Checked body capture and separately selected, fully verified replay.
 +use std::path::PathBuf;
 +use rustc_ast::{self as ast, node_id::NodeMap};
@@ -1457,18 +1457,25 @@ new file mode 100644
 +        report(lctx, &candidate, "rejected-effects", frame.start, end, 0);
 +        return value;
 +    };
-+    let captured_tree = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)
-+        .and_then(|current| capture::capture(&candidate, &current, &value)
-+            .and_then(|tree| {
-+                let tree = validate::check(tree, &current)?;
-+                let prepared = prepared::prepare(&tree, &current)?;
-+                prepared::audit(lctx, &candidate, &tree, prepared)?;
-+                frame.validate_exit(lctx, &candidate, &checked)?;
-+                Some(tree)
-+            }));
-+    let Some(tree) = captured_tree else {
-+        report(lctx, &candidate, "rejected-body-tree", frame.start, end, checked.journal().events.len());
-+        return value;
++    // Preserve the first failed boundary in incremental-info diagnostics. Every
++    // check and its order remain the same; no rejected tree can be published.
++    let captured_tree = (|| {
++        let current = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)
++            .ok_or("rejected-body-tree-current")?;
++        let tree = capture::capture(&candidate, &current, &value)
++            .ok_or("rejected-body-tree-capture")?;
++        let tree = validate::check(tree, &current).ok_or("rejected-body-tree-validation")?;
++        let prepared = prepared::prepare(&tree, &current).ok_or("rejected-body-tree-preparation")?;
++        prepared::audit(lctx, &candidate, &tree, prepared).ok_or("rejected-body-tree-cold-audit")?;
++        frame.validate_exit(lctx, &candidate, &checked).ok_or("rejected-body-tree-post-audit-exit")?;
++        Ok(tree)
++    })();
++    let tree = match captured_tree {
++        Ok(tree) => tree,
++        Err(state) => {
++            report(lctx, &candidate, state, frame.start, end, checked.journal().events.len());
++            return value;
++        }
 +    };
 +    let payload = storage::Payload { journal: checked.journal().clone(), tree: tree.tree().clone() };
 +    let state = match previous {
@@ -2213,7 +2220,7 @@ new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
 @@ -0,0 +1 @@
-+pub(super) const SOURCE_IDENTITY: &str = "7d6c092002471410d342d3a25633d72e314712df4d6ad6e57a8f4849a947cc2b";
++pub(super) const SOURCE_IDENTITY: &str = "1cffd7526fd7d5415407a8d8ec333f1eae5dc06239189f0121bc6455759fceaf";
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/storage.rs b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
 new file mode 100644
 --- /dev/null
