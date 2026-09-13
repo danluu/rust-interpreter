@@ -213,3 +213,11 @@ suggestions1.2/1.3: park the bundle and leave every full comparison unstarted.
 Continue with actual-emitter local-memory traffic evidence before another
 mechanism; no isolated repeat of wider copying, clearing or register pairing.
 [Closed screen](../results/native-boundary-memory-screen-token-01/assessment.md).
+
+The scratch-value census reconstructs both saved unprofiled captures exactly,
+with406 bytecode checks/profile. It finds substantial raw availability, but the
+whole affected Load spans cover only3.03%/1.32% of saved generated samples and
+include required stores. Apply suggestion1.4: keep it as a possible component,
+without an isolated timing screen. Inspect dead final-operation flushes next,
+using exact native spans and CFG liveness under2.1/2.4. No runtime is adopted.
+[Scratch evidence](../results/scratch-local-values-census-01/assessment.md).
