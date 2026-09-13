@@ -10,10 +10,12 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Qualify the drafted complete pgrust `gram_core` support probe: one ordinary
-   unfiltered native library command, then the exact same original test bodies
-   through the normal custom launcher. Static inspection finds 114 tests; actual
-   inventory/support is unverified. Preserve every assertion and report failures.
+1. Diagnose the10,000-function expansion limit reached by the complete pgrust
+   `gram_core` custom selection. All114 original native tests pass. The general
+   boxed FnOnce lowering fix passes88 exporter tests/profile,18 focused guest
+   test executions and78 dynamic/closure/cache/Cargo commands, and gets past the
+   prior receiver failure. No parser guest test has executed yet. Preserve the
+   complete selection and distinguish necessary bodies from conservative growth.
    Native defaults use line tables and disable incremental compilation. Any
    subsequent warm timing needs explicit matched incremental controls.
 2. Use the actual emitter to count local-value forwarding blocked by writes
