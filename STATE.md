@@ -34,8 +34,12 @@ block/exhaustive generated samples. An offline Copy8 audit identifies redundant
 local address calculations. The scalar-copy candidate passes441 Rust tests per
 profile,125 current harness checks and222 real correctness/profile commands.
 Its40-command screen passes: wall−5.46%/CPU−3.47%, beyond4.84%/2.57% A/A.
-The full primary-first five-case comparison is running, starting with token;
-the runtime remains experimental until all gates pass. The suggestions file
+The full comparison completes594 commands with all four admitted cases passing.
+Token improves5.11% wall/3.91% CPU beyond3.62%/2.45% A/A. Folded, pgrust and
+private rg-aot pass regression margins with changes inside variation. Nushell
+is unstarted after storage admission refusal; preserve the completed cases and
+resume only Nushell after safe cache retirement. The runtime remains experimental
+until all five gates and final audits pass. The suggestions file
 is unchanged; its review records the evidence behind this priority.
 No goal-state change, unrelated process control or
 new billing path is authorized.
@@ -43,6 +47,7 @@ new billing path is authorized.
 [Verified operation maps](results/operation-map-validation-01/assessment.md),
 [Operation attribution](results/operation-map-sampling-01/assessment.md),
 [Scalar-copy screen](results/scalar-copy-operands-screen-token-01/assessment.md),
+[Four-case result](results/scalar-copy-operands-full-01-admission/assessment.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Refined binding result](results/replay-costs-token-02/assessment.md),
 [current runtime attribution](results/current-runtime-costs-01/assessment.md),
