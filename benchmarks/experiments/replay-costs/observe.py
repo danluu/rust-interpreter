@@ -1,0 +1,32 @@
+"""Check observer coverage and non-overlapping timing accounting."""
+import json
+import math
+
+
+def messages(stderr, prefix):
+    return [json.loads(line.split(': ', 1)[1]) for line in stderr.splitlines()
+            if line.startswith(prefix + ': ')]
+
+
+def observation(stderr, enabled):
+    rows = messages(stderr, 'rust-interp-replay-costs')
+    if not enabled:
+        assert not rows, 'disabled observer emitted costs'
+        return None
+    row, = rows
+    cache, = messages(stderr, 'rust-interp-function-cache')
+    assert row['schema_version'] == 1 and row['performance_measurement'] is False
+    totals = row['totals']
+    assert cache['mode'] == 'reuse' and totals['functions'] == cache['skipped_functions']
+    for field in ['functions', 'instructions', 'immediate_sites', 'events', 'call_sites']:
+        assert type(totals[field]) is int and totals[field] >= 0
+    phases = [totals[p + '_seconds'] for p in ['setup', 'events', 'patch']]
+    assert all(math.isfinite(x) and x >= 0 for x in phases)
+    assert math.isfinite(row['binding_seconds']) and row['binding_seconds'] >= 0
+    assert row['binding_seconds'] == cache['previous_binding_seconds']
+    assert abs(sum(phases) - row['phase_seconds']) < 1e-9
+    assert abs(row['binding_seconds'] - sum(phases) - row['unassigned_seconds']) < 1e-9
+    assert row['unassigned_seconds'] >= -1e-9
+    if totals['functions'] == 0:
+        assert not any(totals.values()) and row['binding_seconds'] == 0
+    return row
