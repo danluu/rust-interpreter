@@ -43,7 +43,7 @@ impl heap::Heap {
 }
 
 impl Memory {
-    fn c_output(&self, address: u128, size: usize) -> Result<usize, String> {
+    pub(super) fn c_output(&self, address: u128, size: usize) -> Result<usize, String> {
         let address = word(address)?;
         let (is_heap, _) = self.range(address, size)?;
         if !is_heap && address < self.readonly_end {

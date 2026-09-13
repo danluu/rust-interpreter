@@ -100,6 +100,15 @@ fn remap(f: &Function, plan: &Plan) -> Function {
             Op::FillBytes { address, value, size } => { r(address); r(value); r(size); }
             Op::FloatBinary { dst, a, b, .. } => { r(dst); r(a); r(b); }
             Op::RandomBytes { dst, address, size } => { r(dst); r(address); r(size); }
+            Op::DescriptorOpen { dst, path, flags, mode, errno } => {
+                for value in [dst, path, flags, errno] { r(value); } if let Some(mode)=mode { r(mode); }
+            }
+            Op::DescriptorWrite { dst, descriptor, address, size, errno } => {
+                for value in [dst, descriptor, address, size, errno] { r(value); }
+            }
+            Op::DescriptorClose { dst, descriptor, errno } | Op::DescriptorGetFd { dst, descriptor, errno } => {
+                for value in [dst, descriptor, errno] { r(value); }
+            }
             Op::EnvironmentGet { dst, name } => { r(dst); r(name); }
             Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
                 for value in [dst, name, output, output_len, new_data, new_len] { r(value); }
