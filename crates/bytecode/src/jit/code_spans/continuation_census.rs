@@ -9,7 +9,8 @@ fn calls(f:&Function, staged:&CompiledFunction<'_>, base:usize)->Vec<Value> {
         let Op::Call {function:callee,..}=op else {return None};
         let Some(entry)=staged.entries[pc] else {return None};
         assert_eq!(entry.end,pc+1);
-        let target=staged.resumes.get(pc+1).copied().flatten().map(|relative| {
+        let target=staged.resumes.get(pc+1).copied().flatten().map(|word| {
+            let relative=word.checked_mul(4).unwrap();
             let continuation=staged.entries[pc+1].unwrap();
             assert!(continuation.offset<relative && relative<staged.words.len()*4);
             let absolute=base.checked_add(relative).unwrap();
@@ -42,7 +43,7 @@ fn continuation_census_distinguishes_native_unsupported_and_one_past_returns() {
                 assert_eq!(rows[0]["pc"],1);assert_eq!(rows[0]["callee"],1);
                 assert_eq!(!rows[0]["native_return_offset"].is_null(),native);
                 assert_eq!(rows[0]["one_past_code"],one_past);
-                if native {assert_eq!(rows[0]["native_return_offset"],base+staged.resumes[2].unwrap());}
+                if native {assert_eq!(rows[0]["native_return_offset"],base+staged.resumes[2].unwrap()*4);}
             }
             assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
         }}

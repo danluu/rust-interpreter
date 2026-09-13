@@ -41,7 +41,7 @@ def main():
                     '-p', 'rust-interp-bytecode']))
                 extra_env.append({})
         else:
-            build_path = ROOT / 'results/native-continuation-build-01/summary.json'
+            build_path = ROOT / 'results/native-continuation-build-02/summary.json'
             build = json.loads(build_path.read_text())
             assert build['status'] == 'passed' and build['rust_inputs'] == rust
             frozen[str(build_path.relative_to(ROOT))] = sha(build_path)
