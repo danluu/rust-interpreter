@@ -55,10 +55,23 @@ def tree_stamps(directory):
     return result
 
 
+def compiler_programs(host):
+    programs = ['bin/rustc']
+    if host.endswith('-apple-darwin'):
+        programs.append('lib/rustlib/' + host + '/bin/rust-objcopy')
+    return programs
+
+
+def require_executable_programs(sysroot, host):
+    for name in compiler_programs(host):
+        require(os.access(sysroot / name, os.X_OK), 'custom compiler program is not executable: ' + name)
+
+
 def require_complete(files, host):
     require(re.fullmatch(r'[A-Za-z0-9_]+(?:-[A-Za-z0-9_]+)+', host) is not None,
             'invalid custom compiler host')
-    require('bin/rustc' in files, 'custom compiler is missing rustc')
+    for name in compiler_programs(host):
+        require(name in files, 'custom compiler is missing ' + name)
     require('bin/cargo' not in files, 'compiler installation must not shadow the separately selected Cargo')
     lib = 'lib/rustlib/' + host + '/lib/'
     names = [p[len(lib):] for p in files if p.startswith(lib) and '/' not in p[len(lib):]]
@@ -132,7 +145,7 @@ def load_compiler(root, key):
                 'custom compiler file inventory differs')
         require(all(not (entry[2] & 0o222) for entry in current.values()),
                 'custom compiler installation is writable')
-        require(os.access(sysroot / 'bin/rustc', os.X_OK), 'custom rustc is not executable')
+        require_executable_programs(sysroot, identity['host'])
         return Compiler(key, sysroot, identity)
     except (OSError, KeyError, TypeError, ValueError, AttributeError) as error:
         raise RuntimeError('invalid custom compiler installation: ' + str(error)) from error
@@ -160,19 +173,21 @@ def validate_tool_compiler(directory, key, compiler):
 def audit_macos_libraries(sysroot):
     if sys.platform != 'darwin':
         return
-    files = [sysroot / 'bin/rustc', *sorted(p for p in (sysroot / 'lib').rglob('*')
+    executables = [sysroot / 'bin/rustc', *sorted(sysroot.glob('lib/rustlib/*/bin/rust-objcopy'))]
+    files = [*executables, *sorted(p for p in (sysroot / 'lib').rglob('*')
              if p.is_file() and p.suffix in ['.dylib', '.so'])]
     def system(path):
         return path.startswith(('/usr/lib/', '/System/Library/'))
-    def local(path, binary):
+    def local(path, binary, executable):
         if path.startswith('@loader_path/'):
             return binary.parent / path.removeprefix('@loader_path/')
         if path.startswith('@executable_path/'):
-            return sysroot / 'bin' / path.removeprefix('@executable_path/')
+            return executable.parent / path.removeprefix('@executable_path/')
         return None
     load_commands = {'LC_LOAD_DYLIB', 'LC_LOAD_WEAK_DYLIB', 'LC_REEXPORT_DYLIB',
                      'LC_LOAD_UPWARD_DYLIB', 'LC_LAZY_LOAD_DYLIB'}
     for binary in files:
+        executable = binary if binary in executables else sysroot / 'bin/rustc'
         commands = subprocess.check_output(['/usr/bin/otool', '-l', str(binary)], text=True)
         blocks = re.split(r'(?m)^Load command \d+\s*$', commands)[1:]
         require(blocks, 'compiler binary has no readable Mach-O load commands: ' + str(binary))
@@ -190,7 +205,7 @@ def audit_macos_libraries(sysroot):
                 match = re.search(r'(?m)^\s*path (.+) \(offset \d+\)\s*$', block)
                 require(match is not None, 'malformed compiler loader search path')
                 path = match[1]
-                resolved = local(path, binary)
+                resolved = local(path, binary, executable)
                 require(system(path) or (resolved is not None
                         and resolved.resolve(strict=True).is_relative_to(sysroot)),
                         'compiler loader search path escapes installation: ' + path)
@@ -207,7 +222,7 @@ def audit_macos_libraries(sysroot):
                 require(any(str(p.relative_to(sysroot)).endswith('/' + suffix) for p in files),
                         'compiler library is absent from installation: ' + path)
                 continue
-            resolved = local(path, binary)
+            resolved = local(path, binary, executable)
             require(resolved is not None and resolved.resolve(strict=True).is_relative_to(sysroot),
                     'compiler library refers outside its installation: ' + path)
 
@@ -243,6 +258,7 @@ def install_compiler(root, source, provenance):
             'custom compiler lacks stable-CGU support')
     files = {str(p.relative_to(sysroot)): file_digest(p) for p in sorted(sysroot.rglob('*')) if p.is_file()}
     require_complete(files, hosts[0])
+    require_executable_programs(sysroot, hosts[0])
     identity = dict(policy=POLICY, provenance=provenance, compiler=compiler, host=hosts[0], files=files,
                     source_sha256=digest({p: h for p, h in files.items()
                         if p.startswith('lib/rustlib/src/rust/library/')}))

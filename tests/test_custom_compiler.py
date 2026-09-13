@@ -24,7 +24,7 @@ def thaw(root):
 
 def fake_install(root):
     source = root / 'packaged'
-    files = ['bin/rustc', 'lib/librustc_driver-fixture.dylib']
+    files = [*custom.compiler_programs(HOST), 'lib/librustc_driver-fixture.dylib']
     lib = 'lib/rustlib/' + HOST + '/lib/'
     files += [lib + 'lib' + crate + '-fixture.rlib' for crate in ['core', 'alloc', 'std', 'test', 'proc_macro']]
     files += [lib + 'lib' + crate + '-fixture.rmeta' for crate in custom.PRIVATE_CRATES]
@@ -34,7 +34,8 @@ def fake_install(root):
         path = source / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(b'fixture data')
-    (source / 'bin/rustc').chmod(0o755)
+    for name in custom.compiler_programs(HOST):
+        (source / name).chmod(0o755)
     def probe(command, **kwargs):
         if command[-1] == '-vV':
             return 'rustc fixture\nhost: ' + HOST + '\ncommit-hash: ' + 'a' * 40 + '\n'
@@ -88,6 +89,10 @@ class CustomCompilerTests(unittest.TestCase):
             custom.load_compiler(self.root, self.compiler.key)
 
     def test_partial_components_stage1_and_wrong_ownership_are_rejected(self):
+        files = self.compiler.identity['files'].copy()
+        del files['lib/rustlib/' + HOST + '/bin/rust-objcopy']
+        with self.assertRaisesRegex(RuntimeError, 'missing .*rust-objcopy'):
+            custom.require_complete(files, HOST)
         files = self.compiler.identity['files'].copy()
         del files['lib/rustlib/' + HOST + '/lib/librustc_middle-fixture.rmeta']
         with self.assertRaisesRegex(RuntimeError, 'missing or ambiguous rustc-dev rustc_middle'):
@@ -163,6 +168,24 @@ class CustomCompilerTests(unittest.TestCase):
             self.audit_commands([('LC_RPATH', '/live/build')])
         with self.assertRaisesRegex(RuntimeError, 'unrecognized'):
             self.audit_commands([('LC_UNKNOWN_DYLIB', '/usr/lib/libSystem.B.dylib')])
+
+    def test_macos_audit_checks_support_tool_load_edges_and_executable_paths(self):
+        support = self.compiler.sysroot / 'lib/rustlib' / HOST / 'bin/rust-objcopy'
+        support.chmod(0o644)
+        with self.assertRaisesRegex(RuntimeError, 'not executable: .*rust-objcopy'):
+            custom.require_executable_programs(self.compiler.sysroot, HOST)
+        support.chmod(0o555)
+        support_dependency = '/live/build/libLLVM.dylib'
+        def probe(command, **kwargs):
+            dependency = (support_dependency if command[-1] == str(support)
+                          else '/usr/lib/libSystem.B.dylib')
+            return f'fixture:\nLoad command 0\n cmd LC_LOAD_DYLIB\n name {dependency} (offset 24)\n'
+        with patch.object(custom.sys, 'platform', 'darwin'), \
+             patch.object(custom.subprocess, 'check_output', side_effect=probe):
+            with self.assertRaisesRegex(RuntimeError, 'outside its installation'):
+                custom.audit_macos_libraries(self.compiler.sysroot)
+            support_dependency = '@executable_path/../../../librustc_driver-fixture.dylib'
+            custom.audit_macos_libraries(self.compiler.sysroot)
 
 
 if __name__ == '__main__':
