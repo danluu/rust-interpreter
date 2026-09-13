@@ -160,16 +160,24 @@ def main():
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off')
     parser.add_argument('--std-mir-policy',choices=['v1','source-paths-v2'],default='v1')
     parser.add_argument('--std-mir-key',help='preinstalled source-paths-v2 key; prepare separately')
+    parser.add_argument('--stable-mono-cgu-partitioning',choices=['off','on'])
     args=parser.parse_args()
     toolchain=json.loads((ROOT/'benchmarks/corpus.json').read_text())['toolchain']
     if args.stable_cgu_partitioning!='off' and args.compiler_key is None:
         parser.error('--stable-cgu-partitioning=on requires --compiler-key')
+    if args.stable_mono_cgu_partitioning is not None:
+        import stable_mono_cgu
+        try:stable_mono_cgu.validate_selection(args,os.environ)
+        except ValueError as error:parser.error(str(error))
     from custom_compiler import load_compiler
     from custom_cargo import load_cargo
     custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
     options={} if custom is None else dict(custom=custom,namespace='stable-cgu:'+args.stable_cgu_partitioning)
     if args.std_mir_policy!='v1' or args.std_mir_key is not None:
         options.update(policy=args.std_mir_policy,prepared_key=args.std_mir_key)
+    if args.stable_mono_cgu_partitioning is not None:
+        custom.require_option(stable_mono_cgu.OPTION)
+        options['namespace']=stable_mono_cgu.namespace(args.stable_mono_cgu_partitioning)
     if args.cargo_key is not None:options['cargo']=load_cargo(ROOT,args.cargo_key)
     sysroot,target,key,result=checked_std_mir(toolchain,fetch=args.fetch,**options)
     print(json.dumps(dict(sysroot=str(sysroot),target=target,key=key,setup_seconds=result['setup_seconds'],
