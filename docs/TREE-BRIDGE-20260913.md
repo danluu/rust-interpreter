@@ -34,3 +34,8 @@ code; qualify launcher and screen protocols; then run the preregistered
 40-command changed-source primary. Only a passing screen proceeds to full
 primary and held-out projects. The census percentages describe static eligible
 calls, not savings or measured bridge coverage.
+
+Follow-up: [119 strict/cache/Cargo commands](../results/tree-bridge-qualification-01/summary.json)
+and [386 launcher contracts plus six profile-comparison controls](../results/tree-bridge-controls-01/summary.json)
+pass. Sixteen launcher skips remain declared. The first original-workload replay
+is now underway; no changed-source performance result exists.
