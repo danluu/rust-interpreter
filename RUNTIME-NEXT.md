@@ -10,12 +10,21 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Inspect adjacent loads/stores in the saved memory-data spans. Count actual
-   instruction pairs that can use an AArch64 pair instruction without adding
-   address work or changing complete-range validation, fault order, aliasing,
-   register publication or bytecode semantics. Attribute their sampled PCs and
-   static/weighted words before deciding whether to prototype. The whole memory
-   bucket is not an eligibility count. No paired-memory candidate exists yet.
+1. Observe resolved indirect-call targets and native-entry/continuation coverage
+   on the two exact token profiles. CallIndirect accounts for1,025,947/843,776
+   interpreted calls; one hashbrown find_inner site has948,377 block-profile
+   calls. Native Return−Call counts equal interpreted direct+indirect Calls,
+   but this is not proof of entry readiness, per-site monomorphism or signatures.
+   First collect those facts under bounded test-only observation, preserving
+   exact original behavior/profiles and all function-pointer validation. Then
+   assess a bounded native indirect-call path with safe VM fallback.
+
+Adjacent memory pairing is deferred:7,192/8,228 sites affect only30/1,651 and
+13/1,439 sampled PCs, counting both old instructions. Potential removed code is
+28,768/32,912 bytes; these are not elapsed-time savings. Scalar CountOnes has only
+one sample in each capture, so a host CSSC specialization is also deferred.
+[Coverage, retained controls and limits](results/memory-pair-census-02/assessment.md),
+[closure](results/memory-pair-census-02/closure.json).
 
 The native-counter/successor-flush composition is parked after its40-command
 screen: wall−0.114% against2.254% A/A; CPU−0.018% against2.029% A/A. All commands
