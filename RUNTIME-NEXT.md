@@ -56,7 +56,10 @@ suggestion. Historical experiments retain their original decisions.
    203 strict native/cache checks. Three profiles preserve every logical PC
    count and confirm1.03million/0.74million native indirect calls in the two
    dominant tests. Full edited-command comparisons against the wide-operation
-   baseline and fixed anchor are active; all three cases remain mandatory. Full-catalog selection remains later work;
+   baseline and fixed anchor complete token with wall−1.44%/CPU−0.97%, below
+   4.75% wall A/A; the component gate fails. Folded/pgrust remain mandatory;
+   folded had a zero-command shared-lock timeout. Do not retime token. Sample
+   current generated instruction work before extending the indirect cache. Full-catalog selection remains later work;
    original checking and artifact identity requirements remain intact.
 5. **Use the stronger native controls already established.** Every current
    comparison uses matched two-worker Cargo and ordinary native libtest
