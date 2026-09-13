@@ -1,0 +1,1440 @@
+diff --git a/Cargo.lock b/Cargo.lock
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3645,9 +3645,12 @@
+  "rustc_index",
+  "rustc_macros",
+  "rustc_middle",
++ "rustc_serialize",
+  "rustc_session",
+  "rustc_span",
+  "rustc_target",
++ "serde",
++ "serde_json",
+  "smallvec",
+  "thin-vec",
+  "tracing",
+diff --git a/compiler/rustc_ast_lowering/Cargo.toml b/compiler/rustc_ast_lowering/Cargo.toml
+--- a/compiler/rustc_ast_lowering/Cargo.toml
++++ b/compiler/rustc_ast_lowering/Cargo.toml
+@@ -19,9 +19,12 @@
+ rustc_index = { path = "../rustc_index" }
+ rustc_macros = { path = "../rustc_macros" }
+ rustc_middle = { path = "../rustc_middle" }
++rustc_serialize = { path = "../rustc_serialize" }
+ rustc_session = { path = "../rustc_session" }
+ rustc_span = { path = "../rustc_span" }
+ rustc_target = { path = "../rustc_target" }
++serde = { version = "1.0.219", features = ["derive"] }
++serde_json = "1.0.59"
+ smallvec = { version = "1.8.1", features = ["union", "may_dangle"] }
+ thin-vec = "0.2.19"
+ tracing = "0.1"
+diff --git a/compiler/rustc_ast_lowering/src/item.rs b/compiler/rustc_ast_lowering/src/item.rs
+--- a/compiler/rustc_ast_lowering/src/item.rs
++++ b/compiler/rustc_ast_lowering/src/item.rs
+@@ -57,11 +57,17 @@
+     fn with_lctx(
+         &mut self,
+         owner: NodeId,
++        cache_input: Option<&Item>,
+         f: impl FnOnce(&mut LoweringContext<'_, 'hir>) -> hir::OwnerNode<'hir>,
+     ) -> hir::MaybeOwner<'hir> {
++        let candidate = cache_input.and_then(|item| crate::owner_cache::prepare(self.tcx, self.resolver, item));
+         let mut lctx = LoweringContext::new(self.tcx, self.resolver, owner);
+ 
+-        let item = f(&mut lctx);
++        let item = match candidate.as_ref().and_then(|candidate| crate::owner_cache::restore(candidate, &mut lctx)) {
++            Some(item) => item,
++            None => f(&mut lctx),
++        };
++        if let Some(candidate) = &candidate { crate::owner_cache::save(candidate, &lctx, item); }
+ 
+         let info = lctx.curr_owner.into_owner_info(self.tcx, item);
+         hir::MaybeOwner::Owner(lctx.arena.alloc(info))
+@@ -69,7 +75,7 @@
+ 
+     #[instrument(level = "debug", skip(self, c))]
+     pub(super) fn lower_crate(&mut self, c: &Crate) -> hir::MaybeOwner<'hir> {
+-        self.with_lctx(CRATE_NODE_ID, |lctx| {
++        self.with_lctx(CRATE_NODE_ID, None, |lctx| {
+             debug_assert_eq!(lctx.curr_owner.owner_id, CRATE_OWNER_ID);
+             let module = lctx.lower_mod(&c.items, &c.spans);
+             lctx.lower_attrs(hir::CRATE_HIR_ID, &c.attrs, c.spans.inner_span, Target::Crate);
+@@ -79,19 +85,19 @@
+ 
+     #[instrument(level = "debug", skip(self))]
+     pub(super) fn lower_item(&mut self, item: &Item) -> hir::MaybeOwner<'hir> {
+-        self.with_lctx(item.id, |lctx| hir::OwnerNode::Item(lctx.lower_item(item)))
++        self.with_lctx(item.id, Some(item), |lctx| hir::OwnerNode::Item(lctx.lower_item(item)))
+     }
+ 
+     pub(super) fn lower_trait_item(&mut self, item: &AssocItem) -> hir::MaybeOwner<'hir> {
+-        self.with_lctx(item.id, |lctx| hir::OwnerNode::TraitItem(lctx.lower_trait_item(item)))
++        self.with_lctx(item.id, None, |lctx| hir::OwnerNode::TraitItem(lctx.lower_trait_item(item)))
+     }
+ 
+     pub(super) fn lower_impl_item(&mut self, item: &AssocItem) -> hir::MaybeOwner<'hir> {
+-        self.with_lctx(item.id, |lctx| hir::OwnerNode::ImplItem(lctx.lower_impl_item(item)))
++        self.with_lctx(item.id, None, |lctx| hir::OwnerNode::ImplItem(lctx.lower_impl_item(item)))
+     }
+ 
+     pub(super) fn lower_foreign_item(&mut self, item: &ForeignItem) -> hir::MaybeOwner<'hir> {
+-        self.with_lctx(item.id, |lctx| hir::OwnerNode::ForeignItem(lctx.lower_foreign_item(item)))
++        self.with_lctx(item.id, None, |lctx| hir::OwnerNode::ForeignItem(lctx.lower_foreign_item(item)))
+     }
+ }
+ 
+diff --git a/compiler/rustc_ast_lowering/src/lib.rs b/compiler/rustc_ast_lowering/src/lib.rs
+--- a/compiler/rustc_ast_lowering/src/lib.rs
++++ b/compiler/rustc_ast_lowering/src/lib.rs
+@@ -95,6 +95,7 @@
+ mod format;
+ mod index;
+ mod item;
++mod owner_cache;
+ mod pat;
+ mod path;
+ pub mod stability;
+diff --git a/compiler/rustc_ast_lowering/src/owner_cache/capture.rs b/compiler/rustc_ast_lowering/src/owner_cache/capture.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/owner_cache/capture.rs
+@@ -0,0 +1,154 @@
++use rustc_abi::ExternAbi;
++use rustc_ast as ast;
++use rustc_hir as hir;
++use rustc_hir::def::Res;
++use rustc_span::{Ident, Span, SyntaxContext};
++
++use super::input::Probe;
++use super::wire as w;
++use crate::PerOwnerLoweringState;
++
++struct Capture<'a>(&'a Probe);
++
++impl Capture<'_> {
++    fn span(&self, span: Span) -> Option<w::SourceSpan> {
++        if span.ctxt() != SyntaxContext::root() || span.parent() != Some(self.0.current_owner) {
++            return None;
++        }
++        if span.is_dummy() { return Some(w::SourceSpan::Dummy); }
++        let base = self.0.current_span;
++        if span.lo() < base.lo() || span.hi() > base.hi() { return None; }
++        Some(w::SourceSpan::Relative {
++            lo: (span.lo() - base.lo()).0, hi: (span.hi() - base.lo()).0,
++        })
++    }
++    fn id(&self, id: hir::HirId) -> Option<u32> {
++        (id.owner.def_id == self.0.current_owner).then_some(id.local_id.as_u32())
++    }
++    fn node(&self, id: hir::HirId, span: Span) -> Option<w::Node> {
++        Some(w::Node { local: self.id(id)?, span: self.span(span)? })
++    }
++    fn ident(&self, ident: Ident) -> Option<w::Ident> {
++        Some(w::Ident { text: ident.name.as_str().to_owned(), span: self.span(ident.span)? })
++    }
++    fn res(&self, res: Res, segment: bool) -> Option<w::Resolution> {
++        Some(match res {
++            Res::PrimTy(ty) if !matches!(ty, hir::PrimTy::Str) =>
++                w::Resolution::Primitive(ty.name_str().to_owned()),
++            Res::Local(id) => w::Resolution::Local(self.id(id)?),
++            Res::Err if segment => w::Resolution::MissingSegment,
++            _ => return None,
++        })
++    }
++    fn path(&self, qpath: &hir::QPath<'_>) -> Option<w::Path> {
++        let hir::QPath::Resolved(None, path) = qpath else { return None; };
++        let [segment] = path.segments else { return None; };
++        if segment.args.is_some() || segment.delegation_child_segment { return None; }
++        Some(w::Path { span: self.span(path.span)?, resolution: self.res(path.res, false)?,
++            segment_local: self.id(segment.hir_id)?, segment_ident: self.ident(segment.ident)?,
++            segment_resolution: self.res(segment.res, true)?, infer_args: segment.infer_args })
++    }
++    fn ty(&self, ty: &hir::Ty<'_>) -> Option<w::Ty> {
++        let hir::TyKind::Path(path) = &ty.kind else { return None; };
++        Some(w::Ty { node: self.node(ty.hir_id, ty.span)?, path: self.path(path)? })
++    }
++    fn pat(&self, pat: &hir::Pat<'_>) -> Option<w::Pattern> {
++        if !pat.default_binding_modes { return None; }
++        let kind = match pat.kind {
++            hir::PatKind::Wild => w::PatternKind::Wild,
++            hir::PatKind::Binding(mode, id, ident, None) if mode == hir::BindingMode::NONE =>
++                w::PatternKind::Binding { binding_local: self.id(id)?, ident: self.ident(ident)? },
++            _ => return None,
++        };
++        Some(w::Pattern { node: self.node(pat.hir_id, pat.span)?, kind })
++    }
++    fn literal(&self, value: ast::LitKind) -> Option<w::Literal> {
++        Some(match value {
++            ast::LitKind::Bool(value) => w::Literal::Bool(value),
++            ast::LitKind::Byte(value) => w::Literal::Byte(value),
++            ast::LitKind::Char(value) => w::Literal::Char(value),
++            ast::LitKind::Int(value, ty) => w::Literal::Int(value.to_string(), match ty {
++                ast::LitIntType::Unsuffixed => None,
++                ast::LitIntType::Signed(ty) => Some(hir::PrimTy::Int(ty).name_str().to_owned()),
++                ast::LitIntType::Unsigned(ty) => Some(hir::PrimTy::Uint(ty).name_str().to_owned()),
++            }),
++            ast::LitKind::Float(value, ty) => w::Literal::Float(value.as_str().to_owned(), match ty {
++                ast::LitFloatType::Unsuffixed => None,
++                ast::LitFloatType::Suffixed(ty) => Some(hir::PrimTy::Float(ty).name_str().to_owned()),
++            }),
++            _ => return None,
++        })
++    }
++    fn expr(&self, expr: &hir::Expr<'_>, depth: usize) -> Option<w::Expr> {
++        if depth >= 64 { return None; }
++        let kind = match &expr.kind {
++            hir::ExprKind::Lit(lit) => w::ExprKind::Literal(self.span(lit.span)?, self.literal(lit.node)?),
++            hir::ExprKind::Path(path) => w::ExprKind::LocalPath(self.path(path)?),
++            hir::ExprKind::Tup(values) if values.is_empty() => w::ExprKind::Unit,
++            hir::ExprKind::Unary(op, value) => w::ExprKind::Unary(match op {
++                hir::UnOp::Not => w::Unary::Not,
++                hir::UnOp::Neg => w::Unary::Neg,
++                _ => return None,
++            }, Box::new(self.expr(value, depth + 1)?)),
++            hir::ExprKind::Binary(op, left, right) => w::ExprKind::Binary(op.node.as_str().to_owned(),
++                self.span(op.span)?, Box::new(self.expr(left, depth + 1)?), Box::new(self.expr(right, depth + 1)?)),
++            hir::ExprKind::Block(block, None) => w::ExprKind::Block(self.block(block, depth + 1)?),
++            hir::ExprKind::Ret(value) => w::ExprKind::Return(match value {
++                Some(value) => Some(Box::new(self.expr(value, depth + 1)?)), None => None,
++            }),
++            _ => return None,
++        };
++        Some(w::Expr { node: self.node(expr.hir_id, expr.span)?, kind })
++    }
++    fn block(&self, block: &hir::Block<'_>, depth: usize) -> Option<w::Block> {
++        if depth >= 64 || block.targeted_by_break || !matches!(block.rules, hir::BlockCheckMode::DefaultBlock)
++            || block.stmts.len() > 512 { return None; }
++        let statements = block.stmts.iter().map(|stmt| {
++            let kind = match stmt.kind {
++                hir::StmtKind::Let(local) => {
++                    if local.super_.is_some() || local.els.is_some() || !matches!(local.source, hir::LocalSource::Normal) {
++                        return None;
++                    }
++                    w::StatementKind::Let { node: self.node(local.hir_id, local.span)?, pat: self.pat(local.pat)?,
++                        ty: match local.ty { Some(ty) => Some(self.ty(ty)?), None => None },
++                        init: match local.init { Some(expr) => Some(self.expr(expr, depth + 1)?), None => None } }
++                }
++                hir::StmtKind::Expr(expr) => w::StatementKind::Expr(self.expr(expr, depth + 1)?),
++                hir::StmtKind::Semi(expr) => w::StatementKind::Semi(self.expr(expr, depth + 1)?),
++                _ => return None,
++            };
++            Some(w::Statement { node: self.node(stmt.hir_id, stmt.span)?, kind })
++        }).collect::<Option<Vec<_>>>()?;
++        Some(w::Block { node: self.node(block.hir_id, block.span)?, statements,
++            tail: match block.expr { Some(expr) => Some(Box::new(self.expr(expr, depth + 1)?)), None => None } })
++    }
++}
++
++pub(super) fn capture(probe: &Probe, state: &PerOwnerLoweringState<'_, '_>, node: hir::OwnerNode<'_>) -> Option<w::OwnerTree> {
++    let hir::OwnerNode::Item(item) = node else { return None; };
++    let hir::ItemKind::Fn { ident, sig, generics, body, has_body: true } = &item.kind else { return None; };
++    if item.owner_id.def_id != probe.current_owner || item.eii.is_some()
++        || !matches!(sig.header.safety, hir::HeaderSafety::Normal(hir::Safety::Safe))
++        || !matches!(sig.header.constness, hir::Constness::NotConst)
++        || !matches!(sig.header.asyncness, hir::IsAsync::NotAsync) || sig.header.abi != ExternAbi::Rust
++        || !generics.params.is_empty() || !generics.predicates.is_empty() || generics.has_where_clause_predicates
++        || !matches!(sig.decl.implicit_self(), hir::ImplicitSelfKind::None)
++        || sig.decl.c_variadic() || sig.decl.splatted().is_some() { return None; }
++    let [(_, value)] = state.bodies.as_slice() else { return None; };
++    if value.id() != *body { return None; }
++    let c = Capture(probe);
++    Some(w::OwnerTree {
++        ident: c.ident(*ident)?, span: c.span(item.span)?, vis_span: c.span(item.vis_span)?,
++        signature_span: c.span(sig.span)?, generics_span: c.span(generics.span)?,
++        where_span: c.span(generics.where_clause_span)?,
++        lifetime_elision_allowed: sig.decl.lifetime_elision_allowed(),
++        input_types: sig.decl.inputs.iter().map(|ty| c.ty(ty)).collect::<Option<Vec<_>>>()?,
++        output_type: match sig.decl.output {
++            hir::FnRetTy::DefaultReturn(span) => w::ReturnType::Default(c.span(span)?),
++            hir::FnRetTy::Return(ty) => w::ReturnType::Primitive(c.ty(ty)?),
++        },
++        params: value.params.iter().map(|param| Some(w::Param { node: c.node(param.hir_id, param.span)?,
++            ty_span: c.span(param.ty_span)?, pat: c.pat(param.pat)? })).collect::<Option<Vec<_>>>()?,
++        value: c.expr(value.value, 0)?, local_id_limit: state.item_local_id_counter.as_u32(),
++    })
++}
+diff --git a/compiler/rustc_ast_lowering/src/owner_cache/input.rs b/compiler/rustc_ast_lowering/src/owner_cache/input.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/owner_cache/input.rs
+@@ -0,0 +1,321 @@
++//! Conservative expanded/resolved-input gate for owner HIR reuse.
++
++use rustc_ast as ast;
++use rustc_ast::node_id::{NodeMap, NodeSet};
++use rustc_hir as hir;
++use rustc_hir::def::Res;
++use rustc_middle::middle::resolve::ResolverAstLowering;
++use rustc_middle::ty::TyCtxt;
++use rustc_macros::Encodable;
++use rustc_span::def_id::{DefPathHash, LocalDefId};
++use rustc_span::{Ident, Span, StableSourceFileId, SyntaxContext, DUMMY_SP};
++
++#[derive(Debug, PartialEq, Eq, Encodable)]
++pub(super) enum SpanKey {
++    Dummy,
++    Relative { lo: u32, hi: u32 },
++}
++
++#[derive(Debug, PartialEq, Eq, Encodable)]
++pub(super) enum Resolution {
++    Primitive(hir::PrimTy),
++    Local(u32),
++}
++
++#[derive(Debug, PartialEq, Eq, Encodable)]
++pub(super) enum Atom {
++    Tag(&'static str),
++    Flag(bool),
++    Count(usize),
++    Text(String),
++    Node(u32),
++    Span(SpanKey),
++    Res(Option<Resolution>),
++}
++
++/// Equality covers the entire accepted AST and every resolution entry for its nodes.
++/// Storage adds compiler/codec/options identity outside this expanded/resolved-input key.
++#[derive(Debug, PartialEq, Eq, Encodable)]
++pub(super) struct ResolvedInput {
++    pub owner: DefPathHash,
++    pub file: StableSourceFileId,
++    pub source: String,
++    pub atoms: Vec<Atom>,
++}
++
++pub(super) struct Probe {
++    pub input: ResolvedInput,
++    pub current_owner: LocalDefId,
++    pub current_span: Span,
++}
++
++struct Walk<'a, 'tcx> {
++    resolver: &'a ResolverAstLowering<'tcx>,
++    base: Span,
++    atoms: Vec<Atom>,
++    nodes: NodeMap<u32>,
++    ordered_nodes: Vec<ast::NodeId>,
++    bindings: NodeSet,
++}
++
++impl<'a, 'tcx> Walk<'a, 'tcx> {
++    fn tag(&mut self, value: &'static str) { self.atoms.push(Atom::Tag(value)); }
++    fn flag(&mut self, value: bool) { self.atoms.push(Atom::Flag(value)); }
++    fn count(&mut self, value: usize) { self.atoms.push(Atom::Count(value)); }
++
++    fn span(&mut self, span: Span) -> Option<()> {
++        let key = if span == DUMMY_SP {
++            SpanKey::Dummy
++        } else {
++            if span.ctxt() != SyntaxContext::root() || span.parent().is_some()
++                || !self.base.contains(span)
++            {
++                return None;
++            }
++            SpanKey::Relative {
++                lo: (span.lo() - self.base.lo()).0,
++                hi: (span.hi() - self.base.lo()).0,
++            }
++        };
++        self.atoms.push(Atom::Span(key));
++        Some(())
++    }
++
++    fn node(&mut self, id: ast::NodeId) -> Option<()> {
++        if id == ast::DUMMY_NODE_ID || self.nodes.contains_key(&id)
++            || self.ordered_nodes.len() >= 512 { return None; }
++        let slot = u32::try_from(self.ordered_nodes.len()).ok()?;
++        self.nodes.insert(id, slot);
++        self.ordered_nodes.push(id);
++        self.atoms.push(Atom::Node(slot));
++        Some(())
++    }
++
++    fn ident(&mut self, ident: Ident) -> Option<()> {
++        if ident.name.as_str().len() > 512 { return None; }
++        self.atoms.push(Atom::Text(ident.name.as_str().to_owned()));
++        self.span(ident.span)
++    }
++
++    fn path(&mut self, path: &ast::Path) -> Option<()> {
++        let ast::Path { span, segments } = path;
++        let [segment] = segments.as_slice() else { return None; };
++        let ast::PathSegment { ident, id, args } = segment;
++        if args.is_some() { return None; }
++        self.span(*span)?;
++        self.node(*id)?;
++        self.ident(*ident)
++    }
++
++    fn ty(&mut self, ty: &ast::Ty) -> Option<()> {
++        let ast::Ty { id, kind, span } = ty;
++        let ast::TyKind::Path(None, path) = kind else { return None; };
++        let Some(Res::PrimTy(primitive)) = self.resolver.partial_res_map.get(id)?.full_res()
++            else { return None; };
++        if matches!(primitive, hir::PrimTy::Str) { return None; }
++        self.tag("primitive-type");
++        self.node(*id)?;
++        self.span(*span)?;
++        self.path(path)
++    }
++
++    fn pat(&mut self, pat: &ast::Pat) -> Option<()> {
++        let ast::Pat { id, kind, span } = pat;
++        self.node(*id)?;
++        self.span(*span)?;
++        match kind {
++            ast::PatKind::Wild => self.tag("wild"),
++            ast::PatKind::Ident(mode, ident, None) if *mode == hir::BindingMode::NONE => {
++                let Some(Res::Local(binding)) = self.resolver.partial_res_map.get(id)?.full_res()
++                    else { return None; };
++                if binding != *id { return None; }
++                self.bindings.insert(*id);
++                self.tag("immutable-binding");
++                self.ident(*ident)?;
++            }
++            _ => return None,
++        }
++        Some(())
++    }
++
++    fn expr(&mut self, expr: &ast::Expr) -> Option<()> {
++        let ast::Expr { id, kind, span, attrs, tokens } = expr;
++        if !attrs.is_empty() || tokens.is_some() { return None; }
++        self.node(*id)?;
++        self.span(*span)?;
++        match kind {
++            ast::ExprKind::Lit(lit) => {
++                if lit.symbol.as_str().len() > 65_536 { return None; }
++                let kind = match lit.kind {
++                    ast::token::LitKind::Bool => "bool",
++                    ast::token::LitKind::Byte => "byte",
++                    ast::token::LitKind::Char => "char",
++                    ast::token::LitKind::Integer => "integer",
++                    ast::token::LitKind::Float => "float",
++                    _ => return None,
++                };
++                // The original error-emitting lower_lit remains responsible for rejected tokens.
++                if !matches!(ast::LitKind::from_token_lit(*lit).ok()?,
++                    ast::LitKind::Bool(..) | ast::LitKind::Byte(..) | ast::LitKind::Char(..)
++                    | ast::LitKind::Int(..) | ast::LitKind::Float(..)) { return None; }
++                self.tag("literal");
++                self.tag(kind);
++                self.atoms.push(Atom::Text(lit.symbol.as_str().to_owned()));
++                self.flag(lit.suffix.is_some());
++                if let Some(suffix) = lit.suffix {
++                    self.atoms.push(Atom::Text(suffix.as_str().to_owned()));
++                }
++            }
++            ast::ExprKind::Path(None, path) => {
++                let Some(Res::Local(_)) = self.resolver.partial_res_map.get(id)?.full_res()
++                    else { return None; };
++                self.tag("local-path");
++                self.path(path)?;
++            }
++            ast::ExprKind::Unary(op @ (ast::UnOp::Not | ast::UnOp::Neg), value) => {
++                self.tag(match op { ast::UnOp::Not => "not", _ => "neg" });
++                self.expr(value)?;
++            }
++            ast::ExprKind::Binary(op, left, right) => {
++                self.tag("binary");
++                self.atoms.push(Atom::Text(op.node.as_str().to_owned()));
++                self.span(op.span)?;
++                self.expr(left)?;
++                self.expr(right)?;
++            }
++            ast::ExprKind::Paren(value) => { self.tag("paren"); self.expr(value)?; }
++            ast::ExprKind::Block(block, None) => { self.tag("block-expr"); self.block(block)?; }
++            ast::ExprKind::Ret(value) => {
++                self.tag("return");
++                self.flag(value.is_some());
++                if let Some(value) = value { self.expr(value)?; }
++            }
++            ast::ExprKind::Tup(values) if values.is_empty() => self.tag("unit"),
++            _ => return None,
++        }
++        Some(())
++    }
++
++    fn block(&mut self, block: &ast::Block) -> Option<()> {
++        let ast::Block { stmts, id, rules, span } = block;
++        if !matches!(rules, ast::BlockCheckMode::Default) { return None; }
++        self.node(*id)?;
++        self.span(*span)?;
++        self.count(stmts.len());
++        for stmt in stmts {
++            let ast::Stmt { id, kind, span } = stmt;
++            self.node(*id)?;
++            self.span(*span)?;
++            match kind {
++                ast::StmtKind::Let(local) => {
++                    let ast::Local { id, super_, pat, ty, kind, span, colon_sp, attrs, tokens } = &**local;
++                    if super_.is_some() || !attrs.is_empty() || tokens.is_some() { return None; }
++                    self.tag("let");
++                    self.node(*id)?;
++                    self.span(*span)?;
++                    self.flag(colon_sp.is_some());
++                    if let Some(span) = colon_sp { self.span(*span)?; }
++                    self.flag(ty.is_some());
++                    if let Some(ty) = ty { self.ty(ty)?; }
++                    match kind {
++                        ast::LocalKind::Decl => self.tag("uninitialized"),
++                        ast::LocalKind::Init(expr) => { self.tag("initialized"); self.expr(expr)?; }
++                        _ => return None,
++                    }
++                    self.pat(pat)?;
++                }
++                ast::StmtKind::Expr(expr) => { self.tag("expr-stmt"); self.expr(expr)?; }
++                ast::StmtKind::Semi(expr) => { self.tag("semi-stmt"); self.expr(expr)?; }
++                ast::StmtKind::Empty => self.tag("empty-stmt"),
++                _ => return None,
++            }
++        }
++        Some(())
++    }
++
++    fn resolutions(&mut self) -> Option<()> {
++        self.tag("all-current-node-resolutions");
++        self.count(self.ordered_nodes.len());
++        for node in &self.ordered_nodes {
++            let res = match self.resolver.partial_res_map.get(node) {
++                None => None,
++                Some(partial) => Some(match partial.full_res()? {
++                    Res::PrimTy(primitive) => Resolution::Primitive(primitive),
++                    Res::Local(binding) if self.bindings.contains(&binding) =>
++                        Resolution::Local(*self.nodes.get(&binding)?),
++                    _ => return None,
++                }),
++            };
++            self.atoms.push(Atom::Res(res));
++        }
++        Some(())
++    }
++}
++
++/// Call only for AstOwner::Item, before taking the usual with_lctx path.
++/// None means ordinary lowering, with no retry and no side-effect suppression.
++pub(super) fn probe<'tcx>(
++    tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>, item: &ast::Item,
++) -> Option<Probe> {
++    if tcx.incr_comp_session.is_none() || tcx.dcx().has_errors().is_some() { return None; }
++    let ast::Item { attrs, id, span, vis, kind, tokens } = item;
++    if !attrs.is_empty() || tokens.is_some() || *span == DUMMY_SP
++        || span.ctxt() != SyntaxContext::root() || span.parent().is_some() { return None; }
++    let ast::ItemKind::Fn(function) = kind else { return None; };
++    let ast::Fn { defaultness, ident, generics, sig, contract, define_opaque, body, eii_impl } = &**function;
++    if !matches!(defaultness, ast::Defaultness::Implicit)
++        || contract.is_some() || define_opaque.is_some() || eii_impl.is_some() { return None; }
++    let ast::FnSig { header, decl, span: sig_span } = sig;
++    let ast::FnHeader { constness, coroutine_marker, safety, ext } = header;
++    if !matches!(constness, ast::Const::No) || coroutine_marker.is_some()
++        || !matches!(safety, ast::Safety::Default) || !matches!(ext, ast::Extern::None) { return None; }
++    let ast::Generics { params, where_clause, span: generics_span } = generics;
++    let ast::WhereClause { has_where_token, predicates, span: where_span } = where_clause;
++    if !params.is_empty() || *has_where_token || !predicates.is_empty() { return None; }
++    let owner = resolver.owners.get(id)?;
++    if owner.id != *id || !owner.node_id_to_def_id.is_empty() || !owner.label_res_map.is_empty()
++        || !owner.lifetimes_res_map.is_empty() || !owner.trait_map.is_empty()
++        || !owner.import_res.is_empty() || !owner.extra_lifetime_params_map.is_empty() { return None; }
++    let file = tcx.sess.source_map().lookup_source_file(span.lo());
++    if !file.contains(span.hi()) || (span.hi() - span.lo()).0 > 65_536 { return None; }
++    let source = tcx.sess.source_map().span_to_snippet(*span).ok()?;
++    let mut walk = Walk { resolver, base: *span, atoms: Vec::new(), nodes: NodeMap::default(),
++        ordered_nodes: Vec::new(), bindings: NodeSet::default() };
++    walk.tag("resolved-scalar-owner-v1");
++    walk.node(*id)?;
++    walk.span(*span)?;
++    let ast::Visibility { kind: vis_kind, span: vis_span } = vis;
++    match vis_kind {
++        ast::VisibilityKind::Inherited => walk.tag("inherited-vis"),
++        ast::VisibilityKind::Public => walk.tag("public-vis"),
++        _ => return None,
++    }
++    walk.span(*vis_span)?;
++    walk.ident(*ident)?;
++    walk.span(*sig_span)?;
++    walk.span(*generics_span)?;
++    walk.span(*where_span)?;
++    walk.flag(owner.lifetime_elision_allowed);
++    let ast::FnDecl { inputs, output } = &**decl;
++    walk.count(inputs.len());
++    for param in inputs {
++        let ast::Param { attrs, ty, pat, id, span, is_placeholder } = param;
++        if !attrs.is_empty() || *is_placeholder { return None; }
++        walk.node(*id)?;
++        walk.span(*span)?;
++        walk.ty(ty)?;
++        walk.pat(pat)?;
++    }
++    match output {
++        ast::FnRetTy::Default(span) => { walk.tag("default-return"); walk.span(*span)?; }
++        ast::FnRetTy::Ty(ty) => { walk.tag("typed-return"); walk.ty(ty)?; }
++    }
++    walk.block(body.as_deref()?)?;
++    walk.resolutions()?;
++    Some(Probe {
++        input: ResolvedInput { owner: tcx.def_path_hash(owner.def_id.to_def_id()),
++            file: file.stable_id, source, atoms: walk.atoms },
++        current_owner: owner.def_id,
++        current_span: *span,
++    })
++}
+diff --git a/compiler/rustc_ast_lowering/src/owner_cache/materialize.rs b/compiler/rustc_ast_lowering/src/owner_cache/materialize.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/owner_cache/materialize.rs
+@@ -0,0 +1,140 @@
++use rustc_abi::ExternAbi;
++use rustc_ast as ast;
++use rustc_hir as hir;
++use rustc_hir::def::Res;
++use rustc_span::{BytePos, Ident, Span, Symbol, SyntaxContext, DUMMY_SP, respan};
++
++use super::input::Probe;
++use super::validate::CheckedTree;
++use super::wire as w;
++use crate::LoweringContext;
++
++struct Materialize<'a, 'hir> {
++    probe: &'a Probe,
++    arena: &'hir hir::Arena<'hir>,
++}
++
++impl<'hir> Materialize<'_, 'hir> {
++    fn span(&self, span: &w::SourceSpan) -> Span {
++        let span = match *span {
++            w::SourceSpan::Dummy => DUMMY_SP,
++            w::SourceSpan::Relative { lo, hi } => Span::new(
++                self.probe.current_span.lo() + BytePos(lo), self.probe.current_span.lo() + BytePos(hi),
++                SyntaxContext::root(), None),
++        };
++        span.with_parent(Some(self.probe.current_owner))
++    }
++    fn id(&self, local: u32) -> hir::HirId {
++        hir::HirId { owner: hir::OwnerId { def_id: self.probe.current_owner },
++            local_id: hir::ItemLocalId::from_u32(local) }
++    }
++    fn ident(&self, ident: &w::Ident) -> Ident {
++        Ident::new(Symbol::intern(&ident.text), self.span(&ident.span))
++    }
++    fn res(&self, res: &w::Resolution) -> Res {
++        match res {
++            w::Resolution::Primitive(name) => Res::PrimTy(w::primitive(name).unwrap()),
++            w::Resolution::Local(id) => Res::Local(self.id(*id)),
++            w::Resolution::MissingSegment => Res::Err,
++        }
++    }
++    fn path(&self, path: &w::Path) -> hir::QPath<'hir> {
++        let segment = hir::PathSegment { ident: self.ident(&path.segment_ident),
++            hir_id: self.id(path.segment_local), res: self.res(&path.segment_resolution),
++            args: None, infer_args: path.infer_args, delegation_child_segment: false };
++        hir::QPath::Resolved(None, self.arena.alloc(hir::Path {
++            span: self.span(&path.span), res: self.res(&path.resolution),
++            segments: self.arena.alloc_from_iter([segment]),
++        }))
++    }
++    fn ty(&self, ty: &w::Ty) -> hir::Ty<'hir> {
++        hir::Ty { hir_id: self.id(ty.node.local), span: self.span(&ty.node.span),
++            kind: hir::TyKind::Path(self.path(&ty.path)) }
++    }
++    fn pat(&self, pat: &w::Pattern) -> &'hir hir::Pat<'hir> {
++        self.arena.alloc(hir::Pat { hir_id: self.id(pat.node.local), span: self.span(&pat.node.span),
++            default_binding_modes: true, kind: match &pat.kind {
++                w::PatternKind::Wild => hir::PatKind::Wild,
++                w::PatternKind::Binding { binding_local, ident } => hir::PatKind::Binding(
++                    hir::BindingMode::NONE, self.id(*binding_local), self.ident(ident), None),
++            } })
++    }
++    fn literal(&self, lit: &w::Literal) -> ast::LitKind {
++        match lit {
++            w::Literal::Bool(value) => ast::LitKind::Bool(*value),
++            w::Literal::Byte(value) => ast::LitKind::Byte(*value),
++            w::Literal::Char(value) => ast::LitKind::Char(*value),
++            w::Literal::Int(value, kind) => ast::LitKind::Int(value.parse::<u128>().unwrap().into(),
++                w::integer_type(kind).unwrap()),
++            w::Literal::Float(value, kind) => ast::LitKind::Float(Symbol::intern(value), w::float_type(kind).unwrap()),
++        }
++    }
++    fn expr(&self, expr: &w::Expr) -> hir::Expr<'hir> {
++        let kind = match &expr.kind {
++            w::ExprKind::Unit => hir::ExprKind::Tup(&[]),
++            w::ExprKind::Literal(span, lit) => hir::ExprKind::Lit(respan(self.span(span), self.literal(lit))),
++            w::ExprKind::LocalPath(path) => hir::ExprKind::Path(self.path(path)),
++            w::ExprKind::Unary(op, value) => hir::ExprKind::Unary(match op {
++                w::Unary::Not => hir::UnOp::Not, w::Unary::Neg => hir::UnOp::Neg,
++            }, self.arena.alloc(self.expr(value))),
++            w::ExprKind::Binary(op, span, left, right) => hir::ExprKind::Binary(
++                respan(self.span(span), w::binary(op).unwrap()),
++                self.arena.alloc(self.expr(left)), self.arena.alloc(self.expr(right))),
++            w::ExprKind::Block(block) => hir::ExprKind::Block(self.block(block), None),
++            w::ExprKind::Return(value) => hir::ExprKind::Ret(value.as_ref().map(|value| &*self.arena.alloc(self.expr(value)))),
++        };
++        hir::Expr { hir_id: self.id(expr.node.local), span: self.span(&expr.node.span), kind }
++    }
++    fn block(&self, block: &w::Block) -> &'hir hir::Block<'hir> {
++        let stmts = self.arena.alloc_from_iter(block.statements.iter().map(|stmt| {
++            let kind = match &stmt.kind {
++                w::StatementKind::Let { node, pat, ty, init } => hir::StmtKind::Let(self.arena.alloc(hir::LetStmt {
++                    hir_id: self.id(node.local), span: self.span(&node.span), super_: None,
++                    pat: self.pat(pat), ty: ty.as_ref().map(|ty| &*self.arena.alloc(self.ty(ty))),
++                    init: init.as_ref().map(|expr| &*self.arena.alloc(self.expr(expr))), els: None,
++                    source: hir::LocalSource::Normal,
++                })),
++                w::StatementKind::Expr(expr) => hir::StmtKind::Expr(self.arena.alloc(self.expr(expr))),
++                w::StatementKind::Semi(expr) => hir::StmtKind::Semi(self.arena.alloc(self.expr(expr))),
++            };
++            hir::Stmt { hir_id: self.id(stmt.node.local), span: self.span(&stmt.node.span), kind }
++        }));
++        self.arena.alloc(hir::Block { hir_id: self.id(block.node.local), span: self.span(&block.node.span),
++            stmts, expr: block.tail.as_ref().map(|expr| &*self.arena.alloc(self.expr(expr))),
++            rules: hir::BlockCheckMode::DefaultBlock, targeted_by_break: false })
++    }
++}
++
++pub(super) fn materialize<'hir>(lctx: &mut LoweringContext<'_, 'hir>, probe: &Probe, checked: &CheckedTree) -> hir::OwnerNode<'hir> {
++    let tree = checked.get();
++    let m = Materialize { probe, arena: lctx.arena };
++    let params = m.arena.alloc_from_iter(tree.params.iter().map(|param| hir::Param {
++        hir_id: m.id(param.node.local), span: m.span(&param.node.span),
++        ty_span: m.span(&param.ty_span), pat: m.pat(&param.pat),
++    }));
++    let body = &*m.arena.alloc(hir::Body { params, value: m.arena.alloc(m.expr(&tree.value)) });
++    let body_id = body.id();
++    let decl = m.arena.alloc(hir::FnDecl {
++        inputs: m.arena.alloc_from_iter(tree.input_types.iter().map(|ty| m.ty(ty))),
++        output: match &tree.output_type {
++            w::ReturnType::Default(span) => hir::FnRetTy::DefaultReturn(m.span(span)),
++            w::ReturnType::Primitive(ty) => hir::FnRetTy::Return(m.arena.alloc(m.ty(ty))),
++        },
++        fn_decl_kind: hir::FnDeclFlags::default().set_lifetime_elision_allowed(tree.lifetime_elision_allowed),
++    });
++    let item = m.arena.alloc(hir::Item {
++        owner_id: hir::OwnerId { def_id: probe.current_owner }, span: m.span(&tree.span),
++        vis_span: m.span(&tree.vis_span), eii: None,
++        kind: hir::ItemKind::Fn { ident: m.ident(&tree.ident), body: body_id, has_body: true,
++            generics: m.arena.alloc(hir::Generics { params: &[], predicates: &[], has_where_clause_predicates: false,
++                span: m.span(&tree.generics_span), where_clause_span: m.span(&tree.where_span) }),
++            sig: hir::FnSig { span: m.span(&tree.signature_span), decl, header: hir::FnHeader {
++                safety: hir::HeaderSafety::Normal(hir::Safety::Safe), constness: hir::Constness::NotConst,
++                asyncness: hir::IsAsync::NotAsync, abi: ExternAbi::Rust,
++            } },
++        },
++    });
++    lctx.curr_owner.item_local_id_counter = hir::ItemLocalId::from_u32(tree.local_id_limit);
++    lctx.curr_owner.bodies.push((body_id.hir_id.local_id, body));
++    hir::OwnerNode::Item(item)
++}
+diff --git a/compiler/rustc_ast_lowering/src/owner_cache/mod.rs b/compiler/rustc_ast_lowering/src/owner_cache/mod.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/owner_cache/mod.rs
+@@ -0,0 +1,155 @@
++use std::fs::{self, File, OpenOptions};
++use std::hash::{Hash, Hasher};
++use std::io::{Read, Write};
++use std::path::{Path, PathBuf};
++use std::sync::OnceLock;
++use std::sync::atomic::{AtomicU64, Ordering};
++
++use rustc_ast as ast;
++use rustc_data_structures::fingerprint::Fingerprint;
++use rustc_data_structures::stable_hash::StableHasher;
++use rustc_hir as hir;
++use rustc_middle::middle::resolve::ResolverAstLowering;
++use rustc_middle::ty::TyCtxt;
++use rustc_serialize::Encodable;
++use rustc_serialize::opaque::mem_encoder::MemEncoder;
++use serde::{Deserialize, Serialize};
++
++use crate::LoweringContext;
++
++mod capture;
++mod input;
++mod materialize;
++mod validate;
++mod wire;
++
++const FORMAT: &str = "hir-owner-reuse-v1";
++const MAX_RECORD: u64 = 2 * 1024 * 1024;
++static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
++
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++struct Record {
++    format: String,
++    key: Vec<u8>,
++    payload: wire::OwnerTree,
++    checksum: String,
++}
++
++pub(super) struct Candidate {
++    probe: input::Probe,
++    key: Vec<u8>,
++    path: PathBuf,
++    checked: Option<validate::CheckedTree>,
++}
++
++fn digest(bytes: &[u8]) -> String {
++    let mut h = StableHasher::new();
++    h.write(bytes);
++    let fingerprint: Fingerprint = h.finish();
++    hex(fingerprint)
++}
++
++fn hex(fingerprint: Fingerprint) -> String {
++    let (first, second) = fingerprint.split();
++    format!("{:016x}{:016x}", first.as_u64(), second.as_u64())
++}
++
++fn codec_identity() -> &'static str {
++    static ID: OnceLock<String> = OnceLock::new();
++    ID.get_or_init(|| digest(concat!(include_str!("mod.rs"), include_str!("input.rs"),
++        include_str!("wire.rs"), include_str!("validate.rs"), include_str!("capture.rs"),
++        include_str!("materialize.rs")).as_bytes()))
++}
++
++fn checksum(key: &[u8], tree: &wire::OwnerTree) -> Option<String> {
++    let tree = serde_json::to_vec(tree).ok()?;
++    if tree.len() as u64 > MAX_RECORD { return None; }
++    let mut h = StableHasher::new();
++    key.hash(&mut h);
++    tree.hash(&mut h);
++    let fingerprint: Fingerprint = h.finish();
++    Some(hex(fingerprint))
++}
++
++fn read(path: &Path, key: &[u8], source: &str) -> Option<validate::CheckedTree> {
++    if !fs::symlink_metadata(path).ok()?.is_file() { return None; }
++    let file = File::open(path).ok()?;
++    if !file.metadata().ok()?.is_file() || file.metadata().ok()?.len() > MAX_RECORD { return None; }
++    let mut bytes = Vec::new();
++    file.take(MAX_RECORD + 1).read_to_end(&mut bytes).ok()?;
++    if bytes.len() as u64 > MAX_RECORD { return None; }
++    // serde_json retains its default recursion limit; no panic-catching decoder is used.
++    let record: Record = serde_json::from_slice(&bytes).ok()?;
++    if record.format != FORMAT || record.key != key
++        || record.checksum != checksum(key, &record.payload)? { return None; }
++    validate::check(record.payload, source)
++}
++
++fn write(path: &Path, key: &[u8], tree: wire::OwnerTree) -> Option<()> {
++    let checksum = checksum(key, &tree)?;
++    let bytes = serde_json::to_vec(&Record { format: FORMAT.to_owned(), key: key.to_vec(), payload: tree, checksum }).ok()?;
++    if bytes.len() as u64 > MAX_RECORD { return None; }
++    let tmp = path.with_extension(format!("part-{}-{}", std::process::id(), NEXT_TEMP.fetch_add(1, Ordering::Relaxed)));
++    let mut file = OpenOptions::new().write(true).create_new(true).open(&tmp).ok()?;
++    let written = file.write_all(&bytes);
++    drop(file);
++    let result = written.and_then(|()| fs::rename(&tmp, path));
++    if result.is_err() { let _ = fs::remove_file(&tmp); }
++    result.ok()
++}
++
++fn report(tcx: TyCtxt<'_>, item: &ast::Item, kind: &str) {
++    if tcx.sess.opts.unstable_opts.incremental_info {
++        let name = match &item.kind { ast::ItemKind::Fn(f) => f.ident.name.as_str(), _ => "" };
++        eprintln!("[hir-owner-reuse] {kind} {} {name}", item.kind.descr());
++    }
++}
++
++pub(super) fn prepare<'tcx>(
++    tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>, item: &ast::Item,
++) -> Option<Candidate> {
++    if !tcx.sess.opts.unstable_opts.reuse_hir_owners { return None; }
++    let Some(session) = tcx.incr_comp_session else { return None; };
++    if std::env::var_os("RUSTC_FORCE_RUSTC_VERSION").is_some() { return None; }
++    let Some(probe) = input::probe(tcx, resolver, item) else {
++        report(tcx, item, "rejected-input");
++        return None;
++    };
++    let mut encoder = MemEncoder::new();
++    FORMAT.encode(&mut encoder);
++    codec_identity().encode(&mut encoder);
++    tcx.sess.cfg_version.encode(&mut encoder);
++    tcx.sess.opts.dep_tracking_hash(false).as_u64().encode(&mut encoder);
++    probe.input.encode(&mut encoder);
++    let key = encoder.finish();
++    if key.len() as u64 > MAX_RECORD / 4 { return None; }
++    // Flat sidecars follow rustc's own locked COW session copy/finalization/GC protocol.
++    let path = session.session_directory.join(format!("{FORMAT}-{}.bin", hex(probe.input.owner.0)));
++    let checked = read(&path, &key, &probe.input.source);
++    report(tcx, item, if checked.is_some() { "hit" } else { "miss" });
++    Some(Candidate { probe, key, path, checked })
++}
++
++pub(super) fn restore<'hir>(candidate: &Candidate, lctx: &mut LoweringContext<'_, 'hir>) -> Option<hir::OwnerNode<'hir>> {
++    // Parsing, bounded validation and ID-reference checking all preceded creation of this lctx.
++    candidate.checked.as_ref().map(|tree| materialize::materialize(lctx, &candidate.probe, tree))
++}
++
++pub(super) fn save(candidate: &Candidate, lctx: &LoweringContext<'_, '_>, node: hir::OwnerNode<'_>) {
++    if candidate.checked.is_some() || lctx.tcx.dcx().has_errors().is_some() { return; }
++    let state = &lctx.curr_owner;
++    // create_def always inserts into node_id_to_def_id; this map is never cleared by an owner.
++    if !lctx.node_id_to_def_id.is_empty() || lctx.next_node_id != lctx.resolver.next_node_id
++        || !lctx.partial_res_overrides.is_empty() || !state.attrs.is_empty() || !state.children.is_empty()
++        || !state.trait_map.is_empty() || !state.delayed_lints.is_empty() || state.define_opaque.is_some()
++        || !state.impl_trait_defs.is_empty() || !state.impl_trait_bounds.is_empty() { return; }
++    let Some(tree) = capture::capture(&candidate.probe, state, node) else { return; };
++    let Some(checked) = validate::check(tree, &candidate.probe.input.source) else { return; };
++    // Write only after a normal result was completely captured and validated. Failure is a miss.
++    let tree = checked.into_inner();
++    let _ = write(&candidate.path, &candidate.key, tree);
++}
++
++#[cfg(test)]
++mod tests;
+diff --git a/compiler/rustc_ast_lowering/src/owner_cache/tests.rs b/compiler/rustc_ast_lowering/src/owner_cache/tests.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/owner_cache/tests.rs
+@@ -0,0 +1,112 @@
++use super::*;
++use wire::*;
++
++const SOURCE: &str = "fn f(){}";
++
++fn span(lo: u32, hi: u32) -> SourceSpan { SourceSpan::Relative { lo, hi } }
++fn tree() -> OwnerTree {
++    OwnerTree {
++        ident: Ident { text: "f".into(), span: span(3, 4) }, span: span(0, 8), vis_span: span(0, 0),
++        signature_span: span(0, 6), generics_span: SourceSpan::Dummy, where_span: SourceSpan::Dummy,
++        lifetime_elision_allowed: false, input_types: vec![], output_type: ReturnType::Default(span(6, 6)),
++        params: vec![], local_id_limit: 3,
++        value: Expr { node: Node { local: 2, span: span(6, 8) }, kind: ExprKind::Block(Block {
++            node: Node { local: 1, span: span(6, 8) }, statements: vec![], tail: None,
++        }) },
++    }
++}
++
++struct Temp(PathBuf);
++impl Temp {
++    fn new() -> Self {
++        let path = std::env::temp_dir().join(format!("rustc-hir-owner-test-{}-{}", std::process::id(),
++            NEXT_TEMP.fetch_add(1, Ordering::Relaxed)));
++        fs::create_dir(&path).unwrap();
++        Self(path)
++    }
++}
++impl Drop for Temp { fn drop(&mut self) { fs::remove_dir_all(&self.0).unwrap(); } }
++
++#[test]
++fn rejects_duplicate_ids_and_out_of_source_spans() {
++    assert!(validate::check(tree(), SOURCE).is_some());
++    let mut duplicate = tree();
++    duplicate.value.node.local = 1;
++    assert!(validate::check(duplicate, SOURCE).is_none());
++    let mut outside = tree();
++    outside.signature_span = span(0, 9);
++    assert!(validate::check(outside, SOURCE).is_none());
++    let mut sparse = tree();
++    sparse.local_id_limit = 4;
++    assert!(validate::check(sparse, SOURCE).is_none());
++}
++
++#[test]
++fn rejects_bad_keys_unknown_fields_truncation_and_checksums() {
++    let temp = Temp::new();
++    let path = temp.0.join("record");
++    assert!(read(&path, &[1], SOURCE).is_none());
++    write(&path, &[1], tree()).unwrap();
++    assert!(read(&path, &[1], SOURCE).is_some());
++    assert!(read(&path, &[2], SOURCE).is_none());
++    let bytes = fs::read(&path).unwrap();
++    fs::write(&path, &bytes[..bytes.len() / 2]).unwrap();
++    assert!(read(&path, &[1], SOURCE).is_none());
++    let mut value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
++    value["extra"] = true.into();
++    fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
++    assert!(read(&path, &[1], SOURCE).is_none());
++    value.as_object_mut().unwrap().remove("extra");
++    value["checksum"] = "wrong".into();
++    fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
++    assert!(read(&path, &[1], SOURCE).is_none());
++}
++
++#[test]
++fn rejects_semantically_invalid_payload_even_with_matching_checksum() {
++    let temp = Temp::new();
++    let path = temp.0.join("record");
++    let mut bad = tree();
++    bad.value.node.local = 1;
++    write(&path, &[1], bad).unwrap();
++    assert!(read(&path, &[1], SOURCE).is_none());
++    let mut bad = tree();
++    bad.ident.span = span(1, 2);
++    // A byte position inside a Unicode scalar cannot become a diagnostic span.
++    assert!(validate::check(bad, "λxxxxxx").is_none());
++}
++
++#[test]
++fn publication_does_not_modify_hardlinked_previous_session() {
++    let temp = Temp::new();
++    let path = temp.0.join("record");
++    let previous = temp.0.join("previous");
++    write(&path, &[1], tree()).unwrap();
++    let bytes = fs::read(&path).unwrap();
++    fs::hard_link(&path, &previous).unwrap();
++    write(&path, &[2], tree()).unwrap();
++    assert_eq!(fs::read(&previous).unwrap(), bytes);
++    assert!(read(&previous, &[1], SOURCE).is_some());
++    assert!(read(&path, &[2], SOURCE).is_some());
++}
++
++#[test]
++fn malformed_or_unwritable_storage_is_only_a_cache_miss() {
++    let temp = Temp::new();
++    assert!(read(&temp.0, &[1], SOURCE).is_none());
++    let destination = temp.0.join("destination");
++    fs::create_dir(&destination).unwrap();
++    assert!(write(&destination, &[1], tree()).is_none());
++    assert_eq!(fs::read_dir(&temp.0).unwrap().count(), 1);
++    let oversized = temp.0.join("oversized");
++    fs::write(&oversized, vec![0; MAX_RECORD as usize + 1]).unwrap();
++    assert!(read(&oversized, &[1], SOURCE).is_none());
++    #[cfg(unix)]
++    {
++        let regular = temp.0.join("regular");
++        let symlink = temp.0.join("symlink");
++        write(&regular, &[1], tree()).unwrap();
++        std::os::unix::fs::symlink(&regular, &symlink).unwrap();
++        assert!(read(&symlink, &[1], SOURCE).is_none());
++    }
++}
+diff --git a/compiler/rustc_ast_lowering/src/owner_cache/validate.rs b/compiler/rustc_ast_lowering/src/owner_cache/validate.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/owner_cache/validate.rs
+@@ -0,0 +1,165 @@
++use std::collections::BTreeSet;
++
++use super::wire::*;
++
++pub(super) struct CheckedTree(OwnerTree);
++
++impl CheckedTree {
++    pub(super) fn get(&self) -> &OwnerTree { &self.0 }
++    pub(super) fn into_inner(self) -> OwnerTree { self.0 }
++}
++
++struct Check<'a> {
++    source: &'a str,
++    limit: u32,
++    ids: BTreeSet<u32>,
++    bindings: BTreeSet<u32>,
++    references: Vec<u32>,
++    depth: usize,
++}
++
++impl Check<'_> {
++    fn span(&self, span: &SourceSpan) -> Option<()> {
++        match *span {
++            SourceSpan::Dummy => Some(()),
++            SourceSpan::Relative { lo, hi } if lo <= hi && hi as usize <= self.source.len()
++                && self.source.is_char_boundary(lo as usize) && self.source.is_char_boundary(hi as usize)
++                => Some(()),
++            _ => None,
++        }
++    }
++    fn text(&self, value: &str) -> Option<()> {
++        (value.len() <= 65_536).then_some(())
++    }
++    fn ident(&self, value: &Ident) -> Option<()> {
++        if value.text.is_empty() { return None; }
++        self.text(&value.text)?;
++        self.span(&value.span)
++    }
++    fn id(&mut self, id: u32) -> Option<()> {
++        (id > 0 && id < self.limit && self.ids.insert(id)).then_some(())
++    }
++    fn node(&mut self, node: &Node) -> Option<()> {
++        self.id(node.local)?;
++        self.span(&node.span)
++    }
++    fn res(&mut self, res: &Resolution, segment: bool) -> Option<()> {
++        match res {
++            Resolution::Primitive(name) => { primitive(name)?; }
++            Resolution::Local(id) => self.references.push(*id),
++            Resolution::MissingSegment if segment => {}
++            _ => return None,
++        }
++        Some(())
++    }
++    fn path(&mut self, path: &Path, is_type: bool) -> Option<()> {
++        if path.infer_args == is_type { return None; }
++        match (&path.resolution, is_type) {
++            (Resolution::Primitive(_), true) | (Resolution::Local(_), false) => {}
++            _ => return None,
++        }
++        self.span(&path.span)?;
++        self.res(&path.resolution, false)?;
++        self.id(path.segment_local)?;
++        self.ident(&path.segment_ident)?;
++        self.res(&path.segment_resolution, true)
++    }
++    fn ty(&mut self, ty: &Ty) -> Option<()> {
++        self.node(&ty.node)?;
++        self.path(&ty.path, true)
++    }
++    fn pat(&mut self, pat: &Pattern) -> Option<()> {
++        self.node(&pat.node)?;
++        if let PatternKind::Binding { binding_local, ident } = &pat.kind {
++            if *binding_local != pat.node.local || !self.bindings.insert(*binding_local) { return None; }
++            self.ident(ident)?;
++        }
++        Some(())
++    }
++    fn expr(&mut self, expr: &Expr) -> Option<()> {
++        if self.depth >= 64 { return None; }
++        self.depth += 1;
++        let result = self.expr_inner(expr);
++        self.depth -= 1;
++        result
++    }
++    fn expr_inner(&mut self, expr: &Expr) -> Option<()> {
++        self.node(&expr.node)?;
++        match &expr.kind {
++            ExprKind::Unit => {}
++            ExprKind::Literal(span, value) => {
++                self.span(span)?;
++                match value {
++                    Literal::Int(value, kind) => { value.parse::<u128>().ok()?; integer_type(kind)?; }
++                    Literal::Float(value, kind) => {
++                        self.text(value)?;
++                        if !value.as_bytes().first().is_some_and(u8::is_ascii_digit)
++                            || !value.bytes().all(|b| b.is_ascii_digit() || b".eE+-_".contains(&b))
++                            || value.replace('_', "").parse::<f64>().is_err() { return None; }
++                        float_type(kind)?;
++                    }
++                    _ => {}
++                }
++            }
++            ExprKind::LocalPath(path) => self.path(path, false)?,
++            ExprKind::Unary(_, value) => self.expr(value)?,
++            ExprKind::Binary(op, span, left, right) => {
++                binary(op)?;
++                self.span(span)?;
++                self.expr(left)?;
++                self.expr(right)?;
++            }
++            ExprKind::Block(block) => self.block(block)?,
++            ExprKind::Return(value) => if let Some(value) = value { self.expr(value)?; },
++        }
++        Some(())
++    }
++    fn block(&mut self, block: &Block) -> Option<()> {
++        self.node(&block.node)?;
++        if block.statements.len() > 512 { return None; }
++        for stmt in &block.statements {
++            self.node(&stmt.node)?;
++            match &stmt.kind {
++                StatementKind::Let { node, pat, ty, init } => {
++                    self.node(node)?;
++                    self.pat(pat)?;
++                    if let Some(ty) = ty { self.ty(ty)?; }
++                    if let Some(init) = init { self.expr(init)?; }
++                }
++                StatementKind::Expr(expr) | StatementKind::Semi(expr) => self.expr(expr)?,
++            }
++        }
++        if let Some(tail) = &block.tail { self.expr(tail)?; }
++        Some(())
++    }
++}
++
++pub(super) fn check(tree: OwnerTree, source: &str) -> Option<CheckedTree> {
++    if tree.local_id_limit == 0 || tree.local_id_limit > 4096 || source.len() > 65_536
++        || tree.params.len() != tree.input_types.len() || tree.params.len() > 512
++        || !matches!(tree.value.kind, ExprKind::Block(_)) { return None; }
++    match tree.span {
++        SourceSpan::Relative { lo: 0, hi } if hi as usize == source.len() => {}
++        _ => return None,
++    }
++    let mut check = Check { source, limit: tree.local_id_limit, ids: BTreeSet::new(),
++        bindings: BTreeSet::new(), references: Vec::new(), depth: 0 };
++    check.ident(&tree.ident)?;
++    for span in [&tree.span, &tree.vis_span, &tree.signature_span, &tree.generics_span, &tree.where_span] {
++        check.span(span)?;
++    }
++    for ty in &tree.input_types { check.ty(ty)?; }
++    match &tree.output_type {
++        ReturnType::Default(span) => check.span(span)?,
++        ReturnType::Primitive(ty) => check.ty(ty)?,
++    }
++    for param in &tree.params {
++        check.node(&param.node)?;
++        check.span(&param.ty_span)?;
++        check.pat(&param.pat)?;
++    }
++    check.expr(&tree.value)?;
++    if check.ids.len() != tree.local_id_limit as usize - 1
++        || check.references.iter().any(|id| !check.bindings.contains(id)) { return None; }
++    Some(CheckedTree(tree))
++}
+diff --git a/compiler/rustc_ast_lowering/src/owner_cache/wire.rs b/compiler/rustc_ast_lowering/src/owner_cache/wire.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/owner_cache/wire.rs
+@@ -0,0 +1,121 @@
++use serde::{Deserialize, Serialize};
++
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum SourceSpan { Dummy, Relative { lo: u32, hi: u32 } }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Node { pub local: u32, pub span: SourceSpan }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Ident { pub text: String, pub span: SourceSpan }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum Resolution { Primitive(String), Local(u32), MissingSegment }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Path {
++    pub span: SourceSpan,
++    pub resolution: Resolution,
++    pub segment_local: u32,
++    pub segment_ident: Ident,
++    pub segment_resolution: Resolution,
++    pub infer_args: bool,
++}
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Ty { pub node: Node, pub path: Path }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum PatternKind { Wild, Binding { binding_local: u32, ident: Ident } }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Pattern { pub node: Node, pub kind: PatternKind }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum Literal {
++    Bool(bool), Byte(u8), Char(char), Int(String, Option<String>), Float(String, Option<String>),
++}
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum Unary { Not, Neg }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum ExprKind {
++    Literal(SourceSpan, Literal), LocalPath(Path), Unit,
++    Unary(Unary, Box<Expr>),
++    Binary(String, SourceSpan, Box<Expr>, Box<Expr>),
++    Block(Block), Return(Option<Box<Expr>>),
++}
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Expr { pub node: Node, pub kind: ExprKind }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum StatementKind {
++    Let { node: Node, pat: Pattern, ty: Option<Ty>, init: Option<Expr> },
++    Expr(Expr), Semi(Expr),
++}
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Statement { pub node: Node, pub kind: StatementKind }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Block {
++    pub node: Node, pub statements: Vec<Statement>, pub tail: Option<Box<Expr>>,
++}
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Param { pub node: Node, pub ty_span: SourceSpan, pub pat: Pattern }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum ReturnType { Default(SourceSpan), Primitive(Ty) }
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct OwnerTree {
++    pub ident: Ident,
++    pub span: SourceSpan,
++    pub vis_span: SourceSpan,
++    pub signature_span: SourceSpan,
++    pub generics_span: SourceSpan,
++    pub where_span: SourceSpan,
++    pub lifetime_elision_allowed: bool,
++    pub input_types: Vec<Ty>,
++    pub output_type: ReturnType,
++    pub params: Vec<Param>,
++    pub value: Expr,
++    pub local_id_limit: u32,
++}
++
++pub(super) fn primitive(name: &str) -> Option<rustc_hir::PrimTy> {
++    rustc_hir::PrimTy::ALL.into_iter().find(|ty| ty.name_str() == name && name != "str")
++}
++
++pub(super) fn binary(name: &str) -> Option<rustc_ast::BinOpKind> {
++    use rustc_ast::BinOpKind::*;
++    [Add, Sub, Mul, Div, Rem, And, Or, BitXor, BitAnd, BitOr, Shl, Shr, Eq, Lt, Le, Ne, Ge, Gt]
++        .into_iter().find(|op| op.as_str() == name)
++}
++
++pub(super) fn integer_type(name: &Option<String>) -> Option<rustc_ast::LitIntType> {
++    use rustc_ast::LitIntType;
++    Some(match name {
++        None => LitIntType::Unsuffixed,
++        Some(name) => match primitive(name)? {
++            rustc_hir::PrimTy::Int(ty) => LitIntType::Signed(ty),
++            rustc_hir::PrimTy::Uint(ty) => LitIntType::Unsigned(ty),
++            _ => return None,
++        },
++    })
++}
++
++pub(super) fn float_type(name: &Option<String>) -> Option<rustc_ast::LitFloatType> {
++    use rustc_ast::LitFloatType;
++    Some(match name {
++        None => LitFloatType::Unsuffixed,
++        Some(name) => match primitive(name)? {
++            rustc_hir::PrimTy::Float(ty) => LitFloatType::Suffixed(ty),
++            _ => return None,
++        },
++    })
++}
+diff --git a/compiler/rustc_interface/src/tests.rs b/compiler/rustc_interface/src/tests.rs
+--- a/compiler/rustc_interface/src/tests.rs
++++ b/compiler/rustc_interface/src/tests.rs
+@@ -882,6 +882,7 @@
+     tracked!(regparm, Some(3));
+     tracked!(relax_elf_relocations, Some(true));
+     tracked!(remap_cwd_prefix, Some(PathBuf::from("abc")));
++    tracked!(reuse_hir_owners, true);
+     tracked!(sanitizer, SanitizerSet::ADDRESS);
+     tracked!(sanitizer_cfi_canonical_jump_tables, None);
+     tracked!(sanitizer_cfi_generalize_pointers, Some(true));
+diff --git a/compiler/rustc_session/src/options.rs b/compiler/rustc_session/src/options.rs
+--- a/compiler/rustc_session/src/options.rs
++++ b/compiler/rustc_session/src/options.rs
+@@ -2810,6 +2810,8 @@
+     retpoline_external_thunk: bool = (false, parse_bool, [TRACKED] { TARGET_MODIFIER: RetpolineExternalThunk },
+         "enables retpoline-external-thunk, retpoline-indirect-branches and retpoline-indirect-calls \
+         target features (default: no)"),
++    reuse_hir_owners: bool = (false, parse_bool, [TRACKED],
++        "reuse conservative resolved scalar HIR owners (default: no)"),
+     #[rustc_lint_opt_deny_field_access("use `Session::sanitizers()` instead of this field")]
+     sanitizer: SanitizerSet = (SanitizerSet::empty(), parse_sanitizers, [TRACKED] { TARGET_MODIFIER: Sanitizer },
+         "use a sanitizer"),
+diff --git a/tests/run-make/reuse-hir-owners/rmake.rs b/tests/run-make/reuse-hir-owners/rmake.rs
+new file mode 100644
+--- /dev/null
++++ b/tests/run-make/reuse-hir-owners/rmake.rs
+@@ -0,0 +1,111 @@
++//@ ignore-cross-compile
++
++use std::path::{Path, PathBuf};
++
++use run_make_support::{Rustc, rfs, run, rustc};
++
++fn compiler(enabled: bool, info: bool) -> Rustc {
++    let mut command = rustc();
++    command.input("library.rs").crate_name("hir_owner_test").crate_type("rlib")
++        .output("libhir_owner_test.rlib").metadata("hir_owner_reuse_test")
++        .incremental(if enabled { "cache-on" } else { "cache-off" })
++        .arg(format!("-Zreuse-hir-owners={enabled}"))
++        .arg("-Cdebuginfo=2").arg("--edition=2024");
++    if info { command.arg("-Zincremental-info"); }
++    command
++}
++
++fn source(delta: usize, prefix: &str) -> String {
++    format!(
++        "#![allow(dead_code, non_camel_case_types)]\n{prefix}\n\
++         pub fn anchor(x: u64) -> u64 {{ let twice = x * 2; (twice + 3) }}\n\
++         pub fn changed(x: u64) -> u64 {{ x + {delta} }}\n\
++         pub fn scalar_float(x: f64) -> f64 {{ (x * 1.5) + 2.0 }}\n\
++         pub fn scalar_char(x: char) -> bool {{ x == 'λ' }}\n\
++         pub fn shadow(x: u64) -> u64 {{ let y = {{ let x = x + 1; x }}; y + x }}\n\
++         pub fn empty() {{}}\n\
++         #[inline(never)] pub fn attributed(x: u64) -> u64 {{ x + 7 }}\n\
++         pub fn generic<T: Copy>(x: T) -> T {{ x }}\n\
++         pub fn lifetime(x: &u64) -> &u64 {{ x }}\n\
++         pub fn closure(x: u64) -> u64 {{ (|| x + 9)() }}\n\
++         pub fn expansion() -> u32 {{ line!() }}\n"
++    )
++}
++
++fn execute(delta: usize) -> String {
++    rfs::write("main.rs", format!(
++        "extern crate hir_owner_test as t; fn main() {{\n\
++         assert_eq!(t::anchor(5), 13); assert_eq!(t::changed(5), 5 + {delta});\n\
++         assert_eq!(t::scalar_float(2.0), 5.0); assert!(t::scalar_char('λ'));\n\
++         assert_eq!(t::shadow(5), 11); t::empty();\n\
++         assert_eq!(t::attributed(1), 8); assert_eq!(t::generic(4_u8), 4);\n\
++         assert_eq!(*t::lifetime(&3), 3); assert_eq!(t::closure(1), 10);\n\
++         println!(\"{{}} {{}} {{}}\", t::anchor(5), t::changed(5), t::expansion()); }}"
++    ));
++    rustc().input("main.rs").extern_("hir_owner_test", "libhir_owner_test.rlib").run();
++    run("main").stdout_utf8()
++}
++
++fn successful(delta: usize, prefix: &str, expect_anchor_hit: bool) {
++    rfs::write("library.rs", source(delta, prefix));
++    compiler(false, false).run();
++    let ordinary = execute(delta);
++    let stderr = compiler(true, true).run().stderr_utf8();
++    let candidate = execute(delta);
++    assert_eq!(ordinary, candidate);
++    if expect_anchor_hit { assert!(stderr.contains("[hir-owner-reuse] hit function anchor"), "{stderr}"); }
++    else { assert!(stderr.contains("[hir-owner-reuse] miss function anchor"), "{stderr}"); }
++    for name in ["attributed", "generic", "lifetime", "closure", "expansion"] {
++        assert!(stderr.contains(&format!("[hir-owner-reuse] rejected-input function {name}")), "{stderr}");
++    }
++}
++
++fn records(directory: &Path, output: &mut Vec<PathBuf>) {
++    for entry in std::fs::read_dir(directory).unwrap() {
++        let path = entry.unwrap().path();
++        if path.is_dir() { records(&path, output); }
++        else if path.file_name().unwrap().to_string_lossy().starts_with("hir-owner-reuse-v1-")
++            && path.extension().is_some_and(|ext| ext == "bin") { output.push(path); }
++    }
++}
++
++fn main() {
++    successful(1, "", false);
++    successful(17, "// A genuine unequal-width edit before all owners: λ\n", true);
++    successful(1, "", true);
++
++    // Same function syntax now resolves u64 to an application type. It must take stock lowering.
++    rfs::write("library.rs", source(1, "type u64 = u32;"));
++    compiler(false, false).run();
++    let ordinary = execute(1);
++    let stderr = compiler(true, true).run().stderr_utf8();
++    assert!(stderr.contains("[hir-owner-reuse] rejected-input function anchor"), "{stderr}");
++    assert_eq!(ordinary, execute(1));
++    successful(1, "", true);
++
++    for (extra, code) in [
++        ("fn uncalled() -> u64 { true }", "E0308"),
++        ("fn uncalled() { let value = String::from(\"a\"); let moved = value; drop(value); }", "E0382"),
++        ("const UNUSED: u64 = 1 / 0;", "E0080"),
++        ("fn uncalled() -> u64 { 1 / 0 }", "unconditional_panic"),
++    ] {
++        rfs::write("library.rs", format!("{}\n{extra}\n", source(1, "")));
++        let ordinary = compiler(false, false).arg("--error-format=json").run_fail().stderr_utf8();
++        let candidate = compiler(true, false).arg("--error-format=json").run_fail().stderr_utf8();
++        assert!(ordinary.contains(code), "{ordinary}");
++        assert_eq!(ordinary, candidate);
++        successful(1, "", true);
++    }
++
++    let mut paths = Vec::new();
++    records(Path::new("cache-on"), &mut paths);
++    assert!(!paths.is_empty());
++    for path in &paths { rfs::write(path, b"{\"truncated\":"); }
++    successful(23, "// Fresh edit with damaged sidecars\n", false);
++    successful(1, "", true);
++
++    // A changed tracked option must invalidate the normal incremental session and its sidecars.
++    let stderr = compiler(true, true).arg("-Cdebug-assertions=no").run().stderr_utf8();
++    assert!(stderr.contains("[hir-owner-reuse] miss function anchor"), "{stderr}");
++    execute(1);
++}

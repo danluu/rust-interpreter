@@ -1,5 +1,9 @@
 # Narrow owner-lowering feasibility spike
 
+The later [opt-in compiler candidate](CANDIDATE.md) implements this seam as a
+separate, uncompiled patch. This document preserves the original feasibility
+snapshot; its two prototype files are not the candidate implementation.
+
 Source-only against compiler `58e1e1f5311f4424ea81def4763081f6da62d9b3`.
 Neither file is imported, compiled, executed, or installed. This is an acceptance/key
 prototype plus a closed output representation, **not a working compiler cache**.
