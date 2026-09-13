@@ -195,3 +195,14 @@ explicit bounded capacity option before a larger reached-region redesign; retain
 the16 MiB default and require real changed-source evidence for a speedup.
 [Combined qualification](../results/environment-main-final-audit-01/assessment.md),
 [emitter diagnosis](../results/parser-offline-emission-01/assessment.md).
+
+Current follow-up: the guarded-local-facts composition is adopted with all five
+performance gates and current compiler qualification complete. Suggestions2.1–2.4
+now have exact finer native protocol attribution, using the two already saved
+samples and no duplicate guest run. All433/499 Call/Return samples reconcile;
+frame clearing is the largest protocol group, and the exhaustive test spends89
+samples in actual ABI byte-copy loops. Prioritize a bounded wider-clear/copy and
+paired-register composition, retaining all checks and initialization. The old
+argument-only/whole-frame elision and width-packing proposals remain parked.
+Keep the existing1.2/1.3 primary-first screen and mandatory adoption guards.
+[Protocol evidence](../results/native-protocol-census-01/assessment.md).
