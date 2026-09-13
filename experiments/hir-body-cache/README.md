@@ -1,11 +1,12 @@
-# HIR body-v2: typed cold capture and journal boundary
+# HIR body-v2: typed cold capture and materialization audit
 
 This is an **uncompiled, unrun capture checkpoint**, generated against compiler
 `58e1e1f5311f4424ea81def4763081f6da62d9b3`. The compiler checkout was read only.
 The patch contains a closed typed body wire codec, actual cold HIR capture,
-effect journal, tree/reference validator and current typed-value preparation.
-**No body materializer or hit path
-exists.** Every invocation executes stock body lowering and ordinary checks.
+effect journal, tree/reference validator, current typed-value preparation and
+a private cold materialization audit. **No hit path or effect replay exists.**
+Every invocation executes stock body lowering and ordinary checks; the
+reconstructed audit body is never returned or indexed.
 The earlier journal-only checkpoint remains immutable at `3f3e9c28`.
 Its separate actual compiler check failed with three `E0308` errors in
 `effects.rs`: the pinned unordered-map sorting API requires a borrowed key.
@@ -95,7 +96,8 @@ repeats full tree/order/reference validation against the **exact supplied
 current input**, rather than transferring a `CheckedTree` proof between
 contexts. It checks S/E, the complete parameter/body binding map (including
 unused bindings), current-owner identities and resolution/reference pairs.
-`Current::new` now requires root hygiene and an owner span whose byte length
+The token now borrows its exact `Current` until consumed, preventing that input
+from changing or escaping its lifetime. `Current::new` requires root hygiene and an owner span whose byte length
 equals the exact UTF-8 source. Preparation checks source-base/length and every
 absolute `BytePos` addition, including overflow and UTF-8 boundaries.
 
@@ -103,14 +105,42 @@ The token contains current `HirId`/`Res` values, actual pinned operator/binding/
 borrow/block/type-suffix enums, parsed `u128` integers, exact float spelling and
 owned string/byte data. Spans remain checked current-owner coordinate recipes;
 no `Span`, `Symbol`, `ByteSymbol` or HIR node is interned or allocated. All wire
-fields are converted explicitly. The existing read and cold-capture paths both
-require preparation, then discard the token and retain stock lowering's HIR.
-It is not `ReadyHit`: no exclusive context, effect/vacancy preflight, HIR
-materializer or commit operation exists. No token can construct HIR on its own.
+fields are converted explicitly. Saved records require preparation and discard
+the token. The cold path additionally consumes its token through the private
+audit below. It is not `ReadyHit`: no exclusive context, effect/vacancy preflight
+or hit commit exists. No public API converts a token to HIR.
+
+## Cold materialization audit
+
+After stock lowering, the cold exit frame, tree and preparation checks, the
+private `prepared_audit.rs` entry verifies current owner, S/exclusive E, exact
+source range/bytes, expected wire tree, prefix and context association. The
+actual current counter must equal E and tracing must already be disabled.
+An ephemeral session/arena/resolver pointer tuple guards the immediate cold
+call and never enters disk. The caller retains the lowering context, candidate
+and borrowed current input lexically; pointer equality alone is not a lifetime
+or exclusive-context proof.
+
+The builder receives only `hir::Arena` and the current `SpanLowerer`. Its
+exhaustive constructors preserve every admitted field and fixed absent field,
+current IDs/resolutions, reference-versus-slice layout, operator spans,
+independent expression/literal spans, exact float spelling and C-string NUL
+bytes. Checked coordinate recipes use root hygiene and the ordinary span
+lowerer; `DUMMY_SP` also receives the normal current-parent treatment. It has
+no ID allocator, lowering map, resolver, query, fallible lookup or parser.
+Arena allocation and symbol/span interning begin only after audit preflight.
+
+The duplicate HIR is recaptured and fully revalidated against the same current
+input, then compared to the complete cold wire tree. The caller repeats the
+full exit-effect check afterward. Failure rejects capture and returns the
+already-produced stock HIR; it never relowers an advanced context. Success
+also returns stock HIR. No audit node is registered as an owner/body or passed
+to compiler queries. Allocated duplicate nodes remain unused until arena
+teardown; this diagnostic overhead is not a speed optimization or cache hit.
 
 ## Persistence and remaining work
 
-Typed records use a fresh `hir-body-capture-v2-tree-prepared-1` namespace inside rustc's
+Typed records use a fresh `hir-body-capture-v2-cold-materialization-1` namespace inside rustc's
 existing locked incremental session, bounded fallible JSON decoding, an exact
 input key/checksum and fresh-inode publication. Old hardlinked sessions remain
 intact. Missing, corrupt, mismatched, oversized or unwritable records fall back.
@@ -133,7 +163,7 @@ feature/array part of the future entry proof, not a `ReadyHit` contract.
 
 Even a valid saved tree is compared only **after another stock lowering**.
 Logs say `same-tree-and-journal-after-stock-lowering` and
-`cache_hits=0 body_codec=1 prepared_values=1 materializer=0`. These fields identify
+`cache_hits=0 body_codec=1 prepared_values=1 cold_materialization_audit=1 hit_materializer=0`. These fields identify
 the implemented capture checks, not cache-hit or eligibility counts. Typed captures do not establish hits,
 replay correctness, useful effect/output coverage or a speed improvement.
 
@@ -157,10 +187,15 @@ Four additional prepared-value controls cover current coordinate relocation,
 UTF-8/exclusive-end/overflow boundaries, S/source/kind mismatches against an
 earlier checked tree, complete unused-prefix/current-owner/resolution binding,
 all pinned assignment/suffix enums and `u128` overflow. These are also unrun.
+Two cold-audit controls add context/exit/source rejection and actual HIR arena
+literal recapture equality, including dummy/current-parent treatment, UTF-8
+relocation, independent spans, float spelling and byte/C-string preservation.
+The native fixture also includes explicit value/unit returns, wildcard/unit
+bindings, lazy binary conditions and unary/assignment combinations. All new
+unit and native controls are unrun.
 
 Still required: normalized persistent entry-state proof, exclusive current-context
-preflight/commit, complete current-span
-reconstruction and body materialization, prevalidated effect replay through
+preflight/commit, actual cold-audit correctness qualification, prevalidated effect replay through
 ordinary allocation/binding/trait/child/debug semantics, then actual
 cold/hit/edit/error/restoration/corruption/relocation qualification. The current
 capture comparison does not substitute for any of those controls. External

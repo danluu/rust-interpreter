@@ -173,7 +173,7 @@ def main():
         files=files, source_identity=identity, patch_bytes=len(patch), patch_sha256=sha(patch),
         compiler_checkout_modified=False, builds_or_tests_run=False,
         typed_hir_body_codec=True, normalized_feature_entry=True, prepared_current_values=True,
-        cached_body_materialization=False, actual_cache_hit_path=False)
+        cold_materialization_audit=True, cached_body_materialization=False, actual_cache_hit_path=False)
     (ROOT / 'patch.json').write_text(json.dumps(manifest, sort_keys=True, indent=2) + '\n')
     print(json.dumps({name: manifest[name] for name in ['status', 'patch_bytes', 'patch_sha256', 'source_identity']}))
 

@@ -2,9 +2,9 @@
   "status": "source-checks-only",
   "compiler_base_commit": "58e1e1f5311f4424ea81def4763081f6da62d9b3",
   "historical_journal_only_checkpoint": "3f3e9c28704a7866f72ad0974336d79671714ae9",
-  "patch_sha256": "2c6fe23823d5f247ef614c0cd4d5fcd102bbc04c5cff600988e56b4f1d3e52e4",
-  "patch_files": 23,
-  "patch_bytes": 151142,
+  "patch_sha256": "97461b7ae772c50eb7dcd386314c7db063e775499a8fcb84280f7268b6f0e94f",
+  "patch_files": 24,
+  "patch_bytes": 166431,
   "qualified_gate_sha256": "6df8b5b4fe1c0c88f6c21acbbf0514a61b48173bd037456b7563755c50ca15d1",
   "checks": [
     {
@@ -27,24 +27,28 @@
       "note": "Unified-diff blank context lines retain their mandatory single-space marker"
     }
   ],
-  "review": "Independent root and frontend source reviews found no concrete blocker in typed conversion, full current/tree revalidation, complete unused-prefix/local/resolution binding, UTF-8/BytePos overflow and no interning/mutation boundary. Four new pure controls remain unrun. The three inherited unordered-map projection API errors were corrected after the separate actual old-checkpoint failure, retaining numeric ordering.",
-  "prepared_unit_tests": 20,
+  "review": "Independent root and frontend source reviews found no concrete blocker in pinned HIR constructors/arena APIs/module path, current SpanLowerer, prepared-current immutable lifetime, cold owner/E/source/context preflight, complete wire recapture and caller exit checks. A sealed per-span owner invariant has an internal debug assertion. Two new cold-audit source controls and all existing controls remain unrun for this checkpoint.",
+  "prepared_unit_tests": 22,
   "rust_compiler_builds": 0,
   "tests_run": 0,
   "benchmarks_run": 0,
   "compiler_checkout_modified": false,
   "hir_body_codec_implemented": true,
   "hit_path_implemented": false,
-  "materializer_implemented": false,
-  "next_required": "Compile/API validation and prepared cold capture/entry controls. Complete ReadyHit exclusive-context entry/vacancy/event proof, current-span materialization and effect replay remain separate work. The immutable historical 3f3e9c journal-only compiler check does not qualify this new checkpoint.",
+  "materializer_implemented": true,
+  "next_required": "Compile/API validation, all 22 unit controls and the native cold capture/entry/materialization-audit histories on this exact checkpoint. Complete ReadyHit exclusive-context entry/vacancy/event proof and effect replay remain separate work; neither frozen 3f failure nor 33f setup/check results qualify this new audit.",
   "normalized_feature_entry_implemented": true,
   "prepared_current_values_implemented": true,
-  "source_identity": "696d6a44477d5fcb837ea67e73c89cf5155d872d8ff18e3e3cff67b9e44f6a69",
+  "source_identity": "111b94b52b3c748bd46f16aed82ea52efb07dee2176d69dc9b3d4ddb0092c74d",
   "historical_compiler_check": {
     "checkpoint": "3f3e9c28704a7866f72ad0974336d79671714ae9",
     "status": "failed",
     "errors": "Three E0308 errors in effects.rs key projections: pinned into_sorted_stable_ord_by_key requires a borrowed StableCompare key.",
     "current_source_fix": "Borrow stored numeric tuple keys; for binding NodeIds explicitly project to an owned u32 key before stable sorting. NodeId itself lacks StableCompare.",
     "does_not_qualify_current_checkpoint": true
-  }
+  },
+  "cold_materialization_audit_implemented": true,
+  "hit_materializer_implemented": false,
+  "materializer_scope": "Private cold-only audit after complete stock lowering; no reconstructed HIR is returned, registered or passed to ordinary queries.",
+  "frozen_prepared_only_checkpoint": "33f4c4e4b0675578f92f2442de92de8232f30eeb"
 }

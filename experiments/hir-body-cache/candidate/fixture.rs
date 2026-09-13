@@ -40,6 +40,12 @@ fn literals() -> (bool, u8, char, u128, f64, &'static str, &'static [u8], &'stat
         1.25e2_f64, r#"raw λ"#, br#"bytes"#, c"nul")
 }
 fn unsafe_block(x: *const u32) -> u32 { unsafe { *x } }
+fn flow(mut x: i32, stop: bool) -> i32 {
+    if !stop && x > 0 { x = -x; }
+    if stop { return x; }
+    x
+}
+fn early(stop: bool) { if stop { return; } let _ = (); }
 fn body_type(x: &u32) -> u32 { let y: &u32 = x; *y }
 fn nested() -> u32 { fn child() -> u32 { 1 } child() }
 fn closure() -> u32 { let f = || 1; f() }
@@ -67,6 +73,8 @@ fn main() {
     assert_eq!(literals.3, u128::MAX); assert_eq!(literals.4, 125.0);
     assert_eq!(literals.5, "raw λ"); assert_eq!(literals.6, b"bytes"); assert_eq!(literals.7, c"nul");
     assert_eq!(unsafe_block(&4), 4);
+    assert_eq!(flow(5, false), -5); assert_eq!(flow(5, true), 5);
+    early(true); early(false);
     assert_eq!(body_type(&4), 4);
     assert_eq!(nested(), 1);
     assert_eq!(closure(), 1);

@@ -14,6 +14,7 @@ pub(super) struct Current<'a> {
     pub source_start: u32,
     pub source_end: u32,
     pub source_context: rustc_span::SyntaxContext,
+    pub context_identity: [usize; 3],
     pub kinds: &'a [Kind],
     pub journal: &'a journal::Checked,
     pub resolutions: Vec<Option<Res>>,
@@ -65,7 +66,8 @@ impl<'a> Current<'a> {
             resolutions.push(resolution); references.push(reference);
         }
         Some(Self { owner: candidate.owner, start, source: &candidate.source,
-            source_start, source_end, source_context, kinds: &candidate.kinds,
+            source_start, source_end, source_context, context_identity: candidate.context_identity,
+            kinds: &candidate.kinds,
             journal: checked, resolutions, references, locals,
             origins: checked.ast_allocations.iter().map(|(&a, &r)| (r, a)).collect() })
     }
@@ -83,8 +85,8 @@ impl<'a> Current<'a> {
     }
 }
 
-/// Opaque proof of tree/ID/reference closure. It deliberately has no materializer
-/// or public constructor. Cold stock lowering remains the semantic producer.
+/// Opaque proof of tree/ID/reference closure. It deliberately has no direct
+/// materializer or public constructor. Cold stock lowering remains the semantic producer.
 pub(super) struct CheckedTree {
     tree: w::BodyTree,
     _current_resolutions: BTreeMap<u32, Res>,
@@ -366,6 +368,7 @@ pub(super) mod tests {
     pub(in crate::body_cache) fn current(checked: &journal::Checked) -> Current<'_> {
         Current { owner: hir::OwnerId { def_id: rustc_span::def_id::CRATE_DEF_ID }, start: 3, source: "42é",
             source_start: 100, source_end: 104, source_context: rustc_span::SyntaxContext::root(),
+            context_identity: [0; 3],
             kinds: &[Kind::Block, Kind::Expression(kinds::Expr::Literal)], journal: checked,
             resolutions: vec![None, None], references: vec![None, None], locals: BTreeMap::new(),
             origins: BTreeMap::from([(0, 0), (1, 1)]) }
@@ -452,6 +455,7 @@ pub(super) mod tests {
         let id = hir::HirId { owner, local_id: hir::ItemLocalId::from_u32(1) };
         let current = Current { owner, start: 3, source: "42é", journal: &checked,
             source_start: 100, source_end: 104, source_context: rustc_span::SyntaxContext::root(),
+            context_identity: [0; 3],
             kinds: &[Kind::Block, Kind::Expression(kinds::Expr::Assign), Kind::Expression(kinds::Expr::Path),
                 Kind::Segment, Kind::Expression(kinds::Expr::Literal), Kind::Statement(kinds::Statement::Semi),
                 Kind::Pattern { binding: true }],
