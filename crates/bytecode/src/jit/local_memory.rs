@@ -22,6 +22,8 @@ impl Assembler<'_> {
     }
 
     pub(super) fn invalidate_local_memory(&mut self, offset: Option<usize>, size: usize) {
+        #[cfg(test)]
+        self.scratch.invalidate(offset, size);
         if size == 0 { return; }
         let Some(offset) = offset else { self.local_values.clear(); return; };
         let end = offset.checked_add(size).expect("proved local extent");
@@ -137,7 +139,11 @@ impl Assembler<'_> {
             | Op::Allocate {..} | Op::Deallocate {..} | Op::Reallocate {..} | Op::RandomBytes {..}
             | Op::CpuFeatureQuery {..} | Op::EnvironmentGet {..} | Op::CAllocate {..} | Op::CDeallocate {..}
             | Op::CReallocate {..} | Op::CAlignedAllocate {..} | Op::RegisterTlsDestructor {..}
-            | Op::ResetThreadLocals => self.local_values.clear(),
+            | Op::ResetThreadLocals => {
+                self.local_values.clear();
+                #[cfg(test)]
+                self.scratch.invalidate(None, 1);
+            },
         }
     }
 }

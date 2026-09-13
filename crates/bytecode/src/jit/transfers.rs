@@ -16,6 +16,8 @@ impl Assembler<'_> {
                 self.get(12, dst, false);
                 self.get(10, size, false);
                 self.local_values.clear();
+                #[cfg(test)]
+                self.scratch.invalidate(None, 1);
             }
             Op::Copy { dst, src, size } => {
                 self.get(11, src, false);
