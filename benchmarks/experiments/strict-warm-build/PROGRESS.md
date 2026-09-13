@@ -236,6 +236,15 @@ preserved. This establishes the native comparison; interpreted host-unit routing
 and complete build-script execution still need implementation.
 [Native build-script baseline](../../../results/interpreted-build-scripts-native-baseline-01/README.md).
 
+The opt-in Darwin descriptor operations (open, write, close and descriptor flags)
+are implemented and passed native comparison checks in both interpreter engines.
+After integration with main, the release workspace suite passed 533 tests with
+10 ignored diagnostics and no failures or filtering; both native controls and all
+17 child commands passed. This supplies file-descriptor primitives; complete
+standard-library file/stream support and interpreted Cargo host-unit routing
+remain pending. No build-time improvement is claimed from these checks.
+[Integrated descriptor correctness evidence](../../../results/descriptor-io-integrated-qualification-01/README.md).
+
 The [external trait-name index](../../../experiments/external-trait-index/README.md)
 is a reviewed, uncompiled compiler prototype. It preserves ordinary external
 table construction, retains the exact name/namespace projection, and keeps local
