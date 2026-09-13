@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Attribute one real edited build; instrumented observations are not benchmarks.
 
-Uses a task-owned source clone, a fresh target, immutable explicitly selected
-tools, unchanged existing assertions and normal Cargo checking. Only the edited
-state receives rustc phase instrumentation. Prime/restoration are retained too.
+Uses a task-owned source clone, immutable explicitly selected tools, unchanged
+existing assertions and normal Cargo checking. New histories start with an
+empty target. Explicit continuations reuse only a verified owned history and
+compile a previously uncompiled edit. Only edited states receive instrumentation.
 """
 import argparse
 import contextlib
@@ -134,7 +135,15 @@ def compiler_records(directory):
                 require(isinstance(phase.get('pass'), str) and isinstance(phase.get('time'), (int, float)),
                         'invalid rustc phase output')
                 phases.append(phase)
-        record.update(phases=phases, stderr_sha256=digest(folder / 'stderr.log'),
+        profiles = []
+        profile_directory = folder / 'self-profile'
+        if profile_directory.exists():
+            require(not profile_directory.is_symlink(), 'self-profile directory is a symlink')
+            for path in sorted(profile_directory.rglob('*')):
+                require(not path.is_symlink(), 'self-profile output is a symlink')
+                if path.is_file():
+                    profiles.append(dict(path=str(path), bytes=path.stat().st_size, sha256=digest(path)))
+        record.update(phases=phases, self_profiles=profiles, stderr_sha256=digest(folder / 'stderr.log'),
                       record_path=str(folder / 'invocation.json'))
         records.append(record)
     return records
@@ -149,6 +158,103 @@ def sysroot_proof(sysroot, target):
     return {p.name: dict(sha256=digest(p), bytes=p.stat().st_size) for p in files}
 
 
+def owned_report(path):
+    path = Path(path)
+    resolved = path.resolve(strict=True)
+    require(not path.is_symlink() and resolved.parent.parent == ROOT / '.work' and
+            resolved.name == 'report.json' and resolved.stat().st_size <= 128*1024*1024,
+            'resume requires an ordinary report from this checkout .work')
+    report = json.loads(resolved.read_text())
+    require(report.get('schema_version') == 1 and report.get('owner') == str(ROOT) and
+            report.get('performance_measurement') is False and report.get('status') == 'passed' and
+            all(report.get(k) is True for k in ['source_restored', 'assertions_unchanged',
+                'tool_inputs_unchanged', 'scripts_unchanged', 'std_mir_unchanged']),
+            'resume report is not a passed, restored owned diagnostic')
+    return resolved, report
+
+
+def resume_target(path, expected, next_index, next_hash, case):
+    """Validate the latest owned cache history without changing any source/cache."""
+    path, previous = owned_report(path)
+    require(all(previous.get(k) == value for k, value in expected.items()),
+            'resume source, tool, compiler, sysroot, selection or build options differ')
+    previous_index = len(previous['edits'])
+    require(previous['edits'] == [e[0] for e in case['edits'][:previous_index]],
+            'prior edit sequence differs from the current workflow')
+    rows = previous['records']
+    require([r['state'] for r in rows] in (['prime', 'edited', 'restored'], ['edited', 'restored']) and
+            rows[-1]['source_sha256'] == expected['original_sha256'] and
+            all(r['cargo']['returncode'] == r['vm']['returncode'] == 0 for r in rows),
+            'prior history did not complete and restore successfully')
+    target = Path(previous.get('target_directory', str(path.parent / 'target')))
+    require(not target.is_symlink() and target.resolve(strict=True) == target and
+            target.name == 'target' and target.parent.parent == ROOT / '.work' and target.is_dir(),
+            'resume target is outside an owned diagnostic directory')
+    restored = path.parent / 'restored'
+    artifact, event = selected_artifact(restored, target, case['package'])
+    require(event == rows[-1]['selected_cargo_event'] and digest(artifact) == rows[-1]['artifact_sha256'],
+            'live cache no longer matches the prior restored artifact')
+    witnesses = {}
+    for suffix in ['', '.entries.json', '.calls.json']:
+        live = Path(str(artifact) + suffix)
+        snapshot = restored / ('program.rbc' + suffix)
+        require(not live.is_symlink() and live.resolve(strict=True).is_relative_to(target) and
+                live.read_bytes() == snapshot.read_bytes(), 'restored cache sidecar differs from its snapshot')
+        witnesses[str(live)] = digest(live)
+    selected_entry_catalog(artifact, case['tests'])
+    suite, _ = read_report(restored / 'suite.json', rows[-1]['suite_sha256'])
+    validate_report(suite, case['tests'], 'prepared', True)
+    validate_runtime_limits(suite, 100000000000, 150000, required=True)
+    history_path = target / '.strict-warm-profile-history.json'
+    if history_path.exists() or history_path.is_symlink():
+        require(not history_path.is_symlink() and history_path.stat().st_size <= 1024*1024,
+                'invalid target history receipt')
+        history = json.loads(history_path.read_text())
+        require(history.get('schema_version') == 1 and history.get('owner') == str(ROOT) and
+                history.get('kind') == 'strict-warm-diagnostic-target' and history.get('target') == str(target),
+                'target history ownership differs')
+        entries = history.get('entries')
+        require(isinstance(entries, list) and 0 < len(entries) <= len(case['edits']), 'invalid cache history')
+        for entry in entries:
+            require(isinstance(entry, dict) and entry.get('status') == 'passed',
+                    'target history contains an incomplete or failed attempt; automatic resume refused')
+            saved_path, saved = owned_report(entry['report'])
+            require(entry['status'] == 'passed' and entry['report_sha256'] == digest(saved_path) and
+                    all(saved.get(k) == value for k, value in expected.items()) and
+                    entry['edit_index'] == len(saved['edits']) and
+                    saved['edits'] == [e[0] for e in case['edits'][:entry['edit_index']]] and
+                    entry['edited_sha256'] == saved['edited_sha256'], 'cache history entry differs')
+        indices = [entry['edit_index'] for entry in entries]
+        require(indices == sorted(set(indices)) and all(1 <= index <= len(case['edits']) for index in indices),
+                'cache history edit indices are not strictly increasing')
+        require(entries[-1]['report'] == str(path),
+                'resume must name the latest passed target history, not an earlier report')
+        history_before = digest(history_path)
+    else:
+        # Only a legacy independent run can bootstrap a history. An absent
+        # journal cannot silently discard the edits of a continuation.
+        require('continuation' not in previous and target == path.parent / 'target' and
+                [r['state'] for r in rows] == ['prime', 'edited', 'restored'],
+                'continuation target has lost its history receipt')
+        history = dict(schema_version=1, owner=str(ROOT), kind='strict-warm-diagnostic-target',
+            target=str(target), entries=[dict(report=str(path), report_sha256=digest(path),
+                edit_index=previous_index, edited_sha256=previous['edited_sha256'], status='passed')])
+        entries = history['entries']
+        history_before = None
+    require(next_index > max(entry['edit_index'] for entry in entries) and
+            next_hash not in {entry['edited_sha256'] for entry in entries} | {expected['original_sha256']},
+            'continuation must compile a later, previously uncompiled source hash')
+    proof = dict(kind='warm continuation; not an independent cold history',
+        prior_report=str(path), prior_report_sha256=digest(path),
+        prior_cargo_command=rows[-1]['cargo']['command'],
+        history_receipt=str(history_path), history_before_sha256=history_before,
+        previously_compiled_edit_indices=[entry['edit_index'] for entry in entries],
+        previously_compiled_source_hashes=[entry['edited_sha256'] for entry in entries],
+        verified_live_cache_sidecars=witnesses, prime_skipped=True,
+        limitation='fresh relative to this recorded diagnostic target history; no 0.5 second acceptance evidence')
+    return target, history, proof
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
@@ -160,6 +266,9 @@ def main():
     parser.add_argument('--project', choices=WORKFLOWS, default='nushell')
     parser.add_argument('--workflow', default='type-relations')
     parser.add_argument('--edit-index', type=int, default=1)
+    parser.add_argument('--profiling', choices=['passes', 'self'], default='passes')
+    parser.add_argument('--resume-target-from', type=Path,
+                        help='continue the latest passed owned diagnostic with a later, fresh edit')
     parser.add_argument('--jobs', type=int, default=2)
     parser.add_argument('--suite-workers', type=int, default=2)
     parser.add_argument('--borrowck-cache', choices=['off', 'verify', 'reuse'], default='off')
@@ -211,9 +320,6 @@ def main():
             require(time.monotonic() < deadline, 'shared benchmark lock wait expired')
             print(json.dumps(dict(status='waiting for shared benchmark lock')), flush=True)
             time.sleep(min(30, max(0.01, deadline-time.monotonic())))
-    work.mkdir()
-    (work / 'target').mkdir()
-    target = (work / 'target').resolve()
     environment = os.environ.copy()
     for name in list(environment):
         if name.startswith(('RUST_INTERP_', 'CARGO_PROFILE_', 'STRICT_WARM_PROFILE_')) or name in {
@@ -226,9 +332,8 @@ def main():
     wrapper = Path(__file__).with_name('profile_wrapper.py')
     require(os.access(wrapper, os.X_OK), 'diagnostic wrapper must be executable')
     environment.update(CARGO_TERM_COLOR='never', RUSTC=rustc,
-        RUSTC_WRAPPER=str(wrapper), RUSTC_WORKSPACE_WRAPPER='', CARGO_TARGET_DIR=str(target),
+        RUSTC_WRAPPER=str(wrapper), RUSTC_WORKSPACE_WRAPPER='',
         RUST_INTERP_EXPORT_PACKAGE=case['package'], RUST_INTERP_EXPORT_TEST='1',
-        RUST_INTERP_OUTPUT=str(work / 'program.rbc'),
         RUST_INTERP_ENTRIES=json.dumps(case['tests'], separators=(',', ':')),
         RUST_INTERP_INLINE_LEAVES='1', RUST_INTERP_TRAP_UNSUPPORTED_CALLS='1',
         RUST_INTERP_RUN_TRY_CALLBACKS='1', RUST_INTERP_EXPORT_TIMINGS='1',
@@ -242,12 +347,36 @@ def main():
         require((sysroot / 'lib/rustlib' / args.target / 'lib').is_dir(), 'invalid explicit metadata sysroot')
         std_proof = sysroot_proof(sysroot, args.target)
         environment.update(RUST_INTERP_STD_SYSROOT=str(sysroot), RUST_INTERP_STD_TARGET=args.target)
+    expected = dict(source=str(source), revision=revision, project=args.project,
+        workflow=args.workflow, tests=case['tests'], original_sha256=hashlib.sha256(original).hexdigest(),
+        compiler=compiler, compiler_sysroot=compiler_sysroot, rustc_path=rustc,
+        std_mir_sysroot=str(args.std_mir_sysroot.resolve()) if args.std_mir_sysroot else None,
+        std_mir_artifacts=std_proof, target=args.target, tool=tool_proof, jobs=args.jobs,
+        suite_workers=args.suite_workers, borrowck_cache=args.borrowck_cache,
+        function_cache=args.function_cache)
+    continuation = None
+    if args.resume_target_from:
+        target, history, continuation = resume_target(args.resume_target_from, expected,
+            args.edit_index, hashlib.sha256(edited).hexdigest(), case)
+    else:
+        target = work / 'target'
+        history = dict(schema_version=1, owner=str(ROOT), kind='strict-warm-diagnostic-target',
+                       target=str(target), entries=[])
     command = ['cargo', '+' + TOOLCHAIN, 'check', '--manifest-path', str(source / 'Cargo.toml'),
         '--package', case['package'], '--lib', '--profile', 'test', '--locked', '--offline',
         '--jobs', str(args.jobs), '--message-format=json-render-diagnostics', '--timings', '-vv']
     if args.target: command += ['--target', args.target]
+    if continuation:
+        require(command == continuation['prior_cargo_command'], 'continuation Cargo arguments differ')
+    work.mkdir()
+    if not continuation:
+        target.mkdir()
+    environment.update(CARGO_TARGET_DIR=str(target), RUST_INTERP_OUTPUT=str(target.parent / 'program.rbc'))
+    history_path = target / '.strict-warm-profile-history.json'
     report = dict(schema_version=1, owner=str(ROOT), status='running', performance_measurement=False,
         purpose='per-compiler diagnosis of a real edited build; no 0.5 second acceptance evidence',
+        history_kind='warm continuation; not independent' if continuation else 'independent empty-target diagnostic',
+        profiling=args.profiling, edit_index=args.edit_index, target_directory=str(target),
         source=str(source), revision=revision, project=args.project, workflow=args.workflow,
         tests=case['tests'], edits=[e[0] for e in case['edits'][:args.edit_index]],
         original_sha256=hashlib.sha256(original).hexdigest(), edited_sha256=hashlib.sha256(edited).hexdigest(),
@@ -262,13 +391,29 @@ def main():
             ROOT / 'scripts/workflow_cases.py', ROOT / 'scripts/suite_reports.py',
             ROOT / 'scripts/cargo_timing_data.py', ROOT / 'scripts/interpreter.py',
             ROOT / 'scripts/workflow_io.py']}, records=[])
+    if continuation:
+        report['continuation'] = continuation
+    print(json.dumps(dict(status='diagnostic history selected', history_kind=report['history_kind'],
+        prior_report_sha256=continuation['prior_report_sha256'] if continuation else None,
+        target_directory=str(target), profiling=args.profiling, edit_index=args.edit_index)), flush=True)
     write_json(work / 'report.json', report)
+    history_entry = dict(report=str(work / 'report.json'), edit_index=args.edit_index,
+        edited_sha256=report['edited_sha256'], status='running', reserved_before_compilation=True)
+    history['entries'].append(history_entry)
     source_changes = contextlib.ExitStack()
     try:
+        # Reserve this source state before any compiler starts. Failed attempts
+        # remain visible and cannot silently turn a later retry into a fresh edit.
+        write_json(history_path, history)
         source_edit = source_changes.enter_context(SourceEdit(file, original))
-        for name, contents in [('prime', original), ('edited', edited), ('restored', original)]:
+        states = [('edited', edited), ('restored', original)]
+        if not continuation:
+            states.insert(0, ('prime', original))
+        for name, contents in states:
             if name == 'prime':
                 require_space(ROOT, 8)
+            elif name == 'edited':
+                require_space(ROOT, 2)
             require(source_edit.matches(source_edit.current), 'source changed outside this task')
             if contents != source_edit.current:
                 source_edit.replace(contents)
@@ -276,7 +421,8 @@ def main():
             output.mkdir()
             (output / 'units').mkdir()
             env = dict(environment, STRICT_WARM_PROFILE_UNITS=str(output / 'units'),
-                       STRICT_WARM_PROFILE_PHASES='1' if name == 'edited' else '0')
+                       STRICT_WARM_PROFILE_MODE=args.profiling if name == 'edited' else 'off',
+                       STRICT_WARM_PROFILE_PHASES='1' if name == 'edited' and args.profiling == 'passes' else '0')
             before_ready = time.perf_counter()
             cargo = run(command, source, env, output, 'cargo')
             artifact, event = selected_artifact(output, target, case['package'])
@@ -310,10 +456,15 @@ def main():
             (output / 'cargo-timing.html').write_bytes(timing_bytes)
             units = units_from_html(timing_bytes)
             compilers = compiler_records(output / 'units')
-            require(name != 'edited' or any(c['phases'] for c in compilers), 'edited build had no compiler phase output')
+            if name == 'edited':
+                field = 'phases' if args.profiling == 'passes' else 'self_profiles'
+                require(any(c[field] for c in compilers), 'edited build had no requested compiler profile output')
+                require(args.profiling != 'self' or not any(c['phases'] for c in compilers),
+                        'self-profile diagnostic unexpectedly enabled phase logging')
             require(all(c['returncode'] == 0 for c in compilers), 'compiler invocation failed')
             row = dict(state=name, source_sha256=digest(file), cargo=cargo, vm=vm,
-                instrumented=name == 'edited', direct_cargo_to_validated_artifact_seconds=ready_seconds,
+                instrumented=name == 'edited', profiling=args.profiling if name == 'edited' else 'off',
+                direct_cargo_to_validated_artifact_seconds=ready_seconds,
                 scope='excludes Python startup, tool/sysroot verification and artifact snapshots; not launcher timing',
                 artifact_sha256=artifact_hash, artifact_bytes=len(payload), suite_sha256=suite_hash,
                 selected_cargo_event=event, cargo_units=units, cargo_timeline=timeline(units),
@@ -335,11 +486,16 @@ def main():
                                          name, value in report['frozen_scripts'].items())
         report['std_mir_unchanged'] = (std_proof is None or
             sysroot_proof(args.std_mir_sysroot.resolve(), args.target) == std_proof)
-        if not all(report[name] for name in ['tool_inputs_unchanged', 'scripts_unchanged', 'std_mir_unchanged']):
+        report['previous_reports_unchanged'] = all(digest(Path(entry['report'])) == entry['report_sha256']
+            for entry in history['entries'][:-1])
+        if not all(report[name] for name in ['tool_inputs_unchanged', 'scripts_unchanged',
+                                            'std_mir_unchanged', 'previous_reports_unchanged']):
             report.update(status='failed', error='profile inputs changed during this diagnostic')
         report['free_bytes_after'] = shutil.disk_usage(work).free
         report['finished_unix_ns'] = time.time_ns()
         write_json(work / 'report.json', report)
+        history_entry.update(status=report['status'], report_sha256=digest(work / 'report.json'))
+        write_json(history_path, history)
         fcntl.flock(lock, fcntl.LOCK_UN)
         lock.close()
     require(report['status'] == 'passed', report.get('error', 'diagnostic failed'))

@@ -25,8 +25,14 @@ def main():
     # Cargo probes can have a crate name and stdin input, but real compilation
     # units have an emission request. Do not instrument informational probes.
     compilation = any(a == '--emit' or a.startswith('--emit=') for a in original[1:])
-    flags = ['-Ztime-passes', '-Ztime-passes-format=json'] if (
-        compilation and os.environ.get('STRICT_WARM_PROFILE_PHASES') == '1') else []
+    requested = os.environ.get('STRICT_WARM_PROFILE_MODE',
+        'passes' if os.environ.get('STRICT_WARM_PROFILE_PHASES') == '1' else 'off')
+    if requested not in ('off', 'passes', 'self'):
+        raise RuntimeError('unknown compiler profiling mode')
+    profiling = requested if compilation else 'off'
+    flags = (['-Ztime-passes', '-Ztime-passes-format=json'] if profiling == 'passes' else
+             ['-Zself-profile=' + str(directory / 'self-profile'),
+              '-Zself-profile-events=default'] if profiling == 'self' else [])
     command = [os.environ['STRICT_WARM_PROFILE_REAL_WRAPPER'], original[0],
                *flags, *original[1:]]
     environment = os.environ.copy()
@@ -43,7 +49,7 @@ def main():
     record = dict(schema_version=1, wrapper_pid=os.getpid(), parent_pid=os.getppid(),
                   cwd=os.getcwd(), start_unix_ns=started, original_args=original,
                   forwarded_command=command, environment=captured_env,
-                  compilation=compilation, diagnostic_flags=flags,
+                  compilation=compilation, profiling=profiling, diagnostic_flags=flags,
                   inherited_fds_preserved=True, status='starting')
     path = directory / 'invocation.json'
     write_json(path, record)
