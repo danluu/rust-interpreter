@@ -68,6 +68,27 @@ class QualificationTests(unittest.TestCase):
             self.assertIn('[build-dependencies]', (source / 'Cargo.toml').read_text())
             self.assertIn('proc-macro=true', (source / 'macros/Cargo.toml').read_text())
 
+    def test_structured_diagnostics_preserve_semantics_and_reject_stale_cache_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            message = dict(level='error', code={'code': 'E0308'}, message='mismatched types',
+                spans=[dict(file_name=str(root / 'fixture.rs'), line_start=3, is_primary=True)],
+                children=[dict(level='note', message='expected u32', spans=[])], rendered='colored output')
+            cargo = json.dumps(dict(reason='compiler-message', message=message))
+            cache = json.dumps(message | {'$message_type': 'diagnostic'})
+            self.assertEqual(qualification.core_diagnostics(qualification.diagnostic_records(cargo), root),
+                             qualification.core_diagnostics(qualification.diagnostic_records(cache), root))
+            changed = message | {'message': 'different semantics'}
+            self.assertNotEqual(qualification.core_diagnostics([message], root),
+                                qualification.core_diagnostics([changed], root))
+            target = root / 'target'; target.mkdir()
+            output = target / 'output-lib-fixture'; output.write_text(cache)
+            records, files = qualification.changed_diagnostics(target, {})
+            self.assertEqual(records, qualification.diagnostic_records(cache))
+            self.assertEqual(files, {str(output): cache})
+            with self.assertRaisesRegex(RuntimeError, 'did not retain'):
+                qualification.changed_diagnostics(target, qualification.diagnostic_files(target))
+
 
 if __name__ == '__main__':
     unittest.main()

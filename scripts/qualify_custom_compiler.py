@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+import subprocess
 import sys
 import time
 
@@ -84,6 +85,7 @@ def fixture(directory):
         'include!(concat!(env!("OUT_DIR"), "/generated.rs"));\n'
         'pub const MACRO: u32 = custom_macros::host_value!();\n'
         'pub fn entry() -> u32 { ' + calculation + ' + BUILT + MACRO }\n')
+    files['src/main.rs'] = 'fn main() { println!("{}", custom_compiler_fixture::entry()); }\n'
     for name, text in files.items():
         (directory / name).write_text(text)
     (directory / 'shared/src/lib.rs').write_bytes(shared_source(3))
@@ -150,6 +152,54 @@ def validate_failure(row, code):
             'failed compilation executed a guest or reported success')
 
 
+def diagnostic_records(text):
+    records = []
+    for line in text.splitlines():
+        if not line.startswith('{'):
+            continue
+        value = json.loads(line)
+        if value.get('reason') == 'compiler-message':
+            records.append(value['message'])
+        elif value.get('$message_type') == 'diagnostic':
+            records.append(value)
+    return records
+
+
+def core_diagnostics(records, owned_root):
+    def normalize(value):
+        if isinstance(value, dict):
+            return {k: normalize(v) for k, v in value.items() if k != 'rendered'}
+        if isinstance(value, list):
+            return [normalize(v) for v in value]
+        if isinstance(value, str):
+            return value.replace(str(owned_root), '<owned-checkout>')
+        return value
+    result = [normalize(dict(level=r['level'], code=(r.get('code') or {}).get('code'),
+                             message=r['message'], spans=r.get('spans', []), children=r.get('children', [])))
+              for r in records if r['level'] in ('warning', 'error', 'failure-note')]
+    # Concurrent Cargo units may deliver identical warnings in different order.
+    # Preserve duplicate records and every semantic field while sorting records.
+    return sorted(result, key=lambda value: json.dumps(value, sort_keys=True))
+
+
+def diagnostic_files(target):
+    return {str(path): stamp(path) for path in target.rglob('output-*') if path.is_file()}
+
+
+def changed_diagnostics(target, before):
+    records, files = [], {}
+    for name, current in diagnostic_files(target).items():
+        if before.get(name) == current:
+            continue
+        payload = Path(name).read_text()
+        found = diagnostic_records(payload)
+        if found:
+            records.extend(found)
+            files[name] = payload
+    require(records, 'Cargo did not retain structured diagnostics for the failed invocation')
+    return records, files
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler-key', required=True)
@@ -176,20 +226,24 @@ def main():
                 require_export_option(tools, key, capability)
             env = environment()
             compiler.environment(env)
+            public_rustc = Path(subprocess.check_output(['rustup', 'which', '--toolchain', TOOLCHAIN,
+                                                         'rustc'], text=True).strip()).resolve(strict=True)
+            public_identity = dict(rustc=str(public_rustc), sha256=file_digest(public_rustc),
+                compiler=subprocess.check_output([str(public_rustc), '-vV'], text=True, env=env))
             frozen = {str(p): file_digest(p) for p in (ROOT / 'scripts').glob('*.py')}
             write_json(work / 'plan.json', dict(kind='real-custom-compiler-integration',
                 compiler_key=compiler.key, tool_key=key, compiler=compiler.identity,
                 tool_composition=composition, environment_sha256=digest(env), scripts=frozen,
                 modes=MODES, benchmark=False, retries='none', minimum_free_gib=8,
-                lock_path=str(Path(lock.name).resolve())))
+                lock_path=str(Path(lock.name).resolve()), public_reference=public_identity))
 
-            def invoke(label, command, cwd=ROOT):
+            def invoke(label, command, cwd=ROOT, actual_env=None):
                 require_space(work, 8)
                 require(load_compiler(ROOT, compiler.key) == compiler, 'installed compiler changed')
                 require(all(file_digest(Path(p)) == sha for p, sha in frozen.items()), 'harness changed')
                 index = len(rows)
                 started = time.perf_counter()
-                child, stdout, stderr = capture(list(map(str, command)), cwd=cwd, env=env,
+                child, stdout, stderr = capture(list(map(str, command)), cwd=cwd, env=env if actual_env is None else actual_env,
                     receipt_path=work / f'{index:02d}-child.json', receipt=dict(label=label))
                 row = dict(label=label, command=list(map(str, command)), returncode=child.returncode,
                            seconds=time.perf_counter() - started, stdout=stdout, stderr=stderr)
@@ -230,10 +284,34 @@ def main():
             original_shared, original_guest = shared.read_bytes(), guest.read_bytes()
             caches = work / 'caches'
             caches.mkdir()
-            workspaces, artifacts = {}, {}
+            workspaces, artifacts, diagnostics = {}, {}, {}
+
+            def public(label, value=None, code=None):
+                require(file_digest(public_rustc) == public_identity['sha256'], 'public rustc changed')
+                row = invoke(label + '-public', ['cargo', '+' + TOOLCHAIN, 'run',
+                    '--manifest-path', source / 'Cargo.toml', '--package', 'custom-compiler-fixture',
+                    '--bin', 'custom-compiler-fixture', '--locked', '--offline', '--jobs', '2',
+                    '--target', compiler.host, '--target-dir', work / 'public-target',
+                    '--message-format=json-render-diagnostics'], source,
+                    dict(env, RUSTC=str(public_rustc), RUSTC_WRAPPER='', RUSTC_WORKSPACE_WRAPPER=''))
+                output = '\n'.join(line for line in row['stdout'].splitlines() if not line.startswith('{'))
+                messages = diagnostic_records(row['stdout'])
+                core = core_diagnostics(messages, ROOT)
+                if code:
+                    require(row['returncode'] != 0 and output == ''
+                            and any(d['code'] == code and d['level'] == 'error' for d in core),
+                            'ordinary public compiler did not reject the expected uncalled error')
+                    diagnostics[label, 'public'] = core
+                else:
+                    require(row['returncode'] == 0 and output == str(3 * (value + 55)),
+                            'ordinary native execution produced a wrong result')
+                row.update(validated=True, diagnostics=core,
+                           source_sha256={'shared': file_digest(shared), 'guest': file_digest(guest)})
+                write_json(work / 'commands.json', rows)
 
             def launch(label, mode, value=None, code=None):
                 sources = {'shared': file_digest(shared), 'guest': file_digest(guest)}
+                before = diagnostic_files(workspaces[mode] / 'target') if code else {}
                 row = invoke(label + '-' + mode, [sys.executable, ROOT / 'scripts/interpreter.py',
                     '--manifest-path', source / 'Cargo.toml', '--package', 'custom-compiler-fixture',
                     '--entry', 'entry', '--compiler-key', compiler.key, '--tool-key', key,
@@ -247,6 +325,13 @@ def main():
                         'source changed during a launcher command')
                 if code:
                     validate_failure(row, code)
+                    messages, files = changed_diagnostics(workspaces[mode] / 'target', before)
+                    core = core_diagnostics(messages, ROOT)
+                    require(any(d['code'] == code and d['level'] == 'error' for d in core),
+                            'retained compiler diagnostics lack the expected error')
+                    row.update(diagnostics=core, diagnostic_outputs=files)
+                    diagnostics[label, mode] = core
+                    require(core == diagnostics[label, 'public'], 'structured public/custom diagnostics differ')
                 else:
                     report, artifact = validate_launch(row, compiler, mode, key, stds[mode], caches)
                     require(row['stdout'] == str(3 * (value + 55)) + '\n', 'host/guest computed a stale or wrong value')
@@ -269,9 +354,11 @@ def main():
                 write_json(work / 'commands.json', rows)
 
             with SourceEdit(shared, original_shared) as shared_edit, SourceEdit(guest, original_guest) as guest_edit:
+                public('original', 3)
                 for mode in MODES:
                     launch('original', mode, 3)
                 shared_edit.replace(shared_source(7))
+                public('edited', 7)
                 for mode in MODES:
                     launch('edited', mode, 7)
                 for location, edit, original in [('host', shared_edit, original_shared),
@@ -280,10 +367,12 @@ def main():
                     guest_edit.replace(original_guest)
                     for label, (body, code) in ERRORS.items():
                         edit.replace(original + body.encode() + b'\n')
+                        public(location + '-' + label, code=code)
                         for mode in MODES:
                             launch(location + '-' + label, mode, code=code)
                 shared_edit.replace(original_shared)
                 guest_edit.replace(original_guest)
+                public('restored', 3)
                 for mode in MODES:
                     launch('restored', mode, 3)
             require(shared.read_bytes() == original_shared and guest.read_bytes() == original_guest,
@@ -298,7 +387,8 @@ def main():
             installed_tools(key)
             result = dict(status='passed', kind='real-custom-compiler-integration', benchmark=False,
                 compiler_key=compiler.key, tool_key=key, std_mir=stds, commands=len(rows),
-                launcher_commands=22, expected_rejections=16, source_restored=True)
+                launcher_commands=22, public_commands=11, expected_rejections=24, source_restored=True,
+                public_reference=public_identity)
             write_json(work / 'result.json', result)
             print(json.dumps(result))
     except BaseException as error:

@@ -68,3 +68,12 @@ commands, outputs, selected bytecode, and failed runs are retained under the
 explicit run ID. This tests correctness; its small fixture and times are not
 performance evidence or a holdout. The caller must configure this checkout's
 `.work/benchmark.lock` to the campaign's shared lock before admitting work.
+
+The same source history also runs 11 native Cargo commands with the ordinary
+pinned public compiler and a separate target directory. Actual native output
+must agree with the VM results. The eight public uncalled-error rejections must
+match both custom modes' structured core diagnostics, including spans and
+children; only rendering and owned checkout path prefixes are normalized.
+The fixture's explicit two-CGU development and build-helper settings are the
+same for all arms and exist to exercise the merge branch. They do not alter any
+workload comparison profile.
