@@ -31,6 +31,10 @@ fn observe_saved_local_facts() {
         None | Some("0") => false, Some("1") => true, _ => panic!("invalid static-fact census option"),
     };
     alternative.observe_static_local_facts = static_facts;
+    let scalar_copy = match std::env::var("LOCAL_CENSUS_SCALAR_COPY").ok().as_deref() {
+        None | Some("0") => false, Some("1") => true, _ => panic!("invalid scalar-copy census option"),
+    };
+    alternative.observe_scalar_copy = scalar_copy;
     let mut output = vec![];
     let (mut cursor, mut assertions, mut candidate_bytes) = (0, 0, 0);
     let mut seen = BTreeSet::new();
@@ -79,6 +83,6 @@ fn observe_saved_local_facts() {
     let file = std::fs::OpenOptions::new().write(true).create_new(true)
         .open(std::env::var("LOCAL_CENSUS_OUTPUT").unwrap()).unwrap();
     serde_json::to_writer(file, &json!({"status":"passed","baseline_bytes":bytes.len(),
-        "candidate_bytes":candidate_bytes,"static_fact_preservation":static_facts,"functions":output,"exact_baseline_reconstruction":true,
+        "candidate_bytes":candidate_bytes,"static_fact_preservation":static_facts,"scalar_copy":scalar_copy,"functions":output,"exact_baseline_reconstruction":true,
         "guest_commands":0,"executable_code_publications":0,"capacity":MAX_CODE_BYTES})).unwrap();
 }

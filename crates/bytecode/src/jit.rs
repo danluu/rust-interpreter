@@ -332,6 +332,8 @@ pub(crate) struct Jit<'a> {
     observe_guarded_local_retention: bool,
     #[cfg(test)]
     observe_static_local_facts: bool,
+    #[cfg(test)]
+    observe_scalar_copy: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -364,6 +366,8 @@ impl<'a> Jit<'a> {
             observe_guarded_local_retention: false,
             #[cfg(test)]
             observe_static_local_facts: false,
+            #[cfg(test)]
+            observe_scalar_copy: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -516,6 +520,8 @@ impl<'a> Jit<'a> {
                     observe_guarded_local_retention: self.observe_guarded_local_retention,
                     #[cfg(test)]
                     observe_static_local_facts: self.observe_static_local_facts,
+                    #[cfg(test)]
+                    observe_scalar_copy: self.observe_scalar_copy,
                     heap: self.uses_heap,
                     reads: &reads,
                     frame_size: f.frame_size,
@@ -963,6 +969,8 @@ struct Assembler<'a> {
     observe_guarded_local_retention: bool,
     #[cfg(test)]
     observe_static_local_facts: bool,
+    #[cfg(test)]
+    observe_scalar_copy: bool,
     guarded_range: Option<range_groups::Plan>,
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
@@ -1827,6 +1835,17 @@ impl Assembler<'_> {
                 let source_local = self.local_range(src, size);
                 let destination_local = self.local_range(dst, size);
                 let forwarded = self.local_value(source_local, size);
+                #[cfg(test)]
+                if self.observe_scalar_copy && [1, 2, 4, 8, 16].contains(&size) {
+                    self.observed_scalar_copy(dst, src, size, forwarded.map(|(_, value)| value));
+                    if !self.observe_retained_local_write(destination_local, dst, size) {
+                        self.invalidate_local_memory(destination_local, size);
+                    }
+                    if let Some((source, _)) = forwarded {
+                        self.remember_local_memory(destination_local, size, source);
+                    }
+                    return;
+                }
                 if forwarded.is_none() { self.address(11, src, size, false); }
                 self.address(12, dst, size, true);
                 // Read all bytes before writing so even overlapping copies

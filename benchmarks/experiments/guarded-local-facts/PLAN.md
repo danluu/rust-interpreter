@@ -42,3 +42,16 @@ never aliased. Use the existing remember/definition contract, preserving its
 eviction, liveness and eventual spill rules. This census still does not qualify
 guest correctness or enable the change in ordinary VM binaries. Reconstruct
 the same saved baseline and report both gains and losses for the composition.
+
+The static-fact composition also reproduces all baselines. The primary's operation
+spans shrink while flush spans grow; successor-fallback static changes cannot be
+counted as uniformly executed savings. Before selecting one runtime candidate,
+inspect one further composition with the qualified scalar-copy mechanism from
+6eabf6f4, preserving its earlier failed full performance verdict. Its current
+memory_address calls now use existing guarded displacements as well as exact
+local-frame displacements. Both-local copies share a validated frame base;
+other copies retain source-before-destination validation and load all source
+bytes before the first store. The new guarded-retention check remains after
+the immediate write. This is a distinct test-only composition, not retiming of
+the unchanged earlier scalar-copy candidate. Reconstruct the original saved
+baseline again, expose all changed categories, and run no guests in this census.
