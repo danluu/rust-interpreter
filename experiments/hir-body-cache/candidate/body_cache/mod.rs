@@ -12,6 +12,7 @@ use crate::LoweringContext;
 
 mod capture;
 mod effects;
+mod entry;
 mod kinds;
 mod validate;
 mod wire;
@@ -21,7 +22,7 @@ mod storage;
 mod source_identity;
 pub(super) use effects::Trace;
 
-const FORMAT: &str = "hir-body-capture-v2-tree-1";
+const FORMAT: &str = "hir-body-capture-v2-tree-entry-1";
 
 pub(super) struct Candidate {
     owner: hir::OwnerId,
@@ -101,10 +102,16 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
         report(lctx, &candidate, "rejected-entry", 0, 0, 0);
         return lctx.lower_block_expr(body);
     };
+    // Active crate features and actual allow arrays are captured here, after
+    // stock parameters. prepare() may run before context/signature work.
+    let Some(record_key) = entry::bind(lctx, &candidate.key) else {
+        report(lctx, &candidate, "rejected-normalized-entry", frame.start, frame.start, 0);
+        return lctx.lower_block_expr(body);
+    };
     let entry = journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix };
     // Reading/decoding and the validation boundary require only immutable
     // current input. There is NO conversion from Checked to a HIR expression.
-    let previous = storage::read(&candidate.path, &candidate.key).and_then(|payload| {
+    let previous = storage::read(&candidate.path, &record_key).and_then(|payload| {
         let checked = journal::check(payload.journal.clone(), &entry)?;
         let current = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)?;
         validate::check(payload.tree.clone(), &current)?;
@@ -135,7 +142,7 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
     };
     // Typed evidence only: no cached HIR materializer exists. Every comparison
     // follows stock lowering, complete cold capture and exit-effect checks.
-    let stored = storage::write(&candidate.path, &candidate.key, &payload);
+    let stored = storage::write(&candidate.path, &record_key, &payload);
     report(lctx, &candidate, if stored { state } else { "tree-write-unavailable" },
         frame.start, end, checked.journal().events.len());
     value

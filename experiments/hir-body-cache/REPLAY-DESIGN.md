@@ -63,15 +63,17 @@ frame's pointer comparisons still check the implementation during capture;
 they are not a cross-session key. Allowed-feature arrays must be covered by
 tracked options or normalized by stable content, never by Arc pointer value.
 Disambiguator/new-definition/override/impl-trait/lint/move state keeps its current
-conservative guard. There is no permission here to weaken one to a length check.
+conservative guard. Exact state is required; a length check is insufficient.
 
 ## Crate features and ambient-state audit
 
-The current capture key is **not sufficient as a future replay entry key**.
-`Options::dep_tracking_hash(false)` covers command-line settings, but active
+The journal/tree checkpoint `2e60d5fb` omitted active crate features. The new
+`entry.rs` capture-key component addresses that part of this audit; a complete
+future replay entry proof remains outstanding. `Options::dep_tracking_hash(false)`
+covers command-line settings, but active
 `#![feature(...)]` values come from current crate attributes and are fed into
 `features_query` separately (interface/passes.rs1020; expand/config.rs47).
-Before a hit path, add a versioned normalized entry record containing:
+The versioned normalized feature/array entry record now contains:
 
 - Language features from `tcx.features().enabled_lang_features()`: sorted
   `(gate_name.as_str(), stable_since.map(as_str))` records, preserving duplicates.
@@ -123,7 +125,8 @@ manufacture a scope fingerprint. `index_ast` forces early lints before stealing
 AST/resolver inputs (lib.rs583–587); interface/passes.rs1133/1225/1245 retains
 delayed-lint emission, late lint checking and expectation checking afterward.
 
-Tiny additional planned controls, all with byte-identical function bodies:
+Additional controls, all with byte-identical function bodies (crate-feature,
+crate-lint and CLI variants now prepared in run-make; module variant planned):
 
 1. Cold/repeated anchor, then add/remove crate `#![feature(async_fn_track_caller)]`;
    require the normalized language-feature key and allowed-feature-array input
@@ -138,8 +141,8 @@ Tiny additional planned controls, all with byte-identical function bodies:
    Capture stderr without the optional cache-info logs. Also switch `-A` to
    `-D unused_variables` to require the existing session-option key to miss.
 
-These are planned invalidation/presentation controls, not executed tests or an
-assertion that the current capture checkpoint already serializes this entry.
+These invalidation/presentation controls are unrun. The capture record now binds
+features/allow arrays; it does not yet provide the complete `ReadyHit` contract.
 
 ## Commit effects and materialization
 

@@ -86,7 +86,7 @@ or type checking as the semantic producer. They are not yet a hit admission API.
 
 ## Persistence and remaining work
 
-Typed records use a fresh `hir-body-capture-v2-tree-1` namespace inside rustc's
+Typed records use a fresh `hir-body-capture-v2-tree-entry-1` namespace inside rustc's
 existing locked incremental session, bounded fallible JSON decoding, an exact
 input key/checksum and fresh-inode publication. Old hardlinked sessions remain
 intact. Missing, corrupt, mismatched, oversized or unwritable records fall back.
@@ -94,6 +94,18 @@ The key includes the exact resolved input, tracked options, compiler cfg
 version, assertions configuration and generated identity of the entire patch.
 It uses ordinary incremental session compatibility, with immutable compiler
 byte identity audited separately during build/install qualification.
+
+The final record key also binds `entry.rs`'s normalized **actual body-entry**
+context, obtained after ordinary parameter lowering and `Frame::enter` rather
+than from the earlier owner preparation. It sorts the language/library feature
+lists while retaining categories, duplicates and language stabilization text,
+checks their union against the actual enabled set, and preserves every ordered
+symbol name in all eight named `allow_*` arrays. The public list/set accessors
+avoid boolean getters and their `TRACK_FEATURE` side effects. Ordinary context
+construction and feature/lint checks remain unchanged. Empty/oversized or
+inconsistent normalized data rejects capture before reading a sidecar; the
+complete key stays under the existing record budget. This implements the
+feature/array part of the future entry proof, not a `ReadyHit` contract.
 
 Even a valid saved tree is compared only **after another stock lowering**.
 Logs say `same-tree-and-journal-after-stock-lowering` and
@@ -103,11 +115,18 @@ replay correctness, useful effect/output coverage or a speed improvement.
 Prepared source tests cover duplicate/missing/out-of-range/wrong-kind tree IDs,
 journal/tree order disagreement, actual ID sentinel and prefix boundaries,
 current parameter/local/nonlocal resolution binding, UTF-8 span boundaries,
-typed literal domains, lowered assignment operator spelling, and malformed/
+typed literal domains, pinned assignment operator spelling, feature-list category/
+duplicate/version changes, allowed-array order/field association, union/key
+boundaries, and malformed/
 checksum/key/oversized storage with old-hardlink preservation. The run-make
 fixture retains ordinary/edit/restoration, shadowing, fields/methods/traits,
 generic headers, parenthesis/empty syntax, Unicode prefix relocation and raw
-uncalled type/borrow/const/panic diagnostic controls. All are **unrun**.
+uncalled type/borrow/const/panic diagnostic controls. New run-make controls add
+and remove language/library features around the same anchor, require first
+new-feature states to be cold, and compare exact raw current diagnostics for
+crate allow/deny and CLI `-A`/`-D` unused-variable settings. Native cold-state
+controls do not isolate key-field causality; the pure normalization tests cover
+those individual changes. All are **unrun**.
 
 Still required: normalized persistent entry-state proof, complete current-span
 reconstruction and body materialization, prevalidated effect replay through
