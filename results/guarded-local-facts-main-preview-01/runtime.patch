@@ -1,0 +1,758 @@
+diff --git a/crates/bytecode/src/jit.rs b/crates/bytecode/src/jit.rs
+index 121ab89d..fd46eabd 100644
+--- a/crates/bytecode/src/jit.rs
++++ b/crates/bytecode/src/jit.rs
+@@ -290,6 +290,10 @@ pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
+ struct CompiledFunction<'a> {
+     #[cfg(test)]
+     local_forwarding: Vec<(usize, &'static str)>,
++    #[cfg(test)]
++    local_fact_events: Vec<(usize, &'static str, &'static str)>,
++    #[cfg(test)]
++    retained_local_writes: Vec<(usize, Reg, usize, usize)>,
+     words: Vec<u32>,
+     entries: Vec<Option<Block>>,
+     resumes: Vec<Option<usize>>,
+@@ -324,6 +328,12 @@ pub(crate) struct Jit<'a> {
+     resumable: Option<resumable::Entries>,
+     #[cfg(test)]
+     disable_call_slot_hints: bool,
++    #[cfg(test)]
++    observe_guarded_local_retention: bool,
++    #[cfg(test)]
++    observe_static_local_facts: bool,
++    #[cfg(test)]
++    observe_scalar_copy: bool,
+     pub register_functions: usize,
+     pub register_pairs: usize,
+     pub liveness_declines: usize,
+@@ -352,6 +362,12 @@ impl<'a> Jit<'a> {
+             assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
+             #[cfg(test)]
+             disable_call_slot_hints: false,
++            #[cfg(test)]
++            observe_guarded_local_retention: true,
++            #[cfg(test)]
++            observe_static_local_facts: true,
++            #[cfg(test)]
++            observe_scalar_copy: true,
+             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
+             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
+     }
+@@ -447,6 +463,8 @@ impl<'a> Jit<'a> {
+         let mut words = vec![];
+         #[cfg(test)]
+         let mut local_forwarding = vec![];
++        #[cfg(test)]
++        let (mut local_fact_events, mut retained_local_writes) = (vec![], vec![]);
+         let mut assertions = vec![];
+         let mut operations = 0;
+         let mut range_work = 4_000_000;
+@@ -498,6 +516,12 @@ impl<'a> Jit<'a> {
+             if pc - start >= if resumable { 1 } else { 3 } {
+                 let offset = words.len() * 4;
+                 let mut a = Assembler {
++                    #[cfg(test)]
++                    observe_guarded_local_retention: self.observe_guarded_local_retention,
++                    #[cfg(test)]
++                    observe_static_local_facts: self.observe_static_local_facts,
++                    #[cfg(test)]
++                    observe_scalar_copy: self.observe_scalar_copy,
+                     heap: self.uses_heap,
+                     reads: &reads,
+                     frame_size: f.frame_size,
+@@ -617,7 +641,11 @@ impl<'a> Jit<'a> {
+                     return Ok(None);
+                 }
+                 #[cfg(test)]
+-                local_forwarding.extend(a.local_forwarding);
++                {
++                    local_forwarding.extend(a.local_forwarding);
++                    local_fact_events.extend(a.local_fact_events);
++                    retained_local_writes.extend(a.retained_local_writes);
++                }
+                 words.extend(a.words);
+                 entries[start] = Some(Block { offset, end: pc });
+                 operations += pc - start;
+@@ -663,7 +691,9 @@ impl<'a> Jit<'a> {
+         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
+             liveness_declined: self.persistent_registers && values.is_none(),
+-            #[cfg(test)] local_forwarding }))
++            #[cfg(test)] local_forwarding,
++            #[cfg(test)] local_fact_events,
++            #[cfg(test)] retained_local_writes }))
+     }
+     /// Execute a region and any linked successors in the same guest function.
+     ///
+@@ -933,8 +963,14 @@ enum Fact {
+     Physical { lo: u32 },
+ }
+ 
+-#[derive(Default)]
++#[cfg_attr(not(test), derive(Default))]
+ struct Assembler<'a> {
++    #[cfg(test)]
++    observe_guarded_local_retention: bool,
++    #[cfg(test)]
++    observe_static_local_facts: bool,
++    #[cfg(test)]
++    observe_scalar_copy: bool,
+     guarded_range: Option<range_groups::Plan>,
+     values: Option<&'a values::Allocation>,
+     tree_caller_is_region: bool,
+@@ -942,6 +978,10 @@ struct Assembler<'a> {
+     local_values: Vec<local_memory::Value>,
+     #[cfg(test)]
+     local_forwarding: Vec<(usize, &'static str)>,
++    #[cfg(test)]
++    local_fact_events: Vec<(usize, &'static str, &'static str)>,
++    #[cfg(test)]
++    retained_local_writes: Vec<(usize, Reg, usize, usize)>,
+     words: Vec<u32>,
+     links: Vec<(usize, usize)>,
+     failures: Vec<(usize, Failure)>,
+@@ -961,6 +1001,40 @@ struct Assembler<'a> {
+     region_end: usize,
+     current_pc: usize,
+ }
++
++#[cfg(test)]
++impl Default for Assembler<'_> {
++    fn default() -> Self {
++        Self {
++            observe_guarded_local_retention: true,
++            observe_static_local_facts: true,
++            observe_scalar_copy: true,
++            guarded_range: Default::default(),
++            values: Default::default(),
++            tree_caller_is_region: Default::default(),
++            resumable: Default::default(),
++            local_values: Default::default(),
++            local_forwarding: Default::default(),
++            local_fact_events: Default::default(),
++            retained_local_writes: Default::default(),
++            words: Default::default(),
++            links: Default::default(),
++            failures: Default::default(),
++            assertions: Default::default(),
++            heap: Default::default(),
++            frame_size: Default::default(),
++            reads: Default::default(),
++            facts: Default::default(),
++            defined: Default::default(),
++            live_in: Default::default(),
++            cached: Default::default(),
++            cache_recent: Default::default(),
++            region_start: Default::default(),
++            region_end: Default::default(),
++            current_pc: Default::default(),
++        }
++    }
++}
+ impl Assembler<'_> {
+     fn assertion(&mut self, value: Reg, expected: bool, code: u64) {
+         // Bytecode truth is nonzero across all 128 bits, including values
+@@ -1749,6 +1823,26 @@ impl Assembler<'_> {
+             Op::Load { dst, address, size } => {
+                 let local = self.local_range(address, size as usize);
+                 if let Some((_, value)) = self.local_value(local, size as usize) {
++                    #[cfg(test)]
++                    let preserve_static = self.observe_static_local_facts;
++                    #[cfg(not(test))]
++                    let preserve_static = true;
++                    if preserve_static {
++                        // Follow the existing constant-definition contract. Only
++                        // self-contained facts can be copied without a new owner.
++                        let exact = match value {
++                            Fact::Imm(v) => Some(Fact::Imm(v & ((1u128 << (size as u32 * 8))-1))),
++                            Fact::Local(offset) if size == 8 => Some(Fact::Local(offset)),
++                            _ => None,
++                        };
++                        if let Some(exact) = exact {
++                            #[cfg(test)]
++                            self.observe_forwarded_fact(value, "Load");
++                            self.remember(dst, exact);
++                            self.remember_local_memory(local, size as usize, dst);
++                            return;
++                        }
++                    }
+                     self.forward_local_value(value, size as usize, "Load");
+                 } else {
+                     let immediate = self.memory_address(11, address, size as usize, false);
+@@ -1764,7 +1858,8 @@ impl Assembler<'_> {
+                 self.get(9, src, false);
+                 if size > 8 { self.get(10, src, true); }
+                 self.store_mem_at(9, 10, 11, size as usize, immediate);
+-                self.invalidate_local_memory(local, size as usize);
++                let retain = self.preserve_guarded_local_write(local, address, size as usize);
++                if !retain { self.invalidate_local_memory(local, size as usize); }
+                 self.remember_local_memory(local, size as usize, src);
+             }
+             Op::CompareBytes { dst, left, right, size } => {
+@@ -1775,6 +1870,20 @@ impl Assembler<'_> {
+                 let source_local = self.local_range(src, size);
+                 let destination_local = self.local_range(dst, size);
+                 let forwarded = self.local_value(source_local, size);
++                #[cfg(test)]
++                let scalar_copy = self.observe_scalar_copy;
++                #[cfg(not(test))]
++                let scalar_copy = true;
++                if scalar_copy && [1, 2, 4, 8, 16].contains(&size) {
++                    self.scalar_copy(dst, src, size, forwarded.map(|(_, value)| value));
++                    if !self.preserve_guarded_local_write(destination_local, dst, size) {
++                        self.invalidate_local_memory(destination_local, size);
++                    }
++                    if let Some((source, _)) = forwarded {
++                        self.remember_local_memory(destination_local, size, source);
++                    }
++                    return;
++                }
+                 if forwarded.is_none() { self.address(11, src, size, false); }
+                 self.address(12, dst, size, true);
+                 // Read all bytes before writing so even overlapping copies
+@@ -1815,7 +1924,8 @@ impl Assembler<'_> {
+                         self.store_mem(9, 10, 12, tail);
+                     }
+                 }
+-                self.invalidate_local_memory(destination_local, size);
++                let retain = self.preserve_guarded_local_write(destination_local, dst, size);
++                if !retain { self.invalidate_local_memory(destination_local, size); }
+                 if let Some((source, _)) = forwarded {
+                     self.remember_local_memory(destination_local, size, source);
+                 }
+diff --git a/crates/bytecode/src/jit/code_spans.rs b/crates/bytecode/src/jit/code_spans.rs
+index bba145f7..7f7e983a 100644
+--- a/crates/bytecode/src/jit/code_spans.rs
++++ b/crates/bytecode/src/jit/code_spans.rs
+@@ -7,6 +7,9 @@ use std::io::{self, Write};
+ const MAX_SPANS: usize = 2_000_000;
+ const MAX_OUTPUT_BYTES: usize = 256 * 1024 * 1024;
+ 
++#[cfg(test)]
++mod local_census;
++
+ #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+ #[serde(rename_all = "snake_case")]
+ pub(super) enum Kind {
+diff --git a/crates/bytecode/src/jit/code_spans/local_census.rs b/crates/bytecode/src/jit/code_spans/local_census.rs
+new file mode 100644
+index 00000000..dc2643dd
+--- /dev/null
++++ b/crates/bytecode/src/jit/code_spans/local_census.rs
+@@ -0,0 +1,91 @@
++//! Offline comparison only: no executable memory is allocated or published.
++use super::*;
++use serde_json::{Value, json};
++
++fn number(value: &Value, key: &str) -> usize {
++    usize::try_from(value[key].as_u64().unwrap()).unwrap()
++}
++
++#[test]
++#[ignore = "Requires a bound artifact, saved operation map and exact native code"]
++fn observe_saved_local_facts() {
++    let artifact = std::fs::read(std::env::var("LOCAL_CENSUS_ARTIFACT").unwrap()).unwrap();
++    assert!(artifact.len() <= 128 * 1024 * 1024);
++    let program: Program = bincode::deserialize(&artifact).unwrap();
++    crate::validate(&program).unwrap();
++    let mapping = std::fs::read(std::env::var("LOCAL_CENSUS_MAP").unwrap()).unwrap();
++    assert!(mapping.len() <= MAX_OUTPUT_BYTES);
++    let mapping: Value = serde_json::from_slice(&mapping).unwrap();
++    let bytes = std::fs::read(std::env::var("LOCAL_CENSUS_CODE").unwrap()).unwrap();
++    assert!(bytes.len() <= MAX_CODE_BYTES);
++    assert_eq!(number(&mapping, "schema_version"), 1);
++    for flag in ["profiled", "persistent_registers", "resumable_calls", "complete", "reconstructed_bytes_match"] {
++        assert_eq!(mapping[flag], true, "{flag}");
++    }
++    assert_eq!(number(&mapping, "code_bytes"), bytes.len());
++    assert_eq!(mapping["code_sha256"], format!("{:x}", Sha256::digest(&bytes)));
++    let mut baseline = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap();
++    baseline.observe_guarded_local_retention = false;
++    baseline.observe_static_local_facts = false;
++    baseline.observe_scalar_copy = false;
++    let mut alternative = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap();
++    alternative.observe_guarded_local_retention = true;
++    let static_facts = match std::env::var("LOCAL_CENSUS_STATIC_FACTS").ok().as_deref() {
++        None | Some("0") => false, Some("1") => true, _ => panic!("invalid static-fact census option"),
++    };
++    alternative.observe_static_local_facts = static_facts;
++    let scalar_copy = match std::env::var("LOCAL_CENSUS_SCALAR_COPY").ok().as_deref() {
++        None | Some("0") => false, Some("1") => true, _ => panic!("invalid scalar-copy census option"),
++    };
++    alternative.observe_scalar_copy = scalar_copy;
++    let mut output = vec![];
++    let (mut cursor, mut assertions, mut candidate_bytes) = (0, 0, 0);
++    let mut seen = BTreeSet::new();
++    for function in mapping["functions"].as_array().unwrap() {
++        let id = number(function, "function");
++        assert!(seen.insert(id));
++        let f = &program.functions[id];
++        assert_eq!(function["name"], f.name);
++        let offset = number(function, "offset");
++        let end = number(function, "end");
++        assert_eq!(offset, cursor);
++        assert!(offset < end && end <= bytes.len());
++        assert_eq!(number(function, "assertion_base"), assertions);
++        let mut control_map = Collector { rows: vec![], limit: MAX_SPANS };
++        let control = baseline.emit_function_inner(f, (end-offset)/4, assertions, Some(&mut control_map))
++            .unwrap().expect("saved baseline must reconstruct");
++        verify_words(&control.words, &bytes[offset..end]).unwrap();
++        control_map.validate(f, &control).unwrap();
++        assert_eq!(control.assertions.len(), number(function, "assertion_count"));
++        for row in &mut control_map.rows { row.offset += offset; row.end += offset; }
++        assert_eq!(serde_json::to_value(&control_map.rows).unwrap(), function["spans"]);
++        let mut candidate_map = Collector { rows: vec![], limit: MAX_SPANS };
++        // Candidate admission uses its own cumulative staging consumption.
++        let candidate = alternative.emit_function_inner(f, (MAX_CODE_BYTES-candidate_bytes)/4,
++            assertions, Some(&mut candidate_map)).unwrap();
++        let candidate = if let Some(candidate) = candidate {
++            candidate_map.validate(f, &candidate).unwrap();
++            assert_eq!(control.assertions, candidate.assertions);
++            assert_eq!(control.operations, candidate.operations);
++            assert_eq!(control.entries.iter().map(|r|r.map(|r|r.end)).collect::<Vec<_>>(),
++                       candidate.entries.iter().map(|r|r.map(|r|r.end)).collect::<Vec<_>>());
++            candidate_bytes += candidate.words.len()*4;
++            json!({"status":"emitted","bytes":candidate.words.len()*4,
++                "forwarding":candidate.local_fact_events,"retained_writes":candidate.retained_local_writes,
++                "spans":candidate_map.rows,"words_equal":control.words==candidate.words})
++        } else { json!({"status":"declined"}) };
++        assert!(control.retained_local_writes.is_empty());
++        // Control spans are global offsets; candidate spans are function-relative.
++        output.push(json!({"function":id,"name":f.name,"baseline_offset":offset,"baseline_end":end,
++            "assertion_base":assertions,"baseline_forwarding":control.local_fact_events,"candidate":candidate}));
++        assertions += control.assertions.len(); cursor = end;
++    }
++    assert_eq!(cursor, bytes.len());
++    assert!(baseline.code.is_none() && alternative.code.is_none());
++    assert_eq!(baseline.bytes + alternative.bytes, 0);
++    let file = std::fs::OpenOptions::new().write(true).create_new(true)
++        .open(std::env::var("LOCAL_CENSUS_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(file, &json!({"status":"passed","baseline_bytes":bytes.len(),
++        "candidate_bytes":candidate_bytes,"static_fact_preservation":static_facts,"scalar_copy":scalar_copy,"functions":output,"exact_baseline_reconstruction":true,
++        "guest_commands":0,"executable_code_publications":0,"capacity":MAX_CODE_BYTES})).unwrap();
++}
+diff --git a/crates/bytecode/src/jit/copy_tests.rs b/crates/bytecode/src/jit/copy_tests.rs
+index be3943ac..1779fed2 100644
+--- a/crates/bytecode/src/jit/copy_tests.rs
++++ b/crates/bytecode/src/jit/copy_tests.rs
+@@ -150,3 +150,80 @@ fn native_medium_copies_preserve_exact_budgets_and_larger_copy_fallback() {
+         }
+     }
+ }
++
++#[test]
++fn scalar_copies_match_all_bytes_for_local_checked_heap_and_overlapping_ranges() {
++    for size in 0..=16 {
++        for (source, destination) in [(0, 0), (8, 16), (128, 136), (129, 130),
++            (256, 249), (32752, 32744), (32760, 32768), (32768, 32769)] {
++            // 0 = Local proof; 1 = checked stack; 2 = checked heap.
++            for source_kind in 0..3 { for destination_kind in 0..3 {
++                let mut p = program(size, true, false);
++                let f = &mut p.functions[0];
++                f.frame_size = 65536;
++                f.code = vec![Op::Imm { dst: 2, value: LIVE },
++                    if source_kind == 0 { Op::Local { dst: 0, offset: source } }
++                        else { Op::Imm { dst: 3, value: 19 } },
++                    if destination_kind == 0 { Op::Local { dst: 1, offset: destination } }
++                        else { Op::Imm { dst: 3, value: 19 } },
++                    Op::Copy { dst: 1, src: 0, size },
++                    Op::Unary { dst: 4, src: 2, bits: 128, op: Unary::CountOnes }, Op::Return];
++                crate::validate(&p).unwrap();
++                for profiled in [false, true] {
++                    let mut jit = Jit::new(&p, profiled, MAX_CODE_BYTES).unwrap();
++                    jit.ensure_function(0).unwrap();
++                    let mut actual = memory();
++                    actual.bytes = (0..65600).map(|i| (i * 43 + 7) as u8).collect();
++                    actual.heap.bytes = (0..65600).map(|i| (i * 71 + 19) as u8).collect();
++                    let src = source + if source_kind == 2 { crate::heap::TAG + 64 } else { 64 };
++                    let dst = destination + if destination_kind == 2 { crate::heap::TAG + 64 } else { 64 };
++                    let mut expected = memory();
++                    expected.bytes = actual.bytes.to_vec().into();
++                    expected.heap.bytes = actual.heap.bytes.clone();
++                    expected.copy(src, dst, size).unwrap();
++                    let mut registers = [src as u128, dst as u128, 0, 0, 0, LIVE];
++                    let mut hits = [0; 6];
++                    let result = unsafe { jit.run(jit.blocks[0][0].unwrap(), 6, 4,
++                        if profiled { hits.as_mut_ptr() } else { std::ptr::null_mut() },
++                        registers.as_mut_ptr(), 64, actual.bytes.as_mut_ptr(), actual.bytes.len(),
++                        64, actual.heap.bytes.as_mut_ptr(), actual.heap.bytes.len()) }.unwrap();
++                    assert_eq!(result, (4, 4));
++                    assert_eq!(&*actual.bytes, &*expected.bytes,
++                        "size={size} src={src} dst={dst} source_kind={source_kind} destination_kind={destination_kind}");
++                    assert_eq!(actual.heap.bytes, expected.heap.bytes);
++                    assert_eq!((registers[2], registers[5]), (LIVE, LIVE));
++                    assert_eq!(hits, [u64::from(profiled), 0, 0, 0, 0, 0]);
++                }
++            }}
++        }
++    }
++}
++
++#[test]
++fn scalar_copy_invalid_ranges_never_write_even_with_a_local_other_endpoint() {
++    for size in [1, 2, 4, 8, 16] {
++        for source_invalid in [false, true] {
++            let mut p = program(size, true, false);
++            p.functions[0].code = vec![Op::Local { dst: if source_invalid { 1 } else { 0 }, offset: 128 },
++                Op::Copy { dst: 1, src: 0, size }, Op::Imm { dst: 2, value: LIVE }, Op::Return];
++            let mut jit = Jit::new(&p, false, MAX_CODE_BYTES).unwrap();
++            jit.ensure_function(0).unwrap();
++            let mut bad = vec![0, 1024 - size + 1, 1024, usize::MAX,
++                crate::heap::TAG, crate::heap::TAG + 1024 - size + 1];
++            if !source_invalid { bad.extend([1, 32, 63]); }
++            for invalid in bad {
++                let mut actual = memory();
++                let before = actual.bytes.to_vec();
++                let heap_before = actual.heap.bytes.clone();
++                let mut registers = [invalid as u128; 6];
++                let error = unsafe { jit.run(jit.blocks[0][0].unwrap(), 4, 3,
++                    std::ptr::null_mut(), registers.as_mut_ptr(), 64,
++                    actual.bytes.as_mut_ptr(), actual.bytes.len(), 64,
++                    actual.heap.bytes.as_mut_ptr(), actual.heap.bytes.len()) }.unwrap_err();
++                assert_eq!(error, "JIT guest memory access failed");
++                assert_eq!(&*actual.bytes, before.as_slice());
++                assert_eq!(actual.heap.bytes, heap_before);
++            }
++        }
++    }
++}
+diff --git a/crates/bytecode/src/jit/guarded_ranges/tests.rs b/crates/bytecode/src/jit/guarded_ranges/tests.rs
+index 44fd84e2..f3e29ae5 100644
+--- a/crates/bytecode/src/jit/guarded_ranges/tests.rs
++++ b/crates/bytecode/src/jit/guarded_ranges/tests.rs
+@@ -18,6 +18,44 @@ fn compare(actual:Result<Execution,String>,expected:&Result<Execution,String>) {
+     }
+ }
+ 
++#[test]
++fn guarded_local_facts_preserve_alias_declines_and_unselected_writes() {
++    for copied in [false,true] { for unselected in [false,true] {
++        let mut ops=vec![Op::Local {dst:0,offset:0},load(1,0),Op::Local {dst:3,offset:16},
++            Op::Imm {dst:4,value:23},Op::Store {address:3,src:4,size:8},
++            Op::Imm {dst:2,value:7},Op::Local {dst:7,offset:24},Op::Store {address:7,src:2,size:8}];
++        for _ in 0..8 {
++            ops.push(if copied {Op::Copy {dst:1,src:7,size:8}} else {Op::Store {address:1,src:2,size:8}});
++            ops.push(load(5,3));
++        }
++        if unselected {
++            ops.extend([Op::Local {dst:8,offset:32},load(9,8),Op::Store {address:9,src:2,size:8},load(5,3)]);
++        }
++        ops.extend([Op::Local {dst:6,offset:8},Op::Store {address:6,src:5,size:8},Op::Return]);
++        let mut f=function(ops);f.frame_size=64;f.registers=10;
++        f.args.push(Slot {offset:32,size:8});
++        let mut p=program(vec![f]);p.statics=vec![0;32];crate::validate(&p).unwrap();
++        if !unselected {
++            let jit=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
++            let staged=jit.emit_function(&p.functions[0],MAX_CODE_BYTES/4).unwrap().unwrap();
++            assert!(!staged.retained_local_writes.is_empty(),"positive retention path must be exercised");
++        }
++        // Mutable statics are tagged heap bytes; 80 is the frame-local slot
++        // and 81 overlaps it partially. All are initialized valid addresses.
++        for address in [crate::heap::TAG+16,80,81] { for persistent in [false,true] {
++            let args=[address as u128,80];
++            let expected=execute_with_engine(&p,&args,Limits::default(),Engine::Interpreter).unwrap();
++            if !unselected && address==crate::heap::TAG+16 {assert_eq!(expected.value,23);}
++            if unselected || address==80 {assert_eq!(expected.value,7);}
++            for instructions in 0..=expected.instructions+1 {
++                let limits=Limits {instructions,jit_resumable_calls:true,jit_persistent_registers:persistent,..Limits::default()};
++                let reference=execute_with_engine(&p,&args,Limits {instructions,..Limits::default()},Engine::Interpreter);
++                compare(execute_with_engine(&p,&args,limits,Engine::Jit),&reference);
++            }
++        }}
++    }}
++}
++
+ #[test]
+ fn emitted_preflight_matches_independent_complete_range_oracle() {
+     let tag=crate::heap::TAG as u64;
+@@ -73,7 +111,7 @@ fn cached_base_survives_every_fixed_copy_width_and_popcount() {
+         let mut f=function(ops);f.frame_size=512;
+         let plan=range_groups::runtime_plan(&f,0,f.code.len(),&mut 4_000_000).unwrap();
+         let reads=read_registers(&f);
+-        let mut a=Assembler {heap,resumable:true,frame_size:512,reads:&reads,region_end:f.code.len(),..Assembler::default()};
++        let mut a=Assembler {heap,resumable:true,observe_scalar_copy:true,observe_static_local_facts:true,observe_guarded_local_retention:true,frame_size:512,reads:&reads,region_end:f.code.len(),..Assembler::default()};
+         if heap {a.mov(7,5);a.mov(8,6);}
+         let declines=a.prepare_guarded_range(Some(plan)).unwrap();
+         for (pc,op) in f.code.iter().enumerate() {a.current_pc=pc;a.lower(op);}
+diff --git a/crates/bytecode/src/jit/local_memory.rs b/crates/bytecode/src/jit/local_memory.rs
+index 28f875e1..51d980b1 100644
+--- a/crates/bytecode/src/jit/local_memory.rs
++++ b/crates/bytecode/src/jit/local_memory.rs
+@@ -53,9 +53,77 @@ impl Assembler<'_> {
+         self.cache_recent = recent;
+         self.mask(9, (size * 8) as u8);
+         #[cfg(test)]
+-        self.local_forwarding.push((self.current_pc, _kind));
++        self.observe_forwarded_fact(fact, _kind);
+     }
+ 
++    #[cfg(test)]
++    pub(super) fn observe_forwarded_fact(&mut self, fact: Fact, opcode: &'static str) {
++        self.local_forwarding.push((self.current_pc, opcode));
++        let kind = match fact { Fact::Imm(_) => "Imm", Fact::Local(_) => "Local",
++            Fact::Cached {..} => "Cached", Fact::Physical {..} => "Physical" };
++        self.local_fact_events.push((self.current_pc, opcode, kind));
++    }
++
++    pub(super) fn preserve_guarded_local_write(&mut self, local: Option<usize>, reg: Reg, size: usize) -> bool {
++        #[cfg(test)]
++        if !self.observe_guarded_local_retention { return false; }
++        if local.is_some() || size == 0 { return false; }
++        // Immutable query: no synthetic live-in use may be added after the write.
++        let proven = self.guarded_range.as_ref().is_some_and(|plan| plan.frame_disjoint
++            && plan.displacement(self.current_pc, reg, size, true).is_some());
++        #[cfg(test)]
++        if proven {
++            self.retained_local_writes.push((self.current_pc, reg, size, self.local_values.len()));
++        }
++        proven
++    }
++
++    fn scalar_local_memory_immediate(&self, reg: Reg, size: usize) -> Option<u32> {
++        if [1, 2, 4, 8, 16].contains(&size) {
++            if let Some(offset) = self.local_range(reg, size) {
++                let scale = size.min(8);
++                let immediate = offset / scale;
++                if offset % scale == 0 && immediate < 4096 - usize::from(size == 16) {
++                    return Some(immediate as u32);
++                }
++            }
++        }
++        None
++    }
++    pub(super) fn scalar_copy(&mut self, dst: Reg, src: Reg, size: usize, forwarded: Option<Fact>) {
++        debug_assert!([1, 2, 4, 8, 16].contains(&size));
++        if let Some(value) = forwarded {
++            // Preserve destination validation before materializing the captured
++            // value, including the original cache replacement order.
++            let immediate = self.memory_address(12, dst, size, true);
++            self.forward_local_value(value, size, "Copy");
++            self.store_mem_at(9, 31, 12, size, immediate);
++            return;
++        }
++        let high = if size <= 8 { 31 } else { 10 };
++        let (source, destination_base, destination) = match (
++            self.scalar_local_memory_immediate(src, size), self.scalar_local_memory_immediate(dst, size),
++        ) {
++            (Some(source), Some(destination)) => {
++                // Both complete ranges are already proven in the same active
++                // frame. Share its host base; only the memory displacements
++                // differ. Neither load overwrites this base.
++                self.three(0x8b000000, 11, 2, 1);
++                (source, 11, destination)
++            }
++            _ => {
++                // Preserve source-before-destination checks and validate both
++                // entire ranges before touching any bytes.
++                let source = self.memory_address(11, src, size, false);
++                let destination = self.memory_address(12, dst, size, true);
++                (source, 12, destination)
++            }
++        };
++        // Even a sixteen-byte overlapping copy loads both words before its
++        // first store. Narrow copies never consume or define the high scratch.
++        self.load_mem_at(9, high, 11, size, source);
++        self.store_mem_at(9, high, destination_base, size, destination);
++    }
+     pub(super) fn review_local_memory_effect(&mut self, op: &Op) {
+         // Store/Copy and fused local_fill update exact ranges in their paths.
+         // Other effects are conservative, even if currently interpreted. A new
+diff --git a/crates/bytecode/src/jit/local_memory_tests.rs b/crates/bytecode/src/jit/local_memory_tests.rs
+index 0be1ffc7..0727f56f 100644
+--- a/crates/bytecode/src/jit/local_memory_tests.rs
++++ b/crates/bytecode/src/jit/local_memory_tests.rs
+@@ -61,6 +61,34 @@ fn check(p: &Program, args: &[u128], value: Option<u128>, max: u64) {
+ }
+ fn low(value:u128,size:usize)->u128 {if size==16 {value} else {value & ((1u128<<(size*8))-1)}}
+ 
++#[test]
++fn forwarded_immediates_preserve_exact_masks_with_aliased_destinations() {
++    for size in [1,2,4,8] { for destination in [0,1,2] {
++        let mut code=vec![Op::Local {dst:0,offset:128},Op::Imm {dst:1,value:WIDE},
++            Op::Store {address:0,src:1,size},Op::Load {dst:destination,address:0,size},
++            Op::Imm {dst:4,value:1},Op::Binary {dst:5,overflow:6,op:Binary::Add,
++                a:destination,b:4,bits:128,signed:false}];
++        output(&mut code,5);
++        check(&program(code,31,0),&[],Some(low(WIDE,size as usize)+1),12);
++    }}
++}
++
++#[test]
++fn forwarded_local_pointer_facts_require_full_width_and_preserve_later_writes() {
++    for size in [1,2,4,8] { for overwrite in [false,true] {
++        let mut code=vec![Op::Local {dst:0,offset:128},Op::Local {dst:1,offset:200},
++            Op::Imm {dst:2,value:41},Op::Store {address:1,src:2,size:8},
++            Op::Store {address:0,src:1,size},Op::Load {dst:3,address:0,size}];
++        if overwrite { code.extend([Op::Imm {dst:2,value:73},Op::Store {address:1,src:2,size:8}]); }
++        if size == 8 { code.push(Op::Load {dst:4,address:3,size:8});output(&mut code,4); }
++        else { output(&mut code,3); }
++        let p=program(code,31,0);
++        let value=execute_with_engine(&p,&[],Limits::default(),Engine::Interpreter).unwrap().value;
++        if size==8 { assert_eq!(value,if overwrite {73} else {41}); }
++        check(&p,&[],Some(value),16);
++    }}
++}
++
+ #[test]
+ fn local_scalar_roundtrips_truncate_and_zero_extend_all_widths() {
+     for size in 0..=16 { for copied in [false,true] { for value in [0,WIDE,u128::MAX] {
+@@ -99,21 +127,29 @@ fn repeated_local_loads_and_register_address_aliases_keep_old_values() {
+ 
+ #[test]
+ fn partial_and_unknown_alias_writes_invalidate_the_right_ranges() {
+-    for unknown in [false,true] { for delta in [0,1,3,7,8,15] { for size in [1,2,4,8,16] {
++    for address_kind in ["local","forwarded","opaque"] { for delta in [0,1,3,7,8,15] { for size in [1,2,4,8,16] {
+         let mut bytes=[0u8;40];bytes[..8].copy_from_slice(&(WIDE as u64).to_le_bytes());
+         bytes[delta..delta+size].copy_from_slice(&(!WIDE).to_le_bytes()[..size]);
+         let expected=u64::from_le_bytes(bytes[..8].try_into().unwrap()) as u128;
+         let mut code=vec![Op::Local {dst:0,offset:128},Op::Imm {dst:1,value:WIDE},Op::Store {address:0,src:1,size:8},
+             Op::Local {dst:2,offset:128+delta},Op::Imm {dst:3,value:!WIDE}];
+-        let address=if unknown {
+-            code.extend([Op::Local {dst:4,offset:112},Op::Store {address:4,src:2,size:8},Op::Load {dst:5,address:4,size:8}]);5
+-        } else {2};
++        let address=match address_kind {
++            "forwarded" => {code.extend([Op::Local {dst:4,offset:112},Op::Store {address:4,src:2,size:8},Op::Load {dst:5,address:4,size:8}]);5},
++            "opaque" => {code.extend([Op::Local {dst:4,offset:16},Op::Load {dst:5,address:4,size:8}]);5},
++            _ => 2,
++        };
+         code.push(Op::Store {address,src:3,size:size as u8});
+         let load=code.len();code.push(Op::Load {dst:6,address:0,size:8});output(&mut code,6);
+-        let p=program(code,31,0);check(&p,&[],Some(expected),18);
+-        // Exact same-width replacement can itself be forwarded.
+-        if unknown {assert!(!events(&p).contains(&(load,"Load")));}
+-        if !unknown && delta>=8 {assert!(events(&p).contains(&(load,"Load")));}
++        let opaque=address_kind=="opaque";
++        let p=program(code,31,usize::from(opaque));
++        let args=if opaque {vec![(p.data.len()+128+delta) as u128]} else {vec![]};
++        check(&p,&args,Some(expected),18);
++        // A full-width local-pointer roundtrip now preserves its exact fact.
++        // The argument-supplied pointer remains opaque even when its runtime
++        // address happens to match; it must still invalidate all local values.
++        if opaque {assert!(!events(&p).contains(&(load,"Load")));}
++        else if delta>=8 {assert!(events(&p).contains(&(load,"Load")));}
++        else if delta!=0 || size!=8 {assert!(!events(&p).contains(&(load,"Load")));}
+     }}}
+ }
+ 
+diff --git a/crates/bytecode/src/jit/memory_operand_tests.rs b/crates/bytecode/src/jit/memory_operand_tests.rs
+index 17bad7ff..3318c484 100644
+--- a/crates/bytecode/src/jit/memory_operand_tests.rs
++++ b/crates/bytecode/src/jit/memory_operand_tests.rs
+@@ -147,3 +147,116 @@ fn memory_operands_preserve_bytes_across_widths_alignments_exits_and_budget_tail
+         }
+     }
+ }
++
++#[test]
++fn scalar_local_copies_share_one_base_and_load_before_storing() {
++    for size in [1, 2, 4, 8, 16] {
++        let scale = size.min(8);
++        for (source, destination) in [(0, 0), (16, 24), (4088 * scale, 4094 * scale)] {
++            let mut a = Assembler { observe_scalar_copy: true, observe_static_local_facts: true, observe_guarded_local_retention: true, frame_size: 65536, ..Assembler::default() };
++            a.facts.insert(0, Fact::Local(source));
++            a.facts.insert(1, Fact::Local(destination));
++            a.lower(&Op::Copy { dst: 1, src: 0, size });
++            let load = match size { 1 => 0x39400169, 2 => 0x79400169,
++                4 => 0xb9400169, _ => 0xf9400169 };
++            let store = match size { 1 => 0x39000169, 2 => 0x79000169,
++                4 => 0xb9000169, _ => 0xf9000169 };
++            let src = (source / scale) as u32;
++            let dst = (destination / scale) as u32;
++            let expected = if size == 16 {
++                vec![0x8b01004b, load | (src << 10), 0xf940016a | ((src + 1) << 10),
++                    store | (dst << 10), 0xf900016a | ((dst + 1) << 10)]
++            } else { vec![0x8b01004b, load | (src << 10), store | (dst << 10)] };
++            assert_eq!(a.words, expected, "size={size}, src={source}, dst={destination}");
++            assert!(a.failures.is_empty());
++        }
++    }
++}
++
++#[test]
++fn scalar_copy_fallbacks_keep_checks_and_non_scalar_emission() {
++    for size in 0..=16 {
++        for local in [false, true] {
++            let make = || {
++                let mut a = Assembler { observe_scalar_copy: true, observe_static_local_facts: true, observe_guarded_local_retention: true, frame_size: 65536, heap: true, ..Assembler::default() };
++                if local {
++                    // Just beyond every scalar immediate, with unaligned
++                    // addresses for wider accesses. Both ranges remain valid.
++                    a.facts.insert(0, Fact::Local(40001));
++                    a.facts.insert(1, Fact::Local(40003));
++                }
++                a
++            };
++            let mut actual = make();
++            actual.lower(&Op::Copy { dst: 1, src: 0, size });
++            let mut original = make();
++            original.address(11, 0, size, false);
++            original.address(12, 1, size, true);
++            // The only remaining change for unencodable/unknown addresses is
++            // omission of the unused narrow high-word clear.
++            let high = if [1, 2, 4, 8].contains(&size) { 31 } else { 10 };
++            original.load_mem(9, high, 11, size);
++            original.store_mem(9, high, 12, size);
++            assert_eq!(actual.words, original.words, "size={size}, local={local}");
++            assert_eq!(actual.failures.len(), original.failures.len());
++            assert_eq!(actual.live_in, original.live_in);
++        }
++    }
++}
++
++#[test]
++fn scalar_copies_preserve_live_wide_values_native_calls_and_every_budget() {
++    use crate::execute_profiled;
++    const VALUE: u128 = 0xfedc_ba98_7654_3210_0123_4567_89ab_cdef;
++    for size in [1, 2, 4, 8, 16] {
++        for offset in [128, 129, 32752, 32760, 32768] {
++            let mask = if size == 16 { u128::MAX } else { (1u128 << (size * 8)) - 1 };
++            let expected_value = ((VALUE & mask) | (!VALUE & !mask)).wrapping_sub(VALUE);
++            let p = Program { version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0,
++                data: vec![0; 65], statics: vec![], thread_locals: vec![],
++                functions: vec![Function { name: "copy caller".into(), frame_size: 48, frame_align: 2,
++                    registers: 2, args: vec![Slot { offset: 16, size: 16 }], result: Slot { offset: 0, size: 16 },
++                    code: vec![Op::Local { dst: 0, offset: 16 },
++                        Op::Local { dst: 1, offset: 0 }, Op::Call { function: 1, args: vec![0], destination: 1 },
++                        Op::Return] },
++                    Function { name: "copy callee".into(), frame_size: offset + 16, frame_align: 1,
++                        registers: 9, args: vec![Slot { offset: 16, size: 16 }], result: Slot { offset: 0, size: 16 },
++                        code: vec![Op::Local { dst: 0, offset: 16 }, Op::Load { dst: 1, address: 0, size: 16 },
++                            Op::Local { dst: 2, offset }, Op::Imm { dst: 3, value: !VALUE },
++                            Op::Store { address: 2, src: 3, size: 16 }, Op::Copy { dst: 2, src: 0, size },
++                            Op::Load { dst: 5, address: 2, size: 16 },
++                            Op::Binary { dst: 6, overflow: 7, op: Binary::Sub, a: 5, b: 1, bits: 128, signed: false },
++                            Op::Local { dst: 8, offset: 0 }, Op::Store { address: 8, src: 6, size: 16 }, Op::Return] }] };
++            crate::validate(&p).unwrap();
++            let complete = execute_with_engine(&p, &[VALUE], Limits::default(), Engine::Interpreter).unwrap();
++            assert_eq!(complete.value, expected_value);
++            for budget in 0..=complete.instructions + 1 {
++                let reference = execute_profiled(&p, &[VALUE], Limits { instructions: budget, ..Limits::default() }, Engine::Interpreter);
++                for capacity in [0, MAX_CODE_BYTES] { for persistent in [false, true] { for resumable in [false, true] {
++                    let limits = || Limits { instructions: budget, jit_code_bytes: capacity,
++                        jit_persistent_registers: persistent, jit_resumable_calls: resumable, ..Limits::default() };
++                    let normal = execute_with_engine(&p, &[VALUE], limits(), Engine::Jit);
++                    let observed = execute_profiled(&p, &[VALUE], limits(), Engine::Jit);
++                    match &reference {
++                        Err(error) => { assert_eq!(&normal.unwrap_err(), error); assert_eq!(&observed.unwrap_err(), error); }
++                        Ok((result, reference_profile)) => {
++                            let normal = normal.unwrap(); let (observed, profile) = observed.unwrap();
++                            for actual in [normal, observed] {
++                                assert_eq!((actual.value, actual.instructions, actual.peak_memory),
++                                    (result.value, result.instructions, result.peak_memory));
++                                if capacity != 0 { assert!(actual.jit_instructions > 0); }
++                            }
++                            for (f, r) in profile.functions.iter().zip(&reference_profile.functions) {
++                                let mut counts = f.interpreted.clone();
++                                for (start, &hits) in f.jit_blocks.iter().enumerate() {
++                                    if hits != 0 { for count in &mut counts[start..f.jit_block_ends[start]] { *count += hits; } }
++                                }
++                                assert_eq!(counts, r.interpreted);
++                            }
++                        }
++                    }
++                }}}
++            }
++        }
++    }
++}

@@ -25,6 +25,7 @@ struct Run {
     vm: PathBuf,
     sysroot: PathBuf,
     native_sysroot: PathBuf,
+    backend_jobs: String,
     frozen: BTreeMap<PathBuf, String>,
     next: usize,
 }
@@ -44,7 +45,13 @@ impl Run {
                 let digest = sha(&fs::read(&path).unwrap()); (path, digest)
             }).collect();
         let native_sysroot=rustc.parent().unwrap().parent().unwrap().to_path_buf();
-        let mut run = Self { root, exporter, rustc, vm, sysroot, native_sysroot, frozen, next: 0 };
+        // Keep the custom compiler's existing default. Stock rustc callers
+        // explicitly select two codegen units for these tiny native controls.
+        let backend_jobs = std::env::var("RUST_INTERP_TEST_BACKEND_JOBS_FLAG")
+            .unwrap_or_else(|_| "--jobs-backend=2".into());
+        assert!(matches!(backend_jobs.as_str(), "--jobs-backend=2" | "-Ccodegen-units=2"),
+            "unsupported backend-jobs test setting");
+        let mut run = Self { root, exporter, rustc, vm, sysroot, native_sysroot, backend_jobs, frozen, next: 0 };
         let version = run.command(run.rustc.clone(), vec!["-vV".into()], None);
         success(&version);
         let caps = run.command(run.exporter.clone(), vec!["--rust-interp-capabilities".into()], None);
@@ -55,7 +62,7 @@ impl Run {
         run.native_sysroot=fs::canonicalize(String::from_utf8(actual.stdout).unwrap().trim()).unwrap();
         assert_eq!(fs::canonicalize(caps["compiler_sysroot"].as_str().unwrap()).unwrap(),run.native_sysroot);
         write_json(&run.root.join("inputs.json"), &json!({"files":run.frozen,"metadata_sysroot":run.sysroot,
-            "native_sysroot":run.native_sysroot,"capabilities":caps}));
+            "native_sysroot":run.native_sysroot,"backend_jobs_flag":run.backend_jobs,"capabilities":caps}));
         run
     }
     fn guard(&self) {
@@ -96,7 +103,7 @@ impl Run {
         let mut flags = vec!["--edition=2024".into(), "--crate-name=trap_span_fixture".into(),
             "-Copt-level=0".into(), "-Cdebuginfo=0".into(), "-Cdebug-assertions=yes".into(),
             "-Coverflow-checks=yes".into(), "-Zmir-opt-level=0".into(), "--error-format=json".into(),
-            "-Zunstable-options".into(), "--jobs-backend=2".into(), "--sysroot".into(),
+            "-Zunstable-options".into(), self.backend_jobs.clone(), "--sysroot".into(),
             (if linked {&self.native_sysroot} else {&self.sysroot}).display().to_string(), source.display().to_string()];
         if scope != "none" {
             flags.push(format!("--remap-path-prefix={}={MAPPED}", source.parent().unwrap().display()));
