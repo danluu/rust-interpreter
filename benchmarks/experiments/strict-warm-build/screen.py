@@ -32,6 +32,7 @@ CANDIDATE_POLICIES = {
     'stable-mono-cgu': 'stable-mono-cgu-partitioning',
     'cargo-info-cache': None,
     'host-proc-macro-opt': 'host-proc-macro-opt-v1',
+    'frontend-workers': 'frontend-workers-v1',
 }
 DEFAULT_CANDIDATE_POLICY = 'demand-retention'
 CASE = WORKFLOW_VARIANTS['nushell', 'type-relations']
@@ -202,10 +203,17 @@ def require_candidate_policy(tool, key, candidate_policy):
 
 
 def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candidate_std,
-                        baseline_cargo_key=None, candidate_cargo_key=None, compiler_qualification=None):
+                        baseline_cargo_key=None, candidate_cargo_key=None, compiler_qualification=None, worker_qualification=None):
     require(policy in CANDIDATE_POLICIES, 'unknown candidate policy')
     require((compiler_qualification is not None) == (policy == 'stable-mono-cgu'),
             'strict MonoItem qualification is required only for stable-mono-cgu policy')
+    if policy == 'frontend-workers':
+        require(baseline_key == candidate_key, 'worker comparison requires identical actual tool binaries')
+        require(compiler_key is None and candidate_std is None and baseline_cargo_key is None
+                and candidate_cargo_key is None, 'worker comparison cannot mix compiler/Cargo/std policies')
+        require(worker_qualification is not None, 'worker comparison requires actual 30-command qualification')
+        return
+    require(worker_qualification is None, 'worker qualification requires frontend-workers policy')
     if policy == 'cargo-info-cache':
         require(baseline_key == candidate_key, 'Cargo comparison requires identical tool binaries')
         require(compiler_key is None, 'Cargo comparison requires the public compiler')
@@ -268,6 +276,9 @@ def command_for(mode, key, source, work, sample, names=CASE['tests'],
         policy_args = ['--host-proc-macro-opt', proc_macro_setting(mode)]
     require(prepared_std is None or candidate_policy == 'stable-mono-cgu',
             'explicit prepared std command argument requires MonoItem policy')
+    if candidate_policy == 'frontend-workers':
+        from frontend_worker_screen import COUNTS
+        policy_args = ['--frontend-workers', str(COUNTS[mode])]
     command = [sys.executable, ROOT / 'scripts/interpreter.py', '--manifest-path', source / 'Cargo.toml',
         '--package', CASE['package'], '--jobs', str(JOBS), '--tool-key', key,
         '--cache-namespace', work.name + ':' + mode, '--workspace-cache-root', work / 'caches' / mode,
@@ -293,7 +304,7 @@ def measure_command(command, **kwargs):
 
 
 def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, cargo=None,
-                    mono_wrapper=None):
+                    mono_wrapper=None, worker_capability=None):
     retention = retention_setting(mode, candidate_policy)
     expected = dict(tool_key=key, engine='jit', function_cache='auto', borrowck_cache='off',
         jit_persistent_registers=True, jit_resumable_calls=True, inline_leaves=True,
@@ -322,17 +333,24 @@ def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom
         require(cargo is None, 'Cargo arguments require cargo-info-cache policy')
     if candidate_policy == 'host-proc-macro-opt':
         expected['host_proc_macro_opt'] = proc_macro_setting(mode)
+    if candidate_policy == 'frontend-workers':
+        from frontend_worker_screen import COUNTS
+        from frontend_workers import receipt
+        require(worker_capability is not None, 'worker launch requires bound wrapper capability')
+        expected['frontend_workers'] = receipt(COUNTS[mode], worker_capability)
+    else:
+        require(worker_capability is None, 'worker capability requires frontend-workers policy')
     return expected
 
 
 def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
                    candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, prepared_std=None, cargo=None,
-                   mono_wrapper=None):
+                   mono_wrapper=None, worker_capability=None):
     launches = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in stderr.splitlines()
                 if line.startswith('rust-interp-launch: ')]
     require(len(launches) == 1, 'expected exactly one completed launcher report')
     launch = launches[0]
-    expected = launch_settings(mode, key, candidate_policy, custom, cargo, mono_wrapper)
+    expected = launch_settings(mode, key, candidate_policy, custom, cargo, mono_wrapper, worker_capability)
     require(all(launch.get(k) == v for k, v in expected.items()), 'launcher settings differ')
     require(custom is not None or 'custom_compiler' not in launch, 'unexpected custom compiler in launcher')
     require(cargo is not None or 'custom_cargo' not in launch, 'unexpected custom Cargo in launcher')
@@ -341,6 +359,11 @@ def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
         require(launch.get('query_cache_retention', 'off') == 'off', 'unexpected retention policy in independent comparison')
     if not macro:
         require(launch.get('host_proc_macro_opt', 'off') == 'off', 'unexpected proc-macro policy in independent comparison')
+    require(candidate_policy == 'frontend-workers' or 'frontend_workers' not in launch,
+            'unexpected frontend-worker policy')
+    if candidate_policy == 'frontend-workers':
+        require(launch.get('query_cache_retention', 'off') == 'off'
+                and launch.get('host_proc_macro_opt', 'off') == 'off', 'worker launch mixes other policies')
     if cargo:require(launch.get('query_cache_retention', 'off') == 'off', 'unexpected retention policy in Cargo comparison')
     if candidate_policy == 'stable-mono-cgu':
         require(launch.get('query_cache_retention', 'off') == 'off'
@@ -423,6 +446,10 @@ def main():
                         help='passed strict stable-mono-cgu integration result.json')
     parser.add_argument('--baseline-cargo-key', help='qualified stock Cargo for baseline and duplicate arms')
     parser.add_argument('--candidate-cargo-key', help='matched source-only candidate Cargo')
+    parser.add_argument('--frontend-worker-qualification', type=Path,
+                        help='actual external 30-command qualification bound to the published worker tool key')
+    parser.add_argument('--workload-lock', type=Path,
+                        help='explicit existing campaign lock; required for the prepared worker policy')
     parser.add_argument('--candidate-std-mir-ready', type=Path,
                         help='separately prepared candidate std namespace for stable-CGU or Cargo policy')
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=45)
@@ -431,14 +458,20 @@ def main():
     require(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
     validate_comparison(args.candidate_policy, args.baseline_tool_key, args.candidate_tool_key,
                         args.compiler_key, args.candidate_std_mir_ready,
-                        args.baseline_cargo_key, args.candidate_cargo_key, args.compiler_qualification)
+                        args.baseline_cargo_key, args.candidate_cargo_key, args.compiler_qualification, args.frontend_worker_qualification)
+    if args.candidate_policy == 'frontend-workers':
+        require(args.workload_lock is not None and args.workload_lock.is_absolute()
+                and args.workload_lock.resolve(strict=True) == args.workload_lock
+                and args.workload_lock.is_file(), 'worker screen requires the existing explicit campaign lock')
+    else:
+        require(args.workload_lock is None, 'explicit workload-lock argument currently belongs to worker policy')
     source = args.source.absolute()
     work = ROOT / '.work' / args.run_id
     work.mkdir(exist_ok=False)
     rows, transitions, workspaces = [], [], {}
     changed, original = None, None
     try:
-        with (ROOT / '.work/benchmark.lock').open('a') as lock:
+        with (args.workload_lock or ROOT / '.work/benchmark.lock').open('a') as lock:
             acquire_lock(lock, args.lock_wait_seconds)
             require_space(work, MINIMUM_GIB)
             env = environment()
@@ -517,6 +550,24 @@ def main():
                 mono_qualification = validate_qualification(args.compiler_qualification.absolute(), ROOT,
                     custom.key, keys['baseline'], dict(off=stds['baseline'], on=stds['candidate']),
                     compiler_sysroot=custom.sysroot)
+            worker_public, worker_proof, worker_files = None, None, {}
+            if args.candidate_policy == 'frontend-workers':
+                from frontend_worker_screen import public_build, standard_binding, validate_qualification, COUNTS
+                def worker_read(path):
+                    path = Path(path)
+                    require(path.resolve(strict=True) == path and path.is_file(), 'worker proof path is indirect')
+                    data = path.read_bytes()
+                    worker_files[str(path)] = frozen_input_hash(path)
+                    return data
+                tool, key = tools['baseline'], keys['baseline']
+                validate_tool_compiler(tool, key, None)
+                worker_public = public_build(tool, key, worker_read)
+                from qualified_public_tools import validate_live_inputs
+                standard_binding(worker_public, std)
+                worker_proof = validate_qualification(args.frontend_worker_qualification.absolute(), key,
+                    worker_public, std, worker_read)
+                require(worker_proof['workload_lock'] == str(args.workload_lock), 'worker qualification used another lock')
+                initial_guard = validate_live_inputs(worker_public, rehash=True)
             for directory in [work / 'artifacts', work / 'suites', work / 'receipts',
                               *[work / 'caches' / m for m in MODES]]:
                 directory.mkdir(parents=True, exist_ok=False)
@@ -541,6 +592,9 @@ def main():
                 paths += public['payload_paths'] + [Path(public_guards['admission']['path'])]
                 paths += [p for p in tools['baseline'].rglob('*') if p.is_file() or p.is_symlink()]
             paths += sorted((ROOT / 'scripts').glob('*.py'))
+            paths += [Path(path) for path in worker_files]
+            if worker_public:
+                paths.append(Path(__file__).with_name('FRONTEND_WORKERS_SCREEN.md'))
             paths += [p for tool in set(tools.values()) for p in tool.iterdir() if p.is_file()]
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
             paths += [source / name for name in tracked if name and source / name != changed]
@@ -583,10 +637,18 @@ def main():
                     cgu_policy_by_mode=dict.fromkeys(MODES, 'off'),
                     mono_cgu_policy_by_mode={m: cgu_setting(m) for m in MODES},
                     compiler_comparison='same compiler and tool binaries; module off/off/off; MonoItem off/on/off')
+            if worker_public:
+                plan.update(frontend_workers_by_mode=COUNTS, worker_qualification=worker_proof,
+                    worker_public_build_policy=worker_public['composition']['qualification_policy'],
+                    worker_capability=worker_public['capability'], public_input_guard=initial_guard,
+                    workload_lock=str(args.workload_lock),
+                    std_mir_by_mode=stds,
+                    compiler_comparison='same stock compiler/tool binaries/std; explicit frontend workers 1/2/1')
+                (work / 'public-input-guards').mkdir()
             write_json(work / 'plan.json', plan)
             previous = dict.fromkeys(MODES)
 
-            def verify_inputs(expected):
+            def verify_inputs(expected, guard_label=None):
                 require(changed.read_bytes() == expected and not changed.is_symlink(), 'production source changed')
                 require(all(frozen_input_hash(p) == digest for p, digest in frozen.items()), 'frozen source, tool or harness changed')
                 require(all(stamp(Path(p)) == proof['stamp'] for std in stds.values()
@@ -604,6 +666,12 @@ def main():
                 require(current == tracked, 'tracked source inventory changed')
                 require(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=source, text=True).strip() == revision,
                         'source revision changed during screen')
+                if worker_public:
+                    # Benchmark-only identity audit, matching existing frozen
+                    # input checks. No launcher or semantic-cache work moves here.
+                    guard = validate_live_inputs(worker_public, rehash=False)
+                    if guard_label is not None:
+                        write_json(work / 'public-input-guards' / (guard_label + '.json'), guard)
 
             def snapshot(path):
                 require(path.is_file() and not path.is_symlink(), 'missing or linked artifact')
@@ -618,7 +686,8 @@ def main():
                 return dict(path=str(target.relative_to(ROOT)), sha256=digest, bytes=len(payload))
 
             def invoke(mode, sample):
-                verify_inputs(sample['source'])
+                guard_label = str(sample['index']) + '-' + mode
+                verify_inputs(sample['source'], guard_label + '-before')
                 ordinal = len(rows)
                 guard_before = public_guard(f'{ordinal:03}-before.json') if public else None
                 digest = sha(changed)
@@ -648,13 +717,14 @@ def main():
                     row['public_input_guards'] = dict(before=guard_before,
                         after=public_guard(f'{ordinal:03}-after.json'))
                     write_json(work / 'records.json', rows)
-                verify_inputs(sample['source'])
+                verify_inputs(sample['source'], guard_label + '-after')
                 success = sample['phase'] != 'wrong-edit'
                 require((child.returncode == 0) == success, 'wrong-edit/passing exit status differs')
                 launch, outcomes, artifacts, suite_sha = checked_launch(
                     stderr, mode, keys[mode], success, suite_path, work / 'caches' / mode,
                     candidate_policy=args.candidate_policy, custom=custom, prepared_std=stds[mode], cargo=cargos[mode],
-                    mono_wrapper=mono_wrapper)
+                    mono_wrapper=mono_wrapper,
+                    worker_capability=worker_public['capability'] if worker_public else None)
                 workspace = launch['workspace_path']
                 require(workspaces.get(mode, workspace) == workspace, 'arm workspace changed')
                 workspaces[mode] = workspace

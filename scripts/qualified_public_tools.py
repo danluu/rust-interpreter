@@ -17,6 +17,8 @@ from std_mir import POLICY as STD_POLICY, FLAGS as STD_FLAGS
 
 KIND = 'qualified-public-toolset-v1'
 GUARD_POLICY = 'qualified-public-input-guard-v1'
+WORKER_BUILD_POLICY = 'frontend-workers-public-build-v1'
+SUPPORTED_QUALIFICATION_POLICIES = (KIND, WORKER_BUILD_POLICY)
 BINARIES = ('rust-interp-vm', 'rust-interp-mir-export', 'rust-interp-rustc-wrapper')
 SOURCE_REVISION = '01e36c0426afbd61bbfe540af6673a5e7db2f87c'
 COMPILER_REVISION = 'cea272fa356e94bd2ee2cadf376630aa0683867a'
@@ -134,7 +136,7 @@ def check_closure(closure):
                          bytes=library['bytes'], stamp=closure['state']['libraries'][name]))
 
 
-def suite_result(label, stdout, stderr):
+def suite_result(label, stdout, stderr, qualification_policy=None):
     """Parse actual test runner output; never infer success from exit zero alone."""
     if label == 'rust-workspace-tests':
         rows = re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;', stdout)
@@ -142,17 +144,20 @@ def suite_result(label, stdout, stderr):
                 'missing successful Rust test suites')
         return dict(suites=[dict(passed=int(p), failed=int(f), ignored=int(i)) for p, f, i in rows],
                     passed=sum(int(p) for p, _, _ in rows), failed=0)
-    expected = {'launcher-contracts': 3, 'screen-contracts': 24, 'real-histories': 3}[label]
+    expected = ({'launcher-contracts': 7, 'screen-contracts': 8} if qualification_policy == WORKER_BUILD_POLICY
+                else {'launcher-contracts': 3, 'screen-contracts': 24, 'real-histories': 3})[label]
     matches = re.findall(r'^Ran (\d+) tests? in [\d.]+s$', stderr, re.M)
     require(matches == [str(expected)] and re.search(r'^OK$', stderr, re.M)
             and not re.search(r'\b(skipped|FAILED|ERROR|FAIL:)\b', stderr), 'Python qualification differs')
     return dict(passed=expected, failed=0, skipped=0)
 
 
-def planned_commands(plan, compiler, cargo):
+def planned_commands(plan, compiler, cargo, qualification_policy=None):
     """A rekeyed plan cannot replace qualification with a successful no-op."""
+    worker = qualification_policy == WORKER_BUILD_POLICY
     labels = ['public-rustc-identity', 'public-cargo-identity', 'rust-workspace-tests', 'release-tools',
-              'launcher-contracts', 'screen-contracts', 'capabilities', 'real-histories']
+              'launcher-contracts', 'screen-contracts', 'capabilities',
+              'wrapper-capabilities' if worker else 'real-histories']
     require([c['label'] for c in plan['commands']] == labels, 'required qualification commands differ')
     owner = absolute(plan['owner'])
     work = Path(absolute(plan['commands'][0]['receipt'])).parent
@@ -162,17 +167,23 @@ def planned_commands(plan, compiler, cargo):
     expected = [[compiler['rustc_path'], '-vV'], [cargo['path'], '-vV'],
         [cargo['path'], 'test', *common, '--workspace'],
         [cargo['path'], 'build', *common, '-p', 'rust-interp-bytecode', '-p', 'rust-interp-mir-export', '--bins']]
-    for index, pattern in [(4, 'test_host_proc_macro_launcher.py'), (5, 'test_strict_warm*screen.py'),
-                           (7, 'test_host_proc_macro_native.py')]:
+    patterns = [(4, 'test_frontend_workers.py'), (5, 'test_frontend_worker_screen.py')] if worker else [
+        (4, 'test_host_proc_macro_launcher.py'), (5, 'test_strict_warm*screen.py'), (7, 'test_host_proc_macro_native.py')]
+    for index, pattern in patterns:
         command = plan['commands'][index]
         absolute(command['argv'][0])
         require(command['argv'][1:] == ['-m', 'unittest', 'discover', '-s', 'tests', '-p', pattern, '-v'],
                 'required Python qualification differs')
     expected += [plan['commands'][4]['argv'], plan['commands'][5]['argv'],
                  [str(target / 'release/rust-interp-mir-export'), '--rust-interp-capabilities'],
-                 plan['commands'][7]['argv']]
+                 [str(target / 'release/rust-interp-rustc-wrapper'), '--rust-interp-frontend-worker-capability']
+                 if worker else plan['commands'][7]['argv']]
     for command, argv in zip(plan['commands'], expected):
         require(command['argv'] == argv and command['cwd'] == owner, 'required qualification argv differs')
+    if worker:
+        require(all(not c.get('environment_overrides') for c in plan['commands']),
+                'worker public build overrides a command environment')
+        return
     fixture = plan['commands'][7]['environment_overrides']
     require(fixture['RUST_INTERP_TEST_RUSTC'] == compiler['rustc_path']
             and fixture['RUST_INTERP_TEST_VM'] == str(target / 'release/rust-interp-vm')
@@ -182,13 +193,28 @@ def planned_commands(plan, compiler, cargo):
             'real qualification uses different tools or skips VM/std execution')
 
 
-def validate_public_tool(tool, key, read_bytes):
+def worker_capability(capability, wrapper_stdout, binaries):
+    """Bind the actual publication-only wrapper probe without executing it."""
+    from frontend_workers import CAPABILITY
+    require(capability.get('frontend_workers') == CAPABILITY
+            and json.loads(wrapper_stdout) == CAPABILITY
+            and 'frontend_worker_wrapper' not in capability,
+            'worker exporter/wrapper capability differs')
+    capability['frontend_worker_wrapper'] = dict(sha256=binaries['rust-interp-rustc-wrapper'], capability=CAPABILITY)
+    return capability
+
+
+def validate_public_tool(tool, key, read_bytes, *, qualification_policy=None):
     """Return reconciled identities using ONLY callback bytes, never live inputs."""
+    policy = qualification_policy or KIND
+    require(policy in SUPPORTED_QUALIFICATION_POLICIES, 'unsupported public qualification policy')
+    worker = policy == WORKER_BUILD_POLICY
     tool = Path(tool)
     require(tool.is_absolute() and valid_key(key) and tool.name == key, 'invalid public tool location/key')
     try:
         source = json.loads(read_bytes(tool / 'source.json'))
         composition = source['composition']
+        require(composition.get('qualification_policy', KIND) == policy, 'public qualification policy differs')
         require(source['tool_key'] == key == digest(composition) and composition['schema_version'] == 1
                 and composition['kind'] == KIND, 'public tool composition differs')
         manifest = composition['payloads']; hashes(manifest)
@@ -211,7 +237,9 @@ def validate_public_tool(tool, key, read_bytes):
         require(plan['schema_version'] == 2 and plan['status'] == 'not-executed'
                 and plan['tool_key'] is None and plan['screen_command'] is None, 'wrong qualified build plan')
         inputs = composition['source']
-        require(inputs['revision'] == plan['production_source_revision'] == SOURCE_REVISION
+        require(inputs['revision'] == plan['production_source_revision']
+                and (bool(re.fullmatch('[0-9a-f]{40}', inputs['revision'])) if worker else inputs['revision'] == SOURCE_REVISION)
+                and (plan.get('qualification_policy') == WORKER_BUILD_POLICY if worker else 'qualification_policy' not in plan)
                 and inputs['files'] == plan['workspace_sources']
                 and inputs['ordered_paths'] == plan['source_input_paths']
                 and inputs['source_input_key'] == plan['source_input_key'], 'source identity differs')
@@ -243,7 +271,7 @@ def validate_public_tool(tool, key, read_bytes):
         sysroot = Path(absolute(compiler['sysroot']))
         require(sysroot.name == TOOLCHAIN and compiler['rustc_path'] == str(sysroot / 'bin/rustc')
                 and cargo['path'] == str(sysroot / 'bin/cargo'), 'public rustup paths differ')
-        planned_commands(plan, compiler, cargo)
+        planned_commands(plan, compiler, cargo, qualification_policy)
         build = composition['build']
         require(build['profile'] == 'release' and build['environment_overrides'] == plan['clean_environment']['overrides']
                 and build['environment_overrides']['CARGO_PROFILE_RELEASE_DEBUG'] == '1'
@@ -264,7 +292,7 @@ def validate_public_tool(tool, key, read_bytes):
             stdout, stderr = payload[actual['stdout']], payload[actual['stderr']]
             outputs[actual['label']] = (stdout, stderr)
             if actual['label'] in ('rust-workspace-tests', 'launcher-contracts', 'screen-contracts', 'real-histories'):
-                results[actual['label']] = suite_result(actual['label'], stdout.decode(), stderr.decode())
+                results[actual['label']] = suite_result(actual['label'], stdout.decode(), stderr.decode(), qualification_policy)
         rust_version = outputs['public-rustc-identity'][0]
         require(sha(rust_version) == compiler['version_stdout_sha256']
                 and ('commit-hash: ' + COMPILER_REVISION + '\n').encode() in rust_version
@@ -275,7 +303,10 @@ def validate_public_tool(tool, key, read_bytes):
         capability = json.loads(raw_capability)
         require(not {'tool_key', 'exporter_sha256'} & capability.keys() and capability['schema_version'] == 1
                 and capability['bytecode_version'] == 5 and capability['compiler_sysroot'] == str(sysroot)
-                and 'host-proc-macro-opt-v1' in capability['export_options'], 'required capability is missing')
+                and ('frontend-workers-v1' if worker else 'host-proc-macro-opt-v1') in capability['export_options'],
+                'required capability is missing')
+        if worker:
+            worker_capability(capability, outputs['wrapper-capabilities'][0], binaries)
         capability.update(tool_key=key, exporter_sha256=binaries['rust-interp-mir-export'])
         require(json.loads(read_bytes(tool / 'capabilities.json')) == capability, 'capability envelope differs')
         correctness = load('provenance/correctness.json', composition['correctness_receipt_sha256'])
@@ -288,6 +319,10 @@ def validate_public_tool(tool, key, read_bytes):
                 and correctness['library_identity_sha256'] == digest(composition['libraries'])
                 and correctness['capability_stdout_sha256'] == composition['capability_stdout_sha256']
                 and 'tool_key' not in correctness, 'correctness receipt is not bound to this build')
+        if worker:
+            require(correctness.get('qualification_policy') == WORKER_BUILD_POLICY
+                    and correctness.get('qualification_scope') == 'public-build-only',
+                    'worker build claims unsupported qualification scope')
         shared = correctness['shared_std']
         std = load(shared['ready_payload'], shared['ready_sha256'])
         ready_path = Path(absolute(plan['shared_std']['path']))
@@ -372,9 +407,11 @@ def validate_public_tool(tool, key, read_bytes):
             add(record)
         require(records[compiler['rustc_path']]['sha256'] == compiler['rustc_sha256']
                 and records[cargo['path']]['sha256'] == cargo['binary_sha256'], 'compiler/Cargo input hash differs')
-        return dict(composition=composition, capability=capability, correctness=correctness, libraries=libraries,
+        result = dict(composition=composition, capability=capability, correctness=correctness, libraries=libraries,
                     platform=platform, plan=plan, commands=commands, payload_paths=[tool / n for n in manifest],
                     input_records=records, searches=searches, tool_key=key, tool=str(tool), publication=publication)
+        if worker:result['qualification_scope'] = 'public-build-only'
+        return result
     except (KeyError, TypeError, ValueError, AttributeError, UnicodeError) as error:
         raise RuntimeError('invalid qualified public tool provenance: ' + str(error)) from error
 

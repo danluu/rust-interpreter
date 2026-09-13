@@ -14,7 +14,7 @@ from custom_compiler import file_digest, require
 from public_tool_publication import (build_admission, capture_library_closure, command_environment,
     compose_qualified_tools, file_identity, immutable_publish, materialize_screen_command,
     retained_command, run_plan_commands)
-from qualified_public_tools import BINARIES, COMPILER_REVISION, TOOLCHAIN, planned_commands, sha
+from qualified_public_tools import BINARIES, COMPILER_REVISION, TOOLCHAIN, WORKER_BUILD_POLICY, planned_commands, sha
 from workflow_io import write_json
 
 
@@ -186,11 +186,14 @@ def fixture_payloads(work, payload):
 
 def execute(plan_path):
     plan = json.loads(plan_path.read_bytes())
-    require(plan['owner'] == str(ROOT) and plan['source_input_key'] ==
+    policy = plan.get('qualification_policy')
+    require(plan['owner'] == str(ROOT), 'public build plan belongs to another owner')
+    if policy != WORKER_BUILD_POLICY:
+        require(policy is None and plan['source_input_key'] ==
             'f77229fac75b617de4cc760a8e509015e48e7442462f4276c250c7d4e382e23a', 'wrong macro production source plan')
     require(plan['publication']['composition_kind'] == 'qualified-public-toolset-v1', 'wrong publication contract')
     rustc_path = plan['clean_environment']['overrides']['RUSTC']
-    planned_commands(plan, dict(rustc_path=rustc_path), dict(path=str(Path(rustc_path).with_name('cargo'))))
+    planned_commands(plan, dict(rustc_path=rustc_path), dict(path=str(Path(rustc_path).with_name('cargo'))), policy)
     with build_admission(plan) as work:
         payload = work / 'payload'; payload.mkdir()
         metadata_work = work / 'metadata'; metadata_work.mkdir()
@@ -252,7 +255,7 @@ def execute(plan_path):
             retain_command(payload, metadata_work, receipt.name.removesuffix('-process.json'))
         put_json(payload, 'provenance/libraries.json', dict(schema_version=1, subjects=subjects))
         put_json(payload, 'provenance/platform.json', subjects['rustc']['identity']['platform'])
-        fixture_payloads(work, payload)
+        if policy is None:fixture_payloads(work, payload)
         rust_version = (work / 'public-rustc-identity.stdout').read_bytes()
         require(('commit-hash: ' + COMPILER_REVISION + '\n').encode() in rust_version, 'public compiler commit differs')
         compiler = dict(toolchain=TOOLCHAIN, target='aarch64-apple-darwin', source_revision=COMPILER_REVISION,
@@ -266,12 +269,18 @@ def execute(plan_path):
         publication = immutable_publish(composition, payload, plan['publication']['source_binaries'],
                                         [ROOT, Path(plan['screen_owner'])])
         write_json(work / 'published.json', publication)
-        write_json(work / 'result.json', dict(status='qualified-and-published', source_input_key=plan['source_input_key'],
+        status = 'public-build-published-worker-qualification-pending' if policy == WORKER_BUILD_POLICY else 'qualified-and-published'
+        entry = ROOT / 'experiments/frontend-workers/build.py' if policy == WORKER_BUILD_POLICY else Path(__file__).resolve()
+        write_json(work / 'result.json', dict(status=status, source_input_key=plan['source_input_key'],
             tool_key=publication['tool_key'], commands=len(commands), publication=publication,
-            materialize_argv=[sys.executable, str(Path(__file__).resolve()), '--plan', str(plan_path),
+            materialize_argv=[sys.executable, str(entry), '--plan', str(plan_path),
                               '--materialize', str(work / 'published.json')],
-            performance_claim=False, screen_executed=False, pending='integrate exact screen harness and prepare owned source, then materialize'))
-        print(json.dumps(dict(status='qualified-and-published', tool_key=publication['tool_key'],
+            performance_claim=False, screen_executed=False,
+            qualification_argv=([sys.executable, str(entry), '--plan', str(plan_path), '--qualify', str(work / 'published.json')]
+                if policy == WORKER_BUILD_POLICY else None),
+            pending='integrate exact source/harness; worker build additionally requires external30 qualification before screen'
+                if policy == WORKER_BUILD_POLICY else 'integrate exact screen harness and prepare owned source, then materialize'))
+        print(json.dumps(dict(status=status, tool_key=publication['tool_key'],
                               publication=str(work / 'published.json'), screen_executed=False)))
 
 
