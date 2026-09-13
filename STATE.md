@@ -80,9 +80,13 @@ admission failures remain recorded. The 40-command token screen now passes:
 paired wall is 7.91% lower and CPU 6.19% lower, with A/A envelopes 5.002% and
 3.814%; the command remains 1.727 times native. A workspace-library parser repair
 retains one completed native control and executes only 39 new commands. All 13
-additional real controls and 21 full-protocol checks pass. Fresh full histories
-and complete parser compatibility remain required before adoption. The runtime
-stays on its experiment branch; completed reports are published to main.
+additional real controls, 21 full-protocol checks and all114 original parser
+tests pass. Four full histories now pass594 commands: token improves wall4.73%
+and CPU3.83% (A/A1.714%/1.583%), while folded, pgrust and private rg-aot pass
+regression guards. Token remains1.641 times native. Nushell has run no command:
+its47.0325 GiB disk admission was refused. Audit and retain the completed prefix,
+reclaim only proven owned caches, and run the remaining132 commands when admitted.
+The runtime stays experimental; completed results are published to main.
 [Composition evidence](results/guarded-local-facts-composed-census-01/assessment.md),
 [qualification](results/guarded-local-facts-profile-01/assessment.md).
 The automatic tool cache now includes its selected toolchain identifier: the

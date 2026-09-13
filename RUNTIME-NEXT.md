@@ -10,18 +10,18 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Continue the guarded local-value composition's fresh full comparison, primary
-   first. Tool `317a0bf1` passes 504 workspace tests/profile, 119 strict controls,
-   three exact real profiles, 13 additional real controls and 21 full-protocol
-   checks. The 40-command screen passes with paired wall 0.920880 and CPU
-   0.938077 against baseline; candidate/native wall remains 1.726757. Its one
-   retained original native control and 39 new commands preserve the workspace
-   parser failure and repair without repeating a measurement. Complete the
-   separate original 114-test parser control and all five full project gates
-   before adoption. Stop before unstarted cases on any failed gate; keep the
-   same resource floors and preserve the older scalar-copy rejection.
-   [Screen](results/guarded-local-facts-screen-token-continuation-01/assessment.md),
-   [real controls](results/guarded-local-facts-real-controls-01/assessment.md).
+1. Finish the guarded local-value composition's sole remaining full guard,
+   Nushell type relations. Token, folded, pgrust and private rg-aot pass594
+   commands; the token gain is4.73% wall/3.83% CPU and its native ratio is1.641.
+   All114 original parser tests also pass. Nushell's47.0325 GiB cache admission
+   was refused before any command. The continuation must audit and retain the
+   four-case prefix, pass its27 protocol controls, keep the original Nushell
+   driver/settings/gate, and execute only132 new commands. Preserve the admission
+   failure and never repeat completed cases. Reclaim only completed owned public
+   compiler caches to restore headroom. The runtime remains experimental until
+   all five gates pass; the saved goal stays paused.
+   [Primary](results/guarded-local-facts-edit-token-01/assessment.md),
+   [Nushell admission](results/guarded-local-facts-full-admission-01/summary.json).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
