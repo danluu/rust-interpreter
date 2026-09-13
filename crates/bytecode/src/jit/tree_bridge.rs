@@ -130,4 +130,58 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    #[cfg(all(target_arch="aarch64",target_os="macos"))]
+    fn fault_materialization_uses_saved_entry_pointers_and_preserves_native_abi() {
+        let mut a=Assembler::default();
+        a.push_pair(19,30,16);a.mov(19,7);
+        let call=a.words.len();a.emit(0x94000000);
+        a.pop_pair(19,30,16);a.emit(0xd65f03c0);
+        let internal=a.words.len();
+        a.words[call]|=branch_displacement(call,internal,26,CodegenLimit::Jump).unwrap();
+        a.tree_bridge_frame=Some((4,7));
+        a.tree_push_frame();
+        a.imm(20,456); // this tree function's guest result destination
+        a.imm(9,13);a.store64(9,31,layout::HOST_PC);
+        // A child's terminal exit may leave x1 naming that child's frame.
+        // The descriptor must use this function's saved entry base instead.
+        a.imm(1,777);
+        a.imm(0,Failure::Memory as u64);
+        a.bridge_fault_frame().unwrap();
+        a.tree_epilogue();
+        let mut code=platform::Code::reserve(4096).unwrap();let entry=code.append(&a.words).unwrap();
+        for depth in [1,2,4] {
+            for previous_fault in [0,5] {
+                let sentinel=Frame {function:99,pc:99,base:99,register_base:99,return_address:99,tls_callback:true};
+                let mut frames=vec![sentinel;6];let mut registers=vec![u128::MAX;40];let mut memory=vec![23u8;512];
+                let mut cursor=BridgeCursor {
+                    tree:TreeCursor {base:Cursor {remaining:1000,profile_hits:std::ptr::null_mut()},
+                        memory_len:512,peak_linear:512,return_address:0,profile_table:std::ptr::null(),
+                        calls:6,tree_instructions:0,regions_ready:0,stub_calls:0},
+                    frames:frames.as_mut_ptr(),registers:registers.as_mut_ptr(),depth,
+                    fault_depth:previous_fault,fault_register_end:37,
+                };
+                // SAFETY: the only descriptor index is depth-1<6. The saved
+                // register pointer is aligned and lies in the same live array
+                // as the cursor's base. Every host object is distinct, fully
+                // initialized and exclusively owned through this exact probe.
+                let output=unsafe {code.tree_abi_probe(entry,[registers.as_mut_ptr().add(3) as usize,
+                    64,memory.as_mut_ptr() as usize,512,16,0,0,(&mut cursor as *mut BridgeCursor) as usize])};
+                assert_eq!(output[0],Failure::Memory as usize);
+                assert_eq!(&output[1..5],&[0x1357,0x2468,0x3579,0x468a]);
+                assert_eq!(output[5],output[6]);
+                assert_eq!(&output[7..],&[0x579b,0x68ac,0x79bd,0x8ace,0x9bdf,0xace0]);
+                assert_eq!(frames[depth-1],Frame {function:4,pc:13,base:64,register_base:3,
+                    return_address:456,tls_callback:false});
+                assert!(frames.iter().enumerate().all(|(i,f)|i==depth-1 || *f==sentinel));
+                assert_eq!(cursor.depth,depth-1);
+                assert_eq!(cursor.fault_depth,if previous_fault==0 {depth} else {5});
+                assert_eq!(cursor.fault_register_end,if previous_fault==0 {10} else {37});
+                assert_eq!(cursor.tree.base.remaining,1000);assert_eq!(cursor.tree.calls,6);
+                assert_eq!(cursor.tree.memory_len,512);assert_eq!(cursor.tree.peak_linear,512);
+                assert_eq!(registers,vec![u128::MAX;40]);assert_eq!(memory,vec![23u8;512]);
+            }
+        }
+    }
 }
