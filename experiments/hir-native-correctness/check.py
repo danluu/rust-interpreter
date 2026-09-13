@@ -95,9 +95,16 @@ def checked_native(text):
     require(len(re.findall(r'^test \[run-make\] tests/run-make/hir-body-cache-capture \.\.\.', text, re.M)) == 1,
             'actual ReadyHit native run-make did not run exactly once')
     checked_result(text, 1)
-    require(re.search(r'(?m)^\[hir-body-reuse\] [a-z0-9_]+ hit cache_hits=1 '
-                      r'verify_tree=1 verify_journal=1 verify_poststate=1$', text),
-            'no actual verified cache hit in retained native output')
+    hits = re.findall(r'(?m)^\[hir-body-reuse\][^\n]*$', text)
+    require(hits, 'no actual verified cache hit in retained native output')
+    for line in hits:
+        hit = re.fullmatch(r'\[hir-body-reuse\] [a-z0-9_]+ hit cache_hits=1 '
+                          r'verify_tree=1 verify_journal=1 verify_poststate=1 '
+                          r'S=(0|[1-9][0-9]*) E=(0|[1-9][0-9]*)', line)
+        # Pinned ItemLocalId::INVALID is 0xFFFF_FF00. E is exclusive and
+        # may equal INVALID; every allocated ID in [S, E) must precede it.
+        require(hit is not None and 0 < int(hit[1]) < int(hit[2]) <= 0xFFFF_FF00,
+                'malformed verified cache hit or invalid ItemLocalId range')
 
 
 def history(plan_hash, terminal_path):

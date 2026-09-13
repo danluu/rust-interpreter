@@ -57,7 +57,7 @@ class NativeCorrectnessTests(unittest.TestCase):
 
     def test_native_requires_success_and_visible_verified_hit_with_split_libtest_line(self):
         start = 'test [run-make] tests/run-make/hir-body-cache-capture ... '
-        hit = '[hir-body-reuse] anchor hit cache_hits=1 verify_tree=1 verify_journal=1 verify_poststate=1\n'
+        hit = '[hir-body-reuse] anchor hit cache_hits=1 verify_tree=1 verify_journal=1 verify_poststate=1 S=2 E=5\n'
         text = start + '\n------rmake stderr------\n' + hit + 'ok\n' + result(1, 530)
         native.checked_native(text)
         for wrong in [text.replace(hit, ''), text.replace('verify_poststate=1', 'verify_poststate=0'),
@@ -65,6 +65,22 @@ class NativeCorrectnessTests(unittest.TestCase):
                       text.replace('test [run-make]', 'test [ignored]')]:
             with self.assertRaises(RuntimeError):
                 native.checked_native(wrong)
+
+    def test_native_hit_range_matches_pinned_exclusive_item_local_id_limit(self):
+        start = 'test [run-make] tests/run-make/hir-body-cache-capture ... \n'
+        prefix = '[hir-body-reuse] anchor hit cache_hits=1 verify_tree=1 verify_journal=1 verify_poststate=1'
+        def output(suffix):
+            return start + prefix + suffix + '\nok\n' + result(1, 530)
+        for suffix in [' S=1 E=2', ' S=4294967039 E=4294967040']:
+            native.checked_native(output(suffix))
+        for suffix in ['', ' S=2', ' E=5 S=2', ' S=-1 E=5', ' S=0 E=1', ' S=2 E=2', ' S=3 E=2',
+                       ' S=4294967040 E=4294967041', ' S=2 E=4294967295', ' S=2 E=4294967296',
+                       ' S=02 E=5', ' S=2 E=5 extra', ' S=two E=5']:
+            with self.subTest(suffix=suffix), self.assertRaises(RuntimeError):
+                native.checked_native(output(suffix))
+        # A good marker cannot hide another malformed claimed hit.
+        with self.assertRaises(RuntimeError):
+            native.checked_native(output(' S=2 E=5') + prefix + '\n')
 
     def test_option_requires_actual_one_named_pass_and_ignores_command_line_text(self):
         text = 'running: cargo test --test-args test_unstable_options_tracking_hash\n'
