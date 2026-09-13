@@ -69,3 +69,13 @@ The explicit observer feature uses a main-thread executable; its rejected
 libtest replay and all earlier failures remain closed evidence. Setup durations
 are now recorded by tool for the counter experiment. Compiler/Cargo suggestions
 remain with the other workstream; no ownership or worker-count changes follow.
+
+Follow-up through 15:22: reread the requested file; its hash is still unchanged.
+The standalone indirect screen and its successor-flush composition both failed
+their wall gates. The latter observes 3.15% improvement versus 9.17% A/A. Keep
+the high variance visible; do not infer zero effect, retrofit the proposed 8%
+retry threshold, or start the larger comparisons. Its exact profiles preserve
+logical/backend counts and remove only proved dead spill words. Next join the
+existing typed direct-call targets to saved protocol samples and adopted profiles
+to choose a mechanism from actual remaining costs. No compiler-workstream or
+worker-count change follows from this review.
