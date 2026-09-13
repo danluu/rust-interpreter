@@ -441,6 +441,7 @@ impl Assembler<'_> {
 
     /// Memmove between complete prechecked host ranges, x11 -> x12. Argument
     /// slots can overlap each other or their sources; snapshot only this copy.
+    /// Large copies additionally use x13/x14 scratch; x16/x17 remain intact.
     pub(super) fn abi_copy(&mut self, size: usize) -> Result<(), EmitError> {
         if size == 0 { return Ok(()); }
         if size <= 16 {
@@ -460,33 +461,8 @@ impl Assembler<'_> {
                 self.store_mem(9, 10, 12, tail);
             }
         } else {
-            self.imm(9, size as u64);
-            self.cmp(12, 11);
-            let forward = self.words.len();
-            self.emit(0x54000009); // b.ls forward
-            self.three(0x8b000000, 11, 11, 9);
-            self.three(0x8b000000, 12, 12, 9);
-            let backward = self.words.len();
-            self.emit(0x385ffd6a); // ldrb w10,[x11,#-1]!
-            self.emit(0x381ffd8a); // strb w10,[x12,#-1]!
-            self.emit(0xf1000529); // subs x9,x9,#1
-            let again = self.words.len();
-            self.emit(0x54000001);
-            self.patch_conditional(again, backward)?;
-            let done = self.words.len();
-            self.emit(0x14000000);
-            self.patch_conditional(forward, self.words.len())?;
-            let next = self.words.len();
-            self.emit(0x3840156a); // ldrb w10,[x11],#1
-            self.emit(0x3800158a); // strb w10,[x12],#1
-            self.emit(0xf1000529);
-            let again = self.words.len();
-            self.emit(0x54000001);
-            self.patch_conditional(again, next)?;
-            // patch_jump needs the label to be an actual instruction.
-            self.emit(0xd503201f); // nop: common continuation
-            let target = self.words.len() - 1;
-            patch_jump(&mut self.words, done, target)?;
+            self.imm(10, size as u64);
+            self.copy_prechecked()?;
         }
         Ok(())
     }

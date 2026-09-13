@@ -31,6 +31,15 @@ impl Assembler<'_> {
         // Source then destination, complete ranges before any byte is touched.
         self.dynamic_read_address(11, 10);
         self.dynamic_address(12, 10, true);
+        self.copy_prechecked()?;
+        self.patch_conditional(empty, self.words.len())?;
+        Ok(())
+    }
+
+    /// Memmove complete prechecked ranges x11 -> x12, byte count in x10.
+    /// Scratch x9/x13/x14 only; preserve call targets, cursors and budgets.
+    /// Shared with ABI copies after their original ordered address checks.
+    pub(super) fn copy_prechecked(&mut self) -> Result<(), EmitError> {
         self.cmp(12, 11);
         let equal = self.words.len();
         self.emit(0x54000000 | Cond::Eq as u32);
@@ -46,7 +55,7 @@ impl Assembler<'_> {
         let forward_exits = self.copy_direction(true)?;
         let done = self.words.len();
         self.patch_conditional(forward, forward_start)?;
-        for at in [empty, equal]
+        for at in [equal]
             .into_iter()
             .chain(backward_exits)
             .chain(forward_exits)

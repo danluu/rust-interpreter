@@ -474,24 +474,23 @@ impl Assembler<'_> {
         }
     }
 
-    /// Clear the prechecked host range [x11,x12), whose length is at least
-    /// `minimum`. Only the old zero_range scratch registers are clobbered.
-    /// Plain pair stores permit unaligned normal memory and never extend past
-    /// x12. A known 64-byte minimum permits the first batch without a guard;
-    /// subsequent batches test the remaining length. The old helper handles
-    /// the exact tail, including empty ranges. Small frames emit no extra test.
+    /// Clear exactly [x11,x12), with a proved minimum. Only x9/x10 and the
+    /// caller-clobbered vector v0 are scratch. SIMD stores permit unaligned
+    /// normal memory; each full batch fits before its first store. Smaller
+    /// scalar tails retain the exact end, and no guest byte is left dirty.
     fn zero_range_at_least(&mut self, minimum: usize) -> Result<(), EmitError> {
-        const BATCH: usize = 64;
-        if minimum >= BATCH {
+        let batch_size = if minimum >= 256 { 256 } else { 64 };
+        if minimum >= batch_size {
             self.three(0xcb000000, 9, 12, 11);
-            self.imm(10, BATCH as u64);
+            self.imm(10, batch_size as u64);
+            self.emit(0x6e201c00); // eor v0.16b,v0.16b,v0.16b
             let batch = self.words.len();
-            for offset in (0..BATCH).step_by(16) {
-                // stp xzr,xzr,[x11,#offset]; offsets fit signed scaled imm7.
-                self.emit(0xa9000000 | ((offset as u32 / 8) << 15) | (31 << 10) | (11 << 5) | 31);
+            for offset in (0..batch_size).step_by(32) {
+                // stp q0,q0,[x11,#offset], signed imm7 scaled by16.
+                self.emit(0xad000000 | ((offset as u32 / 16) << 15) | (11 << 5));
             }
-            self.add_imm(11, 11, BATCH);
-            self.sub_imm(9, 9, BATCH);
+            self.add_imm(11, 11, batch_size);
+            self.sub_imm(9, 9, batch_size);
             self.cmp(9, 10);
             let more = self.words.len();
             self.emit(0x54000000 | Cond::Hs as u32);
@@ -530,11 +529,18 @@ impl Assembler<'_> {
     /// the length, including alignment padding. No access extends past it.
     fn zero_fixed(&mut self, size: usize) {
         assert!(size <= 256);
-        let pairs = size / 16 * 16;
-        for offset in (0..pairs).step_by(16) {
-            self.emit(0xa9000000 | ((offset as u32 / 8) << 15) | (31 << 10) | (11 << 5) | 31);
+        let mut offset = 0;
+        if size >= 64 {
+            self.emit(0x6e201c00); // v0 is caller-clobbered, never persistent guest state
+            while size - offset >= 32 {
+                self.emit(0xad000000 | ((offset as u32 / 16) << 15) | (11 << 5));
+                offset += 32;
+            }
         }
-        let mut offset = pairs;
+        while size - offset >= 16 {
+            self.emit(0xa9000000 | ((offset as u32 / 8) << 15) | (31 << 10) | (11 << 5) | 31);
+            offset += 16;
+        }
         for (width, opcode) in [(8, 0xf9000000), (4, 0xb9000000), (2, 0x79000000), (1, 0x39000000)] {
             if size - offset >= width {
                 self.emit(opcode | ((offset as u32 / width as u32) << 10) | (11 << 5) | 31);

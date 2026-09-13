@@ -27,6 +27,8 @@ mod guarded_ranges;
 #[cfg(test)]
 mod limit_tests;
 #[cfg(test)]
+mod register_pair_tests;
+#[cfg(test)]
 mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
@@ -1418,9 +1420,24 @@ impl Assembler<'_> {
         } else { self.raw_spill(reg, lo, hi); }
     }
     fn raw_spill(&mut self, reg: Reg, lo: u32, hi: u32) {
+        self.transfer_register_pair(false, reg, lo, hi);
+    }
+    fn transfer_register_pair(&mut self, load: bool, reg: Reg, lo: u32, hi: u32) {
+        // Non-writeback LDP/STP has a signed seven-bit offset scaled by eight.
+        // A VM register occupies sixteen initialized, host-owned bytes. Keep
+        // two scalar accesses where a pair would need an extra address add;
+        // for far registers, materialize their common base only once.
+        if reg < 32 || reg >= 2048 {
+            let (base, offset) = self.reg_address(reg, false);
+            debug_assert!(offset < 64);
+            self.emit((if load { 0xa9400000 } else { 0xa9000000 })
+                | (offset << 15) | (hi << 10) | (base << 5) | lo);
+            return;
+        }
         for (high, rs) in [(false, lo), (true, hi)] {
             let (base, offset) = self.reg_address(reg, high);
-            self.emit(0xf9000000 | (offset << 10) | (base << 5) | rs);
+            self.emit((if load { 0xf9400000 } else { 0xf9000000 })
+                | (offset << 10) | (base << 5) | rs);
         }
     }
     fn remember(&mut self, reg: Reg, fact: Fact) {

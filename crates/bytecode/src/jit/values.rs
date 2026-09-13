@@ -172,11 +172,8 @@ impl Assembler<'_> {
     pub(super) fn load_values(&mut self) {
         let Some(values) = self.values else { return; };
         for (index, &reg) in values.registers.iter().enumerate() {
-            for high in [false, true] {
-                let (base, offset) = self.reg_address(reg, high);
-                let physical = 23 + index as u32 * 2 + u32::from(high);
-                self.emit(0xf9400000 | (offset << 10) | (base << 5) | physical);
-            }
+            let physical = 23 + index as u32 * 2;
+            self.transfer_register_pair(true, reg, physical, physical + 1);
         }
     }
     pub(super) fn external_entry(&mut self) -> usize {

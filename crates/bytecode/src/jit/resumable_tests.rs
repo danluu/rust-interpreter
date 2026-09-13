@@ -4,6 +4,68 @@ use crate::{
 };
 
 #[test]
+fn wide_clear_words_match_independent_assembler_and_keep_exact_scalar_tails() {
+    // Independent xcrun clang/otool fixture: native-boundary-encoding-01.
+    let mut a = Assembler::default();
+    a.zero_fixed(256);
+    assert_eq!(a.words.len(), 9);
+    assert_eq!(a.words[0], 0x6e201c00); // eor v0.16b,v0.16b,v0.16b
+    assert_eq!(a.words[1], 0xad000160); // stp q0,q0,[x11]
+    assert_eq!(a.words[2], 0xad010160); // stp q0,q0,[x11,#32]
+    assert_eq!(a.words[8], 0xad070160); // stp q0,q0,[x11,#224]
+    let mut a = Assembler::default();
+    a.zero_fixed(255);
+    //224 SIMD bytes, then16/8/4/2/1; every last byte stays within the range.
+    assert_eq!(&a.words[8..], &[0xa90e7d7f, 0xf900797f, 0xb900f97f, 0x7901f97f, 0x3903f97f]);
+}
+
+#[test]
+fn abi_bulk_copy_matches_snapshot_memmove_and_preserves_native_call_state() {
+    let mut code = platform::Code::reserve(32768).unwrap();
+    let mut entries = vec![];
+    for size in [0, 1, 8, 16, 127, 128, 129, 136, 143, 144, 255, 256, 257, 304, 511, 513, 4097] {
+        let mut a = Assembler::default();
+        a.resumable_save_host(false);
+        a.load64(11, 0, 0);
+        a.load64(12, 0, 16);
+        a.three(0x8b000000, 11, 2, 11);
+        a.three(0x8b000000, 12, 2, 12);
+        a.imm(16, 0x1357);
+        a.imm(17, 0x2468);
+        a.imm(22, 0x3579);
+        a.abi_copy(size).unwrap();
+        a.store64(16, 0, 32);
+        a.store64(17, 0, 40);
+        a.store64(22, 0, 48);
+        a.mov(0, 31);
+        a.resumable_save_host(true);
+        a.emit(0xd65f03c0);
+        entries.push((size, code.append(&a.words).unwrap()));
+    }
+    for (size, entry) in entries {
+        for alignment in 0..64 {
+            for delta in [-513isize, -17, -16, -1, 0, 1, 15, 16, 17, 513] {
+                let source = 1024 + alignment;
+                let destination = (source as isize + delta) as usize;
+                let len = source.max(destination) + size + 64;
+                let mut actual: Vec<_> = (0..len).map(|n| ((n * 37 + 11) % 251) as u8).collect();
+                let mut expected = actual.clone();
+                expected.copy_within(source..source + size, destination);
+                let mut registers = [source as u128, destination as u128, 0, 0];
+                // SAFETY: the leaf receives two complete initialized owned
+                // ranges. It never accesses outside them; full canaries and
+                // independent snapshot-memmove results are checked below.
+                let result = unsafe { code.call(entry, registers.as_mut_ptr(), 0,
+                    actual.as_mut_ptr(), len, 0, std::ptr::null_mut(), 0, std::ptr::null_mut()) };
+                assert_eq!(result, 0);
+                assert_eq!(actual, expected, "size={size}, alignment={alignment}, delta={delta}");
+                assert_eq!(&registers[2..], &[(0x2468u128 << 64) | 0x1357, 0x3579]);
+            }
+        }
+    }
+}
+
+#[test]
 fn fixed_zeroing_matches_every_dirty_extent_and_unaligned_start() {
     let mut code = platform::Code::reserve(32768).unwrap();
     let mut entries = vec![];
@@ -204,7 +266,7 @@ fn reused_guest_frames_clear_padding_and_preserve_limits() {
 fn bulk_zeroing_matches_exact_dirty_ranges_and_preserves_spare_bytes() {
     let mut code = platform::Code::reserve(4096).unwrap();
     let mut entries = vec![];
-    for minimum in [0, 64] {
+    for minimum in [0, 64, 255, 256, 257] {
         let mut a = Assembler::default();
         a.mov(11, 2); // owned memory argument; no guest frame is needed
         a.three(0x8b000000, 12, 2, 3); // exclusive end = start + length
@@ -215,7 +277,7 @@ fn bulk_zeroing_matches_exact_dirty_ranges_and_preserves_spare_bytes() {
     }
     let mut registers = [0u128; 1];
     for (minimum, entry) in entries {
-        for size in (minimum..=256).chain([511, 512, 513, 1023, 1024, 1025, 4095, 4096, 4097]) {
+        for size in (minimum..=minimum + 256).chain([511, 512, 513, 1023, 1024, 1025, 4095, 4096, 4097]) {
             for alignment in 0..64 {
                 // Every byte begins dirty. Full equality checks both the
                 // requested initialization and untouched prefix/spare suffix.
