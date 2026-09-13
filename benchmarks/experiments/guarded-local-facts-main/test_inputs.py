@@ -1,6 +1,6 @@
 import copy
 import unittest
-from inputs import CASES, VM_KEY, require_complete, require_vm_sources
+from inputs import CASES, VM_KEY, COMPILER_CONTROLS, require_complete, require_vm_sources
 
 
 class PublicationBoundaries(unittest.TestCase):
@@ -48,6 +48,21 @@ class PublicationBoundaries(unittest.TestCase):
         old = {'Cargo.toml': 'workspace', 'crates/bytecode/src/jit.rs': 'jit'}
         for changed in [dict(old, **{'crates/bytecode/build.rs': 'new'}), {'Cargo.toml': 'workspace'}]:
             with self.assertRaises(AssertionError): require_vm_sources(changed, old)
+
+    def test_only_exact_declared_compiler_controls_can_be_added(self):
+        old = {'Cargo.toml': 'workspace', 'crates/bytecode/src/jit.rs': 'jit'}
+        added = dict(old, **COMPILER_CONTROLS)
+        with self.assertRaises(AssertionError): require_vm_sources(added, old)
+        require_vm_sources(added, old, compiler_controls=True)
+        bad = [dict(added, **{path: 'changed'}) for path in COMPILER_CONTROLS]
+        bad += [dict(added, **{'crates/bytecode/tests/other.rs': 'unknown'}),
+                dict(added, **{'crates/bytecode/src/jit.rs': 'changed'}),
+                {p: h for p, h in added.items() if p != 'Cargo.toml'}, old]
+        for current in bad:
+            with self.subTest(current=current), self.assertRaises(AssertionError):
+                require_vm_sources(current, old, compiler_controls=True)
+        with self.assertRaises(AssertionError):
+            require_vm_sources(added, added, compiler_controls=True)
 
 
 if __name__ == '__main__': unittest.main()

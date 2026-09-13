@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 
-from inputs import CASES, VM_KEY, VM_SHA, require_complete, require_vm_sources, rust_input
+from inputs import CASES, VM_KEY, VM_SHA, COMPILER_CONTROLS, require_complete, require_vm_sources, rust_input
 
 ROOT = Path(__file__).resolve().parents[3]
 SOURCE = ROOT / '.work/publication-main'
@@ -80,7 +80,7 @@ def main():
         actual_rust = {str(p.relative_to(SOURCE)): sha(p) for p in (SOURCE / 'crates').rglob('*')
                        if p.is_file() and rust_input(str(p.relative_to(SOURCE)))}
         assert actual_rust == {p: h for p, h in current.items() if p.startswith('crates/')}, 'untracked Rust build input'
-        require_vm_sources(current, qualified)
+        require_vm_sources(current, qualified, compiler_controls=True)
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in evidence}
         for name in tracked:
             if (rust_input(name) or name.endswith('.rs') or name.startswith(('scripts/', 'tests/', '.cargo/'))
@@ -92,16 +92,19 @@ def main():
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
         commands = [('controller-tests', [sys.executable, '-m', 'unittest', 'discover', '-s', str(Path(__file__).parent), '-p', 'test_*.py', '-v'], ROOT),
-                    ('python', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_*.py', '-v'], SOURCE)]
+                    ('python', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_*.py', '-v'], SOURCE),
+                    ('cargo-metadata', ['cargo', '+nightly-2026-09-08', 'metadata', '--locked', '--offline', '--no-deps', '--format-version', '1'], SOURCE)]
         for label, action, profile in [('test-debug', 'test', []), ('test-release', 'test', ['--release']), ('build-release', 'build', ['--release'])]:
             commands.append((label, ['cargo', '+nightly-2026-09-08', action, *profile, '--locked', '--offline',
-                '--jobs', '2', '--target-dir', str(TARGET), '-p', 'rust-interp-mir-export'], SOURCE))
+                '--jobs', '2', '--target-dir', str(TARGET),
+                *(['--workspace'] if action == 'test' else ['-p', 'rust-interp-mir-export'])], SOURCE))
         write(work / 'plan.json', dict(owner=str(ROOT), source=str(SOURCE), source_commit=revision,
             frozen=frozen, rust_inputs=current, target=str(TARGET), vm_source_key=VM_KEY,
             compiler_identity_command=compiler_command, compiler_identity_stdout=compiler.stdout,
+            python_version=sys.version, separately_qualified_compiler_control_additions=COMPILER_CONTROLS,
             previous_workspace_tests_per_profile=504, commands=[dict(label=l, command=c, cwd=str(d)) for l, c, d in commands],
             admitted_free_bytes=shutil.disk_usage(ROOT).free, minimum_initial_free_gib=16,
-            scope='Compiler and launcher compatibility qualification; measured VM binary reused only with exact component/shared input inventory. The prior504 tests are a whole-workspace result, not504 VM-only tests. No timing repetition or claim about newer optional compiler routes.'))
+            scope='Compiler and launcher compatibility qualification; measured VM reused with all125 prior component/shared inputs exact and two hash-pinned compiler-control test additions whose separate Cargo target is checked. Full workspace tests run in both profiles; ignored compiler controls remain pending explicit execution. No timing repetition or claim about newer optional compiler routes.'))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
                              'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET', 'CARGO_BUILD_BUILD_DIR',
@@ -124,12 +127,23 @@ def main():
                 skips = re.findall(r'OK \(skipped=(\d+)\)', err)
                 assert err.rstrip().endswith('OK') or skips
                 counts[label] = dict(tests=int(total), skipped=int(skips[0]) if skips else 0)
-                if label == 'controller-tests': assert counts[label] == dict(tests=5, skipped=0)
+                if label == 'controller-tests': assert counts[label] == dict(tests=6, skipped=0)
+            elif label == 'cargo-metadata':
+                metadata = json.loads(out)
+                package, = [p for p in metadata['packages'] if p['name'] == 'rust-interp-bytecode']
+                target, = [t for t in package['targets'] if t['name'] == 'trap_span_remap']
+                assert target['kind'] == ['test'] and target['test']
+                assert Path(target['src_path']) == SOURCE / 'crates/bytecode/tests/trap_span_remap.rs'
+                assert not any(t['kind'] == ['custom-build'] for t in package['targets'])
+                for target in package['targets']:
+                    if target['kind'] in [['lib'], ['bin']]:
+                        assert Path(target['src_path']).is_relative_to(SOURCE / 'crates/bytecode/src')
+                write(work / 'compiler-control-target.json', package)
             elif label.startswith('test-'):
-                groups = re.findall(r'test result: ok\. (\d+) passed; (\d+) failed;', out + err)
-                assert groups and all(int(f) == 0 for _, f in groups)
-                counts[label] = sum(int(n) for n, _ in groups)
-                assert counts[label] >= 98
+                groups = re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;', out + err)
+                assert groups and all(int(f) == 0 for _, f, _ in groups)
+                counts[label] = dict(passed=sum(int(n) for n, _, _ in groups), ignored=sum(int(n) for _, _, n in groups))
+                assert counts[label]['passed'] >= 504 and counts[label]['ignored'] == 5
             assert all(sha(ROOT / p) == h for p, h in frozen.items())
             print(label, counts.get(label, 'completed'), flush=True)
         assert counts['test-debug'] == counts['test-release']
@@ -157,7 +171,9 @@ def main():
         destination = ROOT / 'results' / args.run_id
         destination.mkdir(exist_ok=False)
         write(destination / 'summary.json', dict(status='passed', source_commit=revision, tool_key=key,
-            binaries=binaries, composition=composition, tests=counts, reused_vm_source_manifest_matches=True,
+            binaries=binaries, composition=composition, tests=counts, prior_vm_and_shared_inputs_match=True,
+            separately_qualified_compiler_control_additions=COMPILER_CONTROLS,
+            compiler_control_target_sha256=sha(work / 'compiler-control-target.json'),
             commands=len(records), raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),
             records_sha256=sha(work / 'records.json'), performance_measurement=False,
             real_project_qualification_pending=True))
