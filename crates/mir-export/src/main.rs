@@ -273,8 +273,9 @@ fn main() -> std::process::ExitCode {
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
             "compiler_sysroot":env!("RUST_INTERP_SYSROOT"),
+            "host_library_opt":serde_json::from_str::<serde_json::Value>(&wrapper_route::host_library_capability()).expect("host library capability"),
             "frontend_workers":serde_json::from_str::<serde_json::Value>(&wrapper_route::frontend_worker_capability()).expect("frontend worker capability"),
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1","stable-mono-cgu-partitioning","compiler-argv-record-v1","frontend-workers-v1"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1","stable-mono-cgu-partitioning","compiler-argv-record-v1","frontend-workers-v1","host-library-opt-v1"]}));
         return std::process::ExitCode::SUCCESS;
     }
     let environment = wrapper_route::Environment::read();

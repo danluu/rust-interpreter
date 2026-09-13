@@ -103,6 +103,8 @@ def _checked_tools_locked():
             capabilities.update(tool_key=key,exporter_sha256=manifest['rust-interp-mir-export'])
             from frontend_workers import bind_wrapper_capability
             bind_wrapper_capability(directory,manifest,capabilities)
+            from host_library_opt import bind_wrapper_capability as bind_host_library
+            bind_host_library(directory,manifest,capabilities)
             (directory/'capabilities.json').write_text(json.dumps(capabilities,indent=2))
         (directory/'ready.json').write_text(json.dumps(manifest,indent=2))
     return installed_tools(key)
@@ -255,6 +257,7 @@ def _main(resources):
     parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable with the selected compiler')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off',help='custom compiler CGU grouping policy (default: off)')
     parser.add_argument('--host-proc-macro-opt',choices=['off','on'],default='off',help='experimental O1 codegen for unoptimized host proc-macro dylibs, retaining checks; requires --std-mir (default: off)')
+    parser.add_argument('--host-library-opt',choices=['off','on'],default='off',help='experimental O1 codegen for unoptimized native host libraries, retaining checks; requires --std-mir (default: off)')
     parser.add_argument('--stable-mono-cgu-partitioning',choices=['off','on'],help='explicit custom compiler per-item CGU policy; requires recorded compiler and wrapper support')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
     parser.add_argument('--function-cache',choices=['off','reuse','auto'],default='off',help='experimental compiler-validated function cache: reuse requires incremental tracking; auto uses full lowering when tracking is disabled; strict checking always runs (default: off)')
@@ -280,6 +283,10 @@ def _main(resources):
     if args.stable_cgu_partitioning!='off' and args.compiler_key is None:parser.error('--stable-cgu-partitioning=on requires --compiler-key')
     if args.host_proc_macro_opt!='off' and (not args.std_mir or args.compiler_key is not None or args.cargo_key is not None or args.borrowck_cache!='off'):
         parser.error('--host-proc-macro-opt=on requires --std-mir, public compiler/stock Cargo and --borrowck-cache=off')
+    if args.host_library_opt!='off':
+        import host_library_opt
+        try:host_library_opt.validate_selection(args,os.environ)
+        except ValueError as error:parser.error(str(error))
     if args.std_mir_policy!='v1' or args.std_mir_key is not None:
         if args.std_mir_policy!='source-paths-v2' or args.std_mir_key is None or not args.std_mir or args.compiler_key is None or args.cargo_key is not None:
             parser.error('source-paths-v2 requires --std-mir, --std-mir-key and --compiler-key, without --cargo-key')
@@ -389,6 +396,11 @@ def _main(resources):
     if args.function_cache!='off':require_export_option(tools,key,'function-cache-'+args.function_cache)
     if args.borrowck_cache!='off':require_export_option(tools,key,'borrowck-cache')
     if args.host_proc_macro_opt!='off':require_export_option(tools,key,'host-proc-macro-opt-v1')
+    if args.host_library_opt!='off':
+        require_export_option(tools,key,host_library_opt.POLICY)
+        capabilities=json.loads((tools/'capabilities.json').read_text())
+        host_library_opt.require_capability(tools,capabilities,json.loads((tools/'ready.json').read_text()))
+        timings['host_library_opt']=host_library_opt.receipt(capabilities)
     if listing:require_export_option(tools,key,'list-tests')
     if filtered:require_export_option(tools,key,'filtered-tests')
     if args.inline_leaves:require_export_option(tools,key,'inline-leaves')
@@ -446,6 +458,7 @@ def _main(resources):
     if cargo:identity_input='custom-cargo-v1\0'+cargo.key+'\0'+identity_input
     if args.host_proc_macro_opt!='off':
         identity_input='host-proc-macro-opt-v1\0'+args.host_proc_macro_opt+'\0'+identity_input
+    if args.host_library_opt!='off':identity_input=host_library_opt.namespace(identity_input)
     if args.frontend_workers is not None:
         identity_input=namespace(args.frontend_workers,identity_input)
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
@@ -521,7 +534,7 @@ def _main(resources):
     if stats:cargo_cpu_started=cpu_usage(resource.RUSAGE_CHILDREN)
     stage=time.perf_counter()
     cargo_env=env
-    if args.function_cache!='off' or args.borrowck_cache!='off' or custom or args.host_proc_macro_opt!='off' or args.frontend_workers is not None:
+    if args.function_cache!='off' or args.borrowck_cache!='off' or custom or args.host_proc_macro_opt!='off' or args.host_library_opt!='off' or args.frontend_workers is not None:
         cargo_env=env.copy()
         if custom:
             cargo_env['RUST_INTERP_COMPILER_RUSTC']=str(custom.rustc)
@@ -532,6 +545,7 @@ def _main(resources):
         if args.function_cache!='off':cargo_env['RUST_INTERP_FUNCTION_CACHE']=args.function_cache
         if args.borrowck_cache!='off':cargo_env['RUST_INTERP_BORROWCK_CACHE']=args.borrowck_cache
         if args.host_proc_macro_opt!='off':cargo_env['RUST_INTERP_HOST_PROC_MACRO_OPT']=args.host_proc_macro_opt
+        if args.host_library_opt!='off':cargo_env['RUST_INTERP_HOST_LIBRARY_OPT']=args.host_library_opt
     result=subprocess.run(command,cwd=manifest.parent,env=cargo_env,stdout=subprocess.PIPE,text=True)
     timings['cargo_seconds']=time.perf_counter()-stage
     if stats:timings['cargo_cpu']=cpu_since(resource.RUSAGE_CHILDREN,cargo_cpu_started)

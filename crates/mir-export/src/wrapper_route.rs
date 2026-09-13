@@ -12,6 +12,13 @@ pub fn frontend_worker_capability() -> String {
     )
 }
 
+pub fn host_library_capability() -> String {
+    format!(
+        r#"{{"schema_version":1,"policy":"host-library-opt-v1","compiler_commit":"{}","opt_level":1,"mir_opt_level":1,"lto":"off","preserve_checks":true}}"#,
+        option_env!("RUST_INTERP_RUSTC_COMMIT").unwrap_or("unknown"),
+    )
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum BorrowckCacheMode {
     #[default]
@@ -50,6 +57,7 @@ pub struct Environment {
     pub stable_mono_cgu_partitioning: Option<OsString>,
     pub frontend_workers: Option<OsString>,
     pub host_proc_macro_opt: Option<OsString>,
+    pub host_library_opt: Option<OsString>,
     pub frontend_compiler: Option<OsString>,
     pub conflicting_frontend_policy: bool,
 }
@@ -72,13 +80,14 @@ impl Environment {
             stable_mono_cgu_partitioning: std::env::var_os("RUST_INTERP_STABLE_MONO_CGU_PARTITIONING"),
             frontend_workers: std::env::var_os("RUST_INTERP_FRONTEND_WORKERS"),
             host_proc_macro_opt: std::env::var_os("RUST_INTERP_HOST_PROC_MACRO_OPT"),
+            host_library_opt: std::env::var_os("RUST_INTERP_HOST_LIBRARY_OPT"),
             frontend_compiler: option_env!("RUST_INTERP_SYSROOT").map(|root| {
                 Path::new(root)
                     .join(format!("bin/rustc{}", std::env::consts::EXE_SUFFIX))
                     .into_os_string()
             }),
             conflicting_frontend_policy: std::env::var_os("RUST_INTERP_COMPILER_RUSTC").is_some()
-                || ["RUST_INTERP_STABLE_CGU_PARTITIONING", "RUST_INTERP_HOST_PROC_MACRO_OPT"]
+                || ["RUST_INTERP_STABLE_CGU_PARTITIONING", "RUST_INTERP_HOST_PROC_MACRO_OPT", "RUST_INTERP_HOST_LIBRARY_OPT"]
                     .iter().any(|name| std::env::var_os(name).is_some_and(|value| value != "off")),
         }
     }
@@ -92,6 +101,7 @@ pub struct Route {
     pub borrowck_cache: BorrowckCacheMode,
     pub custom_compiler: bool,
     pub host_proc_macro_opt: bool,
+    pub host_library_opt: bool,
 }
 
 impl Route {
@@ -100,7 +110,7 @@ impl Route {
     }
 
     pub fn check_compiler(&self, sysroot: &Path) -> Result<(), String> {
-        if self.wrapper && (self.custom_compiler || self.host_proc_macro_opt || self.requires_exporter()) {
+        if self.wrapper && (self.custom_compiler || self.host_proc_macro_opt || self.host_library_opt || self.requires_exporter()) {
             let expected = sysroot.join("bin/rustc").canonicalize();
             let supplied = Path::new(&self.args[0]).canonicalize();
             if !matches!((&expected, &supplied), (Ok(a), Ok(b)) if a == b) {
@@ -174,6 +184,19 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
         Some(Some("on")) => true,
         _ => return Err("RUST_INTERP_HOST_PROC_MACRO_OPT must be off or on".into()),
     };
+    let host_library_opt = match env.host_library_opt.as_deref().map(OsStr::to_str) {
+        None | Some(Some("off")) => false,
+        Some(Some("on")) => true,
+        _ => return Err("RUST_INTERP_HOST_LIBRARY_OPT must be off or on".into()),
+    };
+    if host_library_opt && (!wrapper || custom_compiler || host_proc_macro_opt
+        || env.frontend_workers.is_some() || env.stable_mono_cgu_partitioning.is_some()
+        || env.stable_cgu_partitioning.as_deref().is_some_and(|value| value != OsStr::new("off"))
+        || borrowck_cache != BorrowckCacheMode::Off
+        || env.std_sysroot.as_ref().is_none_or(String::is_empty)
+        || env.std_target.as_ref().is_none_or(String::is_empty)) {
+        return Err("host library optimization requires public compiler Cargo wrapping with complete std-MIR context and other compiler policies off".into());
+    }
     if host_proc_macro_opt && (!wrapper || custom_compiler || borrowck_cache != BorrowckCacheMode::Off ||
         env.std_sysroot.as_ref().is_none_or(String::is_empty) || env.std_target.as_ref().is_none_or(String::is_empty)) {
         return Err("host proc-macro optimization requires public compiler Cargo wrapping with complete std-MIR context and borrowck cache off".into());
@@ -181,6 +204,7 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
     // Policy conflicts concern original Cargo/user flags, not sysroot/MIR
     // additions that this shared router may make below.
     let host_proc_macro_args = host_proc_macro_opt.then(|| args.clone());
+    let host_library_args = host_library_opt.then(|| args.clone());
     let mono_value = match env.stable_mono_cgu_partitioning.as_deref().map(OsStr::to_str) {
         None => None,
         Some(Some("off")) => Some("no"),
@@ -337,6 +361,9 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
     if let Some(original) = host_proc_macro_args {
         args.extend(host_proc_macro::additions(&original, export)?);
     }
+    if let Some(original) = host_library_args {
+        args.extend(host_proc_macro::library_additions(&original, export)?);
+    }
     Ok(Route {
         args,
         wrapper,
@@ -344,5 +371,6 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
         borrowck_cache,
         custom_compiler,
         host_proc_macro_opt,
+        host_library_opt,
     })
 }
