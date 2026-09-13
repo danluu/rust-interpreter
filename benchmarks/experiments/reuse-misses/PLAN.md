@@ -4,7 +4,8 @@ The attached patch is unintegrated and its eight new Rust tests have not run.
 It changes five exporter files, preserving the cache format, function-dependency
 observer, compiler query order, eager MIR materialization and emitted program.
 Apply only after the scalar Copy comparison is terminal and after checking the
-recorded source preimage hashes. Choose the then-qualified VM as a retained
+recorded source preimage hashes (`git apply --unidiff-zero`). The Python reader
+and its eight tests are also drafts and have not run. Choose the then-qualified VM as a retained
 binary; rebuild only the exporter package. Do not overlap builds or diagnostics
 with that comparison, mutate its helpers or restart a completed case.
 
