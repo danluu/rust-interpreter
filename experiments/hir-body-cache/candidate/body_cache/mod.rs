@@ -1,4 +1,4 @@
-//! Actual body lowering capture checkpoint. Never substitutes a cached body.
+//! Checked body capture and separately selected, fully verified replay.
 use std::path::PathBuf;
 use rustc_ast::{self as ast, node_id::NodeMap};
 use rustc_data_structures::fingerprint::Fingerprint;
@@ -24,6 +24,7 @@ mod source_identity;
 pub(super) use effects::Trace;
 
 const FORMAT: &str = "hir-body-capture-v2-cold-materialization-1";
+const REUSE_POLICY: &str = "hir-body-reuse-v2-ready-hit-1";
 
 pub(super) struct Candidate {
     owner: hir::OwnerId,
@@ -50,7 +51,7 @@ fn hex(value: Fingerprint) -> String {
 
 pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
     owner: ast::NodeId, span: Span, function: &ast::Fn, role: &'static str) -> Option<Candidate> {
-    if !tcx.sess.opts.unstable_opts.hir_body_cache_capture
+    if !(tcx.sess.opts.unstable_opts.hir_body_cache_capture || tcx.sess.opts.unstable_opts.hir_body_cache_reuse)
         || std::env::var_os("RUSTC_FORCE_RUSTC_VERSION").is_some() { return None; }
     let session = tcx.incr_comp_session?;
     let probe = input::probe(tcx, resolver, owner, span, function, role).ok()?;
@@ -67,7 +68,8 @@ pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'t
     let resolutions = ast_nodes.iter().map(|(id, _)|
         resolver.partial_res_map.get(id).and_then(|res| res.full_res())).collect();
     let mut encoder = MemEncoder::new();
-    FORMAT.encode(&mut encoder);
+    let policy = if tcx.sess.opts.unstable_opts.hir_body_cache_reuse { REUSE_POLICY } else { FORMAT };
+    policy.encode(&mut encoder);
     source_identity::SOURCE_IDENTITY.encode(&mut encoder);
     cfg!(debug_assertions).encode(&mut encoder);
     tcx.sess.cfg_version.encode(&mut encoder);
@@ -78,7 +80,7 @@ pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'t
     Some(Candidate {
         owner: hir::OwnerId { def_id: resolver.owners[&owner].def_id },
         body: function.body.as_deref()?.id, name: function.ident.name.as_str().to_owned(),
-        path: session.session_directory.join(format!("{FORMAT}-{}.json", hex(probe.input.owner.0))),
+        path: session.session_directory.join(format!("{policy}-{}.json", hex(probe.input.owner.0))),
         key, ast_nodes, ordinals, nodes, kinds, resolutions, current_span: span,
         source: probe.input.owner_source.clone(),
         input_statistics: [probe.body_bytes, probe.body_nodes, probe.parameter_nodes,
@@ -114,8 +116,18 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
         return lctx.lower_block_expr(body);
     };
     let entry = journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix };
-    // Reading/decoding and the validation boundary require only immutable
-    // current input. There is NO conversion from Checked to a HIR expression.
+    if lctx.tcx.sess.opts.unstable_opts.hir_body_cache_reuse {
+        if let Some(value) = prepared::try_reuse(lctx, &candidate, &record_key, &frame) {
+            if lctx.tcx.sess.opts.unstable_opts.incremental_info {
+                eprintln!("[hir-body-reuse] {} hit cache_hits=1 verify_tree=1 verify_journal=1 verify_poststate=1 S={} E={}", candidate.name,
+                    frame.start, lctx.curr_owner.item_local_id_counter.as_u32());
+            }
+            return value;
+        }
+        frame.assert_unchanged_miss(lctx);
+    }
+    // Capture-only mode and replay misses both continue through ordinary
+    // lowering. Reading/decoding below mutates no lowering state.
     let previous = storage::read(&candidate.path, &record_key).and_then(|payload| {
         let checked = journal::check(payload.journal.clone(), &entry)?;
         let current = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)?;
@@ -124,7 +136,7 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
         Some(payload)
     });
     lctx.body_trace = Some(Trace::new());
-    let value = lctx.lower_block_expr(body); // Always ordinary lowering.
+    let value = lctx.lower_block_expr(body); // Ordinary lowering on every miss.
     let trace = lctx.body_trace.take();
     let end = lctx.curr_owner.item_local_id_counter.as_u32();
     let captured = trace.and_then(|trace| trace.finish(&candidate, frame.start, end, value.hir_id))
@@ -152,8 +164,8 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
         Some(_) => "changed-tree-or-journal-after-stock-lowering",
         None => "cold-tree-and-journal-after-stock-lowering",
     };
-    // Typed evidence only: no hit path exists. Every comparison follows stock
-    // lowering, a cold materialization/recapture audit and exit-effect checks.
+    // A record is written only after stock lowering, cold materialization/
+    // recapture and exact exit checks, in the selected policy's own namespace.
     let stored = storage::write(&candidate.path, &record_key, &payload);
     report(lctx, &candidate, if stored { state } else { "tree-write-unavailable" },
         frame.start, end, checked.journal().events.len());

@@ -15,12 +15,12 @@ struct Observed<'a> {
 }
 fn compatible(prepared: &PreparedBody<'_, '_>, observed: &Observed<'_>) -> bool {
     let current = prepared.current;
-    prepared.owner == observed.owner && prepared.owner == current.owner
-        && prepared.start == current.start && prepared.end == current.journal.end
-        && prepared.end == observed.counter && prepared.source_start == observed.source_start
-        && prepared.source_end == observed.source_end && prepared.source == observed.source
-        && prepared.source_start.0 == current.source_start && prepared.source_end.0 == current.source_end
-        && prepared.source == current.source && current.context_identity == observed.context_identity
+    prepared.body.owner == observed.owner && prepared.body.owner == current.owner
+        && prepared.body.start == current.start && prepared.body.end == current.journal.end
+        && prepared.body.end == observed.counter && prepared.body.source_start == observed.source_start
+        && prepared.body.source_end == observed.source_end && prepared.body.source == observed.source
+        && prepared.body.source_start.0 == current.source_start && prepared.body.source_end.0 == current.source_end
+        && prepared.body.source == current.source && current.context_identity == observed.context_identity
 }
 
 pub(super) fn audit(lctx: &crate::LoweringContext<'_, '_>, candidate: &Candidate,
@@ -39,18 +39,18 @@ pub(super) fn audit(lctx: &crate::LoweringContext<'_, '_>, candidate: &Candidate
     if !compatible(&prepared, &observed) || candidate.owner != observed.owner
         || candidate.context_identity != observed.context_identity
         || !candidate.current_span.ctxt().is_root() || lctx.tcx.sess.opts.incremental.is_none()
-        || lctx.body_trace.is_some() || prepared.expected != *expected.tree()
-        || current_state(current)? != prepared.prefix { return None; }
-    let rebuilt = Builder { arena: lctx.arena, spans: lctx.span_lowerer() }.expr(&prepared.value);
+        || lctx.body_trace.is_some() || prepared.body.expected != *expected.tree()
+        || current_state(current)? != prepared.body.prefix { return None; }
+    let rebuilt = Builder { arena: lctx.arena, spans: lctx.span_lowerer() }.expr(&prepared.body.value);
     // Fallible validation after allocation is an audit rejection, never a
     // reason to re-lower an already advanced context. No reconstructed node is
     // registered as an owner/body or returned to ordinary compiler queries.
     let recaptured = capture::capture(candidate, current, &rebuilt)?;
     let checked = validate::check(recaptured, current)?;
-    (checked.tree() == &prepared.expected).then_some(())
+    (checked.tree() == &prepared.body.expected).then_some(())
 }
 
-struct Builder<'hir> { arena: &'hir hir::Arena<'hir>, spans: crate::SpanLowerer }
+pub(super) struct Builder<'hir> { pub(super) arena: &'hir hir::Arena<'hir>, pub(super) spans: crate::SpanLowerer }
 impl<'hir> Builder<'hir> {
     fn span(&self, value: &SpanRecipe) -> Span {
         let span = match *value {
@@ -99,7 +99,7 @@ impl<'hir> Builder<'hir> {
     fn optional(&self, value: &Option<Box<Expr>>) -> Option<&'hir hir::Expr<'hir>> {
         value.as_ref().map(|value| self.expr_ref(value))
     }
-    fn expr(&self, value: &Expr) -> hir::Expr<'hir> {
+    pub(super) fn expr(&self, value: &Expr) -> hir::Expr<'hir> {
         use ExprKind as E; use hir::ExprKind as H;
         let Expr { node: Node { id, span }, kind } = value;
         let kind = match kind {
@@ -201,7 +201,7 @@ mod tests {
                 tail.kind = w::ExprKind::Literal { span: w::SourceSpan::Relative { lo: 2, hi: 4 }, value: literal };
                 let checked = validate::check(wire, &current).unwrap();
                 let prepared = prepare(&checked, &current).unwrap();
-                let rebuilt = builder.expr(&prepared.value);
+                let rebuilt = builder.expr(&prepared.body.value);
                 let recaptured = capture::capture(&candidate, &current, &rebuilt).unwrap();
                 assert_eq!(validate::check(recaptured, &current).unwrap().tree(), checked.tree());
             }

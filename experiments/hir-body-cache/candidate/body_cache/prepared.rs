@@ -1,8 +1,8 @@
 //! Owned, typed values for a checked current-session body. This module performs
 //! no HIR allocation, symbol/span interning, query or LoweringContext mutation.
-//! Its opaque result is NOT a ReadyHit: no exclusive context, vacancy/effect
-//! preflight or hit commit exists. The separate private child audits cold
-//! materialization only after stock lowering, which always supplies the result.
+//! Its opaque result is NOT a ReadyHit. The cold child consumes the borrowed
+//! token after stock lowering; the replay child must separately acquire the
+//! exclusive context and validate all current vacancies/effects before commit.
 use std::collections::BTreeMap;
 use rustc_ast as ast;
 use rustc_hir::{self as hir, def::Res};
@@ -10,12 +10,20 @@ use rustc_span::BytePos;
 use super::{validate::{self, CheckedTree, Current}, wire as w};
 #[path = "prepared_audit.rs"]
 mod cold;
+#[path = "prepared_replay.rs"]
+mod replay;
 
-/// No public fields, deserializer, unchecked constructor or hit materializer.
+/// No public fields, deserializer, unchecked constructor or direct HIR conversion.
 /// Immutable borrowing binds this token to the exact Current until consumed;
 /// it does not grant exclusive access to the LoweringContext.
 pub(super) struct PreparedBody<'current, 'input> {
     current: &'current Current<'input>,
+    body: BodyValues,
+}
+
+/// Owned values have no Current or context borrow; only the private exclusive
+/// ReadyHit constructor may detach them for a real commit.
+struct BodyValues {
     expected: w::BodyTree,
     owner: hir::OwnerId,
     start: u32,
@@ -28,7 +36,7 @@ pub(super) struct PreparedBody<'current, 'input> {
 }
 
 /// Coordinates are absolute in this current SourceMap, UTF-8 checked against
-/// the exact current owner source. A future exclusive commit must use current
+/// the exact current owner source. The private exclusive commit uses current
 /// root hygiene and the ordinary lower_span parent policy, including Dummy.
 /// Constructing this recipe does not construct or intern a rustc Span.
 enum SpanRecipe { Dummy, Current { owner: hir::OwnerId, lo: BytePos, hi: BytePos } }
@@ -72,10 +80,10 @@ pub(super) fn prepare<'current, 'input>(tree: &CheckedTree,
     let prefix = current_state(current)?;
     let checked = validate::check(tree.tree().clone(), current)?;
     let value = Convert { current }.expr(&checked.tree().value)?;
-    Some(PreparedBody { current, expected: checked.tree().clone(),
+    Some(PreparedBody { current, body: BodyValues { expected: checked.tree().clone(),
         owner: current.owner, start: current.start, end: current.journal.end,
         source_start: BytePos(current.source_start), source_end: BytePos(current.source_end),
-        source: current.source.to_owned(), prefix, value })
+        source: current.source.to_owned(), prefix, value } })
 }
 
 /// Cold-only API: returns no HIR and offers no materialization/commit shortcut.
@@ -83,6 +91,11 @@ pub(super) fn prepare<'current, 'input>(tree: &CheckedTree,
 pub(super) fn audit(lctx: &crate::LoweringContext<'_, '_>, candidate: &super::Candidate,
     expected: &CheckedTree, prepared: PreparedBody<'_, '_>) -> Option<()> {
     cold::audit(lctx, candidate, expected, prepared)
+}
+
+pub(super) fn try_reuse<'hir>(lctx: &mut crate::LoweringContext<'_, 'hir>, candidate: &super::Candidate,
+    key: &[u8], frame: &super::effects::Frame) -> Option<hir::Expr<'hir>> {
+    replay::try_reuse(lctx, candidate, key, frame)
 }
 
 fn current_state(current: &Current<'_>) -> Option<BTreeMap<u32, hir::HirId>> {
@@ -298,9 +311,9 @@ mod tests {
         let checked = validate::check(tree(), &current).unwrap();
         current.source_start = 200; current.source_end = 204;
         let prepared = prepare(&checked, &current).unwrap();
-        assert_eq!(prepared.value.node.id.local_id.as_u32(), 5);
-        assert_eq!(prepared.value.node.id.owner, current.owner);
-        let SpanRecipe::Current { owner, lo, hi } = prepared.value.node.span else { panic!() };
+        assert_eq!(prepared.body.value.node.id.local_id.as_u32(), 5);
+        assert_eq!(prepared.body.value.node.id.owner, current.owner);
+        let SpanRecipe::Current { owner, lo, hi } = prepared.body.value.node.span else { panic!() };
         assert_eq!(owner, current.owner); assert_eq!((lo.0, hi.0), (200, 202));
         assert!(span(&w::SourceSpan::Relative { lo: 2, hi: 4 }, &current).is_some());
         assert!(span(&w::SourceSpan::Relative { lo: 3, hi: 4 }, &current).is_none());
@@ -317,8 +330,8 @@ mod tests {
             start: invalid - 3, nodes: &nodes, prefix_bindings: &BTreeMap::new() }).unwrap();
         let mut relocated = validate::tests::current(&boundary); relocated.start = boundary.start;
         let prepared = prepare(&checked, &relocated).unwrap();
-        assert_eq!(prepared.value.node.id.local_id.as_u32(), invalid - 1);
-        assert_eq!(prepared.end, invalid);
+        assert_eq!(prepared.body.value.node.id.local_id.as_u32(), invalid - 1);
+        assert_eq!(prepared.body.end, invalid);
         assert!(current_id(&relocated, boundary.journal().end_delta).is_none());
     }
 
@@ -353,7 +366,7 @@ mod tests {
         current.resolutions.push(Some(Res::Local(id)));
         current.references.push(Some(w::Resolution::Local(reference.clone())));
         let checked = validate::check(tree(), &current).unwrap();
-        assert_eq!(prepare(&checked, &current).unwrap().prefix[&2], id);
+        assert_eq!(prepare(&checked, &current).unwrap().body.prefix[&2], id);
         current.locals.get_mut(&reference).unwrap().owner = hir::OwnerId {
             def_id: rustc_span::def_id::LocalDefId { local_def_index: rustc_span::def_id::DefIndex::from_u32(1) } };
         assert!(prepare(&checked, &current).is_none());
