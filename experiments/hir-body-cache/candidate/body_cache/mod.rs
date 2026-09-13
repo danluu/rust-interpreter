@@ -10,14 +10,18 @@ use rustc_serialize::{Encodable, opaque::mem_encoder::MemEncoder};
 use rustc_span::Span;
 use crate::LoweringContext;
 
+mod capture;
 mod effects;
+mod kinds;
+mod validate;
+mod wire;
 mod input;
 mod journal;
 mod storage;
 mod source_identity;
 pub(super) use effects::Trace;
 
-const FORMAT: &str = "hir-body-capture-v2";
+const FORMAT: &str = "hir-body-capture-v2-tree-1";
 
 pub(super) struct Candidate {
     owner: hir::OwnerId,
@@ -28,6 +32,10 @@ pub(super) struct Candidate {
     ast_nodes: Vec<(ast::NodeId, bool)>,
     ordinals: NodeMap<u32>,
     nodes: Vec<journal::Node>,
+    kinds: Vec<kinds::Kind>,
+    resolutions: Vec<Option<Res<ast::NodeId>>>,
+    current_span: Span,
+    source: String,
     input_statistics: [usize; 6],
 }
 
@@ -51,6 +59,9 @@ pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'t
             .is_some_and(|res| matches!(res, Res::Local(local) if local == id));
         nodes.push(journal::Node { body, binding, traits: resolver.owners[&owner].trait_map.contains_key(&id) });
     }
+    let kinds = kinds::classify(function, &ordinals)?;
+    let resolutions = ast_nodes.iter().map(|(id, _)|
+        resolver.partial_res_map.get(id).and_then(|res| res.full_res())).collect();
     let mut encoder = MemEncoder::new();
     FORMAT.encode(&mut encoder);
     source_identity::SOURCE_IDENTITY.encode(&mut encoder);
@@ -64,7 +75,8 @@ pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'t
         owner: hir::OwnerId { def_id: resolver.owners[&owner].def_id },
         body: function.body.as_deref()?.id, name: function.ident.name.as_str().to_owned(),
         path: session.session_directory.join(format!("{FORMAT}-{}.json", hex(probe.input.owner.0))),
-        key, ast_nodes, ordinals, nodes,
+        key, ast_nodes, ordinals, nodes, kinds, resolutions, current_span: span,
+        source: probe.input.owner_source.clone(),
         input_statistics: [probe.body_bytes, probe.body_nodes, probe.parameter_nodes,
             probe.trait_entries, probe.trait_candidates, probe.external_resolutions],
     })
@@ -74,7 +86,7 @@ fn report(lctx: &LoweringContext<'_, '_>, candidate: &Candidate, state: &str,
     start: u32, end: u32, events: usize) {
     if lctx.tcx.sess.opts.unstable_opts.incremental_info {
         let [bytes, ast, params, traits, candidates, externals] = candidate.input_statistics;
-        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=0 \
+        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=1 materializer=0 \
             body_bytes={bytes} body_ast={ast} param_ast={params} trait_entries={traits} trait_candidates={candidates} external_refs={externals}",
             candidate.name);
     }
@@ -92,8 +104,12 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
     let entry = journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix };
     // Reading/decoding and the validation boundary require only immutable
     // current input. There is NO conversion from Checked to a HIR expression.
-    let previous = storage::read(&candidate.path, &candidate.key)
-        .and_then(|value| journal::check(value, &entry));
+    let previous = storage::read(&candidate.path, &candidate.key).and_then(|payload| {
+        let checked = journal::check(payload.journal.clone(), &entry)?;
+        let current = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)?;
+        validate::check(payload.tree.clone(), &current)?;
+        Some(payload)
+    });
     lctx.body_trace = Some(Trace::new());
     let value = lctx.lower_block_expr(body); // Always ordinary lowering.
     let trace = lctx.body_trace.take();
@@ -104,15 +120,23 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
         report(lctx, &candidate, "rejected-effects", frame.start, end, 0);
         return value;
     };
-    let state = match previous {
-        Some(previous) if previous.journal() == checked.journal() => "same-journal-after-stock-lowering",
-        Some(_) => "changed-journal-after-stock-lowering",
-        None => "cold-journal-after-stock-lowering",
+    let captured_tree = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)
+        .and_then(|current| capture::capture(&candidate, &current, &value)
+            .and_then(|tree| validate::check(tree, &current)));
+    let Some(tree) = captured_tree else {
+        report(lctx, &candidate, "rejected-body-tree", frame.start, end, checked.journal().events.len());
+        return value;
     };
-    // These are evidence sidecars, not usable cached HIR. Even a valid repeated
-    // journal never skips lowering, parameter/signature work or later checks.
-    let stored = storage::write(&candidate.path, &candidate.key, checked.journal());
-    report(lctx, &candidate, if stored { state } else { "journal-write-unavailable" },
+    let payload = storage::Payload { journal: checked.journal().clone(), tree: tree.tree().clone() };
+    let state = match previous {
+        Some(previous) if previous == payload => "same-tree-and-journal-after-stock-lowering",
+        Some(_) => "changed-tree-or-journal-after-stock-lowering",
+        None => "cold-tree-and-journal-after-stock-lowering",
+    };
+    // Typed evidence only: no cached HIR materializer exists. Every comparison
+    // follows stock lowering, complete cold capture and exit-effect checks.
+    let stored = storage::write(&candidate.path, &candidate.key, &payload);
+    report(lctx, &candidate, if stored { state } else { "tree-write-unavailable" },
         frame.start, end, checked.journal().events.len());
     value
 }

@@ -1,4 +1,4 @@
-//! Fallible, mutation-free journal validation. This is not a HIR body codec.
+//! Fallible, mutation-free event validation. Tree closure is checked separately.
 use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
@@ -40,9 +40,11 @@ pub(super) struct Entry<'a> {
 
 /// Opaque, checked event layout. No lowering context or arena was mutated.
 /// It is deliberately not convertible into a HIR expression: the complete
-/// body wire-tree/reference validator and materializer remain unimplemented.
+/// body wire-tree/reference validator must additionally succeed. No materializer exists.
 pub(super) struct Checked {
     journal: Journal,
+    pub start: u32,
+    pub prefix_bindings: BTreeMap<u32, u32>,
     pub ast_allocations: BTreeMap<u32, u32>,
     pub bindings: BTreeMap<u32, u32>,
     pub trait_allocations: BTreeSet<u32>,
@@ -107,7 +109,8 @@ pub(super) fn check(journal: Journal, entry: &Entry<'_>) -> Option<Checked> {
             return None;
         }
     }
-    Some(Checked { journal, ast_allocations, bindings, trait_allocations, end })
+    Some(Checked { journal, start: entry.start, prefix_bindings: entry.prefix_bindings.clone(),
+        ast_allocations, bindings, trait_allocations, end })
 }
 
 #[cfg(test)]

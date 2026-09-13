@@ -30,6 +30,192 @@ diff --git a/compiler/rustc_ast_lowering/Cargo.toml b/compiler/rustc_ast_lowerin
  smallvec = { version = "1.8.1", features = ["union", "may_dangle"] }
  thin-vec = "0.2.19"
  tracing = "0.1"
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/capture.rs b/compiler/rustc_ast_lowering/src/body_cache/capture.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/capture.rs
+@@ -0,0 +1,181 @@
++//! Cold actual HIR -> closed wire. Exhaustive struct patterns deliberately
++//! require an explicit decision if the pinned HIR gains another field.
++use rustc_ast as ast;
++use rustc_hir::{self as hir, def::Res};
++use rustc_span::{Ident, Span, SyntaxContext};
++use super::{Candidate, validate::{self, Current}, wire as w};
++
++struct Capture<'a, 'b> { candidate: &'a Candidate, current: &'a Current<'b> }
++impl Capture<'_, '_> {
++    fn span(&self, span: Span) -> Option<w::SourceSpan> {
++        if span.ctxt() != SyntaxContext::root() || span.parent() != Some(self.candidate.owner.def_id) {
++            return None;
++        }
++        let result = if span.is_dummy() { w::SourceSpan::Dummy } else {
++            let base = self.candidate.current_span;
++            if span.lo() < base.lo() || span.hi() > base.hi() { return None; }
++            w::SourceSpan::Relative { lo: (span.lo() - base.lo()).0, hi: (span.hi() - base.lo()).0 }
++        };
++        validate::span(&result, self.current.source)?; Some(result)
++    }
++    fn id(&self, id: hir::HirId) -> Option<u32> {
++        let local = id.local_id.as_u32();
++        if id.owner != self.current.owner || local < self.current.start || local >= self.current.journal.end {
++            return None;
++        }
++        Some(local - self.current.start)
++    }
++    fn node(&self, id: hir::HirId, span: Span) -> Option<w::Node> {
++        Some(w::Node { relative: self.id(id)?, span: self.span(span)? })
++    }
++    fn ident(&self, ident: Ident) -> Option<w::Ident> {
++        Some(w::Ident { text: ident.name.as_str().to_owned(), span: self.span(ident.span)? })
++    }
++    fn local(&self, id: hir::HirId) -> Option<w::LocalRef> {
++        self.current.locals.iter().find_map(|(reference, current)| (*current == id).then(|| reference.clone()))
++    }
++    fn resolution(&self, res: Res, relative: u32, segment: bool) -> Option<w::Resolution> {
++        let ordinal = self.current.origin(relative)?;
++        let (expected, reference) = self.current.resolution(ordinal, segment)?;
++        (res == expected).then_some(reference)
++    }
++    fn segment(&self, segment: &hir::PathSegment<'_>) -> Option<w::Segment> {
++        let hir::PathSegment { ident, hir_id, res, args, infer_args, delegation_child_segment } = *segment;
++        if args.is_some() || delegation_child_segment { return None; }
++        let relative = self.id(hir_id)?;
++        Some(w::Segment { relative, ident: self.ident(ident)?, resolution: self.resolution(res, relative, true)?, infer_args })
++    }
++    fn path(&self, path: &hir::QPath<'_>, relative: u32) -> Option<w::Path> {
++        let hir::QPath::Resolved(None, path) = path else { return None; };
++        let hir::Path { span, res, segments } = **path;
++        if segments.is_empty() { return None; }
++        Some(w::Path { span: self.span(span)?, resolution: self.resolution(res, relative, false)?,
++            segments: segments.iter().map(|s| self.segment(s)).collect::<Option<_>>()? })
++    }
++    fn pattern(&self, pattern: &hir::Pat<'_>) -> Option<w::Pattern> {
++        let hir::Pat { hir_id, kind, span, default_binding_modes } = *pattern;
++        if !default_binding_modes { return None; }
++        let kind = match kind {
++            hir::PatKind::Wild => w::PatternKind::Wild,
++            hir::PatKind::Binding(mode, target, ident, None) => w::PatternKind::Binding {
++                mode: binding_mode(mode), target: self.local(target)?, ident: self.ident(ident)? },
++            _ => return None,
++        };
++        Some(w::Pattern { node: self.node(hir_id, span)?, kind, default_binding_modes })
++    }
++    fn exprs(&self, values: &[hir::Expr<'_>], depth: usize) -> Option<Vec<w::Expr>> {
++        values.iter().map(|e| self.expr(e, depth)).collect()
++    }
++    fn expr(&self, expr: &hir::Expr<'_>, depth: usize) -> Option<w::Expr> {
++        if depth >= 64 { return None; }
++        let hir::Expr { hir_id, kind, span } = *expr;
++        let node = self.node(hir_id, span)?;
++        use hir::ExprKind as H; use w::ExprKind as W;
++        let kind = match kind {
++            H::Array(values) => W::Array(self.exprs(values, depth + 1)?),
++            H::Tup(values) => W::Tuple(self.exprs(values, depth + 1)?),
++            H::Lit(lit) => W::Literal { span: self.span(lit.span)?, value: literal(lit.node)? },
++            H::Path(path) => W::Path(self.path(&path, node.relative)?),
++            H::Call(function, arguments) => W::Call { function: Box::new(self.expr(function, depth + 1)?),
++                arguments: self.exprs(arguments, depth + 1)? },
++            H::MethodCall(segment, receiver, arguments, span) => W::Method { segment: self.segment(segment)?,
++                receiver: Box::new(self.expr(receiver, depth + 1)?), arguments: self.exprs(arguments, depth + 1)?, span: self.span(span)? },
++            H::Unary(op, value) => W::Unary(match op {
++                hir::UnOp::Not => w::Unary::Not, hir::UnOp::Neg => w::Unary::Negate,
++                hir::UnOp::Deref => w::Unary::Dereference,
++            }, Box::new(self.expr(value, depth + 1)?)),
++            H::Binary(op, left, right) => W::Binary { operation: op.node.as_str().to_owned(), span: self.span(op.span)?,
++                left: Box::new(self.expr(left, depth + 1)?), right: Box::new(self.expr(right, depth + 1)?) },
++            H::Block(block, None) => W::Block(self.block(block, depth + 1)?),
++            H::If(condition, then, otherwise) => W::If { condition: Box::new(self.expr(condition, depth + 1)?),
++                then: Box::new(self.expr(then, depth + 1)?),
++                otherwise: otherwise.map(|e| self.expr(e, depth + 1).map(Box::new)).transpose_option()? },
++            H::Assign(left, right, span) => W::Assign { left: Box::new(self.expr(left, depth + 1)?),
++                right: Box::new(self.expr(right, depth + 1)?), span: self.span(span)? },
++            H::AssignOp(op, left, right) => W::AssignOp { operation: op.node.as_str().to_owned(), span: self.span(op.span)?,
++                left: Box::new(self.expr(left, depth + 1)?), right: Box::new(self.expr(right, depth + 1)?) },
++            H::Field(value, ident) => W::Field(Box::new(self.expr(value, depth + 1)?), self.ident(ident)?),
++            H::Index(value, index, span) => W::Index { value: Box::new(self.expr(value, depth + 1)?),
++                index: Box::new(self.expr(index, depth + 1)?), span: self.span(span)? },
++            H::AddrOf(kind, mutable, value) => W::Borrow { kind: match kind {
++                hir::BorrowKind::Ref => w::Borrow::Reference, hir::BorrowKind::Raw => w::Borrow::Raw,
++                _ => return None,
++            }, mutability: mutability(mutable), value: Box::new(self.expr(value, depth + 1)?) },
++            H::Ret(value) => W::Return(value.map(|e| self.expr(e, depth + 1).map(Box::new)).transpose_option()?),
++            _ => return None,
++        };
++        Some(w::Expr { node, kind })
++    }
++    fn block(&self, block: &hir::Block<'_>, depth: usize) -> Option<w::Block> {
++        if depth >= 64 { return None; }
++        let hir::Block { stmts, expr, hir_id, rules, span, targeted_by_break } = *block;
++        if targeted_by_break { return None; }
++        let rules = match rules {
++            hir::BlockCheckMode::DefaultBlock => w::BlockRules::Default,
++            hir::BlockCheckMode::UnsafeBlock(hir::UnsafeSource::UserProvided) => w::BlockRules::UnsafeUser,
++            _ => return None,
++        };
++        Some(w::Block { node: self.node(hir_id, span)?, rules, targeted_by_break,
++            statements: stmts.iter().map(|s| self.statement(s, depth + 1)).collect::<Option<_>>()?,
++            tail: expr.map(|e| self.expr(e, depth + 1).map(Box::new)).transpose_option()? })
++    }
++    fn statement(&self, statement: &hir::Stmt<'_>, depth: usize) -> Option<w::Statement> {
++        let hir::Stmt { hir_id, kind, span } = *statement;
++        let kind = match kind {
++            hir::StmtKind::Let(local) => {
++                let hir::LetStmt { super_, pat, ty, init, els, hir_id, span, source } = *local;
++                if super_.is_some() || ty.is_some() || els.is_some() || !matches!(source, hir::LocalSource::Normal) {
++                    return None;
++                }
++                w::StatementKind::Let(w::Local { node: self.node(hir_id, span)?, pattern: self.pattern(pat)?,
++                    init: init.map(|e| self.expr(e, depth + 1)).transpose_option()? })
++            }
++            hir::StmtKind::Expr(value) => w::StatementKind::Expr(self.expr(value, depth + 1)?),
++            hir::StmtKind::Semi(value) => w::StatementKind::Semi(self.expr(value, depth + 1)?),
++            _ => return None,
++        };
++        Some(w::Statement { node: self.node(hir_id, span)?, kind })
++    }
++}
++// Unlike flatten(), preserve failure of a present unsupported child.
++trait TransposeOption<T> { fn transpose_option(self) -> Option<Option<T>>; }
++impl<T> TransposeOption<T> for Option<Option<T>> {
++    fn transpose_option(self) -> Option<Option<T>> { match self { Some(v) => v.map(Some), None => Some(None) } }
++}
++fn mutability(value: hir::Mutability) -> w::Mutability {
++    match value { hir::Mutability::Not => w::Mutability::Immutable, hir::Mutability::Mut => w::Mutability::Mutable }
++}
++fn binding_mode(value: hir::BindingMode) -> w::BindingMode {
++    let hir::BindingMode(by_ref, mutable) = value;
++    w::BindingMode { mutability: mutability(mutable), by_ref: match by_ref {
++        hir::ByRef::No => w::ByRef::No,
++        hir::ByRef::Yes(pinned, mutable) => w::ByRef::Yes {
++            pinned: matches!(pinned, hir::Pinnedness::Pinned), mutability: mutability(mutable) },
++    } }
++}
++fn style(value: ast::StrStyle) -> w::StringStyle {
++    match value { ast::StrStyle::Cooked => w::StringStyle::Cooked, ast::StrStyle::Raw(n) => w::StringStyle::Raw(n) }
++}
++fn literal(value: ast::LitKind) -> Option<w::Literal> {
++    Some(match value {
++        ast::LitKind::Str(s, ty) => w::Literal::String(s.as_str().to_owned(), style(ty)),
++        ast::LitKind::ByteStr(s, ty) => w::Literal::Bytes(s.as_byte_str().to_vec(), style(ty)),
++        ast::LitKind::CStr(s, ty) => w::Literal::CString(s.as_byte_str().to_vec(), style(ty)),
++        ast::LitKind::Bool(v) => w::Literal::Bool(v), ast::LitKind::Byte(v) => w::Literal::Byte(v),
++        ast::LitKind::Char(v) => w::Literal::Char(v),
++        ast::LitKind::Int(v, ty) => w::Literal::Integer(v.to_string(), match ty {
++            ast::LitIntType::Unsuffixed => None,
++            ast::LitIntType::Signed(t) => Some(hir::PrimTy::Int(t).name_str().to_owned()),
++            ast::LitIntType::Unsigned(t) => Some(hir::PrimTy::Uint(t).name_str().to_owned()),
++        }),
++        ast::LitKind::Float(v, ty) => w::Literal::Float(v.as_str().to_owned(), match ty {
++            ast::LitFloatType::Unsuffixed => None,
++            ast::LitFloatType::Suffixed(t) => Some(hir::PrimTy::Float(t).name_str().to_owned()),
++        }),
++        ast::LitKind::Err(_) => return None,
++    })
++}
++
++pub(super) fn capture(candidate: &Candidate, current: &Current<'_>, value: &hir::Expr<'_>) -> Option<w::BodyTree> {
++    Some(w::BodyTree { value: Capture { candidate, current }.expr(value, 0)? })
++}
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/effects.rs b/compiler/rustc_ast_lowering/src/body_cache/effects.rs
 new file mode 100644
 --- /dev/null
@@ -526,8 +712,8 @@ diff --git a/compiler/rustc_ast_lowering/src/body_cache/journal.rs b/compiler/ru
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/journal.rs
-@@ -0,0 +1,181 @@
-+//! Fallible, mutation-free journal validation. This is not a HIR body codec.
+@@ -0,0 +1,184 @@
++//! Fallible, mutation-free event validation. Tree closure is checked separately.
 +use std::collections::{BTreeMap, BTreeSet};
 +use serde::{Deserialize, Serialize};
 +
@@ -569,9 +755,11 @@ new file mode 100644
 +
 +/// Opaque, checked event layout. No lowering context or arena was mutated.
 +/// It is deliberately not convertible into a HIR expression: the complete
-+/// body wire-tree/reference validator and materializer remain unimplemented.
++/// body wire-tree/reference validator must additionally succeed. No materializer exists.
 +pub(super) struct Checked {
 +    journal: Journal,
++    pub start: u32,
++    pub prefix_bindings: BTreeMap<u32, u32>,
 +    pub ast_allocations: BTreeMap<u32, u32>,
 +    pub bindings: BTreeMap<u32, u32>,
 +    pub trait_allocations: BTreeSet<u32>,
@@ -636,7 +824,8 @@ new file mode 100644
 +            return None;
 +        }
 +    }
-+    Some(Checked { journal, ast_allocations, bindings, trait_allocations, end })
++    Some(Checked { journal, start: entry.start, prefix_bindings: entry.prefix_bindings.clone(),
++        ast_allocations, bindings, trait_allocations, end })
 +}
 +
 +#[cfg(test)]
@@ -708,11 +897,92 @@ new file mode 100644
 +        }
 +    }
 +}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/kinds.rs b/compiler/rustc_ast_lowering/src/body_cache/kinds.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/kinds.rs
+@@ -0,0 +1,76 @@
++//! Classify only IDs already admitted by the exact qualified walker. This is
++//! an output cross-check, never a replacement structural eligibility gate.
++use rustc_ast::{self as ast, node_id::NodeMap, visit::{self, Visitor}};
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(super) enum Expr {
++    Array, Tuple, Literal, Path, Call, Method, Unary, Binary, Block, If,
++    Assign, AssignOp, Field, Index, Borrow, Return, Parenthesized, Unsupported,
++}
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(super) enum Statement { Let, Expr, Semi, Empty, Unsupported }
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub(super) enum Kind {
++    Expression(Expr), Statement(Statement), Pattern { binding: bool },
++    Block, Local, Segment, Parameter, Unsupported,
++}
++
++struct Classify<'a> { ordinals: &'a NodeMap<u32>, result: Vec<Option<Kind>>, failed: bool }
++impl Classify<'_> {
++    fn mark(&mut self, id: ast::NodeId, kind: Kind) {
++        if let Some(&ordinal) = self.ordinals.get(&id) {
++            if self.result[ordinal as usize].replace(kind).is_some() { self.failed = true; }
++        }
++    }
++}
++impl<'ast> Visitor<'ast> for Classify<'_> {
++    fn visit_expr(&mut self, value: &'ast ast::Expr) {
++        let kind = match value.kind {
++            ast::ExprKind::Array(..) => Expr::Array, ast::ExprKind::Tup(..) => Expr::Tuple,
++            ast::ExprKind::Lit(..) => Expr::Literal, ast::ExprKind::Path(..) => Expr::Path,
++            ast::ExprKind::Call(..) => Expr::Call, ast::ExprKind::MethodCall(..) => Expr::Method,
++            ast::ExprKind::Unary(..) => Expr::Unary, ast::ExprKind::Binary(..) => Expr::Binary,
++            ast::ExprKind::Block(..) => Expr::Block, ast::ExprKind::If(..) => Expr::If,
++            ast::ExprKind::Assign(..) => Expr::Assign, ast::ExprKind::AssignOp(..) => Expr::AssignOp,
++            ast::ExprKind::Field(..) => Expr::Field, ast::ExprKind::Index(..) => Expr::Index,
++            ast::ExprKind::AddrOf(..) => Expr::Borrow, ast::ExprKind::Ret(..) => Expr::Return,
++            ast::ExprKind::Paren(..) => Expr::Parenthesized, _ => Expr::Unsupported,
++        };
++        self.mark(value.id, Kind::Expression(kind)); visit::walk_expr(self, value);
++    }
++    fn visit_stmt(&mut self, value: &'ast ast::Stmt) {
++        let kind = match value.kind {
++            ast::StmtKind::Let(..) => Statement::Let, ast::StmtKind::Expr(..) => Statement::Expr,
++            ast::StmtKind::Semi(..) => Statement::Semi, ast::StmtKind::Empty => Statement::Empty,
++            _ => Statement::Unsupported,
++        };
++        self.mark(value.id, Kind::Statement(kind)); visit::walk_stmt(self, value);
++    }
++    fn visit_pat(&mut self, value: &'ast ast::Pat) {
++        let kind = match value.kind {
++            ast::PatKind::Wild => Kind::Pattern { binding: false },
++            ast::PatKind::Ident(_, _, None) => Kind::Pattern { binding: true }, _ => Kind::Unsupported,
++        };
++        self.mark(value.id, kind); visit::walk_pat(self, value);
++    }
++    fn visit_block(&mut self, value: &'ast ast::Block) {
++        self.mark(value.id, Kind::Block); visit::walk_block(self, value);
++    }
++    fn visit_local(&mut self, value: &'ast ast::Local) {
++        self.mark(value.id, Kind::Local); visit::walk_local(self, value);
++    }
++    fn visit_path_segment(&mut self, value: &'ast ast::PathSegment) {
++        self.mark(value.id, Kind::Segment); visit::walk_path_segment(self, value);
++    }
++    fn visit_param(&mut self, value: &'ast ast::Param) {
++        self.mark(value.id, Kind::Parameter); visit::walk_param(self, value);
++    }
++}
++
++pub(super) fn classify(function: &ast::Fn, ordinals: &NodeMap<u32>) -> Option<Vec<Kind>> {
++    let mut visitor = Classify { ordinals, result: vec![None; ordinals.len()], failed: false };
++    for parameter in &function.sig.decl.inputs { visitor.visit_param(parameter); }
++    visitor.visit_block(function.body.as_deref()?);
++    if visitor.failed { return None; }
++    visitor.result.into_iter().collect()
++}
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/mod.rs b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
-@@ -0,0 +1,128 @@
+@@ -0,0 +1,152 @@
 +//! Actual body lowering capture checkpoint. Never substitutes a cached body.
 +use std::path::PathBuf;
 +use rustc_ast::{self as ast, node_id::NodeMap};
@@ -725,14 +995,18 @@ new file mode 100644
 +use rustc_span::Span;
 +use crate::LoweringContext;
 +
++mod capture;
 +mod effects;
++mod kinds;
++mod validate;
++mod wire;
 +mod input;
 +mod journal;
 +mod storage;
 +mod source_identity;
 +pub(super) use effects::Trace;
 +
-+const FORMAT: &str = "hir-body-capture-v2";
++const FORMAT: &str = "hir-body-capture-v2-tree-1";
 +
 +pub(super) struct Candidate {
 +    owner: hir::OwnerId,
@@ -743,6 +1017,10 @@ new file mode 100644
 +    ast_nodes: Vec<(ast::NodeId, bool)>,
 +    ordinals: NodeMap<u32>,
 +    nodes: Vec<journal::Node>,
++    kinds: Vec<kinds::Kind>,
++    resolutions: Vec<Option<Res<ast::NodeId>>>,
++    current_span: Span,
++    source: String,
 +    input_statistics: [usize; 6],
 +}
 +
@@ -766,6 +1044,9 @@ new file mode 100644
 +            .is_some_and(|res| matches!(res, Res::Local(local) if local == id));
 +        nodes.push(journal::Node { body, binding, traits: resolver.owners[&owner].trait_map.contains_key(&id) });
 +    }
++    let kinds = kinds::classify(function, &ordinals)?;
++    let resolutions = ast_nodes.iter().map(|(id, _)|
++        resolver.partial_res_map.get(id).and_then(|res| res.full_res())).collect();
 +    let mut encoder = MemEncoder::new();
 +    FORMAT.encode(&mut encoder);
 +    source_identity::SOURCE_IDENTITY.encode(&mut encoder);
@@ -779,7 +1060,8 @@ new file mode 100644
 +        owner: hir::OwnerId { def_id: resolver.owners[&owner].def_id },
 +        body: function.body.as_deref()?.id, name: function.ident.name.as_str().to_owned(),
 +        path: session.session_directory.join(format!("{FORMAT}-{}.json", hex(probe.input.owner.0))),
-+        key, ast_nodes, ordinals, nodes,
++        key, ast_nodes, ordinals, nodes, kinds, resolutions, current_span: span,
++        source: probe.input.owner_source.clone(),
 +        input_statistics: [probe.body_bytes, probe.body_nodes, probe.parameter_nodes,
 +            probe.trait_entries, probe.trait_candidates, probe.external_resolutions],
 +    })
@@ -789,7 +1071,7 @@ new file mode 100644
 +    start: u32, end: u32, events: usize) {
 +    if lctx.tcx.sess.opts.unstable_opts.incremental_info {
 +        let [bytes, ast, params, traits, candidates, externals] = candidate.input_statistics;
-+        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=0 \
++        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=1 materializer=0 \
 +            body_bytes={bytes} body_ast={ast} param_ast={params} trait_entries={traits} trait_candidates={candidates} external_refs={externals}",
 +            candidate.name);
 +    }
@@ -807,8 +1089,12 @@ new file mode 100644
 +    let entry = journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix };
 +    // Reading/decoding and the validation boundary require only immutable
 +    // current input. There is NO conversion from Checked to a HIR expression.
-+    let previous = storage::read(&candidate.path, &candidate.key)
-+        .and_then(|value| journal::check(value, &entry));
++    let previous = storage::read(&candidate.path, &candidate.key).and_then(|payload| {
++        let checked = journal::check(payload.journal.clone(), &entry)?;
++        let current = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)?;
++        validate::check(payload.tree.clone(), &current)?;
++        Some(payload)
++    });
 +    lctx.body_trace = Some(Trace::new());
 +    let value = lctx.lower_block_expr(body); // Always ordinary lowering.
 +    let trace = lctx.body_trace.take();
@@ -819,15 +1105,23 @@ new file mode 100644
 +        report(lctx, &candidate, "rejected-effects", frame.start, end, 0);
 +        return value;
 +    };
-+    let state = match previous {
-+        Some(previous) if previous.journal() == checked.journal() => "same-journal-after-stock-lowering",
-+        Some(_) => "changed-journal-after-stock-lowering",
-+        None => "cold-journal-after-stock-lowering",
++    let captured_tree = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)
++        .and_then(|current| capture::capture(&candidate, &current, &value)
++            .and_then(|tree| validate::check(tree, &current)));
++    let Some(tree) = captured_tree else {
++        report(lctx, &candidate, "rejected-body-tree", frame.start, end, checked.journal().events.len());
++        return value;
 +    };
-+    // These are evidence sidecars, not usable cached HIR. Even a valid repeated
-+    // journal never skips lowering, parameter/signature work or later checks.
-+    let stored = storage::write(&candidate.path, &candidate.key, checked.journal());
-+    report(lctx, &candidate, if stored { state } else { "journal-write-unavailable" },
++    let payload = storage::Payload { journal: checked.journal().clone(), tree: tree.tree().clone() };
++    let state = match previous {
++        Some(previous) if previous == payload => "same-tree-and-journal-after-stock-lowering",
++        Some(_) => "changed-tree-or-journal-after-stock-lowering",
++        None => "cold-tree-and-journal-after-stock-lowering",
++    };
++    // Typed evidence only: no cached HIR materializer exists. Every comparison
++    // follows stock lowering, complete cold capture and exit-effect checks.
++    let stored = storage::write(&candidate.path, &candidate.key, &payload);
++    report(lctx, &candidate, if stored { state } else { "tree-write-unavailable" },
 +        frame.start, end, checked.journal().events.len());
 +    value
 +}
@@ -846,12 +1140,12 @@ new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
 @@ -0,0 +1 @@
-+pub(super) const SOURCE_IDENTITY: &str = "2290bc460dc1f231746d591be3b9c258c31b8d5a350f272ac500ad5bcc5026d0";
++pub(super) const SOURCE_IDENTITY: &str = "ebf804542c08205ad84de5d62a95c13e57fc447feddf96e5d68ca2ca51bf1aa3";
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/storage.rs b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,86 @@
 +//! Versioned, bounded evidence sidecars in rustc's existing incremental session.
 +//! Shares v1's fresh-inode COW discipline; stores no executable HIR payload.
 +use std::fs::{self, File, OpenOptions};
@@ -861,17 +1155,21 @@ new file mode 100644
 +use std::hash::Hash;
 +use rustc_data_structures::{fingerprint::Fingerprint, stable_hash::StableHasher};
 +use serde::{Deserialize, Serialize};
-+use super::{FORMAT, journal::Journal};
++use super::{FORMAT, journal::Journal, wire::BodyTree};
 +
 +pub(super) const MAX_RECORD: usize = 4 * 1024 * 1024;
 +static NEXT: AtomicU64 = AtomicU64::new(0);
 +
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Payload { pub journal: Journal, pub tree: BodyTree }
++
 +#[derive(Serialize, Deserialize)]
 +#[serde(deny_unknown_fields)]
-+struct Record { format: String, key: Vec<u8>, journal: Journal, checksum: String }
++struct Record { format: String, key: Vec<u8>, payload: Payload, checksum: String }
 +
-+fn checksum(key: &[u8], journal: &Journal) -> Option<String> {
-+    let bytes = serde_json::to_vec(journal).ok()?;
++fn checksum(key: &[u8], payload: &Payload) -> Option<String> {
++    let bytes = serde_json::to_vec(payload).ok()?;
 +    if bytes.len() > MAX_RECORD { return None; }
 +    let mut state = StableHasher::new();
 +    key.hash(&mut state); bytes.hash(&mut state);
@@ -879,7 +1177,7 @@ new file mode 100644
 +    Some(super::hex(fingerprint))
 +}
 +
-+pub(super) fn read(path: &Path, key: &[u8]) -> Option<Journal> {
++pub(super) fn read(path: &Path, key: &[u8]) -> Option<Payload> {
 +    if !fs::symlink_metadata(path).ok()?.is_file() { return None; }
 +    let file = File::open(path).ok()?;
 +    let metadata = file.metadata().ok()?;
@@ -888,15 +1186,15 @@ new file mode 100644
 +    file.take(MAX_RECORD as u64 + 1).read_to_end(&mut bytes).ok()?;
 +    if bytes.len() > MAX_RECORD { return None; }
 +    let record: Record = serde_json::from_slice(&bytes).ok()?;
-+    if record.format != FORMAT || record.key != key || record.checksum != checksum(key, &record.journal)? {
++    if record.format != FORMAT || record.key != key || record.checksum != checksum(key, &record.payload)? {
 +        return None;
 +    }
-+    Some(record.journal)
++    Some(record.payload)
 +}
 +
-+pub(super) fn write(path: &Path, key: &[u8], journal: &Journal) -> bool {
-+    let Some(checksum) = checksum(key, journal) else { return false; };
-+    let record = Record { format: FORMAT.to_owned(), key: key.to_vec(), journal: journal.clone(), checksum };
++pub(super) fn write(path: &Path, key: &[u8], payload: &Payload) -> bool {
++    let Some(checksum) = checksum(key, payload) else { return false; };
++    let record = Record { format: FORMAT.to_owned(), key: key.to_vec(), payload: payload.clone(), checksum };
 +    let Ok(bytes) = serde_json::to_vec(&record) else { return false; };
 +    if bytes.len() > MAX_RECORD { return false; }
 +    let temp = path.with_extension(format!("part-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
@@ -917,21 +1215,641 @@ new file mode 100644
 +            std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
 +        fs::create_dir(&directory).unwrap();
 +        let path = directory.join("current.json"); let old = directory.join("old.json");
-+        let journal = Journal { events: vec![super::super::journal::Event::Allocate {
-+            source: super::super::journal::Allocation::Synthetic, relative: 0 }], end_delta: 1, root_relative: 0 };
-+        assert!(write(&path, b"key", &journal));
++        let payload = Payload { journal: super::super::validate::tests::checked().journal().clone(),
++            tree: super::super::validate::tests::tree() };
++        assert!(write(&path, b"key", &payload));
 +        let bytes = fs::read(&path).unwrap(); fs::hard_link(&path, &old).unwrap();
-+        assert!(write(&path, b"new-key", &journal));
++        assert!(write(&path, b"new-key", &payload));
 +        assert_eq!(fs::read(&old).unwrap(), bytes);
 +        assert!(read(&path, b"key").is_none()); assert!(read(&old, b"key").is_some());
 +        for bad in [b"{".to_vec(), b"[]".to_vec(), bytes[..bytes.len()/2].to_vec(), vec![0; MAX_RECORD + 1]] {
 +            fs::write(&path, bad).unwrap(); assert!(read(&path, b"key").is_none());
 +        }
 +        let mut record: Record = serde_json::from_slice(&bytes).unwrap();
-+        record.journal.end_delta = 2;
++        record.payload.journal.end_delta = 2;
 +        fs::write(&path, serde_json::to_vec(&record).unwrap()).unwrap();
 +        assert!(read(&path, b"key").is_none());
 +        fs::remove_dir_all(directory).unwrap();
++    }
++}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/validate.rs b/compiler/rustc_ast_lowering/src/body_cache/validate.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/validate.rs
+@@ -0,0 +1,473 @@
++//! Fallible wire-tree closure checks against the actual allocation journal and
++//! freshly resolved input. Never allocates HIR, interns symbols or mutates tcx.
++use std::collections::{BTreeMap, BTreeSet};
++use rustc_hir::{self as hir, def::Res};
++use super::{Candidate, journal, kinds::{self, Kind}, wire as w};
++
++/// Current-session identities are constructed only after journal range checks.
++/// They are never persisted. Input indices address the exact keyed resolver
++/// input, not an unchecked DefId decoded from a previous compiler invocation.
++pub(super) struct Current<'a> {
++    pub owner: hir::OwnerId,
++    pub start: u32,
++    pub source: &'a str,
++    pub kinds: &'a [Kind],
++    pub journal: &'a journal::Checked,
++    pub resolutions: Vec<Option<Res>>,
++    pub references: Vec<Option<w::Resolution>>,
++    pub locals: BTreeMap<w::LocalRef, hir::HirId>,
++    origins: BTreeMap<u32, u32>,
++}
++impl<'a> Current<'a> {
++    pub fn new(candidate: &'a Candidate, start: u32, prefix: &BTreeMap<u32, u32>,
++        checked: &'a journal::Checked) -> Option<Self> {
++        let invalid = hir::ItemLocalId::INVALID.as_u32();
++        if start == 0 || start >= invalid || start != checked.start || *prefix != checked.prefix_bindings
++            || checked.end != start.checked_add(checked.journal().end_delta)?
++            || checked.end > invalid { return None; }
++        let mut locals = BTreeMap::new();
++        for (&ordinal, &local) in prefix {
++            if local == 0 || local >= start { return None; }
++            locals.insert(w::LocalRef::Parameter(ordinal), hir::HirId {
++                owner: candidate.owner, local_id: hir::ItemLocalId::from_u32(local) });
++        }
++        for &relative in checked.bindings.values() {
++            let local = start.checked_add(relative)?;
++            if local >= checked.end { return None; }
++            locals.insert(w::LocalRef::Body(relative), hir::HirId {
++                owner: candidate.owner, local_id: hir::ItemLocalId::from_u32(local) });
++        }
++        let binding_ref = |node: rustc_ast::NodeId| -> Option<w::LocalRef> {
++            let ordinal = *candidate.ordinals.get(&node)?;
++            if prefix.contains_key(&ordinal) { Some(w::LocalRef::Parameter(ordinal)) }
++            else { checked.bindings.get(&ordinal).copied().map(w::LocalRef::Body) }
++        };
++        let mut resolutions = Vec::new(); let mut references = Vec::new();
++        for (ordinal, value) in candidate.resolutions.iter().enumerate() {
++            let (resolution, reference) = match value {
++                None => (None, None),
++                Some(Res::Err) => (Some(Res::Err), Some(w::Resolution::MissingSegment)),
++                Some(Res::Local(node)) => {
++                    let reference = binding_ref(*node)?;
++                    (Some(Res::Local(*locals.get(&reference)?)), Some(w::Resolution::Local(reference)))
++                }
++                Some(value) => (Some(value.apply_id(|_| Err::<hir::HirId, ()>(())).ok()?),
++                    Some(w::Resolution::Input(ordinal as u32))),
++            };
++            resolutions.push(resolution); references.push(reference);
++        }
++        Some(Self { owner: candidate.owner, start, source: &candidate.source, kinds: &candidate.kinds,
++            journal: checked, resolutions, references, locals,
++            origins: checked.ast_allocations.iter().map(|(&a, &r)| (r, a)).collect() })
++    }
++    pub fn origin(&self, relative: u32) -> Option<u32> { self.origins.get(&relative).copied() }
++    pub fn resolution(&self, ordinal: u32, segment: bool) -> Option<(Res, w::Resolution)> {
++        let res = *self.resolutions.get(ordinal as usize)?;
++        let reference = self.references.get(ordinal as usize)?.clone();
++        match (res, reference) {
++            (Some(Res::Err), Some(w::Resolution::MissingSegment)) | (None, None) if segment =>
++                Some((Res::Err, w::Resolution::MissingSegment)),
++            (Some(Res::Err), _) | (None, _) => None,
++            (Some(res), Some(reference)) => Some((res, reference)),
++            _ => None,
++        }
++    }
++}
++
++/// Opaque proof of tree/ID/reference closure. It deliberately has no materializer
++/// or public constructor. Cold stock lowering remains the semantic producer.
++pub(super) struct CheckedTree {
++    tree: w::BodyTree,
++    _current_resolutions: BTreeMap<u32, Res>,
++    _current_locals: BTreeMap<w::LocalRef, hir::HirId>,
++}
++impl CheckedTree { pub fn tree(&self) -> &w::BodyTree { &self.tree } }
++
++pub(super) fn span(value: &w::SourceSpan, source: &str) -> Option<()> {
++    if let w::SourceSpan::Relative { lo, hi } = *value {
++        if lo > hi || hi as usize > source.len() || !source.is_char_boundary(lo as usize)
++            || !source.is_char_boundary(hi as usize) { return None; }
++    }
++    Some(())
++}
++struct Check<'a, 'b> {
++    current: &'a Current<'b>, seen: BTreeSet<u32>, bindings: BTreeSet<u32>,
++    resolutions: BTreeMap<u32, Res>, locals: BTreeMap<w::LocalRef, hir::HirId>,
++}
++impl Check<'_, '_> {
++    fn node(&mut self, n: &w::Node, kind: Kind, synthetic_block: bool) -> Option<Option<u32>> {
++        span(&n.span, self.current.source)?;
++        if n.relative >= self.current.journal.journal().end_delta || !self.seen.insert(n.relative) {
++            return None;
++        }
++        let origin = self.current.origin(n.relative);
++        match origin {
++            Some(ordinal) if self.current.kinds.get(ordinal as usize) == Some(&kind) => (),
++            None if synthetic_block && kind == Kind::Expression(kinds::Expr::Block) => (),
++            _ => return None,
++        }
++        Some(origin)
++    }
++    fn ident(&self, ident: &w::Ident) -> Option<()> {
++        if ident.text.len() > 4096 { return None; }
++        span(&ident.span, self.current.source)
++    }
++    fn reference(&mut self, reference: &w::LocalRef, use_at: Option<u32>) -> Option<()> {
++        let current = *self.current.locals.get(reference)?;
++        if let (w::LocalRef::Body(binding), Some(use_at)) = (reference, use_at) {
++            if *binding >= use_at { return None; }
++        }
++        self.locals.insert(reference.clone(), current); Some(())
++    }
++    fn resolution(&mut self, value: &w::Resolution, origin: u32, segment: bool, at: u32) -> Option<()> {
++        let (current, expected) = self.current.resolution(origin, segment)?;
++        if *value != expected { return None; }
++        if let w::Resolution::Local(reference) = value { self.reference(reference, Some(at))?; }
++        self.resolutions.insert(origin, current); Some(())
++    }
++    fn segment(&mut self, s: &w::Segment) -> Option<()> {
++        let origin = self.node(&w::Node { relative: s.relative, span: s.ident.span.clone() }, Kind::Segment, false)??;
++        self.ident(&s.ident)?;
++        self.resolution(&s.resolution, origin, true, s.relative)
++    }
++    fn pattern(&mut self, p: &w::Pattern) -> Option<()> {
++        if !p.default_binding_modes { return None; }
++        let binding = matches!(p.kind, w::PatternKind::Binding { .. });
++        let origin = self.node(&p.node, Kind::Pattern { binding }, false)??;
++        match &p.kind {
++            w::PatternKind::Wild => (),
++            w::PatternKind::Binding { target, ident, .. } => {
++                if *target != w::LocalRef::Body(p.node.relative)
++                    || self.current.journal.bindings.get(&origin) != Some(&p.node.relative)
++                    || !self.bindings.insert(origin) { return None; }
++                self.ident(ident)?; self.reference(target, None)?;
++            }
++        }
++        Some(())
++    }
++    fn literal(&self, value: &w::Literal) -> Option<()> {
++        let valid = match value {
++            w::Literal::String(v, _) => v.len() <= 131072,
++            w::Literal::Bytes(v, _) => v.len() <= 131072,
++            w::Literal::CString(v, _) => v.len() <= 131073 && v.last() == Some(&0)
++                && !v[..v.len().saturating_sub(1)].contains(&0),
++            w::Literal::Integer(v, suffix) => v.parse::<u128>().is_ok_and(|n| n.to_string() == *v)
++                && suffix.as_deref().is_none_or(w::integer_type),
++            // Keep the actual lexer float spelling; do not round through f64.
++            w::Literal::Float(v, suffix) => float_spelling(v, suffix.is_some())
++                && suffix.as_deref().is_none_or(w::float_type),
++            w::Literal::Bool(_) | w::Literal::Byte(_) | w::Literal::Char(_) => true,
++        };
++        valid.then_some(())
++    }
++    fn expr(&mut self, e: &w::Expr, depth: usize, synthetic_block: bool) -> Option<()> {
++        if depth >= 64 { return None; }
++        use kinds::Expr as K; use w::ExprKind as E;
++        let kind = match &e.kind {
++            E::Array(_) => K::Array, E::Tuple(_) => K::Tuple, E::Literal { .. } => K::Literal,
++            E::Path(_) => K::Path, E::Call { .. } => K::Call, E::Method { .. } => K::Method,
++            E::Unary(..) => K::Unary, E::Binary { .. } => K::Binary, E::Block(_) => K::Block,
++            E::If { .. } => K::If, E::Assign { .. } => K::Assign, E::AssignOp { .. } => K::AssignOp,
++            E::Field(..) => K::Field, E::Index { .. } => K::Index, E::Borrow { .. } => K::Borrow,
++            E::Return(_) => K::Return,
++        };
++        let origin = self.node(&e.node, Kind::Expression(kind), synthetic_block)?;
++        // Root and then-block have no AST Expr. Every ordinary child does.
++        if synthetic_block != origin.is_none() { return None; }
++        match &e.kind {
++            E::Array(v) | E::Tuple(v) => for e in v { self.expr(e, depth + 1, false)?; },
++            E::Literal { span: s, value } => { span(s, self.current.source)?; self.literal(value)?; }
++            E::Path(p) => {
++                span(&p.span, self.current.source)?;
++                self.resolution(&p.resolution, origin?, false, e.node.relative)?;
++                if p.segments.is_empty() { return None; }
++                for s in &p.segments { self.segment(s)?; }
++            }
++            E::Call { function, arguments } => {
++                self.expr(function, depth + 1, false)?;
++                for a in arguments { self.expr(a, depth + 1, false)?; }
++            }
++            E::Method { segment, receiver, arguments, span: s } => {
++                self.segment(segment)?; self.expr(receiver, depth + 1, false)?;
++                for a in arguments { self.expr(a, depth + 1, false)?; }
++                span(s, self.current.source)?;
++            }
++            E::Unary(_, v) | E::Borrow { value: v, .. } => self.expr(v, depth + 1, false)?,
++            E::Binary { operation, span: s, left, right } |
++            E::AssignOp { operation, span: s, left, right } => {
++                if !(if matches!(e.kind, E::Binary { .. }) { w::binary(operation) } else { w::assignment(operation) }) {
++                    return None;
++                }
++                span(s, self.current.source)?; self.expr(left, depth + 1, false)?; self.expr(right, depth + 1, false)?;
++            }
++            E::Block(block) => self.block(block, depth + 1)?,
++            E::If { condition, then, otherwise } => {
++                self.expr(condition, depth + 1, false)?;
++                if !matches!(then.kind, E::Block(_)) { return None; }
++                self.expr(then, depth + 1, true)?;
++                if let Some(e) = otherwise {
++                    if !matches!(e.kind, E::Block(_) | E::If { .. }) { return None; }
++                    self.expr(e, depth + 1, false)?;
++                }
++            }
++            E::Assign { left, right, span: s } => {
++                span(s, self.current.source)?; self.expr(left, depth + 1, false)?; self.expr(right, depth + 1, false)?;
++            }
++            E::Field(v, ident) => { self.expr(v, depth + 1, false)?; self.ident(ident)?; }
++            E::Index { value, index, span: s } => {
++                self.expr(value, depth + 1, false)?; self.expr(index, depth + 1, false)?; span(s, self.current.source)?;
++            }
++            E::Return(v) => if let Some(v) = v { self.expr(v, depth + 1, false)?; },
++        }
++        Some(())
++    }
++    fn block(&mut self, b: &w::Block, depth: usize) -> Option<()> {
++        if depth >= 64 || b.targeted_by_break { return None; }
++        self.node(&b.node, Kind::Block, false)??;
++        for s in &b.statements {
++            let kind = match &s.kind {
++                w::StatementKind::Let(_) => kinds::Statement::Let,
++                w::StatementKind::Expr(_) => kinds::Statement::Expr,
++                w::StatementKind::Semi(_) => kinds::Statement::Semi,
++            };
++            self.node(&s.node, Kind::Statement(kind), false)??;
++            match &s.kind {
++                w::StatementKind::Let(l) => {
++                    self.node(&l.node, Kind::Local, false)??;
++                    if let Some(e) = &l.init { self.expr(e, depth + 1, false)?; }
++                    self.pattern(&l.pattern)?;
++                }
++                w::StatementKind::Expr(e) | w::StatementKind::Semi(e) => self.expr(e, depth + 1, false)?,
++            }
++        }
++        if let Some(e) = &b.tail { self.expr(e, depth + 1, false)?; }
++        Some(())
++    }
++}
++
++pub(super) fn check(tree: w::BodyTree, current: &Current<'_>) -> Option<CheckedTree> {
++    if tree.value.node.relative != current.journal.journal().root_relative
++        || !matches!(tree.value.kind, w::ExprKind::Block(_)) { return None; }
++    let mut c = Check { current, seen: BTreeSet::new(), bindings: BTreeSet::new(),
++        resolutions: BTreeMap::new(), locals: BTreeMap::new() };
++    c.expr(&tree.value, 0, true)?;
++    let mut order = Order { current, events: Vec::new() };
++    order.expr(&tree.value)?;
++    if order.events != current.journal.journal().events { return None; }
++    if c.seen.len() != current.journal.journal().end_delta as usize
++        || c.bindings != current.journal.bindings.keys().copied().collect() { return None; }
++    Some(CheckedTree { tree, _current_resolutions: c.resolutions, _current_locals: c.locals })
++}
++
++fn float_spelling(value: &str, suffixed: bool) -> bool {
++    if value.len() > 131072 { return false; }
++    let bytes = value.as_bytes(); let mut i = 0;
++    while bytes.get(i).is_some_and(u8::is_ascii_digit) { i += 1; }
++    if i == 0 { return false; }
++    let mut floating = suffixed;
++    if bytes.get(i) == Some(&b'.') {
++        floating = true; i += 1;
++        while bytes.get(i).is_some_and(u8::is_ascii_digit) { i += 1; }
++    }
++    if matches!(bytes.get(i), Some(b'e' | b'E')) {
++        floating = true; i += 1;
++        if matches!(bytes.get(i), Some(b'+' | b'-')) { i += 1; }
++        let digits = i;
++        while bytes.get(i).is_some_and(u8::is_ascii_digit) { i += 1; }
++        if i == digits { return false; }
++    }
++    floating && i == bytes.len()
++}
++
++/// Cross-check the actual allocation/binding call order, independently of the
++/// wire's ownership traversal. This emits data only; it never replays effects.
++/// In particular synthetic block Expr IDs follow their block, Expr/Semi Stmt
++/// IDs follow their expression, and Local IDs follow the initializer.
++struct Order<'a, 'b> { current: &'a Current<'b>, events: Vec<journal::Event> }
++impl Order<'_, '_> {
++    fn allocate(&mut self, relative: u32) {
++        self.events.push(journal::Event::Allocate { relative,
++            source: self.current.origin(relative).map_or(journal::Allocation::Synthetic, journal::Allocation::Ast) });
++    }
++    fn expr(&mut self, e: &w::Expr) -> Option<()> {
++        let synthetic = self.current.origin(e.node.relative).is_none();
++        if !synthetic { self.allocate(e.node.relative); }
++        use w::ExprKind as E;
++        match &e.kind {
++            E::Array(v) | E::Tuple(v) => for e in v { self.expr(e)?; },
++            E::Literal { .. } => (),
++            E::Path(p) => for s in &p.segments { self.allocate(s.relative); },
++            E::Call { function, arguments } => { self.expr(function)?; for a in arguments { self.expr(a)?; } }
++            E::Method { segment, receiver, arguments, .. } => {
++                self.allocate(segment.relative); self.expr(receiver)?; for a in arguments { self.expr(a)?; }
++            }
++            E::Unary(_, v) | E::Borrow { value: v, .. } | E::Field(v, _) => self.expr(v)?,
++            E::Binary { left, right, .. } | E::AssignOp { left, right, .. } => { self.expr(left)?; self.expr(right)?; }
++            // Lowering order (not runtime evaluation order) is LHS then RHS.
++            E::Assign { left, right, .. } => { self.expr(left)?; self.expr(right)?; }
++            E::Block(b) => self.block(b)?,
++            E::If { condition, then, otherwise } => {
++                self.expr(condition)?; self.expr(then)?; if let Some(e) = otherwise { self.expr(e)?; }
++            }
++            E::Index { value, index, .. } => { self.expr(value)?; self.expr(index)?; }
++            E::Return(v) => if let Some(v) = v { self.expr(v)?; },
++        }
++        if synthetic { self.allocate(e.node.relative); }
++        Some(())
++    }
++    fn block(&mut self, b: &w::Block) -> Option<()> {
++        self.allocate(b.node.relative);
++        for s in &b.statements {
++            match &s.kind {
++                w::StatementKind::Let(l) => {
++                    self.allocate(s.node.relative);
++                    if let Some(e) = &l.init { self.expr(e)?; }
++                    self.allocate(l.node.relative); self.allocate(l.pattern.node.relative);
++                    if matches!(l.pattern.kind, w::PatternKind::Binding { .. }) {
++                        self.events.push(journal::Event::Bind { ast: self.current.origin(l.pattern.node.relative)?,
++                            relative: l.pattern.node.relative });
++                    }
++                }
++                w::StatementKind::Expr(e) | w::StatementKind::Semi(e) => { self.expr(e)?; self.allocate(s.node.relative); }
++            }
++        }
++        if let Some(e) = &b.tail { self.expr(e)?; }
++        Some(())
++    }
++}
++
++#[cfg(test)]
++pub(super) mod tests {
++    use super::*;
++    fn node(relative: u32) -> w::Node { w::Node { relative, span: w::SourceSpan::Relative { lo: 0, hi: 2 } } }
++    pub(in crate::body_cache) fn tree() -> w::BodyTree {
++        w::BodyTree { value: w::Expr { node: node(2), kind: w::ExprKind::Block(w::Block {
++            node: node(0), statements: vec![], tail: Some(Box::new(w::Expr { node: node(1),
++                kind: w::ExprKind::Literal { span: w::SourceSpan::Relative { lo: 0, hi: 2 }, value: w::Literal::Integer("42".into(), None) } })),
++            rules: w::BlockRules::Default, targeted_by_break: false }) } }
++    }
++    pub(in crate::body_cache) fn checked() -> journal::Checked {
++        let nodes = vec![journal::Node { body: true, binding: false, traits: false }; 2];
++        journal::check(journal::Journal { events: vec![
++            journal::Event::Allocate { source: journal::Allocation::Ast(0), relative: 0 },
++            journal::Event::Allocate { source: journal::Allocation::Ast(1), relative: 1 },
++            journal::Event::Allocate { source: journal::Allocation::Synthetic, relative: 2 },
++        ], end_delta: 3, root_relative: 2 }, &journal::Entry { start: 3, nodes: &nodes, prefix_bindings: &BTreeMap::new() }).unwrap()
++    }
++    fn current(checked: &journal::Checked) -> Current<'_> {
++        Current { owner: hir::OwnerId { def_id: rustc_span::def_id::CRATE_DEF_ID }, start: 3, source: "42é",
++            kinds: &[Kind::Block, Kind::Expression(kinds::Expr::Literal)], journal: checked,
++            resolutions: vec![None, None], references: vec![None, None], locals: BTreeMap::new(),
++            origins: BTreeMap::from([(0, 0), (1, 1)]) }
++    }
++    #[test]
++    fn complete_tree_ids_and_exclusive_root_are_required() {
++        let checked = checked(); let current = current(&checked);
++        assert!(check(tree(), &current).is_some());
++        let mut duplicate = tree();
++        let w::ExprKind::Block(b) = &mut duplicate.value.kind else { unreachable!() };
++        b.tail.as_mut().unwrap().node.relative = 0;
++        assert!(check(duplicate, &current).is_none());
++        let mut missing = tree();
++        let w::ExprKind::Block(b) = &mut missing.value.kind else { unreachable!() };
++        b.tail = None;
++        assert!(check(missing, &current).is_none());
++        let mut outside = tree(); outside.value.node.relative = 3;
++        assert!(check(outside, &current).is_none());
++        let mut wrong_kind = tree();
++        let w::ExprKind::Block(b) = &mut wrong_kind.value.kind else { unreachable!() };
++        b.tail.as_mut().unwrap().kind = w::ExprKind::Tuple(vec![]);
++        assert!(check(wrong_kind, &current).is_none());
++    }
++    #[test]
++    fn spans_reject_split_utf8_reversal_and_outside_owner() {
++        for (lo, hi) in [(0, 0), (0, 2), (2, 4), (4, 4)] {
++            assert!(span(&w::SourceSpan::Relative { lo, hi }, "42é").is_some());
++        }
++        for (lo, hi) in [(0, 3), (3, 4), (4, 2), (0, 5), (u32::MAX, u32::MAX)] {
++            assert!(span(&w::SourceSpan::Relative { lo, hi }, "42é").is_none());
++        }
++    }
++    #[test]
++    fn references_are_current_binding_and_resolution_specific() {
++        let checked = checked(); let mut current = current(&checked);
++        let local = w::LocalRef::Parameter(7);
++        let id = hir::HirId { owner: current.owner, local_id: hir::ItemLocalId::from_u32(1) };
++        current.locals.insert(local.clone(), id);
++        current.references[1] = Some(w::Resolution::Local(local.clone()));
++        current.resolutions[1] = Some(Res::Local(id));
++        let mut c = Check { current: &current, seen: BTreeSet::new(), bindings: BTreeSet::new(),
++            resolutions: BTreeMap::new(), locals: BTreeMap::new() };
++        assert!(c.resolution(&w::Resolution::Local(local), 1, false, 1).is_some());
++        assert!(c.resolution(&w::Resolution::Input(1), 1, false, 1).is_none());
++        assert!(c.resolution(&w::Resolution::Local(w::LocalRef::Parameter(8)), 1, false, 1).is_none());
++        assert!(c.resolution(&w::Resolution::MissingSegment, 0, false, 1).is_none());
++        assert!(c.resolution(&w::Resolution::MissingSegment, 0, true, 1).is_some());
++        assert!(c.reference(&w::LocalRef::Body(0), Some(1)).is_none());
++        drop(c);
++        current.references[1] = Some(w::Resolution::Input(1));
++        current.resolutions[1] = Some(Res::SelfCtor(rustc_span::def_id::CRATE_DEF_ID.to_def_id()));
++        let mut c = Check { current: &current, seen: BTreeSet::new(), bindings: BTreeSet::new(),
++            resolutions: BTreeMap::new(), locals: BTreeMap::new() };
++        assert!(c.resolution(&w::Resolution::Input(1), 1, false, 1).is_some());
++        assert!(c.resolution(&w::Resolution::Input(0), 1, false, 1).is_none());
++    }
++    #[test]
++    fn journal_order_cannot_be_changed_while_preserving_tree_ids() {
++        let mut checked = checked();
++        // Both journals separately pass event-layout validation, but the tree
++        // requires its Block allocation before its literal.
++        let nodes = vec![journal::Node { body: true, binding: false, traits: false }; 2];
++        let mut altered = checked.journal().clone();
++        altered.events[0] = journal::Event::Allocate { source: journal::Allocation::Ast(1), relative: 0 };
++        altered.events[1] = journal::Event::Allocate { source: journal::Allocation::Ast(0), relative: 1 };
++        checked = journal::check(altered, &journal::Entry { start: 3, nodes: &nodes, prefix_bindings: &BTreeMap::new() }).unwrap();
++        let mut current = current(&checked); current.origins = BTreeMap::from([(1, 0), (0, 1)]);
++        let mut moved = tree();
++        let w::ExprKind::Block(b) = &mut moved.value.kind else { unreachable!() };
++        b.node.relative = 1; b.tail.as_mut().unwrap().node.relative = 0;
++        assert!(check(moved, &current).is_none());
++    }
++    #[test]
++    fn ordinary_assignment_uses_lhs_then_rhs_lowering_order() {
++        let mut nodes = vec![journal::Node { body: true, binding: false, traits: false }; 6];
++        nodes.push(journal::Node { body: false, binding: true, traits: false });
++        let mut events: Vec<_> = (0..6).map(|relative| journal::Event::Allocate {
++            source: journal::Allocation::Ast(relative), relative }).collect();
++        events.push(journal::Event::Allocate { source: journal::Allocation::Synthetic, relative: 6 });
++        let checked = journal::check(journal::Journal { events, end_delta: 7, root_relative: 6 },
++            &journal::Entry { start: 3, nodes: &nodes, prefix_bindings: &BTreeMap::from([(6, 1)]) }).unwrap();
++        let owner = hir::OwnerId { def_id: rustc_span::def_id::CRATE_DEF_ID };
++        let parameter = w::LocalRef::Parameter(6);
++        let id = hir::HirId { owner, local_id: hir::ItemLocalId::from_u32(1) };
++        let current = Current { owner, start: 3, source: "42é", journal: &checked,
++            kinds: &[Kind::Block, Kind::Expression(kinds::Expr::Assign), Kind::Expression(kinds::Expr::Path),
++                Kind::Segment, Kind::Expression(kinds::Expr::Literal), Kind::Statement(kinds::Statement::Semi),
++                Kind::Pattern { binding: true }],
++            origins: (0..6).map(|n| (n, n)).collect(),
++            locals: BTreeMap::from([(parameter.clone(), id)]),
++            resolutions: vec![None, None, Some(Res::Local(id)), None, None, None, Some(Res::Local(id))],
++            references: vec![None, None, Some(w::Resolution::Local(parameter.clone())), None, None, None,
++                Some(w::Resolution::Local(parameter.clone()))] };
++        let span = w::SourceSpan::Relative { lo: 0, hi: 2 };
++        let assign = w::Expr { node: node(1), kind: w::ExprKind::Assign {
++            left: Box::new(w::Expr { node: node(2), kind: w::ExprKind::Path(w::Path {
++                span: span.clone(), resolution: w::Resolution::Local(parameter), segments: vec![w::Segment {
++                    relative: 3, ident: w::Ident { text: "x".into(), span: span.clone() },
++                    resolution: w::Resolution::MissingSegment, infer_args: true }] }) }),
++            right: Box::new(w::Expr { node: node(4), kind: w::ExprKind::Literal {
++                span: span.clone(), value: w::Literal::Integer("42".into(), None) } }), span } };
++        let value = w::BodyTree { value: w::Expr { node: node(6), kind: w::ExprKind::Block(w::Block {
++            node: node(0), statements: vec![w::Statement { node: node(5), kind: w::StatementKind::Semi(assign) }],
++            tail: None, rules: w::BlockRules::Default, targeted_by_break: false }) } };
++        assert!(check(value, &current).is_some());
++    }
++    #[test]
++    fn typed_literal_domain_is_bounded_without_rounding() {
++        for value in ["1.", "1.25", "1e99", "1e-9999", "0001.0"] { assert!(float_spelling(value, false)); }
++        assert!(float_spelling("42", true));
++        for value in ["", "1", "-1.0", "NaN", "inf", "1..2", "1e", "1e+", "1_2.0"] {
++            assert!(!float_spelling(value, false));
++        }
++    }
++}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/wire.rs b/compiler/rustc_ast_lowering/src/body_cache/wire.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/wire.rs
+@@ -0,0 +1,137 @@
++//! Closed, owned body wire tree. No compiler IDs, pointers, symbols or hygiene
++//! indices are deserialized. Unknown HIR variants/fields fall back at capture.
++use serde::{Deserialize, Serialize};
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum SourceSpan { Dummy, Relative { lo: u32, hi: u32 } }
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Node { pub relative: u32, pub span: SourceSpan }
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Ident { pub text: String, pub span: SourceSpan }
++
++#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum LocalRef { Body(u32), Parameter(u32) }
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum Resolution {
++    Local(LocalRef),
++    /// Index of a nonlocal (non-binding) resolution in the freshly resolved
++    /// exact input. Its DefKind/DefPathHash are already bound by that input key.
++    /// Validation binds this to the current actual Res/DefId without decoding
++    /// an old DefId or reconstructing a DefKind from unchecked bytes.
++    Input(u32),
++    /// Stock missing path-segment resolution. Never a value-path resolution.
++    MissingSegment,
++}
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Segment {
++    pub relative: u32, pub ident: Ident, pub resolution: Resolution, pub infer_args: bool,
++}
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Path { pub span: SourceSpan, pub resolution: Resolution, pub segments: Vec<Segment> }
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub(super) enum Mutability { Immutable, Mutable }
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub(super) enum ByRef { No, Yes { pinned: bool, mutability: Mutability } }
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct BindingMode { pub by_ref: ByRef, pub mutability: Mutability }
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum PatternKind { Wild, Binding { mode: BindingMode, target: LocalRef, ident: Ident } }
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Pattern { pub node: Node, pub kind: PatternKind, pub default_binding_modes: bool }
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub(super) enum StringStyle { Cooked, Raw(u8) }
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum Literal {
++    String(String, StringStyle), Bytes(Vec<u8>, StringStyle), CString(Vec<u8>, StringStyle),
++    Bool(bool), Byte(u8), Char(char), Integer(String, Option<String>), Float(String, Option<String>),
++}
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub(super) enum Unary { Not, Negate, Dereference }
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub(super) enum Borrow { Reference, Raw }
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub(super) enum BlockRules { Default, UnsafeUser }
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum ExprKind {
++    Array(Vec<Expr>), Tuple(Vec<Expr>),
++    Literal { span: SourceSpan, value: Literal }, Path(Path),
++    Call { function: Box<Expr>, arguments: Vec<Expr> },
++    Method { segment: Segment, receiver: Box<Expr>, arguments: Vec<Expr>, span: SourceSpan },
++    Unary(Unary, Box<Expr>),
++    Binary { operation: String, span: SourceSpan, left: Box<Expr>, right: Box<Expr> },
++    Block(Block),
++    If { condition: Box<Expr>, then: Box<Expr>, otherwise: Option<Box<Expr>> },
++    Assign { left: Box<Expr>, right: Box<Expr>, span: SourceSpan },
++    AssignOp { operation: String, span: SourceSpan, left: Box<Expr>, right: Box<Expr> },
++    Field(Box<Expr>, Ident), Index { value: Box<Expr>, index: Box<Expr>, span: SourceSpan },
++    Borrow { kind: Borrow, mutability: Mutability, value: Box<Expr> }, Return(Option<Box<Expr>>),
++}
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Expr { pub node: Node, pub kind: ExprKind }
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Local { pub node: Node, pub pattern: Pattern, pub init: Option<Expr> }
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum StatementKind { Let(Local), Expr(Expr), Semi(Expr) }
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Statement { pub node: Node, pub kind: StatementKind }
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Block {
++    pub node: Node, pub statements: Vec<Statement>, pub tail: Option<Box<Expr>>,
++    pub rules: BlockRules, pub targeted_by_break: bool,
++}
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct BodyTree { pub value: Expr }
++
++pub(super) fn integer_type(name: &str) -> bool {
++    matches!(name, "i8"|"i16"|"i32"|"i64"|"i128"|"isize"|"u8"|"u16"|"u32"|"u64"|"u128"|"usize")
++}
++pub(super) fn float_type(name: &str) -> bool { matches!(name, "f16"|"f32"|"f64"|"f128") }
++pub(super) fn binary(name: &str) -> bool {
++    matches!(name, "+"|"-"|"*"|"/"|"%"|"&&"|"||"|"^"|"&"|"|"|"<<"|">>"|"=="|"!="|"<"|"<="|">"|">=")
++}
++pub(super) fn assignment(name: &str) -> bool {
++    // This pin keeps ast::AssignOpKind in HIR, including the equals sign.
++    matches!(name, "+="|"-="|"*="|"/="|"%="|"^="|"&="|"|="|"<<="|">>=")
++}
++
++#[cfg(test)]
++mod tests {
++    #[test]
++    fn assign_op_preserves_actual_pinned_hir_enum_spelling() {
++        use rustc_hir::AssignOpKind::*;
++        assert_eq!(AddAssign.as_str(), "+=");
++        for op in [AddAssign, SubAssign, MulAssign, DivAssign, RemAssign,
++            BitXorAssign, BitAndAssign, BitOrAssign, ShlAssign, ShrAssign] {
++            assert!(super::assignment(op.as_str()));
++        }
++        for op in ["+", "==", "&&", "||", "<"] { assert!(!super::assignment(op)); }
 +    }
 +}
 diff --git a/compiler/rustc_ast_lowering/src/expr.rs b/compiler/rustc_ast_lowering/src/expr.rs
@@ -1132,7 +2050,7 @@ diff --git a/compiler/rustc_session/src/options.rs b/compiler/rustc_session/src/
          "enables retpoline-external-thunk, retpoline-indirect-branches and retpoline-indirect-calls \
          target features (default: no)"),
 +    hir_body_cache_capture: bool = (false, parse_bool, [TRACKED],
-+        "capture conservative HIR body journals without reusing HIR (default: no)"),
++        "capture conservative HIR body trees/journals without reusing HIR (default: no)"),
      #[rustc_lint_opt_deny_field_access("use `Session::sanitizers()` instead of this field")]
      sanitizer: SanitizerSet = (SanitizerSet::empty(), parse_sanitizers, [TRACKED] { TARGET_MODIFIER: Sanitizer },
          "use a sanitizer"),
@@ -1140,7 +2058,7 @@ diff --git a/tests/run-make/hir-body-cache-capture/fixture.rs b/tests/run-make/h
 new file mode 100644
 --- /dev/null
 +++ b/tests/run-make/hir-body-cache-capture/fixture.rs
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,75 @@
 +#![allow(dead_code, unused_imports)]
 +#![deny(unconditional_panic)]
 +
@@ -1175,6 +2093,14 @@ new file mode 100644
 +fn borrowed(x: &u32) -> u32 { *x }
 +fn raw(x: &u32) -> *const u32 { &raw const *x }
 +fn uninitialized(x: u32) -> u32 { let y; y = x; y }
++fn arithmetic(mut x: u32) -> u32 {
++    x += 1; x -= 1; x *= 2; x /= 2; x %= 100; x ^= 1; x &= 255; x |= 2; x <<= 1; x >>= 1; x
++}
++fn literals() -> (bool, u8, char, u128, f64, &'static str, &'static [u8], &'static core::ffi::CStr) {
++    (true, b'a', 'λ', 340282366920938463463374607431768211455_u128,
++        1.25e2_f64, r#"raw λ"#, br#"bytes"#, c"nul")
++}
++fn unsafe_block(x: *const u32) -> u32 { unsafe { *x } }
 +fn body_type(x: &u32) -> u32 { let y: &u32 = x; *y }
 +fn nested() -> u32 { fn child() -> u32 { 1 } child() }
 +fn closure() -> u32 { let f = || 1; f() }
@@ -1196,6 +2122,12 @@ new file mode 100644
 +    assert_eq!(borrowed(&4), 4);
 +    assert_eq!(unsafe { *raw(&4) }, 4);
 +    assert_eq!(uninitialized(4), 4);
++    assert_eq!(arithmetic(4), 7);
++    let literals = literals();
++    assert_eq!(literals.0, true); assert_eq!(literals.1, b'a'); assert_eq!(literals.2, 'λ');
++    assert_eq!(literals.3, u128::MAX); assert_eq!(literals.4, 125.0);
++    assert_eq!(literals.5, "raw λ"); assert_eq!(literals.6, b"bytes"); assert_eq!(literals.7, c"nul");
++    assert_eq!(unsafe_block(&4), 4);
 +    assert_eq!(body_type(&4), 4);
 +    assert_eq!(nested(), 1);
 +    assert_eq!(closure(), 1);
@@ -1206,7 +2138,7 @@ diff --git a/tests/run-make/hir-body-cache-capture/rmake.rs b/tests/run-make/hir
 new file mode 100644
 --- /dev/null
 +++ b/tests/run-make/hir-body-cache-capture/rmake.rs
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,72 @@
 +//@ ignore-cross-compile
 +
 +// Unrun capture checkpoint controls. A repeated journal is explicitly NOT a
@@ -1230,11 +2162,14 @@ new file mode 100644
 +    let ordinary = run("body_journal_test").stdout_utf8();
 +    let diagnostics = compiler(true, true).run().stderr_utf8();
 +    assert_eq!(ordinary, run("body_journal_test").stdout_utf8());
-+    let mode = if repeated_anchor { "same-journal-after-stock-lowering" } else { "cold-journal-after-stock-lowering" };
++    let mode = if repeated_anchor { "same-tree-and-journal-after-stock-lowering" } else { "cold-tree-and-journal-after-stock-lowering" };
 +    assert!(diagnostics.contains(&format!("[hir-body-capture] anchor {mode}")), "{diagnostics}");
-+    assert!(diagnostics.contains("cache_hits=0 body_codec=0"), "{diagnostics}");
-+    for name in ["add", "field", "method", "double", "selected", "shadow", "generic"] {
-+        assert!(diagnostics.contains(&format!("[hir-body-capture] {name} ")), "{diagnostics}");
++    assert!(diagnostics.contains("cache_hits=0 body_codec=1 materializer=0"), "{diagnostics}");
++    for name in ["add", "field", "method", "double", "selected", "shadow", "generic",
++        "conditional", "array_index", "uninitialized", "raw", "arithmetic", "literals", "unsafe_block"] {
++        assert!(["cold-tree-and-journal-after-stock-lowering", "same-tree-and-journal-after-stock-lowering",
++            "changed-tree-or-journal-after-stock-lowering"].iter().any(|state|
++                diagnostics.contains(&format!("[hir-body-capture] {name} {state}"))), "{diagnostics}");
 +    }
 +}
 +
