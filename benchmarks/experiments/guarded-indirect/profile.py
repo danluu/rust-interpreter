@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Replay the three current controls with the qualified guarded-indirect VM."""
+import argparse
 import json
 import os
 from pathlib import Path
@@ -66,11 +67,16 @@ def indirect_counts(profile, baseline, dump):
 
 
 def main():
-    run_id = 'guarded-indirect-profile-01'
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--build', type=Path, required=True)
+    parser.add_argument('--run-id', required=True)
+    args = parser.parse_args()
+    run_id = args.run_id
+    assert re.fullmatch(r'guarded-indirect-profile-\d{2}', run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 8)
-        build_path = ROOT / 'results/guarded-indirect-build-01/summary.json'
+        build_path = args.build.resolve(strict=True)
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
         assert build['tests']['test-debug'] == build['tests']['test-release'] == dict(passed=424, ignored=1)
