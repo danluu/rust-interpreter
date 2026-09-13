@@ -10,22 +10,21 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Implement and qualify an explicit bounded JIT code-limit option, preserving
-   the16 MiB default. The publication audit for capacity and environment support
-   passes: all40 existing project edit controls preserve exact artifacts/outcomes. The
-   full114-test parser comparison is15.78% slower than native under repository
-   settings and23.03% slower with matched incremental compilation. Preserve the
-   original22-command identity failure; paired traces locate its constant split
-   in rustc with template reuse disabled. The separately revised66-command
-   comparison keeps A/B identity within each cycle/state and all native outcomes.
-   The dominant reference-vector test's missing routine needs16,554,488 native
-   bytes by itself, exceeding remaining arena space. Compare16/32 MiB on complete
-   changed-source commands before investing in reached-region compilation.
-2. Use the actual emitter to count local-value forwarding blocked by writes
+1. Use the actual emitter to count local-value forwarding blocked by writes
    whose new guard already proves disjoint from the current frame. Reconstruct
    saved baseline code exactly before comparing a test-only alternative. Count
    lost forwarding, spills and flushes too. Static words are not retired
    instructions or latency. Choose an implementation from that evidence.
+
+The explicit 16/32 MiB parser screen is complete and the larger-capacity
+treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
+All 32 controls pass, with five retained and 27 new commands after a documented
+failed-test statistics repair. No unchanged full study will run. The earlier
+profile reaches 66.60% of the large routine's bytecode; a typed check shows its
+registers already avoid bulk initial zeroing. Broad reached-region compilation
+and frame-clearing changes require further cost evidence. Keep the default
+16 MiB and retain the prototype on its experiment branch.
+[Capacity result](results/parser-jit-capacity-screen-continuation-01/assessment.md).
 
 The current five-case result is a narrow 2.55% primary wall improvement; the
 primary still takes 1.773 times ordinary native. Do not repeat unchanged
