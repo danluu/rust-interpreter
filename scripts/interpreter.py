@@ -247,6 +247,7 @@ def _main(resources):
     parser.add_argument('--compiler-key',help='use an owned complete stage2 compiler; requires preinstalled matching --tool-key')
     parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable with the selected compiler')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off',help='custom compiler CGU grouping policy (default: off)')
+    parser.add_argument('--host-proc-macro-opt',choices=['off','on'],default='off',help='experimental O1 codegen for unoptimized host proc-macro dylibs, retaining checks; requires --std-mir (default: off)')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
     parser.add_argument('--function-cache',choices=['off','reuse','auto'],default='off',help='experimental compiler-validated function cache: reuse requires incremental tracking; auto uses full lowering when tracking is disabled; strict checking always runs (default: off)')
     parser.add_argument('--borrowck-cache',choices=['off','verify','reuse'],default='off',help='experimental compiler-validated borrow-check query cache for all compiled Cargo units; verify compares cached results while checking; reuse retains strict checking (default: off)')
@@ -263,6 +264,8 @@ def _main(resources):
     args=parser.parse_args()
     if args.compiler_key is not None and args.tool_key is None:parser.error('--compiler-key requires preinstalled --tool-key')
     if args.stable_cgu_partitioning!='off' and args.compiler_key is None:parser.error('--stable-cgu-partitioning=on requires --compiler-key')
+    if args.host_proc_macro_opt!='off' and (not args.std_mir or args.compiler_key is not None or args.cargo_key is not None or args.borrowck_cache!='off'):
+        parser.error('--host-proc-macro-opt=on requires --std-mir, public compiler/stock Cargo and --borrowck-cache=off')
     if args.toolchain_lookup!='fresh' and not args.std_mir:parser.error('--toolchain-lookup=cached requires --std-mir')
     if args.test_target is not None:
         if not args.test_body:parser.error('--test-target requires --test-body')
@@ -349,6 +352,7 @@ def _main(resources):
     if custom:require_export_option(tools,key,'stable-cgu-partitioning')
     if args.function_cache!='off':require_export_option(tools,key,'function-cache-'+args.function_cache)
     if args.borrowck_cache!='off':require_export_option(tools,key,'borrowck-cache')
+    if args.host_proc_macro_opt!='off':require_export_option(tools,key,'host-proc-macro-opt-v1')
     if listing:require_export_option(tools,key,'list-tests')
     if filtered:require_export_option(tools,key,'filtered-tests')
     if args.inline_leaves:require_export_option(tools,key,'inline-leaves')
@@ -359,6 +363,7 @@ def _main(resources):
     if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
     if stats:timings['function_cache']=args.function_cache
     if stats:timings['borrowck_cache']=args.borrowck_cache
+    if stats:timings['host_proc_macro_opt']=args.host_proc_macro_opt
     if custom:
         timings['custom_compiler']=dict(key=custom.key,rustc=str(custom.rustc),
             rustc_sha256=custom.identity['files']['bin/rustc'],compiler=custom.identity['compiler'],
@@ -392,6 +397,8 @@ def _main(resources):
     if custom:
         identity_input='custom-compiler-v1\0'+custom.key+'\0'+args.stable_cgu_partitioning+'\0'+identity_input
     if cargo:identity_input='custom-cargo-v1\0'+cargo.key+'\0'+identity_input
+    if args.host_proc_macro_opt!='off':
+        identity_input='host-proc-macro-opt-v1\0'+args.host_proc_macro_opt+'\0'+identity_input
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
     if args.workspace_cache_root is None:
         work=cache_base/key/identity
@@ -463,13 +470,14 @@ def _main(resources):
     if stats:cargo_cpu_started=cpu_usage(resource.RUSAGE_CHILDREN)
     stage=time.perf_counter()
     cargo_env=env
-    if args.function_cache!='off' or args.borrowck_cache!='off' or custom:
+    if args.function_cache!='off' or args.borrowck_cache!='off' or custom or args.host_proc_macro_opt!='off':
         cargo_env=env.copy()
         if custom:
             cargo_env['RUST_INTERP_COMPILER_RUSTC']=str(custom.rustc)
             cargo_env['RUST_INTERP_STABLE_CGU_PARTITIONING']=args.stable_cgu_partitioning
         if args.function_cache!='off':cargo_env['RUST_INTERP_FUNCTION_CACHE']=args.function_cache
         if args.borrowck_cache!='off':cargo_env['RUST_INTERP_BORROWCK_CACHE']=args.borrowck_cache
+        if args.host_proc_macro_opt!='off':cargo_env['RUST_INTERP_HOST_PROC_MACRO_OPT']=args.host_proc_macro_opt
     result=subprocess.run(command,cwd=manifest.parent,env=cargo_env,stdout=subprocess.PIPE,text=True)
     timings['cargo_seconds']=time.perf_counter()-stage
     if stats:timings['cargo_cpu']=cpu_since(resource.RUSAGE_CHILDREN,cargo_cpu_started)
