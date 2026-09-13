@@ -10,19 +10,30 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Implement and qualify a general native indirect-call transition using exact,
-   immutable signature/layout metadata and the existing native frame protocol.
-   The two exact token traces preserve every adopted per-PC count and code word:
-   all1,025,947 block calls are at monomorphic sites; two targets cover843,768
-   of843,776 exhaustive calls. Only20/23 calls lack an already-native callee
-   entry; every caller continuation is ready. Existing VM local-argument proof
-   covers none. Full128-bit handle and signature checks, limits, fault order,
-   budgets and safe VM fallback remain mandatory. No profiled IDs or workload
-   choices enter code. Start with static code ownership; compare bounded target
-   specialization later if metadata loads remain costly. Then use the declared
-   primary-first end-to-end screen before full project guards.
-   [Coverage and limits](results/indirect-target-census-03/assessment.md),
-   [closed evidence](results/indirect-target-census-03/closure.json).
+1. Assess a new composition of opt-in native indirect calls with successor-only
+   register flushing. Both standalone sources and failures remain retained;
+   check overlap and qualify the composition before a fresh primary-first screen.
+   Do not add their point estimates or relax any gate.
+
+The native indirect metadata prototype is parked after its40-command screen:
+wall improves4.06% versus4.56% A/A, so the required wall margin1.00493 fails.
+CPU improves1.18%; all original/wrong/edit/restored outcomes and artifact identity
+checks pass. No full or held-out case started. Do not retime it unchanged.
+Its541 workspace checks/profile,119 strict/cache commands,13 screen controls and
+384 Python contracts (16 skipped) pass. Exact original profiles move1,025,927 /
+843,753 token calls into native code, with precisely that many fewer JIT entries,
+29,216 /27,000 extra code bytes and no declines. Fold moves30 calls. The explicit
+--jit-indirect-calls option remains disabled and confined to the experiment branch.
+Main keeps the adopted runtime; archived controllers require the qualified
+`experiment/native-indirect-metadata-20260913` source and installed toola9e5116a.
+[Screen and limits](results/native-indirect-screen-token-01/assessment.md),
+[closure](results/native-indirect-screen-token-01/closure.json),
+[setup cost](results/native-indirect-build-01/setup-accounting.json).
+
+The precursor indirect-call diagnostic remains closed:23/21 executed sites,
+all block sites monomorphic, at most two targets for all but8 exhaustive calls,
+and every caller continuation ready. It establishes coverage, not a latency gain.
+[Coverage](results/indirect-target-census-03/assessment.md).
 
 Adjacent memory pairing is deferred:7,192/8,228 sites affect only30/1,651 and
 13/1,439 sampled PCs, counting both old instructions. Potential removed code is
