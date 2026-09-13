@@ -10,14 +10,15 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Diagnose the restored parser's constant-layout difference with paired bounded
-   allocation traces and function-template reuse disabled. The default-profile
-   full114-test comparison passes66 commands but is15.78% slower than native;
-   the incremental run stops after22 commands with no performance verdict.
-   Preserve that failure. Determine whether this is compiler MIR allocation
-   sharing before changing cache logic or a future comparison protocol. Complete
-   the existing five-project edit qualification before publishing capacity and
-   environment support; they remain experimental.
+1. Finish the publication audit for capacity and environment support: all40
+   existing project edit controls now preserve exact artifacts/outcomes. The
+   full114-test parser comparison is15.78% slower than native under repository
+   settings and23.03% slower with matched incremental compilation. Preserve the
+   original22-command identity failure; paired traces locate its constant split
+   in rustc with template reuse disabled. The separately revised66-command
+   comparison keeps A/B identity within each cycle/state and all native outcomes.
+   Diagnose the dominant reference-vector test and early JIT decline using the
+   saved artifact, exact emitter and bounded profiles before changing capacity.
 2. Use the actual emitter to count local-value forwarding blocked by writes
    whose new guard already proves disjoint from the current frame. Reconstruct
    saved baseline code exactly before comparing a test-only alternative. Count

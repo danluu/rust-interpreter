@@ -40,19 +40,25 @@ exact adopted VM and wrapper. Sized dynamic bytecode matches the prior control.
 The full original pgrust SQL-parser target now passes all 114 native and custom
 JIT tests, including C reference vectors. General function-capacity, environment
 read and checked C-string support remove the subsequent blockers; these changes
-remain experimental pending existing-project edit qualification and performance
-checks. The workspace passes 484 tests per profile, the final exporter passes
+remain experimental pending publication audit. All 40 existing-project history
+commands now preserve exact artifacts and assertion outcomes. The workspace
+passes 484 tests per profile, the final exporter passes
 89 per profile, and 119 focused/cache/strict Cargo commands pass. All 4,918 parser
 inputs verify; source and assertions are unchanged.
 [Complete parser support](results/pgrust-parser-support-04/assessment.md).
 The complete 66-command default-profile parser comparison now passes its
 correctness controls but is 15.78% slower than native on edited wall time
-(8.29% more child CPU). The matched incremental comparison stops after22
-commands because restoring the original source changes constant layout while
-all114 tests still pass. Typed decoding finds32 extra readonly bytes and only
-immediate changes, resembling the previously diagnosed compiler allocation
-sharing. Paired observer-off/on histories with function reuse disabled are next.
+(8.29% more child CPU). The separately completed matched-incremental comparison
+is23.03% slower wall and24.02% more CPU across15 edited pairs. Its revised
+protocol retains the failed22-command cross-cycle study and runs only44
+unstarted commands. Paired allocation traces with function reuse disabled locate
+the original/restored layout difference in rustc's sharing of an immutable
+literal, before exporter placement. A/B artifact identity holds within each
+cycle/state. All114 native/custom assertion outcomes match and sources restore.
+The dominant reference-vector test and early JIT decline are the next runtime
+diagnostic; no capacity increase is justified yet.
 [Parser baseline](results/pgrust-parser-edits-repository-continuation-01/assessment.md).
+[Matched incremental](results/pgrust-parser-edits-incremental-history-01/assessment.md).
 The actual-emitter local-value census is a separate next optimization candidate.
 The automatic tool cache now includes its selected toolchain identifier: the
 retained regression fails before the fix, and 123 runnable root tests pass after
