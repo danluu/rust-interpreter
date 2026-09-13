@@ -737,7 +737,7 @@ def main():
     if plan['candidate_policy'] == 'stable-mono-cgu':
         frozen_snapshot(Path(__file__).with_name('STABLE_MONO_CGU_SCREEN.md'))
     bundle = dict(schema_version=1,
-                  encoding='exact UTF-8 or base64 members' if mono_qualification or worker_public else 'exact UTF-8 members',
+                  encoding='exact UTF-8 or base64 members' if mono_qualification or worker_public or library_public else 'exact UTF-8 members',
                   files=list(files.values()),
                   source_symlinks=source_symlinks)
     payload = (json.dumps(bundle, separators=(',', ':'), ensure_ascii=False) + '\n').encode()

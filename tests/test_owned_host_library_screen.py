@@ -5,17 +5,19 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from test_owned_screen_assessment import OwnedScreenAssessment, assess, screen
+import test_owned_screen_assessment as base_assessment
 from test_host_library_screen import qualified_fixture
 import host_library_screen as library
 import qualified_public_tools as public_tools
 
+assess, screen = base_assessment.assess, base_assessment.screen
+
 
 class OwnedHostLibraryAssessment(unittest.TestCase):
-    setUp = OwnedScreenAssessment.setUp
-    base = OwnedScreenAssessment.base
-    std = OwnedScreenAssessment.std
-    proc_macro = OwnedScreenAssessment.proc_macro
+    setUp = base_assessment.OwnedScreenAssessment.setUp
+    base = base_assessment.OwnedScreenAssessment.base
+    std = base_assessment.OwnedScreenAssessment.std
+    proc_macro = base_assessment.OwnedScreenAssessment.proc_macro
 
     def plan(self):
         plan = self.proc_macro()
