@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = ROOT / 'experiments/stable-cgu'
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(ROOT / 'scripts'))
-from owned_stage import inventory, require, sha, write
+from owned_stage import disk, inventory, require, sha, write
 from std_mir_source_paths import source_capability
 
 
@@ -103,7 +103,16 @@ def compose(command, work, records, source_state, component, lock_fd):
             and not (work / 'combined-upstream.patch').is_symlink(), 'complete upstream-to-current patch required')
     write(capability, source_capability(revision))
     require(legacy.public_component() == component, 'pinned public rust-src component changed')
-    shutil.copytree(legacy.PUBLIC_LIBRARY, rust_src / 'library', symlinks=False)
+    def guarded_copy(source, destination):
+        disk(ROOT, 9)
+        result = shutil.copy2(source, destination)
+        disk(ROOT, 9)
+        return result
+
+    disk(ROOT, 9)
+    shutil.copytree(legacy.PUBLIC_LIBRARY, rust_src / 'library', symlinks=False,
+                    copy_function=guarded_copy)
+    disk(ROOT, 9)
     copied = inventory(rust_src)
     require({name.removeprefix('library/'): item['sha256'] for name, item in copied.items()}
             == component['files'], 'distributed library source copy differs')
