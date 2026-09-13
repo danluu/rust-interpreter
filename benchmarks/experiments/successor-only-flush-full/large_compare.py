@@ -23,6 +23,7 @@ from workflow_io import SourceEdit, capture, require_space, write_json as write
 from suite_reports import read_report, validate_report, validate_runtime_limits
 from std_mir import checked_std_mir
 from prerequisites import BASELINE_KEY, CANDIDATE_KEY, load as load_prerequisites
+from screen import native_executable
 
 BASELINE = BASELINE_KEY
 CANDIDATE = CANDIDATE_KEY
@@ -245,15 +246,7 @@ def main():
                             row[kind]=dict(path=str(path.relative_to(root)),sha256=sha(path))
                     elif mode != 'check':
                         row['outcomes']=native_outcomes(stdout,case['tests'],success)
-                        targets=[]
-                        for line in stdout.splitlines():
-                            if not line.startswith('{'): continue
-                            unit=json.loads(line)
-                            if unit.get('reason')=='compiler-artifact' and unit.get('profile',{}).get('test') and unit.get('executable'):
-                                if unit['target']['kind']==['lib']:
-                                    targets.append(Path(unit['executable']).resolve(strict=True))
-                        executable,=targets
-                        assert executable.is_relative_to((work/mode).resolve())
+                        executable=native_executable(stdout,source,work/mode)
                         digest_exe=sha(executable)
                         saved=work/'native-artifacts'/(digest_exe+'.native')
                         if saved.exists(): assert sha(saved)==digest_exe

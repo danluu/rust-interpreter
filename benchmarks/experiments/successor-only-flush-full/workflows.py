@@ -23,6 +23,7 @@ from workflow_io import SourceEdit, capture, require_space, write_json as write
 from test_discovery import read_listing, read_selection
 from suite_reports import guest_test_failure, read_report, validate_report, validate_runtime_limits
 from prerequisites import BASELINE_KEY, EXPORTER_KEY, CANDIDATE_KEY, load as load_prerequisites
+from screen import native_executable
 
 CASES = {'token': ('fre', 'token-phrase-allocation', 'token_phrase::tests::', 'prepared-suite-token-01'),
          'folded': ('fre', 'folded-literal-trie', 'folded_literal_trie::tests::', 'prepared-suite-folded-01'),
@@ -295,15 +296,7 @@ def main():
                     row['function_cache'] = reports[0]
             elif mode != 'check':
                 row['outcomes'] = native_outcomes(stdout, names, success)
-                targets=[]
-                for line in stdout.splitlines():
-                    if not line.startswith('{'): continue
-                    unit=json.loads(line)
-                    if unit.get('reason')=='compiler-artifact' and unit.get('profile',{}).get('test') and unit.get('executable'):
-                        if unit['target']['kind']==['lib']:
-                            targets.append(Path(unit['executable']).resolve(strict=True))
-                executable,=targets
-                assert executable.is_relative_to((work/mode).resolve())
+                executable=native_executable(stdout,source,work/mode)
                 row['native_executable']=snapshot(executable)
                 (ROOT/row['native_executable']['path']).chmod(executable.stat().st_mode & 0o777)
                 row['native_build_executable']=str(executable.relative_to(ROOT))
