@@ -33,6 +33,7 @@ fn fixed_frame_clear_size(caller: &Function, callee: &Function) -> Option<usize>
 pub(super) struct Indirect {
     entries: Vec<usize>,
     attempted: Vec<bool>,
+    ranges: Vec<(usize, usize)>, // (caller PC, published thunk start)
 }
 impl Indirect {
     pub(super) fn try_new(len: usize) -> Option<Self> {
@@ -84,6 +85,10 @@ impl Entries {
         if !self.indirect[id].entries.is_empty() {
             self.indirect_pointers[id] = self.indirect[id].entries.as_ptr();
         }
+    }
+    pub(super) fn indirect_ranges(&self) -> impl Iterator<Item = (usize, usize, usize)> + '_ {
+        self.indirect.iter().enumerate().flat_map(|(function, table)|
+            table.ranges.iter().map(move |&(pc, offset)| (function, pc, offset)))
     }
 }
 
@@ -179,13 +184,21 @@ impl<'a> Jit<'a> {
             Err(EmitError::InvalidRelocation(message)) => return Err(message.into()),
         };
         if a.words.len() > (self.capacity - self.bytes) / 4 { return Ok(false); }
+        let tables = self.resumable.as_mut().unwrap();
+        let range_bytes = std::mem::size_of::<(usize, usize)>();
+        if tables.bytes.checked_add(range_bytes).is_none_or(|n| n > MAX_ENTRY_BYTES)
+            || tables.indirect[caller].ranges.try_reserve_exact(1).is_err() {
+            return Ok(false);
+        }
         let Some(code) = self.code.as_mut() else { return Ok(false); };
         let offset = code.append(&a.words)?;
         let entry = code.published().0 + offset + internal * 4;
         self.bytes += a.words.len() * 4;
+        tables.indirect[caller].ranges.push((pc, offset));
+        tables.bytes += range_bytes;
         // Both vectors have their final length and never move while native
         // execution is active. Publishing the data slot is the final mutation.
-        self.resumable.as_mut().unwrap().indirect[caller].entries[pc] = entry;
+        tables.indirect[caller].entries[pc] = entry;
         Ok(true)
     }
 

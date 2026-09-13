@@ -146,6 +146,19 @@ fn indirect_publication_is_bounded_and_never_retargets_or_partially_publishes() 
         assert_eq!(jit.bytes, bytes);
         assert_eq!(jit.resumable.as_ref().unwrap().indirect[0].entries[CALL_PC], entry);
     }
+    // Appended thunks must not be attributed to the preceding native region.
+    let dump = std::env::temp_dir().join(format!("rust-interp-indirect-map-{}-{}",
+        std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+    jit.dump_code(&dump).unwrap();
+    let map: serde_json::Value = serde_json::from_slice(&std::fs::read(dump.join("map.json")).unwrap()).unwrap();
+    let ranges = map["ranges"].as_array().unwrap();
+    let thunk = ranges.iter().find(|r| r["kind"] == "resumable_indirect_call").unwrap();
+    assert_eq!(thunk["function"], 0);
+    assert_eq!(thunk["pc"], CALL_PC);
+    assert_eq!(thunk["offset"], static_bytes);
+    assert_eq!(thunk["end"], bytes);
+    assert_eq!(ranges.last().unwrap()["end"], map["code_bytes"]);
+    std::fs::remove_dir_all(dump).unwrap();
     for capacity in [0, static_bytes] {
         let mut full = Jit::new_resumable(&p, false, capacity, true).unwrap();
         for id in [0, 1, 2] { full.ensure_function(id).unwrap(); }

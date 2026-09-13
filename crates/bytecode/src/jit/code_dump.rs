@@ -45,10 +45,18 @@ impl Jit<'_> {
                     name: &self.program.functions[function].name,
                     kind: if self.resumable.is_some() {
                         match self.program.functions[function].code[pc] {
-                            Op::Call { .. } => "resumable_call", Op::Return => "resumable_return", _ => "resumable_region",
+                            Op::Call { .. } => "resumable_call", Op::Return => "resumable_return",
+                            Op::CallIndirect { .. } => "resumable_indirect_dispatch", _ => "resumable_region",
                         }
                     } else if matches!(self.program.functions[function].code[pc], Op::Call { .. }) { "call_stub" } else { "ordinary_region" },
                     pc: Some(pc), pc_end: Some(block.end) });
+            }
+        }
+        if let Some(entries) = &self.resumable {
+            for (function, pc, offset) in entries.indirect_ranges() {
+                ranges.push(Range { offset, end: 0, function,
+                    name: &self.program.functions[function].name, kind: "resumable_indirect_call",
+                    pc: Some(pc), pc_end: Some(pc + 1) });
             }
         }
         if let Some(trees) = &self.trees {

@@ -15,8 +15,10 @@ emitter. Only then is the internal entry published. Call sites never retarget;
 mismatches use the VM. Native entry availability remains independently checked.
 All publication occurs on the creating thread between native entries.
 
-Dispatch tables and attempted flags count against the existing16MiB entry-table
-budget, including existing resume entries. Thunks count against the configured
+Dispatch tables, attempted flags and published code-range descriptors count
+against the existing16MiB entry-table budget, including existing resume entries.
+The code dump identifies each thunk separately from its preceding region.
+Thunks count against the configured
 code budget, and their analysis/emission cost enters JIT compile timing.
 No code bytes are patched, guest addresses exposed, callback ABI introduced,
 borrow checks delayed or argument values specialized.
