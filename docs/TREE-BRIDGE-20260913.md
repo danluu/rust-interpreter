@@ -1,7 +1,7 @@
 # Bounded trees inside the resumable JIT
 
-The experimental bridge passes 556 workspace controls in debug and release.
-It has not been timed on changed-source workloads and is not adopted. The
+The experimental bridge passes 556 workspace controls in debug and release,
+but fails its 40-command changed-source performance screen and is not adopted. The
 runtime remains on `experiment/resumable-tree-bridge-20260913`; main receives
 these records and the design, preserving the other session's runtime/compiler
 changes. The [build receipt](../results/tree-bridge-build-01/summary.json) binds
@@ -28,9 +28,23 @@ focused runs include three compile failures, all retained. Their
 [archive](../results/tree-bridge-focused-closure-01/summary.json) binds 1,202 source
 inputs and contains 222 exact Git source blobs plus terminal receipts.
 
-Next: finish strict/cache/Cargo controls; replay the three original test profiles
-with bound entropy; measure actual bridge coverage, compilation and duplicate
-code; qualify launcher and screen protocols; then run the preregistered
-40-command changed-source primary. Only a passing screen proceeds to full
-primary and held-out projects. The census percentages describe static eligible
-calls, not savings or measured bridge coverage.
+The [strict controls](../results/tree-bridge-qualification-01/summary.json) pass
+119 commands; launcher qualification passes 386 tests with 16 declared skips.
+All three [original profiles](../results/tree-bridge-profile-01/assessment.md)
+preserve exact logical instruction counts, memory peaks and entropy. Block and
+exhaustive execute 25.97M / 26.49M outer bridges, with 5.68M / 25.89M nested tree
+Calls. Code occupies 12.19 / 14.80 million bytes, including duplicate
+tree bodies. These instrumented counts do not establish speedups.
+
+The [primary screen](../results/tree-bridge-screen-token-01/assessment.md)
+retains all 40 commands and original assertions, wrong edits and restoration.
+Median paired wall ratio is 0.995499 (0.45% improvement), inside 9.9249% A/A
+variation. CPU ratio is 1.021747 (2.17% regression). Both required margins fail.
+This does not establish a useful gain or prove zero benefit. Full primary,
+held-out campaigns and repeated screens remain unstarted.
+
+The [closure](../results/tree-bridge-screen-token-01/closure.json) verifies
+1,958 frozen inputs, 56 retained artifacts and 380 Git source bindings. Setup
+cost is separately recorded as 117.71 seconds for this qualified tool build.
+Next examine the cursor and budget adaptation paid by the many small trees;
+choose a materially different implementation before another performance test.

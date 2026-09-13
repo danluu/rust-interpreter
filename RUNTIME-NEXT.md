@@ -10,20 +10,18 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Prototype an explicit bounded-tree bridge from resumable Calls. The current
-   exact planner admits 55.85% / 74.45% of native calls, whose Call spans contain
-   141 / 189 saved samples; eligible Return functions add a separate 54 / 86
-   sample upper bound. This broader coverage justifies a correctness prototype,
-   not a speed claim. Preserve ordinary fallback before progress, all limits,
-   fault/copy semantics and current body optimizations. The old cursor/host ABI
-   cannot be enabled by merely combining flags. Capacity credit stays parked.
+1. The bounded-tree bridge passed correctness but failed its changed-source
+   primary: wall ratio 0.995499 versus 9.9249% A/A; CPU ratio 1.021747. Keep
+   full and held-out runs unstarted and do not retime the same source. Examine
+   repeated cursor/budget adaptation in its many small trees before selecting
+   another runtime change. The adopted runtime remains unchanged.
 
-The bridge prototype now passes 556 workspace controls per profile on its
-experiment branch, including full native ABI, limits, fault publication and
-profile reconciliation. The explicit option is disabled; duplicate tree code
-is globally capped at one quarter of the 16 MiB arena. Strict/cache controls
-and real original workload profiles precede any changed-source screen. The
-runtime change is not adopted. [Prototype status](docs/TREE-BRIDGE-20260913.md).
+The bridge passes 556 workspace controls per profile, 119 strict/cache commands,
+386 launcher tests (16 skips) and three exact original-workload profiles. Its
+40-command screen retains original assertions, wrong edits, identical bytecode
+and restoration. The closure verifies 1,958 inputs, 56 artifacts and 380 source
+bindings. Duplicate trees stay under a quarter of the 16 MiB arena. The runtime
+prototype stays on its experiment branch. [Result](docs/TREE-BRIDGE-20260913.md).
 
 Five existing tree-proof controls pass per profile. The diagnostic includes
 interpreter fixtures, but no benchmark execution or native-code publication.

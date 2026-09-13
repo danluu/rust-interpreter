@@ -96,3 +96,12 @@ qualification remain pending. A global quarter-arena code quota limits duplicate
 trees, and guarded-body exclusions propagate to ancestors. No timing result or
 adoption claim follows. The six focused runs, including all three early compile
 failures, are archived with 1,202 source bindings and 222 exact source blobs.
+
+Follow-up through 16:49: the requested suggestions file remains unchanged.
+The bridge passes all strict and original-workload controls but fails its
+40-command primary performance gate: wall improvement 0.45% versus 9.9249%
+A/A, CPU regression 2.17%. The audit closes 1,958 frozen inputs, 56 artifacts
+and 380 Git source bindings. Keep full/held-out runs unstarted. Review its
+repeated cursor/budget adaptation before another materially changed candidate;
+no retrospective noise threshold or unchanged retry follows. Reclaim only
+verified completed owned compiler caches before admitting the next build.
