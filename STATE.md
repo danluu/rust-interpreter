@@ -57,9 +57,16 @@ literal, before exporter placement. A/B artifact identity holds within each
 cycle/state. All114 native/custom assertion outcomes match and sources restore.
 The dominant reference-vector test spends94.13% of its interpreted operations
 in one large parser routine. Offline emission produces16,554,488 native bytes
-for that routine alone, establishing whole-function capacity pressure. Next
-compare explicit16/32 MiB limits while retaining the16 MiB default, then decide
-whether reached-region compilation is warranted.
+for that routine alone, establishing whole-function capacity pressure.
+The completed explicit 16/32 MiB screen retains the 16 MiB default and parks the
+larger treatment: its 0.69% paired wall improvement is inside 4.04% A/A variation.
+All 32 controls agree with native, including the wrong edit. Five commands were
+retained after a failed-test statistics validator repair; exactly 27 new commands
+completed the schedule. No valid edited timing preceded the repair. The large
+routine reaches 66.60% of its bytecode and already avoids bulk register zeroing.
+No unchanged full capacity study or broad lazy-region rewrite follows this
+result. Return to actual-emitter local-value forwarding composition evidence.
+[Capacity screen](results/parser-jit-capacity-screen-continuation-01/assessment.md).
 [Parser baseline](results/pgrust-parser-edits-repository-continuation-01/assessment.md).
 [Matched incremental](results/pgrust-parser-edits-incremental-history-01/assessment.md).
 [Combined compatibility](results/environment-main-final-audit-01/assessment.md).
