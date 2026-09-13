@@ -8,7 +8,8 @@ bytes (SHA-256 `8108e3de7cdf9cd80fc7382824be639d7cf8e20a46535729b392f552a390b068
 It incorrectly treated an ordered source fingerprint as a complete tool key.
 `planned-build-02.json` is also retained unexecuted; subsequent support changes
 invalidate its frozen harness hashes. The final runner plan uses the fresh
-`.work/host-proc-macro-build-03` directory. It does not authorize resuming or
+`.work/host-proc-macro-build-04` directory. Plan03's inventory failure is retained
+with zero qualification commands started. It does not authorize resuming or
 interpreting an old plan as a completed run.
 
 ## Two distinct identities

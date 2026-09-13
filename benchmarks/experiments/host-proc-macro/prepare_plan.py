@@ -51,8 +51,11 @@ def main():
     if any(p.is_symlink() for p in [*workspace_entries, *workspace_inputs]):
         raise RuntimeError('source inventory requires regular files, not unresolved source symlinks')
     contract = Path(__file__).with_name('PUBLICATION.md')
-    superseded = [Path(__file__).with_name(f'planned-build-{index:02}.json') for index in (1, 2)]
-    work = ROOT / '.work/host-proc-macro-build-03'
+    superseded = [Path(__file__).with_name(f'planned-build-{index:02}.json') for index in (1, 2, 3)]
+    previous_work = ROOT / '.work/host-proc-macro-build-03'
+    prior_receipts = [ROOT / '.work/host-proc-macro-admission-03-failed.json', previous_work / 'supervisor.json',
+                      *sorted((previous_work / 'metadata').glob('*'))]
+    work = ROOT / '.work/host-proc-macro-build-04'
     target = work / 'target'
     screen_work = screen_root / '.work/strict-warm-proc-macro-screen-01'
     source = screen_root / '.work/sources/nushell-proc-macro-opt'
@@ -104,8 +107,12 @@ def main():
         tool_sources={str(p.relative_to(ROOT)): sha(p) for p in inputs},
         workspace_sources={str(p.relative_to(ROOT)): sha(p) for p in workspace_inputs},
         harness={str(p.relative_to(ROOT)): sha(p) for p in paths},
-        supersedes=[dict(path=str(p.relative_to(ROOT)), sha256=sha(p), status='superseded-not-executed')
+        supersedes=[dict(path=str(p.relative_to(ROOT)), sha256=sha(p),
+                        status='failed-before-qualification' if p.name == 'planned-build-03.json' else 'superseded-not-executed')
                     for p in superseded],
+        prior_attempt=dict(status='failed-before-qualification', work=str(previous_work),
+            reason='registry sources omit .cargo-checksum.json; use locked archive reconciliation',
+            qualification_commands_started=0, records={str(p.relative_to(ROOT)): sha(p) for p in prior_receipts}),
         implementation_contract_tests=dict(required_before_build=True, run_separately_under_canonical_lock=True,
             commands=[dict(argv=[sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', name, '-v'],
                            expected_tests=5) for name in ['test_qualified_public_tools.py', 'test_public_tool_publication.py']]),

@@ -35,6 +35,8 @@ def build_admission(plan):
     with Path(admission['lock']).open('a') as lock:
         acquire_lock(lock, admission['wait_seconds'])
         require_space(owner, admission['tool_build_minimum_free_gib'])
+        work.parent.mkdir(exist_ok=True)
+        require(work.parent.resolve(strict=True) == work.parent, 'build work parent is a symlink')
         work.mkdir()
         receipt = dict(schema_version=1, status='running', pid=os.getpid(), parent_pid=os.getppid(),
                        cwd=os.getcwd(), command=sys.argv, owner=str(owner), started_at=time.time())

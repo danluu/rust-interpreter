@@ -1,9 +1,11 @@
 """Publication failures use dummy bytes only; never execute a tool or workload."""
 import json
 import importlib.util
+import io
 from pathlib import Path
 import sys
 import tempfile
+import tarfile
 import unittest
 from unittest.mock import patch
 
@@ -80,18 +82,29 @@ class PublicToolPublicationTests(unittest.TestCase):
     def test_registry_source_drift_is_rejected_without_running_cargo(self):
         driver = build_driver()
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary); package = root / 'registry/fixture'; package.mkdir(parents=True)
-            manifest = package / 'Cargo.toml'; manifest.write_text('[package]\nname="fixture"\nversion="1.0.0"\n')
-            (root / 'Cargo.lock').write_text('version = 4\n[[package]]\nname="fixture"\nversion="1.0.0"\n'
-                'source="registry+fixture"\nchecksum="' + '1' * 64 + '"\n')
-            (package / '.cargo-checksum.json').write_text(json.dumps(dict(package='1' * 64,
-                files={'Cargo.toml': '0' * 64})))
-            metadata = dict(resolve=dict(nodes=[dict(id='fixture-id', features=[])]),
-                packages=[dict(id='fixture-id', name='fixture', version='1.0.0', source='registry+fixture',
-                               manifest_path=str(manifest))])
-            with patch.object(driver, 'ROOT', root), patch.object(driver, 'retained_command') as command:
-                with self.assertRaisesRegex(RuntimeError, 'registry source differs'):
-                    driver.dependency_inventory(metadata, {}, {})
+            root = Path(temporary); package = root / 'registry/src/registry-id/fixture-1.0.0'
+            package.mkdir(parents=True)
+            archive = root / 'registry/cache/registry-id/fixture-1.0.0.crate'
+            archive.parent.mkdir(parents=True)
+            content = b'[package]\nname="fixture"\nversion="1.0.0"\n'
+            manifest = package / 'Cargo.toml'; manifest.write_bytes(content)
+            with tarfile.open(archive, 'w:gz') as bundle:
+                member = tarfile.TarInfo(package.name + '/Cargo.toml'); member.size = len(content)
+                bundle.addfile(member, io.BytesIO(content))
+            checksum = driver.file_digest(archive)
+            (package / '.cargo-ok').write_text('installed')
+            with patch.object(driver, 'retained_command') as command:
+                self.assertEqual(set(driver.registry_files(package, {'checksum': checksum})),
+                                 {manifest, package / '.cargo-ok', archive})
+                with self.assertRaisesRegex(RuntimeError, 'archive differs from lockfile'):
+                    driver.registry_files(package, {'checksum': '0' * 64})
+                manifest.write_bytes(content + b'# drift\n')
+                with self.assertRaisesRegex(RuntimeError, 'source differs from archive'):
+                    driver.registry_files(package, {'checksum': checksum})
+                manifest.write_bytes(content)
+                (package / 'unexpected.rs').write_text('')
+                with self.assertRaisesRegex(RuntimeError, 'file inventory differs'):
+                    driver.registry_files(package, {'checksum': checksum})
                 command.assert_not_called()
 
     def test_cargo_config_wrapper_override_fails_before_any_command(self):
