@@ -10,20 +10,19 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Finish the guarded local-value composition's sole remaining full guard,
-   Nushell type relations. Token, folded, pgrust and private rg-aot pass594
-   commands; the token gain is4.73% wall/3.83% CPU and its native ratio is1.641.
-   All114 original parser tests also pass. The27 continuation controls and the
-   complete594-command prefix audit pass. After verified retirement of completed
-   public/private and explicitly assessed closed compiler caches, the original
-   Nushell case passed its unchanged47.0325 GiB admission and is running under
-   `guarded-local-facts-full-continuation-01` (outer admission02). It executes
-   only the remaining132 commands with the original driver/settings/gate. Keep
-   its active source and caches intact, preserve both earlier admissions, and
-   never repeat completed cases. The runtime remains experimental until all
-   five gates pass; the saved goal stays paused.
+1. Integrate the guarded local-value composition with current main compiler
+   sources. All five gates and726 commands now pass:594 retained plus132 new
+   Nushell commands, with zero repeats. Token improves4.73% wall/3.83% CPU and
+   remains1.641 times ordinary native. Nushell is effectively unchanged against
+   the prior custom runtime and passes its frozen guard. All9,005 final inputs
+   verify and all114 original parser tests pass. Keep the16 MiB code default.
+   Reuse the exact measured VM only after complete source identity checks;
+   qualify newer exporter/wrapper/launcher code, original/wrong/restored project
+   histories and the full parser before publication. No second timing campaign.
+   Preserve the earlier admissions and verified cache-retirement evidence.
+   The runtime is qualified for integration; the saved goal stays paused.
    [Primary](results/guarded-local-facts-edit-token-01/assessment.md),
-   [Retained prefix](results/guarded-local-facts-full-prefix-01/summary.json),
+   [Complete result](results/guarded-local-facts-full-continuation-01/assessment.md),
    [Original admission](results/guarded-local-facts-full-admission-01/summary.json).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
@@ -36,8 +35,8 @@ and frame-clearing changes require further cost evidence. Keep the default
 16 MiB and retain the prototype on its experiment branch.
 [Capacity result](results/parser-jit-capacity-screen-continuation-01/assessment.md).
 
-The current five-case result is a narrow 2.55% primary wall improvement; the
-primary still takes 1.773 times ordinary native. Do not repeat unchanged
+The previously adopted guarded-range result was a narrow2.55% primary wall
+improvement, with the primary1.773 times ordinary native. Do not repeat unchanged
 candidates or infer general large-project speedups. Primary screens reject weak
 new mechanisms before full histories; every adoption guard remains mandatory.
 Keep allocator/arena redesign and broad lazy-MIR work conditional on evidence.
