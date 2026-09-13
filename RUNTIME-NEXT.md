@@ -10,15 +10,24 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Implement successor-only register flushing for ordinary JIT regions, with
-   complete CFG liveness. Existing facts remain available for terminal branch
-   selection; values live on any successor must still spill. Keep native call
-   trees and unavailable liveness conservative. Exact flush attribution locates
-   120/1,651 and165/1,439 generated samples in dead-after-exit values, mainly
-   terminal operands. Qualify wide branches, pressure, backedges, limits and VM
-   fallback, then use the40-command primary-first screen. This is not a speedup
-   result. Scratch-value forwarding remains parked as a possible component.
-   [Flush census and proof obligations](results/consumed-flush-values-census-01/assessment.md).
+1. Partition the adopted emitter's small Copy/Load/Store spans into address
+   materialization, address-space selection, bounds/readonly checks, data
+   transfer and register publication. Reconstruct both saved native captures
+   exactly before applying finer labels to their existing samples. Copy/Load
+   spans contain 686/1,651 and 388/1,439 generated samples, but those coarse
+   totals do not identify checking cost or justify an arena redesign. Preserve
+   forwarding paths, original fault order and every emitted word. Use the
+   diagnostic to select the next compatible runtime component.
+
+Successor-only flushing is parked as a possible component after its full primary
+gate fails. Its 40-command screen passed, but the fresh 154-command comparison
+observes wall−3.25% against 7.32% A/A; CPU−4.62% against 4.48% A/A. All original
+assertions and restoration pass. The four remaining full cases (572 commands)
+and full-parser qualification stay unstarted. Keep the 525 workspace tests per
+profile, 119 strict controls, three exact profiles and 13 selected/prepared
+controls as correctness evidence. Do not retime this candidate unchanged or
+adopt it from the screen. The adopted VM remains f0e5f2ea.
+[Full result and limitations](results/successor-only-flush-full-01/assessment.md).
 
 The native boundary memory bundle is parked after its40-command primary screen:
 wall−0.66% versus3.30% A/A, CPU−2.18% versus2.79% A/A. All519 workspace checks per
