@@ -40,6 +40,9 @@ mod trees;
 mod native_calls;
 mod native_regions;
 mod resumable;
+mod native_counters;
+#[cfg(test)]
+mod successor_flush_tests;
 mod call_slots;
 mod code_dump;
 mod code_spans;
@@ -375,11 +378,22 @@ pub(crate) struct Jit<'a> {
     observe_flush: bool,
     #[cfg(test)]
     observe_memory_parts: bool,
+    #[cfg(test)]
+    omit_dead_exit_spills: bool,
+    #[cfg(test)]
+    register_native_counters: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
 }
 impl<'a> Jit<'a> {
+    #[cfg(test)]
+    fn use_adopted_emission(mut self) -> Self {
+        self.omit_dead_exit_spills = false;
+        self.register_native_counters = false;
+        self
+    }
+
     pub fn new(program: &'a Program, profiled: bool, capacity: usize) -> Result<Self, String> {
         Self::new_with_call_stubs(program, profiled, capacity, false)
     }
@@ -415,6 +429,10 @@ impl<'a> Jit<'a> {
             observe_flush: false,
             #[cfg(test)]
             observe_memory_parts: false,
+            #[cfg(test)]
+            omit_dead_exit_spills: true,
+            #[cfg(test)]
+            register_native_counters: true,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -588,6 +606,8 @@ impl<'a> Jit<'a> {
                     region_end: pc,
                     values: values.as_ref(),
                     resumable,
+                    #[cfg(test)]
+                    register_native_counters: self.register_native_counters,
                     ..Assembler::default()
                 };
                 let mut covered = 0;
@@ -657,7 +677,11 @@ impl<'a> Jit<'a> {
                 }
                 #[cfg(test)]
                 { a.flush_tail_consumed = terminal.is_none(); }
-                a.flush_facts(start, pc);
+                #[cfg(test)]
+                let retain_tail_reads = !self.omit_dead_exit_spills;
+                #[cfg(not(test))]
+                let retain_tail_reads = false;
+                a.flush_facts(start, pc, retain_tail_reads);
                 span!(Flush, None);
                 a.exit(terminal, pc)?;
                 if terminal.is_some() { span!(Operation, Some(pc - 1)); }
@@ -1045,6 +1069,8 @@ enum Fact {
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
     #[cfg(test)]
+    register_native_counters: bool,
+    #[cfg(test)]
     observe_guarded_local_retention: bool,
     #[cfg(test)]
     observe_static_local_facts: bool,
@@ -1097,6 +1123,7 @@ struct Assembler<'a> {
 impl Default for Assembler<'_> {
     fn default() -> Self {
         Self {
+            register_native_counters: true,
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,
             observe_scalar_copy: true,
@@ -1147,6 +1174,7 @@ impl Assembler<'_> {
         if self.resumable {
             self.resumable_save_memory();
             self.resumable_save_budget();
+            self.save_native_counters();
         }
         self.restore_external_values();
         self.emit(0xd65f03c0);
@@ -1548,7 +1576,7 @@ impl Assembler<'_> {
             }
         }
     }
-    fn flush_facts(&mut self, start: usize, end: usize) {
+    fn flush_facts(&mut self, start: usize, end: usize, retain_tail_reads: bool) {
         // Registers are not guest-addressable. A value used only inside this
         // straight-line region needs no spill. Conservatively retain every
         // value read elsewhere. Also retain values read before their first
@@ -1557,7 +1585,10 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
+                // Exit reads branch operands from these same facts/cache.
+                // Flushing preserves them; native-tree call tails remain conservative.
+                return (values.live.after(end - 1, reg)
+                    || retain_tail_reads && values.live.at(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))

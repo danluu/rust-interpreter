@@ -24,11 +24,11 @@ fn observe_saved_local_facts() {
     }
     assert_eq!(number(&mapping, "code_bytes"), bytes.len());
     assert_eq!(mapping["code_sha256"], format!("{:x}", Sha256::digest(&bytes)));
-    let mut baseline = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap();
+    let mut baseline = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap().use_adopted_emission();
     baseline.observe_guarded_local_retention = false;
     baseline.observe_static_local_facts = false;
     baseline.observe_scalar_copy = false;
-    let mut alternative = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap();
+    let mut alternative = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap().use_adopted_emission();
     alternative.observe_guarded_local_retention = true;
     let static_facts = match std::env::var("LOCAL_CENSUS_STATIC_FACTS").ok().as_deref() {
         None | Some("0") => false, Some("1") => true, _ => panic!("invalid static-fact census option"),

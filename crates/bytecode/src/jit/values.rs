@@ -190,8 +190,9 @@ impl Assembler<'_> {
         if self.resumable {
             self.resumable_current_frame();
             self.resumable_load_budget();
+            self.load_native_counters();
         }
-        // Native callees inherit x22; only external Rust entries load memory.
+        // Internal edges inherit x22 and v29..v31; only external entries reload.
         let resume = self.words.len();
         self.load_values();
         resume

@@ -19,6 +19,8 @@ mod flush_census;
 mod memory_parts;
 #[cfg(test)]
 mod continuation_census;
+#[cfg(test)]
+mod native_counter_flush;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]

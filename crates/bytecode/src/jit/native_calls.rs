@@ -230,7 +230,7 @@ impl<'a> Jit<'a> {
                     op => if let Some(fill) = fills.get(&index) { a.local_fill(*fill); } else { a.lower(op); },
                 }
             }
-            a.flush_facts(start, pc);
+            a.flush_facts(start, pc, true);
             a.current_pc = pc - 1;
             match tail {
                 Some(Op::Call { function, args, destination }) => {

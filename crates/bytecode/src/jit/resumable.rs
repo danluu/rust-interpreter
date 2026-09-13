@@ -293,6 +293,8 @@ impl<'a> Jit<'a> {
             reads,
             values,
             resumable: true,
+            #[cfg(test)]
+            register_native_counters: self.register_native_counters,
             frame_size: f.frame_size,
             current_pc: pc,
             region_start: pc,
@@ -394,6 +396,7 @@ impl Assembler<'_> {
         self.emit(0x54000000 | condition as u32);
     }
     fn increment_cursor(&mut self, field: usize) {
+        if self.increment_native_counter(field) { return; }
         self.load64(9, 19, field);
         self.add_imm(9, 9, 1);
         self.store64(9, 19, field);
