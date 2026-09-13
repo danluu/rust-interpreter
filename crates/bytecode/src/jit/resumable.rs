@@ -289,6 +289,8 @@ impl<'a> Jit<'a> {
         slots: Option<&[Option<usize>]>,
     ) -> Result<(Assembler<'b>, usize, usize), EmitError> {
         let mut a = Assembler {
+            #[cfg(test)]
+            branch_address_spaces: self.branch_address_spaces,
             heap: self.uses_heap,
             reads,
             values,

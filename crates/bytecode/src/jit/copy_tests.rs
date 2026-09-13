@@ -227,3 +227,30 @@ fn scalar_copy_invalid_ranges_never_write_even_with_a_local_other_endpoint() {
         }
     }
 }
+
+#[test]
+fn branch_selector_matches_complete_copy_ranges_at_tag_and_immediate_boundaries() {
+    for size in [0,1,2,3,4,7,8,15,16,17,31,32,33,128] {
+        for heap in [false,true] {
+            let p=program(size,heap,false);crate::validate(&p).unwrap();
+            let mut addresses=vec![0,1,32,63,64,65,256,1024-size,1024-size+1,1024,1025,usize::MAX];
+            if heap {
+                let tag=crate::heap::TAG;
+                addresses.extend([tag-1,tag,tag+1,tag+64,tag+1024-size,tag+1024-size+1,
+                                  tag+1024,tag*2-1,tag*2,tag*2+1,tag*3,tag*3+64]);
+            }
+            for profiled in [false,true] {
+                let mut jit=Jit::new(&p,profiled,MAX_CODE_BYTES).unwrap();
+                jit.ensure_function(0).unwrap();
+                for &src in &addresses { for &dst in &addresses {
+                    let mut expected=memory();let reference=expected.copy(src,dst,size);
+                    let mut actual=memory();let native=probe(&jit,&mut actual,src,dst,profiled);
+                    assert_eq!(native.is_ok(),reference.is_ok(),"size={size} heap={heap} src={src} dst={dst}");
+                    if native.is_err() { assert_eq!(native.unwrap_err(),"JIT guest memory access failed"); }
+                    assert_eq!(&*actual.bytes,&*expected.bytes,"linear size={size} src={src} dst={dst}");
+                    assert_eq!(actual.heap.bytes,expected.heap.bytes,"heap size={size} src={src} dst={dst}");
+                }}
+            }
+        }
+    }
+}

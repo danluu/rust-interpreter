@@ -53,7 +53,9 @@ impl<'a> Jit<'a> {
         args: &[Reg], destination: Reg, plan: trees::Plan, target: usize, global_start: usize,
         reads: &'b [Option<(usize, usize)>], values: Option<&'b values::Allocation>,
     ) -> Result<(Assembler<'b>, usize, usize), EmitError> {
-        let mut a = Assembler { heap: self.uses_heap, reads, values, frame_size: caller.frame_size,
+        let mut a = Assembler {
+            #[cfg(test)]
+            branch_address_spaces: self.branch_address_spaces, heap: self.uses_heap, reads, values, frame_size: caller.frame_size,
             region_start: pc, region_end: pc + 1, current_pc: pc, tree_caller_is_region: true,
             ..Assembler::default() };
         a.external_entry();

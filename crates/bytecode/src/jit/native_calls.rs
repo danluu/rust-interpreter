@@ -157,7 +157,11 @@ impl<'a> Jit<'a> {
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
-        let mut wrapper = Assembler::default();
+        let mut wrapper = Assembler {
+            #[cfg(test)]
+            branch_address_spaces: self.branch_address_spaces,
+            ..Assembler::default()
+        };
         wrapper.emit(0xa9bf7bf3); // stp x19,lr,[sp,#-16]!
         wrapper.mov(19, 7);
         if self.uses_heap { wrapper.mov(7, 5); wrapper.mov(8, 6); }
@@ -202,7 +206,9 @@ impl<'a> Jit<'a> {
             while pc < f.code.len() && pc - start < 1024 && !starts[pc] { pc += 1; }
             entries[start] = Some(words.len());
             ends[start] = Some(pc);
-            let mut a = Assembler { heap: self.uses_heap, reads: &reads, values: values.as_ref(), frame_size: f.frame_size,
+            let mut a = Assembler {
+            #[cfg(test)]
+            branch_address_spaces: self.branch_address_spaces, heap: self.uses_heap, reads: &reads, values: values.as_ref(), frame_size: f.frame_size,
                 region_start: start, region_end: pc, ..Assembler::default() };
             // The checked whole-tree bound guarantees enough budget for every
             // path, including nested bodies. There is no partial-budget exit.
@@ -230,7 +236,7 @@ impl<'a> Jit<'a> {
                     op => if let Some(fill) = fills.get(&index) { a.local_fill(*fill); } else { a.lower(op); },
                 }
             }
-            a.flush_facts(start, pc);
+            a.flush_facts(start, pc, true);
             a.current_pc = pc - 1;
             match tail {
                 Some(Op::Call { function, args, destination }) => {

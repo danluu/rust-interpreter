@@ -57,6 +57,9 @@ mod flush_census;
 mod memory_parts;
 #[cfg(test)]
 mod memory_operand_tests;
+mod address_spaces;
+#[cfg(test)]
+mod successor_flush_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
 // Its pointers never enter guest registers or addressable guest memory.
@@ -375,6 +378,10 @@ pub(crate) struct Jit<'a> {
     observe_flush: bool,
     #[cfg(test)]
     observe_memory_parts: bool,
+    #[cfg(test)]
+    branch_address_spaces: bool,
+    #[cfg(test)]
+    omit_dead_exit_spills: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -415,8 +422,19 @@ impl<'a> Jit<'a> {
             observe_flush: false,
             #[cfg(test)]
             observe_memory_parts: false,
+            #[cfg(test)]
+            branch_address_spaces: true,
+            #[cfg(test)]
+            omit_dead_exit_spills: true,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
+    }
+
+    // Historical offline observers explicitly reconstruct adopted emission.
+    #[cfg(test)]
+    fn use_adopted_emission(&mut self) {
+        self.branch_address_spaces = false;
+        self.omit_dead_exit_spills = false;
     }
 
     /// Called at guest function entry, including TLS callbacks, never in the
@@ -581,6 +599,8 @@ impl<'a> Jit<'a> {
                     observe_flush: self.observe_flush,
                     #[cfg(test)]
                     memory_parts: memory_parts::State::new(self.observe_memory_parts),
+                    #[cfg(test)]
+                    branch_address_spaces: self.branch_address_spaces,
                     heap: self.uses_heap,
                     reads: &reads,
                     frame_size: f.frame_size,
@@ -657,7 +677,11 @@ impl<'a> Jit<'a> {
                 }
                 #[cfg(test)]
                 { a.flush_tail_consumed = terminal.is_none(); }
-                a.flush_facts(start, pc);
+                #[cfg(test)]
+                let retain_tail_reads = !self.omit_dead_exit_spills;
+                #[cfg(not(test))]
+                let retain_tail_reads = false;
+                a.flush_facts(start, pc, retain_tail_reads);
                 span!(Flush, None);
                 a.exit(terminal, pc)?;
                 if terminal.is_some() { span!(Operation, Some(pc - 1)); }
@@ -1050,6 +1074,8 @@ struct Assembler<'a> {
     observe_static_local_facts: bool,
     #[cfg(test)]
     observe_scalar_copy: bool,
+    #[cfg(test)]
+    branch_address_spaces: bool,
     guarded_range: Option<range_groups::Plan>,
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
@@ -1100,6 +1126,7 @@ impl Default for Assembler<'_> {
             observe_guarded_local_retention: true,
             observe_static_local_facts: true,
             observe_scalar_copy: true,
+            branch_address_spaces: true,
             guarded_range: Default::default(),
             values: Default::default(),
             tree_caller_is_region: Default::default(),
@@ -1548,7 +1575,7 @@ impl Assembler<'_> {
             }
         }
     }
-    fn flush_facts(&mut self, start: usize, end: usize) {
+    fn flush_facts(&mut self, start: usize, end: usize, retain_tail_reads: bool) {
         // Registers are not guest-addressable. A value used only inside this
         // straight-line region needs no spill. Conservatively retain every
         // value read elsewhere. Also retain values read before their first
@@ -1557,7 +1584,11 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
+                // exit() reads its branch operand from these same facts after
+                // flushing. This loop leaves x5/x6 and persistent pairs intact.
+                // The separate tree-call tail retains its array-backed contract.
+                return (values.live.after(end - 1, reg)
+                    || retain_tail_reads && values.live.at(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))
@@ -1664,13 +1695,7 @@ impl Assembler<'_> {
         }
         if self.heap {
             memory_part!(self, "address_space_selection", {
-                self.imm(14, crate::heap::TAG as u64);
-                self.cmp(address, 14);
-                self.three(0xcb000000, 13, address, 14); // heap-relative offset
-                // All four CSELs use the original unsigned address < heap tag.
-                for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8), (14, 4, 31)] {
-                    self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (stack << 5) | dst);
-                }
+                self.select_fixed_address_space(address, write);
             });
             memory_part!(self, "bounds_check", {
                 self.cmp(address, 31);
