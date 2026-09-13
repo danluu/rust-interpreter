@@ -1,0 +1,5 @@
+Retired only compiler intermediates in four exact caches belonging to the closed resumable-bulk Nushell ENOSPC attempt. This differs from completed-case retirement: its 12 primary records, three completed checks, unknown fourth-check outcome and stale running receipts remain incomplete and unchanged. A separate 63-command replacement and a terminal recovery assessment already verified that later history. Neither history was rerun or spliced.
+
+The cleanup revalidated the failure archive against original files, replacement report, source restoration/pin, exact command/cache identities and current absence of matching original processes or open target files. It held the shared and invocation locks. All 19,039 protected files, including saved bytecode, executables and failure evidence, remained byte-identical.
+
+Removed 35,338 files containing 14,885,258,781 logical bytes; observed free space rose by 11,153,256,448 bytes. This is storage maintenance, with no performance claim. No other project, private cache, installed tool or peer workload was changed.
