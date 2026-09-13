@@ -4,19 +4,23 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: admit the qualified full guarded-range comparison. The full
-harness passes159 checks; controller01 times out before any benchmark command
-or source edit. All five case namespaces remain unstarted. A new controller
-may run that same frozen protocol; no completed prefix exists to repeat.
-The prototype passes478 Rust tests/profile and222 real qualification commands.
-An offline repair proves the inactive folded profile byte-identical, retaining
-the original overstrict-validator failure without repeating guest execution.
-The40-command changed-source screen passes narrowly: wall−1.84% against1.74%
-A/A. No runtime adoption follows. Run token first, then folded, pgrust, private
-rg-aot and Nushell only while every preceding complete case passes. All five
-and a serialized final audit are required. Recheck disk admission; retire only
-completed owned public intermediates if a later unstarted case needs room.
-[Screen](results/guarded-ranges-screen-token-01/assessment.md).
+Current action: finish the guarded-range full comparison under controller03.
+The154-command token primary passes: wall−2.55%, CPU−1.43%, observed A/A
+2.275%/1.730%. Its incremental wall margin is narrow. Original tests, wrong-edit
+controls, bytecode/catalog identity and restoration pass. Folded matching is
+next, then pgrust, private rg-aot and Nushell. Every guard and the final serialized
+audit remain mandatory. The two earlier controllers executed zero benchmark
+commands; their admission receipts remain intact. Do not repeat this primary.
+
+The candidate passes478 Rust tests/profile,222 real qualification commands and
+159 full-harness checks. The original profile-validator failure was repaired
+offline with zero repeated guest commands and byte-identical inactive folded
+code. Recheck disk at each admission; the largest guard still needs about47GiB.
+The read-only retirement inventory identifies65 already-processed cache roots
+from seven explicit receipts; absent roots remain unknown. Preserve other
+sessions and the paused goal.
+[Full primary](results/guarded-ranges-edit-token-01/assessment.md),
+[cleanup inventory](results/cache-retirement-ledger-01/assessment.md).
 
 The scalar-Copy full comparison, Copy/budget screen and checked-address screen
 remain failed adoption attempts. Smaller emitted code does not establish a
