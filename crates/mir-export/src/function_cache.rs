@@ -75,7 +75,7 @@ fn decode_measured(bytes: &[u8], namespace: &[u8; 32]) -> Result<(HashMap<String
     let hash_seconds = hash_start.elapsed().as_secs_f64();
     let entries: Vec<Entry> = bincode::DefaultOptions::new().with_fixint_encoding()
         .with_limit(MAX_FILE).reject_trailing_bytes().deserialize(body).map_err(|e| e.to_string())?;
-    if entries.len() > 10_000 { return Err("cache entry count".into()); }
+    if entries.len() > crate::limits::MAX_FUNCTIONS { return Err("cache entry count".into()); }
     let mut result = HashMap::with_capacity(entries.len());
     for entry in entries {
         if !valid_node(&entry.node) || entry.payload.len() > MAX_PAYLOAD
@@ -86,7 +86,7 @@ fn decode_measured(bytes: &[u8], namespace: &[u8; 32]) -> Result<(HashMap<String
     Ok((result, hash_seconds))
 }
 fn encode_measured(entries: &BTreeMap<String, Vec<u8>>, namespace: &[u8; 32]) -> Result<(Vec<u8>, f64)> {
-    if entries.len() > 10_000 || entries.iter().any(|(key, value)| !valid_node(key) || value.len() > MAX_PAYLOAD) {
+    if entries.len() > crate::limits::MAX_FUNCTIONS || entries.iter().any(|(key, value)| !valid_node(key) || value.len() > MAX_PAYLOAD) {
         return Err("cache output bounds".into());
     }
     let values: Vec<_> = entries.iter().map(|(node, payload)| BorrowedEntry { node, payload }).collect();
@@ -237,6 +237,30 @@ impl Cache {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn large_function_sets_round_trip_and_reject_over_limit_reads_and_writes() {
+        let mut entries = BTreeMap::new();
+        for count in [10_001, crate::limits::MAX_FUNCTIONS] {
+            for index in entries.len()..count {
+                entries.insert(format!("{index:x}-0"), (index as u64).to_le_bytes().to_vec());
+            }
+            let bytes = encode(&entries, &[7; 32]).unwrap();
+            assert_eq!(decode(&bytes, &[7; 32]).unwrap(), entries.clone().into_iter().collect());
+        }
+        let index = entries.len();
+        entries.insert(format!("{index:x}-0"), vec![0]);
+        assert_eq!(encode(&entries, &[7; 32]).unwrap_err(), "cache output bounds");
+        // Build a correctly checksummed oversized input independently of the
+        // writer's admission check, so the reader must enforce its own cap.
+        let values: Vec<_> = entries.iter().map(|(node, payload)| BorrowedEntry { node, payload }).collect();
+        let body = bincode::DefaultOptions::new().with_fixint_encoding().serialize(&values).unwrap();
+        let mut bytes = MAGIC.to_vec();
+        bytes.extend_from_slice(&[7; 32]);
+        bytes.extend_from_slice(&Sha256::digest(&body));
+        bytes.extend_from_slice(&body);
+        assert_eq!(decode(&bytes, &[7; 32]).unwrap_err(), "cache entry count");
+    }
+
     #[test]
     fn automatic_reuse_requires_both_session_and_dependency_tracking() {
         for session in [false, true] {

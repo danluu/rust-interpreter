@@ -37,13 +37,32 @@ profile,18 focused guest tests across interpreter/JIT modes and78 existing
 dynamic/closure/cache/strict Cargo commands pass. Tool `15574904` retains the
 exact adopted VM and wrapper. Sized dynamic bytecode matches the prior control.
 [Receiver fix](results/boxed-fnonce-after-01/assessment.md).
-The full original pgrust SQL-parser target passes all114 native tests. Its
-custom build now gets past the callback but stops at the10,000-function
-expansion limit before guest execution. No tests are excluded; all4,918 frozen
-inputs verify. Next: diagnose graph growth and resource limits.
-[Parser support limit](results/pgrust-parser-support-02/assessment.md).
-Preserve pgrust's profile
-choices and use matched incremental settings for any later warm comparison.
+The full original pgrust SQL-parser target now passes all 114 native and custom
+JIT tests, including C reference vectors. General function-capacity, environment
+read and checked C-string support remove the subsequent blockers. The combined
+main compiler qualification and publication audit pass. All 40 existing-project history
+commands now preserve exact artifacts and assertion outcomes. The workspace
+passes 484 tests per profile, the final exporter passes
+89 per profile, and 119 focused/cache/strict Cargo commands pass. All 4,918 parser
+inputs verify; source and assertions are unchanged.
+[Complete parser support](results/pgrust-parser-support-04/assessment.md).
+The complete 66-command default-profile parser comparison now passes its
+correctness controls but is 15.78% slower than native on edited wall time
+(8.29% more child CPU). The separately completed matched-incremental comparison
+is23.03% slower wall and24.02% more CPU across15 edited pairs. Its revised
+protocol retains the failed22-command cross-cycle study and runs only44
+unstarted commands. Paired allocation traces with function reuse disabled locate
+the original/restored layout difference in rustc's sharing of an immutable
+literal, before exporter placement. A/B artifact identity holds within each
+cycle/state. All114 native/custom assertion outcomes match and sources restore.
+The dominant reference-vector test spends94.13% of its interpreted operations
+in one large parser routine. Offline emission produces16,554,488 native bytes
+for that routine alone, establishing whole-function capacity pressure. Next
+compare explicit16/32 MiB limits while retaining the16 MiB default, then decide
+whether reached-region compilation is warranted.
+[Parser baseline](results/pgrust-parser-edits-repository-continuation-01/assessment.md).
+[Matched incremental](results/pgrust-parser-edits-incremental-history-01/assessment.md).
+[Combined compatibility](results/environment-main-final-audit-01/assessment.md).
 The actual-emitter local-value census is a separate next optimization candidate.
 The automatic tool cache now includes its selected toolchain identifier: the
 retained regression fails before the fix, and 123 runnable root tests pass after

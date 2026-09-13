@@ -10,14 +10,17 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Diagnose the10,000-function expansion limit reached by the complete pgrust
-   `gram_core` custom selection. All114 original native tests pass. The general
-   boxed FnOnce lowering fix passes88 exporter tests/profile,18 focused guest
-   test executions and78 dynamic/closure/cache/Cargo commands, and gets past the
-   prior receiver failure. No parser guest test has executed yet. Preserve the
-   complete selection and distinguish necessary bodies from conservative growth.
-   Native defaults use line tables and disable incremental compilation. Any
-   subsequent warm timing needs explicit matched incremental controls.
+1. Implement and qualify an explicit bounded JIT code-limit option, preserving
+   the16 MiB default. The publication audit for capacity and environment support
+   passes: all40 existing project edit controls preserve exact artifacts/outcomes. The
+   full114-test parser comparison is15.78% slower than native under repository
+   settings and23.03% slower with matched incremental compilation. Preserve the
+   original22-command identity failure; paired traces locate its constant split
+   in rustc with template reuse disabled. The separately revised66-command
+   comparison keeps A/B identity within each cycle/state and all native outcomes.
+   The dominant reference-vector test's missing routine needs16,554,488 native
+   bytes by itself, exceeding remaining arena space. Compare16/32 MiB on complete
+   changed-source commands before investing in reached-region compilation.
 2. Use the actual emitter to count local-value forwarding blocked by writes
    whose new guard already proves disjoint from the current frame. Reconstruct
    saved baseline code exactly before comparing a test-only alternative. Count
