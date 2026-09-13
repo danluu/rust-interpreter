@@ -1,0 +1,1 @@
+const QUALIFICATION_BAD_CONSTANT: u32 = 1 / 0;
