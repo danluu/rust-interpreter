@@ -63,7 +63,7 @@ def main():
         acquire_lock(lock,45);require_space(ROOT,12)
         assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip()
         build_path=args.build.resolve(strict=True);build=json.loads(build_path.read_text())
-        assert build['status']=='passed' and build['tests']=={'debug':417,'release':417} and build['observer_only']
+        assert build['status']=='passed' and build['tests']=={'debug':417,'release':417} and build['observer_only'] and build['observer_main_thread']
         observer=ROOT/build['observer'];assert sha(observer)==build['observer_sha256']
         build_raw=ROOT/build['raw'];build_plan=json.loads((build_raw/'plan.json').read_text())
         assert sha(build_raw/'plan.json')==build['plan_sha256'] and sha(build_raw/'records.json')==build['records_sha256']
@@ -110,14 +110,14 @@ def main():
         for item,previous in cases:
             require_space(ROOT,8);index=item['index'];profile_path=work/f'{index}-profile.json';dump_path=work/f'{index}-code';report_path=work/f'{index}-trace.json'
             assert sha(observer)==build['observer_sha256']
-            command=[str(observer),'indirect_trace::observe_saved_indirect_targets','--exact','--ignored','--nocapture','--test-threads','1']
+            command=[str(observer)]
             child,out,err=capture(command,cwd=ROOT,env=dict(env,RUST_INTERP_ENTROPY_TAPE=str(raw/f'{index}.tape'),
                 INDIRECT_ARTIFACT=str(ROOT/item['artifact']),INDIRECT_CATALOG=str(ROOT/item['catalog']),INDIRECT_TEST=item['name'],
                 INDIRECT_INSTRUCTIONS=str(item['limits']['instructions']),INDIRECT_ALLOCATIONS=str(item['limits']['allocations']),
                 INDIRECT_PROFILE=str(profile_path),INDIRECT_CODE=str(dump_path),INDIRECT_REPORT=str(report_path)),
                 receipt_path=work/'active.json',receipt=dict(index=index))
             rows.append(dict(index=index,command=command,pid=child.pid,returncode=child.returncode,stdout=out,stderr=err));write(work/'records.json',rows)
-            assert child.returncode==0 and 'test result: ok. 1 passed; 0 failed;' in out,(out+err)[-4000:]
+            assert child.returncode==0 and out=='',(out+err)[-4000:]
             report=json.loads(report_path.read_text());assert report['pid']==child.pid and report['entry']==item['function'] and report['name']==item['name']
             assert report['guest_commands']==1 and not report['performance_measurement']
             for name in ['artifact','catalog']:assert report[name+'_sha256']==item[name+'_sha256']

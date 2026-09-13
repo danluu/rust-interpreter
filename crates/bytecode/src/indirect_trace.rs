@@ -1,4 +1,4 @@
-//! Bounded, thread-local test observation after complete indirect-call validation.
+//! Bounded diagnostic observation after complete indirect-call validation.
 use super::*;
 use std::{cell::RefCell, collections::BTreeMap};
 
@@ -41,6 +41,7 @@ impl Drop for Guard {
     }
 }
 
+#[cfg(test)]
 fn fixture(pointer: u128, argument_size: usize, result_size: usize) -> Program {
     Program { version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0,
         data: vec![0;16], statics: vec![], thread_locals: vec![], functions: vec![
@@ -98,9 +99,9 @@ fn indirect_trace_is_bounded_and_scope_cleanup_preserves_execution() {
     assert!(guard.finish().rows.is_empty());
 }
 
-#[test]
-#[ignore="Requires an exact saved artifact, entry catalog, entropy tape and profile comparison"]
-fn observe_saved_indirect_targets() {
+/// One diagnostic execution, called directly on the main thread by the explicit observer binary.
+#[cfg(feature = "indirect-target-observer")]
+pub fn observe_saved_indirect_targets() {
     use serde_json::json;
     use sha2::{Digest,Sha256};
     let bytes=std::fs::read(std::env::var("INDIRECT_ARTIFACT").unwrap()).unwrap();assert!(bytes.len()<=128*1024*1024);
