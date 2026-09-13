@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "performance_measurement": false,
+  "sub_half_second_target_established": false,
+  "implementation_commit": "355f12ad83f1140625482f526e2541ac7ce92f4e",
+  "qualification": "Final debug compiler and compatibility correctness, not performance evidence. Earlier failed and intermediate runs remain distinguished below.",
+  "debug_tool_build_environment": {
+    "CARGO_INCREMENTAL": "0",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "profile": "debug, default opt-level 0"
+  },
+  "failed_attempt": {
+    "run": "demand-retention-correctness-01",
+    "real_test_functions": 6,
+    "failed_subcases": 15,
+    "cause": "The initial save-hook identity guard compared the stock provider with a separately generated closure address and rejected enabled compiles before analysis. The implementation was corrected to compare against rustc_interface::DEFAULT_QUERY_PROVIDERS.",
+    "source_provenance_limit": "The original uncommitted source contents were not retained; per-file source hashes, binary hashes, exact logs and commands were retained. This is not the final committed implementation."
+  },
+  "runs": [
+    {
+      "run": "demand-retention-correctness-01",
+      "status": "failed",
+      "source_unchanged_during_run": true,
+      "source_manifest_sha256": "997123778d81b73364b51d4073c7e279185ba07f2ce3c5757525fa1c0595b516",
+      "matches_committed_source": false,
+      "binaries": {
+        ".work/demand-retention-target/debug/rust-interp-mir-export": "a8cdb139280127bbeb799756fc6939334188d77c7e9e2df7dddecb3f8ac2e0b2",
+        ".work/demand-retention-target/debug/rust-interp-rustc-wrapper": "0191ab604dd8f836c5edd511f7696c7842b81d8a48fa1f44e2b8508b9eb1c02d"
+      },
+      "stages": [
+        {
+          "stage": 0,
+          "command": [
+            "cargo",
+            "+nightly-2026-09-08",
+            "test",
+            "--locked",
+            "--offline",
+            "--jobs",
+            "2",
+            "--package",
+            "rust-interp-mir-export",
+            "--target-dir",
+            "/Users/danluu/dev/rust-interp-demand-retention-20260913/.work/demand-retention-target"
+          ],
+          "returncode": 0,
+          "test_functions": 94,
+          "failed_subcases": 0,
+          "log_sha256": "ce5a42b5b0c2dfd33d97f5ab96e59184d5106f1c83d99c7051228193fd9da978"
+        },
+        {
+          "stage": 1,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_demand_retention_launcher.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "test_functions": 7,
+          "failed_subcases": 0,
+          "log_sha256": "98ae4c186e298f3304f856944d23aa464470f9cf31c194eb0993fb173e0f88fb"
+        },
+        {
+          "stage": 2,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_demand_retention.py",
+            "-v"
+          ],
+          "returncode": 1,
+          "test_functions": 6,
+          "failed_subcases": 15,
+          "log_sha256": "2786e15d9f4d71e4f698a7569de8ac76794c618d51467a84966ac51506526150"
+        }
+      ],
+      "test_functions": 107,
+      "receipt_sha256": "30385ef8367bfa9624758a73f18658536809a4d91c33a00aab57ee1bfeccd4e6"
+    },
+    {
+      "run": "demand-retention-correctness-02",
+      "status": "passed",
+      "source_unchanged_during_run": true,
+      "source_manifest_sha256": "c128f0ff0168cfef0af39f51a6bcc8985331470286f1f9fb13d505290711afd1",
+      "matches_committed_source": false,
+      "binaries": {
+        ".work/demand-retention-target/debug/rust-interp-mir-export": "f6d0dd555436d00922d46879b85a79a4e6a98cc66ebb4814864d03d33d1c950c",
+        ".work/demand-retention-target/debug/rust-interp-rustc-wrapper": "0191ab604dd8f836c5edd511f7696c7842b81d8a48fa1f44e2b8508b9eb1c02d"
+      },
+      "stages": [
+        {
+          "stage": 0,
+          "command": [
+            "cargo",
+            "+nightly-2026-09-08",
+            "test",
+            "--locked",
+            "--offline",
+            "--jobs",
+            "2",
+            "--package",
+            "rust-interp-mir-export",
+            "--target-dir",
+            "/Users/danluu/dev/rust-interp-demand-retention-20260913/.work/demand-retention-target"
+          ],
+          "returncode": 0,
+          "test_functions": 94,
+          "failed_subcases": 0,
+          "log_sha256": "5a4ad3c44a0e4a1c8c8b9afcc4d3080103ea58308d85b1288ab97d57fc601b29"
+        },
+        {
+          "stage": 1,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_demand_retention_launcher.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "test_functions": 7,
+          "failed_subcases": 0,
+          "log_sha256": "bb9f750d00866643394ef76a93703c713bc24b829ec91dc5aa979d1a141164be"
+        },
+        {
+          "stage": 2,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_demand_retention.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "test_functions": 6,
+          "failed_subcases": 0,
+          "log_sha256": "9e2c5d28da921b7a093a5c2e589ef01fed5ce7c61364e06a893e4917da3f2ab8"
+        }
+      ],
+      "test_functions": 107,
+      "receipt_sha256": "d1601619d6b0893721819a12c243b83d02f1054ae6ca37e4fc4eaefd328aee70"
+    },
+    {
+      "run": "demand-retention-correctness-03",
+      "status": "passed",
+      "source_unchanged_during_run": true,
+      "source_manifest_sha256": "2510237ee8f7ceb51414adfa1344fa3156a2b542719570041cae40d9b4ca45e2",
+      "matches_committed_source": true,
+      "binaries": {
+        ".work/demand-retention-target/debug/rust-interp-mir-export": "a4ab30790881c2c4c5e3c587ca751c1ef7c42a3dd018c2b663efe4cb7383ea39",
+        ".work/demand-retention-target/debug/rust-interp-rustc-wrapper": "0191ab604dd8f836c5edd511f7696c7842b81d8a48fa1f44e2b8508b9eb1c02d"
+      },
+      "stages": [
+        {
+          "stage": 0,
+          "command": [
+            "cargo",
+            "+nightly-2026-09-08",
+            "test",
+            "--locked",
+            "--offline",
+            "--jobs",
+            "2",
+            "--package",
+            "rust-interp-mir-export",
+            "--target-dir",
+            "/Users/danluu/dev/rust-interp-demand-retention-20260913/.work/demand-retention-target"
+          ],
+          "returncode": 0,
+          "test_functions": 94,
+          "failed_subcases": 0,
+          "log_sha256": "e2876ac5fc65cdff79ac2e136a36cabe268c696e526dc2416951093ff203d4ce"
+        },
+        {
+          "stage": 1,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_demand_retention_launcher.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "test_functions": 7,
+          "failed_subcases": 0,
+          "log_sha256": "12f2dd30740f9c7498447fa4004fead537862ce630a3151f3723f3456bb0f0a1"
+        },
+        {
+          "stage": 2,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_demand_retention.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "test_functions": 6,
+          "failed_subcases": 0,
+          "log_sha256": "fe7accf6e827ded7e5922d2da9980c26944249d312d5ef965726efb7322e8f95"
+        },
+        {
+          "stage": 3,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_demand_retention_cargo.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "test_functions": 1,
+          "failed_subcases": 0,
+          "log_sha256": "398dbd4a5255bc574f453df541f26d7e3c30117221ab63a72c25f90d2e865c04"
+        },
+        {
+          "stage": 4,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_borrowck_cache_launcher.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "test_functions": 9,
+          "failed_subcases": 0,
+          "log_sha256": "ddd50cfa2f51a993136ea01c4e1609e478cb70ff6d288671d040d0ff38c57575"
+        },
+        {
+          "stage": 5,
+          "command": [
+            "python3",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-p",
+            "test_borrowck_cache.py",
+            "-v"
+          ],
+          "returncode": 0,
+          "test_functions": 9,
+          "failed_subcases": 0,
+          "log_sha256": "bcff24e01d97d87e77267269ceb268e35c359c2d5c1d713a79740e9a6e57bd9d"
+        }
+      ],
+      "test_functions": 126,
+      "receipt_sha256": "93d0d86599926527f8f64b81e26ab35af4bdb74927198cffd831110d5b446b19"
+    }
+  ],
+  "serializer_retry": {
+    "report_records_including_cargo_replay": 72,
+    "distinct_successful_save_reports": 43,
+    "maximum_serialization_attempts": 1,
+    "serializer_query_jobs": 0,
+    "positive_retry_runtime_coverage": false,
+    "limitation": "All observed successful saves took one pass and started zero serializer query jobs. The repeated-pass path has pinned-source review but no positive runtime regression case."
+  },
+  "evidence": {
+    "path": "evidence.tar.gz",
+    "sha256": "604dc23945e920b59a6d921d5d175fc387a37e83afbf6845bc3bf80ad9b95b4b",
+    "bytes": 149978,
+    "files": 47,
+    "uncompressed_file_bytes": 1449281,
+    "manifest": "MANIFEST.json",
+    "manifest_sha256": "7816a5757c6abdf76303ad2a594bb60cea0d3975ae01a3b93c52a6d37672faa7",
+    "scope": "Exact supervisor receipts, available supervisor scripts, stage logs, and per-fixture command/source-state/routing JSONL; binaries and Cargo caches remain in .work."
+  },
+  "private_raw_root": ".work/demand-retention-correctness-03",
+  "final_release_evidence": "../demand-retention-release-02/summary.json"
+}
