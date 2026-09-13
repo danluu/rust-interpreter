@@ -14,14 +14,17 @@ original, valid, wrong, type-error, borrow-error and restored states have their
 expected outcomes. The new option skips repeated compiler identity discovery
 only; Cargo checking, runtime and exporter bytes remain identical. Seven driver
 checks pass after an earlier zero-test lock-admission timeout. The frozen
-three-project comparison is running pgrust, private rg-aot and Nushell,132
-changed-source commands each. Pgrust completes132 expected commands and
+three-project comparison completes all396 expected commands across pgrust,
+private rg-aot and Nushell,132 per project. Pgrust completes132 expected commands and
 passes: paired wall−5.96%, CPU−5.16%, beyond1.52% wall/1.43% CPU A/A.
 Std-MIR lookup falls from38ms to6ms; artifacts remain identical.
 Private rg-aot completes132 expected commands: wall−13.18%, CPU−11.67%.
 Its3.67% CPU A/A exceeds the3% quality bound, so that guard does not pass.
-Keep its measured improvement and failed gate explicit. Nushell remains
-mandatory and is running.
+Keep its measured improvement and failed gate explicit. Nushell changes
+wall−0.54% and CPU−0.91%; its6.56% wall A/A exceeds the4% bound. Overall
+adoption fails the declared guards. Keep the optional source experimental;
+do not retime or recalculate these decisions under a different gate.
+[Nushell result](results/toolchain-lookup-edit-nushell-01/assessment.md).
 [Private aggregate result](results/toolchain-lookup-edit-rg-aot-01/assessment.md).
 [Pgrust result](results/toolchain-lookup-edit-pgrust-01/assessment.md).
 [Qualification](results/toolchain-lookup-cargo-01/summary.json),

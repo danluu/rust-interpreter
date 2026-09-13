@@ -183,3 +183,27 @@ test; the failed receipt remains. After a later read-only lock availability
 check, only those unstarted tests ran. The frozen pgrust/rg-aot/Nushell comparison
 is active; all three cases are mandatory and no result has been inferred from
 the eliminated subprocesses.
+
+
+### Toolchain lookup comparison completed
+
+Suggestion4.3 now has396 complete changed-source commands with expected
+assertions and identical custom artifacts. Pgrust improves paired wall5.96%
+and CPU5.16%, passing its gate. Private rg-aot improves13.18% wall/11.67%
+CPU but exceeds the CPU A/A ceiling (3.67% versus3%). Nushell changes
+wall−0.54%/CPU−0.91%, with6.56% wall A/A exceeding4%. Preserve all pairs and
+the overall failed adoption decision; no retiming is queued. The discovery
+cache removes about32ms per command without changing strict checking, but
+it has not established a broad large-project gain.
+
+The next runtime implementation specializes one validated indirect target per
+call site, with a complete handle guard and bounded code/data publication.
+It reuses the existing checked call protocol; type and borrow checks remain
+complete before execution. Qualify debug/release, real assertions and exact
+profiles before timing. Future guards will account for observed A/A as an
+explicit regression margin, frozen before any new timing; this does not
+relabel earlier results.
+
+[Lookup pgrust](../results/toolchain-lookup-edit-pgrust-01/assessment.md),
+[private aggregate](../results/toolchain-lookup-edit-rg-aot-01/assessment.md),
+[Nushell](../results/toolchain-lookup-edit-nushell-01/assessment.md).
