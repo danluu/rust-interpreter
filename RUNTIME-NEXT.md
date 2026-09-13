@@ -4,23 +4,23 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: finish the guarded-range full comparison under controller03.
-The154-command token primary passes: wall−2.55%, CPU−1.43%, observed A/A
-2.275%/1.730%. Its incremental wall margin is narrow. Original tests, wrong-edit
-controls, bytecode/catalog identity and restoration pass. Folded matching is
-next, then pgrust, private rg-aot and Nushell. Every guard and the final serialized
-audit remain mandatory. The two earlier controllers executed zero benchmark
-commands; their admission receipts remain intact. Do not repeat this primary.
+Current action: qualify the complete guarded-range/main-compiler composition.
+All726 comparison commands and five gates pass. The primary improves wall2.55%
+and CPU1.43%; its2.275% wall A/A leaves a narrow incremental pass. Nushell's
+wall margin1.04417 passes1.05, with no incremental gain established there.
+The final serialized audit verifies8,999 case inputs and every restored source.
+No completed case was repeated after the retained admission failures.
 
-The candidate passes478 Rust tests/profile,222 real qualification commands and
-159 full-harness checks. The original profile-validator failure was repaired
-offline with zero repeated guest commands and byte-identical inactive folded
-code. Recheck disk at each admission; the largest guard still needs about47GiB.
-The read-only retirement inventory identifies65 already-processed cache roots
-from seven explicit receipts; absent roots remain unknown. Preserve other
-sessions and the paused goal.
-[Full primary](results/guarded-ranges-edit-token-01/assessment.md),
-[cleanup inventory](results/cache-retirement-ledger-01/assessment.md).
+Preserve main's compiler observer/query-reuse and validator fixes. Reuse exact
+component binaries and source-bound Rust/profile proofs; run263 fresh strict
+cache/Cargo/project correctness commands after the adapted harness qualifies.
+Do not repeat the726 timing campaign. Merge source and usage/results to main
+only after complete-tool checks pass, then select a measured follow-up.
+The actual-emitter local-value census and a broader original pgrust SQL-parser
+support probe are candidates for next work. Keep conservative disk admission,
+two Cargo workers, the shared lock, other sessions and the paused goal.
+[Complete comparison](results/guarded-ranges-admission-resume-01/assessment.md),
+[integration plan](benchmarks/experiments/guarded-ranges-main/PLAN.md).
 
 The scalar-Copy full comparison, Copy/budget screen and checked-address screen
 remain failed adoption attempts. Smaller emitted code does not establish a

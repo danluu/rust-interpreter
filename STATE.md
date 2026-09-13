@@ -45,8 +45,11 @@ assertions, wrong edits, restoration and artifact identity checks pass.
 The full harness passes159 checks. After two zero-command admission failures,
 controller03 completes the154-command primary: wall−2.55%, CPU−1.43%, with
 2.275%/1.730% A/A. It narrowly passes the incremental wall gate; all original
-assertions, artifacts and source restoration pass. The remaining four cases
-and final serialized audit are mandatory before adoption.
+assertions, artifacts and source restoration pass. All four remaining guards
+now pass; the Nushell-only continuation adds132 commands to the retained594
+and verifies all8,999 case inputs. Complete-tool integration is next, preserving
+the exact measured VM and the newer qualified main compiler.
+[Complete decision](results/guarded-ranges-admission-resume-01/assessment.md).
 [Full primary](results/guarded-ranges-edit-token-01/assessment.md).
 [Complete qualification](results/guarded-ranges-validation-repair-01/assessment.md),
 [screen and limits](results/guarded-ranges-screen-token-01/assessment.md).
