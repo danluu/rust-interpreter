@@ -5,32 +5,41 @@ The task is a general custom Rust interpreter/direct AArch64 JIT, guided by
 real changed-source build/test commands across small and large projects.
 Private repository: `danluu/rust-interpreter`. Qualified changes go to main.
 
-The guarded-range runtime is adopted on main (`4dcc889`). It validates one bounded
-related-pointer range at native-region entry, reuses its translated base, and
-falls back to the original ordered path if the stronger guard fails. Rust type
-and borrow checking still finish before guest execution. No external guest
-backend, project-specific shim or lazy unchecked execution is introduced.
+The guarded local-value/scalar-Copy runtime is adopted with the current compiler.
+It preserves proven frame-disjoint facts across writes and folds existing local
+scalar-copy addresses, retaining ordered fallback and memory fault semantics.
+Rust type and borrow checking still finish before guest execution. The custom
+interpreter/direct AArch64 JIT remains the guest backend; the16 MiB default stays.
 
-All 726 performance commands and five gates pass. Token improves wall 2.55%
-and CPU 1.43% against the prior custom runtime; the wall pass is narrow against
-2.275% observed A/A. Its command remains 1.773 times ordinary native. Folded
-matching, pgrust hashfn, private rg-aot and Nushell type-relations pass regression
-guards without established incremental gains. The pgrust guard covers four
-hashfn tests and the Nushell guard covers 14 tests. Do not generalize those
-selections into complete database or shell coverage.
+All726 changed-source performance commands and five gates pass. The primary
+improves4.73% wall/3.83% CPU against the previous custom runtime and remains1.641
+times ordinary native. Folded matching, pgrust hashfn, private rg-aot and Nushell
+type-relations pass regression guards. Nushell's incremental difference stays
+inside variation. These selections cover four pgrust hash tests and14 Nushell
+tests; they do not establish complete database/shell coverage.
+[Complete comparison](results/guarded-local-facts-full-continuation-01/assessment.md).
 
-[Complete comparison](results/guarded-ranges-admission-resume-01/assessment.md).
-All sources restore, 8,999 case inputs verify, and no completed case was repeated.
-The earlier lock/disk admissions and offline profile-validator repair remain
-recorded. Historical failed candidates keep their original decisions.
+Qualified complete tool `35df4077` retains exact measured VM `f0e5f2ea` and uses
+new exporter `cf4b3499`/wrapper `45bca4f2`. It passes513 workspace Rust tests per
+profile,130 internal remapping controls,119 strict/cache/Cargo commands,40 exact
+project histories and all114 original parser tests. The final audit verifies
+9,639 unique frozen inputs and579 Git source bindings. The publication merge
+also passes334 Python contracts (16 declared skips) and preserves the other
+session's owned-compiler loader improvement. Timing ratios stay bound to the
+original measured compiler binaries; these integration checks establish
+compatibility without repeating the timing campaign.
+[Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-The complete tool `c743a75d` preserves exact VM `4e9c9af6`, current exporter
-`cccdc909` and wrapper `10fb7656`. Source-bound Rust/profile proofs are reused;
-132 harness checks and 263 fresh strict cache/Cargo/project commands pass.
-Every real-project artifact, catalog and assertion outcome matches the retained
-history. Main's compiler observers/query reuse and validator fixes are preserved.
-Borrow-check reuse remains off by default; execution options remain explicit.
-[Integration](results/guarded-ranges-main-qualification-01/assessment.md).
+The local-value-transfer observer reconstructs all three current code/maps exactly
+but saves only8 /8 /0 static bytes and1,792 /8 /0 weighted forwarded accesses.
+Park it without timing; its test-only implementation remains experimental.
+Two new owned native-PC captures now identify native Call/Return code at26.23%
+/34.68% of attributed generated samples, plus8.18% /12.51% register flushing.
+Next partition the actual protocol emission and label those already captured
+PCs; preserve all guards before choosing a mechanism. These partial perturbed
+samples are diagnostic, and native calls are not VM exits.
+[Current samples](results/adopted-runtime-sampling-01/assessment.md),
+[eviction-loss result](results/local-value-transfer-census-01/assessment.md).
 
 The general boxed `FnOnce` receiver fix is qualified:88 exporter tests per
 profile,18 focused guest tests across interpreter/JIT modes and78 existing

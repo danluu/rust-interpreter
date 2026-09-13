@@ -22,6 +22,8 @@ impl Assembler<'_> {
     }
 
     pub(super) fn invalidate_local_memory(&mut self, offset: Option<usize>, size: usize) {
+        #[cfg(test)]
+        self.scratch.invalidate(offset, size);
         if size == 0 { return; }
         let Some(offset) = offset else { self.local_values.clear(); return; };
         let end = offset.checked_add(size).expect("proved local extent");
@@ -53,9 +55,77 @@ impl Assembler<'_> {
         self.cache_recent = recent;
         self.mask(9, (size * 8) as u8);
         #[cfg(test)]
-        self.local_forwarding.push((self.current_pc, _kind));
+        self.observe_forwarded_fact(fact, _kind);
     }
 
+    #[cfg(test)]
+    pub(super) fn observe_forwarded_fact(&mut self, fact: Fact, opcode: &'static str) {
+        self.local_forwarding.push((self.current_pc, opcode));
+        let kind = match fact { Fact::Imm(_) => "Imm", Fact::Local(_) => "Local",
+            Fact::Cached {..} => "Cached", Fact::Physical {..} => "Physical" };
+        self.local_fact_events.push((self.current_pc, opcode, kind));
+    }
+
+    pub(super) fn preserve_guarded_local_write(&mut self, local: Option<usize>, reg: Reg, size: usize) -> bool {
+        #[cfg(test)]
+        if !self.observe_guarded_local_retention { return false; }
+        if local.is_some() || size == 0 { return false; }
+        // Immutable query: no synthetic live-in use may be added after the write.
+        let proven = self.guarded_range.as_ref().is_some_and(|plan| plan.frame_disjoint
+            && plan.displacement(self.current_pc, reg, size, true).is_some());
+        #[cfg(test)]
+        if proven {
+            self.retained_local_writes.push((self.current_pc, reg, size, self.local_values.len()));
+        }
+        proven
+    }
+
+    fn scalar_local_memory_immediate(&self, reg: Reg, size: usize) -> Option<u32> {
+        if [1, 2, 4, 8, 16].contains(&size) {
+            if let Some(offset) = self.local_range(reg, size) {
+                let scale = size.min(8);
+                let immediate = offset / scale;
+                if offset % scale == 0 && immediate < 4096 - usize::from(size == 16) {
+                    return Some(immediate as u32);
+                }
+            }
+        }
+        None
+    }
+    pub(super) fn scalar_copy(&mut self, dst: Reg, src: Reg, size: usize, forwarded: Option<Fact>) {
+        debug_assert!([1, 2, 4, 8, 16].contains(&size));
+        if let Some(value) = forwarded {
+            // Preserve destination validation before materializing the captured
+            // value, including the original cache replacement order.
+            let immediate = self.memory_address(12, dst, size, true);
+            self.forward_local_value(value, size, "Copy");
+            self.store_mem_at(9, 31, 12, size, immediate);
+            return;
+        }
+        let high = if size <= 8 { 31 } else { 10 };
+        let (source, destination_base, destination) = match (
+            self.scalar_local_memory_immediate(src, size), self.scalar_local_memory_immediate(dst, size),
+        ) {
+            (Some(source), Some(destination)) => {
+                // Both complete ranges are already proven in the same active
+                // frame. Share its host base; only the memory displacements
+                // differ. Neither load overwrites this base.
+                self.three(0x8b000000, 11, 2, 1);
+                (source, 11, destination)
+            }
+            _ => {
+                // Preserve source-before-destination checks and validate both
+                // entire ranges before touching any bytes.
+                let source = self.memory_address(11, src, size, false);
+                let destination = self.memory_address(12, dst, size, true);
+                (source, 12, destination)
+            }
+        };
+        // Even a sixteen-byte overlapping copy loads both words before its
+        // first store. Narrow copies never consume or define the high scratch.
+        self.load_mem_at(9, high, 11, size, source);
+        self.store_mem_at(9, high, destination_base, size, destination);
+    }
     pub(super) fn review_local_memory_effect(&mut self, op: &Op) {
         // Store/Copy and fused local_fill update exact ranges in their paths.
         // Other effects are conservative, even if currently interpreted. A new
@@ -69,7 +139,11 @@ impl Assembler<'_> {
             | Op::Allocate {..} | Op::Deallocate {..} | Op::Reallocate {..} | Op::RandomBytes {..}
             | Op::CpuFeatureQuery {..} | Op::EnvironmentGet {..} | Op::CAllocate {..} | Op::CDeallocate {..}
             | Op::CReallocate {..} | Op::CAlignedAllocate {..} | Op::RegisterTlsDestructor {..}
-            | Op::ResetThreadLocals => self.local_values.clear(),
+            | Op::ResetThreadLocals => {
+                self.local_values.clear();
+                #[cfg(test)]
+                self.scratch.invalidate(None, 1);
+            },
         }
     }
 }

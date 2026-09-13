@@ -1,29 +1,37 @@
 # Next work
 
-The guarded-runtime campaign and complete-tool correctness qualification pass.
-The exact qualified runtime/helper sources are published on main (`4dcc889`),
-preserving the newer compiler work. Continue manual work with the goal paused.
-[Integration and identities](results/guarded-ranges-main-qualification-01/assessment.md).
+The guarded local-value/scalar-Copy composition and current compiler are adopted.
+All726 performance commands and five gates pass; token improves4.73% wall/3.83%
+CPU and remains1.641 times ordinary native. The exact measured VM is preserved
+in tool35df4077. Current compiler qualification passes513 Rust tests/profile,
+130 internal remapping controls,119 strict/cache/Cargo commands,40 exact project
+histories and all114 original parser tests. The merged launcher passes334 Python
+contracts (16 declared skips). No timing is repeated; preserve the16 MiB default,
+all retained admissions and the paused goal state.
+[Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-The selected-toolchain cache regression is fixed and passes 123 runnable root
-checks, with 10 existing skips. Archived backend crates are not custom-tool
-dependencies and remain excluded; explicit immutable tool keys remain usable.
-[Cache fix](results/toolchain-cache-after-01/assessment.md).
+1. Implement successor-only register flushing for ordinary JIT regions, with
+   complete CFG liveness. Existing facts remain available for terminal branch
+   selection; values live on any successor must still spill. Keep native call
+   trees and unavailable liveness conservative. Exact flush attribution locates
+   120/1,651 and165/1,439 generated samples in dead-after-exit values, mainly
+   terminal operands. Qualify wide branches, pressure, backedges, limits and VM
+   fallback, then use the40-command primary-first screen. This is not a speedup
+   result. Scratch-value forwarding remains parked as a possible component.
+   [Flush census and proof obligations](results/consumed-flush-values-census-01/assessment.md).
 
-1. Integrate the guarded local-value composition with current main compiler
-   sources. All five gates and726 commands now pass:594 retained plus132 new
-   Nushell commands, with zero repeats. Token improves4.73% wall/3.83% CPU and
-   remains1.641 times ordinary native. Nushell is effectively unchanged against
-   the prior custom runtime and passes its frozen guard. All9,005 final inputs
-   verify and all114 original parser tests pass. Keep the16 MiB code default.
-   Reuse the exact measured VM only after complete source identity checks;
-   qualify newer exporter/wrapper/launcher code, original/wrong/restored project
-   histories and the full parser before publication. No second timing campaign.
-   Preserve the earlier admissions and verified cache-retirement evidence.
-   The runtime is qualified for integration; the saved goal stays paused.
-   [Primary](results/guarded-local-facts-edit-token-01/assessment.md),
-   [Complete result](results/guarded-local-facts-full-continuation-01/assessment.md),
-   [Original admission](results/guarded-local-facts-full-admission-01/summary.json).
+The native boundary memory bundle is parked after its40-command primary screen:
+wall−0.66% versus3.30% A/A, CPU−2.18% versus2.79% A/A. All519 workspace checks per
+profile,119 strict controls and three exact workload profiles pass, but no useful
+complete-command gain is established. Its full histories remain unstarted.
+The adopted VMf0e5f2ea remains the baseline; do not retime this bundle unchanged.
+[Screen and closure](results/native-boundary-memory-screen-token-01/assessment.md).
+
+The local-value-transfer hypothesis is parked. Its observer passes408 bytecode
+checks/profile and reconstructs all three baseline maps exactly, but saves only
+8 /8 /0 bytes and1,792 /8 /0 weighted forwarded accesses. Large metadata-transfer
+counts are not avoided loads. No timing screen or production activation follows.
+[Negative census](results/local-value-transfer-census-01/assessment.md).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.

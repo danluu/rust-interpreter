@@ -195,3 +195,38 @@ explicit bounded capacity option before a larger reached-region redesign; retain
 the16 MiB default and require real changed-source evidence for a speedup.
 [Combined qualification](../results/environment-main-final-audit-01/assessment.md),
 [emitter diagnosis](../results/parser-offline-emission-01/assessment.md).
+
+Current follow-up: the guarded-local-facts composition is adopted with all five
+performance gates and current compiler qualification complete. Suggestions2.1–2.4
+now have exact finer native protocol attribution, using the two already saved
+samples and no duplicate guest run. All433/499 Call/Return samples reconcile;
+frame clearing is the largest protocol group, and the exhaustive test spends89
+samples in actual ABI byte-copy loops. Prioritize a bounded wider-clear/copy and
+paired-register composition, retaining all checks and initialization. The old
+argument-only/whole-frame elision and width-packing proposals remain parked.
+Keep the existing1.2/1.3 primary-first screen and mandatory adoption guards.
+[Protocol evidence](../results/native-protocol-census-01/assessment.md).
+
+The resulting native-boundary memory bundle fails its40-command primary screen:
+wall−0.66% within3.30% A/A, despite complete correctness qualification. Follow
+suggestions1.2/1.3: park the bundle and leave every full comparison unstarted.
+Continue with actual-emitter local-memory traffic evidence before another
+mechanism; no isolated repeat of wider copying, clearing or register pairing.
+[Closed screen](../results/native-boundary-memory-screen-token-01/assessment.md).
+
+The scratch-value census reconstructs both saved unprofiled captures exactly,
+with406 bytecode checks/profile. It finds substantial raw availability, but the
+whole affected Load spans cover only3.03%/1.32% of saved generated samples and
+include required stores. Apply suggestion1.4: keep it as a possible component,
+without an isolated timing screen. Inspect dead final-operation flushes next,
+using exact native spans and CFG liveness under2.1/2.4. No runtime is adopted.
+[Scratch evidence](../results/scratch-local-values-census-01/assessment.md).
+
+The exact flush census redirects the proposal: consumed last uses cover only8/8
+samples, while terminal branch operands dead on all successors cover112/157.
+The branch emitter can still read its retained facts after flushing. Implement
+successor-only flushing for ordinary regions, keeping tree-call tails and missing
+liveness conservative, then qualify and screen under1.2/1.3. This uses2.4 actual
+emission evidence without a new sample or premature arena redesign. Scratch
+forwarding stays parked; the larger mechanism has a smaller implementation.
+[Flush evidence](../results/consumed-flush-values-census-01/assessment.md).

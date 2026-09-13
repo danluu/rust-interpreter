@@ -54,12 +54,39 @@ def tree_stamps(directory):
     require(directory.resolve(strict=True) == directory and directory.is_dir(),
             'compiler installation must be an ordinary directory')
     result = {}
-    for path in [directory, *sorted(directory.rglob('*'))]:
-        require(not path.is_symlink(), 'compiler installation contains a symlink: ' + str(path))
-        stat = path.stat()
-        require(path.is_file() or path.is_dir(), 'unsupported compiler installation entry')
-        result[str(path.relative_to(directory))] = [stat.st_dev, stat.st_ino, stat.st_mode,
-            stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns]
+
+    def record(relative, info):
+        if stat.S_ISLNK(info.st_mode):
+            raise RuntimeError('compiler installation contains a symlink: ' + str(directory / relative))
+        require(stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode),
+                'unsupported compiler installation entry')
+        result[relative] = [info.st_dev, info.st_ino, info.st_mode,
+            info.st_size, info.st_mtime_ns, info.st_ctime_ns]
+
+    record('.', directory.lstat())
+    directories = [(directory, '.')]
+    pending = [(directory, '')]
+    while pending:
+        parent, prefix = pending.pop()
+        with os.scandir(parent) as entries:
+            for entry in entries:
+                # One no-follow stat supplies both the type check and every
+                # identity field. Enumerate every directory on every call;
+                # an unchanged parent stamp never substitutes for child checks.
+                info = entry.stat(follow_symlinks=False)
+                relative = prefix + entry.name
+                record(relative, info)
+                if stat.S_ISDIR(info.st_mode):
+                    pending.append((entry.path, relative + '/'))
+                    directories.append((entry.path, relative))
+    # A directory can be replaced between its entry stat and scandir. Recheck
+    # the no-follow directory identities after traversal, including the root,
+    # so a path redirected to the same descendants cannot reuse stale stamps.
+    for path, relative in directories:
+        info = os.stat(path, follow_symlinks=False)
+        if [info.st_dev, info.st_ino, info.st_mode, info.st_size,
+                info.st_mtime_ns, info.st_ctime_ns] != result[relative]:
+            raise RuntimeError('compiler installation changed during inspection: ' + str(path))
     return result
 
 

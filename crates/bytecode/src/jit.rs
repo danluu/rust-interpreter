@@ -27,6 +27,10 @@ mod guarded_ranges;
 #[cfg(test)]
 mod limit_tests;
 #[cfg(test)]
+mod scratch_locals;
+#[cfg(test)]
+mod flush_census;
+#[cfg(test)]
 mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
@@ -290,6 +294,14 @@ pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 struct CompiledFunction<'a> {
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
+    #[cfg(test)]
+    local_fact_events: Vec<(usize, &'static str, &'static str)>,
+    #[cfg(test)]
+    scratch_hits: Vec<scratch_locals::Hit>,
+    #[cfg(test)]
+    flush_spans: Vec<flush_census::Span>,
+    #[cfg(test)]
+    retained_local_writes: Vec<(usize, Reg, usize, usize)>,
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
     resumes: Vec<Option<usize>>,
@@ -324,6 +336,16 @@ pub(crate) struct Jit<'a> {
     resumable: Option<resumable::Entries>,
     #[cfg(test)]
     disable_call_slot_hints: bool,
+    #[cfg(test)]
+    observe_guarded_local_retention: bool,
+    #[cfg(test)]
+    observe_static_local_facts: bool,
+    #[cfg(test)]
+    observe_scalar_copy: bool,
+    #[cfg(test)]
+    observe_scratch_locals: bool,
+    #[cfg(test)]
+    observe_flush: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -352,6 +374,16 @@ impl<'a> Jit<'a> {
             assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
+            #[cfg(test)]
+            observe_guarded_local_retention: true,
+            #[cfg(test)]
+            observe_static_local_facts: true,
+            #[cfg(test)]
+            observe_scalar_copy: true,
+            #[cfg(test)]
+            observe_scratch_locals: false,
+            #[cfg(test)]
+            observe_flush: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -447,6 +479,12 @@ impl<'a> Jit<'a> {
         let mut words = vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
+        #[cfg(test)]
+        let (mut local_fact_events, mut retained_local_writes) = (vec![], vec![]);
+        #[cfg(test)]
+        let mut scratch_hits = vec![];
+        #[cfg(test)]
+        let mut flush_spans = vec![];
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
@@ -498,6 +536,16 @@ impl<'a> Jit<'a> {
             if pc - start >= if resumable { 1 } else { 3 } {
                 let offset = words.len() * 4;
                 let mut a = Assembler {
+                    #[cfg(test)]
+                    observe_guarded_local_retention: self.observe_guarded_local_retention,
+                    #[cfg(test)]
+                    observe_static_local_facts: self.observe_static_local_facts,
+                    #[cfg(test)]
+                    observe_scalar_copy: self.observe_scalar_copy,
+                    #[cfg(test)]
+                    scratch: scratch_locals::State::new(self.observe_scratch_locals),
+                    #[cfg(test)]
+                    observe_flush: self.observe_flush,
                     heap: self.uses_heap,
                     reads: &reads,
                     frame_size: f.frame_size,
@@ -568,6 +616,8 @@ impl<'a> Jit<'a> {
                     }
                     span!(Operation, Some(start + index));
                 }
+                #[cfg(test)]
+                { a.flush_tail_consumed = terminal.is_none(); }
                 a.flush_facts(start, pc);
                 span!(Flush, None);
                 a.exit(terminal, pc)?;
@@ -617,7 +667,17 @@ impl<'a> Jit<'a> {
                     return Ok(None);
                 }
                 #[cfg(test)]
-                local_forwarding.extend(a.local_forwarding);
+                {
+                    local_forwarding.extend(a.local_forwarding);
+                    local_fact_events.extend(a.local_fact_events);
+                    scratch_hits.extend(a.scratch.hits);
+                    for mut span in a.flush_spans {
+                        span.offset += words.len() * 4;
+                        span.end += words.len() * 4;
+                        flush_spans.push(span);
+                    }
+                    retained_local_writes.extend(a.retained_local_writes);
+                }
                 words.extend(a.words);
                 entries[start] = Some(Block { offset, end: pc });
                 operations += pc - start;
@@ -663,7 +723,11 @@ impl<'a> Jit<'a> {
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
-            #[cfg(test)] local_forwarding }))
+            #[cfg(test)] local_forwarding,
+            #[cfg(test)] local_fact_events,
+            #[cfg(test)] scratch_hits,
+            #[cfg(test)] flush_spans,
+            #[cfg(test)] retained_local_writes }))
     }
     /// Execute a region and any linked successors in the same guest function.
     ///
@@ -933,8 +997,14 @@ enum Fact {
     Physical { lo: u32 },
 }
 
-#[derive(Default)]
+#[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
+    #[cfg(test)]
+    observe_guarded_local_retention: bool,
+    #[cfg(test)]
+    observe_static_local_facts: bool,
+    #[cfg(test)]
+    observe_scalar_copy: bool,
     guarded_range: Option<range_groups::Plan>,
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
@@ -942,6 +1012,20 @@ struct Assembler<'a> {
     local_values: Vec<local_memory::Value>,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
+    #[cfg(test)]
+    local_fact_events: Vec<(usize, &'static str, &'static str)>,
+    #[cfg(test)]
+    retained_local_writes: Vec<(usize, Reg, usize, usize)>,
+    #[cfg(test)]
+    protocol_spans: Vec<resumable::ProtocolSpan>,
+    #[cfg(test)]
+    scratch: scratch_locals::State,
+    #[cfg(test)]
+    observe_flush: bool,
+    #[cfg(test)]
+    flush_tail_consumed: bool,
+    #[cfg(test)]
+    flush_spans: Vec<flush_census::Span>,
     words: Vec<u32>,
     links: Vec<(usize, usize)>,
     failures: Vec<(usize, Failure)>,
@@ -960,6 +1044,45 @@ struct Assembler<'a> {
     region_start: usize,
     region_end: usize,
     current_pc: usize,
+}
+
+#[cfg(test)]
+impl Default for Assembler<'_> {
+    fn default() -> Self {
+        Self {
+            observe_guarded_local_retention: true,
+            observe_static_local_facts: true,
+            observe_scalar_copy: true,
+            guarded_range: Default::default(),
+            values: Default::default(),
+            tree_caller_is_region: Default::default(),
+            resumable: Default::default(),
+            local_values: Default::default(),
+            local_forwarding: Default::default(),
+            local_fact_events: Default::default(),
+            retained_local_writes: Default::default(),
+            protocol_spans: Default::default(),
+            scratch: Default::default(),
+            observe_flush: false,
+            flush_tail_consumed: false,
+            flush_spans: vec![],
+            words: Default::default(),
+            links: Default::default(),
+            failures: Default::default(),
+            assertions: Default::default(),
+            heap: Default::default(),
+            frame_size: Default::default(),
+            reads: Default::default(),
+            facts: Default::default(),
+            defined: Default::default(),
+            live_in: Default::default(),
+            cached: Default::default(),
+            cache_recent: Default::default(),
+            region_start: Default::default(),
+            region_end: Default::default(),
+            current_pc: Default::default(),
+        }
+    }
 }
 impl Assembler<'_> {
     fn assertion(&mut self, value: Reg, expected: bool, code: u64) {
@@ -1045,6 +1168,8 @@ impl Assembler<'_> {
         }
     }
     fn emit(&mut self, word: u32) {
+        #[cfg(test)]
+        self.scratch.observe_word(word);
         self.words.push(word);
     }
     fn imm(&mut self, rd: u32, value: u64) {
@@ -1389,9 +1514,13 @@ impl Assembler<'_> {
                 .map(|_| (reg, fact))
         }).collect();
         for (reg, fact) in live {
+            #[cfg(test)]
+            let offset = self.words.len() * 4;
             self.materialize(9, fact, false);
             self.materialize(10, fact, true);
             self.spill(reg, 9, 10);
+            #[cfg(test)]
+            if self.observe_flush { self.observe_flush_fact(start, end, reg, fact, offset); }
         }
     }
     fn address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) {
@@ -1748,7 +1877,32 @@ impl Assembler<'_> {
             }
             Op::Load { dst, address, size } => {
                 let local = self.local_range(address, size as usize);
+                #[cfg(test)]
+                {
+                    let forwarded = self.local_value(local, size as usize).is_some();
+                    self.scratch.load(self.current_pc, local, size as usize, forwarded);
+                }
                 if let Some((_, value)) = self.local_value(local, size as usize) {
+                    #[cfg(test)]
+                    let preserve_static = self.observe_static_local_facts;
+                    #[cfg(not(test))]
+                    let preserve_static = true;
+                    if preserve_static {
+                        // Follow the existing constant-definition contract. Only
+                        // self-contained facts can be copied without a new owner.
+                        let exact = match value {
+                            Fact::Imm(v) => Some(Fact::Imm(v & ((1u128 << (size as u32 * 8))-1))),
+                            Fact::Local(offset) if size == 8 => Some(Fact::Local(offset)),
+                            _ => None,
+                        };
+                        if let Some(exact) = exact {
+                            #[cfg(test)]
+                            self.observe_forwarded_fact(value, "Load");
+                            self.remember(dst, exact);
+                            self.remember_local_memory(local, size as usize, dst);
+                            return;
+                        }
+                    }
                     self.forward_local_value(value, size as usize, "Load");
                 } else {
                     let immediate = self.memory_address(11, address, size as usize, false);
@@ -1757,6 +1911,8 @@ impl Assembler<'_> {
                 }
                 self.put(dst, 9, if size <= 8 { 31 } else { 10 });
                 self.remember_local_memory(local, size as usize, dst);
+                #[cfg(test)]
+                self.scratch.capture(self.current_pc, local, size as usize, "Load");
             }
             Op::Store { address, src, size } => {
                 let local = self.local_range(address, size as usize);
@@ -1764,8 +1920,11 @@ impl Assembler<'_> {
                 self.get(9, src, false);
                 if size > 8 { self.get(10, src, true); }
                 self.store_mem_at(9, 10, 11, size as usize, immediate);
-                self.invalidate_local_memory(local, size as usize);
+                let retain = self.preserve_guarded_local_write(local, address, size as usize);
+                if !retain { self.invalidate_local_memory(local, size as usize); }
                 self.remember_local_memory(local, size as usize, src);
+                #[cfg(test)]
+                self.scratch.capture(self.current_pc, local, size as usize, "Store");
             }
             Op::CompareBytes { dst, left, right, size } => {
                 self.compare_bytes(dst, left, right, size);
@@ -1775,6 +1934,22 @@ impl Assembler<'_> {
                 let source_local = self.local_range(src, size);
                 let destination_local = self.local_range(dst, size);
                 let forwarded = self.local_value(source_local, size);
+                #[cfg(test)]
+                let scalar_copy = self.observe_scalar_copy;
+                #[cfg(not(test))]
+                let scalar_copy = true;
+                if scalar_copy && [1, 2, 4, 8, 16].contains(&size) {
+                    self.scalar_copy(dst, src, size, forwarded.map(|(_, value)| value));
+                    if !self.preserve_guarded_local_write(destination_local, dst, size) {
+                        self.invalidate_local_memory(destination_local, size);
+                    }
+                    if let Some((source, _)) = forwarded {
+                        self.remember_local_memory(destination_local, size, source);
+                    }
+                    #[cfg(test)]
+                    self.scratch.capture(self.current_pc, destination_local, size, "Copy");
+                    return;
+                }
                 if forwarded.is_none() { self.address(11, src, size, false); }
                 self.address(12, dst, size, true);
                 // Read all bytes before writing so even overlapping copies
@@ -1815,7 +1990,8 @@ impl Assembler<'_> {
                         self.store_mem(9, 10, 12, tail);
                     }
                 }
-                self.invalidate_local_memory(destination_local, size);
+                let retain = self.preserve_guarded_local_write(destination_local, dst, size);
+                if !retain { self.invalidate_local_memory(destination_local, size); }
                 if let Some((source, _)) = forwarded {
                     self.remember_local_memory(destination_local, size, source);
                 }

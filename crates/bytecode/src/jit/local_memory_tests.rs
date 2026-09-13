@@ -62,6 +62,34 @@ fn check(p: &Program, args: &[u128], value: Option<u128>, max: u64) {
 fn low(value:u128,size:usize)->u128 {if size==16 {value} else {value & ((1u128<<(size*8))-1)}}
 
 #[test]
+fn forwarded_immediates_preserve_exact_masks_with_aliased_destinations() {
+    for size in [1,2,4,8] { for destination in [0,1,2] {
+        let mut code=vec![Op::Local {dst:0,offset:128},Op::Imm {dst:1,value:WIDE},
+            Op::Store {address:0,src:1,size},Op::Load {dst:destination,address:0,size},
+            Op::Imm {dst:4,value:1},Op::Binary {dst:5,overflow:6,op:Binary::Add,
+                a:destination,b:4,bits:128,signed:false}];
+        output(&mut code,5);
+        check(&program(code,31,0),&[],Some(low(WIDE,size as usize)+1),12);
+    }}
+}
+
+#[test]
+fn forwarded_local_pointer_facts_require_full_width_and_preserve_later_writes() {
+    for size in [1,2,4,8] { for overwrite in [false,true] {
+        let mut code=vec![Op::Local {dst:0,offset:128},Op::Local {dst:1,offset:200},
+            Op::Imm {dst:2,value:41},Op::Store {address:1,src:2,size:8},
+            Op::Store {address:0,src:1,size},Op::Load {dst:3,address:0,size}];
+        if overwrite { code.extend([Op::Imm {dst:2,value:73},Op::Store {address:1,src:2,size:8}]); }
+        if size == 8 { code.push(Op::Load {dst:4,address:3,size:8});output(&mut code,4); }
+        else { output(&mut code,3); }
+        let p=program(code,31,0);
+        let value=execute_with_engine(&p,&[],Limits::default(),Engine::Interpreter).unwrap().value;
+        if size==8 { assert_eq!(value,if overwrite {73} else {41}); }
+        check(&p,&[],Some(value),16);
+    }}
+}
+
+#[test]
 fn local_scalar_roundtrips_truncate_and_zero_extend_all_widths() {
     for size in 0..=16 { for copied in [false,true] { for value in [0,WIDE,u128::MAX] {
         let mut code=vec![Op::Local {dst:0,offset:16},Op::Load {dst:1,address:0,size:16},
@@ -99,21 +127,29 @@ fn repeated_local_loads_and_register_address_aliases_keep_old_values() {
 
 #[test]
 fn partial_and_unknown_alias_writes_invalidate_the_right_ranges() {
-    for unknown in [false,true] { for delta in [0,1,3,7,8,15] { for size in [1,2,4,8,16] {
+    for address_kind in ["local","forwarded","opaque"] { for delta in [0,1,3,7,8,15] { for size in [1,2,4,8,16] {
         let mut bytes=[0u8;40];bytes[..8].copy_from_slice(&(WIDE as u64).to_le_bytes());
         bytes[delta..delta+size].copy_from_slice(&(!WIDE).to_le_bytes()[..size]);
         let expected=u64::from_le_bytes(bytes[..8].try_into().unwrap()) as u128;
         let mut code=vec![Op::Local {dst:0,offset:128},Op::Imm {dst:1,value:WIDE},Op::Store {address:0,src:1,size:8},
             Op::Local {dst:2,offset:128+delta},Op::Imm {dst:3,value:!WIDE}];
-        let address=if unknown {
-            code.extend([Op::Local {dst:4,offset:112},Op::Store {address:4,src:2,size:8},Op::Load {dst:5,address:4,size:8}]);5
-        } else {2};
+        let address=match address_kind {
+            "forwarded" => {code.extend([Op::Local {dst:4,offset:112},Op::Store {address:4,src:2,size:8},Op::Load {dst:5,address:4,size:8}]);5},
+            "opaque" => {code.extend([Op::Local {dst:4,offset:16},Op::Load {dst:5,address:4,size:8}]);5},
+            _ => 2,
+        };
         code.push(Op::Store {address,src:3,size:size as u8});
         let load=code.len();code.push(Op::Load {dst:6,address:0,size:8});output(&mut code,6);
-        let p=program(code,31,0);check(&p,&[],Some(expected),18);
-        // Exact same-width replacement can itself be forwarded.
-        if unknown {assert!(!events(&p).contains(&(load,"Load")));}
-        if !unknown && delta>=8 {assert!(events(&p).contains(&(load,"Load")));}
+        let opaque=address_kind=="opaque";
+        let p=program(code,31,usize::from(opaque));
+        let args=if opaque {vec![(p.data.len()+128+delta) as u128]} else {vec![]};
+        check(&p,&args,Some(expected),18);
+        // A full-width local-pointer roundtrip now preserves its exact fact.
+        // The argument-supplied pointer remains opaque even when its runtime
+        // address happens to match; it must still invalidate all local values.
+        if opaque {assert!(!events(&p).contains(&(load,"Load")));}
+        else if delta>=8 {assert!(events(&p).contains(&(load,"Load")));}
+        else if delta!=0 || size!=8 {assert!(!events(&p).contains(&(load,"Load")));}
     }}}
 }
 

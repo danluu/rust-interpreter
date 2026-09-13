@@ -1,0 +1,3 @@
+Prospective source integration only. The eight-file runtime delta from main57976cc1 to candidate907bf4ee passes git apply --check in the owned publication worktree. Applying that delta to the recorded base is predicted to reproduce all125 bytecode/shared Rust and Cargo input hashes from the qualified504-test workspace build. The original measured VM remains unchanged.
+
+The patch has not been applied. No compiler, guest command or performance measurement ran for this preview. Adoption still requires the original Nushell comparison and final all-five audit; a newer main compiler also needs separate compatibility qualification. Revalidate the base and full source inventory before applying the patch.

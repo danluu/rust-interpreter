@@ -1,0 +1,1278 @@
+diff --git a/Cargo.lock b/Cargo.lock
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3645,9 +3645,12 @@
+  "rustc_index",
+  "rustc_macros",
+  "rustc_middle",
++ "rustc_serialize",
+  "rustc_session",
+  "rustc_span",
+  "rustc_target",
++ "serde",
++ "serde_json",
+  "smallvec",
+  "thin-vec",
+  "tracing",
+diff --git a/compiler/rustc_ast_lowering/Cargo.toml b/compiler/rustc_ast_lowering/Cargo.toml
+--- a/compiler/rustc_ast_lowering/Cargo.toml
++++ b/compiler/rustc_ast_lowering/Cargo.toml
+@@ -19,9 +19,12 @@
+ rustc_index = { path = "../rustc_index" }
+ rustc_macros = { path = "../rustc_macros" }
+ rustc_middle = { path = "../rustc_middle" }
++rustc_serialize = { path = "../rustc_serialize" }
+ rustc_session = { path = "../rustc_session" }
+ rustc_span = { path = "../rustc_span" }
+ rustc_target = { path = "../rustc_target" }
++serde = { version = "1.0.219", features = ["derive"] }
++serde_json = "1.0.59"
+ smallvec = { version = "1.8.1", features = ["union", "may_dangle"] }
+ thin-vec = "0.2.19"
+ tracing = "0.1"
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/effects.rs b/compiler/rustc_ast_lowering/src/body_cache/effects.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/effects.rs
+@@ -0,0 +1,179 @@
++//! Exact cold-boundary effects. Process-local pointer identities never persist.
++use std::collections::BTreeMap;
++use std::sync::Arc;
++use rustc_ast::{NodeId, node_id::NodeMap};
++use rustc_hir as hir;
++use rustc_span::Span;
++use crate::{LoweringContext, PerOwnerLoweringState, TryBlockScope};
++use super::{Candidate, journal};
++
++#[derive(PartialEq, Eq)]
++enum Child { Owner(usize), NonOwner(hir::HirId) }
++
++#[derive(PartialEq, Eq)]
++struct Unchanged {
++    resolver: usize,
++    arena: usize,
++    owner: usize,
++    owner_id: hir::OwnerId,
++    disambiguator: hir::definitions::PerParentDisambiguatorState,
++    next_node: NodeId,
++    current_item: Option<Span>,
++    attrs: Vec<(u32, usize, usize)>,
++    bodies: Vec<(u32, usize)>,
++    children: BTreeMap<u32, Child>,
++    opaque: Option<(usize, usize)>,
++    allowed_features: Vec<usize>,
++}
++
++/// Exhaustive destructuring is intentional: adding a compiler field requires
++/// an explicit decision here. Mutable internals without safe comparison are
++/// rejected or guarded at their exact mutation entry point in the patch.
++fn unchanged(lctx: &LoweringContext<'_, '_>) -> Option<Unchanged> {
++    let LoweringContext { tcx: _, resolver, curr_owner, arena,
++        contract_ensures, coroutine_kind, task_context, current_item,
++        try_block_scope, loop_scope, is_in_loop_condition, is_in_dyn_type,
++        next_node_id, node_id_to_def_id, partial_res_overrides,
++        allow_contracts, allow_try_trait, allow_gen_future, allow_pattern_type,
++        allow_async_gen, allow_async_iterator, allow_for_await, allow_async_fn_traits,
++        move_expr_bindings, attribute_parser: _, body_candidate: _, body_trace: _ } = lctx;
++    let PerOwnerLoweringState { owner, owner_id, disambiguator, item_local_id_counter: _,
++        ident_and_label_to_local_id: _,
++        #[cfg(debug_assertions)] relowering_checker: _,
++        attrs, bodies, define_opaque, trait_map: _, delayed_lints, children,
++        impl_trait_defs, impl_trait_bounds } = curr_owner;
++    if contract_ensures.is_some() || coroutine_kind.is_some() || task_context.is_some()
++        || !matches!(try_block_scope, TryBlockScope::Function) || loop_scope.is_some()
++        || *is_in_loop_condition || *is_in_dyn_type || !move_expr_bindings.is_empty()
++        || !node_id_to_def_id.is_empty() || !partial_res_overrides.is_empty()
++        || !delayed_lints.is_empty() || !impl_trait_defs.is_empty() || !impl_trait_bounds.is_empty() {
++        return None;
++    }
++    // Nonempty preexisting attrs/children/bodies are preserved byte-for-byte by
++    // immutable object identity, rather than incorrectly requiring whole-owner
++    // emptiness. Empty delayed_lints avoids comparing/replaying FnOnce callbacks.
++    let children = children.items().map(|(id, value)| {
++        let value = match value {
++            hir::MaybeOwner::Owner(info) => Child::Owner(*info as *const _ as usize),
++            hir::MaybeOwner::NonOwner(id) => Child::NonOwner(*id),
++        };
++        (id.local_def_index.as_u32(), value)
++    }).into_sorted_stable_ord_by_key(|x| x.0).into_iter().collect();
++    let allowed_features = [allow_contracts, allow_try_trait, allow_gen_future, allow_pattern_type,
++        allow_async_gen, allow_async_iterator, allow_for_await, allow_async_fn_traits]
++        .into_iter().map(|value| Arc::as_ptr(value) as *const () as usize).collect();
++    Some(Unchanged { resolver: *resolver as *const _ as usize, arena: *arena as *const _ as usize,
++        owner: *owner as *const _ as usize, owner_id: *owner_id, disambiguator: disambiguator.clone(), next_node: *next_node_id,
++        current_item: *current_item,
++        attrs: attrs.iter().map(|(id, value)| (id.as_u32(), value.as_ptr() as usize, value.len())).collect(),
++        bodies: bodies.iter().map(|(id, value)| (id.as_u32(), *value as *const _ as usize)).collect(),
++        children, opaque: define_opaque.map(|value| (value.as_ptr() as usize, value.len())), allowed_features })
++}
++
++fn traits(lctx: &LoweringContext<'_, '_>) -> BTreeMap<u32, (usize, usize)> {
++    lctx.curr_owner.trait_map.items().map(|(id, value)|
++        (id.as_u32(), (value.as_ptr() as usize, value.len())))
++        .into_sorted_stable_ord_by_key(|x| x.0).into_iter().collect()
++}
++
++pub(super) struct Frame {
++    unchanged: Unchanged,
++    pub start: u32,
++    bindings: NodeMap<hir::ItemLocalId>,
++    traits: BTreeMap<u32, (usize, usize)>,
++    #[cfg(debug_assertions)] debug_nodes: NodeMap<hir::ItemLocalId>,
++    pub prefix: BTreeMap<u32, u32>,
++}
++
++impl Frame {
++    pub fn enter(lctx: &LoweringContext<'_, '_>, candidate: &Candidate) -> Option<Self> {
++        if lctx.body_trace.is_some() || lctx.tcx.dcx().has_errors().is_some() { return None; }
++        let start = lctx.curr_owner.item_local_id_counter.as_u32();
++        let mut prefix = BTreeMap::new();
++        let bindings = lctx.curr_owner.ident_and_label_to_local_id.clone();
++        // Every current binding must belong to the normally lowered parameter
++        // prefix. Hidden caller/closure bindings are an unsupported context.
++        for (id, local) in bindings.items().into_sorted_stable_ord_by_key(|x| x.0.as_u32()) {
++            let ordinal = *candidate.ordinals.get(id)?;
++            let node = candidate.nodes.get(ordinal as usize)?;
++            if node.body || !node.binding || local.as_u32() == 0 || local.as_u32() >= start { return None; }
++            prefix.insert(ordinal, local.as_u32());
++        }
++        Some(Self { unchanged: unchanged(lctx)?, start, bindings, traits: traits(lctx), prefix,
++            #[cfg(debug_assertions)] debug_nodes: lctx.curr_owner.relowering_checker.body_snapshot()? })
++    }
++
++    pub fn validate_exit(&self, lctx: &LoweringContext<'_, '_>, candidate: &Candidate,
++        checked: &journal::Checked) -> Option<()> {
++        if lctx.tcx.dcx().has_errors().is_some() || unchanged(lctx)? != self.unchanged
++            || lctx.curr_owner.item_local_id_counter.as_u32() != checked.end { return None; }
++        let mut bindings = self.bindings.clone();
++        for (&ordinal, &relative) in &checked.bindings {
++            let id = candidate.ast_nodes.get(ordinal as usize)?.0;
++            if bindings.insert(id, hir::ItemLocalId::from_u32(self.start.checked_add(relative)?)).is_some() {
++                return None;
++            }
++        }
++        if bindings != lctx.curr_owner.ident_and_label_to_local_id { return None; }
++        let mut expected_traits = self.traits.clone();
++        for (&ordinal, &relative) in &checked.ast_allocations {
++            let ast = candidate.ast_nodes.get(ordinal as usize)?.0;
++            if let Some(value) = lctx.curr_owner.owner.trait_map.get(&ast) {
++                if !checked.trait_allocations.contains(&relative) { return None; }
++                let local = self.start.checked_add(relative)?;
++                if expected_traits.insert(local, (value.as_ptr() as usize, value.len())).is_some() { return None; }
++            } else if checked.trait_allocations.contains(&relative) { return None; }
++        }
++        if expected_traits != traits(lctx) { return None; }
++        #[cfg(debug_assertions)] {
++            let mut expected = self.debug_nodes.clone();
++            for (&ordinal, &relative) in &checked.ast_allocations {
++                let ast = candidate.ast_nodes.get(ordinal as usize)?.0;
++                if expected.insert(ast, hir::ItemLocalId::from_u32(self.start.checked_add(relative)?)).is_some() {
++                    return None;
++                }
++            }
++            if expected != lctx.curr_owner.relowering_checker.body_snapshot()? { return None; }
++        }
++        Some(())
++    }
++}
++
++pub(super) enum Raw {
++    Ast(NodeId, u32), Synthetic(u32), Bind(NodeId, Option<u32>, u32),
++}
++pub(crate) struct Trace {
++    events: Vec<Raw>,
++    rejected: Option<&'static str>,
++}
++impl Trace {
++    pub fn new() -> Self { Self { events: Vec::new(), rejected: None } }
++    pub fn reject(&mut self, reason: &'static str) { self.rejected.get_or_insert(reason); }
++    fn push(&mut self, event: Raw) {
++        if self.events.len() >= journal::MAX_EVENTS { self.reject("event-budget"); }
++        else if self.rejected.is_none() { self.events.push(event); }
++    }
++    pub fn ast(&mut self, id: NodeId, local: hir::ItemLocalId) { self.push(Raw::Ast(id, local.as_u32())); }
++    pub fn synthetic(&mut self, local: hir::ItemLocalId) { self.push(Raw::Synthetic(local.as_u32())); }
++    pub fn binding(&mut self, id: NodeId, old: Option<hir::ItemLocalId>, new: hir::ItemLocalId) {
++        self.push(Raw::Bind(id, old.map(|id| id.as_u32()), new.as_u32()));
++    }
++    pub fn finish(self, candidate: &Candidate, start: u32, end: u32, root: hir::HirId)
++        -> Option<journal::Journal> {
++        if self.rejected.is_some() || root.owner != candidate.owner { return None; }
++        let mut events = Vec::with_capacity(self.events.len());
++        for event in self.events {
++            events.push(match event {
++                Raw::Ast(id, local) => journal::Event::Allocate {
++                    source: journal::Allocation::Ast(*candidate.ordinals.get(&id)?), relative: local.checked_sub(start)? },
++                Raw::Synthetic(local) => journal::Event::Allocate {
++                    source: journal::Allocation::Synthetic, relative: local.checked_sub(start)? },
++                Raw::Bind(id, None, local) => journal::Event::Bind {
++                    ast: *candidate.ordinals.get(&id)?, relative: local.checked_sub(start)? },
++                Raw::Bind(_, Some(_), _) => return None,
++            });
++        }
++        Some(journal::Journal { events, end_delta: end.checked_sub(start)?,
++            root_relative: root.local_id.as_u32().checked_sub(start)? })
++    }
++}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/input.rs b/compiler/rustc_ast_lowering/src/body_cache/input.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/input.rs
+@@ -0,0 +1,303 @@
++//! Closed structural/resolved body gate. No lowering, queries, arena writes or cache.
++use rustc_ast as ast;
++use rustc_ast::node_id::NodeMap;
++use rustc_hir::def::{DefKind, Res};
++use rustc_macros::Encodable;
++use rustc_middle::middle::resolve::ResolverAstLowering;
++use rustc_middle::ty::TyCtxt;
++use rustc_serialize::{Encodable, opaque::mem_encoder::MemEncoder};
++use rustc_span::def_id::{DefId, DefPathHash};
++use rustc_span::{Ident, Span, StableSourceFileId, SyntaxContext, DUMMY_SP};
++
++pub const POLICY: &str = "hir-body-input-coverage-v2";
++pub type Outcome<T> = Result<T, &'static str>;
++#[derive(Debug, Encodable)]
++pub enum Atom {
++    Tag(&'static str), Count(usize), Text(String), Value(Vec<u8>),
++    Span(Option<(u32,u32)>), Node(u32), Def(DefPathHash), Local(u32),
++}
++#[derive(Debug, Encodable)]
++pub struct Input {
++    pub owner: DefPathHash,
++    pub file: StableSourceFileId,
++    pub role: &'static str,
++    pub owner_source: String,
++    pub atoms: Vec<Atom>,
++}
++pub struct Probe {
++    pub input: Input,
++    pub body_bytes: usize,
++    pub body_nodes: usize,
++    pub parameter_nodes: usize,
++    pub trait_entries: usize,
++    pub trait_candidates: usize,
++    pub external_resolutions: usize,
++}
++struct Walk<'a,'tcx> {
++    tcx: TyCtxt<'tcx>, resolver: &'a ResolverAstLowering<'tcx>, owner: ast::NodeId,
++    base: Span, atoms: Vec<Atom>, nodes: NodeMap<u32>, ordered: Vec<(ast::NodeId,bool)>,
++    trait_entries: usize, trait_candidates: usize, external_resolutions: usize, depth: usize,
++}
++impl Walk<'_, '_> {
++    fn tag(&mut self,v:&'static str) { self.atoms.push(Atom::Tag(v)); }
++    fn count(&mut self,v:usize) { self.atoms.push(Atom::Count(v)); }
++    fn value<T: Encodable<MemEncoder>>(&mut self,v:&T) {
++        let mut e=MemEncoder::new();v.encode(&mut e);self.atoms.push(Atom::Value(e.finish()));
++    }
++    fn def(&mut self,id:DefId) {
++        self.atoms.push(Atom::Def(self.tcx.def_path_hash(id)));
++        self.external_resolutions+=usize::from(!id.is_local());
++    }
++    fn span(&mut self,span:Span)->Outcome<()> {
++        if span==DUMMY_SP { self.atoms.push(Atom::Span(None));return Ok(()); }
++        if span.ctxt()!=SyntaxContext::root() { return Err("nonroot-hygiene"); }
++        if span.parent().is_some() { return Err("parented-input-span"); }
++        if !self.base.contains(span) { return Err("span-outside-owner"); }
++        self.atoms.push(Atom::Span(Some(((span.lo()-self.base.lo()).0,(span.hi()-self.base.lo()).0))));
++        Ok(())
++    }
++    fn ident(&mut self,ident:Ident)->Outcome<()> {
++        if ident.name.as_str().len()>4096 { return Err("identifier-budget"); }
++        self.atoms.push(Atom::Text(ident.name.as_str().to_owned()));self.span(ident.span)
++    }
++    fn node(&mut self,id:ast::NodeId,body:bool)->Outcome<()> {
++        if id==ast::DUMMY_NODE_ID { return Err("dummy-node"); }
++        if self.nodes.contains_key(&id) { return Err("duplicate-node"); }
++        if self.ordered.len()>=8192 { return Err("node-budget"); }
++        if body {
++            let o=&self.resolver.owners[&self.owner];
++            if o.node_id_to_def_id.contains_key(&id) { return Err("body-existing-nonowner-definition"); }
++            if o.lifetimes_res_map.contains_key(&id) { return Err("body-lifetime-resolution"); }
++            if o.extra_lifetime_params_map.contains_key(&id) { return Err("body-extra-lifetime-parameters"); }
++            if o.label_res_map.contains_key(&id) { return Err("body-label-resolution"); }
++        }
++        let n=self.ordered.len() as u32;self.nodes.insert(id,n);self.ordered.push((id,body));
++        self.atoms.push(Atom::Node(n));self.value(&body);Ok(())
++    }
++    fn pattern(&mut self,p:&ast::Pat,body:bool)->Outcome<()> {
++        let ast::Pat { id,kind,span }=p;
++        self.node(*id,body)?;self.span(*span)?;
++        match kind {
++            ast::PatKind::Wild=>self.tag("wild"),
++            ast::PatKind::Ident(mode,ident,None)=>{
++                let Some(Res::Local(binding))=self.resolver.partial_res_map.get(id).and_then(|p|p.full_res())
++                    else { return Err("pattern-not-local-binding"); };
++                if binding!=*id { return Err("shared-pattern-binding"); }
++                self.tag("binding");self.value(mode);self.ident(*ident)?;
++            }
++            _=>return Err("unsupported-pattern"),
++        }
++        Ok(())
++    }
++    fn segment(&mut self,s:&ast::PathSegment)->Outcome<()> {
++        let ast::PathSegment { ident,id,args }=s;
++        if args.is_some() { return Err("explicit-path-arguments"); }
++        self.node(*id,true)?;self.ident(*ident)
++    }
++    fn path(&mut self,id:ast::NodeId,p:&ast::Path)->Outcome<()> {
++        let ast::Path {span,segments}=p;
++        let Some(res)=self.resolver.partial_res_map.get(&id).and_then(|p|p.full_res())
++            else { return Err("incomplete-path-resolution"); };
++        match res {
++            Res::Local(_) | Res::SelfCtor(_) => (),
++            Res::Def(DefKind::Fn | DefKind::AssocFn | DefKind::Const {..} | DefKind::AssocConst {..}
++                | DefKind::Static {..} | DefKind::Ctor(..),_)=>(),
++            _=>return Err("unsupported-value-resolution"),
++        }
++        if segments.is_empty() { return Err("empty-path"); }
++        self.span(*span)?;self.count(segments.len());
++        for segment in segments { self.segment(segment)?; }
++        Ok(())
++    }
++    fn exprs(&mut self,values:&[Box<ast::Expr>])->Outcome<()> {
++        self.count(values.len());for v in values { self.expr(v)?; }Ok(())
++    }
++    fn place(e:&ast::Expr)->bool {
++        matches!(&e.kind,ast::ExprKind::Path(None,_)|ast::ExprKind::Field(..)|ast::ExprKind::Index(..)
++            |ast::ExprKind::Unary(ast::UnOp::Deref,_))
++    }
++    fn expr(&mut self,e:&ast::Expr)->Outcome<()> {
++        if self.depth>=128 {return Err("expression-depth-budget");}
++        self.depth+=1;let result=self.expr_inner(e);self.depth-=1;result
++    }
++    fn expr_inner(&mut self,e:&ast::Expr)->Outcome<()> {
++        let ast::Expr {id,kind,span,attrs,tokens}=e;
++        if !attrs.is_empty() { return Err("body-expression-attributes"); }
++        if tokens.is_some() { return Err("body-expression-tokens"); }
++        self.node(*id,true)?;self.span(*span)?;
++        match kind {
++            ast::ExprKind::Array(v)=>{self.tag("array");self.exprs(v)?;}
++            ast::ExprKind::Tup(v)=>{self.tag("tuple");self.exprs(v)?;}
++            ast::ExprKind::Lit(lit)=>{
++                if ast::LitKind::from_token_lit(*lit).is_err() { return Err("invalid-literal"); }
++                if lit.symbol.as_str().len()>131072 { return Err("literal-budget"); }
++                self.tag("literal");self.value(&lit.kind);
++                self.atoms.push(Atom::Text(lit.symbol.as_str().to_owned()));
++                self.value(&lit.suffix.is_some());
++                if let Some(suffix)=lit.suffix { self.atoms.push(Atom::Text(suffix.as_str().to_owned())); }
++            }
++            ast::ExprKind::Path(None,p)=>{self.tag("path");self.path(*id,p)?;}
++            ast::ExprKind::Call(f,args)=>{
++                // Stock legacy rewriting only examines a bare Path with no final
++                // generic args. No metadata lookup is hidden in this diagnostic.
++                if let ast::ExprKind::Path(None,p)=&f.kind {
++                    if p.segments.last().is_some_and(|s|s.args.is_none()) {
++                        if let Some(def)=self.resolver.partial_res_map.get(&f.id)
++                            .and_then(|p|p.full_res()).and_then(|r|r.opt_def_id()) {
++                            if !def.is_local() { return Err("external-call-needs-current-legacy-proof"); }
++                        }
++                    }
++                }
++                self.tag("call");self.expr(f)?;self.exprs(args)?;
++            }
++            ast::ExprKind::MethodCall(call)=>{
++                let ast::MethodCall {seg,receiver,args,span}= &**call;
++                self.tag("method-call");self.segment(seg)?;self.expr(receiver)?;self.exprs(args)?;self.span(*span)?;
++            }
++            ast::ExprKind::Field(v,ident)=>{self.tag("field");self.expr(v)?;self.ident(*ident)?;}
++            ast::ExprKind::Index(a,b,span)=>{self.tag("index");self.expr(a)?;self.expr(b)?;self.span(*span)?;}
++            ast::ExprKind::Binary(op,a,b)=>{self.tag("binary");self.value(&op.node);self.span(op.span)?;self.expr(a)?;self.expr(b)?;}
++            ast::ExprKind::Unary(op,v)=>{self.tag("unary");self.value(op);self.expr(v)?;}
++            ast::ExprKind::AddrOf(kind,mutable,v)=>{
++                if *kind==ast::BorrowKind::Pin { return Err("pinned-borrow"); }
++                self.tag("borrow");self.value(kind);self.value(mutable);self.expr(v)?;
++            }
++            ast::ExprKind::Assign(a,b,span)=>{
++                if !Self::place(a) { return Err("destructuring-assignment"); }
++                self.tag("assign");self.expr(a)?;self.expr(b)?;self.span(*span)?;
++            }
++            ast::ExprKind::AssignOp(op,a,b)=>{
++                if !Self::place(a) { return Err("destructuring-assignment"); }
++                self.tag("assign-op");self.value(&op.node);self.span(op.span)?;self.expr(a)?;self.expr(b)?;
++            }
++            ast::ExprKind::If(c,b,e)=>{
++                self.tag("if");self.expr(c)?;self.block(b)?;self.value(&e.is_some());
++                if let Some(e)=e {self.expr(e)?;}
++            }
++            ast::ExprKind::Block(b,None)=>{self.tag("block-expr");self.block(b)?;}
++            ast::ExprKind::Ret(v)=>{self.tag("return");self.value(&v.is_some());if let Some(v)=v {self.expr(v)?;}}
++            ast::ExprKind::Paren(v)=>{self.tag("paren");self.expr(v)?;}
++            _=>return Err("unsupported-expression"),
++        }
++        Ok(())
++    }
++    fn block(&mut self,b:&ast::Block)->Outcome<()> {
++        let ast::Block {stmts,id,rules,span}=b;
++        if !matches!(rules,ast::BlockCheckMode::Default|ast::BlockCheckMode::Unsafe(ast::UnsafeSource::UserProvided)) {
++            return Err("generated-unsafe-block");
++        }
++        self.node(*id,true)?;self.span(*span)?;self.value(rules);self.count(stmts.len());
++        for s in stmts {
++            let ast::Stmt {id,kind,span}=s;
++            self.node(*id,true)?;self.span(*span)?;
++            match kind {
++                ast::StmtKind::Empty=>self.tag("empty"),
++                ast::StmtKind::Expr(e)=>{self.tag("expr-stmt");self.expr(e)?;}
++                ast::StmtKind::Semi(e)=>{self.tag("semi-stmt");self.expr(e)?;}
++                ast::StmtKind::Let(l)=>{
++                    let ast::Local {id,super_,pat,ty,kind,span,colon_sp,attrs,tokens}=&**l;
++                    if super_.is_some()||ty.is_some()||colon_sp.is_some() {return Err("body-local-type-or-super");}
++                    if !attrs.is_empty()||tokens.is_some() {return Err("body-local-attributes-or-tokens");}
++                    self.tag("let");self.node(*id,true)?;self.span(*span)?;
++                    match kind {
++                        ast::LocalKind::Decl=>self.tag("uninitialized"),
++                        ast::LocalKind::Init(e)=>{self.tag("initialized");self.expr(e)?;}
++                        _=>return Err("let-else"),
++                    }
++                    self.pattern(pat,true)?;
++                }
++                _=>return Err("nested-item-or-unexpanded-statement"),
++            }
++        }
++        Ok(())
++    }
++    fn resolution(&mut self,r:Res<ast::NodeId>)->Outcome<()> {
++        match r {
++            Res::Local(id)=>{self.tag("local");self.atoms.push(Atom::Local(*self.nodes.get(&id).ok_or("binding-outside-input")?));}
++            Res::Def(kind,id)=>{self.tag("definition");self.value(&kind);self.def(id);}
++            Res::PrimTy(t)=>{self.tag("primitive");self.value(&t);}
++            Res::SelfCtor(id)=>{self.tag("self-constructor");self.def(id);}
++            Res::SelfTyParam{trait_}=>{self.tag("self-trait-type");self.def(trait_);}
++            Res::SelfTyAlias{alias_to,is_trait_impl}=>{self.tag("self-impl-type");self.def(alias_to);self.value(&is_trait_impl);}
++            Res::Err=>return Err("error-resolution"),
++            _=>return Err("unsupported-resolution"),
++        }
++        Ok(())
++    }
++    fn resolved(&mut self)->Outcome<()> {
++        for (id,body) in self.ordered.clone() {
++            self.tag("node-resolution");self.value(&body);
++            if let Some(partial)=self.resolver.partial_res_map.get(&id).copied() {
++                self.value(&true);self.count(partial.unresolved_segments());
++                // Full Expr paths required above; method segments may be absent
++                // and type checking will select their current trait candidate.
++                self.resolution(partial.base_res())?;
++            } else {self.value(&false);}
++            let owner=&self.resolver.owners[&self.owner];
++            if body {
++                if let Some(traits)=owner.trait_map.get(&id).copied() {
++                    self.tag("trait-entry");self.count(traits.len());self.trait_entries+=1;
++                    for candidate in traits {
++                        self.trait_candidates+=1;self.def(candidate.def_id);self.count(candidate.import_ids.len());
++                        for id in candidate.import_ids {self.def(id.to_def_id());}
++                        self.value(&candidate.lint_ambiguous);
++                    }
++                } else {self.tag("no-trait-entry");}
++            }
++        }
++        Ok(())
++    }
++}
++
++/// Caller enumerates Fn owners directly from expanded AST; no HIR query needed.
++/// Accepted means structural input only, never an S/E or replay qualification.
++pub fn probe<'tcx>(tcx:TyCtxt<'tcx>,resolver:&ResolverAstLowering<'tcx>,owner:ast::NodeId,
++    span:Span,f:&ast::Fn,role:&'static str)->Outcome<Probe> {
++    if tcx.incr_comp_session.is_none() {return Err("no-incremental-session");}
++    if tcx.dcx().has_errors().is_some() {return Err("prior-errors");}
++    if span==DUMMY_SP||span.ctxt()!=SyntaxContext::root()||span.parent().is_some() {return Err("owner-span-or-hygiene");}
++    if f.sig.header.coroutine_marker.is_some() {return Err("coroutine-body");}
++    if f.contract.is_some() {return Err("contract-body");}
++    let body=f.body.as_deref().ok_or("no-body")?;
++    let current=resolver.owners.get(&owner).ok_or("missing-resolver-owner")?;
++    if current.id!=owner {return Err("owner-identity-mismatch");}
++    let file=tcx.sess.source_map().lookup_source_file(span.lo());
++    if !file.contains(span.hi())||(span.hi()-span.lo()).0>262144 {return Err("source-extent-budget");}
++    let source=tcx.sess.source_map().span_to_snippet(span).map_err(|_|"owner-source-unavailable")?;
++    let body_source=tcx.sess.source_map().span_to_snippet(body.span).map_err(|_|"body-source-unavailable")?;
++    let mut w=Walk{tcx,resolver,owner,base:span,atoms:Vec::new(),nodes:NodeMap::default(),ordered:Vec::new(),
++        trait_entries:0,trait_candidates:0,external_resolutions:0,depth:0};
++    w.tag(POLICY);w.count(f.sig.decl.inputs.len());
++    for p in &f.sig.decl.inputs {
++        if p.is_placeholder {return Err("placeholder-parameter");}
++        w.node(p.id,false)?;w.span(p.span)?;w.span(p.ty.span)?;w.pattern(&p.pat,false)?;
++    }
++    let parameter_nodes=w.ordered.len();w.block(body)?;w.resolved()?;
++    let body_nodes=w.ordered.len()-parameter_nodes;
++    Ok(Probe{input:Input{owner:tcx.def_path_hash(current.def_id.to_def_id()),file:file.stable_id,
++        role,owner_source:source,atoms:w.atoms},body_bytes:body_source.len(),body_nodes,parameter_nodes,
++        trait_entries:w.trait_entries,trait_candidates:w.trait_candidates,external_resolutions:w.external_resolutions})
++}
++
++// Appended after the exact qualified gate bytes by prepare_patch.py. Reuses
++// its actual Walk, and byte-compares the rebuilt Input before exposing IDs.
++// No alternative approximate AST traversal is involved.
++pub(super) fn current_nodes<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
++    owner: ast::NodeId, span: Span, f: &ast::Fn, probe: &Probe)
++    -> Outcome<Vec<(ast::NodeId, bool)>> {
++    let mut w = Walk { tcx, resolver, owner, base: span, atoms: Vec::new(),
++        nodes: NodeMap::default(), ordered: Vec::new(), trait_entries: 0,
++        trait_candidates: 0, external_resolutions: 0, depth: 0 };
++    w.tag(POLICY); w.count(f.sig.decl.inputs.len());
++    for p in &f.sig.decl.inputs {
++        if p.is_placeholder { return Err("placeholder-parameter"); }
++        w.node(p.id, false)?; w.span(p.span)?; w.span(p.ty.span)?; w.pattern(&p.pat, false)?;
++    }
++    w.block(f.body.as_deref().ok_or("no-body")?)?; w.resolved()?;
++    let repeated = Input { owner: probe.input.owner, file: probe.input.file,
++        role: probe.input.role, owner_source: probe.input.owner_source.clone(), atoms: w.atoms };
++    let mut first = MemEncoder::new(); probe.input.encode(&mut first);
++    let mut second = MemEncoder::new(); repeated.encode(&mut second);
++    if first.finish() != second.finish() { return Err("qualified-walker-disagreement"); }
++    Ok(w.ordered)
++}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/journal.rs b/compiler/rustc_ast_lowering/src/body_cache/journal.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/journal.rs
+@@ -0,0 +1,181 @@
++//! Fallible, mutation-free journal validation. This is not a HIR body codec.
++use std::collections::{BTreeMap, BTreeSet};
++use serde::{Deserialize, Serialize};
++
++pub(super) const MAX_EVENTS: usize = 32768;
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum Allocation { Ast(u32), Synthetic }
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) enum Event {
++    Allocate { source: Allocation, relative: u32 },
++    Bind { ast: u32, relative: u32 },
++}
++
++#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub(super) struct Journal {
++    pub events: Vec<Event>,
++    pub end_delta: u32,
++    pub root_relative: u32,
++}
++
++/// Current, freshly resolved input. AST ordinals index this slice. Raw NodeIds
++/// and old-session HirIds never enter the serialized journal.
++#[derive(Clone, Debug)]
++pub(super) struct Node {
++    pub body: bool,
++    pub binding: bool,
++    pub traits: bool,
++}
++
++pub(super) struct Entry<'a> {
++    pub start: u32,
++    pub nodes: &'a [Node],
++    pub prefix_bindings: &'a BTreeMap<u32, u32>,
++}
++
++/// Opaque, checked event layout. No lowering context or arena was mutated.
++/// It is deliberately not convertible into a HIR expression: the complete
++/// body wire-tree/reference validator and materializer remain unimplemented.
++pub(super) struct Checked {
++    journal: Journal,
++    pub ast_allocations: BTreeMap<u32, u32>,
++    pub bindings: BTreeMap<u32, u32>,
++    pub trait_allocations: BTreeSet<u32>,
++    pub end: u32,
++}
++
++impl Checked {
++    pub fn journal(&self) -> &Journal { &self.journal }
++}
++
++pub(super) fn check(journal: Journal, entry: &Entry<'_>) -> Option<Checked> {
++    let invalid = rustc_hir::ItemLocalId::INVALID.as_u32();
++    if entry.start == 0 || entry.start >= invalid || entry.nodes.len() > 8192 || journal.events.len() > MAX_EVENTS
++        || journal.end_delta == 0 || journal.root_relative >= journal.end_delta {
++        return None;
++    }
++    let end = entry.start.checked_add(journal.end_delta)?;
++    // INVALID is 0xFFFF_FF00 on this pinned compiler, not u32::MAX.
++    // E is exclusive: it may equal INVALID, but every actual allocation must
++    // be below it. Never construct a sentinel ID for a node or binding.
++    if end > invalid { return None; }
++    let mut prefix_ids = BTreeSet::new();
++    for (&ordinal, &local) in entry.prefix_bindings {
++        let node = entry.nodes.get(ordinal as usize)?;
++        if node.body || !node.binding || local == 0 || local >= invalid || local >= entry.start
++            || !prefix_ids.insert(local) { return None; }
++    }
++    for (ordinal, node) in entry.nodes.iter().enumerate() {
++        if !node.body && node.binding && !entry.prefix_bindings.contains_key(&(ordinal as u32)) {
++            return None;
++        }
++    }
++    let mut ast_allocations = BTreeMap::new();
++    let mut bindings = BTreeMap::new();
++    let mut trait_allocations = BTreeSet::new();
++    let mut next = 0_u32;
++    for event in &journal.events {
++        match *event {
++            Event::Allocate { ref source, relative } => {
++                if relative != next || relative >= journal.end_delta { return None; }
++                next = next.checked_add(1)?;
++                if let Allocation::Ast(ordinal) = *source {
++                    let node = entry.nodes.get(ordinal as usize)?;
++                    if !node.body || ast_allocations.insert(ordinal, relative).is_some() {
++                        return None;
++                    }
++                    if node.traits { trait_allocations.insert(relative); }
++                }
++            }
++            Event::Bind { ast, relative } => {
++                let node = entry.nodes.get(ast as usize)?;
++                if !node.body || !node.binding || ast_allocations.get(&ast) != Some(&relative)
++                    || relative >= next || bindings.insert(ast, relative).is_some() {
++                    return None;
++                }
++            }
++        }
++    }
++    if next != journal.end_delta { return None; }
++    for (&ordinal, &relative) in &ast_allocations {
++        if entry.nodes[ordinal as usize].binding && bindings.get(&ordinal) != Some(&relative) {
++            return None;
++        }
++    }
++    Some(Checked { journal, ast_allocations, bindings, trait_allocations, end })
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    fn nodes() -> Vec<Node> {
++        vec![Node { body: false, binding: true, traits: false },
++             Node { body: true, binding: false, traits: true },
++             Node { body: true, binding: true, traits: false }]
++    }
++    fn journal() -> Journal {
++        Journal { events: vec![
++            Event::Allocate { source: Allocation::Ast(1), relative: 0 },
++            Event::Allocate { source: Allocation::Ast(2), relative: 1 },
++            Event::Bind { ast: 2, relative: 1 },
++            Event::Allocate { source: Allocation::Synthetic, relative: 2 },
++        ], end_delta: 3, root_relative: 2 }
++    }
++    #[test]
++    fn validates_s_relative_relocation_and_trait_presence() {
++        let n = nodes();
++        for start in [3, 41, 4096] {
++            let prefix = BTreeMap::from([(0, start - 1)]);
++            let checked = check(journal(), &Entry { start, nodes: &n, prefix_bindings: &prefix }).unwrap();
++            assert_eq!(checked.end, start + 3);
++            assert_eq!(checked.trait_allocations, BTreeSet::from([0]));
++            assert_eq!(checked.bindings, BTreeMap::from([(2, 1)]));
++        }
++    }
++    #[test]
++    fn rejects_forward_bind_duplicate_ast_and_counter_gaps() {
++        let n = nodes(); let prefix = BTreeMap::from([(0, 1)]);
++        let entry = Entry { start: 3, nodes: &n, prefix_bindings: &prefix };
++        let mut bad = journal(); bad.events.swap(1, 2); assert!(check(bad, &entry).is_none());
++        let mut bad = journal(); bad.events[1] = Event::Allocate { source: Allocation::Ast(1), relative: 1 };
++        assert!(check(bad, &entry).is_none());
++        let mut bad = journal(); bad.events[0] = Event::Allocate { source: Allocation::Ast(1), relative: 1 };
++        assert!(check(bad, &entry).is_none());
++        let mut bad = journal(); bad.events.remove(2); assert!(check(bad, &entry).is_none());
++    }
++    #[test]
++    fn rejects_prefix_aliases_body_prefixes_and_overflow() {
++        let n = nodes();
++        for prefix in [BTreeMap::new(), BTreeMap::from([(0, 3)]), BTreeMap::from([(2, 1)])] {
++            assert!(check(journal(), &Entry { start: 3, nodes: &n, prefix_bindings: &prefix }).is_none());
++        }
++        let prefix = BTreeMap::from([(0, 1)]);
++        assert!(check(journal(), &Entry { start: u32::MAX - 2, nodes: &n, prefix_bindings: &prefix }).is_none());
++    }
++    #[test]
++    fn honors_actual_item_local_id_sentinel_and_exclusive_end() {
++        let invalid = rustc_hir::ItemLocalId::INVALID.as_u32();
++        assert_eq!(invalid, 0xFFFF_FF00);
++        let n = nodes(); let prefix = BTreeMap::from([(0, 1)]);
++        let one = Journal { events: vec![Event::Allocate {
++            source: Allocation::Synthetic, relative: 0 }], end_delta: 1, root_relative: 0 };
++        for start in [invalid - 2, invalid - 1] {
++            let checked = check(one.clone(), &Entry { start, nodes: &n, prefix_bindings: &prefix }).unwrap();
++            assert_eq!(checked.end, start + 1);
++        }
++        for start in [invalid, invalid + 1, u32::MAX] {
++            assert!(check(one.clone(), &Entry { start, nodes: &n, prefix_bindings: &prefix }).is_none());
++        }
++        assert!(check(journal(), &Entry { start: invalid - 2, nodes: &n, prefix_bindings: &prefix }).is_none());
++        for local in [invalid, invalid + 1] {
++            let bad_prefix = BTreeMap::from([(0, local)]);
++            assert!(check(one.clone(), &Entry { start: invalid - 1, nodes: &n, prefix_bindings: &bad_prefix }).is_none());
++        }
++    }
++}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/mod.rs b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
+@@ -0,0 +1,128 @@
++//! Actual body lowering capture checkpoint. Never substitutes a cached body.
++use std::path::PathBuf;
++use rustc_ast::{self as ast, node_id::NodeMap};
++use rustc_data_structures::fingerprint::Fingerprint;
++use rustc_hir as hir;
++use rustc_hir::def::Res;
++use rustc_middle::middle::resolve::ResolverAstLowering;
++use rustc_middle::ty::TyCtxt;
++use rustc_serialize::{Encodable, opaque::mem_encoder::MemEncoder};
++use rustc_span::Span;
++use crate::LoweringContext;
++
++mod effects;
++mod input;
++mod journal;
++mod storage;
++mod source_identity;
++pub(super) use effects::Trace;
++
++const FORMAT: &str = "hir-body-capture-v2";
++
++pub(super) struct Candidate {
++    owner: hir::OwnerId,
++    body: ast::NodeId,
++    name: String,
++    key: Vec<u8>,
++    path: PathBuf,
++    ast_nodes: Vec<(ast::NodeId, bool)>,
++    ordinals: NodeMap<u32>,
++    nodes: Vec<journal::Node>,
++    input_statistics: [usize; 6],
++}
++
++fn hex(value: Fingerprint) -> String {
++    let (a, b) = value.split();
++    format!("{:016x}{:016x}", a.as_u64(), b.as_u64())
++}
++
++pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
++    owner: ast::NodeId, span: Span, function: &ast::Fn, role: &'static str) -> Option<Candidate> {
++    if !tcx.sess.opts.unstable_opts.hir_body_cache_capture
++        || std::env::var_os("RUSTC_FORCE_RUSTC_VERSION").is_some() { return None; }
++    let session = tcx.incr_comp_session?;
++    let probe = input::probe(tcx, resolver, owner, span, function, role).ok()?;
++    let ast_nodes = input::current_nodes(tcx, resolver, owner, span, function, &probe).ok()?;
++    let mut ordinals = NodeMap::default();
++    let mut nodes = Vec::with_capacity(ast_nodes.len());
++    for (ordinal, &(id, body)) in ast_nodes.iter().enumerate() {
++        ordinals.insert(id, ordinal as u32);
++        let binding = resolver.partial_res_map.get(&id).and_then(|res| res.full_res())
++            .is_some_and(|res| matches!(res, Res::Local(local) if local == id));
++        nodes.push(journal::Node { body, binding, traits: resolver.owners[&owner].trait_map.contains_key(&id) });
++    }
++    let mut encoder = MemEncoder::new();
++    FORMAT.encode(&mut encoder);
++    source_identity::SOURCE_IDENTITY.encode(&mut encoder);
++    cfg!(debug_assertions).encode(&mut encoder);
++    tcx.sess.cfg_version.encode(&mut encoder);
++    tcx.sess.opts.dep_tracking_hash(false).as_u64().encode(&mut encoder);
++    probe.input.encode(&mut encoder);
++    let key = encoder.finish();
++    if key.len() > storage::MAX_RECORD / 2 { return None; }
++    Some(Candidate {
++        owner: hir::OwnerId { def_id: resolver.owners[&owner].def_id },
++        body: function.body.as_deref()?.id, name: function.ident.name.as_str().to_owned(),
++        path: session.session_directory.join(format!("{FORMAT}-{}.json", hex(probe.input.owner.0))),
++        key, ast_nodes, ordinals, nodes,
++        input_statistics: [probe.body_bytes, probe.body_nodes, probe.parameter_nodes,
++            probe.trait_entries, probe.trait_candidates, probe.external_resolutions],
++    })
++}
++
++fn report(lctx: &LoweringContext<'_, '_>, candidate: &Candidate, state: &str,
++    start: u32, end: u32, events: usize) {
++    if lctx.tcx.sess.opts.unstable_opts.incremental_info {
++        let [bytes, ast, params, traits, candidates, externals] = candidate.input_statistics;
++        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=0 \
++            body_bytes={bytes} body_ast={ast} param_ast={params} trait_entries={traits} trait_candidates={candidates} external_refs={externals}",
++            candidate.name);
++    }
++}
++
++pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Block) -> hir::Expr<'hir> {
++    let Some(candidate) = lctx.body_candidate.take() else { return lctx.lower_block_expr(body); };
++    if candidate.owner != lctx.curr_owner.owner_id || candidate.body != body.id {
++        return lctx.lower_block_expr(body);
++    }
++    let Some(frame) = effects::Frame::enter(lctx, &candidate) else {
++        report(lctx, &candidate, "rejected-entry", 0, 0, 0);
++        return lctx.lower_block_expr(body);
++    };
++    let entry = journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix };
++    // Reading/decoding and the validation boundary require only immutable
++    // current input. There is NO conversion from Checked to a HIR expression.
++    let previous = storage::read(&candidate.path, &candidate.key)
++        .and_then(|value| journal::check(value, &entry));
++    lctx.body_trace = Some(Trace::new());
++    let value = lctx.lower_block_expr(body); // Always ordinary lowering.
++    let trace = lctx.body_trace.take();
++    let end = lctx.curr_owner.item_local_id_counter.as_u32();
++    let captured = trace.and_then(|trace| trace.finish(&candidate, frame.start, end, value.hir_id))
++        .and_then(|value| journal::check(value, &entry));
++    let Some(checked) = captured.filter(|checked| frame.validate_exit(lctx, &candidate, checked).is_some()) else {
++        report(lctx, &candidate, "rejected-effects", frame.start, end, 0);
++        return value;
++    };
++    let state = match previous {
++        Some(previous) if previous.journal() == checked.journal() => "same-journal-after-stock-lowering",
++        Some(_) => "changed-journal-after-stock-lowering",
++        None => "cold-journal-after-stock-lowering",
++    };
++    // These are evidence sidecars, not usable cached HIR. Even a valid repeated
++    // journal never skips lowering, parameter/signature work or later checks.
++    let stored = storage::write(&candidate.path, &candidate.key, checked.journal());
++    report(lctx, &candidate, if stored { state } else { "journal-write-unavailable" },
++        frame.start, end, checked.journal().events.len());
++    value
++}
++
++impl LoweringContext<'_, '_> {
++    pub(super) fn insert_body_binding(&mut self, id: ast::NodeId, local: hir::ItemLocalId) {
++        let old = self.curr_owner.ident_and_label_to_local_id.insert(id, local);
++        if let Some(trace) = &mut self.body_trace { trace.binding(id, old, local); }
++    }
++    pub(super) fn reject_body_capture(&mut self, reason: &'static str) {
++        if let Some(trace) = &mut self.body_trace { trace.reject(reason); }
++    }
++}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
+@@ -0,0 +1 @@
++pub(super) const SOURCE_IDENTITY: &str = "2290bc460dc1f231746d591be3b9c258c31b8d5a350f272ac500ad5bcc5026d0";
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/storage.rs b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
+@@ -0,0 +1,82 @@
++//! Versioned, bounded evidence sidecars in rustc's existing incremental session.
++//! Shares v1's fresh-inode COW discipline; stores no executable HIR payload.
++use std::fs::{self, File, OpenOptions};
++use std::io::{Read, Write};
++use std::path::Path;
++use std::sync::atomic::{AtomicU64, Ordering};
++use std::hash::Hash;
++use rustc_data_structures::{fingerprint::Fingerprint, stable_hash::StableHasher};
++use serde::{Deserialize, Serialize};
++use super::{FORMAT, journal::Journal};
++
++pub(super) const MAX_RECORD: usize = 4 * 1024 * 1024;
++static NEXT: AtomicU64 = AtomicU64::new(0);
++
++#[derive(Serialize, Deserialize)]
++#[serde(deny_unknown_fields)]
++struct Record { format: String, key: Vec<u8>, journal: Journal, checksum: String }
++
++fn checksum(key: &[u8], journal: &Journal) -> Option<String> {
++    let bytes = serde_json::to_vec(journal).ok()?;
++    if bytes.len() > MAX_RECORD { return None; }
++    let mut state = StableHasher::new();
++    key.hash(&mut state); bytes.hash(&mut state);
++    let fingerprint: Fingerprint = state.finish();
++    Some(super::hex(fingerprint))
++}
++
++pub(super) fn read(path: &Path, key: &[u8]) -> Option<Journal> {
++    if !fs::symlink_metadata(path).ok()?.is_file() { return None; }
++    let file = File::open(path).ok()?;
++    let metadata = file.metadata().ok()?;
++    if !metadata.is_file() || metadata.len() > MAX_RECORD as u64 { return None; }
++    let mut bytes = Vec::new();
++    file.take(MAX_RECORD as u64 + 1).read_to_end(&mut bytes).ok()?;
++    if bytes.len() > MAX_RECORD { return None; }
++    let record: Record = serde_json::from_slice(&bytes).ok()?;
++    if record.format != FORMAT || record.key != key || record.checksum != checksum(key, &record.journal)? {
++        return None;
++    }
++    Some(record.journal)
++}
++
++pub(super) fn write(path: &Path, key: &[u8], journal: &Journal) -> bool {
++    let Some(checksum) = checksum(key, journal) else { return false; };
++    let record = Record { format: FORMAT.to_owned(), key: key.to_vec(), journal: journal.clone(), checksum };
++    let Ok(bytes) = serde_json::to_vec(&record) else { return false; };
++    if bytes.len() > MAX_RECORD { return false; }
++    let temp = path.with_extension(format!("part-{}-{}", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
++    let Ok(mut file) = OpenOptions::new().create_new(true).write(true).open(&temp) else { return false; };
++    let result = file.write_all(&bytes);
++    drop(file);
++    let result = result.and_then(|()| fs::rename(&temp, path));
++    if result.is_err() { let _ = fs::remove_file(&temp); }
++    result.is_ok()
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    #[test]
++    fn corrupt_truncated_wrong_key_and_hardlinked_old_inode() {
++        let directory = std::env::temp_dir().join(format!("hir-body-journal-{}-{}",
++            std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
++        fs::create_dir(&directory).unwrap();
++        let path = directory.join("current.json"); let old = directory.join("old.json");
++        let journal = Journal { events: vec![super::super::journal::Event::Allocate {
++            source: super::super::journal::Allocation::Synthetic, relative: 0 }], end_delta: 1, root_relative: 0 };
++        assert!(write(&path, b"key", &journal));
++        let bytes = fs::read(&path).unwrap(); fs::hard_link(&path, &old).unwrap();
++        assert!(write(&path, b"new-key", &journal));
++        assert_eq!(fs::read(&old).unwrap(), bytes);
++        assert!(read(&path, b"key").is_none()); assert!(read(&old, b"key").is_some());
++        for bad in [b"{".to_vec(), b"[]".to_vec(), bytes[..bytes.len()/2].to_vec(), vec![0; MAX_RECORD + 1]] {
++            fs::write(&path, bad).unwrap(); assert!(read(&path, b"key").is_none());
++        }
++        let mut record: Record = serde_json::from_slice(&bytes).unwrap();
++        record.journal.end_delta = 2;
++        fs::write(&path, serde_json::to_vec(&record).unwrap()).unwrap();
++        assert!(read(&path, b"key").is_none());
++        fs::remove_dir_all(directory).unwrap();
++    }
++}
+diff --git a/compiler/rustc_ast_lowering/src/expr.rs b/compiler/rustc_ast_lowering/src/expr.rs
+--- a/compiler/rustc_ast_lowering/src/expr.rs
++++ b/compiler/rustc_ast_lowering/src/expr.rs
+@@ -1506,7 +1506,7 @@
+         dest_hir_id: hir::HirId,
+     ) -> Option<Label> {
+         let label = opt_label?;
+-        self.curr_owner.ident_and_label_to_local_id.insert(dest_id, dest_hir_id.local_id);
++        self.insert_body_binding(dest_id, dest_hir_id.local_id);
+         Some(Label { ident: self.lower_ident(label.ident) })
+     }
+ 
+diff --git a/compiler/rustc_ast_lowering/src/item.rs b/compiler/rustc_ast_lowering/src/item.rs
+--- a/compiler/rustc_ast_lowering/src/item.rs
++++ b/compiler/rustc_ast_lowering/src/item.rs
+@@ -205,6 +205,10 @@
+     }
+ 
+     fn lower_item(&mut self, i: &Item) -> &'hir hir::Item<'hir> {
++        if let ItemKind::Fn(function) = &i.kind {
++            self.body_candidate = crate::body_cache::prepare(self.tcx, self.resolver,
++                i.id, i.span, function, "free-function");
++        }
+         let owner_id = self.curr_owner.owner_id;
+         let hir_id: HirId = owner_id.into();
+         let vis_span = self.lower_span(i.vis.span);
+@@ -913,6 +917,10 @@
+     }
+ 
+     fn lower_trait_item(&mut self, i: &AssocItem) -> &'hir hir::TraitItem<'hir> {
++        if let AssocItemKind::Fn(function) = &i.kind {
++            self.body_candidate = crate::body_cache::prepare(self.tcx, self.resolver,
++                i.id, i.span, function, "provided-trait-method");
++        }
+         let trait_item_def_id = self.curr_owner.owner_id;
+         let hir_id: HirId = trait_item_def_id.into();
+         let attrs = self.lower_attrs(
+@@ -1173,6 +1181,11 @@
+         let parent_id = self.tcx.local_parent(owner_id.def_id);
+         let is_in_trait_impl =
+             matches!(self.tcx.def_kind(parent_id), DefKind::Impl { of_trait: true });
++        if let AssocItemKind::Fn(function) = &i.kind {
++            self.body_candidate = crate::body_cache::prepare(self.tcx, self.resolver,
++                i.id, i.span, function, if is_in_trait_impl { "trait-impl-method" }
++                else { "inherent-impl-method" });
++        }
+ 
+         // Since `default impl` is not yet implemented, this is always true in impls.
+         let has_value = true;
+@@ -1389,7 +1402,7 @@
+         body: &Block,
+         contract: Option<&FnContract>,
+     ) -> hir::BodyId {
+-        self.lower_fn_body(decl, contract, |this| this.lower_block_expr(body))
++        self.lower_fn_body(decl, contract, |this| crate::body_cache::lower(this, body))
+     }
+ 
+     pub(super) fn lower_const_body(&mut self, span: Span, expr: Option<&Expr>) -> hir::BodyId {
+diff --git a/compiler/rustc_ast_lowering/src/lib.rs b/compiler/rustc_ast_lowering/src/lib.rs
+--- a/compiler/rustc_ast_lowering/src/lib.rs
++++ b/compiler/rustc_ast_lowering/src/lib.rs
+@@ -88,6 +88,7 @@
+ 
+ mod asm;
+ mod block;
++mod body_cache;
+ mod contract;
+ mod delegation;
+ mod diagnostics;
+@@ -119,6 +120,10 @@
+     }
+ 
+     impl ReloweringChecker {
++        pub(crate) fn body_snapshot(&self) -> Option<NodeMap<hir::ItemLocalId>> {
++            (!self.can_relower).then(|| self.node_id_to_local_id.clone())
++        }
++
+         pub(crate) fn assert_node_is_not_relowered(
+             &mut self,
+             ast_node_id: NodeId,
+@@ -326,6 +331,8 @@
+     move_expr_bindings: Vec<Option<expr::MoveExprState<'hir>>>,
+ 
+     attribute_parser: AttributeParser<'hir>,
++    body_candidate: Option<body_cache::Candidate>,
++    body_trace: Option<body_cache::Trace>,
+ }
+ 
+ impl<'a, 'hir> LoweringContext<'a, 'hir> {
+@@ -371,6 +378,8 @@
+             allow_async_iterator: [sym::gen_future, sym::async_iterator].into(),
+ 
+             move_expr_bindings: Vec::new(),
++            body_candidate: None,
++            body_trace: None,
+             attribute_parser: AttributeParser::new(
+                 tcx.sess,
+                 tcx.features(),
+@@ -828,6 +837,7 @@
+         def_kind: DefKind,
+         span: Span,
+     ) -> LocalDefId {
++        self.reject_body_capture("create-def");
+         let parent = self.curr_owner.owner_id.def_id;
+         assert_ne!(node_id, ast::DUMMY_NODE_ID);
+         assert!(
+@@ -851,6 +861,7 @@
+     }
+ 
+     fn next_node_id(&mut self) -> NodeId {
++        self.reject_body_capture("new-ast-node");
+         let start = self.next_node_id;
+         let next = start.as_u32().checked_add(1).expect("input too large; ran out of NodeIds");
+         self.next_node_id = NodeId::from_u32(next);
+@@ -905,6 +916,7 @@
+         owner: NodeId,
+         f: impl FnOnce(&mut Self) -> hir::OwnerNode<'hir>,
+     ) {
++        self.reject_body_capture("nested-owner");
+         let child_owner = PerOwnerLoweringState::new(self.resolver, owner);
+         let parent_owner = mem::replace(&mut self.curr_owner, child_owner);
+ 
+@@ -958,6 +970,7 @@
+         #[cfg(debug_assertions)]
+         self.curr_owner.relowering_checker.assert_node_is_not_relowered(ast_node_id, local_id);
+ 
++        if let Some(trace) = &mut self.body_trace { trace.ast(ast_node_id, local_id); }
+         hir_id
+     }
+ 
+@@ -968,6 +981,7 @@
+         let local_id = self.curr_owner.item_local_id_counter;
+         assert_ne!(local_id, hir::ItemLocalId::ZERO);
+         self.curr_owner.item_local_id_counter.increment_by(1);
++        if let Some(trace) = &mut self.body_trace { trace.synthetic(local_id); }
+         HirId { owner, local_id }
+     }
+ 
+@@ -1217,6 +1231,7 @@
+         target_hir_id: HirId,
+         target: Target,
+     ) -> Vec<hir::Attribute> {
++        self.reject_body_capture("attribute-parser");
+         let l = self.span_lowerer();
+         self.attribute_parser.parse_attribute_list(
+             attrs,
+diff --git a/compiler/rustc_ast_lowering/src/pat.rs b/compiler/rustc_ast_lowering/src/pat.rs
+--- a/compiler/rustc_ast_lowering/src/pat.rs
++++ b/compiler/rustc_ast_lowering/src/pat.rs
+@@ -289,7 +289,7 @@
+                         // will be resolved to the same `Res::Local`. Thus they just share a single
+                         // `HirId`.
+                         if id == p.id {
+-                            self.curr_owner.ident_and_label_to_local_id.insert(id, hir_id.local_id);
++                            self.insert_body_binding(id, hir_id.local_id);
+                             hir_id
+                         } else {
+                             hir::HirId {
+@@ -299,7 +299,7 @@
+                         }
+                     }
+                     _ => {
+-                        self.curr_owner.ident_and_label_to_local_id.insert(p.id, hir_id.local_id);
++                        self.insert_body_binding(p.id, hir_id.local_id);
+                         hir_id
+                     }
+                 };
+diff --git a/compiler/rustc_hir_id/src/definitions.rs b/compiler/rustc_hir_id/src/definitions.rs
+--- a/compiler/rustc_hir_id/src/definitions.rs
++++ b/compiler/rustc_hir_id/src/definitions.rs
+@@ -21,7 +21,7 @@
+ 
+ use crate::def_path_hash_map::DefPathHashMap;
+ 
+-#[derive(Debug, Default, Clone)]
++#[derive(Debug, Default, Clone, PartialEq, Eq)]
+ pub struct PerParentDisambiguatorState {
+     #[cfg(debug_assertions)]
+     parent: Option<LocalDefId>,
+diff --git a/compiler/rustc_interface/src/tests.rs b/compiler/rustc_interface/src/tests.rs
+--- a/compiler/rustc_interface/src/tests.rs
++++ b/compiler/rustc_interface/src/tests.rs
+@@ -882,6 +882,7 @@
+     tracked!(regparm, Some(3));
+     tracked!(relax_elf_relocations, Some(true));
+     tracked!(remap_cwd_prefix, Some(PathBuf::from("abc")));
++    tracked!(hir_body_cache_capture, true);
+     tracked!(sanitizer, SanitizerSet::ADDRESS);
+     tracked!(sanitizer_cfi_canonical_jump_tables, None);
+     tracked!(sanitizer_cfi_generalize_pointers, Some(true));
+diff --git a/compiler/rustc_session/src/options.rs b/compiler/rustc_session/src/options.rs
+--- a/compiler/rustc_session/src/options.rs
++++ b/compiler/rustc_session/src/options.rs
+@@ -2810,6 +2810,8 @@
+     retpoline_external_thunk: bool = (false, parse_bool, [TRACKED] { TARGET_MODIFIER: RetpolineExternalThunk },
+         "enables retpoline-external-thunk, retpoline-indirect-branches and retpoline-indirect-calls \
+         target features (default: no)"),
++    hir_body_cache_capture: bool = (false, parse_bool, [TRACKED],
++        "capture conservative HIR body journals without reusing HIR (default: no)"),
+     #[rustc_lint_opt_deny_field_access("use `Session::sanitizers()` instead of this field")]
+     sanitizer: SanitizerSet = (SanitizerSet::empty(), parse_sanitizers, [TRACKED] { TARGET_MODIFIER: Sanitizer },
+         "use a sanitizer"),
+diff --git a/tests/run-make/hir-body-cache-capture/fixture.rs b/tests/run-make/hir-body-cache-capture/fixture.rs
+new file mode 100644
+--- /dev/null
++++ b/tests/run-make/hir-body-cache-capture/fixture.rs
+@@ -0,0 +1,61 @@
++#![allow(dead_code, unused_imports)]
++#![deny(unconditional_panic)]
++
++struct Counter { value: u32 }
++trait Left { fn choose(&self) -> u32; }
++trait Right { fn choose(&self) -> u32; }
++impl Left for Counter { fn choose(&self) -> u32 { self.value + 10 } }
++impl Right for Counter { fn choose(&self) -> u32 { self.value + 20 } }
++mod current {
++    use super::{Counter, Left as Selected};
++    pub(super) fn selected(x: &Counter) -> u32 { x.choose() }
++}
++impl Counter {
++    #[inline]
++    fn add(&mut self, x: u32) { self.value += x; }
++    fn field(&self) -> u32 { self.value }
++    fn method(&self) -> u32 { self.field() + 1 }
++}
++trait DefaultBody {
++    fn field(&self) -> u32;
++    fn double(&self) -> u32 { self.field() + self.field() }
++}
++impl DefaultBody for Counter { fn field(&self) -> u32 { self.value } }
++
++fn anchor(x: u32) -> u32 { let y = (x + 1); ; y * 2 }
++fn changed(x: u32) -> u32 { x + 3 }
++fn local_call(x: u32) -> u32 { anchor(x) }
++fn shadow(x: u32) -> u32 { let y = { let x = x + 1; x }; y + x }
++fn conditional(x: &Counter, yes: bool) -> u32 { if yes { x.value } else { 0 } }
++fn array_index(x: u32) -> u32 { let a = [x, x + 1]; a[1] }
++fn generic<T: Copy>(x: T) -> T { x }
++fn borrowed(x: &u32) -> u32 { *x }
++fn raw(x: &u32) -> *const u32 { &raw const *x }
++fn uninitialized(x: u32) -> u32 { let y; y = x; y }
++fn body_type(x: &u32) -> u32 { let y: &u32 = x; *y }
++fn nested() -> u32 { fn child() -> u32 { 1 } child() }
++fn closure() -> u32 { let f = || 1; f() }
++fn expansion() -> u32 { line!() }
++
++#[cfg(type_error)] fn uncalled_type() -> u32 { true }
++#[cfg(borrow_error)] fn uncalled_borrow() { let x = String::from("used"); let y = x; drop(x); }
++#[cfg(const_error)] const BAD_CONST: u32 = 1 / 0;
++#[cfg(panic_error)] fn uncalled_panic() -> u32 { 1 / 0 }
++
++fn main() {
++    let mut value = Counter { value: 2 };
++    value.add(changed(1));
++    assert_eq!(anchor(4), 10);
++    assert_eq!(local_call(4), 10);
++    assert_eq!(shadow(4), 9);
++    assert_eq!(array_index(4), 5);
++    assert_eq!(generic(4_u8), 4);
++    assert_eq!(borrowed(&4), 4);
++    assert_eq!(unsafe { *raw(&4) }, 4);
++    assert_eq!(uninitialized(4), 4);
++    assert_eq!(body_type(&4), 4);
++    assert_eq!(nested(), 1);
++    assert_eq!(closure(), 1);
++    println!("{} {} {} {} {}", current::selected(&value), value.method(), value.double(),
++        conditional(&value, true), expansion());
++}
+diff --git a/tests/run-make/hir-body-cache-capture/rmake.rs b/tests/run-make/hir-body-cache-capture/rmake.rs
+new file mode 100644
+--- /dev/null
++++ b/tests/run-make/hir-body-cache-capture/rmake.rs
+@@ -0,0 +1,69 @@
++//@ ignore-cross-compile
++
++// Unrun capture checkpoint controls. A repeated journal is explicitly NOT a
++// cache hit: both arms always perform stock lowering and normal compilation.
++use std::path::{Path, PathBuf};
++use run_make_support::{Rustc, rfs, run, rustc};
++
++fn compiler(enabled: bool, info: bool) -> Rustc {
++    let mut command = rustc();
++    command.input("input.rs").crate_name("body_journal_test").output("body_journal_test")
++        .metadata("body_journal_test").incremental(if enabled { "cache-on" } else { "cache-off" })
++        .arg(format!("-Zhir-body-cache-capture={enabled}"))
++        .arg("-Cdebuginfo=2").arg("--edition=2024");
++    if info { command.arg("-Zincremental-info"); }
++    command
++}
++
++fn success(source: &str, repeated_anchor: bool) {
++    rfs::write("input.rs", source);
++    compiler(false, false).run();
++    let ordinary = run("body_journal_test").stdout_utf8();
++    let diagnostics = compiler(true, true).run().stderr_utf8();
++    assert_eq!(ordinary, run("body_journal_test").stdout_utf8());
++    let mode = if repeated_anchor { "same-journal-after-stock-lowering" } else { "cold-journal-after-stock-lowering" };
++    assert!(diagnostics.contains(&format!("[hir-body-capture] anchor {mode}")), "{diagnostics}");
++    assert!(diagnostics.contains("cache_hits=0 body_codec=0"), "{diagnostics}");
++    for name in ["add", "field", "method", "double", "selected", "shadow", "generic"] {
++        assert!(diagnostics.contains(&format!("[hir-body-capture] {name} ")), "{diagnostics}");
++    }
++}
++
++fn records(root: &Path, output: &mut Vec<PathBuf>) {
++    for entry in std::fs::read_dir(root).unwrap() {
++        let path = entry.unwrap().path();
++        if path.is_dir() { records(&path, output); }
++        else if path.file_name().unwrap().to_string_lossy().starts_with("hir-body-capture-v2-")
++            && path.extension().is_some_and(|ext| ext == "json") { output.push(path); }
++    }
++}
++
++fn main() {
++    let original = rfs::read_to_string("fixture.rs");
++    success(&original, false);
++    success(&original.replace("x + 3", "x + 17"), true);
++    let moved = original.replace("struct Counter", "// Earlier source extent moves: λ 🚀\nstruct Counter");
++    success(&moved, true);
++    success(&original, true);
++    let trait_edit = original.replace("Left as Selected", "Right as Selected");
++    success(&trait_edit, true);
++    success(&original, true);
++    for (cfg, code) in [("type_error", "E0308"), ("borrow_error", "E0382"),
++                        ("const_error", "E0080"), ("panic_error", "unconditional_panic")] {
++        rfs::write("input.rs", &original);
++        let ordinary = compiler(false, false).arg("--cfg").arg(cfg).arg("--error-format=json")
++            .run_fail().stderr_utf8();
++        let candidate = compiler(true, false).arg("--cfg").arg(cfg).arg("--error-format=json")
++            .run_fail().stderr_utf8();
++        assert!(ordinary.contains(code), "{ordinary}");
++        assert_eq!(ordinary, candidate);
++        // Changing cfg is a normal tracked-input invalidation. It must not be
++        // relabeled a cold/hit test, and restoration still compiles normally.
++        success(&original, true);
++    }
++    let mut paths = Vec::new(); records(Path::new("cache-on"), &mut paths);
++    assert!(!paths.is_empty());
++    for path in paths { rfs::write(path, b"{\"truncated\":"); }
++    success(&original.replace("x + 3", "x + 29"), false);
++    success(&original, true);
++}

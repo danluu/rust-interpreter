@@ -19,6 +19,44 @@ fn compare(actual:Result<Execution,String>,expected:&Result<Execution,String>) {
 }
 
 #[test]
+fn guarded_local_facts_preserve_alias_declines_and_unselected_writes() {
+    for copied in [false,true] { for unselected in [false,true] {
+        let mut ops=vec![Op::Local {dst:0,offset:0},load(1,0),Op::Local {dst:3,offset:16},
+            Op::Imm {dst:4,value:23},Op::Store {address:3,src:4,size:8},
+            Op::Imm {dst:2,value:7},Op::Local {dst:7,offset:24},Op::Store {address:7,src:2,size:8}];
+        for _ in 0..8 {
+            ops.push(if copied {Op::Copy {dst:1,src:7,size:8}} else {Op::Store {address:1,src:2,size:8}});
+            ops.push(load(5,3));
+        }
+        if unselected {
+            ops.extend([Op::Local {dst:8,offset:32},load(9,8),Op::Store {address:9,src:2,size:8},load(5,3)]);
+        }
+        ops.extend([Op::Local {dst:6,offset:8},Op::Store {address:6,src:5,size:8},Op::Return]);
+        let mut f=function(ops);f.frame_size=64;f.registers=10;
+        f.args.push(Slot {offset:32,size:8});
+        let mut p=program(vec![f]);p.statics=vec![0;32];crate::validate(&p).unwrap();
+        if !unselected {
+            let jit=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+            let staged=jit.emit_function(&p.functions[0],MAX_CODE_BYTES/4).unwrap().unwrap();
+            assert!(!staged.retained_local_writes.is_empty(),"positive retention path must be exercised");
+        }
+        // Mutable statics are tagged heap bytes; 80 is the frame-local slot
+        // and 81 overlaps it partially. All are initialized valid addresses.
+        for address in [crate::heap::TAG+16,80,81] { for persistent in [false,true] {
+            let args=[address as u128,80];
+            let expected=execute_with_engine(&p,&args,Limits::default(),Engine::Interpreter).unwrap();
+            if !unselected && address==crate::heap::TAG+16 {assert_eq!(expected.value,23);}
+            if unselected || address==80 {assert_eq!(expected.value,7);}
+            for instructions in 0..=expected.instructions+1 {
+                let limits=Limits {instructions,jit_resumable_calls:true,jit_persistent_registers:persistent,..Limits::default()};
+                let reference=execute_with_engine(&p,&args,Limits {instructions,..Limits::default()},Engine::Interpreter);
+                compare(execute_with_engine(&p,&args,limits,Engine::Jit),&reference);
+            }
+        }}
+    }}
+}
+
+#[test]
 fn emitted_preflight_matches_independent_complete_range_oracle() {
     let tag=crate::heap::TAG as u64;
     let mut code=platform::Code::reserve(2*1024*1024).unwrap();
@@ -73,7 +111,7 @@ fn cached_base_survives_every_fixed_copy_width_and_popcount() {
         let mut f=function(ops);f.frame_size=512;
         let plan=range_groups::runtime_plan(&f,0,f.code.len(),&mut 4_000_000).unwrap();
         let reads=read_registers(&f);
-        let mut a=Assembler {heap,resumable:true,frame_size:512,reads:&reads,region_end:f.code.len(),..Assembler::default()};
+        let mut a=Assembler {heap,resumable:true,observe_scalar_copy:true,observe_static_local_facts:true,observe_guarded_local_retention:true,frame_size:512,reads:&reads,region_end:f.code.len(),..Assembler::default()};
         if heap {a.mov(7,5);a.mov(8,6);}
         let declines=a.prepare_guarded_range(Some(plan)).unwrap();
         for (pc,op) in f.code.iter().enumerate() {a.current_pc=pc;a.lower(op);}
