@@ -30,6 +30,11 @@ pub(super) fn parse(program: &Program, bytes: &[u8]) -> Result<Profile, String> 
 }
 
 impl FunctionProfile {
+    pub(super) fn intervals(&self) -> impl Iterator<Item = (usize, usize, u64)> + '_ {
+        self.jit_blocks.iter().zip(&self.jit_block_ends).enumerate()
+            .filter_map(|(pc, (&hits, &end))| (hits != 0).then_some((pc, end, hits)))
+    }
+
     pub(super) fn native_counts(&self, f: &Function) -> Result<Vec<u64>, String> {
         let n = f.code.len();
         if self.name != f.name || self.frame_size != f.frame_size || self.registers != f.registers

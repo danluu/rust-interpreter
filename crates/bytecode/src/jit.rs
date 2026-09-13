@@ -2015,6 +2015,13 @@ pub fn register_width_profile_census(program: &Program, profile: &[u8]) -> Resul
 
 mod constant_arguments;
 
+mod address_reuse;
+
+/// Count repeated validation in a verified saved profile; never executes guest code.
+pub fn address_reuse_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
+    address_reuse::census(program, profile)
+}
+
 /// Offline argument-byte coverage; never changes or executes the program.
 pub fn constant_call_argument_census(program: &Program, profile: Option<&[u8]>) -> Result<serde_json::Value, String> {
     constant_arguments::census(program, profile)
