@@ -1124,6 +1124,7 @@ impl Default for Assembler<'_> {
             guarded_range: Default::default(),
             values: Default::default(),
             tree_caller_is_region: Default::default(),
+            tree_bridge_frame: None,
             resumable: Default::default(),
             local_values: Default::default(),
             local_forwarding: Default::default(),
