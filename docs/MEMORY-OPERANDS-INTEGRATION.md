@@ -1,5 +1,11 @@
 # Conditional integration of the measured memory-operand stack
 
+The [completed comparison](../results/memory-operands-complete-01/assessment.md)
+fails the pgrust CPU guard. This integration remains conditional and has not
+been executed. The next work is a distinct composition with compiler-identity
+lookup caching; it must earn its own completed result. The source review below
+records the scope of the original memory-only proposal.
+
 Token completes154 expected commands and passes its prospective gate. Folded
 and pgrust are still required. Do not import runtime source until the complete
 comparison is assessed; the frozen benchmark inputs stay unchanged meanwhile.
