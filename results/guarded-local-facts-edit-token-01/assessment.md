@@ -18,3 +18,10 @@ private rg-aot and Nushell type relations. All four regression guards remain
 required, along with the completed 114-test parser compatibility control, before
 runtime adoption. No full-campaign or general large-project speedup is claimed
 from this single case.
+
+Saved nested-stage observations show paired execution wall 0.937527 (6.25%
+lower). Cargo wall is 0.987679 with identical compiler binaries; do not attribute
+that movement to a compiler optimization. Descriptive candidate stage medians
+are 1.518 seconds in Cargo and 2.653 seconds in execution. Timers overlap in
+scope and are not additive components. These observations use the same completed
+15 pairs and do not change the gate or introduce new guest commands.
