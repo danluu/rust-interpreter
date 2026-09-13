@@ -1,0 +1,46 @@
+# Prospective primary screen
+
+Run exactly one current token history: original, wrong production edit, five
+cumulative valid production edits, restored original. All12 selected original
+tests and their assertions remain unchanged. Five modes at each state give40
+commands. Only the five valid edited states enter the timing gate.
+
+The baseline and A/A duplicate use adopted e729a493; candidate ac02a5e2 changes
+only the VM. These three use identical exporter/wrapper binaries, automatic
+function caching and cached toolchain lookup. The fixed anchor fe9dcae0 keeps
+its original cache policy and fresh lookup. Native uses ordinary repository
+Cargo test settings. Use two Cargo workers and two prepared custom workers;
+native libtest retains its default test concurrency. Preserve the existing
+guest MIR flags,100billion instruction limit and150000 allocation limit.
+Separate fresh namespaces give each mode the same source history.
+
+Custom order repeats the four rows B,D,A,C; D,C,B,A; C,A,D,B; A,B,C,D.
+Here B=baseline, D=duplicate, C=candidate and A=fixed anchor. Native runs first
+on source indices0,2,4,6 and last on1,3,5,7. Freeze this executable schedule,
+all source fingerprints, tool identities and helper files before the first
+command. Require matching per-test outcomes and identical baseline/duplicate/
+candidate bytecode and catalogs, including the intentionally wrong edit.
+
+Compute each candidate/baseline wall and CPU ratio before taking the median
+over the five valid edits. A/A is the maximum absolute individual
+duplicate/baseline deviation from1, separately for wall and CPU. It describes
+observed variation in this short screen and is not a confidence interval.
+Proceed to a prospectively declared full comparison only if wall ratio is
+strictly below1 minus wall A/A, CPU ratio is at most1 and CPU ratio plus CPU
+A/A is at most1.05. Fixed-anchor/native ratios are contextual; prior adopted
+gains cannot satisfy the new candidate's gate. No adoption follows from this
+screen. A failed or inconclusive screen cancels unstarted guards; retain the
+result and do not repeat it to cross the threshold.
+
+Require14GiB at admission and8GiB before each command, with the shared lock
+held for the entire case and45-second lock admission. The previous full token
+case's four custom caches occupied391164/391164/391164/260300KiB and its native
+cache393252KiB. A6GiB new-data allowance covers those caches, saved artifacts
+and additional margin above the8GiB reserve. Recheck the independent disk
+sampler before launching; do not assume other workloads leave space constant.
+Do not control other sessions or perform host cleanup in this runner.
+
+Prerequisites:433 Rust tests per profile,107 harness checks, seven exact real
+test replays, nine suite commands,203 strict native/cache checks and three
+profiles with unchanged per-PC logical work. These are correctness and
+mechanism checks, not additional timing pairs.
