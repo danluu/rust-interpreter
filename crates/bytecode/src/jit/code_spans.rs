@@ -13,6 +13,8 @@ mod local_census;
 mod protocol_census;
 #[cfg(test)]
 mod scratch_census;
+#[cfg(test)]
+mod flush_census;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
