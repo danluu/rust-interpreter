@@ -367,7 +367,9 @@ def _main(resources):
         std_options={} if custom is None else dict(custom=custom,namespace='stable-cgu:'+args.stable_cgu_partitioning)
         std=checked_std_mir(TOOLCHAIN,lookup=args.toolchain_lookup,lookup_stats=lookup_stats,**std_options)
         timings['std_mir_seconds']=time.perf_counter()-stage
-        if stats:timings['toolchain_lookup']=lookup_stats
+        if stats:
+            timings['toolchain_lookup']=lookup_stats
+            timings['std_mir']=dict(key=std[2],sysroot=str(std[0]),target=std[1])
     selection=args.entry[0] if len(args.entry)==1 else json.dumps(args.entry,separators=(',',':'))
     identity_input='shared-entries-v1\0'+str(manifest)+'\0'+args.package+'\0'+str(args.test_body)
     # Cargo already separates selected test units by target identity. Share
