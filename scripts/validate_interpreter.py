@@ -64,8 +64,9 @@ def main():
     run(['rustc', '+' + TOOLCHAIN, source, '--edition=2024', '-o', work / 'native'])
     seeds = [0,1,2,3,127,128,255,256,2**63-1,2**63,2**64-1]
     seeds += [random.Random(i).getrandbits(64) for i in range(100)]
-    expected = run([work / 'native', *seeds]).splitlines()
-    for seed, want in zip(seeds, expected):
+    interpreter_expected = run([work / 'native', *seeds]).splitlines()
+    assert len(interpreter_expected) == len(seeds)
+    for seed, want in zip(seeds, interpreter_expected):
         assert evaluate(seed) == want
 
     popcount_source = ROOT / 'tests/popcount_fixture.rs'
@@ -438,7 +439,7 @@ def main():
     }
     for policy in ['demand','demand-cache']:
         export(source,policy=policy)
-        for seed,want in zip(seeds,expected):
+        for seed,want in zip(seeds,interpreter_expected):
             assert evaluate(seed)==want
         for name in ['uncalled-type-error','uncalled-borrow-error']:
             export(work/(name+'.rs'),policy=policy)
