@@ -43,3 +43,14 @@ from retained complete cache inventories plus temporary-file allowance before
 starting. Preserve source snapshots, private-data boundaries, peer worktrees,
 all completed and failed receipts, and the paused goal state. No process control,
 new service activation, subagents or new cleanup service is authorized here.
+
+The prospective `build.py` enforces the completed comparison, its terminal
+receipt, all five case identities and the exact VM/shared Rust and Cargo input
+set before starting qualification. It reads source only from the owned
+publication worktree. Its five controller checks reject a failed final guard,
+repeated commands, changed case/tool/source identity and changed or added VM
+inputs. They run under the same lock before current-main Python contracts and
+debug/release exporter tests. The prior 504-test count covers the whole
+workspace; only the unchanged bytecode component's proof is reused. A newly
+composed immutable tool remains explicitly pending real-project qualification.
+This controller has not been run while the original Nushell case is active.
