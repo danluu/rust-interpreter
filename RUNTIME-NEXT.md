@@ -21,16 +21,17 @@ suggestion. Historical experiments retain their original decisions.
    Modest correct mechanisms were composed and measured; their old ratios are
    not multiplied or their failed gates retroactively changed.
    [Latest token result](results/call-capacity-credit-edit-token-02/stage-assessment.md).
-3. **Confirm the next runtime opportunity on current artifacts.** The original
-   exhaustive test process retires7.132× native instructions and4.398× cycles,
-   with lower CPI. That favors instruction-volume work but does not identify
-   which emitter change saves time. The historical operation profile points
-   to indirect calls and allocation primitives among VM returns; a three-test exact census is now running
-   on current integrated token/folded artifacts before implementing a bridge
-   or dispatch change. Measure actual fast-path use if revisiting capacity design. Preserve
-   readiness, ownership, fault order, exact budgets and strict checking.
-   Do not repeat negligible width packing or tagged-address check shuffling.
-   [Counter scope](results/process-instruction-counts-01-completed/assessment.md).
+3. **Qualify wide bitwise operations, then measure their complete commands.**
+   The current-artifact census passes all six control/profile commands and
+   finds4.84million interpreted128-bit bitwise/shift operations in the dominant
+   block-boundary test,71.5% of its interpreted operations. The custom emitter
+   now handles And/Or/Xor/Shl/Shr. Host419-test/profile qualification is running,
+   followed by exact original selections, serial/prepared suites and strict
+   cache/native checks. Then freeze fifteen edited pairs, A/A, native controls
+   and folded/pgrust guards. Keep the exhaustive token test in the selection;
+   it has far fewer such operations. Counts do not predict a time saving.
+   [Current census](results/current-runtime-boundaries-02/assessment.md),
+   [qualification plan](benchmarks/experiments/wide-bitwise/PLAN.md).
 4. **Keep frontend work tied to its own costs.** Main's invocation-local
    compiler reuse is integrated. The latest token comparison records about
    139ms rebinding within642ms baseline lowering. Resolve the binding cost
