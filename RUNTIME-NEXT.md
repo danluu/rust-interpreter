@@ -46,7 +46,9 @@ suggestion. Historical experiments retain their original decisions.
    20 real Cargo checks and seven driver tests. Its fixed pgrust/rg-aot/
    Nushell comparison is running, with identical runtime/compiler binaries
    and strict checking in every custom arm. Pgrust passes with wall−5.96%
-   and CPU−5.16%; complete both remaining guards before adoption.
+   and CPU−5.16%. Private rg-aot improves13.18% wall/11.67% CPU but misses
+   its3% CPU-noise limit (observed3.67%). Keep that failed gate, finish
+   Nushell and review the complete evidence without retiming.
    The next compute-bound design is bounded guarded indirect-call
    specialization; [design](docs/INDIRECT-CALL-NEXT.md), no implementation yet. Full-catalog selection remains later work;
    original checking and artifact identity requirements remain intact.

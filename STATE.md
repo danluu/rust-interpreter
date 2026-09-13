@@ -18,7 +18,11 @@ three-project comparison is running pgrust, private rg-aot and Nushell,132
 changed-source commands each. Pgrust completes132 expected commands and
 passes: paired wall−5.96%, CPU−5.16%, beyond1.52% wall/1.43% CPU A/A.
 Std-MIR lookup falls from38ms to6ms; artifacts remain identical.
-Private rg-aot and Nushell guards remain mandatory.
+Private rg-aot completes132 expected commands: wall−13.18%, CPU−11.67%.
+Its3.67% CPU A/A exceeds the3% quality bound, so that guard does not pass.
+Keep its measured improvement and failed gate explicit. Nushell remains
+mandatory and is running.
+[Private aggregate result](results/toolchain-lookup-edit-rg-aot-01/assessment.md).
 [Pgrust result](results/toolchain-lookup-edit-pgrust-01/assessment.md).
 [Qualification](results/toolchain-lookup-cargo-01/summary.json),
 [prospective comparison](benchmarks/experiments/toolchain-lookup/WORKFLOW.md).
