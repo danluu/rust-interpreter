@@ -69,7 +69,8 @@ def dump_options(dump, command):
     resumable = dump.get('resumable_calls', False)
     require(not resumable or not any(f in command for f in ['--jit-native-calls', '--jit-native-call-stubs']),
             'incompatible dumped runtime options')
-    allowed = ({'resumable_region', 'resumable_call', 'resumable_return'} if resumable else
+    allowed = ({'resumable_region', 'resumable_call', 'resumable_return',
+                'resumable_indirect_dispatch', 'resumable_indirect_call'} if resumable else
                {'ordinary_region'} | ({'call_stub'} if '--jit-native-call-stubs' in command else set()) |
                ({'native_tree'} if '--jit-native-calls' in command else set()))
     require(all(r['kind'] in allowed for r in dump['ranges']), 'dumped range kind differs from runtime options')

@@ -832,6 +832,7 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 frames: frames.as_mut_ptr(),
                                 registers: registers.as_mut_ptr(),
                                 entries: jit.resumable.as_ref().unwrap().pointers.as_ptr(),
+                                indirect: jit.resumable.as_ref().unwrap().indirect_pointers.as_ptr(),
                                 profiles: profiles.as_ptr(),
                                 memory_end,
                                 register_end,

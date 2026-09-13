@@ -33,10 +33,12 @@ Run full debug/release tests before any new runtime execution outside tests;
 then qualify exact saved assertions/entropy, serial/prepared suites and strict
 native/cache controls. Provisional expected host count is424 per profile.
 
-The toolchain-lookup benchmark is currently active against immutable49746a22
-tools. These runtime source files are not its measured inputs. Do not build,
-test or profile this candidate until that controller finishes and this task
-can acquire the shared benchmark lock. No runtime performance has been measured.
+The toolchain-lookup benchmark completed all396 expected outcomes against
+immutable49746a22 tools before this qualification started. The first host
+build found two existing direct-entry test fixtures missing the new cursor
+pointer field; compilation stopped before tests ran. Both fixtures now use
+the prepared JIT table pointer. Preserve that failed receipt and rerun the
+changed source under the shared lock. No runtime performance has been measured.
 
 Before this candidate's timing, freeze its full command driver and tests.
 The full twelve-test token selection, including both dominant tests, is primary;
