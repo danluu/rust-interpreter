@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 from benchmark import ratios
-from states import native_outcomes, source_states
+from states import native_outcomes, source_states, custom_export_ran, check_prefix_schedule
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -73,6 +73,26 @@ class ProtocolTests(unittest.TestCase):
 
     def test_missing_mode_cannot_become_an_incomplete_timing_pair(self):
         with self.assertRaises(AssertionError): ratios([])
+
+    def test_custom_export_requires_target_progress_and_exact_export_completion(self):
+        export = 'rust-interp-export: frontend_ms=1 lowering_ms=2 functions=3 ops=4 bytes=5\n'
+        for label in ['Checking', 'Compiling']:
+            self.assertTrue(custom_export_ran('   ' + label + ' gram_core v0.1.0 (/source)\n' + export))
+        for text in [export, 'Compiling gram_core\n', '   Fresh gram_core v0.1.0\n' + export,
+                     '   Checking other_crate v0.1.0\n' + export,
+                     '   Compiling gram_core v0.1.0\n' + export * 2]:
+            self.assertFalse(custom_export_ran(text))
+
+    def test_continuation_cannot_change_profile_order_source_or_prior_outcomes(self):
+        schedule = [dict(cycle=0, state=0, mode=mode, label='original', source_sha256='original')
+                    for mode in ['native', 'custom-a', 'custom-b']] * 22
+        rows = [dict(s, index=i, returncode=0) for i, s in enumerate(schedule[:2])]
+        check_prefix_schedule(rows, schedule, 'repository')
+        with self.assertRaises(ValueError): check_prefix_schedule(rows, schedule, 'incremental')
+        for bad in [rows[::-1], rows[:1], rows + rows[:1],
+                    [dict(rows[0], source_sha256='different'), rows[1]],
+                    [rows[0], dict(rows[1], returncode=1)]]:
+            with self.assertRaises(ValueError): check_prefix_schedule(bad, schedule, 'repository')
 
 
 if __name__ == '__main__':

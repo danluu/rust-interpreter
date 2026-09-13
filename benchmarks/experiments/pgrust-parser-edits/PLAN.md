@@ -42,3 +42,21 @@ Read the independent disk sampler before launching; do not create another cleane
 or control another session. Existing support and five-project checks are separate
 correctness evidence. This baseline guides the next optimization; it makes no
 claim that capacity/environment support itself is a speed optimization.
+
+## Retained prefix and validator repair
+
+Repository run01 completed native and custom-A original commands, both114/114,
+then rejected Cargo's `Compiling gram_core` label. The pinned launcher actually
+uses cargo check --profile test and the exporter ran successfully. The offline
+prefix audit verifies every original frozen input, both logs, source restoration,
+suite/artifacts, and terminal receipt before changing the validator. Accept either
+Checking or Compiling for this selected target and still require exactly one
+exporter completion marker. Qualify this boundary and prefix rejection controls.
+
+Continue only those two retained commands, using the same original native cache
+and custom namespaces with a fresh output directory and64 unstarted commands.
+Bind repaired input files to their original Git blobs and the successful prefix
+audit; reject other source changes. Keep timings and schedule unchanged, record
+prefix/new command counts separately, and preserve all native executable versions
+as well as bytecode/catalogs. A separate incremental profile remains a new66-command
+experiment. No edited timing has been collected in the stopped prefix.

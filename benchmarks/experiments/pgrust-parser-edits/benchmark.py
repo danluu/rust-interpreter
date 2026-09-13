@@ -21,7 +21,7 @@ from workflow_io import SourceEdit, capture, require_space, write_json as write
 from workflow_measurements import child_usage, child_cpu_since, mode_order
 from workflow_controls import exporter_seconds
 from bench_e2e_workflow import build_metrics
-from states import source_states, native_outcomes
+from states import source_states, native_outcomes, custom_export_ran, check_prefix_schedule
 
 MODES = ['native', 'custom-a', 'custom-b']
 
@@ -54,6 +54,7 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--profile', choices=['repository', 'incremental'], required=True)
     parser.add_argument('--harness', type=Path, required=True)
+    parser.add_argument('--prefix-proof', type=Path)
     args = parser.parse_args()
     assert __debug__ and args.run_id.startswith('pgrust-parser-edits-') and Path(args.run_id).name == args.run_id
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -61,7 +62,7 @@ def main():
         require_space(ROOT, 18)
         harness_path = args.harness.resolve(strict=True)
         harness = json.loads(harness_path.read_text())
-        assert harness['status'] == 'passed' and harness['tests'] == 7
+        assert harness['status'] == 'passed' and harness['tests'] == 9
         inputs_path = ROOT / harness['raw'] / 'inputs.json'
         assert sha(inputs_path) == harness['inputs_sha256']
         assert all(sha(ROOT / p) == h for p, h in json.loads(inputs_path.read_text()).items())
@@ -100,8 +101,49 @@ def main():
             if p.startswith('.work/sources/pgrust/'):
                 assert fingerprint(ROOT / p) == h
         work = ROOT / '.work' / args.run_id
+        cache_scope = args.run_id
+        prefix_rows, prefix_details = [], None
+        if args.prefix_proof:
+            prefix_path = args.prefix_proof.resolve(strict=True)
+            prefix = json.loads(prefix_path.read_text())
+            assert prefix['status'] == 'two-command prefix verified; validator mismatch retained'
+            assert prefix['commands'] == 2 and prefix['edited_commands'] == 0 and prefix['source_restored']
+            old = ROOT / prefix['raw']
+            assert sha(old / 'plan.json') == prefix['plan_sha256']
+            assert sha(old / 'records.json') == prefix['original_records_sha256']
+            assert sha(old / 'audited-prefix.json') == prefix['audited_prefix_sha256']
+            old_plan = json.loads((old / 'plan.json').read_text())
+            assert old_plan['tool_key'] == key and old_plan['profile'] == args.profile == 'repository'
+            allowed = {str(Path(__file__).relative_to(ROOT)),
+                       *[str(Path(__file__).with_name(n).relative_to(ROOT)) for n in ['states.py', 'test_protocol.py', 'check.py', 'PLAN.md']]}
+            for path, expected in old_plan['frozen'].items():
+                actual = fingerprint(ROOT / path)
+                if actual != expected:
+                    assert path in allowed and expected['kind'] == 'file'
+                    old_bytes = subprocess.check_output(['git', 'show', old_plan['source_commit'] + ':' + path], cwd=ROOT)
+                    assert hashlib.sha256(old_bytes).hexdigest() == expected['sha256']
+            prefix_rows = json.loads((old / 'audited-prefix.json').read_text())
+            for row in prefix_rows:
+                for stream in ['stdout', 'stderr']:
+                    assert sha(old / f"{row['index']}.{stream}") == row[stream + '_sha256']
+                for kind in ['artifact', 'entry_catalog', 'executable']:
+                    if kind in row: assert sha(ROOT / row[kind]['path']) == row[kind]['sha256']
+                row['log_raw'] = prefix['raw']
+                row['outcomes'] = [tuple(outcome) for outcome in row['outcomes']]
+            cache_scope = old.name
+            prefix_details = dict(proof=str(prefix_path.relative_to(ROOT)), proof_sha256=sha(prefix_path),
+                                  retained_commands=2, old_raw=prefix['raw'], old_plan_sha256=prefix['plan_sha256'])
+            frozen.update({str(p.relative_to(ROOT)): fingerprint(p) for p in
+                           [prefix_path, old / 'plan.json', old / 'records.json', old / 'audited-prefix.json']})
         work.mkdir(exist_ok=False)
         artifacts = work / 'artifacts'; artifacts.mkdir()
+        for row in prefix_rows:
+            if row['mode'] == 'native':
+                exe = row['executable']; saved = artifacts / (exe['sha256'] + '.native')
+                shutil.copy2(ROOT / exe['path'], saved)
+                assert sha(saved) == exe['sha256']
+                row['native_build_executable'] = exe['path']
+                row['executable'] = dict(path=str(saved.relative_to(ROOT)), sha256=exe['sha256'])
         env = {k: v for k, v in os.environ.items()
                if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
@@ -112,7 +154,7 @@ def main():
         if args.profile == 'incremental': env['CARGO_INCREMENTAL'] = '1'
         native = native_rows[0]['command'].copy()
         assert native.count('--target-dir') == 1
-        native[native.index('--target-dir') + 1] = str(work / 'native')
+        native[native.index('--target-dir') + 1] = str(ROOT / '.work' / cache_scope / 'native')
         custom = prior_plan['command'].copy()
         assert [custom[i + 1] for i, value in enumerate(custom) if value == '--entry'] == names
         assert custom[custom.index('--tool-key') + 1] == key
@@ -124,21 +166,34 @@ def main():
                 schedule.append(dict(cycle=state['cycle'], state=state['state'], mode=mode,
                     label=state['label'], source_sha256=hashlib.sha256(state['source']).hexdigest()))
         assert len(schedule) == 66
+        if prefix_rows:
+            check_prefix_schedule(prefix_rows, schedule, args.profile)
+            assert prefix_rows[0]['command'] == native, 'retained native command differs'
+            expected_custom = custom.copy()
+            for option, value in [('--suite-report', str(ROOT / prefix_details['old_raw'] / '1-suite.json')),
+                                  ('--cache-namespace', cache_scope + ':custom-a')]:
+                assert expected_custom.count(option) == 1
+                expected_custom[expected_custom.index(option) + 1] = value
+            assert prefix_rows[1]['command'] == expected_custom, 'retained custom command differs'
         write(work / 'plan.json', dict(owner=str(ROOT), revision=PIN, tool_key=key, binaries=binaries,
             source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
             profile=args.profile, cargo_incremental=env.get('CARGO_INCREMENTAL', 'project defaults'),
             frozen=frozen, original_source_sha256=hashlib.sha256(original).hexdigest(),
             schedule=schedule, native_command_template=native, custom_command_template=custom,
-            commands=66, cycles=3, original_tests=114, cargo_jobs=2, custom_workers=2,
+            commands=66, new_commands=66-len(prefix_rows), prefix=prefix_details, cache_scope=cache_scope,
+            cycles=3, original_tests=114, cargo_jobs=2, custom_workers=2,
             native_threads='libtest default', initial_free_bytes=shutil.disk_usage(ROOT).free,
             minimum_child_gib=8, initial_minimum_gib=18, performance_measurement=True))
-        records, by_state = [], {}
+        records, by_state = prefix_rows, {}
+        for row in prefix_rows:
+            if row['mode'] != 'native':
+                for kind in ['artifact', 'entry_catalog']: by_state[row['state'], kind] = row[kind]['sha256']
         with SourceEdit(changed, original) as edit:
             for state in states:
                 edit.replace(state['source'])
                 selected = [s for s in schedule if (s['cycle'], s['state']) == (state['cycle'], state['state'])]
-                current = []
-                for scheduled in selected:
+                current = [r for r in records if (r['cycle'], r['state']) == (state['cycle'], state['state'])]
+                for scheduled in selected[len(current):]:
                     index = len(records); mode = scheduled['mode']
                     assert sha(changed) == scheduled['source_sha256']
                     require_space(ROOT, 8)
@@ -146,7 +201,7 @@ def main():
                     command = native.copy() if mode == 'native' else custom.copy()
                     selected_env = env.copy()
                     if mode != 'native':
-                        for option, value in [('--suite-report', str(suite)), ('--cache-namespace', args.run_id + ':' + mode)]:
+                        for option, value in [('--suite-report', str(suite)), ('--cache-namespace', cache_scope + ':' + mode)]:
                             assert command.count(option) == 1
                             command[command.index(option) + 1] = value
                         selected_env['RUST_INTERP_LAUNCH_STATS'] = '1'
@@ -155,7 +210,7 @@ def main():
                         receipt_path=work / 'active.json', receipt=dict(index=index, **scheduled))
                     wall = time.perf_counter() - start; cpu = child_cpu_since(usage)
                     (work / f'{index}.stdout').write_text(out); (work / f'{index}.stderr').write_text(err)
-                    row = dict(scheduled, index=index, pid=child.pid, command=command,
+                    row = dict(scheduled, index=index, pid=child.pid, command=command, log_raw=str(work.relative_to(ROOT)),
                         returncode=child.returncode, wall_seconds=wall, cpu_seconds=cpu['total_seconds'], cpu=cpu,
                         stdout_sha256=sha(work / f'{index}.stdout'), stderr_sha256=sha(work / f'{index}.stderr'))
                     records.append(row); write(work / 'records.json', records)
@@ -164,8 +219,12 @@ def main():
                     if mode == 'native':
                         row['outcomes'] = native_outcomes(out, names, success)
                         exe = native_target(out, source / 'crates/backend/parser/gram_core/src/lib.rs').resolve(strict=True)
-                        assert exe.is_relative_to((work / 'native').resolve())
-                        row['executable'] = dict(path=str(exe.relative_to(ROOT)), sha256=sha(exe))
+                        assert exe.is_relative_to((ROOT / '.work' / cache_scope / 'native').resolve())
+                        digest = sha(exe); saved = artifacts / (digest + '.native')
+                        if not saved.exists(): shutil.copy2(exe, saved)
+                        assert sha(saved) == digest
+                        row['native_build_executable'] = str(exe.relative_to(ROOT))
+                        row['executable'] = dict(path=str(saved.relative_to(ROOT)), sha256=digest)
                         assert 'Compiling gram_core ' in err, 'selected native source was not rebuilt'
                     else:
                         launch, = [json.loads(l.split(': ', 1)[1]) for l in err.splitlines() if l.startswith('rust-interp-launch: ')]
@@ -175,7 +234,7 @@ def main():
                         report, digest = read_report(suite, launch['suite_report_sha256'])
                         row['outcomes'] = validate_report(report, names, 'prepared', success)
                         validate_runtime_limits(report, 100000000000, 150000, required=True)
-                        assert 'Checking gram_core ' in err, 'selected custom source was not checked'
+                        assert custom_export_ran(err), 'selected custom source did not run the exporter'
                         assert report['workers'] == report['requested_workers'] == 2
                         row.update(suite_sha256=digest, launch=launch, stages=exporter_seconds(err), build=build_metrics(launch))
                         for kind, suffix in [('artifact', 'rbc'), ('entry_catalog', 'json')]:
@@ -196,7 +255,8 @@ def main():
         assert all(fingerprint(ROOT / p) == h for p, h in frozen.items())
         assert len(records) == 66
         result = ROOT / 'results' / args.run_id; result.mkdir(exist_ok=False)
-        write(result / 'summary.json', dict(status='passed', commands=66, original_tests=114,
+        write(result / 'summary.json', dict(status='passed', commands=66, new_commands=66-(2 if prefix_details else 0),
+            prefix=prefix_details, original_tests=114,
             profile=args.profile, tool_key=key, source_restored=True, frozen_inputs_verified=len(frozen),
             original_assertions_unchanged=True, exact_native_test_outcomes=True,
             raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),

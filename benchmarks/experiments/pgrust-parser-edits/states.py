@@ -22,6 +22,25 @@ EDITS = [
 ]
 
 
+def custom_export_ran(stderr):
+    # Pinned Cargo labels Check { test: true } as Compiling in this profile.
+    # Require the selected target plus a newly emitted exporter completion.
+    progress = re.findall(r'^\s+(?:Checking|Compiling) gram_core v[^\n]+$', stderr, re.M)
+    exports = re.findall(r'^rust-interp-export: frontend_ms=[^\n]+$', stderr, re.M)
+    return len(progress) == len(exports) == 1
+
+
+def check_prefix_schedule(rows, schedule, profile):
+    if profile != 'repository' or len(rows) != 2 or len(schedule) != 66:
+        raise ValueError('only the audited two-command repository prefix may continue')
+    for index, mode in enumerate(['native', 'custom-a']):
+        row = rows[index]
+        if (row['index'], row['cycle'], row['state'], row['mode'], row['returncode']) != (index, 0, 0, mode, 0):
+            raise ValueError('prefix is reordered, failed or contains edited observations')
+        if {k: row[k] for k in schedule[index]} != schedule[index]:
+            raise ValueError('prefix does not match the frozen schedule')
+
+
 def source_states(original, cycles=3):
     if not isinstance(original, bytes) or cycles != 3:
         raise ValueError('this protocol requires bytes and exactly three cycles')
