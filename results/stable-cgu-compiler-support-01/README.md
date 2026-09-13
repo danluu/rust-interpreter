@@ -1,0 +1,9 @@
+# Compiler support-tool qualification
+
+Normal release tool compilation exposed a missing `rust-objcopy` in package05. The frozen bootstrap profile has `llvm-tools=false`; its native compiler can still request the tool for normal Darwin strip modes. Package06 adds exactly the configured CI LLVM archive's `llvm-objcopy`, renamed to `lib/rustlib/aarch64-apple-darwin/bin/rust-objcopy` using the pinned bootstrap distribution convention. No compiler/configuration/profile/strip setting changed, and no compiler rebuild ran.
+
+All 6,982 prior package files and all 60 qualified runtime paths remain byte-identical. The sole addition is the verified 244,992-byte support executable. Its `@loader_path/../lib` search path resolves to the previously preserved native LLVM library. The new package contains 6,983 files.
+
+Six real native controls passed: executable and proc-macro builds with strip modes none, debuginfo and symbols. Each executable ran; every proc macro was loaded by the same compiler to compile a consumer, and each consumer ran. Debug-symbol counts fell from 4,123 to zero for the executable and 4,394 to zero for the macro. Symbols mode reduced the tables further to 70 and 62 entries. Compiler strip warnings were rejected. Every package file stayed unchanged throughout.
+
+The earlier 15 native CGU histories remain evidence for the identical runtime and were not repeated for this support-only addition. This archive preserves the new exact receipts, source fixtures, commands, outputs, compiler/support-tool hashes and package inventory. It includes both the initial source-inspection receipt with a case-only log-name collision and the corrected distinct log names; that logging issue did not affect the archive-member/binary equality check. The separate installer and full interpreter integration still determine publication readiness. There is no performance claim.
