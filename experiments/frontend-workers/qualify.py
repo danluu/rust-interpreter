@@ -17,6 +17,8 @@ from interpreter import TOOLCHAIN, installed_tools, require_export_option
 from std_mir import FLAGS, POLICY, stamp
 from workflow_io import SourceEdit, capture, require_space, write_json
 
+QUALIFICATION_POLICY = 'frontend-workers-qualification-v1'
+
 ERRORS = {
     'type': ('fn unused() { let _: u32 = false; }\n', 'E0308'),
     'borrow': ('fn unused() { let x = vec![1]; let y = &x; drop(x); println!("{:?}", y); }\n', 'E0505'),
@@ -81,6 +83,8 @@ def main():
     parser.add_argument('--lock', type=Path, required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=600)
     args = parser.parse_args()
+    require(args.lock.is_absolute() and args.lock.is_file()
+            and args.lock.resolve(strict=True) == args.lock, 'qualification requires an existing explicit campaign lock')
     run = args.run_dir.resolve()
     require(not run.exists() and run.parent.is_dir(), 'run directory must be new in an existing parent')
     try:
@@ -98,8 +102,9 @@ def qualify(args,run):
     require_export_option(tools,key,'frontend-workers-v1')
     require_export_option(tools,key,'function-cache-auto')
     require_capability(tools,caps,manifest)
-    source_files = [ROOT/'Cargo.toml',ROOT/'Cargo.lock',*sorted((ROOT/'scripts').glob('*.py')),
-                    *sorted((ROOT/'crates').rglob('*.rs')),
+    source_files = [ROOT/'Cargo.toml',ROOT/'Cargo.lock',ROOT/'rust-toolchain.toml',
+                    *sorted((ROOT/'.cargo').rglob('*')),*sorted((ROOT/'scripts').glob('*.py')),
+                    *sorted((ROOT/'crates').rglob('*')),
                     *sorted((Path(__file__).parent/'fixture').rglob('*'))]
     frozen = {str(path):sha(path) for path in source_files if path.is_file()}
     frozen[str(Path(__file__).resolve())] = sha(Path(__file__))
@@ -107,7 +112,8 @@ def qualify(args,run):
     (run/'logs').mkdir()
     (run/'artifacts').mkdir()
     (run/'cache').mkdir()
-    plan = dict(status='waiting', supervisor_pid=os.getpid(), parent_pid=os.getppid(),
+    plan = dict(status='waiting', policy=QUALIFICATION_POLICY, owner=str(ROOT),
+                supervisor_pid=os.getpid(), parent_pid=os.getppid(),
                 argv=sys.argv, cwd=os.getcwd(), started_at=time.time(), tool_key=key,
                 tools=manifest, capability=caps, frozen=frozen, lock=str(args.lock.resolve()),
                 scope='correctness only; no performance conclusion', jobs=2)
@@ -118,10 +124,14 @@ def qualify(args,run):
 
     def invoke(label, command, env=environment):
         require_space(run,8)
+        inputs = [run/'fixture/shared/src/lib.rs',run/'fixture/src/lib.rs']
+        if '-native-diagnostic-' in label:inputs.append(run/'diagnostic.rs')
+        sources = {str(p.relative_to(run)):sha(p) for p in inputs if p.is_file()}
         child,stdout,stderr = capture(command,cwd=run,env=env,
             receipt_path=run/'logs'/f'{label}-process.json',
-            receipt=dict(label=label,environment=compiler_environment(env)))
-        row = dict(label=label,command=command,returncode=child.returncode,stdout=stdout,stderr=stderr)
+            receipt=dict(label=label,environment=compiler_environment(env),sources=sources))
+        require(all(sha(run/name)==value for name,value in sources.items()),'qualification source changed during child')
+        row = dict(label=label,command=command,returncode=child.returncode,stdout=stdout,stderr=stderr,sources=sources)
         write_json(run/'logs'/f'{label}.json',row)
         records.append(row)
         return row
@@ -218,7 +228,7 @@ def qualify(args,run):
         installed_tools(key)
         require(sha(std_work/'ready.json')==plan['std_ready_sha256'],'std preparation identity changed')
         prepared_std_unchanged(std_work,ready,host)
-        write_json(run/'result.json',dict(status='passed',tool_key=key,commands=len(records),
+        write_json(run/'result.json',dict(status='passed',policy=QUALIFICATION_POLICY,tool_key=key,commands=len(records),
             workspaces={str(k):str(v) for k,v in workspace_paths.items()},
             logs={str(p.relative_to(run)):sha(p) for p in sorted((run/'logs').glob('*.json'))},
             original_artifact_sha256=hashlib.sha256(original).hexdigest(),

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Validate and archive saved stable-CGU or Cargo-info-cache mechanism screens."""
 import argparse
+import base64
 import gzip
 import os
 import json
@@ -14,8 +15,22 @@ from screen import CASE, assessment as assess_rows, protocol_states, frozen_inpu
 from suite_reports import read_report, validate_report, validate_runtime_limits
 
 
+def member_bytes(item):
+    require(('utf8' in item) != ('base64' in item), 'ambiguous archive member encoding')
+    return item['utf8'].encode() if 'utf8' in item else base64.b64decode(item['base64'], validate=True)
+
+
+def saved_member(path):
+    data = path.read_bytes()
+    result = dict(path=str(path), bytes=len(data), sha256=sha(data))
+    try:result['utf8'] = data.decode('utf-8')
+    except UnicodeError:result['base64'] = base64.b64encode(data).decode('ascii')
+    return result
+
+
 def markdown(s):
-    title = {'stable-cgu': 'Stable code-generation groups', 'cargo-info-cache': 'Cargo compiler-info cache'}[s['candidate_policy']]
+    title = {'stable-cgu': 'Stable code-generation groups', 'cargo-info-cache': 'Cargo compiler-info cache',
+             'frontend-workers': 'Compiler frontend workers'}[s['candidate_policy']]
     medians = s['complete_command_median_seconds']
     lines = ['# ' + title + ' mechanism screen', '',
         f"Candidate median: {medians['candidate']:.6f} s; baseline: {medians['baseline']:.6f} s; "
@@ -52,6 +67,9 @@ def markdown(s):
         ('The compiler binary, native std and exporter/VM are identical for off/on/off. '
          'This comparison does not attribute differences from a separately built public compiler to the patch.'
          if s['candidate_policy'] == 'stable-cgu' else
+         'Only explicit frontend worker counts change (1/2/1). Stock compiler, tool binaries, standard library, '
+         'Cargo jobs, backend/linker policy and checking remain equal. The final public build identity and '
+         'separate actual 30-command worker qualification were verified.' if s['candidate_policy'] == 'frontend-workers' else
          'The matched Cargo executables differ only by the qualified production-source change, with '
          'equal build settings and dynamic libraries. Cargo optimization is isolated from custom compiler policies.'), '',
         '[summary.json](summary.json) retains every pair, command, setup identity and artifact hash. '
@@ -110,7 +128,7 @@ def selection(plan, snapshot):
     policy = plan['candidate_policy']
     modes = ['baseline', 'candidate', 'duplicate']
     require(plan['case'] == json.loads(json.dumps(CASE)), 'original workflow and edit recipe differ')
-    require(policy in ['stable-cgu', 'cargo-info-cache'] and set(plan['tools']) == set(modes)
+    require(policy in ['stable-cgu', 'cargo-info-cache', 'frontend-workers'] and set(plan['tools']) == set(modes)
             and len(set(plan['tools'].values())) == 1, 'owned screen requires one tool identity')
     require(set(plan['std_mir_by_mode']) == set(modes), 'missing per-arm std identities')
     custom, cargos = None, dict.fromkeys(modes)
@@ -128,7 +146,7 @@ def selection(plan, snapshot):
                 and custom.identity['provenance']['stage'] == 2, 'compiler path or stage differs')
         require(plan['cgu_policy_by_mode'] == dict(baseline='off', candidate='on', duplicate='off'),
                 'stable-CGU policy differs')
-    else:
+    elif policy == 'cargo-info-cache':
         require('custom_compiler' not in plan and 'cgu_policy_by_mode' not in plan, 'mixed compiler/Cargo policies')
         for mode in modes:
             receipt = plan['cargos_by_mode'][mode]
@@ -144,6 +162,13 @@ def selection(plan, snapshot):
                 'Cargo screen requires distinct actual candidate bytes and identical baseline/duplicate')
         require(cargo_pair(cargos['baseline'], cargos['candidate'], snapshot) == plan['cargo_comparison'],
                 'Cargo matched pair differs')
+    else:
+        from frontend_worker_screen import COUNTS, BUILD_POLICY
+        require(not any(k in plan for k in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode'])
+                and plan['frontend_workers_by_mode'] == COUNTS
+                and plan['worker_public_build_policy'] == BUILD_POLICY, 'worker policy is mixed or differs')
+        lock = Path(plan['workload_lock'])
+        require(lock.is_absolute() and str(lock) == os.path.normpath(str(lock)), 'worker lock identity differs')
     for mode in modes:
         from std_mir import FLAGS, POLICY
         std = plan['std_mir_by_mode'][mode]
@@ -177,15 +202,22 @@ def selection(plan, snapshot):
                     and identity['lock_sha256'] == custom.identity['files'][
                         'lib/rustlib/src/rust/library/Cargo.lock'],
                     'std compiler/policy differs')
-        else:
+        elif policy == 'cargo-info-cache':
             require(identity['cargo'] == cargos[mode].receipt()
                     and identity['compiler'] == cargos[mode].identity['pinned_compiler']['compiler']
                     and identity['target'] == cargos[mode].identity['pinned_compiler']['host']
                     and not any(k in identity for k in ['compiler_key', 'namespace', 'source_sha256']),
                     'std Cargo differs')
-    require(plan['std_mir_by_mode']['baseline'] == plan['std_mir_by_mode']['duplicate'] and
-            plan['std_mir_by_mode']['baseline']['key'] != plan['std_mir_by_mode']['candidate']['key'],
-            'std namespaces must match baseline/duplicate and isolate candidate')
+        else:
+            require(not any(k in identity for k in ['compiler_key', 'cargo', 'namespace', 'source_sha256']),
+                    'worker comparison requires unchanged stock standard library')
+    if policy == 'frontend-workers':
+        require(all(s == plan['std_mir_by_mode']['baseline'] for s in plan['std_mir_by_mode'].values()),
+                'worker comparison changed prepared standard library')
+    else:
+        require(plan['std_mir_by_mode']['baseline'] == plan['std_mir_by_mode']['duplicate'] and
+                plan['std_mir_by_mode']['baseline']['key'] != plan['std_mir_by_mode']['candidate']['key'],
+                'std namespaces must match baseline/duplicate and isolate candidate')
     return custom, cargos
 
 
@@ -193,6 +225,21 @@ def tool_identity(plan, key, custom, snapshot):
     """Bind the retained exporter capability to its physical compiler prefix."""
     from custom_compiler import TOOL_POLICY, digest
     tool = Path(plan['owner']) / '.work/interpreter-tools' / key
+    if plan['candidate_policy'] == 'frontend-workers':
+        from frontend_worker_screen import public_build, standard_binding, validate_qualification
+        read = lambda path: member_bytes(snapshot(path))
+        validated = public_build(tool, key, read)
+        from qualified_public_tools import validate_input_guard
+        require(all(validated['composition']['binaries'] == manifest for manifest in plan['binaries'].values())
+                and set(plan['binaries']) == set(plan['tools'])
+                and validated['capability'] == plan['worker_capability'], 'worker tool composition differs')
+        standard_binding(validated, plan['std_mir'])
+        proof = validate_qualification(Path(plan['worker_qualification']['result_path']), key,
+            validated, plan['std_mir'], read)
+        require(proof == plan['worker_qualification'], 'worker qualification differs from screen admission')
+        require(proof['workload_lock'] == plan['workload_lock'], 'worker qualification lock differs')
+        validate_input_guard(validated, plan['public_input_guard'])
+        return validated
     name = 'compiler.json' if custom else 'source.json'
     source = json.loads(snapshot(tool / name)['utf8'])
     composition = source if custom else source['composition']
@@ -261,7 +308,7 @@ def main():
     require(plan['owner'] == str(ROOT) and plan['kind'] == 'mechanism-screen' and
             plan['final_qualification'] is False and original_summary['source_restored'] is True and
             plan['candidate_policy'] == original_summary['candidate_policy'] and
-            plan['candidate_policy'] in ['stable-cgu', 'cargo-info-cache'],
+            plan['candidate_policy'] in ['stable-cgu', 'cargo-info-cache', 'frontend-workers'],
             'expected completed owned mechanism screen')
     require(plan['guest_rustflags'] == [] and plan['profile_overrides'] == {} and
             len(plan['case']['tests']) == 14, 'workload profiles or original test count differ')
@@ -277,7 +324,7 @@ def main():
                 'prior snapshots do not identify this verified screen')
         prior_bundle = json.loads(gzip.decompress(prior_archive.read_bytes()))
         for item in prior_bundle['files']:
-            data = item['utf8'].encode()
+            data = member_bytes(item)
             require(len(data) == item['bytes'] and sha(data) == item['sha256'], 'prior archive member differs')
             prior_files[item['path']] = item
         require(prior_files[str(raw / 'plan.json')]['sha256'] == original_summary['plan_sha256'] and
@@ -286,11 +333,11 @@ def main():
 
     def snapshot(path):
         path = str(path)
-        return prior_files[path] if args.snapshots_from else member(Path(path))
+        return prior_files[path] if args.snapshots_from else saved_member(Path(path))
 
     def frozen_snapshot(path):
         item = snapshot(path)
-        require(sha(b'file\0' + item['utf8'].encode()) == plan['frozen'][str(path)],
+        require(sha(b'file\0' + member_bytes(item)) == plan['frozen'][str(path)],
                 'frozen snapshot differs: ' + str(path))
         files[str(path)] = item
         return item
@@ -326,6 +373,9 @@ def main():
             expected_before = plan['states'][max(0, index - 1)]['source_sha256']
             require(transition['before'] == expected_before, 'source transition input differs')
     custom, cargos = selection(plan, frozen_snapshot)
+    worker_public = None
+    if plan['candidate_policy'] == 'frontend-workers':
+        worker_public = tool_identity(plan, plan['tools']['baseline'], None, frozen_snapshot)
     artifacts, compact = {}, []
     previous = dict.fromkeys(plan['tools'])
     workspaces = {}
@@ -357,9 +407,20 @@ def main():
                 row['launch']['tool_key'] == plan['tools'][mode] and
                 'query_cache_retention' not in row['launch'],
                 'launcher evidence differs')
-        settings = launch_settings(mode, plan['tools'][mode], plan['candidate_policy'], custom, cargos[mode])
+        settings = launch_settings(mode, plan['tools'][mode], plan['candidate_policy'], custom, cargos[mode],
+            worker_public['capability'] if worker_public else None)
         require(custom is not None or 'custom_compiler' not in row['launch'], 'unexpected custom compiler')
         require(cargos[mode] is not None or 'custom_cargo' not in row['launch'], 'unexpected custom Cargo')
+        require(worker_public is not None or 'frontend_workers' not in row['launch'], 'unexpected worker policy')
+        if worker_public:
+            from qualified_public_tools import validate_input_guard
+            for when in ['before', 'after']:
+                path = raw / 'public-input-guards' / f'{index}-{mode}-{when}.json'
+                item = member(path); files[str(path)] = item
+                guard = json.loads(item['utf8'])
+                require(guard['validation'] == 'stat', 'worker guard validation mode differs')
+                validate_input_guard(worker_public, guard)
+            require(row['launch'].get('host_proc_macro_opt', 'off') == 'off', 'worker launch mixes macro policy')
         require(math.isfinite(row['launch']['launcher_seconds']) and
                 0 < row['launch']['launcher_seconds'] <= row['seconds'],
                 'complete-command time excludes part of the launcher')
@@ -431,18 +492,18 @@ def main():
     for key in set(plan['tools'].values()):
         tool_identity(plan, key, custom, lambda path: files[str(path)])
     if not custom:
-        for cargo in {c.key: c for c in cargos.values()}.values():
+        for cargo in {c.key: c for c in cargos.values() if c is not None}.values():
             for name, expected_hash in cargo.identity['files'].items():
                 path = cargo.directory / 'payload' / name
                 if name != 'cargo':
                     item = frozen_snapshot(path)
                     require(item['sha256'] == expected_hash, 'Cargo provenance input differs')
-    bundle = dict(schema_version=1, encoding='exact UTF-8 members', files=list(files.values()),
+    bundle = dict(schema_version=1, encoding='exact UTF-8 or base64 members', files=list(files.values()),
                   source_symlinks=source_symlinks)
     payload = (json.dumps(bundle, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
     archive = compressed(payload)
     for item in json.loads(gzip.decompress(archive))['files']:
-        data = item['utf8'].encode()
+        data = member_bytes(item)
         require(len(data) == item['bytes'] and sha(data) == item['sha256'], 'archived member differs')
     summary = dict(original_summary)
     summary.update(project=plan['project'], workflow=plan['workflow'], revision=plan['revision'],
@@ -465,7 +526,9 @@ def main():
         candidate_observations_below_half_second=sum(p['candidate_seconds'] < .5 for p in summary['pairs']),
         adoption='not decided by this single-history mechanism screen', final_latency_gate_qualified=False,
         holdouts_evaluated=False)
-    for key in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode']:
+    for key in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode',
+                'frontend_workers_by_mode', 'worker_qualification', 'worker_public_build_policy',
+                'worker_capability', 'public_input_guard', 'workload_lock']:
         if key in plan:summary[key] = plan[key]
     for pair in summary['pairs']:
         for mode in plan['tools']:
