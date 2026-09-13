@@ -102,6 +102,22 @@ class CustomCompilerLauncherTests(unittest.TestCase):
             self.launch()
         self.assertEqual(self.invocations, [])
 
+    def test_selected_std_namespace_is_bound_to_launcher_report(self):
+        def prepared(toolchain, **options):
+            mode = options['namespace'].removeprefix('stable-cgu:')
+            options['lookup_stats'].update(mode='cached', outcome='owned-manifest')
+            return self.root / ('std-' + mode), self.compiler.host, custom.digest(mode), {}
+        with patch.object(std_mir, 'checked_std_mir', side_effect=prepared):
+            for mode in ['off', 'on']:
+                result, [report] = self.launch('--std-mir', '--toolchain-lookup', 'cached',
+                                              '--stable-cgu-partitioning', mode)
+                self.assertEqual(result, 0)
+                self.assertEqual(report['std_mir'], dict(key=custom.digest(mode),
+                    sysroot=str(self.root / ('std-' + mode)), target=self.compiler.host))
+                cargo = self.invocations[-2]
+                self.assertEqual(cargo[1]['env']['RUST_INTERP_STD_SYSROOT'], report['std_mir']['sysroot'])
+                self.assertEqual(cargo[1]['env']['RUST_INTERP_STD_TARGET'], report['std_mir']['target'])
+
     def test_custom_std_build_keeps_flags_and_selects_custom_rustc_in_separate_namespaces(self):
         children = []
         def popen(command, **kwargs):
