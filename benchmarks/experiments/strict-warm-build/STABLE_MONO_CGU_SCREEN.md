@@ -20,12 +20,18 @@ Cargo's command before wrapper routing is insufficient. A preliminary diagnostic
 comparison, old module-only integration result or std smoke result is rejected.
 Recording is confined to qualification; the measured commands omit it.
 
-Admission also requires the independent `std-source-observables-v1` result for
+Admission also requires the independent `std-source-observables-v2` result for
 the same compiler, tools and both std keys. Its real source-position histories,
 second-prefix copies, missing/corrupt source controls and native/exported
 proc-macro observables are separate from the 36-command integration. The screen
 validates this result and freezes every linked evidence file around all timed
-commands; neither prerequisite may substitute for the other.
+commands; neither prerequisite may substitute for the other. The current
+`native-rows-exact-guest-bitmask-v1` transport retains all original 57 controls
+and adds four real wrong-expectation executions, for 61 commands. Native raw
+observations supply exact expected bytes/coordinates; the actual exported
+program compares all ten fields and returns their bitmask. Generated source,
+native rows, actual bytecode and actual output are bound by the same typed
+validator. The old stdout-based57-command policy cannot qualify this screen.
 
 Both prepared std directories must use `source-paths-v2` and the authoritative
 `std_mir_source_paths.load` validator, in `stable-mono-cgu:off` and

@@ -10,6 +10,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import qualify_std_source_observables as qualify
 from std_source_observables import validate_source_observables
+import source_observable_transport as transport
 
 
 class SourceObservableContracts(unittest.TestCase):
@@ -92,10 +93,67 @@ class SourceObservableContracts(unittest.TestCase):
         self.assertEqual(parsed['host']['aarch64-apple-darwin']['rustflags'], flags)
         self.assertEqual(parsed['target']['aarch64-apple-darwin']['rustflags'], flags)
 
+    def test_exact_native_fields_bind_expected_source_and_actual_guest_mask(self):
+        values, output = self.values(), self.output()
+        record = transport.expectation('off', 'unmapped', 12, output, values)
+        source = transport.expectation_source(record)
+        transport.validate_transport(record, source, values, 12, output, 'off', 'unmapped', '1023\n')
+        for label in transport.LABELS:
+            for field in transport.FIELDS:
+                wrong = copy.deepcopy(record)
+                wrong['values'][label][field] = (wrong['values'][label][field] + 1
+                    if field in ['line', 'column'] else wrong['values'][label][field] + 'x')
+                with self.subTest(label=label, field=field), self.assertRaisesRegex(RuntimeError, 'exact native'):
+                    transport.validate_transport(wrong, transport.expectation_source(wrong),
+                        values, 12, output, 'off', 'unmapped', '1023\n')
+        for stdout in ['1022\n', '', '1023\n1023\n']:
+            with self.subTest(stdout=stdout), self.assertRaisesRegex(RuntimeError, 'mask'):
+                transport.validate_transport(record, source, values, 12, output, 'off', 'unmapped', stdout)
+
+    def test_negative_executions_require_the_exact_missing_field_bit(self):
+        for mode in ['off', 'on']:
+            for phase, mask in [('wrong-file', 1022), ('wrong-line', 767)]:
+                record = transport.expectation(mode, phase, 12, self.output(), self.values())
+                self.assertEqual(record['expected_mask'], mask)
+                self.assertEqual(record['native_phase'], 'application-map')
+                source = transport.expectation_source(record)
+                transport.validate_transport(record, source, self.values(), 12, self.output(), mode, phase, str(mask)+'\n')
+                for forged in ['1023\n', '0\n']:
+                    with self.subTest(mode=mode, phase=phase, forged=forged), self.assertRaisesRegex(RuntimeError, 'mask'):
+                        transport.validate_transport(record, source, self.values(), 12, self.output(), mode, phase, forged)
+
+    def test_changed_generated_source_or_native_row_association_is_rejected(self):
+        record = transport.expectation('on', 'restored', 42, self.output(), self.values())
+        source = transport.expectation_source(record)
+        with self.assertRaisesRegex(RuntimeError, 'generated guest expectation'):
+            transport.validate_transport(record, source.replace(b'pub const', b'pub static'),
+                self.values(), 42, self.output(), 'on', 'restored', '1023\n')
+        for index, output in [(41, self.output()), (42, self.output() + '\n')]:
+            with self.subTest(index=index), self.assertRaisesRegex(RuntimeError, 'exact native'):
+                transport.validate_transport(record, source, self.values(), index, output, 'on', 'restored', '1023\n')
+
+    def test_constant_successful_entry_cannot_replace_actual_comparison_fixture(self):
+        payloads = {'application/' + name: text.encode() for name, text in transport.fixture_sources().items()}
+        transport.validate_fixture(payloads)
+        original = payloads['application/src/main.rs']
+        line = next(line for line in original.splitlines() if line.startswith(b'pub fn entry()'))
+        payloads['application/src/main.rs'] = original.replace(line, b'pub fn entry() -> u32 { 1023 }')
+        with self.assertRaisesRegex(RuntimeError, 'fixture or final restoration'):
+            transport.validate_fixture(payloads)
+
+    def test_malformed_native_fields_cannot_become_expected_rust_source(self):
+        for field, value in [('file', ''), ('line', True), ('line', -1), ('column', 2**32)]:
+            wrong = self.values(); wrong['main'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaisesRegex(RuntimeError, 'expectation fields'):
+                transport.expectation('off', 'unmapped', 12, self.output(), wrong)
+        with self.assertRaisesRegex(RuntimeError, 'both native source locations'):
+            transport.expectation('off', 'unmapped', 12, self.output(), {'main': self.values()['main']})
+
     def test_missing_or_old_qualification_cannot_satisfy_archived_prerequisite(self):
         owner = Path('/owned/project'); path = owner / '.work/source-controls/result.json'
         stds = {m: dict(key=m, sysroot='/std/' + m, target='host') for m in ['off', 'on']}
-        for result in [{}, {'status': 'passed', 'policy': 'stable-mono-cgu-integration-v1', 'commands': 36},
+        for result in [{}, {'status': 'passed', 'policy': 'std-source-observables-v1', 'commands': 57},
+                       {'status': 'passed', 'policy': 'stable-mono-cgu-integration-v1', 'commands': 36},
                        {'status': 'passed', 'policy': qualify.POLICY, 'diagnostics_rewritten': True}]:
             reads = []
             def read(selected):

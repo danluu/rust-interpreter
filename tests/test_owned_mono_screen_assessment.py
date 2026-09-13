@@ -17,6 +17,8 @@ import owned_mono_screen as mono
 import std_mir_source_paths as v2
 from verified_std_diagnostics import source_span_text
 from test_strict_warm_mono_screen import fixture as integration_fixture
+from std_source_observables import validate_source_observables
+from source_observable_transport import POLICY as OBSERVABLE_POLICY, TRANSPORT, COMMANDS
 
 
 def encoded(value):
@@ -250,6 +252,31 @@ class OwnedMonoAssessmentTests(unittest.TestCase):
         for changes in [dict(sha256='0' * 64), dict(bytes=1), dict(utf8='also present')]:
             with self.subTest(changes=changes), self.assertRaises(RuntimeError):
                 assess.member_bytes(item | changes)
+
+    def test_saved_screen_uses_typed_transport_version_gate_after_valid_strict36(self):
+        result, files, put, validate = integration_fixture()
+        checked = validate()
+        owner = Path('/owned/project')
+        observable_path = owner / '.work/observable/result.json'
+        old = dict(status='passed', policy=OBSERVABLE_POLICY, transport_policy=TRANSPORT,
+            guest_negative_controls=4, commands=COMMANDS, owner=str(owner), compiler_key='c'*64,
+            tool_key='a'*64, compiler_sysroot='/compiler/sysroot', std_mir=result['std_mir'],
+            benchmark=False, diagnostics_rewritten=False, source_restored=True, qualification_only=True,
+            unmapped_source_paths='passed', std_only_application_observables='unchanged',
+            application_remap_sensitivity='expected-span-file-only-change',
+            disposable_source_negatives='rejected-by-raw-source-validator')
+        observable = dict(path=str(observable_path))
+        plan = dict(candidate_policy='stable-mono-cgu', owner=str(owner), tools=dict(baseline='a'*64),
+            std_mir_by_mode=dict(baseline=result['std_mir']['off'], candidate=result['std_mir']['on']),
+            compiler_qualification=checked, source_observables=observable)
+        compiler = SimpleNamespace(key='c'*64, sysroot=Path('/compiler/sysroot'))
+        for change in [dict(policy='std-source-observables-v1'), dict(commands=57),
+                       dict(transport_policy='guest-stdout')]:
+            payload = encoded(old | change)
+            def read(path):
+                return payload if path == observable_path else files[str(path.relative_to(owner / '.work/integration'))]
+            with self.subTest(change=change), self.assertRaisesRegex(RuntimeError, 'source prerequisite is missing or uses different'):
+                mono.qualification(plan, compiler, read, source_observables_validator=validate_source_observables)
 
 
 if __name__ == '__main__':
