@@ -207,3 +207,23 @@ relabel earlier results.
 [Lookup pgrust](../results/toolchain-lookup-edit-pgrust-01/assessment.md),
 [private aggregate](../results/toolchain-lookup-edit-rg-aot-01/assessment.md),
 [Nushell](../results/toolchain-lookup-edit-nushell-01/assessment.md).
+
+
+### Indirect comparison completed; next instruction-volume experiment
+
+The guarded indirect implementation completes all 462 expected edited-command
+outcomes. Token improves paired wall 1.44%, below 4.75% A/A; folded fails its
+wall margin. Pgrust passes the documented margin but the executable contained
+an extra no-CPU-increase condition and a different sum threshold. The
+inconsistency was documented before either held-out ran, with a conservative
+requirement to pass both rules. The complete candidate remains experimental;
+no timing case is repeated to cross a threshold.
+
+Suggestions 2.5, 2.6 and 2.8 now motivate a smaller emitter change: pair the
+existing 64-bit register transfers where one STP/LDP replaces two scalar
+accesses, preserving both initialized words and the current allocation policy.
+This is distinct from the previously rejected larger register bank, larger
+local cache, lifetime allocator and scalar-ABI experiments. Source is committed
+and host qualification is in progress; no performance claim is made. The new
+comparison tests both boundaries of the documented held-out CPU margin.
+[Indirect result](../results/guarded-indirect-complete-01/assessment.md).
