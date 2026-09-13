@@ -35,6 +35,18 @@ a bounded guarded prototype on the existing resumable path, with original
 ordered interpreter fallback on preflight failure. No execution change or
 latency gain is established by these counts.
 [Conditional evidence](results/disjoint-frame-census-01/assessment.md).
+
+The guarded prototype passes478 Rust tests/profile,143 harness checks and222
+real qualification/profile commands. The retained validator failure was
+repaired offline with zero repeated guest commands: the inactive folded
+control has byte-identical adopted code. Its40-command changed-source screen
+passes narrowly: wall−1.84% with1.74% A/A, CPU−1.14% with1.16% A/A. All original
+assertions, wrong edits, restoration and artifact identity checks pass.
+Proceed to a separately qualified full comparison, primary first; all five
+cases and a final serialized audit remain required for adoption.
+[Complete qualification](results/guarded-ranges-validation-repair-01/assessment.md),
+[screen and limits](results/guarded-ranges-screen-token-01/assessment.md).
+
 [Range-group evidence](results/range-groups-census-01/assessment.md).
 [Region-fact decision](results/region-facts-census-01/assessment.md).
 [Qualification](results/checked-addresses-validation-01/assessment.md),
