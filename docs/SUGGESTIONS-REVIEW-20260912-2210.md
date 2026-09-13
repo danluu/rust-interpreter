@@ -52,7 +52,24 @@ aggregations; stage subtraction is a scope description, not causal attribution.
 
 ## Current execution
 
-The rebuilt VM matches the measured runtime exactly;428 Rust tests per profile
+Follow-up after the latest request: `suggestions.txt` remains the same22:10
+revision, SHA256`739e9e770db3536b5854c491421c266df996281c5bee519eb0d71b809a6c2169`.
+The composition is now published. Suggestions2.1/2.4 have new verified
+operation-level evidence: Copy accounts for24.34%/18.26% of generated samples
+in the two dominant token tests, including many redundant scalar address
+calculations. Prioritize folding those existing proven local addresses before
+the broader memory-model proposal2.5. Keep allocator work conditional; native
+Call/Return spans are not VM exits. Tiny arithmetic covers only3.05%/1.99% of
+these samples, reinforcing the decision to park the failed direct-operand
+candidate. Its screen passed but its full primary failed; retain primary-first
+stopping and do not treat a screen as adoption. The binding observer3.2 is
+complete:93.32ms context preparation versus4.83ms indexing rules out the
+positions-table rewrite as the first lever. Cargo attribution4.1 and reuse-miss
+classification3.1 remain useful next diagnostics. The full original dispositions
+above still apply. [New operation evidence](../results/operation-map-sampling-01/assessment.md).
+
+Original integration checkpoint (subsequently completed): the rebuilt VM matches
+the measured runtime exactly;428 Rust tests per profile
 and223 new cache/Cargo commands pass. The first project qualification stopped
 on a driver catalog-field mismatch after16 completed large/private commands.
 The token bytecode and catalog also match in the retained failure audit.

@@ -28,12 +28,16 @@ and CPU4.66%, beyond3.73%/3.11% A/A. Its full token comparison then passes all
 inside4.84%/2.25% A/A. Keep the runtime experimental; the other four cases
 remain unstarted. The post-execution operation map now passes436 Rust tests per
 profile,103 harness checks and10 real-test commands. All three current code
-dumps and per-PC profiles match adopted main exactly. Next are two fresh
-same-process native samples for operation attribution.
+dumps and per-PC profiles match adopted main exactly. Two fresh same-process
+samples now assign all3,985 generated samples: Copy accounts for24.34%/18.26% of
+block/exhaustive generated samples. An offline Copy8 audit identifies redundant
+local address calculations; next is a bounded scalar-copy emitter candidate.
+The suggestions file is unchanged; its review now records these priority updates.
 No goal-state change, unrelated process control or
 new billing path is authorized.
 [Direct-operand final decision](results/direct-operands-full-01/assessment.md),
 [Verified operation maps](results/operation-map-validation-01/assessment.md),
+[Operation attribution](results/operation-map-sampling-01/assessment.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Refined binding result](results/replay-costs-token-02/assessment.md),
 [current runtime attribution](results/current-runtime-costs-01/assessment.md),

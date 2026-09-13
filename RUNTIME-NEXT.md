@@ -4,8 +4,13 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: attribute two new same-process samples to verified operations
-and entry/exit machinery. Post-execution maps pass436 Rust tests per profile,
+Current action: simplify scalar Copy address calculations using existing
+proven local ranges. Two fresh samples assign all3,985 generated samples; Copy
+accounts for24.34%/18.26% of block/exhaustive generated samples. A saved-code
+audit identifies local Copy8 sequences that can shrink from seven words to
+three. Qualify overlap, fault order and register preservation, then use the
+prospective screen and full gates. This is not yet a measured speedup.
+Post-execution maps pass436 Rust tests per profile,
 103 harness checks and10 real-test commands; all three current generated code
 dumps and per-PC profiles match the adopted runtime exactly.
 The433-test direct-operand candidate passed its40-command screen, but the full
@@ -23,6 +28,7 @@ predeclared screens and cancel unstarted guards on primary failure; adoption
 still requires every declared guard.
 [Direct-operand final decision](results/direct-operands-full-01/assessment.md),
 [Verified operation maps](results/operation-map-validation-01/assessment.md),
+[Operation attribution](results/operation-map-sampling-01/assessment.md),
 [Full protocol](benchmarks/experiments/direct-operands/FULL.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Binding decision](results/replay-costs-token-02/assessment.md),
