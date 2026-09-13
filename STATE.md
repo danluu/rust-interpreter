@@ -24,7 +24,7 @@ extra CPU ceiling; a conservative intersection was recorded before either
 held-out ran. No complete case will be retimed.
 [Complete comparison and rule discrepancy](results/guarded-indirect-complete-01/assessment.md).
 
-The next candidate pairs existing VM-register spills and reloads at offsets
+The completed paired-register candidate pairs spills and reloads at offsets
 where this reduces emitted instructions. It starts from the qualified wide
 runtime, preserving both words and existing register assignment. Source and
 new boundary checks are committed on `experiment/paired-registers-20260912`.
@@ -33,8 +33,13 @@ nine suite commands, 203 strict cache/native checks and three profile replays
 pass. Every VM operation count and native interval matches the wide control.
 The complete comparison passes all 462 expected outcomes. Token gains 0.71%
 wall and 0.09% CPU, below 1.77% wall A/A; folded and pgrust guards pass. Keep
-the runtime experimental without retiming. The next step is an offline typed
-census of repeated address validation, before changing the emitter.
+the runtime experimental without retiming. The subsequent offline typed
+census completes ten commands and finds zero reusable same-register address
+checks in all three profiles, with no analysis limits reached. Drop that
+implementation path. The next candidate simplifies memory operand generation
+on the wide baseline: preserve checks and full register writes, remove unused
+temporary reads/clears, and fold already proven local offsets into hardware
+memory operands. [Census and constraints](results/address-check-reuse-census-01/assessment.md).
 [Complete comparison](results/paired-registers-complete-01/assessment.md). [Scope and next constraints](docs/REGISTER-TRANSFER-NEXT.md).
 [Token result](results/guarded-indirect-edit-token-02/stage-assessment.md),
 [design and qualification](docs/INDIRECT-CALL-NEXT.md).
