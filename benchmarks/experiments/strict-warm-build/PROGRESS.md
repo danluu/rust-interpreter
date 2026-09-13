@@ -192,8 +192,14 @@ audit. The produced native binary was not executed and no reuse hit is qualified
 Source review identified an address mismatch: capture stored the WorkerLocal
 wrapper address while the audit compared the dereferenced worker arena. The
 repair checkpoint `84166943` uses the current worker arena and adds a 27th unit
-test rejecting wrapper and foreign-arena identities. All audit checks remain;
-the repair's compiler check, unit tests and native qualification are pending.
+test rejecting wrapper and foreign-arena identities. All audit checks remain.
+Its actual compiler source `7efc0d9484da82cd327deb3b48616f8ec81eaf8d`
+passed the selected compiler check and all 27 unit tests, with no warnings,
+failures, ignored or filtered tests. All 61 plan/apply/check/unit commands and
+the complete source inventories are archived. Native capture/reuse qualification
+and performance remain pending; the stage1 executable has not been rebuilt for
+this repair.
+[Worker-arena repair check and 27-unit evidence](../../../results/hir-arena-identity-check-01/README.md).
 [Complete rebuilt native diagnostic](../../../results/hir-diagnostic-native-01/README.md).
 [Fixture and phase-diagnostic check evidence](../../../results/hir-fixture-phase-check-01/README.md).
 [Four upgrade-driver controls](../../../results/hir-fixture-phase-upgrade-controls-01/README.md).
