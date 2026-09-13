@@ -22,9 +22,14 @@ gain or changes the completed memory-only and lookup-only failed decisions.
 Nushell completes all 132 commands and passes the regression guard: paired
 wall ratio 0.99073 plus 5.732% A/A gives 1.04804; CPU margin is 1.01638.
 The small wall change is inside observed variation and establishes no useful
-Nushell speedup. Candidate/ordinary-native wall ratio is 0.629. Private rg-aot
-and the three compute cases remain mandatory before adoption.
+Nushell speedup. Candidate/ordinary-native wall ratio is 0.629.
 [Nushell result](results/memory-lookup-edit-nushell-01/assessment.md).
+Private rg-aot also completes all 132 commands and passes: paired wall
+improves 12.55% and CPU 11.53%, beyond 2.46% wall/1.61% CPU A/A. Its lookup
+stage falls from about 39 ms to 6 ms, with identical artifacts and strict
+checking. Candidate/ordinary-native wall ratio is 0.396. Token, folded and
+pgrust remain mandatory; token is now running. Private source and names stay
+local. [Private aggregate result](results/memory-lookup-edit-rg-aot-01/assessment.md).
 
 Guarded native indirect-call specialization passes424 Rust tests per profile,
 123 harness checks, seven exact real tests, nine suite commands and203 strict
