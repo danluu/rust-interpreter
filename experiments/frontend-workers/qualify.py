@@ -267,7 +267,8 @@ def qualify_locked(args,run):
                 require(row['returncode']!=0 and code in row['stderr'],'native diagnostic control was accepted')
                 messages.append(diagnostics(row['stderr']))
             require(messages[0]==messages[1],'structured diagnostics differ across worker counts')
-        for count in [1,2]:launch('assembly-rejection',count,entry='assembly',error='unsupported terminator InlineAsm')
+        for count in [1,2]:launch('assembly-rejection',count,entry='assembly',
+            error='custom interpreter cannot lower this entry: assembly: unsupported terminator asm!(')
         for count in [1,2]:require(launch('assembly-restored',count)==original,'assembly selection affected restored bytecode')
     require(all(sha(Path(path))==digest for path,digest in frozen.items()),'qualification sources changed')
     installed_tools(key)

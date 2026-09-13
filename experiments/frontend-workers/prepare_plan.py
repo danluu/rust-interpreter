@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--screen-root', type=Path, required=True)
     parser.add_argument('--std-mir-ready', type=Path, required=True)
     parser.add_argument('--run-id', required=True)
+    parser.add_argument('--qualification-run-id', default='frontend-worker-qualification-01')
     parser.add_argument('--supersedes', type=Path, action='append', default=[])
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=600)
     parser.add_argument('--output', type=Path, required=True)
@@ -57,6 +58,7 @@ def main():
 def freeze(args):
     import re
     require(re.fullmatch('[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
+    require(re.fullmatch('[a-z0-9][a-z0-9-]{0,95}', args.qualification_run_id), 'invalid qualification run ID')
     owner = args.screen_root.resolve(strict=True)
     ready_path = args.std_mir_ready.resolve(strict=True)
     ready = json.loads(ready_path.read_bytes()); identity = ready['identity']
@@ -113,7 +115,8 @@ def freeze(args):
         ('wrapper-capabilities',[str(target/'release/rust-interp-rustc-wrapper'),'--rust-interp-frontend-worker-capability'])]
     contract = Path(__file__).with_name('PUBLICATION.md')
     project = owner/'.work/sources/nushell-frontend-workers'
-    qualification = owner/'.work/frontend-worker-qualification-01'
+    qualification = owner / '.work' / args.qualification_run_id
+    require(not qualification.exists() and not qualification.is_symlink(), 'qualification destination already exists')
     plan = dict(schema_version=2,kind='source-only-build-qualification-plan',status='not-executed',
         qualification_policy=WORKER_BUILD_POLICY,owner=str(ROOT),screen_owner=str(owner),
         superseded_plans=superseded,

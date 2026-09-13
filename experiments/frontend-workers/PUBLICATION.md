@@ -1,6 +1,13 @@
 # Frontend-worker build and qualification handoff
 
-This source checkpoint and its plan are unexecuted. The public compiler remains
+Plan 03 completed its eight build commands and published tool
+`7191cec48448ea59dd85f330a417074d07390e6a1b1bf4f33f75c8a8a1172c02`.
+Its first qualification stopped at command 27: the selected assembly entry was
+rejected correctly, but the harness expected `InlineAsm` while the actual MIR
+diagnostic renders `asm!(...)`. That failed history and publication remain
+retained. The next plan uses a fresh qualification directory and matches the
+actual entry-specific diagnostic in both producer and archived consumer. Its
+full 30-command qualification and timing remain required. The public compiler remains
 nightly-2026-09-08 (`cea272fa356e94bd2ee2cadf376630aa0683867a`). No custom compiler,
 custom Cargo, macro optimization, borrow-check cache or analysis bypass is part
 of this experiment. Omission remains compatible with existing installed tools.
@@ -65,12 +72,13 @@ and emits no compiler, Cargo, test or benchmark command:
 
 ```sh
 python3 experiments/frontend-workers/prepare_plan.py \
-  --run-id frontend-worker-build-03 \
+  --run-id frontend-worker-build-04 \
+  --qualification-run-id frontend-worker-qualification-02 \
   --supersedes experiments/frontend-workers/planned-build-01.json \
   --supersedes experiments/frontend-workers/planned-build-02.json \
   --screen-root /Users/danluu/dev/rust-interp-semantic-reuse-20260913 \
   --std-mir-ready /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/std-mir/bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef/ready.json \
-  --output experiments/frontend-workers/planned-build-03.json
+  --output experiments/frontend-workers/planned-build-04.json
 ```
 
 After review, the corrected source tests and each actual stage need separate
@@ -80,13 +88,13 @@ and merged launcher/screen contracts. The runner itself uses the canonical lock,
 a bounded 600-second wait, a 12-GiB build entry gate and 8-GiB command gates.
 
 ```sh
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-03.json
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-03.json \
-  --qualify .work/frontend-worker-build-03/published.json
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-03.json \
-  --materialize .work/frontend-worker-build-03/published.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-04.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-04.json \
+  --qualify .work/frontend-worker-build-04/published.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-04.json \
+  --materialize .work/frontend-worker-build-04/published.json
 ```
 
-The last command creates `.work/frontend-worker-build-03/screen-command.json`
+The last command creates `.work/frontend-worker-build-04/screen-command.json`
 only after strict prerequisites. Its final-key argv requires another admission;
 no timing, speedup, adoption or holdout claim follows from publication.
