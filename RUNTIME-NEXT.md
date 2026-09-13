@@ -10,14 +10,15 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Partition the adopted emitter's small Copy/Load/Store spans into address
-   materialization, address-space selection, bounds/readonly checks, data
-   transfer and register publication. Reconstruct both saved native captures
-   exactly before applying finer labels to their existing samples. Copy/Load
-   spans contain 686/1,651 and 388/1,439 generated samples, but those coarse
-   totals do not identify checking cost or justify an arena redesign. Preserve
-   forwarding paths, original fault order and every emitted word. Use the
-   diagnostic to select the next compatible runtime component.
+1. Prototype branch-based fixed-address-space selection, composed with the
+   qualified successor-only flush mechanism. Exact small-memory attribution
+   finds 188/1,651 and 66/1,439 generated samples in the current eight-word
+   selector, versus 65/18 in bounds checks. Preserve unsigned classification
+   around the actual `1 << 62` tag, including larger invalid values; a single-bit
+   test is insufficient. Keep all bounds/readonly checks, zero-size behavior,
+   copy fault order, register contracts and the 16 MiB capacity. Qualify code
+   size/declines and original executions, then use a fresh primary-first screen.
+   [Exact partition and limitations](results/memory-operation-parts-census-01/assessment.md).
 
 Successor-only flushing is parked as a possible component after its full primary
 gate fails. Its 40-command screen passed, but the fresh 154-command comparison
@@ -66,6 +67,6 @@ Keep source pins, explicit workers/limits, private-data redaction, shared-lock
 admission and conservative disk floors. Do not control unrelated processes,
 reactivate the goal, use subagents, or activate AWS offerings.
 
-[Suggestion decisions](docs/SUGGESTIONS-REVIEW-20260912-2210.md),
+[Current suggestion decisions](docs/SUGGESTIONS-REVIEW-20260913-1245.md),
 [full comparison](results/guarded-ranges-admission-resume-01/assessment.md),
 [prior work snapshot](docs/history/RUNTIME-NEXT-20260913-before-guarded-integration.md).
