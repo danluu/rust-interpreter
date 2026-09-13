@@ -15,7 +15,8 @@ import time
 from custom_compiler import digest, file_digest, require
 from custom_cargo_libraries import library_closure, platform_identity
 from qualified_public_tools import (BINARIES, check_closure, record_file, sha,
-    relative, suite_result, validate_live_inputs, validate_public_tool, WORKER_BUILD_POLICY, worker_capability)
+    relative, suite_result, validate_live_inputs, validate_public_tool, WORKER_BUILD_POLICY, worker_capability,
+    HOST_LIBRARY_BUILD_POLICY, library_capability)
 from toolchain_lookup import _stamp
 from workflow_io import atomic_bytes, capture, require_space, write_json
 
@@ -92,7 +93,7 @@ def command_environment(plan, command, inherited):
 
 
 def run_plan_commands(plan, *, inherited, before_command=None, after_command=None):
-    """Run the frozen eight commands, under a lock already held by the caller.
+    """Run the frozen commands, under a lock already held by the caller.
 
     Hooks capture source/tool/dependency identities at the required boundaries.
     They cannot replace or filter the command list. A hook failure stops the
@@ -164,7 +165,7 @@ def compose_qualified_tools(payload_root, *, public_compiler, public_cargo, qual
     policy = plan.get('qualification_policy')
     results = {}
     for command in commands:
-        if command['label'] in ('rust-workspace-tests', 'launcher-contracts', 'screen-contracts', 'real-histories'):
+        if command['label'] in ('rust-workspace-tests', 'launcher-contracts', 'screen-contracts', 'publication-contracts', 'real-histories'):
             results[command['label']] = suite_result(command['label'], (root / command['stdout']).read_text(),
                                                     (root / command['stderr']).read_text(), policy)
     require(set(qualified_binaries) == set(BINARIES), 'missing pre-history binary identities')
@@ -196,6 +197,8 @@ def compose_qualified_tools(payload_root, *, public_compiler, public_cargo, qual
         capability_stdout_sha256=capability_sha, shared_std=shared_std, results=results, commands=commands)
     if policy == WORKER_BUILD_POLICY:
         correctness.update(qualification_policy=policy, qualification_scope='public-build-only')
+    if policy == HOST_LIBRARY_BUILD_POLICY:
+        correctness.update(qualification_policy=policy, qualification_scope='host-library-real-histories')
     output = root / 'provenance/correctness.json'
     require(not output.exists() and not output.is_symlink(), 'correctness receipt already exists')
     write_json(output, correctness)
@@ -208,7 +211,7 @@ def compose_qualified_tools(payload_root, *, public_compiler, public_cargo, qual
         public_compiler=public_compiler, public_cargo=public_cargo, build=build, libraries=libraries,
         binaries=binaries, capability_stdout_sha256=capability_sha,
         correctness_receipt_sha256=payloads['provenance/correctness.json'], payloads=payloads)
-    if policy == WORKER_BUILD_POLICY:composition['qualification_policy'] = policy
+    if policy in (WORKER_BUILD_POLICY, HOST_LIBRARY_BUILD_POLICY):composition['qualification_policy'] = policy
     return composition
 
 
@@ -271,6 +274,9 @@ def immutable_publish(composition, payload_root, source_binaries, owners):
         if composition.get('qualification_policy') == WORKER_BUILD_POLICY:
             wrapper = next(c for c in commands if c['label'] == 'wrapper-capabilities')
             worker_capability(capability, (destination / wrapper['stdout']).read_bytes(), composition['binaries'])
+        if composition.get('qualification_policy') == HOST_LIBRARY_BUILD_POLICY:
+            wrapper = next(c for c in commands if c['label'] == 'wrapper-capabilities')
+            library_capability(capability, (destination / wrapper['stdout']).read_bytes(), composition['binaries'])
         capability.update(tool_key=key, exporter_sha256=composition['binaries']['rust-interp-mir-export'])
         write_json(destination / 'capabilities.json', capability)
         publication = dict(schema_version=1, status='published', owner=str(owner), directory=str(destination),
@@ -293,6 +299,8 @@ def immutable_publish(composition, payload_root, source_binaries, owners):
 
 def materialize_screen_command(plan, publication, *, output):
     """Produce argv only after actual publication; never execute the screen."""
+    require(plan.get('qualification_policy') != HOST_LIBRARY_BUILD_POLICY,
+            'host library screen policy has not been implemented or qualified')
     output = Path(output)
     require(not output.exists() and not output.is_symlink(), 'screen handoff already exists')
     owner = Path(plan['screen_owner']); key = publication['tool_key']

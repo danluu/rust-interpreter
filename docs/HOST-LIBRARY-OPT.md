@@ -49,9 +49,10 @@ Focused Rust routing and mocked launcher/publication controls are prepared in
 `tests/test_host_library_launcher.py`; none has run for this source-only change.
 Before timing, qualify the unchanged proc-macro parser controls plus native
 checks, actual macro/build-script outputs, cold/edit/restore exports, and compiler
-argv for host/guest roles. Use the existing shared publisher later; its host
-library capability hook is `host_library_opt.bind_wrapper_capability`. No new
-publication or performance harness is introduced here.
+argv for host/guest roles. The shared publisher's explicit host-library handoff
+is prepared in [PUBLICATION.md](../experiments/host-library-opt/PUBLICATION.md).
+Its recorded wrapper binder is also used by the existing automatic publisher.
+No host-library performance screen has been implemented.
 
 ## Prepared real controls
 
@@ -98,5 +99,6 @@ The final command requires `RUST_INTERP_TEST_EXPORTER`,
 `RUST_INTERP_TEST_WRAPPER`, `RUST_INTERP_TEST_VM`,
 `RUST_INTERP_TEST_STD_SYSROOT` and an owned `RUST_INTERP_TEST_ARTIFACT_DIR`.
 `RUST_INTERP_TEST_RUSTC` may name the exact public compiler explicitly. These
-are correctness controls, not timing or publication qualification; the future
-existing publisher must bind their inputs and receipts to its final tool key.
+are correctness controls, not timings. The prepared shared publication policy
+binds their frozen inputs and actual receipts to the final tool key; standalone
+execution without that binding does not qualify a toolset for a later screen.

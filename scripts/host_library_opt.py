@@ -37,8 +37,14 @@ def bind_wrapper_capability(directory, manifest, capabilities):
         return
     probe = subprocess.run([str(directory / WRAPPER), '--rust-interp-host-library-capability'],
                            capture_output=True, text=True, timeout=10, check=True)
-    lines = probe.stdout.splitlines()
-    if (len(lines) != 2 or json.loads(lines[0]) != capabilities.get('host_library_opt')
+    bind_recorded_wrapper_capability(manifest, capabilities, probe.stdout)
+
+
+def bind_recorded_wrapper_capability(manifest, capabilities, stdout):
+    """Bind an already captured probe; shared publication never reprobes tools."""
+    lines = (stdout.decode('utf-8') if isinstance(stdout, bytes) else stdout).splitlines()
+    if (len(lines) != 2 or capabilities.get('host_library_opt') != CAPABILITY
+            or json.loads(lines[0]) != CAPABILITY or 'host_library_wrapper' in capabilities
             or lines[1] != capabilities.get('compiler_sysroot')):
         raise RuntimeError('host library exporter/wrapper capability or compiled sysroot differs')
     capabilities['host_library_wrapper'] = dict(sha256=manifest[WRAPPER],
