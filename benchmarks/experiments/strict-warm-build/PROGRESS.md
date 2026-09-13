@@ -122,16 +122,22 @@ bytes. A reviewed [source-only capture checkpoint](../../../experiments/hir-body
 now records the actual lowering ID/effect journal and a typed HIR body tree,
 validating the complete observed context boundary and tree/reference/allocation
 closure after stock lowering. It remains uncompiled and has no materializer or
-hit path. Twelve prepared unit controls and the native run-make sequence remain
+hit path. Sixteen prepared unit controls and the native run-make sequence remain
 unrun; structural input counts are not measured reusable-body coverage.
+The latest capture key also binds active language/library feature declarations
+and all eight ordered allow-lists at the actual body-lowering entry. This covers
+inputs outside the session-option hash without invoking boolean feature getters.
+It remains capture-only and does not skip ordinary lowering or feature checks.
 [Native controls](../../../results/hir-body-coverage-native-01/README.md),
 [complete development coverage](../../../results/hir-body-development-coverage-01/README.md).
 A separate [limited compiler check driver](../../../experiments/hir-capture-check/README.md)
 freezes the earlier journal-only checkpoint `3f3e9c28`; its two configuration
-guards passed with no skips. The actual independent compiler checkout, selected
+guards and subsequent six configuration/archive controls passed with no skips.
+The actual independent compiler checkout, selected
 crate check and unit tests still await the planned 24 GiB free-space baseline.
 They cannot qualify the newer typed codec or a cache hit.
 [Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
+[Copied archive guard evidence](../../../results/hir-capture-offline-seed-guards-01/README.md).
 
 The [external trait-name index](../../../experiments/external-trait-index/README.md)
 is a reviewed, uncompiled compiler prototype. It preserves ordinary external
