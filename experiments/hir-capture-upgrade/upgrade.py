@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Sequential, explicitly admitted source upgrade of the owned limited HIR check."""
 import argparse
+from dataclasses import dataclass
 import difflib
 import hashlib
 import importlib.util
@@ -26,6 +27,25 @@ spec = importlib.util.spec_from_file_location('frozen_hir_check', HIRC / 'experi
 old = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(old)
 STAGES = ['apply', 'check', 'unit']
+
+
+@dataclass(frozen=True)
+class UpgradeContext:
+    """Source-defined successor settings; no command-line policy overrides."""
+    root: Path
+    here: Path
+    work: Path
+    revision: str
+    read_inputs: object
+    read_previous: object
+    read_checkpoint: object
+    required_tests: tuple
+    archive_sha256: str | None = None
+
+
+def default_context():
+    return UpgradeContext(ROOT, HERE, WORK, CHECKPOINT, inputs, previous, checkpoint,
+                          tuple(old.REQUIRED_TESTS))
 
 
 def digest(data):
@@ -172,56 +192,64 @@ def checked_tests(text, original, added):
                 'required actual unit test missing: ' + name)
 
 
-def load_plan(path, expected_hash, frozen, names):
+def load_plan(path, expected_hash, frozen, names, *, context=None):
+    context = context or default_context()
     require(re.fullmatch('[0-9a-f]{64}', expected_hash or ''), 'reviewed plan SHA256 required')
     data = Path(path).read_bytes()
     require(digest(data) == expected_hash, 'reviewed upgrade plan changed')
     plan = json.loads(data)
-    require(plan['owner'] == str(ROOT) and plan['source'] == str(SOURCE)
-            and plan['inputs'] == frozen and plan['checkpoint'] == CHECKPOINT
+    require(plan['owner'] == str(context.root) and plan['source'] == str(SOURCE)
+            and plan['inputs'] == frozen and plan['checkpoint'] == context.revision
             and plan['stages'] == STAGES and plan['commands'] == old.COMMANDS
-            and plan['old_tests'] == old.REQUIRED_TESTS
-            and plan['added_tests'] == sorted(set(names) - set(old.REQUIRED_TESTS))
+            and plan['old_tests'] == list(context.required_tests)
+            and plan['added_tests'] == sorted(set(names) - set(context.required_tests))
             and (plan['initial_free_gib'], plan['running_floor_gib'], plan['capacity_stop_gib']) == (16, 8, 9),
             'upgrade plan changed fixed source, commands, tests or capacity policy')
+    require(context.archive_sha256 is None or
+            plan['archive_hashes'][plan['archive_paths']['archive']] == context.archive_sha256,
+            'upgrade plan changed required predecessor archive')
     return plan
 
 
-def execute(args):
+def execute(args, *, context=None):
+    context = context or default_context()
     require(re.fullmatch('[a-z0-9][a-z0-9-]{0,95}', args.attempt), 'fresh attempt name required')
     phase = 'plan' if args.write_plan else args.stage
     require(phase in ['plan', *STAGES], 'explicit upgrade phase required')
-    output = WORK / 'stages' / args.attempt
+    output = context.work / 'stages' / args.attempt
     output.mkdir(parents=True, exist_ok=False)
-    receipt = dict(status='waiting', stage=phase, owner=str(ROOT), pid=os.getpid(), parent_pid=os.getppid(),
+    receipt = dict(status='waiting', stage=phase, owner=str(context.root), pid=os.getpid(), parent_pid=os.getppid(),
                    started_at=time.time(), commands=[], canonical_lock=str(CANONICAL_LOCK), lock_wait_seconds=600,
                    expected_plan_sha256=args.plan_sha256)
     write(output / 'receipt.json', receipt)
     try:
         with workload_lock(CANONICAL_LOCK, 600):
-            receipt.update(status='running', admitted_at=time.time(), free_bytes_before=disk(ROOT, 16))
+            receipt.update(status='running', admitted_at=time.time(), free_bytes_before=disk(context.root, 16))
             write(output / 'receipt.json', receipt)
-            frozen = inputs()
-            new_manifest, names = checkpoint()
+            frozen = context.read_inputs()
+            new_manifest, names = context.read_checkpoint()
             if phase == 'plan':
-                require(args.write_plan.is_absolute() and args.write_plan.parent == HERE
+                require(args.write_plan.is_absolute() and args.write_plan.parent == context.here
                         and not args.write_plan.exists(), 'plan must be a fresh owned path')
-                prior = previous(args.terminal)
+                prior = context.read_previous(args.terminal)
                 archive_paths = dict(archive=str(args.archive.resolve(strict=True)),
                     manifest=str(args.archive_manifest.resolve(strict=True)), summary=str(args.archive_summary.resolve(strict=True)))
+                require(context.archive_sha256 is None or
+                        sha(archive_paths['archive']) == context.archive_sha256,
+                        'wrong predecessor archive')
                 required = prior['files'] | prior['historical_source']
                 verify_archive(archive_paths['archive'], archive_paths['manifest'], archive_paths['summary'], required)
                 plan = None
             else:
-                require(args.plan.resolve(strict=True).parent == HERE and not args.plan.is_symlink(), 'unexpected upgrade plan')
-                plan = load_plan(args.plan, args.plan_sha256, frozen, names)
+                require(args.plan.resolve(strict=True).parent == context.here and not args.plan.is_symlink(), 'unexpected upgrade plan')
+                plan = load_plan(args.plan, args.plan_sha256, frozen, names, context=context)
                 prior, archive_paths, required = plan['previous'], plan['archive_paths'], plan['archive_required']
                 require(all(sha(p) == h for p, h in plan['archive_hashes'].items()), 'historical archive changed')
                 verify_archive(archive_paths['archive'], archive_paths['manifest'], archive_paths['summary'], required)
             old_plan_hash = sha(prior['old_plan_path'])
             env = prior['old_plan']['environment']
             def guard():
-                require(inputs() == frozen and old.frozen_plan() == prior['old_plan']
+                require(context.read_inputs() == frozen and old.frozen_plan() == prior['old_plan']
                         and all(sha(p) == h for p, h in prior['files'].items()), 'frozen prerequisites changed')
                 if phase != 'plan':
                     require(sha(args.plan) == args.plan_sha256, 'reviewed plan changed during execution')
@@ -235,7 +263,7 @@ def execute(args):
                 receipt['commands'].append(ref)
                 write(output / 'receipt.json', receipt)
                 try:
-                    result = run(argv, cwd=cwd, env=env, out=directory, capacity_root=ROOT)
+                    result = run(argv, cwd=cwd, env=env, out=directory, capacity_root=context.root)
                 finally:
                     if (directory / 'receipt.json').exists():
                         ref['sha256'] = sha(directory / 'receipt.json')
@@ -250,7 +278,7 @@ def execute(args):
                 # here. This is not a compiler checkout, bootstrap, or Cargo target.
                 scratch = output / 'delta-inputs'
                 scratch.mkdir()
-                command(['git', 'init', '--quiet', str(scratch)], ROOT)
+                command(['git', 'init', '--quiet', str(scratch)], context.root)
                 paths = sorted(set(prior['old_manifest']['files']) | set(new_manifest['files']))
                 before, base = {}, {}
                 for name in paths:
@@ -267,8 +295,8 @@ def execute(args):
                         target.parent.mkdir(parents=True, exist_ok=True)
                         target.write_bytes(data)
                         base[name] = data
-                command(['git', 'apply', '--check', str(HERE / 'inputs/capture.patch')], scratch)
-                command(['git', 'apply', str(HERE / 'inputs/capture.patch')], scratch)
+                command(['git', 'apply', '--check', str(context.here / 'inputs/capture.patch')], scratch)
+                command(['git', 'apply', str(context.here / 'inputs/capture.patch')], scratch)
                 after_hashes, delta = {}, bytearray()
                 for name in paths:
                     path = scratch / name
@@ -281,17 +309,17 @@ def execute(args):
                 delta_path.write_bytes(delta)
                 command(['git', 'apply', '--check', '--index', str(delta_path)])
                 source_guard(prior['source'], command, old_plan_hash)
-                plan = dict(schema_version=1, owner=str(ROOT), source=str(SOURCE), checkpoint=CHECKPOINT,
+                plan = dict(schema_version=1, owner=str(context.root), source=str(SOURCE), checkpoint=context.revision,
                     inputs=frozen, previous=prior, archive_paths=archive_paths, archive_required=required,
                     archive_hashes={p:sha(p) for p in archive_paths.values()},
                     delta=str(delta_path), delta_sha256=sha(delta_path), after_hashes=after_hashes,
                     before_hashes={p:digest(b) if b is not None else None for p,b in before.items()},
-                    old_tests=old.REQUIRED_TESTS, added_tests=sorted(set(names)-set(old.REQUIRED_TESTS)),
+                    old_tests=list(context.required_tests), added_tests=sorted(set(names)-set(context.required_tests)),
                     stages=STAGES, commands=old.COMMANDS, initial_free_gib=16, running_floor_gib=8,
                     capacity_stop_gib=9, compiler_downloads='unchanged constrained original policy')
                 write(args.write_plan, plan)
             else:
-                completed_path = WORK / 'completed.json'
+                completed_path = context.work / 'completed.json'
                 completed = json.loads(completed_path.read_text()) if completed_path.exists() else {}
                 require(set(completed) == set(STAGES[:STAGES.index(phase)]), 'upgrade stages out of order')
                 for ref in completed.values():
@@ -310,20 +338,20 @@ def execute(args):
                         backtrace_files=prior['source']['backtrace_files'], config_sha256=prior['source']['config_sha256'],
                         plan_sha256=sha(args.plan))
                     require(command(['git', 'rev-parse', 'HEAD^'])['stdout'].strip() == state['parent'], 'source parent changed')
-                    write(WORK / 'source.json', state)
+                    write(context.work / 'source.json', state)
                 else:
-                    state = json.loads((WORK / 'source.json').read_text())
+                    state = json.loads((context.work / 'source.json').read_text())
                     require(state['plan_sha256'] == sha(args.plan), 'upgrade source record changed')
                     source_guard(state, command, old_plan_hash)
                     result = command(plan['commands'][phase])
                     if phase == 'unit':
                         checked_tests(result['stdout'] + result['stderr'], plan['old_tests'], plan['added_tests'])
                 source_guard(state, command, old_plan_hash)
-                receipt['source_record_sha256'] = sha(WORK / 'source.json')
+                receipt['source_record_sha256'] = sha(context.work / 'source.json')
             guard()
             old.verify_archives(old.ARCHIVES)
             old.verify_copied_archives()
-            receipt.update(status='passed', finished_at=time.time(), free_bytes_after=disk(ROOT),
+            receipt.update(status='passed', finished_at=time.time(), free_bytes_after=disk(context.root),
                            plan_sha256=sha(args.write_plan or args.plan))
             write(output / 'receipt.json', receipt)
             if phase != 'plan':
@@ -335,8 +363,8 @@ def execute(args):
         raise
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def arguments(description=__doc__):
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--write-plan', type=Path)
     parser.add_argument('--plan', type=Path)
     parser.add_argument('--plan-sha256')
@@ -351,7 +379,11 @@ def main():
         require(not args.plan and not args.plan_sha256 and not args.stage and all([args.terminal,args.archive,args.archive_manifest,args.archive_summary]), 'explicit prior evidence required')
     else:
         require(args.plan and args.plan_sha256 and args.stage and not any([args.terminal,args.archive,args.archive_manifest,args.archive_summary]), 'use the reviewed plan hash for execution')
-    execute(args)
+    return args
+
+
+def main():
+    execute(arguments())
 
 
 if __name__ == '__main__':

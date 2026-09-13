@@ -1,0 +1,5 @@
+# Failed prepared-value compiler check
+
+The 33f checkpoint was planned and applied in 23 and 16 commands, then its sixth check command failed on 21 warnings under the unchanged build.warnings=deny policy. The previous three E0308 mismatches were absent. The warnings comprise 19 unreachable public items, one private-interface mismatch, and one potentially unstable query iteration. No unit tests or cache-performance run occurred.
+
+This archive preserves all 45 original command receipts and raw outputs, three supervisors, the exact source/plan/completion records, 23 patched source files, and the parent/new Git history. An independent guard rechecked every one of the 62,706 compiler and 102 backtrace entries twice, along with ownership, HEAD/parent, configuration absences and all original/copied seed archives. The original 158-member failed-history archive was fully verified and is referenced without duplicating its payload. Old receipts and compiler sources remain unchanged. All new archive members were read back and hash verified.
