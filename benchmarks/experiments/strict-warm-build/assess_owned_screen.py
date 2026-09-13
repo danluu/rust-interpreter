@@ -1,0 +1,425 @@
+#!/usr/bin/env python3
+"""Validate and archive saved stable-CGU or Cargo-info-cache mechanism screens."""
+import argparse
+import gzip
+import os
+import json
+import math
+from pathlib import Path
+import re
+
+from analyzer import ROOT, compressed, identity, member
+from assess import require, sha
+from screen import assessment as assess_rows, protocol_states, frozen_input_hash, launch_settings, command_for
+from suite_reports import read_report, validate_report, validate_runtime_limits
+
+
+def markdown(s):
+    title = {'stable-cgu': 'Stable code-generation groups', 'cargo-info-cache': 'Cargo compiler-info cache'}[s['candidate_policy']]
+    medians = s['complete_command_median_seconds']
+    lines = ['# ' + title + ' mechanism screen', '',
+        f"Candidate median: {medians['candidate']:.6f} s; baseline: {medians['baseline']:.6f} s; "
+        f"independent baseline duplicate: {medians['duplicate']:.6f} s. "
+        f"{s['candidate_observations_below_half_second']} of five edited candidate commands were below 0.500 s. "
+        'This single-history screen does not qualify the final latency target or holdout generalization.', '',
+        f"Median paired wall change: {(s['median_paired_wall_ratio'] - 1) * 100:+.3f}%; "
+        f"CPU change: {(s['median_paired_cpu_ratio'] - 1) * 100:+.3f}%. "
+        f"Maximum absolute A/A wall deviation: {s['maximum_aa_wall_deviation'] * 100:.3f}%; "
+        f"CPU deviation: {s['maximum_aa_cpu_deviation'] * 100:.3f}%. "
+        'These deviations describe the observed comparisons; they are not confidence intervals.', '',
+        '| Edit | Baseline wall s | Candidate wall s | Duplicate wall s | Baseline CPU s | Candidate CPU s | Duplicate CPU s |',
+        '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
+    for pair in s['pairs']:
+        values = [f"{pair[mode + suffix]:.6f}" for suffix in ['_seconds', '_cpu_seconds']
+                  for mode in ['baseline', 'candidate', 'duplicate']]
+        lines.append('| ' + pair['label'] + ' | ' + ' | '.join(values) + ' |')
+    lines += ['', 'Wall time includes the entire launcher, Cargo, VM, all 14 original tests and receipt I/O. '
+        'Waited-child CPU may exceed wall time because compilers run concurrently. Nested stages remain '
+        'separate; nothing is subtracted from complete-command time.', '',
+        '| Arm | Empty-target wall s | CPU s | All nine commands wall s |',
+        '| --- | ---: | ---: | ---: |']
+    for row in s['cold']:
+        lines.append(f"| {row['mode']} | {row['seconds']:.6f} | {row['cpu']['total_seconds']:.6f} | "
+                     f"{s['whole_session_command_seconds'][row['mode']]:.6f} |")
+    lines += ['', 'The one cold observation per arm includes its empty project cache; installed tools '
+        'and prepared std MIR are separate setup. One cold observation does not establish a repeatable '
+        'cold-build gain or regression.', '',
+        'All 27 commands, nine source states, five first-seen valid edited hashes per arm, all 14 original '
+        'tests, deliberate wrong-result failures, compiled recovery and final restoration were checked. '
+        'Outputs, outcomes, bytecode and entry catalogs agree across arms for every state. Source edits, '
+        'manifests, features, units, profiles and checking requirements were preserved.', '',
+        s['compiler_comparison'] + '. ' +
+        ('The compiler binary, native std and exporter/VM are identical for off/on/off. '
+         'This comparison does not attribute differences from a separately built public compiler to the patch.'
+         if s['candidate_policy'] == 'stable-cgu' else
+         'The matched Cargo executables differ only by the qualified production-source change, with '
+         'equal build settings and dynamic libraries. Cargo optimization is isolated from custom compiler policies.'), '',
+        '[summary.json](summary.json) retains every pair, command, setup identity and artifact hash. '
+        '[evidence.json.gz](evidence.json.gz) contains exact raw records, receipts, suites, source states, '
+        'compiler/Cargo/tool provenance and frozen harness snapshots. All archive member hashes were checked. '
+        'Binaries and project caches are not included in this compact archive. No adoption decision or '
+        'fresh-project result is implied by packaging this screen.', '']
+    return '\n'.join(lines)
+
+
+def cargo_pair(baseline, candidate, snapshot):
+    """Recheck the source-only build proof using archived provenance bytes."""
+    from custom_compiler import digest
+    require(baseline.identity['pinned_compiler'] == candidate.identity['pinned_compiler'] and
+            baseline.identity['dynamic_libraries'] == candidate.identity['dynamic_libraries'],
+            'Cargo compiler or dynamic-library closure differs')
+    require(baseline.identity['files']['qualification'] == candidate.identity['files']['qualification'],
+            'Cargo qualification identities differ')
+    compositions = []
+    for cargo, mode in [(baseline, 'stock'), (candidate, 'candidate')]:
+        payloads = {}
+        for name in ['source', 'qualification']:
+            item = snapshot(cargo.directory / 'payload' / name)
+            data = item['utf8'].encode()
+            require(sha(data) == item['sha256'] == cargo.identity['files'][name],
+                    'Cargo proof payload hash differs')
+            payloads[name] = json.loads(data)
+        manifest = payloads['source']; composition = manifest['composition']
+        require(composition['mode'] == mode and digest(composition) == manifest['tool_key'] ==
+                cargo.identity['provenance']['qualified_tool_key'] and
+                composition['cargo_sha256'] == cargo.identity['files']['cargo'],
+                'Cargo source/binary association differs')
+        compositions.append(composition)
+    stock, patched = compositions
+    require(set(stock) == set(patched) and all(stock[k] == patched[k] for k in stock
+            if k not in ['mode', 'source_inventory', 'cargo_sha256']),
+            'Cargo build profile, features, compiler or settings differ')
+    before, after = stock['source_inventory'], patched['source_inventory']
+    require(set(before) == set(after), 'Cargo source inventory sets differ')
+    changed = sorted(p for p in before if before[p] != after[p])
+    require(changed == ['src/util/rustc.rs'], 'Cargo production source difference is not the qualified fix')
+    report = payloads['qualification']
+    require(report['status'] == 'passed' and report['candidate_source_restored'] is True and
+            report['candidate_tests_passed'] == 3 and report['stock_existing_tests_passed'] == 2 and
+            report['stock_expected_regression_failures'] == 1 and report['original_candidate_inventory'] == after
+            and report['source_only_production_difference'] == changed[0], 'Cargo qualification outcomes differ')
+    return dict(source_revision=stock['source_revision'], source_only_production_difference=changed,
+        qualification_sha256=baseline.identity['files']['qualification'], source_inputs=len(before),
+        baseline=baseline.receipt(), candidate=candidate.receipt())
+
+
+def selection(plan, snapshot):
+    """Reconstruct typed identities from frozen manifests without running tools."""
+    from custom_compiler import Compiler, digest, POLICY as COMPILER_POLICY
+    from custom_cargo import Cargo, POLICY as CARGO_POLICY
+    policy = plan['candidate_policy']
+    modes = ['baseline', 'candidate', 'duplicate']
+    require(policy in ['stable-cgu', 'cargo-info-cache'] and set(plan['tools']) == set(modes)
+            and len(set(plan['tools'].values())) == 1, 'owned screen requires one tool identity')
+    require(set(plan['std_mir_by_mode']) == set(modes), 'missing per-arm std identities')
+    custom, cargos = None, dict.fromkeys(modes)
+    if policy == 'stable-cgu':
+        require('cargo_comparison' not in plan and 'cargos_by_mode' not in plan, 'mixed compiler/Cargo policies')
+        frozen = plan['custom_compiler']
+        manifest = json.loads(snapshot(Path(frozen['manifest']))['utf8'])
+        require(manifest['identity'] == frozen['identity'] and manifest['key'] == frozen['key']
+                and digest(manifest['identity']) == frozen['key'] and manifest['owner'] == plan['owner']
+                and manifest['identity']['policy'] == COMPILER_POLICY,
+                'custom compiler manifest differs')
+        custom = Compiler(frozen['key'], Path(frozen['sysroot']), frozen['identity'])
+        require(Path(frozen['manifest']) == custom.sysroot.parent / 'ready.json', 'compiler path differs')
+        require(plan['cgu_policy_by_mode'] == dict(baseline='off', candidate='on', duplicate='off'),
+                'stable-CGU policy differs')
+    else:
+        require('custom_compiler' not in plan and 'cgu_policy_by_mode' not in plan, 'mixed compiler/Cargo policies')
+        for mode in modes:
+            receipt = plan['cargos_by_mode'][mode]
+            directory = Path(plan['owner']) / '.work/cargos' / receipt['key']
+            manifest = json.loads(snapshot(directory / 'ready.json')['utf8'])
+            require(manifest['key'] == receipt['key'] and digest(manifest['identity']) == receipt['key']
+                    and manifest['owner'] == plan['owner'] and manifest['identity']['policy'] == CARGO_POLICY,
+                    'Cargo manifest differs')
+            cargos[mode] = Cargo(receipt['key'], directory, manifest['identity'])
+            require(cargos[mode].receipt() == receipt, 'Cargo receipt differs from frozen manifest')
+        require(cargos['baseline'] == cargos['duplicate'] and
+                cargos['baseline'].identity['files']['cargo'] != cargos['candidate'].identity['files']['cargo'],
+                'Cargo screen requires distinct actual candidate bytes and identical baseline/duplicate')
+        require(cargo_pair(cargos['baseline'], cargos['candidate'], snapshot) == plan['cargo_comparison'],
+                'Cargo matched pair differs')
+    for mode in modes:
+        std = plan['std_mir_by_mode'][mode]
+        ready = json.loads(snapshot(Path(std['path']))['utf8'])
+        key = sha(json.dumps(ready['identity'], sort_keys=True).encode())
+        require(key == std['key'] and Path(std['path']).parent.name == key
+                and ready['owner'] == plan['owner'], 'std manifest differs')
+        if custom:
+            require(ready['identity']['compiler_key'] == custom.key
+                    and ready['identity']['namespace'] == 'stable-cgu:' + plan['cgu_policy_by_mode'][mode],
+                    'std compiler/policy differs')
+        else:
+            require(ready['identity']['cargo'] == cargos[mode].receipt(), 'std Cargo differs')
+    require(plan['std_mir_by_mode']['baseline'] == plan['std_mir_by_mode']['duplicate'] and
+            plan['std_mir_by_mode']['baseline']['key'] != plan['std_mir_by_mode']['candidate']['key'],
+            'std namespaces must match baseline/duplicate and isolate candidate')
+    return custom, cargos
+
+
+def command_identity(plan, row, raw, custom, cargo):
+    expected = command_for(row['mode'], plan['tools'][row['mode']], Path(plan['source']), raw,
+        plan['states'][row['index']], names=plan['case']['tests'], candidate_policy=plan['candidate_policy'],
+        compiler_key=custom.key if custom else None, cargo_key=cargo.key if cargo else None)
+    # Repackaging may use another Python installation; retain the original
+    # interpreter spelling while checking every workload argument and its order.
+    require(row['command'] and isinstance(row['command'][0], str), 'missing launcher interpreter')
+    expected[0] = row['command'][0]
+    require(row['command'] == [str(x) for x in expected], 'timed command differs from policy and original workload')
+    for value in [row['seconds'], row['cpu']['user_seconds'], row['cpu']['system_seconds'],
+                  row['cpu']['total_seconds']]:
+        require(type(value) in (int, float) and math.isfinite(value) and value >= 0,
+                'invalid complete-command wall or CPU duration')
+    require(row['seconds'] > 0 and row['cpu']['total_seconds'] > 0 and
+            math.isclose(row['cpu']['total_seconds'], row['cpu']['user_seconds'] + row['cpu']['system_seconds'],
+                         rel_tol=1e-12, abs_tol=1e-12), 'inconsistent complete-command CPU duration')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('raw', type=Path)
+    parser.add_argument('--run-id', required=True)
+    parser.add_argument('--snapshots-from', type=Path,
+                        help='previous result summary with a verified exact source/harness archive')
+    args = parser.parse_args()
+    require(re.fullmatch('[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
+    raw = args.raw.resolve(strict=True)
+    require(raw.is_relative_to(ROOT / '.work'), 'input escapes owned workspace')
+    files = {str(raw / name): member(raw / name) for name in
+             ['plan.json', 'records.json', 'summary.json', 'transitions.json']}
+    plan, rows, original_summary, transitions = [json.loads(files[str(raw / n)]['utf8'])
+        for n in ['plan.json', 'records.json', 'summary.json', 'transitions.json']]
+    require(plan['owner'] == str(ROOT) and plan['kind'] == 'mechanism-screen' and
+            plan['final_qualification'] is False and original_summary['source_restored'] is True and
+            plan['candidate_policy'] == original_summary['candidate_policy'] and
+            plan['candidate_policy'] in ['stable-cgu', 'cargo-info-cache'],
+            'expected completed owned mechanism screen')
+    require(plan['guest_rustflags'] == [] and plan['profile_overrides'] == {} and
+            len(plan['case']['tests']) == 14, 'workload profiles or original test count differ')
+    prior_files, prior_summary = {}, None
+    if args.snapshots_from:
+        previous_result = args.snapshots_from.resolve(strict=True)
+        prior_summary = json.loads(previous_result.read_bytes())
+        prior_archive = previous_result.parent / prior_summary['archive']['path']
+        require(identity(prior_archive)['sha256'] == prior_summary['archive']['sha256'] and
+                prior_summary['frozen_inventory_verified'] is True and
+                prior_summary['plan_sha256'] == original_summary['plan_sha256'] and
+                prior_summary['records_sha256'] == original_summary['records_sha256'],
+                'prior snapshots do not identify this verified screen')
+        prior_bundle = json.loads(gzip.decompress(prior_archive.read_bytes()))
+        for item in prior_bundle['files']:
+            data = item['utf8'].encode()
+            require(len(data) == item['bytes'] and sha(data) == item['sha256'], 'prior archive member differs')
+            prior_files[item['path']] = item
+        require(prior_files[str(raw / 'plan.json')]['sha256'] == original_summary['plan_sha256'] and
+                prior_files[str(raw / 'records.json')]['sha256'] == original_summary['records_sha256'],
+                'prior archived plan or records differ')
+
+    def snapshot(path):
+        path = str(path)
+        return prior_files[path] if args.snapshots_from else member(Path(path))
+
+    def frozen_snapshot(path):
+        item = snapshot(path)
+        require(sha(b'file\0' + item['utf8'].encode()) == plan['frozen'][str(path)],
+                'frozen snapshot differs: ' + str(path))
+        files[str(path)] = item
+        return item
+
+    if not args.snapshots_from:
+        require(all(frozen_input_hash(p) == digest for p, digest in plan['frozen'].items()),
+                'frozen source/tool/harness differs; use an existing verified snapshot for repackaging')
+    for name in ['plan', 'records']:
+        require(files[str(raw / (name + '.json'))]['sha256'] == original_summary[name + '_sha256'],
+                'screen source hash differs')
+    calculated = assess_rows(rows)
+    require(all(original_summary[k] == v for k, v in calculated.items()), 'saved screen assessment differs')
+    source_file = Path(plan['source']) / plan['case']['file']
+    source_member = snapshot(source_file)
+    source_bytes = source_member['utf8'].encode()
+    require(sha(source_bytes) == plan['original_source_sha256'], 'source is not restored')
+    files[str(source_file)] = source_member
+    expected_states = protocol_states(source_bytes, plan['case'])
+    expected_plan = [{k: v for k, v in state.items() if k != 'source'} |
+                     dict(source_sha256=sha(state['source'])) for state in expected_states]
+    require(expected_plan == plan['states'], 'saved source sequence differs from original edits')
+    for state in expected_states:
+        path = str(source_file) + '#state=' + str(state['index'])
+        files[path] = dict(path=path, bytes=len(state['source']), sha256=sha(state['source']),
+                           utf8=state['source'].decode(), reconstructed_from='original source and exact plan edits')
+    require([(r['index'], r['mode']) for r in rows] ==
+            [(s['index'], m) for s in plan['states'] for m in s['modes']], 'command order differs')
+    require(len(transitions) == len(plan['states']), 'source transition count differs')
+    for index, transition in enumerate(transitions):
+        require(transition['index'] == index and transition['after'] == plan['states'][index]['source_sha256'],
+                'source transition differs')
+        if index < len(transitions) - 1:
+            expected_before = plan['states'][max(0, index - 1)]['source_sha256']
+            require(transition['before'] == expected_before, 'source transition input differs')
+    custom, cargos = selection(plan, frozen_snapshot)
+    artifacts, compact = {}, []
+    previous = dict.fromkeys(plan['tools'])
+    for row in rows:
+        index, mode = row['index'], row['mode']
+        expected = plan['states'][index]
+        command_identity(plan, row, raw, custom, cargos[mode])
+        require(row['phase'] == expected['phase'] and row['source_sha256'] == expected['source_sha256'] and
+                row['previous_source_sha256'] == previous[mode], 'command source history differs')
+        previous[mode] = row['source_sha256']
+        receipt_path, suite_path = [raw / folder / f'{index}-{mode}.json' for folder in ['receipts', 'suites']]
+        for p in [receipt_path, suite_path]:
+            files[str(p)] = member(p)
+        receipt = json.loads(files[str(receipt_path)]['utf8'])
+        require(all(receipt[k] == row[k] for k in ['index', 'phase', 'mode', 'source_sha256', 'pid',
+                'command', 'returncode']) and receipt['status'] == 'finished' and
+                receipt['tool_key'] == plan['tools'][mode], 'command receipt differs')
+        success = row['phase'] != 'wrong-edit'
+        require((row['returncode'] == 0) == success, 'command status differs')
+        suite, suite_sha = read_report(suite_path, row['suite_sha256'])
+        outcomes = validate_report(suite, plan['case']['tests'], 'prepared', success)
+        validate_runtime_limits(suite, plan['instruction_limit'], plan['allocation_limit'], required=True)
+        require([list(x) for x in outcomes] == row['outcomes'] and
+                suite['workers'] == suite['requested_workers'] == plan['suite_workers'], 'suite differs')
+        launches = [json.loads(l.split(': ', 1)[1]) for l in row['stderr'].splitlines()
+                    if l.startswith('rust-interp-launch: ')]
+        require(launches == [row['launch']] and row['launch']['suite_report_sha256'] == suite_sha and
+                row['launch']['tool_key'] == plan['tools'][mode] and
+                'query_cache_retention' not in row['launch'],
+                'launcher evidence differs')
+        settings = launch_settings(mode, plan['tools'][mode], plan['candidate_policy'], custom, cargos[mode])
+        require(custom is not None or 'custom_compiler' not in row['launch'], 'unexpected custom compiler')
+        require(cargos[mode] is not None or 'custom_cargo' not in row['launch'], 'unexpected custom Cargo')
+        require(math.isfinite(row['launch']['launcher_seconds']) and
+                0 < row['launch']['launcher_seconds'] <= row['seconds'],
+                'complete-command time excludes part of the launcher')
+        require(all(row['launch'].get(k) == v for k, v in settings.items()) and
+                '--query-cache-retention' not in row['command'] and
+                row['launch']['compiler_wrapper']['sha256'] == plan['binaries'][mode]['rust-interp-rustc-wrapper']
+                and 'Checking ' + plan['case']['package'] in row['stderr'] and
+                sum(l.startswith('rust-interp-export: ') for l in row['stderr'].splitlines()) == 1,
+                'compiler policy or selected fresh export evidence differs')
+        std = plan['std_mir_by_mode'][mode]
+        require(row['launch']['std_mir'] == {k: std[k] for k in ['key', 'sysroot', 'target']},
+                'actual std identity differs')
+        if cargos[mode]:
+            require(receipt['cargo_key'] == cargos[mode].key, 'timed Cargo identity differs')
+        for item in row['artifacts']:
+            p = (ROOT / item['path']).resolve(strict=True)
+            require(p.is_relative_to(raw / 'artifacts'), 'artifact snapshot escapes screen')
+            actual = identity(p)
+            require(actual['sha256'] == item['sha256'] and actual['bytes'] == item['bytes'],
+                    'retained artifact differs')
+            artifacts[item['path']] = item
+            if p.suffix == '.json':
+                files[str(p)] = member(p)
+        bytecode, catalog_item, calls_item = row['artifacts']
+        catalog, calls = [json.loads(files[str((ROOT / i['path']).resolve())]['utf8'])
+                          for i in [catalog_item, calls_item]]
+        require(bytecode['sha256'] == row['launch']['artifact_sha256'] == catalog['artifact_sha256'] ==
+                calls['artifact_sha256'] and calls['strict_frontend'] is True and
+                [e['name'] for e in catalog['entries']] == plan['case']['tests'] and
+                [e['function'] for e in catalog['entries']] == [t['function'] for t in suite['tests']],
+                'artifact-bound catalog/checking evidence differs')
+        compact.append({k: row[k] for k in ['index', 'phase', 'label', 'mode', 'pid', 'seconds', 'cpu',
+            'returncode', 'source_sha256', 'previous_source_sha256', 'suite_sha256', 'artifacts']} |
+            dict(test_passed=suite['passed'], test_failed=suite['failed'],
+                 stdout_sha256=sha(row['stdout'].encode()), stderr_sha256=sha(row['stderr'].encode()),
+                 stages={k: row['launch'][k] for k in ['tools_seconds', 'std_mir_seconds', 'cargo_seconds',
+                     'cargo_cpu', 'execution_seconds', 'build_to_ready_seconds', 'build_to_ready_cpu']},
+                 failed_tests=[name for name, status in outcomes if status == 'failed']))
+    for index in range(len(plan['states'])):
+        group = [r for r in rows if r['index'] == index]
+        require(len({json.dumps(r['outcomes']) for r in group}) == 1 and
+                len({r['stdout'] for r in group}) == 1 and all(
+                    len({r['artifacts'][slot]['sha256'] for r in group}) == 1 for slot in [0, 1]),
+                'cross-arm suite, bytecode, catalog or output differs')
+    provenance = []
+    for key in sorted(set(plan['tools'].values())):
+        tool = ROOT / '.work/interpreter-tools' / key
+        for name in ['ready.json', 'capabilities.json', 'compiler.json' if custom else 'source.json']:
+            p = tool / name
+            frozen_snapshot(p)
+            provenance.append({k: files[str(p)][k] for k in ['path', 'bytes', 'sha256']})
+    for p in [Path(__file__).with_name('screen.py'), Path(__file__).with_name('PROTOCOL.md'),
+              Path(plan['source']) / '.rust-interp-owned.json', Path(plan['std_mir']['path'])]:
+        frozen_snapshot(p)
+    for path in plan['frozen']:
+        if Path(path).parent == ROOT / 'scripts' or path == str(ROOT / 'benchmarks/corpus.json'):
+            frozen_snapshot(path)
+    # Preserve the complete hash inventory in the exact plan, and spell out
+    # symlink identity without copying or following directory/link fixtures.
+    source_symlinks = prior_summary['source_symlinks'] if prior_summary else [
+        dict(path=p, target=os.readlink(p), frozen_sha256=digest)
+        for p, digest in plan['frozen'].items() if Path(p).is_symlink()]
+    for link in source_symlinks:
+        require(sha(b'symlink\0' + os.fsencode(link['target'])) ==
+                plan['frozen'][link['path']] == link['frozen_sha256'], 'symlink inventory differs')
+    for p in [Path(__file__).resolve(), Path(__file__).with_name('analyzer.py'),
+              Path(__file__).with_name('assess.py')]:
+        files[str(p)] = member(p)
+    for key in set(plan['tools'].values()):
+        tool = ROOT / '.work/interpreter-tools' / key
+        name = 'compiler.json' if custom else 'source.json'
+        source = json.loads(files[str(tool / name)]['utf8'])
+        composition = source if custom else source['composition']
+        require(sha(json.dumps(composition, sort_keys=True, separators=(',', ':')).encode()) == key
+                and all(composition['binaries'] == plan['binaries'][m] for m in plan['tools'])
+                and composition['binaries'] == json.loads(files[str(tool / 'ready.json')]['utf8']),
+                'tool composition differs')
+        if custom:
+            require(composition['compiler_key'] == custom.key, 'exporter compiler association differs')
+    if not custom:
+        for cargo in {c.key: c for c in cargos.values()}.values():
+            for name, expected_hash in cargo.identity['files'].items():
+                path = cargo.directory / 'payload' / name
+                if name != 'cargo':
+                    item = frozen_snapshot(path)
+                    require(item['sha256'] == expected_hash, 'Cargo provenance input differs')
+    bundle = dict(schema_version=1, encoding='exact UTF-8 members', files=list(files.values()),
+                  source_symlinks=source_symlinks)
+    payload = (json.dumps(bundle, separators=(',', ':'), ensure_ascii=False) + '\n').encode()
+    archive = compressed(payload)
+    for item in json.loads(gzip.decompress(archive))['files']:
+        data = item['utf8'].encode()
+        require(len(data) == item['bytes'] and sha(data) == item['sha256'], 'archived member differs')
+    summary = dict(original_summary)
+    summary.update(project=plan['project'], workflow=plan['workflow'], revision=plan['revision'],
+        tools=plan['tools'], binaries=plan['binaries'], cargo_jobs=plan['cargo_jobs'],
+        suite_workers=plan['suite_workers'], tests=plan['case']['tests'], states=plan['states'],
+        original_source_sha256=plan['original_source_sha256'], compiler=plan['std_mir']['compiler'],
+        std_mir=plan['std_mir'], environment_sha256=plan['environment_sha256'],
+        command_summaries=compact, cold=[r for r in compact if r['phase'] == 'cold'],
+        maximum_aa_cpu_deviation=max(abs(p['aa_cpu_ratio'] - 1) for p in summary['pairs']),
+        artifact_inventory=list(artifacts.values()),
+        tool_provenance=provenance, source_inventory_entries=len(plan['frozen']),
+        archive=dict(path='evidence.json.gz', bytes=len(archive), sha256=sha(archive), gzip_mtime=0,
+                     uncompressed_sha256=sha(payload), members=len(files), all_member_hashes_verified=True),
+        packager_sha256=sha(Path(__file__).read_bytes()), source_restoration_rechecked=not bool(prior_summary),
+        frozen_inventory_verified=True, frozen_inventory_verified_against_current_files=not bool(prior_summary),
+        source_snapshot_fallback=identity(args.snapshots_from.resolve()) if prior_summary else None,
+        source_symlinks=source_symlinks, archived_source_states=len(expected_states),
+        compiler_comparison=plan['compiler_comparison'],
+        std_mir_by_mode=plan['std_mir_by_mode'],
+        candidate_observations_below_half_second=sum(p['candidate_seconds'] < .5 for p in summary['pairs']),
+        adoption='not decided by this single-history mechanism screen', final_latency_gate_qualified=False,
+        holdouts_evaluated=False)
+    for key in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode']:
+        if key in plan:summary[key] = plan[key]
+    for pair in summary['pairs']:
+        for mode in plan['tools']:
+            row = next(r for r in rows if r['index'] == pair['index'] and r['mode'] == mode)
+            pair[mode + '_cpu_seconds'] = row['cpu']['total_seconds']
+    output = ROOT / 'results' / args.run_id
+    output.mkdir(exist_ok=False)
+    (output / 'evidence.json.gz').write_bytes(archive)
+    require(identity(output / 'evidence.json.gz')['sha256'] == summary['archive']['sha256'],
+            'published archive differs')
+    (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+    (output / 'assessment.md').write_text(markdown(summary))
+    print(json.dumps(dict(output=str(output), archive=summary['archive'], commands=len(rows))))
+
+
+if __name__ == '__main__':
+    main()
