@@ -1,10 +1,13 @@
 """Synthetic screen contracts; no Cargo, exporter, guest or benchmark runs."""
 import collections
 import importlib.util
+import hashlib
+import json
 import os
 from pathlib import Path
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 PATH = Path(__file__).resolve().parents[1] / 'benchmarks/experiments/strict-warm-build/screen.py'
@@ -103,13 +106,121 @@ class ScreenContracts(unittest.TestCase):
     def test_candidate_capability_is_required_for_the_selected_policy(self):
         tool, key = Path('/owned/tool'), 'a' * 64
         for policy, capability in [('demand-retention', 'query-cache-retention'),
-                                   ('native-host-mir', 'native-host-mir-policy')]:
+                                   ('native-host-mir', 'native-host-mir-policy'),
+                                   ('stable-cgu', 'stable-cgu-partitioning')]:
             with patch.object(screen, 'require_export_option') as check:
                 screen.require_candidate_policy(tool, key, policy)
                 check.assert_called_once_with(tool, key, capability)
             with patch.object(screen, 'require_export_option', side_effect=RuntimeError('missing capability')):
                 with self.assertRaisesRegex(RuntimeError, 'missing capability'):
                     screen.require_candidate_policy(tool, key, policy)
+
+    def test_cgu_comparison_requires_one_compiler_and_tool_build(self):
+        a, b, compiler = 'a' * 64, 'b' * 64, 'c' * 64
+        screen.validate_comparison('stable-cgu', a, a, compiler, Path('/std/on/ready.json'))
+        for policy in ['demand-retention', 'native-host-mir']:
+            screen.validate_comparison(policy, a, b, None, None)
+            with self.assertRaisesRegex(RuntimeError, 'distinct tool'):
+                screen.validate_comparison(policy, a, a, None, None)
+            with self.assertRaisesRegex(RuntimeError, 'custom compiler/std'):
+                screen.validate_comparison(policy, a, b, compiler, Path('/std/on/ready.json'))
+        with self.assertRaisesRegex(RuntimeError, 'identical tool'):
+            screen.validate_comparison('stable-cgu', a, b, compiler, Path('/std/on/ready.json'))
+        with self.assertRaisesRegex(RuntimeError, 'compiler key'):
+            screen.validate_comparison('stable-cgu', a, a, None, Path('/std/on/ready.json'))
+        with self.assertRaisesRegex(RuntimeError, 'candidate std'):
+            screen.validate_comparison('stable-cgu', a, a, compiler, None)
+
+    def test_cgu_commands_change_only_policy_and_independent_cache_paths(self):
+        compiler_key = 'c' * 64
+        for mode in screen.MODES:
+            args = (mode, 'a' * 64, Path('/owned/source'), Path('/owned/run'), {'index': 3})
+            ordinary = screen.command_for(*args, candidate_policy='native-host-mir')
+            command = screen.command_for(*args, candidate_policy='stable-cgu', compiler_key=compiler_key)
+            index = command.index('--compiler-key')
+            self.assertEqual(command[index:index + 4], ['--compiler-key', compiler_key,
+                '--stable-cgu-partitioning', 'on' if mode == 'candidate' else 'off'])
+            self.assertEqual(command[:index] + command[index + 4:], ordinary)
+            self.assertNotIn('--query-cache-retention', command)
+        with self.assertRaisesRegex(RuntimeError, 'compiler key'):
+            screen.command_for(*args, candidate_policy='stable-cgu')
+        with self.assertRaisesRegex(RuntimeError, 'stable-CGU policy'):
+            screen.command_for(*args, candidate_policy='native-host-mir', compiler_key=compiler_key)
+
+    def test_cgu_launch_rejects_wrong_compiler_mode_and_discovery_path(self):
+        custom = SimpleNamespace(key='c' * 64, rustc=Path('/owned/compiler/bin/rustc'),
+            identity=dict(files={'bin/rustc': 'd' * 64}, compiler='custom rustc'))
+        launch = screen.launch_settings('candidate', 'a' * 64, 'stable-cgu', custom)
+        launch['toolchain_lookup'] = dict(mode='cached', outcome='owned-manifest')
+        for key, value in [('key', 'b' * 64), ('rustc_sha256', 'e' * 64),
+                           ('stable_cgu_partitioning', 'off')]:
+            bad = json.loads(json.dumps(launch))
+            bad['custom_compiler'][key] = value
+            with self.assertRaisesRegex(RuntimeError, 'settings differ'):
+                screen.checked_launch('rust-interp-launch: ' + json.dumps(bad),
+                    'candidate', 'a' * 64, True, Path('/absent/suite'), Path('/absent/cache'),
+                    candidate_policy='stable-cgu', custom=custom)
+        launch['toolchain_lookup']['outcome'] = 'hit'
+        with self.assertRaisesRegex(RuntimeError, 'toolchain lookup'):
+            screen.checked_launch('rust-interp-launch: ' + json.dumps(launch),
+                'candidate', 'a' * 64, True, Path('/absent/suite'), Path('/absent/cache'),
+                candidate_policy='stable-cgu', custom=custom)
+
+        launch['toolchain_lookup']['outcome'] = 'owned-manifest'
+        expected_std = dict(key='f' * 64, sysroot='/std/on/sysroot', target='aarch64-apple-darwin')
+        with self.assertRaisesRegex(RuntimeError, 'prepared std identity'):
+            screen.checked_launch('rust-interp-launch: ' + json.dumps(launch),
+                'candidate', 'a' * 64, True, Path('/absent/suite'), Path('/absent/cache'),
+                candidate_policy='stable-cgu', custom=custom)
+        for key, value in [('key', 'e' * 64), ('sysroot', '/std/off/sysroot'), ('target', 'other-target')]:
+            launch['std_mir'] = expected_std | {key: value}
+            with self.assertRaisesRegex(RuntimeError, 'different standard-library'):
+                screen.checked_launch('rust-interp-launch: ' + json.dumps(launch),
+                    'candidate', 'a' * 64, True, Path('/absent/suite'), Path('/absent/cache'),
+                    candidate_policy='stable-cgu', custom=custom, prepared_std=expected_std)
+
+    def test_prepared_custom_std_requires_matching_compiler_source_and_mode(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            sysroot = root / 'compiler'
+            rustc = sysroot / 'bin/rustc'
+            rustc.parent.mkdir(parents=True)
+            rustc.write_bytes(b'compiler fixture')
+            lock = sysroot / 'lib/rustlib/src/rust/library/Cargo.lock'
+            lock.parent.mkdir(parents=True)
+            lock.write_bytes(b'lock fixture')
+            custom = SimpleNamespace(key='c' * 64, sysroot=sysroot, rustc=rustc,
+                host='aarch64-apple-darwin', identity=dict(source_sha256='d' * 64))
+            identity = dict(policy=screen.STD_POLICY, flags=screen.STD_FLAGS,
+                compiler_key=custom.key, compiler='custom compiler identity', target=custom.host,
+                source_sha256=custom.identity['source_sha256'], namespace='stable-cgu:off',
+                lock_sha256=screen.sha(lock))
+            key = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
+            work = root / '.work/std-mir' / key
+            lib = work / 'sysroot/lib/rustlib' / custom.host / 'lib'
+            lib.mkdir(parents=True)
+            artifacts = {}
+            for crate in ['core', 'alloc', 'std', 'test', 'proc_macro']:
+                artifact = lib / ('lib' + crate + '-fixture.rmeta')
+                artifact.write_bytes(crate.encode())
+                artifacts[str(artifact.relative_to(work))] = dict(stamp=screen.stamp(artifact),
+                                                                  sha256=screen.sha(artifact))
+            ready = work / 'ready.json'
+            ready.write_text(json.dumps(dict(owner=str(root), identity=identity, artifacts=artifacts)))
+            with patch.object(screen, 'ROOT', root), \
+                 patch.object(screen.subprocess, 'check_output', return_value=identity['compiler']) as probe:
+                result = screen.validate_std_ready(ready, {}, custom, 'off')
+                self.assertEqual(result['key'], key)
+                probe.assert_called_once_with([str(rustc), '-vV'], env={}, text=True)
+                probe.reset_mock()
+                with self.assertRaisesRegex(RuntimeError, 'identity or mode differs'):
+                    screen.validate_std_ready(ready, {}, custom, 'on')
+                custom.identity['source_sha256'] = 'e' * 64
+                with self.assertRaisesRegex(RuntimeError, 'identity or mode differs'):
+                    screen.validate_std_ready(ready, {}, custom, 'off')
+                with self.assertRaisesRegex(RuntimeError, 'requires a custom compiler'):
+                    screen.validate_std_ready(ready, {})
+                probe.assert_not_called()
 
     def test_whole_command_clock_encloses_capture_without_stage_subtraction(self):
         events = []

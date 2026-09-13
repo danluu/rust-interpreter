@@ -28,6 +28,7 @@ MODES = ['baseline', 'candidate', 'duplicate']
 CANDIDATE_POLICIES = {
     'demand-retention': 'query-cache-retention',
     'native-host-mir': 'native-host-mir-policy',
+    'stable-cgu': 'stable-cgu-partitioning',
 }
 DEFAULT_CANDIDATE_POLICY = 'demand-retention'
 CASE = WORKFLOW_VARIANTS['nushell', 'type-relations']
@@ -88,7 +89,7 @@ def environment():
     return env
 
 
-def validate_std_ready(path, env):
+def validate_std_ready(path, env, custom=None, mode='off'):
     """Read-only setup verification; never invoke the std-MIR builder."""
     path = path.absolute()
     require(path.resolve(strict=True) == path and path.name == 'ready.json', 'invalid std readiness path')
@@ -99,8 +100,16 @@ def validate_std_ready(path, env):
             and identity['flags'] == STD_FLAGS, 'std ownership or policy differs')
     key = hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
     require(path.parent.name == key, 'std MIR identity differs from its directory')
-    rustup = Path(env.get('RUSTUP_HOME', str(Path.home() / '.rustup')))
-    toolchain = (rustup / 'toolchains' / (TOOLCHAIN + '-' + identity['target'])).resolve(strict=True)
+    if custom is None:
+        require('compiler_key' not in identity, 'custom std MIR requires a custom compiler')
+        rustup = Path(env.get('RUSTUP_HOME', str(Path.home() / '.rustup')))
+        toolchain = (rustup / 'toolchains' / (TOOLCHAIN + '-' + identity['target'])).resolve(strict=True)
+    else:
+        require(identity.get('compiler_key') == custom.key
+                and identity.get('source_sha256') == custom.identity['source_sha256']
+                and identity.get('namespace') == 'stable-cgu:' + mode
+                and identity['target'] == custom.host, 'custom std MIR identity or mode differs')
+        toolchain = custom.sysroot
     rustc = toolchain / 'bin/rustc'
     require(rustc.is_file(), 'pinned rustc is not installed; setup is required')
     compiler = subprocess.check_output([str(rustc), '-vV'], env=env, text=True)
@@ -120,7 +129,8 @@ def validate_std_ready(path, env):
         matches = list((path.parent / 'sysroot/lib/rustlib' / identity['target'] / 'lib').glob('lib' + crate + '-*.rmeta'))
         require(len(matches) == 1 and str(matches[0]) in artifacts, 'missing prepared std crate ' + crate)
     return dict(path=str(path), sha256=sha(path), key=key, artifacts=artifacts,
-                compiler=compiler, rustc=str(rustc), rustc_sha256=sha(rustc))
+                compiler=compiler, rustc=str(rustc), rustc_sha256=sha(rustc),
+                sysroot=str(path.parent / 'sysroot'), target=identity['target'])
 
 
 def validate_source(source):
@@ -154,10 +164,34 @@ def require_candidate_policy(tool, key, candidate_policy):
     require_export_option(tool, key, CANDIDATE_POLICIES[candidate_policy])
 
 
+def validate_comparison(policy, baseline_key, candidate_key, compiler_key, candidate_std):
+    require(policy in CANDIDATE_POLICIES, 'unknown candidate policy')
+    if policy == 'stable-cgu':
+        require(baseline_key == candidate_key, 'stable-CGU comparison requires identical tool binaries')
+        require(isinstance(compiler_key, str) and re.fullmatch('[0-9a-f]{64}', compiler_key),
+                'stable-CGU comparison requires an installed compiler key')
+        require(candidate_std is not None, 'stable-CGU comparison requires prepared candidate std MIR')
+    else:
+        require(baseline_key != candidate_key, 'screen requires distinct tool identities')
+        require(compiler_key is None and candidate_std is None,
+                'custom compiler/std arguments require stable-CGU policy')
+
+
+def cgu_setting(mode):
+    require(mode in MODES, 'unknown screen arm')
+    return 'on' if mode == 'candidate' else 'off'
+
+
 def command_for(mode, key, source, work, sample, names=CASE['tests'],
-                candidate_policy=DEFAULT_CANDIDATE_POLICY):
+                candidate_policy=DEFAULT_CANDIDATE_POLICY, compiler_key=None):
     retention = retention_setting(mode, candidate_policy)
     policy_args = [] if retention is None else ['--query-cache-retention', retention]
+    if candidate_policy == 'stable-cgu':
+        require(isinstance(compiler_key, str) and re.fullmatch('[0-9a-f]{64}', compiler_key),
+                'stable-CGU command requires an installed compiler key')
+        policy_args = ['--compiler-key', compiler_key, '--stable-cgu-partitioning', cgu_setting(mode)]
+    else:
+        require(compiler_key is None, 'custom compiler requires stable-CGU policy')
     command = [sys.executable, ROOT / 'scripts/interpreter.py', '--manifest-path', source / 'Cargo.toml',
         '--package', CASE['package'], '--jobs', str(JOBS), '--tool-key', key,
         '--cache-namespace', work.name + ':' + mode, '--workspace-cache-root', work / 'caches' / mode,
@@ -182,7 +216,7 @@ def measure_command(command, **kwargs):
     return child, stdout, stderr, elapsed, cpu
 
 
-def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY):
+def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None):
     retention = retention_setting(mode, candidate_policy)
     expected = dict(tool_key=key, engine='jit', function_cache='auto', borrowck_cache='off',
         jit_persistent_registers=True, jit_resumable_calls=True, inline_leaves=True,
@@ -190,19 +224,32 @@ def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY):
         suite_workers_requested=SUITE_WORKERS)
     if retention is not None:
         expected['query_cache_retention'] = retention
+    if candidate_policy == 'stable-cgu':
+        require(custom is not None, 'stable-CGU launch requires a validated compiler')
+        expected['custom_compiler'] = dict(key=custom.key, rustc=str(custom.rustc),
+            rustc_sha256=custom.identity['files']['bin/rustc'], compiler=custom.identity['compiler'],
+            stable_cgu_partitioning=cgu_setting(mode))
+    else:
+        require(custom is None, 'custom compiler requires stable-CGU policy')
     return expected
 
 
 def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
-                   candidate_policy=DEFAULT_CANDIDATE_POLICY):
+                   candidate_policy=DEFAULT_CANDIDATE_POLICY, custom=None, prepared_std=None):
     launches = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in stderr.splitlines()
                 if line.startswith('rust-interp-launch: ')]
     require(len(launches) == 1, 'expected exactly one completed launcher report')
     launch = launches[0]
-    expected = launch_settings(mode, key, candidate_policy)
+    expected = launch_settings(mode, key, candidate_policy, custom)
     require(all(launch.get(k) == v for k, v in expected.items()), 'launcher settings differ')
     require(launch['toolchain_lookup']['mode'] == 'cached'
-            and launch['toolchain_lookup']['outcome'] in {'miss', 'hit'}, 'cached toolchain lookup unavailable')
+            and launch['toolchain_lookup']['outcome'] in ({'owned-manifest'} if custom else {'miss', 'hit'}),
+            'cached toolchain lookup unavailable')
+    if custom:
+        require(prepared_std is not None, 'stable-CGU launch requires prepared std identity')
+    if prepared_std is not None:
+        require(launch.get('std_mir') == {k: prepared_std[k] for k in ['key', 'sysroot', 'target']},
+                'launcher used different standard-library MIR')
     for field in ['launcher_seconds', 'cargo_seconds', 'execution_seconds']:
         value = launch[field]
         require(type(value) in (int, float) and math.isfinite(value) and value > 0, 'invalid launcher duration')
@@ -265,11 +312,15 @@ def main():
     parser.add_argument('--candidate-policy', choices=CANDIDATE_POLICIES,
                         default=DEFAULT_CANDIDATE_POLICY)
     parser.add_argument('--std-mir-ready', type=Path, required=True)
+    parser.add_argument('--compiler-key', help='same installed compiler for all stable-CGU arms')
+    parser.add_argument('--candidate-std-mir-ready', type=Path,
+                        help='separately prepared stable-CGU on namespace; baseline uses off')
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=45)
     args = parser.parse_args()
     require(__debug__, 'run Python without -O')
     require(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
-    require(args.baseline_tool_key != args.candidate_tool_key, 'screen requires distinct tool identities')
+    validate_comparison(args.candidate_policy, args.baseline_tool_key, args.candidate_tool_key,
+                        args.compiler_key, args.candidate_std_mir_ready)
     source = args.source.absolute()
     work = ROOT / '.work' / args.run_id
     work.mkdir(exist_ok=False)
@@ -280,7 +331,16 @@ def main():
             acquire_lock(lock, args.lock_wait_seconds)
             require_space(work, MINIMUM_GIB)
             env = environment()
-            std = validate_std_ready(args.std_mir_ready, env)
+            custom = None
+            if args.compiler_key is not None:
+                from custom_compiler import load_compiler, validate_tool_compiler
+                custom = load_compiler(ROOT, args.compiler_key)
+                custom.environment(env)
+            std = validate_std_ready(args.std_mir_ready, env, custom, 'off')
+            stds = dict.fromkeys(MODES, std)
+            if custom:
+                stds['candidate'] = validate_std_ready(args.candidate_std_mir_ready, env, custom, 'on')
+                require(std['key'] != stds['candidate']['key'], 'stable-CGU std namespaces must differ')
             revision, marker, changed, original = validate_source(source)
             states = protocol_states(original)
             keys = dict(baseline=args.baseline_tool_key, candidate=args.candidate_tool_key,
@@ -290,6 +350,9 @@ def main():
             require(len({proof['rust-interp-vm'] for proof in manifests.values()}) == 1,
                     'compiler-cache screen requires identical VM binaries')
             for mode, tool in tools.items():
+                if custom:
+                    validate_tool_compiler(tool, keys[mode], custom)
+                    require_candidate_policy(tool, keys[mode], args.candidate_policy)
                 for option in ['entry-catalog', 'function-cache-auto', 'inline-leaves',
                                'trap-unsupported-calls', 'run-try-callbacks']:
                     require_export_option(tool, keys[mode], option)
@@ -299,6 +362,8 @@ def main():
                 directory.mkdir(parents=True, exist_ok=False)
             paths = [Path(__file__).resolve(), Path(__file__).with_name('PROTOCOL.md'), marker,
                      ROOT / 'benchmarks/corpus.json', Path(std['path'])]
+            if custom:
+                paths += [Path(stds['candidate']['path']), custom.sysroot.parent / 'ready.json']
             paths += sorted((ROOT / 'scripts').glob('*.py'))
             paths += [p for tool in set(tools.values()) for p in tool.iterdir() if p.is_file()]
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
@@ -317,14 +382,22 @@ def main():
                 timing='wall around capture, including launcher, Cargo, VM, tests and receipt I/O; waited-for child CPU',
                 controls='original; wrong production edit; compiled recovery; five new cumulative edits; compiled final restoration',
                 final_qualification=False, retry='none; failures retained, no sample replacement')
+            if custom:
+                plan.update(custom_compiler=dict(key=custom.key, sysroot=str(custom.sysroot),
+                    manifest=str(custom.sysroot.parent / 'ready.json'), identity=custom.identity),
+                    std_mir_by_mode=stds, cgu_policy_by_mode={m: cgu_setting(m) for m in MODES},
+                    compiler_comparison='same compiler and tool binaries; stable-CGU off/on/off')
             write_json(work / 'plan.json', plan)
             previous = dict.fromkeys(MODES)
 
             def verify_inputs(expected):
                 require(changed.read_bytes() == expected and not changed.is_symlink(), 'production source changed')
                 require(all(frozen_input_hash(p) == digest for p, digest in frozen.items()), 'frozen source, tool or harness changed')
-                require(all(stamp(Path(p)) == proof['stamp'] for p, proof in std['artifacts'].items()),
+                require(all(stamp(Path(p)) == proof['stamp'] for std in stds.values()
+                            for p, proof in std['artifacts'].items()),
                         'prepared standard-library artifact changed')
+                if custom:
+                    require(load_compiler(ROOT, custom.key) == custom, 'custom compiler changed')
                 current = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
                 require(current == tracked, 'tracked source inventory changed')
                 require(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=source, text=True).strip() == revision,
@@ -347,7 +420,7 @@ def main():
                 digest = sha(changed)
                 require(previous[mode] != digest, 'unchanged command entered screen')
                 command = command_for(mode, keys[mode], source, work, sample,
-                                      candidate_policy=args.candidate_policy)
+                                      candidate_policy=args.candidate_policy, compiler_key=args.compiler_key)
                 suite_path = work / 'suites' / f"{sample['index']}-{mode}.json"
                 free = shutil.disk_usage(work).free
                 require_space(work, MINIMUM_GIB)
@@ -366,7 +439,7 @@ def main():
                 require((child.returncode == 0) == success, 'wrong-edit/passing exit status differs')
                 launch, outcomes, artifacts, suite_sha = checked_launch(
                     stderr, mode, keys[mode], success, suite_path, work / 'caches' / mode,
-                    candidate_policy=args.candidate_policy)
+                    candidate_policy=args.candidate_policy, custom=custom, prepared_std=stds[mode])
                 workspace = launch['workspace_path']
                 require(workspaces.get(mode, workspace) == workspace, 'arm workspace changed')
                 workspaces[mode] = workspace
