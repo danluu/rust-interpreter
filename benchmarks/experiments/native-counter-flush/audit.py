@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--build-run',default='native-counter-flush-build-02')
     args=parser.parse_args();assert re.fullmatch(r'native-counter-flush-build-\d{2}',args.build_run)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock, 45); require_space(ROOT, 8)
+        acquire_lock(lock, 45); require_space(ROOT, 12)
         names = [args.build_run, 'native-counter-flush-qualification-01',
                  'native-counter-flush-emission-01',
                  'native-counter-flush-profile-01', 'native-counter-flush-protocol-01',

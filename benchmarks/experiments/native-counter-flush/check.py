@@ -19,7 +19,7 @@ def main():
     assert args.run_id.startswith('native-counter-flush-protocol-') and Path(args.run_id).name == args.run_id
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
-        require_space(ROOT, 8)
+        require_space(ROOT, 12)
         work = ROOT / '.work' / args.run_id; work.mkdir(exist_ok=False)
         paths = list(Path(__file__).parent.glob('*.py')) + [Path(__file__).with_name(name) for name in ['PLAN.md','QUALIFICATION.md']]
         paths += list((ROOT / 'scripts').glob('*.py'))

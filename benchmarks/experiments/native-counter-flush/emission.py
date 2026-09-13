@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--build',type=Path,required=True)
     args=parser.parse_args();assert re.fullmatch(r'native-counter-flush-emission-\d{2}',args.run_id)
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45);require_space(ROOT,8)
+        acquire_lock(lock,45);require_space(ROOT,12)
         build_path=args.build.resolve(strict=True);build=json.loads(build_path.read_text())
         assert build['status']=='passed' and build['tests']=={'test-debug':532,'test-release':532}
         manifest=ROOT/build['source_manifest'];assert sha(manifest)==build['source_manifest_sha256']
