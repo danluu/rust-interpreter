@@ -28,6 +28,13 @@ def fixture():
 
 
 class Maps(unittest.TestCase):
+    def test_range_guard_is_overhead_and_cannot_claim_a_guest_pc(self):
+        op,region,code,profile,pid=fixture()
+        row=op['functions'][0]['spans'][0];row['kind']='range_guard'
+        self.assertEqual(validate(op,region,code,profile,pid)['static_words']['range_guard'],1)
+        row['pc']=0
+        with self.assertRaises(AssertionError):validate(op,region,code,profile,pid)
+
     def test_zero_word_pcs_are_preserved_but_never_steal_a_sample_address(self):
         index = validate(*fixture())
         self.assertEqual(index['mapped_pcs'], 2)

@@ -77,6 +77,9 @@ def _checked_tools_locked():
         inputs.append(ROOT/'crates'/folder/'Cargo.toml')
     def fingerprint():
         h=hashlib.sha256()
+        # A pin change must not reuse binaries linked to the prior rustc_driver.
+        # Explicit --tool-key builds retain their separate immutable identity.
+        h.update(b'rust-interp-tools-v2\0'+TOOLCHAIN.encode()+b'\0')
         for p in inputs:h.update(str(p.relative_to(ROOT)).encode()+b'\0'+p.read_bytes())
         return h.hexdigest()
     key=fingerprint()
