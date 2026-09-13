@@ -161,15 +161,42 @@ def run(command, *, cwd, env, out, capacity_root, pass_fds=(), expected=(0,)):
     return record
 
 
-def inventory(root):
-    """Hash regular files and materialized file links; reject live directory links."""
+def bootstrap_source_links(root, source_checkout):
+    """Validate the two source links created by bootstrap's nonzero sysroots.
+
+    Their identities are separate from the regular-file inventory: neither live
+    checkout belongs in a distributed runtime or substitutes for rust-src/dev.
+    """
+    root, source_checkout = Path(root), Path(source_checkout)
+    require(root.is_dir() and root.resolve(strict=True) == root
+            and source_checkout.is_dir()
+            and source_checkout.resolve(strict=True) == source_checkout,
+            'bootstrap source links require explicit ordinary sysroot and checkout paths')
+    links = {}
+    for component in ['src', 'rustc-src']:
+        directory = root / 'lib/rustlib' / component
+        require(directory.is_dir() and not directory.is_symlink()
+                and sorted(path.name for path in directory.iterdir()) == ['rust'],
+                'unexpected bootstrap source directory contents: ' + str(directory))
+        path = directory / 'rust'
+        require(path.is_symlink() and path.is_dir()
+                and path.resolve(strict=True) == source_checkout,
+                'unexpected bootstrap source link target: ' + str(path))
+        links[str(path.relative_to(root))] = dict(
+            link_text=os.readlink(path), resolved_target=str(source_checkout))
+    return links
+
+
+def inventory(root, *, source_checkout=None):
+    """Hash file bytes; omit only explicitly validated bootstrap source links."""
     root = Path(root)
+    source_links = (bootstrap_source_links(root, source_checkout)
+                    if source_checkout is not None else {})
     result = {}
     for path in sorted(root.rglob('*')):
         if path.is_dir():
             if path.is_symlink():
-                # Bootstrap's one known live source link is omitted by composer.
-                require(str(path.relative_to(root)) == 'lib/rustlib/rustc-src/rust',
+                require(str(path.relative_to(root)) in source_links,
                         'unexpected artifact directory link')
             continue
         require(path.is_file(), 'unsupported artifact entry: ' + str(path))

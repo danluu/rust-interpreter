@@ -13,7 +13,8 @@ import tarfile
 import time
 import tomllib
 
-from owned_stage import CANONICAL_LOCK, disk, inventory, require, run, sha, workload_lock, write
+from owned_stage import (CANONICAL_LOCK, bootstrap_source_links, disk, inventory,
+                         require, run, sha, workload_lock, write)
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -342,7 +343,13 @@ def execute_stage(args):
                 elif args.stage == 'dist':
                     artifact_roots = [SOURCE / 'build/tmp/tarball' / name / HOST / 'image'
                                       for name in ['rustc-dev', 'rust-std']]
-                record['artifact_inventories'] = {str(path): inventory(path) for path in artifact_roots}
+                stage2_root = SOURCE / 'build' / HOST / 'stage2'
+                record['artifact_inventories'] = {
+                    str(path): inventory(path, source_checkout=SOURCE if path == stage2_root else None)
+                    for path in artifact_roots}
+                record['artifact_source_links'] = {
+                    str(path): bootstrap_source_links(path, SOURCE)
+                    for path in artifact_roots if path == stage2_root}
                 record['returncode'] = 0
             elif args.stage == 'package':
                 package_stage(command, work, out, completed, frozen, lock_fd, record, plan['rust_src_component'])

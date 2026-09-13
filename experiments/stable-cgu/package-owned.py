@@ -14,7 +14,7 @@ import tarfile
 import time
 import tomllib
 
-from owned_stage import CANONICAL_LOCK, workload_lock
+from owned_stage import CANONICAL_LOCK, bootstrap_source_links, inventory, workload_lock
 
 
 def sha256(path):
@@ -156,13 +156,16 @@ require(all(name == '.gitignore' or name.startswith('crates/') for name in backt
         'required backtrace source missing from component')
 
 inputs = {}
+stage2_source_links = bootstrap_source_links(args.stage2, args.source)
 for name in ['stage2', 'std_image', 'dev_image', 'rust_src']:
     root = getattr(args, name)
-    inputs[name] = {'path': str(root), 'files': {}}
-    for path in sorted(root.rglob('*')):
-        if path.is_file():
-            inputs[name]['files'][str(path.relative_to(root))] = {
-                'size': path.stat().st_size, 'sha256': sha256(path)}
+    inputs[name] = {'path': str(root), 'files': inventory(
+        root, source_checkout=args.source if name == 'stage2' else None)}
+inputs['stage2']['omitted_source_links'] = stage2_source_links
+if args.first_production:
+    for receipt in [build, original_build]:
+        require(receipt.get('artifact_source_links', {}).get(str(args.stage2)) == stage2_source_links,
+                'bootstrap source links differ from the recorded stage2 output')
 for name, receipt in [('stage2', build), ('std_image', dist), ('dev_image', dist)]:
     root = str(getattr(args, name))
     require(receipt.get('artifact_inventories', {}).get(root) == inputs[name]['files'],
@@ -250,16 +253,13 @@ args.prefix.mkdir(parents=True)
 copy_tree(args.stage2 / 'bin', args.prefix / 'bin')
 copy_tree(args.stage2 / 'lib', args.prefix / 'lib', skip=('rustlib',))
 for path in sorted((args.stage2 / 'lib/rustlib').iterdir()):
-    if path.name == 'src':
-        continue
-    if path.name == 'rustc-src':
-        # Bootstrap exposes its live checkout here for development. Ship only
-        # the materialized compiler sources in the provenanced rustc-dev image.
-        require(sorted(child.name for child in path.iterdir()) == ['rust'] and
-                (path / 'rust').is_symlink() and
-                (path / 'rust').resolve() == args.source,
-                'unexpected stage2 rustc-src layout')
-        record['omitted_live_source_link'] = str(path / 'rust')
+    if path.name in ['src', 'rustc-src']:
+        # Both exact directories/links were validated and inventoried above.
+        # Recheck before omitting them; only the pinned materialized component
+        # sources below may enter the package.
+        require(bootstrap_source_links(args.stage2, args.source) == stage2_source_links,
+                'bootstrap source links changed before composition')
+        record['omitted_live_source_links'] = stage2_source_links
         continue
     if path.name == args.host:
         copy_tree(path, args.prefix / 'lib/rustlib' / args.host)

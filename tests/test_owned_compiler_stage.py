@@ -67,6 +67,53 @@ class OwnedCompilerStageContracts(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'directory link'):
                 owned_stage.inventory(component)
 
+    @staticmethod
+    def bootstrap_layout(root):
+        source, sysroot = root / 'checkout', root / 'stage2'
+        source.mkdir()
+        (source / 'not-a-runtime-file').write_text('source stays outside package')
+        for name in ['src', 'rustc-src']:
+            directory = sysroot / 'lib/rustlib' / name
+            directory.mkdir(parents=True)
+            (directory / 'rust').symlink_to(source, target_is_directory=True)
+        (sysroot / 'bin').mkdir()
+        (sysroot / 'bin/rustc').write_bytes(b'runtime')
+        return source, sysroot
+
+    def test_both_bootstrap_source_links_are_recorded_separately_from_runtime(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            source, sysroot = self.bootstrap_layout(Path(temporary).resolve())
+            links = owned_stage.bootstrap_source_links(sysroot, source)
+            self.assertEqual(links, {f'lib/rustlib/{name}/rust': {
+                'link_text': str(source), 'resolved_target': str(source)}
+                for name in ['src', 'rustc-src']})
+            files = owned_stage.inventory(sysroot, source_checkout=source)
+            self.assertEqual(set(files), {'bin/rustc'})
+            self.assertEqual(files['bin/rustc']['size'], 7)
+            with self.assertRaisesRegex(RuntimeError, 'directory link'):
+                owned_stage.inventory(sysroot)
+
+    def test_bootstrap_source_links_reject_a_different_checkout(self):
+        for name in ['src', 'rustc-src']:
+            with self.subTest(component=name), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                source, sysroot = self.bootstrap_layout(root)
+                foreign = root / 'foreign'
+                foreign.mkdir()
+                link = sysroot / 'lib/rustlib' / name / 'rust'
+                link.unlink()
+                link.symlink_to(foreign, target_is_directory=True)
+                with self.assertRaisesRegex(RuntimeError, 'source link target'):
+                    owned_stage.inventory(sysroot, source_checkout=source)
+
+    def test_bootstrap_source_omission_rejects_extra_directory_contents(self):
+        for name in ['src', 'rustc-src']:
+            with self.subTest(component=name), tempfile.TemporaryDirectory() as temporary:
+                source, sysroot = self.bootstrap_layout(Path(temporary).resolve())
+                (sysroot / 'lib/rustlib' / name / 'unexpected.rs').write_text('extra')
+                with self.assertRaisesRegex(RuntimeError, 'source directory contents'):
+                    owned_stage.bootstrap_source_links(sysroot, source)
+
 
 if __name__ == '__main__':
     unittest.main()

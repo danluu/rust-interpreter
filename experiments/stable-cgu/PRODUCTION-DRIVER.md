@@ -82,6 +82,16 @@ is retained separately. These extras are not claimed to be rustc Git source or
 verified `.crate` archives. The resulting installed library tree remains exactly
 equal to the public tree required by strict native/prepared diagnostic checks.
 
+Bootstrap's two development source links, `lib/rustlib/src/rust` and
+`lib/rustlib/rustc-src/rust`, are recorded separately from runtime file hashes.
+Both must point to the explicit owned compiler checkout, and each containing
+directory must contain only that link. Stage receipts bind their link text and
+resolved target; composition rechecks those identities and omits both links in
+favor of the materialized rust-src/rustc-dev components. Other directory links,
+foreign checkout targets and unexpected source-directory contents are rejected.
+Plan01 remains an unexecuted source checkpoint; the corrected source-link
+contract requires a fresh plan02 after its source changes are committed.
+
 All bootstrap build/test/dist commands retain `-vv` output so actual compiler
 environment/flags are reviewable. The environment whitelist prevents unrelated
 credentials appearing in verbose build logs. Cargo is offline; normal bootstrap
