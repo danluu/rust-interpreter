@@ -71,7 +71,7 @@ def main():
     assert re.fullmatch(prefix + '-' + args.phase + r'-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
-        require_space(ROOT, 3.5)
+        require_space(ROOT, 8 if args.memory_operands_candidate else 3.5)
         paths = [Path(__file__), Path(__file__).with_name('PLAN.md')]
         paths += [ROOT / 'scripts' / name for name in ['compare_saved_runtime.py', 'interpreter.py',
             'workspace_cache.py', 'workflow_io.py', 'workflow_measurements.py', 'suite_reports.py', 'native_suite.py']]
@@ -153,7 +153,7 @@ def main():
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         work = ROOT / '.work' / args.run_id; work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(owner=str(ROOT), frozen=frozen, inputs=inputs,
-            phase=args.phase, keys=keys, minimum_free_gib=3, pairs=6 if args.phase == 'screen' else 0,
+            phase=args.phase, keys=keys, minimum_free_gib=8 if args.memory_operands_candidate else 3, pairs=6 if args.phase == 'screen' else 0,
             normal_entropy_for_all_concurrent_runs=True, complete_workflow_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_'))}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -167,7 +167,7 @@ def main():
                 order = [(pair, 'candidate', workers, False) for pair in range(6)
                          for workers in ([1, 2] if pair % 2 == 0 else [2, 1])]
             for pair, mode, workers, replay in order:
-                require_space(ROOT, 3)
+                require_space(ROOT, 8 if args.memory_operands_candidate else 3)
                 suite_path = work / f'{case}-{pair}-{mode}-{workers}-suite.json'
                 command = [str(vms[mode]), '--engine', 'jit', '--jit-resumable-calls', '--jit-persistent-registers',
                     '--isolated-batch', 'prepared', '--suite-report', str(suite_path), '--suite-catalog', item['catalog'],

@@ -54,7 +54,7 @@ def main():
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         # Small standalone fixtures and one dependency-free Cargo crate only.
-        require_space(ROOT, 4)
+        require_space(ROOT, 8 if args.memory_operands_candidate else 4)
         build_path = args.build.resolve(strict=True)
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
@@ -84,7 +84,7 @@ def main():
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(owner=str(ROOT), frozen=frozen, tool_key=key,
-            fixtures=fixtures, minimum_free_gib=4, performance_measurement=False,
+            fixtures=fixtures, minimum_free_gib=8 if args.memory_operands_candidate else 4, performance_measurement=False,
             changes='original fixtures plus scalar helper edit, unreachable type/borrow errors and restoration',
             entropy='ordinary OS; fixture assertions avoid comparing random hash keys'))
         env = {k: v for k, v in os.environ.items()
@@ -96,7 +96,7 @@ def main():
         rows, fixture_results, cache_rows = [], [], []
 
         def invoke(label, command, selected=env, success=True):
-            require_space(ROOT, 3)
+            require_space(ROOT, 8 if args.memory_operands_candidate else 3)
             command = list(map(str, command))
             child, stdout, stderr = capture(command, cwd=ROOT, env=selected,
                 receipt_path=work / 'active.json', receipt=dict(label=label))

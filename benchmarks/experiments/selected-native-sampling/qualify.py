@@ -30,7 +30,7 @@ def main():
     assert args.run_id.startswith('parallel-suites')==args.parallel_suite_candidate
     assert args.run_id.startswith('composed-development')==args.composed_candidate
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45);require_space(ROOT,3.5)
+        acquire_lock(lock,45);require_space(ROOT,8 if args.memory_operands_candidate else 3.5)
         build_path=args.build.resolve(strict=True);build=json.loads(build_path.read_text())
         expected_tests=428 if args.memory_operands_candidate else 421 if args.paired_registers_candidate else 424 if args.guarded_indirect_candidate else 419 if args.wide_bitwise_candidate else 422 if args.capacity_credit_candidate else 418 if args.main_integration_candidate else 395 if args.call_protocol_candidate else 393 if args.composed_candidate else 365 if args.parallel_suite_candidate else 360
         assert build['status']=='passed' and build['tests']['test-debug']==build['tests']['test-release']==dict(passed=expected_tests,ignored=1)
@@ -57,12 +57,12 @@ def main():
             inputs.append(dict(case=case,artifact=str(artifact),catalog=str(catalog),tape=str(tape),tape_sha256=sha(tape)))
             paths += [artifact,catalog,tape,profile]
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths};work=ROOT/'.work'/args.run_id;work.mkdir(exist_ok=False)
-        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,inputs=inputs,vm_sha256=sha(vm),minimum_free_gib=3,performance_measurement=False))
+        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,inputs=inputs,vm_sha256=sha(vm),minimum_free_gib=8 if args.memory_operands_candidate else 3,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_'))};assert not any(k.startswith('DYLD_') for k in env)
         env.update(DYLD_INSERT_LIBRARIES=str(library),RUST_INTERP_ENTROPY_MODE='replay',RUST_INTERP_VM_STATS='1')
         rows=[]
         for item in inputs:
-            require_space(ROOT,3);case=item['case'];selected=dict(env,RUST_INTERP_ENTROPY_TAPE=item['tape'])
+            require_space(ROOT,8 if args.memory_operands_candidate else 3);case=item['case'];selected=dict(env,RUST_INTERP_ENTROPY_TAPE=item['tape'])
             command=[str(vm),'--engine','jit','--jit-resumable-calls','--jit-persistent-registers','--select-test',case['name'],'--suite-catalog',item['catalog'],
                 '--instruction-limit',str(case['limits']['instructions']),'--allocation-limit',str(case['limits']['allocations']),item['artifact']]
             child,stdout,stderr=capture(command,cwd=ROOT,env=selected,receipt_path=work/'active.json',receipt=dict(index=case['index']))
