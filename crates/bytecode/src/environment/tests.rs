@@ -104,7 +104,7 @@ fn program(write_value: bool) -> Program {
     }
     code.extend([Op::Load { dst: 1, address: 0, size: 1 }, Op::Local { dst: 2, offset: 0 },
         Op::Store { address: 2, src: 1, size: 8 }, Op::Return]);
-    Program { version: VERSION, data, statics: vec![], thread_locals: vec![], entry: 0,
+    Program { version: VERSION, target: "aarch64-apple-darwin".into(), data, statics: vec![], thread_locals: vec![], entry: 0,
         functions: vec![Function { name: "environment".into(), frame_size: 16, frame_align: 16,
             registers: 3, args: vec![], result: Slot { offset: 0, size: 8 }, code }] }
 }
