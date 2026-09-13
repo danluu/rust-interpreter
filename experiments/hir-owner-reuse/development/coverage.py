@@ -209,7 +209,12 @@ def aggregate(reports):
                 'ordinary compiler invocation has unusable coverage: '+path.name)
         require(report['unvisited_resolver_owners']==0,'unexplained owner gap')
         argv=report['compiler_argv']
-        role='test' if '--test' in argv else 'build-script' if report['crate_name']=='build_script_build' else 'normal'
+        # A target with harness=false is checked with `--cfg test`, not `--test`
+        # (pinned Cargo src/compiler/mod.rs:1484-1498). Match exact argument pairs;
+        # `--check-cfg cfg(test)` and feature values must not classify as tests.
+        test='--test' in argv or '--cfg=test' in argv or any(
+            option=='--cfg' and value=='test' for option,value in zip(argv,argv[1:]))
+        role='test' if test else 'build-script' if report['crate_name']=='build_script_build' else 'normal'
         key=report['crate_name']+'|'+role
         group=groups.setdefault(key,{'crate':report['crate_name'],'role':role,'invocations':0,'resolver_owners':0,
              'counts':{},'reasons':{},'reports':[],'incremental_sessions':0})
