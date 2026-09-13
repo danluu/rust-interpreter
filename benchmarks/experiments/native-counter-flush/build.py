@@ -60,14 +60,17 @@ def main():
         env.update(CARGO_TERM_COLOR='never', CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
                    CARGO_PROFILE_TEST_DEBUG='0', CARGO_PROFILE_RELEASE_DEBUG='1')
         records, counts = [], {}
+        setup_started = time.time()
         for label, command in [
             ('assemble-control', ['/usr/bin/clang', '-target', 'arm64-apple-macos11', '-c',
                 str(Path(__file__).with_name('counters.s')), '-o', str(work/'counters.o')]),
             ('inspect-control', ['/usr/bin/otool', '-s', '__TEXT', '__text', str(work/'counters.o')])]:
+            started = time.time()
             child, stdout, stderr = capture(command,cwd=ROOT,env=env,
                 receipt_path=work/'active.json',receipt=dict(label=label))
             (work/(label+'.stdout')).write_text(stdout);(work/(label+'.stderr')).write_text(stderr)
-            records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode))
+            records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode,
+                started_at=started,finished_at=time.time()))
             write(work/'commands.json',records);assert child.returncode==0,(stdout+stderr)[-3000:]
             if label=='inspect-control':
                 words=[int(word,16) for line in stdout.splitlines() if re.match(r'^[0-9a-f]{16}\s',line)
@@ -131,6 +134,13 @@ def main():
         write(out / 'summary.json', dict(status='passed', source_commit=source, tool_key=key, binaries=binaries,
               composition=composition, tests=counts, commands=records, source_manifest=str((work / 'plan.json').relative_to(ROOT)),
               source_manifest_sha256=sha(work / 'plan.json'), raw=str(work.relative_to(ROOT)), performance_measurement=False))
+        write(out / 'setup-accounting.json', dict(status='passed', tool_key=key,
+            retained_compiler_key=CONTROL, source_commit=source,
+            setup_wall_seconds=time.time()-setup_started,
+            command_wall_seconds={r['label']:r['finished_at']-r['started_at'] for r in records},
+            qualification_summary_sha256=sha(out/'summary.json'),
+            definition='Admitted setup through immutable tool installation, including compilation and tests; excludes lock wait. The last VM build alone is not total setup cost.',
+            performance_measurement=False))
         print('PASS', counts, key, flush=True)
 
 
