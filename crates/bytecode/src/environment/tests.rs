@@ -114,6 +114,7 @@ fn exercise<const JIT: bool, const RESUMABLE: bool>(p: &Program, persistent: boo
     let settings = Limits { jit_persistent_registers: persistent, jit_resumable_calls: RESUMABLE, ..Limits::default() };
     let mut jit = crate::create_jit::<false, JIT, false, RESUMABLE>(p, &settings).unwrap();
     let metadata = ExecutionMetadata {
+        has_descriptor_io: false,
         needs_register_zeroes: p.functions.iter().map(crate::registers::needs_initial_zeroes).collect(),
         local_call_arguments: crate::calls::local_arguments(p), environment: Some(snapshot()),
     };

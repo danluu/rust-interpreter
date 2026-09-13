@@ -6,6 +6,7 @@ impl<'tcx> Lower<'_, 'tcx> {
         let tcx = self.tcx();
         if !tcx.is_foreign_item(instance.def_id()) { return Ok(false); }
         if self.c_allocator_function(instance, args, destination)? { return Ok(true); }
+        if self.descriptor_function(instance, args, destination)? { return Ok(true); }
         if self.tls_registration(instance, args)? { return Ok(true); }
         let symbol = tcx.symbol_name(instance).name;
         if !matches!(symbol, "abort" | "CCRandomGenerateBytes" | "sysctlbyname" | "getenv" | "strlen") { return Ok(false); }

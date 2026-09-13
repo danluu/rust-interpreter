@@ -49,6 +49,8 @@ pub(crate) fn local_arguments(program: &Program) -> Vec<Vec<bool>> {
                 | Op::Cast { dst, .. } | Op::Select { dst, .. } | Op::CompareBytes { dst, .. }
                 | Op::Allocate { dst, .. } | Op::Reallocate { dst, .. } | Op::RandomBytes { dst, .. }
                 | Op::CpuFeatureQuery { dst, .. }
+                | Op::DescriptorOpen { dst, .. } | Op::DescriptorWrite { dst, .. }
+                | Op::DescriptorClose { dst, .. } | Op::DescriptorGetFd { dst, .. }
                 | Op::EnvironmentGet { dst, .. }
                 | Op::CAllocate { dst, .. } | Op::CReallocate { dst, .. } | Op::CAlignedAllocate { dst, .. }
                 | Op::FloatBinary { dst, .. } | Op::FloatUnary { dst, .. } | Op::FloatConvert { dst, .. } => {
@@ -117,6 +119,10 @@ fn every_register_writer_invalidates_its_destination() {
         Op::Reallocate { dst: 0, pointer: 0, old_size: 1, align: 1, new_size: 1 },
         Op::RandomBytes { dst: 0, address: 0, size: 1 },
         Op::CpuFeatureQuery { dst: 0, name: 0, output: 1, output_len: 1, new_data: 1, new_len: 1 },
+        Op::DescriptorOpen { dst: 0, path: 1, flags: 1, mode: Some(1), errno: 1 },
+        Op::DescriptorWrite { dst: 0, descriptor: 1, address: 1, size: 1, errno: 1 },
+        Op::DescriptorClose { dst: 0, descriptor: 1, errno: 1 },
+        Op::DescriptorGetFd { dst: 0, descriptor: 1, errno: 1 },
         Op::CAllocate { dst: 0, count: 1, size: 1, errno: 0, zeroed: true },
         Op::CReallocate { dst: 0, pointer: 0, size: 1, errno: 1 },
         Op::CAlignedAllocate { dst: 0, output: 0, align: 1, size: 1 },

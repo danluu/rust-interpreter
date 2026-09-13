@@ -27,6 +27,7 @@ mod calls;
 mod cpu;
 mod environment;
 mod c_allocator;
+mod descriptor_io;
 mod tls;
 mod forwarding;
 #[cfg(test)]
@@ -258,6 +259,11 @@ pub enum Op {
     RegisterTlsDestructor { callback: Reg, argument: Reg },
     /// Read a C name from guest memory; return an immutable guest value pointer.
     EnvironmentGet { dst: Reg, name: Reg },
+    /// Opt-in AArch64 Darwin primitives; descriptors belong to a fresh guest table.
+    DescriptorOpen { dst: Reg, path: Reg, flags: Reg, mode: Option<Reg>, errno: Reg },
+    DescriptorWrite { dst: Reg, descriptor: Reg, address: Reg, size: Reg, errno: Reg },
+    DescriptorClose { dst: Reg, descriptor: Reg, errno: Reg },
+    DescriptorGetFd { dst: Reg, descriptor: Reg, errno: Reg },
 }
 
 fn mask(bits: u8) -> u128 {
@@ -404,6 +410,8 @@ pub struct Limits {
     /// Live guest allocations, including temporary replacements during realloc.
     /// Zero prohibits allocation; values above MAX_ALLOCATION_LIMIT are rejected.
     pub allocations: usize,
+    /// Experimental opened-descriptor-only I/O. No inherited or standard streams.
+    pub guest_descriptor_io: bool,
     pub instructions: u64,
     pub frames: usize,
     /// Native code budget, at most 16 MiB. Declined functions use our interpreter.
@@ -429,6 +437,7 @@ impl Default for Limits {
         Self {
             memory: 64 * 1024 * 1024,
             allocations: DEFAULT_ALLOCATION_LIMIT,
+            guest_descriptor_io: false,
             instructions: 100_000_000,
             frames: 4096,
             jit_code_bytes: jit::MAX_CODE_BYTES,
@@ -748,6 +757,7 @@ struct ExecutionMetadata {
     needs_register_zeroes: Vec<bool>,
     local_call_arguments: Vec<Vec<bool>>,
     environment: Option<environment::Snapshot>,
+    has_descriptor_io: bool,
 }
 impl ExecutionMetadata {
     fn new(program: &Program, jit: Option<&jit::Jit<'_>>, resumable: bool, memory_limit: usize) -> Result<Self, String> {
@@ -760,6 +770,7 @@ impl ExecutionMetadata {
             } else { program.functions.iter().map(registers::needs_initial_zeroes).collect() },
             local_call_arguments: calls::local_arguments(program),
             environment,
+            has_descriptor_io: program.functions.iter().any(|f| f.code.iter().any(descriptor_io::is_descriptor_op)),
         })
     }
 }
@@ -776,6 +787,10 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
     if limits.allocations > MAX_ALLOCATION_LIMIT {
         return Err(format!("live allocation limit exceeds supported maximum of {MAX_ALLOCATION_LIMIT}"));
     }
+    // Scan the complete program before any guest instruction, including for
+    // prepared invocations whose runtime capability may have changed.
+    let mut descriptors = if metadata.has_descriptor_io { descriptor_io::State::new(program, &limits)? } else { None };
+    let descriptor_bytes = descriptors.as_ref().map_or(0, |state| state.charged_bytes());
     let mut jit_instructions = 0;
     let mut jit_entries = 0;
     let mut resumable_calls = 0;
@@ -806,8 +821,10 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
         limit: limits.memory,
         readonly_end: program.data.len(),
         peak: 0,
-        auxiliary_bytes: 0,
+        auxiliary_bytes: descriptor_bytes,
     };
+    if memory.total_len() > limits.memory { return Err("initial guest data exceeds memory limit".into()); }
+    memory.peak = memory.total_len();
     memory.bytes.resize(memory.bytes.len().max(16), 0);
     let environment_base = metadata.environment.as_ref().map(|snapshot| snapshot.install(&mut memory)).transpose()?;
     let base = memory.reserve_frame(entry.frame_size, entry.frame_align)?;
@@ -955,6 +972,23 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                 }
                 Op::RandomBytes { dst, address, size } => {
                     r[*dst as usize] = memory.random_bytes(r[*address as usize] as usize, r[*size as usize] as usize)?;
+                }
+                Op::DescriptorOpen { dst, path, flags, mode, errno } => {
+                    r[*dst as usize] = descriptors.as_mut().ok_or("missing guest descriptor table")?
+                        .open(&mut memory, r[*path as usize], r[*flags as usize],
+                            mode.map(|mode| r[mode as usize]), r[*errno as usize])?;
+                }
+                Op::DescriptorWrite { dst, descriptor, address, size, errno } => {
+                    r[*dst as usize] = descriptors.as_mut().ok_or("missing guest descriptor table")?
+                        .write(&mut memory, r[*descriptor as usize], r[*address as usize], r[*size as usize], r[*errno as usize])?;
+                }
+                Op::DescriptorClose { dst, descriptor, errno } => {
+                    r[*dst as usize] = descriptors.as_mut().ok_or("missing guest descriptor table")?
+                        .close(&mut memory, r[*descriptor as usize], r[*errno as usize])?;
+                }
+                Op::DescriptorGetFd { dst, descriptor, errno } => {
+                    r[*dst as usize] = descriptors.as_mut().ok_or("missing guest descriptor table")?
+                        .get_fd(&mut memory, r[*descriptor as usize], r[*errno as usize])?;
                 }
                 Op::EnvironmentGet { dst, name } => {
                     r[*dst as usize] = metadata.environment.as_ref().ok_or("missing environment snapshot")?
@@ -1398,6 +1432,9 @@ pub fn validate(program: &Program) -> Result<(), String> {
             }
         };
         for op in &f.code {
+            if descriptor_io::is_descriptor_op(op) && program.target != "aarch64-apple-darwin" {
+                return Err("descriptor operations require the Darwin guest contract".into());
+            }
             if matches!(op, Op::CAllocate { .. } | Op::CDeallocate { .. }
                 | Op::CReallocate { .. } | Op::CAlignedAllocate { .. })
                 && program.target != "aarch64-apple-darwin" {
@@ -1421,6 +1458,16 @@ pub fn validate(program: &Program) -> Result<(), String> {
                     for r in [dst, output, align, size] { reg(*r)?; }
                 }
                 Op::RandomBytes { dst, address, size } => { reg(*dst)?; reg(*address)?; reg(*size)?; }
+                Op::DescriptorOpen { dst, path, flags, mode, errno } => {
+                    for r in [dst, path, flags, errno] { reg(*r)?; }
+                    if let Some(mode) = mode { reg(*mode)?; }
+                }
+                Op::DescriptorWrite { dst, descriptor, address, size, errno } => {
+                    for r in [dst, descriptor, address, size, errno] { reg(*r)?; }
+                }
+                Op::DescriptorClose { dst, descriptor, errno } | Op::DescriptorGetFd { dst, descriptor, errno } => {
+                    for r in [dst, descriptor, errno] { reg(*r)?; }
+                }
                 Op::EnvironmentGet { dst, name } => { reg(*dst)?; reg(*name)?; }
                 Op::CpuFeatureQuery { dst, name, output, output_len, new_data, new_len } => {
                     for r in [dst, name, output, output_len, new_data, new_len] { reg(*r)?; }

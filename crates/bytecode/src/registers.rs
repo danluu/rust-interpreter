@@ -149,6 +149,9 @@ pub(crate) fn visit_registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnM
         Op::Reallocate{pointer,old_size,align,new_size,..}=>{read(*pointer);read(*old_size);read(*align);read(*new_size);},
         Op::FillBytes{address,value,size}=>{read(*address);read(*value);read(*size);},
         Op::RandomBytes{address,size,..}=>{read(*address);read(*size);},
+        Op::DescriptorOpen{path,flags,mode,errno,..}=>{for r in [path,flags,errno] {read(*r);} if let Some(r)=mode {read(*r);}},
+        Op::DescriptorWrite{descriptor,address,size,errno,..}=>{for r in [descriptor,address,size,errno] {read(*r);}},
+        Op::DescriptorClose{descriptor,errno,..}|Op::DescriptorGetFd{descriptor,errno,..}=>{read(*descriptor);read(*errno);},
         Op::EnvironmentGet{name,..}=>read(*name),
         Op::CpuFeatureQuery{name,output,output_len,new_data,new_len,..}=>{for r in [name,output,output_len,new_data,new_len] {read(*r);}},
         Op::CAllocate{count,size,errno,..}=>{for r in [count,size,errno] {read(*r);}},
@@ -161,6 +164,7 @@ pub(crate) fn visit_registers(op:&Op,mut read:impl FnMut(Reg),mut write:impl FnM
         Op::Binary{dst,overflow,..}=>{write(*dst);write(*overflow);},
         Op::Imm{dst,..}|Op::Local{dst,..}|Op::Load{dst,..}|Op::Unary{dst,..}|Op::Cast{dst,..}|Op::Select{dst,..}
         |Op::CompareBytes{dst,..}|Op::Allocate{dst,..}|Op::Reallocate{dst,..}|Op::RandomBytes{dst,..}|Op::CpuFeatureQuery{dst,..}|Op::EnvironmentGet{dst,..}
+        |Op::DescriptorOpen{dst,..}|Op::DescriptorWrite{dst,..}|Op::DescriptorClose{dst,..}|Op::DescriptorGetFd{dst,..}
         |Op::CAllocate{dst,..}|Op::CReallocate{dst,..}|Op::CAlignedAllocate{dst,..}
         |Op::FloatBinary{dst,..}|Op::FloatUnary{dst,..}|Op::FloatConvert{dst,..}=>write(*dst),
         Op::Store{..}|Op::Copy{..}|Op::CopyDynamic{..}|Op::Jump{..}|Op::Switch{..}|Op::Assert{..}

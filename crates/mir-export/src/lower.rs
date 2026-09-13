@@ -25,6 +25,7 @@ mod entry;
 mod caller;
 mod system;
 mod c_allocator;
+mod descriptor_io;
 mod tls;
 mod reachability;
 mod allocation;
