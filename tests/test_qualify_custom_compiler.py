@@ -11,6 +11,20 @@ import qualify_custom_compiler as qualification
 
 
 class QualificationTests(unittest.TestCase):
+    def test_public_command_keeps_structured_compiler_messages_and_duplicate_units(self):
+        command = qualification.public_command(Path('/owned/source'), 'host', Path('/owned/target'))
+        formats = [arg for arg in command if isinstance(arg, str) and arg.startswith('--message-format=')]
+        self.assertEqual(formats, ['--message-format=json'])
+        message = dict(level='error', code={'code': 'E0308'}, message='mismatched types',
+                       spans=[], children=[], rendered='error[E0308]: mismatched types')
+        diagnostic = json.dumps(dict(reason='compiler-message', message=message))
+        cargo_json = diagnostic + '\n' + diagnostic + '\n' + json.dumps(dict(reason='build-finished', success=False))
+        core = qualification.core_diagnostics(qualification.diagnostic_records(cargo_json), Path('/owned'))
+        self.assertEqual(len(core), 2)
+        self.assertTrue(all(item['code'] == 'E0308' for item in core))
+        rendered_only = json.dumps(dict(reason='build-finished', success=False))
+        self.assertEqual(qualification.diagnostic_records(rendered_only), [])
+
     def test_real_cargo_route_parser_requires_both_target_roles_and_host_tools(self):
         wrapper, rustc = Path('/owned tools/wrapper'), Path('/owned compiler/rustc')
         lines = []

@@ -200,6 +200,15 @@ def changed_diagnostics(target, before):
     return records, files
 
 
+def public_command(source, host, target):
+    # Cargo's json-render-diagnostics consumes compiler-message JSON and emits
+    # rendered stderr. Plain json retains the structured diagnostic payloads.
+    return ['cargo', '+' + TOOLCHAIN, 'run', '--manifest-path', source / 'Cargo.toml',
+        '--package', 'custom-compiler-fixture', '--bin', 'custom-compiler-fixture',
+        '--locked', '--offline', '--jobs', '2', '--target', host, '--target-dir', target,
+        '--message-format=json']
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler-key', required=True)
@@ -288,11 +297,8 @@ def main():
 
             def public(label, value=None, code=None):
                 require(file_digest(public_rustc) == public_identity['sha256'], 'public rustc changed')
-                row = invoke(label + '-public', ['cargo', '+' + TOOLCHAIN, 'run',
-                    '--manifest-path', source / 'Cargo.toml', '--package', 'custom-compiler-fixture',
-                    '--bin', 'custom-compiler-fixture', '--locked', '--offline', '--jobs', '2',
-                    '--target', compiler.host, '--target-dir', work / 'public-target',
-                    '--message-format=json-render-diagnostics'], source,
+                row = invoke(label + '-public', public_command(source, compiler.host,
+                    work / 'public-target'), source,
                     dict(env, RUSTC=str(public_rustc), RUSTC_WRAPPER='', RUSTC_WORKSPACE_WRAPPER=''))
                 output = '\n'.join(line for line in row['stdout'].splitlines() if not line.startswith('{'))
                 messages = diagnostic_records(row['stdout'])
