@@ -24,7 +24,8 @@ owned production `58e1e1f5311f4424ea81def4763081f6da62d9b3`):
   source-map columns are equivalent: native uses display columns; the existing
   trap range uses character columns. The fixture uses ASCII and no tabs.
 
-`trap_span_remap_fixture.rs` contains a macro-generated direct panic and a
+`crates/bytecode/tests/fixtures/trap_span_remap_fixture.rs` contains a
+macro-generated direct panic and a
 direct panic preceded by a projected write. At `mir-opt-level=0`, the first
 panic block must have only preparation statements; the second must contain
 `(*_1) = const 29_u64` in the panic's own block. The test checks the actual

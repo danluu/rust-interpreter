@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, fs, path::{Path, PathBuf}, process::{Command, Output, Stdio}, time::{SystemTime, UNIX_EPOCH}};
 
-const SOURCE: &str = include_str!("../../../tests/trap_span_remap_fixture.rs");
+const SOURCE: &str = include_str!("fixtures/trap_span_remap_fixture.rs");
 const SCOPES: [&str; 4] = ["none", "macro", "diagnostics", "all"];
 const MAPPED: &str = "/trap-remap-source";
 
@@ -36,7 +36,7 @@ impl Run {
         let rustc = required("RUST_INTERP_TEST_RUSTC");
         let vm = required("RUST_INTERP_TEST_VM");
         let sysroot = required("RUST_INTERP_TEST_STD_SYSROOT");
-        let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../tests/trap_span_remap_fixture.rs");
+        let source = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/trap_span_remap_fixture.rs");
         assert_eq!(fs::read(&source).unwrap(), SOURCE.as_bytes());
         let frozen = [exporter.clone(), rustc.clone(), vm.clone(), source,
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/trap_span_remap.rs")].into_iter().map(|path| {
