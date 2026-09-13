@@ -4,6 +4,15 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
+Current priority: complete the frozen memory-operand comparison, with all
+462 token/folded/pgrust commands required. Its refined runtime passes428 Rust
+tests per profile,131 harness checks,7 exact tests,9 suite commands,203 strict
+native/cache checks and3 profiles. Logical work at every PC is identical to
+the wide control; generated code is5.1–5.6% smaller. Only complete changed-source
+commands determine latency. Preserve all frozen inputs and do not run another
+build, test or profile alongside this comparison.
+[Mechanism and qualification](results/memory-operands-profile-01/assessment.md).
+
 1. **Keep the completed host-MIR decision.** Wrapper466c60a2 completed all264
    Nushell/pgrust commands with matching artifacts and original assertions.
    Nushell paired wall+0.35% and CPU+0.31% show no gain;4.13% A/A wall also
@@ -50,16 +59,24 @@ suggestion. Historical experiments retain their original decisions.
    its3% CPU-noise limit (observed3.67%). Nushell changes wall−0.54% and
    CPU−0.91%, with6.56% wall noise exceeding4%. Keep the failed overall
    adoption decision and do not retime.
-   The next compute-bound design is bounded guarded indirect-call
-   specialization; [design](docs/INDIRECT-CALL-NEXT.md). It passes424 tests
+   Bounded guarded indirect-call specialization is complete;
+   [design](docs/INDIRECT-CALL-NEXT.md). It passes424 tests
    per profile,123 harness checks, seven exact tests, nine suite commands and
    203 strict native/cache checks. Three profiles preserve every logical PC
    count and confirm1.03million/0.74million native indirect calls in the two
    dominant tests. Full edited-command comparisons against the wide-operation
    baseline and fixed anchor complete token with wall−1.44%/CPU−0.97%, below
-   4.75% wall A/A; the component gate fails. Folded/pgrust remain mandatory;
-   folded had a zero-command shared-lock timeout. Do not retime token. Sample
-   current generated instruction work before extending the indirect cache. Full-catalog selection remains later work;
+   4.75% wall A/A; the component gate fails. All462 expected commands complete.
+   Folded fails its wall margin; pgrust passes the documented margin but fails
+   the frozen executable's extra CPU ceiling. Both rules were required
+   prospectively before the held-outs. Keep the failed adoption decision.
+   The subsequent paired-register candidate also completes462 commands;
+   token gains0.71% wall, below1.77% A/A, and both held-outs pass. It remains
+   experimental. The typed address-check census then finds zero fully reusable
+   checks in all three profiles, with no analysis declines. Do not implement
+   that cache. The current candidate instead simplifies existing memory
+   operands, retaining all checks and full VM-register writes.
+   Full-catalog selection remains later work;
    original checking and artifact identity requirements remain intact.
 5. **Use the stronger native controls already established.** Every current
    comparison uses matched two-worker Cargo and ordinary native libtest
