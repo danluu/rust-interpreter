@@ -1,3 +1,5 @@
+import contextlib
+import io
 import sys
 import unittest
 from unittest.mock import patch
@@ -8,6 +10,18 @@ ENV = {'RUSTC_WRAPPER': '/owned/rust-interp-rustc-wrapper', 'KEEP': 'value'}
 
 
 class LauncherTests(unittest.TestCase):
+    def test_exporter_only_verify_mode_rejects_before_cargo(self):
+        argv = ['launcher.py', '--reuse-misses', '1', '--package', 'fixture', '--function-cache', 'verify']
+        err = io.StringIO()
+        with patch.object(sys, 'argv', argv), patch.object(launcher.interpreter.subprocess, 'run') as run, \
+                contextlib.redirect_stderr(err):
+            with self.assertRaises(SystemExit) as raised:
+                launcher.main()
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIs(sys.argv, argv)
+            run.assert_not_called()
+        self.assertIn("argument --function-cache: invalid choice: 'verify'", err.getvalue())
+
     def test_explicit_values_go_only_to_owned_cargo_check(self):
         for value in [None, '0', '1', '', '2']:
             original = dict(ENV)

@@ -134,7 +134,13 @@ def main():
                 run_env = env if incremental is None else dict(env, CARGO_INCREMENTAL=incremental)
                 row = run(label, command('on', value, label, cache), run_env)
                 assert row['returncode'] != 0 and not (work / (label + '-suite.json')).exists()
-                expected = 'RUST_INTERP_REUSE_MISSES must be 0 or 1' if label in ['empty', 'invalid'] else 'reuse-miss observation requires actual reuse, strict checking and disabled replay-cost observation'
+                if label == 'verify-cache':
+                    # Verify is an exporter-only diagnostic mode. The public
+                    # launcher rejects it before spawning Cargo.
+                    expected = "argument --function-cache: invalid choice: 'verify'"
+                else:
+                    require_cargo_export(row['stderr'], 'host-mir-app')
+                    expected = 'RUST_INTERP_REUSE_MISSES must be 0 or 1' if label in ['empty', 'invalid'] else 'reuse-miss observation requires actual reuse, strict checking and disabled replay-cost observation'
                 assert expected in row['stderr'] and not messages(row['stderr'], 'rust-interp-launch')
                 print(label, 'expected rejection', flush=True)
             label='incompatible-replay-costs'
