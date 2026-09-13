@@ -39,8 +39,8 @@ exact adopted VM and wrapper. Sized dynamic bytecode matches the prior control.
 [Receiver fix](results/boxed-fnonce-after-01/assessment.md).
 The full original pgrust SQL-parser target now passes all 114 native and custom
 JIT tests, including C reference vectors. General function-capacity, environment
-read and checked C-string support remove the subsequent blockers; these changes
-remain experimental pending publication audit. All 40 existing-project history
+read and checked C-string support remove the subsequent blockers. The combined
+main compiler qualification and publication audit pass. All 40 existing-project history
 commands now preserve exact artifacts and assertion outcomes. The workspace
 passes 484 tests per profile, the final exporter passes
 89 per profile, and 119 focused/cache/strict Cargo commands pass. All 4,918 parser
@@ -55,10 +55,14 @@ unstarted commands. Paired allocation traces with function reuse disabled locate
 the original/restored layout difference in rustc's sharing of an immutable
 literal, before exporter placement. A/B artifact identity holds within each
 cycle/state. All114 native/custom assertion outcomes match and sources restore.
-The dominant reference-vector test and early JIT decline are the next runtime
-diagnostic; no capacity increase is justified yet.
+The dominant reference-vector test spends94.13% of its interpreted operations
+in one large parser routine. Offline emission produces16,554,488 native bytes
+for that routine alone, establishing whole-function capacity pressure. Next
+compare explicit16/32 MiB limits while retaining the16 MiB default, then decide
+whether reached-region compilation is warranted.
 [Parser baseline](results/pgrust-parser-edits-repository-continuation-01/assessment.md).
 [Matched incremental](results/pgrust-parser-edits-incremental-history-01/assessment.md).
+[Combined compatibility](results/environment-main-final-audit-01/assessment.md).
 The actual-emitter local-value census is a separate next optimization candidate.
 The automatic tool cache now includes its selected toolchain identifier: the
 retained regression fails before the fix, and 123 runnable root tests pass after

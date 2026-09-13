@@ -185,3 +185,13 @@ capacity and environment support can proceed to publication audit. Investigate
 the parser's dominant reference-vector test and early JIT decline before code
 capacity changes; the local-value census remains a separate candidate.
 [Matched incremental parser result](../results/pgrust-parser-edits-incremental-history-01/assessment.md).
+
+The combined current compiler qualification now passes98 exporter/wrapper tests
+per profile,119 strict controls,40 exact project histories and all114 original
+parser tests. Its final source/tool audit passes. The next2.1/2.3 finding is
+specific: one routine accounts for94.13% of interpreted operations in the
+reference-vector profile and needs16,554,488 native bytes by itself. Compare an
+explicit bounded capacity option before a larger reached-region redesign; retain
+the16 MiB default and require real changed-source evidence for a speedup.
+[Combined qualification](../results/environment-main-final-audit-01/assessment.md),
+[emitter diagnosis](../results/parser-offline-emission-01/assessment.md).
