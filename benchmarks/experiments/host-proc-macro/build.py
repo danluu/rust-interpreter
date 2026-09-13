@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Execute a reviewed public-tool build/qualification/publication plan, never a screen."""
 import argparse
+import base64
 import json
 import os
 from pathlib import Path
@@ -14,7 +15,8 @@ from custom_compiler import file_digest, require
 from public_tool_publication import (build_admission, capture_library_closure, command_environment,
     compose_qualified_tools, file_identity, immutable_publish, materialize_screen_command,
     retained_command, run_plan_commands)
-from qualified_public_tools import BINARIES, COMPILER_REVISION, TOOLCHAIN, WORKER_BUILD_POLICY, planned_commands, sha
+from qualified_public_tools import (BINARIES, COMPILER_REVISION, TOOLCHAIN, WORKER_BUILD_POLICY,
+    HOST_LIBRARY_BUILD_POLICY, planned_commands, sha)
 from workflow_io import write_json
 
 
@@ -165,7 +167,7 @@ def unchanged(records):
         require(file_identity(Path(record['path'])) == record, 'qualified input changed: ' + record['path'])
 
 
-def fixture_payloads(work, payload):
+def fixture_payloads(work, payload, *, qualification_policy=None):
     fixtures = work / 'fixtures'
     roots = list(fixtures.glob('test_*-*'))
     require(len(roots) == 3 and all(root.is_dir() for root in roots), 'real fixture histories were not retained')
@@ -179,16 +181,26 @@ def fixture_payloads(work, payload):
                           and name not in ('debug', 'release', 'incremental', '.fingerprint')]
             for name in names:
                 path = Path(directory) / name
-                if path.suffix not in ('.json', '.jsonl', '.rs', '.toml', '.py', '.txt') and name != 'Cargo.lock':continue
+                library = qualification_policy == HOST_LIBRARY_BUILD_POLICY
+                suffixes = ('.json', '.jsonl', '.rs', '.toml', '.py', '.txt') + (('.argv', '.rbc') if library else ())
+                if path.suffix not in suffixes and name != 'Cargo.lock':continue
                 require(not path.is_symlink(), 'fixture provenance follows a symlink')
-                put(payload, 'provenance/fixtures/' + str(path.relative_to(fixtures)), path.read_bytes())
+                retained = 'provenance/fixtures/' + str(path.relative_to(fixtures))
+                data = path.read_bytes()
+                if library and path.suffix == '.rbc':
+                    # The existing archival validator accepts textual payloads.
+                    # Preserve exact bytecode without a new binary archive path.
+                    put_json(payload, retained + '.base64.json', dict(schema_version=1,
+                        encoding='base64', bytes=len(data), sha256=sha(data),
+                        data=base64.b64encode(data).decode('ascii')))
+                else:put(payload, retained, data)
 
 
 def execute(plan_path):
     plan = json.loads(plan_path.read_bytes())
     policy = plan.get('qualification_policy')
     require(plan['owner'] == str(ROOT), 'public build plan belongs to another owner')
-    if policy != WORKER_BUILD_POLICY:
+    if policy not in (WORKER_BUILD_POLICY, HOST_LIBRARY_BUILD_POLICY):
         require(policy is None and plan['source_input_key'] ==
             'f77229fac75b617de4cc760a8e509015e48e7442462f4276c250c7d4e382e23a', 'wrong macro production source plan')
     require(plan['publication']['composition_kind'] == 'qualified-public-toolset-v1', 'wrong publication contract')
@@ -255,7 +267,7 @@ def execute(plan_path):
             retain_command(payload, metadata_work, receipt.name.removesuffix('-process.json'))
         put_json(payload, 'provenance/libraries.json', dict(schema_version=1, subjects=subjects))
         put_json(payload, 'provenance/platform.json', subjects['rustc']['identity']['platform'])
-        if policy is None:fixture_payloads(work, payload)
+        if policy in (None, HOST_LIBRARY_BUILD_POLICY):fixture_payloads(work, payload, qualification_policy=policy)
         rust_version = (work / 'public-rustc-identity.stdout').read_bytes()
         require(('commit-hash: ' + COMPILER_REVISION + '\n').encode() in rust_version, 'public compiler commit differs')
         compiler = dict(toolchain=TOOLCHAIN, target='aarch64-apple-darwin', source_revision=COMPILER_REVISION,
@@ -273,12 +285,15 @@ def execute(plan_path):
         entry = ROOT / 'experiments/frontend-workers/build.py' if policy == WORKER_BUILD_POLICY else Path(__file__).resolve()
         write_json(work / 'result.json', dict(status=status, source_input_key=plan['source_input_key'],
             tool_key=publication['tool_key'], commands=len(commands), publication=publication,
-            materialize_argv=[sys.executable, str(entry), '--plan', str(plan_path),
-                              '--materialize', str(work / 'published.json')],
+            materialize_argv=([sys.executable, str(entry), '--plan', str(plan_path),
+                              '--materialize', str(work / 'published.json')]
+                if policy != HOST_LIBRARY_BUILD_POLICY else None),
             performance_claim=False, screen_executed=False,
             qualification_argv=([sys.executable, str(entry), '--plan', str(plan_path), '--qualify', str(work / 'published.json')]
                 if policy == WORKER_BUILD_POLICY else None),
-            pending='integrate exact source/harness; worker build additionally requires external30 qualification before screen'
+            pending='host library real histories qualified; separate screen implementation and admission remain required'
+                if policy == HOST_LIBRARY_BUILD_POLICY else
+                'integrate exact source/harness; worker build additionally requires external30 qualification before screen'
                 if policy == WORKER_BUILD_POLICY else 'integrate exact screen harness and prepare owned source, then materialize'))
         print(json.dumps(dict(status=status, tool_key=publication['tool_key'],
                               publication=str(work / 'published.json'), screen_executed=False)))

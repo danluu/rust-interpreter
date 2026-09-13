@@ -8,6 +8,10 @@ use std::process::{Command, ExitCode};
 
 fn main() -> ExitCode {
     let original: Vec<String> = std::env::args().collect();
+    if original.len() == 2 && original[1] == "--rust-interp-host-library-capability" {
+        println!("{}\n{}", wrapper_route::host_library_capability(), env!("RUST_INTERP_SYSROOT"));
+        return ExitCode::SUCCESS;
+    }
     if original.len() == 2 && original[1] == "--rust-interp-stable-mono-capability" {
         // A publication-only, std-only protocol also binds this physical
         // wrapper's compiled sysroot. Normal Cargo routing stays unchanged.

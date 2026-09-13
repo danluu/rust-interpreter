@@ -15,12 +15,14 @@ def validate_selection(args, environment):
             or getattr(args, 'cargo_key', None) is not None
             or getattr(args, 'frontend_workers', None) is not None
             or getattr(args, 'host_proc_macro_opt', 'off') != 'off'
+            or getattr(args, 'host_library_opt', 'off') != 'off'
             or getattr(args, 'borrowck_cache', 'off') != 'off'):
         raise ValueError('stable-MonoItem policy requires a custom compiler with module, Cargo, worker, macro and borrowck policies off')
     for name in ('RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER', 'RUST_INTERP_FRONTEND_WORKERS'):
         if environment.get(name):
             raise ValueError('stable-MonoItem policy conflicts with ' + name)
     for name in ('RUST_INTERP_STABLE_CGU_PARTITIONING', 'RUST_INTERP_HOST_PROC_MACRO_OPT',
+                 'RUST_INTERP_HOST_LIBRARY_OPT',
                  'RUST_INTERP_BORROWCK_CACHE'):
         if environment.get(name, 'off') != 'off':
             raise ValueError('stable-MonoItem policy conflicts with ' + name)

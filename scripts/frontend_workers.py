@@ -15,6 +15,7 @@ def validate_selection(args, environment):
             or getattr(args, 'cargo_key', None) is not None
             or getattr(args, 'stable_cgu_partitioning', 'off') != 'off'
             or getattr(args, 'host_proc_macro_opt', 'off') != 'off'
+            or getattr(args, 'host_library_opt', 'off') != 'off'
             or getattr(args, 'stable_mono_cgu_partitioning', None) is not None
             or getattr(args, 'compiler_argv_record_dir', None) is not None
             or args.borrowck_cache != 'off'):
@@ -24,6 +25,7 @@ def validate_selection(args, environment):
         if environment.get(name):
             raise ValueError('frontend workers conflict with '+name)
     for name in ('RUST_INTERP_STABLE_CGU_PARTITIONING', 'RUST_INTERP_HOST_PROC_MACRO_OPT',
+                 'RUST_INTERP_HOST_LIBRARY_OPT',
                  'RUST_INTERP_STABLE_MONO_CGU_PARTITIONING'):
         if environment.get(name, 'off') != 'off':
             raise ValueError('frontend workers conflict with '+name)
