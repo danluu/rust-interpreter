@@ -1,0 +1,1 @@
+The existing legacy cache catalog verified 20 completed public targets and all 1,273 protected files. Their compiler intermediates had already been retired: this pass removed zero files and reclaimed zero bytes. It executed no old backend and repeated no benchmark. Detailed local inventory and hash manifests remain bound by the summary.
