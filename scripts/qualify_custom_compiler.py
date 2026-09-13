@@ -216,6 +216,9 @@ def argument_parser():
     parser.add_argument('--tool-key', required=True)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=45)
+    parser.add_argument('--std-mir-policy', choices=['v1', 'source-paths-v2'], default='v1')
+    parser.add_argument('--std-mir-off-key', help='preinstalled v2 off namespace')
+    parser.add_argument('--std-mir-on-key', help='preinstalled v2 on namespace')
     parser.add_argument('--diagnostic-comparison', choices=['strict', 'verified-std-source'], default='strict',
         help='Explicit preliminary mechanism mode may compare verified std source aliases; '
              'missing snippets remain an unresolved presentation gap, never final qualification.')
@@ -234,6 +237,11 @@ def qualification_scope(mode, gaps):
 
 def main():
     args = argument_parser().parse_args()
+    std_keys = dict(off=args.std_mir_off_key, on=args.std_mir_on_key)
+    if args.std_mir_policy != 'v1' or any(std_keys.values()):
+        require(args.std_mir_policy == 'source-paths-v2' and all(std_keys.values())
+                and args.diagnostic_comparison == 'strict',
+                'std v2 requires both explicit prepared keys and strict diagnostics')
     require(re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
     work = ROOT / '.work' / args.run_id
     work.mkdir(parents=True, exist_ok=False)
@@ -263,6 +271,7 @@ def main():
                 compiler_key=compiler.key, tool_key=key, compiler=compiler.identity,
                 tool_composition=composition, environment_sha256=digest(env), scripts=frozen,
                 modes=MODES, benchmark=False, retries='none', minimum_free_gib=8,
+                std_mir_policy=args.std_mir_policy, prepared_std_keys=std_keys,
                 **qualification_scope(args.diagnostic_comparison, []),
                 lock_path=str(Path(lock.name).resolve()), public_reference=public_identity))
 
@@ -283,14 +292,23 @@ def main():
 
             stds, prepared = {}, {}
             for mode in MODES:
+                std_selection = [] if args.std_mir_policy == 'v1' else [
+                    '--std-mir-policy', args.std_mir_policy, '--std-mir-key', std_keys[mode]]
                 row = invoke('std-' + mode, [sys.executable, ROOT / 'scripts/std_mir.py',
-                    '--compiler-key', compiler.key, '--stable-cgu-partitioning', mode])
+                    '--compiler-key', compiler.key, '--stable-cgu-partitioning', mode, *std_selection])
                 require(row['returncode'] == 0, 'custom std setup failed')
                 result = json.loads(row['stdout'])
                 std = {field: result[field] for field in ['key', 'sysroot', 'target']}
                 ready_path = ROOT / '.work/std-mir' / std['key'] / 'ready.json'
                 ready = json.loads(ready_path.read_text())
                 identity = ready['identity']
+                if args.std_mir_policy != 'v1':
+                    from std_mir_source_paths import load as load_std_v2
+                    loaded = load_std_v2(ROOT, std_keys[mode], compiler, 'stable-cgu:' + mode, rehash=True)
+                    require(std == dict(key=loaded[2], sysroot=str(loaded[0]), target=loaded[1]),
+                            'std v2 selected key differs')
+                    stds[mode], prepared[mode] = std, ready_path
+                    continue
                 require(ready['owner'] == str(ROOT) and identity['compiler_key'] == compiler.key
                         and identity['namespace'] == 'stable-cgu:' + mode
                         and identity['source_sha256'] == compiler.identity['source_sha256']
@@ -362,6 +380,8 @@ def main():
             def launch(label, mode, value=None, code=None):
                 sources = {'shared': file_digest(shared), 'guest': file_digest(guest)}
                 before = diagnostic_files(workspaces[mode] / 'target') if code else {}
+                std_selection = [] if args.std_mir_policy == 'v1' else [
+                    '--std-mir-policy', args.std_mir_policy, '--std-mir-key', std_keys[mode]]
                 row = invoke(label + '-' + mode, [sys.executable, ROOT / 'scripts/interpreter.py',
                     '--manifest-path', source / 'Cargo.toml', '--package', 'custom-compiler-fixture',
                     '--entry', 'entry', '--compiler-key', compiler.key, '--tool-key', key,
@@ -369,7 +389,8 @@ def main():
                     '--workspace-cache-root', caches, '--cache-namespace', args.run_id,
                     '--jobs', '2', '--engine', 'jit', '--jit-resumable-calls', '--jit-persistent-registers',
                     '--function-cache', 'auto', '--inline-leaves', '--trap-unsupported-calls',
-                    '--run-try-callbacks', '--instruction-limit', '100000000', '--allocation-limit', '150000'], source)
+                    '--run-try-callbacks', '--instruction-limit', '100000000', '--allocation-limit', '150000',
+                    *std_selection], source)
                 row['source_sha256'] = sources
                 require(sources == {'shared': file_digest(shared), 'guest': file_digest(guest)},
                         'source changed during a launcher command')
@@ -441,6 +462,7 @@ def main():
                 write_json(work / 'standard-source-comparison.json', standard_sources.evidence())
             result = dict(status='passed', kind='real-custom-compiler-integration', benchmark=False,
                 compiler_key=compiler.key, tool_key=key, std_mir=stds, commands=len(rows),
+                std_mir_policy=args.std_mir_policy,
                 launcher_commands=22, public_commands=11, expected_rejections=24, source_restored=True,
                 public_reference=public_identity, semantic_controls='passed',
                 **qualification_scope(args.diagnostic_comparison, standard_sources.gaps if standard_sources else []))

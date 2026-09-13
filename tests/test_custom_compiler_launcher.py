@@ -144,6 +144,27 @@ class CustomCompilerLauncherTests(unittest.TestCase):
         self.assertEqual(first[3]['identity']['compiler_key'], self.compiler.key)
         self.assertEqual(first[3]['identity']['source_sha256'], self.compiler.identity['source_sha256'])
 
+    def test_explicit_std_v2_key_reaches_loader_and_launch_stats(self):
+        from std_mir_source_paths import POLICY
+        std = (self.root / 'prepared/sysroot', self.compiler.host, 'e' * 64,
+               dict(identity=dict(policy=POLICY)))
+        def prepared(*args, **kwargs):
+            self.assertEqual(kwargs['policy'], 'source-paths-v2')
+            self.assertEqual(kwargs['prepared_key'], 'e' * 64)
+            self.assertEqual(kwargs['namespace'], 'stable-cgu:on')
+            kwargs['lookup_stats'].update(mode='cached', outcome='owned-manifest')
+            return std
+        with patch.object(std_mir, 'checked_std_mir', side_effect=prepared):
+            result, [report] = self.launch('--std-mir', '--toolchain-lookup', 'cached',
+                '--stable-cgu-partitioning', 'on', '--std-mir-policy', 'source-paths-v2',
+                '--std-mir-key', 'e' * 64)
+        self.assertEqual(result, 0)
+        self.assertEqual(report['std_mir']['key'], 'e' * 64)
+        self.assertEqual(report['std_mir_policy'], POLICY)
+        for extra in [('--std-mir-key', 'e' * 64), ('--std-mir', '--std-mir-policy', 'source-paths-v2')]:
+            with self.assertRaises(SystemExit):
+                self.launch(*extra)
+
     def test_tool_build_uses_custom_rustc_and_publishes_checked_compiler_association(self):
         captures = []
         def capture(command, **kwargs):

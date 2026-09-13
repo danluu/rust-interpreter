@@ -30,8 +30,17 @@ def source_digest(directory):
     return h.hexdigest()
 
 
-def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None,custom=None,namespace='',cargo=None):
+def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None,custom=None,namespace='',cargo=None,policy='v1',prepared_key=None):
     """Install a frozen source snapshot once; validate metadata stamps on reuse."""
+    if policy!='v1' or prepared_key is not None:
+        from std_mir_source_paths import SELECTION, load
+        if policy!=SELECTION or custom is None or cargo is not None or fetch or prepared_key is None:
+            raise RuntimeError('std source-paths-v2 requires an explicit custom compiler and prepared key, without fetch/custom Cargo')
+        if toolchain!='nightly-2026-09-08':raise RuntimeError('std source-paths-v2 requires the pinned toolchain')
+        if lookup not in ['fresh','cached']:raise ValueError('unknown toolchain lookup mode')
+        result=load(ROOT,prepared_key,custom,namespace)
+        if lookup_stats is not None:lookup_stats.update(mode=lookup,outcome='owned-manifest')
+        return result
     if custom is not None:custom.environment(os.environ)
     if cargo is not None:cargo.environment(os.environ,toolchain,custom)
     (ROOT/'.work').mkdir(exist_ok=True)
@@ -149,6 +158,8 @@ def main():
     parser.add_argument('--compiler-key',help='use an owned complete stage2 compiler')
     parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off')
+    parser.add_argument('--std-mir-policy',choices=['v1','source-paths-v2'],default='v1')
+    parser.add_argument('--std-mir-key',help='preinstalled source-paths-v2 key; prepare separately')
     args=parser.parse_args()
     toolchain=json.loads((ROOT/'benchmarks/corpus.json').read_text())['toolchain']
     if args.stable_cgu_partitioning!='off' and args.compiler_key is None:
@@ -157,6 +168,8 @@ def main():
     from custom_cargo import load_cargo
     custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
     options={} if custom is None else dict(custom=custom,namespace='stable-cgu:'+args.stable_cgu_partitioning)
+    if args.std_mir_policy!='v1' or args.std_mir_key is not None:
+        options.update(policy=args.std_mir_policy,prepared_key=args.std_mir_key)
     if args.cargo_key is not None:options['cargo']=load_cargo(ROOT,args.cargo_key)
     sysroot,target,key,result=checked_std_mir(toolchain,fetch=args.fetch,**options)
     print(json.dumps(dict(sysroot=str(sysroot),target=target,key=key,setup_seconds=result['setup_seconds'],
