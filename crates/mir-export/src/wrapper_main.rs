@@ -7,6 +7,10 @@ use std::process::{Command, ExitCode};
 
 fn main() -> ExitCode {
     let original: Vec<String> = std::env::args().collect();
+    if original.len() == 2 && original[1] == "--rust-interp-frontend-worker-capability" {
+        println!("{}", wrapper_route::frontend_worker_capability());
+        return ExitCode::SUCCESS;
+    }
     let route = match wrapper_route::route(original.clone(), &wrapper_route::Environment::read()) {
         Ok(route) if route.wrapper => route,
         Ok(_) => {

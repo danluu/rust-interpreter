@@ -270,8 +270,9 @@ fn main() -> std::process::ExitCode {
     let mut args: Vec<String> = std::env::args().collect();
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
+            "frontend_workers":serde_json::from_str::<serde_json::Value>(&wrapper_route::frontend_worker_capability()).expect("frontend worker capability"),
             "compiler_sysroot":env!("RUST_INTERP_SYSROOT"),
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","frontend-workers-v1"]}));
         return std::process::ExitCode::SUCCESS;
     }
     let environment = wrapper_route::Environment::read();
