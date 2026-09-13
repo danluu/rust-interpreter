@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Limited native correctness of an archived, checked ReadyHit compiler source."""
 import argparse
+from dataclasses import dataclass
 import importlib.util
 import json
 import os
@@ -44,6 +45,23 @@ CAPACITY = dict(initial_free_gib=16, capacity_stop_gib=9, running_floor_gib=8,
     analogous_host_net_gib=[3.548553, 0.846394, 2.450684],
     interpretation='Host free-space observations; not isolated allocation or peak upper bounds; no reuse credit',
     full_stage2_package_gate_gib=36)
+
+
+@dataclass(frozen=True)
+class NativeContext:
+    """Fixed successor wiring; the compiler commands and capacity policy stay shared."""
+    root: Path
+    here: Path
+    work: Path
+    revision: str
+    read_inputs: object
+    read_checkpoint: object
+    read_history: object
+    archive_sha256: str | None = None
+
+
+def default_context():
+    return NativeContext(ROOT, HERE, WORK, CHECKPOINT, inputs, checkpoint, history)
 
 
 def ordinary(path):
@@ -202,8 +220,8 @@ def verify_references(prior):
         engine.verify_archive(paths['archive'], paths['manifest'], paths['summary'], ref['required'])
 
 
-def extra_configurations():
-    dirs = [ROOT, SOURCE / 'compiler/rustc_interface', SOURCE / 'src/tools/compiletest',
+def extra_configurations(*, root=None):
+    dirs = [root or ROOT, SOURCE / 'compiler/rustc_interface', SOURCE / 'src/tools/compiletest',
             SOURCE / 'src/tools/run-make-support', SOURCE / 'src/tools/rustdoc',
             SOURCE / 'tests/run-make/hir-body-cache-capture', SOURCE / 'library']
     paths = {p / '.cargo' / name for d in dirs for p in [d, *d.parents] for name in ['config', 'config.toml']}
@@ -215,15 +233,19 @@ def extra_configurations():
     return values
 
 
-def load_plan(path, expected, frozen, names):
+def load_plan(path, expected, frozen, names, *, context=None):
+    context = context or default_context()
     require(re.fullmatch('[0-9a-f]{64}', expected or ''), 'reviewed native plan SHA256 required')
     data = ordinary(path).read_bytes()
     require(engine.digest(data) == expected, 'reviewed native plan changed')
     plan = json.loads(data)
-    require(plan['owner'] == str(ROOT) and plan['source'] == str(SOURCE) and plan['checkpoint'] == CHECKPOINT
+    require(plan['owner'] == str(context.root) and plan['source'] == str(SOURCE) and plan['checkpoint'] == context.revision
             and plan['inputs'] == frozen and plan['required_units'] == names and plan['commands'] == COMMANDS
             and plan['probes'] == PROBES and plan['capacity'] == CAPACITY
             and plan['canonical_lock'] == str(engine.CANONICAL_LOCK), 'fixed native plan contract changed')
+    require(context.archive_sha256 is None or
+            plan['archive_hashes'][plan['archive_paths']['archive']] == context.archive_sha256,
+            'native plan changed required current archive')
     return plan
 
 
@@ -238,37 +260,41 @@ def artifacts():
     return dict(files=files, source_links=bootstrap_source_links(SYSROOT, SOURCE))
 
 
-def execute(args):
+def execute(args, *, context=None):
+    context = context or default_context()
     require(re.fullmatch('[a-z0-9][a-z0-9-]{0,95}', args.attempt), 'invalid fresh native attempt')
-    output = WORK / 'stages' / args.attempt
+    output = context.work / 'stages' / args.attempt
     output.mkdir(parents=True, exist_ok=False)
-    receipt = dict(schema_version=1, owner=str(ROOT), status='waiting', stage=args.stage,
+    receipt = dict(schema_version=1, owner=str(context.root), status='waiting', stage=args.stage,
         pid=os.getpid(), parent_pid=os.getppid(), started_at=time.time(), commands=[])
     write(output / 'receipt.json', receipt)
     try:
         with engine.workload_lock(engine.CANONICAL_LOCK, 600):
             receipt.update(status='running', admitted_at=time.time(),
-                           free_bytes_before=engine.disk(ROOT, 16 if args.stage == 'run' else 8))
+                           free_bytes_before=engine.disk(context.root, 16 if args.stage == 'run' else 8))
             write(output / 'receipt.json', receipt)
-            frozen, (_, names) = inputs(), checkpoint()
+            frozen, (_, names) = context.read_inputs(), context.read_checkpoint()
             if args.stage == 'plan':
-                require(args.write_plan and args.write_plan.is_absolute() and args.write_plan.parent == HERE
+                require(args.write_plan and args.write_plan.is_absolute() and args.write_plan.parent == context.here
                         and not args.write_plan.exists(), 'fresh owned plan destination required')
-                prior = history(args.ready_plan_sha256, args.terminal)
+                prior = context.read_history(args.ready_plan_sha256, args.terminal)
                 verify_references(prior)
                 archive_paths = {n: str(ordinary(getattr(args, n))) for n in ['archive', 'manifest', 'summary']}
                 archive_hashes = {p: sha(p) for p in archive_paths.values()}
+                require(context.archive_sha256 is None or
+                        archive_hashes[archive_paths['archive']] == context.archive_sha256,
+                        'wrong current native prerequisite archive')
                 required = prior['files'] | prior['historical_source']
                 engine.verify_archive(archive_paths['archive'], archive_paths['manifest'], archive_paths['summary'], required)
-                plan = dict(schema_version=1, owner=str(ROOT), source=str(SOURCE), checkpoint=CHECKPOINT,
+                plan = dict(schema_version=1, owner=str(context.root), source=str(SOURCE), checkpoint=context.revision,
                     inputs=frozen, required_units=names, commands=COMMANDS, probes=PROBES, capacity=CAPACITY,
                     canonical_lock=str(engine.CANONICAL_LOCK), previous=prior, archive_paths=archive_paths,
-                    archive_hashes=archive_hashes, archive_required=required, configurations=extra_configurations())
+                    archive_hashes=archive_hashes, archive_required=required, configurations=extra_configurations(root=context.root))
             else:
-                require(args.plan and args.plan.parent == HERE, 'native plan must belong to this experiment')
-                plan = load_plan(args.plan, args.plan_sha256, frozen, names)
+                require(args.plan and args.plan.parent == context.here, 'native plan must belong to this experiment')
+                plan = load_plan(args.plan, args.plan_sha256, frozen, names, context=context)
                 prior = plan['previous']
-                require(history(prior['plan_sha256'], prior['terminal']) == prior, 'ReadyHit prerequisite changed')
+                require(context.read_history(prior['plan_sha256'], prior['terminal']) == prior, 'ReadyHit prerequisite changed')
                 verify_references(prior)
                 require(plan['archive_required'] == (prior['files'] | prior['historical_source']),
                         'immediate ReadyHit archive required-member map changed')
@@ -277,7 +303,7 @@ def execute(args):
                     manifest_path=plan['archive_paths']['manifest'], summary_path=plan['archive_paths']['summary'],
                     required=plan['archive_required']))
             def guard():
-                require(inputs() == frozen and extra_configurations() == plan['configurations']
+                require(context.read_inputs() == frozen and extra_configurations(root=context.root) == plan['configurations']
                         and old.frozen_plan() == prior['old_plan']
                         and all(sha(p) == h for p, h in prior['files'].items())
                         and all(sha(p) == h for p, h in plan['archive_hashes'].items())
@@ -285,7 +311,7 @@ def execute(args):
                                 for p, h in ref['hashes'].items()), 'native frozen input changed')
                 if args.stage == 'run':
                     require(sha(args.plan) == args.plan_sha256, 'reviewed plan changed during native sequence')
-                engine.disk(ROOT, 9)
+                engine.disk(context.root, 9)
             def command(argv, cwd=SOURCE):
                 guard()
                 if argv[0] == './x':
@@ -297,7 +323,7 @@ def execute(args):
                 write(output / 'receipt.json', receipt)
                 try:
                     result = engine.run(argv, cwd=cwd, env=prior['old_plan']['environment'],
-                                        out=directory, capacity_root=ROOT)
+                                        out=directory, capacity_root=context.root)
                 finally:
                     if (directory / 'receipt.json').exists():
                         ref['sha256'] = sha(directory / 'receipt.json')
@@ -337,23 +363,23 @@ def execute(args):
                         and final['source_links'] == built['source_links'], 'tested compiler/std bytes changed')
                 write(output / 'final-artifacts.json', final)
                 receipt.update(bootstrap_commands_passed=3, actual_option_tests_passed=1,
-                    actual_native_runmake_passed=1, required_units_prerequisite=26,
+                    actual_native_runmake_passed=1, required_units_prerequisite=len(names),
                     built_artifacts_sha256=sha(output / 'built-artifacts.json'),
                     final_artifacts_sha256=sha(output / 'final-artifacts.json'))
             guard()
             old.verify_archives(old.ARCHIVES)
             old.verify_copied_archives()
-            receipt.update(status='passed', finished_at=time.time(), free_bytes_after=engine.disk(ROOT))
+            receipt.update(status='passed', finished_at=time.time(), free_bytes_after=engine.disk(context.root))
             write(output / 'receipt.json', receipt)
     except BaseException as error:
         receipt.update(status='failed', error=repr(error), finished_at=time.time(),
-                       free_bytes_after=shutil.disk_usage(ROOT).free)
+                       free_bytes_after=shutil.disk_usage(context.root).free)
         write(output / 'receipt.json', receipt)
         raise
 
 
-def main():
-    p = argparse.ArgumentParser(__doc__)
+def arguments(description=__doc__):
+    p = argparse.ArgumentParser(description)
     p.add_argument('stage', choices=['plan', 'run'])
     p.add_argument('--attempt', required=True)
     p.add_argument('--write-plan', type=Path)
@@ -362,7 +388,11 @@ def main():
     for name in ['archive', 'manifest', 'summary', 'plan']:
         p.add_argument('--' + name, type=Path)
     p.add_argument('--plan-sha256')
-    execute(p.parse_args())
+    return p.parse_args()
+
+
+def main():
+    execute(arguments())
 
 
 if __name__ == '__main__':
