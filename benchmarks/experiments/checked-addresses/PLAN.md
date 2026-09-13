@@ -26,8 +26,8 @@ validation, all-before-any-write copy behavior, every scratch/ABI obligation,
 logical limits and cache invalidation unchanged. Apply the same range helper
 to fixed-width and dynamic memory paths. No arena/layout/allocation change.
 
-An eight-byte checked read takes6 words without heap support or11 with it,
-down from9/16. Writes take8/14, down from11/18. Dynamic read/write paths share
+An eight-byte checked read takes6 words without heap support or12 with it,
+down from9/17. Writes take8/15, down from11/19. Dynamic read/write paths share
 the same new sizes. These static changes are not a latency prediction.
 Platform assembly/disassembly was used only to verify instruction encodings;
 the custom JIT emits the words directly and has no external backend fallback.
@@ -54,5 +54,9 @@ only those five pairs enter the prospective gate. No repeat after failure.
 A passing screen must precede a separately frozen full five-case comparison;
 all full guards remain required for adoption.
 
-This plan is unexecuted when committed. The preceding Copy/budget full draft
+The initial build caught an undercount of tag materialization in the new size
+test: the existing immediate emitter uses two words, not one. All217 other
+bytecode unit tests passed, including the new complete-range matrix. That
+failed build remains recorded; only this size expectation and description
+changed before the second build. The preceding Copy/budget full draft
 remains unstarted. Keep other sessions' work and the paused goal state intact.

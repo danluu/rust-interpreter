@@ -192,7 +192,7 @@ fn compact_range_encodings_preserve_unsigned_failure_flags_and_size_boundaries()
     }
     let mut a=Assembler::default();a.check_range_size(11,15,RangeSize::Register(10));
     assert_eq!(a.words,[0xeb0b01ef,0xfa4a21e0,0x54000003]);
-    for (heap,write,expected) in [(false,false,6),(false,true,8),(true,false,11),(true,true,14)] {
+    for (heap,write,expected) in [(false,false,6),(false,true,8),(true,false,12),(true,true,15)] {
         let mut a=Assembler {heap,..Assembler::default()};a.checked_address(11,8,write);
         assert_eq!(a.words.len(),expected);
         let mut dynamic=Assembler {heap,..Assembler::default()};dynamic.dynamic_address(11,10,write);
