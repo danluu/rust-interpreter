@@ -25,6 +25,11 @@ from workflow_io import SourceEdit, capture, require_space, write_json
 from workflow_measurements import child_usage, child_cpu_since, source_states
 
 MODES = ['baseline', 'candidate', 'duplicate']
+CANDIDATE_POLICIES = {
+    'demand-retention': 'query-cache-retention',
+    'native-host-mir': 'native-host-mir-policy',
+}
+DEFAULT_CANDIDATE_POLICY = 'demand-retention'
 CASE = WORKFLOW_VARIANTS['nushell', 'type-relations']
 INSTRUCTIONS, ALLOCATIONS = 100_000_000_000, 150_000
 JOBS, SUITE_WORKERS, MINIMUM_GIB = 4, 2, 8
@@ -136,12 +141,27 @@ def validate_source(source):
     return revision, marker, changed, original
 
 
-def command_for(mode, key, source, work, sample, names=CASE['tests']):
+def retention_setting(mode, candidate_policy):
     require(mode in MODES, 'unknown screen arm')
+    require(candidate_policy in CANDIDATE_POLICIES, 'unknown candidate policy')
+    if candidate_policy == 'demand-retention':
+        return 'demand' if mode == 'candidate' else 'off'
+    return None
+
+
+def require_candidate_policy(tool, key, candidate_policy):
+    require(candidate_policy in CANDIDATE_POLICIES, 'unknown candidate policy')
+    require_export_option(tool, key, CANDIDATE_POLICIES[candidate_policy])
+
+
+def command_for(mode, key, source, work, sample, names=CASE['tests'],
+                candidate_policy=DEFAULT_CANDIDATE_POLICY):
+    retention = retention_setting(mode, candidate_policy)
+    policy_args = [] if retention is None else ['--query-cache-retention', retention]
     command = [sys.executable, ROOT / 'scripts/interpreter.py', '--manifest-path', source / 'Cargo.toml',
         '--package', CASE['package'], '--jobs', str(JOBS), '--tool-key', key,
         '--cache-namespace', work.name + ':' + mode, '--workspace-cache-root', work / 'caches' / mode,
-        '--query-cache-retention', 'demand' if mode == 'candidate' else 'off',
+        *policy_args,
         '--test-body', '--std-mir', '--engine', 'jit', '--jit-resumable-calls',
         '--jit-persistent-registers', '--inline-leaves', '--trap-unsupported-calls', '--run-try-callbacks',
         '--function-cache', 'auto', '--toolchain-lookup', 'cached', '--isolated-batch', 'prepared',
@@ -162,16 +182,24 @@ def measure_command(command, **kwargs):
     return child, stdout, stderr, elapsed, cpu
 
 
-def checked_launch(stderr, mode, key, success, suite_path, cache_parent):
+def launch_settings(mode, key, candidate_policy=DEFAULT_CANDIDATE_POLICY):
+    retention = retention_setting(mode, candidate_policy)
+    expected = dict(tool_key=key, engine='jit', function_cache='auto', borrowck_cache='off',
+        jit_persistent_registers=True, jit_resumable_calls=True, inline_leaves=True,
+        trap_unsupported_calls=True, run_try_callbacks=True, isolated_batch='prepared',
+        suite_workers_requested=SUITE_WORKERS)
+    if retention is not None:
+        expected['query_cache_retention'] = retention
+    return expected
+
+
+def checked_launch(stderr, mode, key, success, suite_path, cache_parent,
+                   candidate_policy=DEFAULT_CANDIDATE_POLICY):
     launches = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in stderr.splitlines()
                 if line.startswith('rust-interp-launch: ')]
     require(len(launches) == 1, 'expected exactly one completed launcher report')
     launch = launches[0]
-    expected = dict(tool_key=key, engine='jit', function_cache='auto', borrowck_cache='off',
-        query_cache_retention='demand' if mode == 'candidate' else 'off',
-        jit_persistent_registers=True, jit_resumable_calls=True, inline_leaves=True,
-        trap_unsupported_calls=True, run_try_callbacks=True, isolated_batch='prepared',
-        suite_workers_requested=SUITE_WORKERS)
+    expected = launch_settings(mode, key, candidate_policy)
     require(all(launch.get(k) == v for k, v in expected.items()), 'launcher settings differ')
     require(launch['toolchain_lookup']['mode'] == 'cached'
             and launch['toolchain_lookup']['outcome'] in {'miss', 'hit'}, 'cached toolchain lookup unavailable')
@@ -234,6 +262,8 @@ def main():
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--baseline-tool-key', required=True)
     parser.add_argument('--candidate-tool-key', required=True)
+    parser.add_argument('--candidate-policy', choices=CANDIDATE_POLICIES,
+                        default=DEFAULT_CANDIDATE_POLICY)
     parser.add_argument('--std-mir-ready', type=Path, required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=45)
     args = parser.parse_args()
@@ -263,7 +293,7 @@ def main():
                 for option in ['entry-catalog', 'function-cache-auto', 'inline-leaves',
                                'trap-unsupported-calls', 'run-try-callbacks']:
                     require_export_option(tool, keys[mode], option)
-            require_export_option(tools['candidate'], keys['candidate'], 'query-cache-retention')
+            require_candidate_policy(tools['candidate'], keys['candidate'], args.candidate_policy)
             for directory in [work / 'artifacts', work / 'suites', work / 'receipts',
                               *[work / 'caches' / m for m in MODES]]:
                 directory.mkdir(parents=True, exist_ok=False)
@@ -275,7 +305,8 @@ def main():
             paths += [source / name for name in tracked if name and source / name != changed]
             frozen = {str(p): frozen_input_hash(p) for p in paths}
             plan = dict(schema_version=1, kind='mechanism-screen', owner=str(ROOT), project='nushell',
-                workflow='type-relations', revision=revision, source=str(source), case=CASE,
+                workflow='type-relations', candidate_policy=args.candidate_policy,
+                revision=revision, source=str(source), case=CASE,
                 original_source_sha256=hashlib.sha256(original).hexdigest(), frozen=frozen, std_mir=std,
                 tools=keys, binaries=manifests, cargo_jobs=JOBS, suite_workers=SUITE_WORKERS,
                 guest_rustflags=[], profile_overrides={}, instruction_limit=INSTRUCTIONS,
@@ -315,7 +346,8 @@ def main():
                 verify_inputs(sample['source'])
                 digest = sha(changed)
                 require(previous[mode] != digest, 'unchanged command entered screen')
-                command = command_for(mode, keys[mode], source, work, sample)
+                command = command_for(mode, keys[mode], source, work, sample,
+                                      candidate_policy=args.candidate_policy)
                 suite_path = work / 'suites' / f"{sample['index']}-{mode}.json"
                 free = shutil.disk_usage(work).free
                 require_space(work, MINIMUM_GIB)
@@ -333,7 +365,8 @@ def main():
                 success = sample['phase'] != 'wrong-edit'
                 require((child.returncode == 0) == success, 'wrong-edit/passing exit status differs')
                 launch, outcomes, artifacts, suite_sha = checked_launch(
-                    stderr, mode, keys[mode], success, suite_path, work / 'caches' / mode)
+                    stderr, mode, keys[mode], success, suite_path, work / 'caches' / mode,
+                    candidate_policy=args.candidate_policy)
                 workspace = launch['workspace_path']
                 require(workspaces.get(mode, workspace) == workspace, 'arm workspace changed')
                 workspaces[mode] = workspace
@@ -367,7 +400,8 @@ def main():
             run_state(states[-1])
             verify_inputs(original)
             summary = assessment(rows)
-            summary.update(raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),
+            summary.update(candidate_policy=args.candidate_policy,
+                raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),
                 records_sha256=sha(work / 'records.json'), source_restored=True, cache_workspaces=workspaces)
             write_json(work / 'summary.json', summary)
     except BaseException as error:
@@ -376,6 +410,7 @@ def main():
         except OSError:
             restored = False
         failure = dict(status='failed', kind='mechanism-screen', final_qualification=False,
+            candidate_policy=args.candidate_policy,
             commands=len(rows), error_type=type(error).__name__, error=str(error), source_restored=restored)
         try:
             write_json(work / 'summary.json', failure)
