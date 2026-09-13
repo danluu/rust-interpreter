@@ -4,12 +4,14 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: simplify scalar Copy address calculations using existing
-proven local ranges. Two fresh samples assign all3,985 generated samples; Copy
-accounts for24.34%/18.26% of block/exhaustive generated samples. A saved-code
-audit identifies local Copy8 sequences that can shrink from seven words to
-three. Qualify overlap, fault order and register preservation, then use the
-prospective screen and full gates. This is not yet a measured speedup.
+Current action: complete the primary-first scalar Copy comparison. The emitter
+uses existing proven local ranges and reduces local Copy8 from seven words to
+three. It passes441 Rust tests per profile,125 current harness checks and222
+real correctness/profile commands. Its40-command screen passes with wall−5.46%
+and CPU−3.47%, beyond4.84%/2.57% A/A. The full five-case comparison has started
+with token; no adoption until all required gates and final audits pass. The
+selection came from current Copy sample shares of24.34%/18.26%, with all3,985
+generated samples assigned. Keep the original screen separate from full pairs.
 Post-execution maps pass436 Rust tests per profile,
 103 harness checks and10 real-test commands; all three current generated code
 dumps and per-PC profiles match the adopted runtime exactly.
@@ -29,6 +31,7 @@ still requires every declared guard.
 [Direct-operand final decision](results/direct-operands-full-01/assessment.md),
 [Verified operation maps](results/operation-map-validation-01/assessment.md),
 [Operation attribution](results/operation-map-sampling-01/assessment.md),
+[Scalar-copy screen](results/scalar-copy-operands-screen-token-01/assessment.md),
 [Full protocol](benchmarks/experiments/direct-operands/FULL.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Binding decision](results/replay-costs-token-02/assessment.md),

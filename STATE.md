@@ -1,4 +1,4 @@
-# Current state — September 12, 2026
+# Current state — September 13, 2026
 
 Manual work continues indefinitely; the saved goal record remains paused.
 The objective is to improve the custom Rust development engine
@@ -31,13 +31,18 @@ profile,103 harness checks and10 real-test commands. All three current code
 dumps and per-PC profiles match adopted main exactly. Two fresh same-process
 samples now assign all3,985 generated samples: Copy accounts for24.34%/18.26% of
 block/exhaustive generated samples. An offline Copy8 audit identifies redundant
-local address calculations; next is a bounded scalar-copy emitter candidate.
-The suggestions file is unchanged; its review now records these priority updates.
+local address calculations. The scalar-copy candidate passes441 Rust tests per
+profile,125 current harness checks and222 real correctness/profile commands.
+Its40-command screen passes: wall−5.46%/CPU−3.47%, beyond4.84%/2.57% A/A.
+The full primary-first five-case comparison is running, starting with token;
+the runtime remains experimental until all gates pass. The suggestions file
+is unchanged; its review records the evidence behind this priority.
 No goal-state change, unrelated process control or
 new billing path is authorized.
 [Direct-operand final decision](results/direct-operands-full-01/assessment.md),
 [Verified operation maps](results/operation-map-validation-01/assessment.md),
 [Operation attribution](results/operation-map-sampling-01/assessment.md),
+[Scalar-copy screen](results/scalar-copy-operands-screen-token-01/assessment.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Refined binding result](results/replay-costs-token-02/assessment.md),
 [current runtime attribution](results/current-runtime-costs-01/assessment.md),
