@@ -1,133 +1,129 @@
-# HIR body-v2: actual capture and journal boundary
+# HIR body-v2: typed cold capture and journal boundary
 
 This is an **uncompiled, unrun capture checkpoint**, generated against compiler
 `58e1e1f5311f4424ea81def4763081f6da62d9b3`. The compiler checkout was read only.
-It is the first part of the requested body-v2 cache implementation, not a
-complete cache: no typed HIR body codec, body materializer or hit path exists.
-Every invocation still executes stock body lowering and all ordinary checks.
+The patch contains a closed typed body wire codec, actual cold HIR capture,
+effect journal and tree/reference validator. **No body materializer or hit path
+exists.** Every invocation executes stock body lowering and ordinary checks.
+The earlier journal-only checkpoint remains immutable at `3f3e9c28`.
 
 `capture-body-journals.patch` adds `-Zhir-body-cache-capture`, default off and
 tracked by the normal incremental option hash. It prepares inputs for ordinary
-free, provided-trait and implementation functions, using the exact qualified
-gate bytes (SHA256 `6df8b5b4fe1c0c88f6c21acbbf0514a61b48173bd037456b7563755c50ca15d1`).
-The small appended adapter invokes that same private walker and byte-compares
-its repeated encoded input before exposing its current AST-node ordinal table.
-The qualified diagnostic, previous patches and retained evidence are unchanged.
+free, provided-trait and implementation functions using the exact qualified
+gate (SHA256 `6df8b5b4fe1c0c88f6c21acbbf0514a61b48173bd037456b7563755c50ca15d1`).
+The appended adapter invokes that same private walker and byte-compares its
+encoded input before exposing the current AST ordinal table. The qualified
+diagnostic, earlier patches and retained coverage evidence are unchanged.
 
 ## Actual compiler boundary
 
-The hook wraps only `lower_block_expr(body)` called from `lower_fn_body_block`.
-`lower_fn_body` first lowers all actual parameters, their patterns and attributes
-normally. The checkpoint then observes the real `item_local_id_counter` as S;
-stock lowering runs; the checkpoint observes E. `record_body`, signatures,
-generics, outer attributes, owner indexing/hashing, all checking and native
-codegen remain stock and in their original order.
+The hook wraps `lower_block_expr(body)` inside `lower_fn_body_block`. Ordinary
+parameter/pattern/attribute lowering finishes first; capture observes the real
+counter S, executes stock body lowering, then observes exclusive E. Stock
+`record_body`, signature/generic/outer-attribute work, owner indexing/hashing,
+all checking and codegen retain their original order.
 
-Instrumentation records calls, not guessed counts:
+Instrumentation records actual `lower_node_id`/`next_id` allocations and
+binding-map insertions. The journal accounts for separate method/path segments,
+initializer-before-local IDs, Expr/Semi statement IDs after expressions, and
+no allocation for parentheses, empty statements or trailing Expr wrappers.
+Unknown ordinals, overwrites, definitions, new AST IDs, nested owners and
+attribute parsing reject capture. Empty attributes retain their stock shortcut.
 
-- `lower_node_id`: current AST ordinal and actual S-relative allocation.
-- `next_id`: actual synthetic allocation and relative ID.
-- Pattern/label binding insertion: current ordinal, old binding and new ID.
+The entry/exit snapshot exhaustively binds context/owner fields, full
+existing binding and trait maps, full disambiguator state, debug AST-ID map,
+existing immutable attribute/body/child/opaque entries and scalar state.
+Delayed lints, impl-trait accumulators, definition maps, resolution overrides
+and move-binding stacks conservatively reject. No snapshot pointers enter disk.
+The earlier effect journal's scope is unchanged.
 
-The ordered journal therefore handles initializers before local/pattern IDs,
-statement IDs after their expressions, separate method-segment IDs, and zero
-allocation for parenthesized expressions, empty statements and trailing Expr
-statement wrappers. Overwrites, unknown ordinals, unsupported new definitions,
-new AST IDs, nested owner transitions and attribute parser activity invalidate
-the capture. A counter change without a recorded allocation also fails.
+## Typed fields and complete ID closure
 
-## Validation and unchanged effects
+`wire.rs` covers the current closed body grammar: arrays/tuples, typed literals,
+paths, ordinary/local calls, methods, unary/binary/assignment operators, blocks,
+if/return, field/index access and ordinary/raw borrows; simple bindings and
+wildcards; ordinary let/Expr/Semi statements. Capture destructures every HIR
+struct field explicitly. Unsupported variants or nondefault fields reject,
+including generic argument payloads, delegation segments, body types,
+let-else, generated unsafe blocks and destructuring-assignment locals/patterns.
+Gate acceptance alone does not establish output eligibility.
 
-`journal::check` is a fallible, mutation-free structural boundary. It validates
-the actual prefix parameter bindings, contiguous S-relative allocations,
-checked E arithmetic against the actual `ItemLocalId::INVALID` bound
-(`0xFFFF_FF00`, with E exclusive), unique AST allocation, binding target/order/identity,
-and trait-map presence, including an explicitly empty candidate list. It admits
-unallocated AST ordinals because stock lowering legitimately drops some syntax.
-It does **not** claim that an arbitrary journal describes a valid HIR tree.
-The opaque `Checked` type has no conversion into HIR or arena allocation.
+The representation preserves binding modes and binding target separately,
+actual infer-args flags, block rules, literal style/unescaped bytes/type suffix,
+operator/call/bracket spans, independent literal versus expression spans, and
+actual node/identifier/path spans. In particular parenthesized expressions can
+widen the Expr span while leaving the literal span intact. HIR `AssignOp`
+preserves this pinned compiler’s `AssignOpKind` spelling (`+=`). Ordinary
+assignment's *lowering* order is LHS then RHS.
 
-Cold exit validation compares the full observed binding map and full trait-map
-delta against the journal, using exact current resolver candidate slices. It
-preserves preexisting attrs, bodies, children and `define_opaque` by immutable
-object identity within that compiler process; no pointers enter stored records.
-It clones and compares the entire disambiguator state. The patch adds derived
-`PartialEq`/`Eq` to its existing Clone type; it does not expose or mutate private
-definition state. Debug builds also compare the complete relowering-checker map
-against the actual recorded AST allocations.
+`journal::check` validates contiguous S-relative allocation, prefix bindings,
+actual `ItemLocalId::INVALID` (`0xFFFF_FF00`) arithmetic with exclusive E,
+binding events and trait presence. It intentionally permits omitted AST IDs.
+`validate::check` additionally requires:
 
-The context snapshot exhaustively destructures the pinned context/owner state.
-It rejects nonempty delayed-lint callbacks, impl-trait accumulators, generated
-definition maps, partial resolution overrides or move-binding stacks at both
-boundaries. This is an additional conservative gate, not an assumption that
-the 482 previously reported normal `nu_protocol` bodies all pass. It binds
-owner/current-item/arena/resolver identity, next AST ID, allowed-feature arrays,
-contract/coroutine/task/try/loop/condition/dyn state. New fields require an explicit
-source decision. Definitions and attribute-parser entry points also mark the
-trace invalid, including changes whose outputs might otherwise disappear.
+- Every allocated ID occurs exactly once in the owned wire tree with the
+  appropriate current AST kind; the root matches the recorded root ID.
+- Synthetic IDs occur only for the root and if-then block expression wrappers.
+  All other nodes have their current AST origin. Unsupported desugaring falls
+  back even if the structural input gate accepted its syntax.
+- A second traversal reconstructs the stock allocation/binding event order
+  and compares the complete journal, including initializer and statement order.
+- Body binding IDs equal their actual pattern IDs. All local uses match the
+  fresh resolver's binding target, map to an actual body or parameter binding,
+  and body bindings precede their uses in the allocation sequence.
+- Nonlocal resolutions point to the exact current input ordinal. The validator
+  binds its current `Res`/DefId, whose kind and stable definition path are in
+  the exact input key; no old DefId is decoded or guessed. Missing resolution
+  is permitted only for stock path/method segments, including ordinary methods.
+- Captured spans have root hygiene and the current owner parent. Relative byte
+  offsets stay in the exact current owner source and at UTF-8 boundaries.
+  Dummy spans remain distinguished. No old parent/hygiene IDs are serialized.
 
-## Storage and comparisons
+The opaque checked tree retains current resolution/binding proofs without
+allocating HIR or interning symbols. These checks prove wire/tree/effect
+closure for a cold stock-lowered result; they do not replace ordinary lowering
+or type checking as the semantic producer. They are not yet a hit admission API.
 
-Journal evidence lives in the existing locked incremental session directory.
-It uses a distinct policy/filename, a bounded fallible JSON decoder, exact input
-key and checksum, and fresh-inode publication so previous hardlinked sessions
-remain intact. Missing, malformed, mismatched, oversized or unwritable records
-fall back to ordinary lowering. A record contains no raw NodeIds/DefIds/HirIds.
+## Persistence and remaining work
 
-The key binds the exact qualified resolved input, tracked session options,
-compiler cfg version, assertions configuration, policy, and a generated source
-identity covering every changed hook and all gate/journal/storage source. This
-reuses ordinary compiler incremental session selection and avoids hashing
-compiler/library binaries on every process. Actual build/install provenance
-must still freeze the generated patch and compiler normally.
+Typed records use a fresh `hir-body-capture-v2-tree-1` namespace inside rustc's
+existing locked incremental session, bounded fallible JSON decoding, an exact
+input key/checksum and fresh-inode publication. Old hardlinked sessions remain
+intact. Missing, corrupt, mismatched, oversized or unwritable records fall back.
+The key includes the exact resolved input, tracked options, compiler cfg
+version, assertions configuration and generated identity of the entire patch.
+It uses ordinary incremental session compatibility, with immutable compiler
+byte identity audited separately during build/install qualification.
 
-Reading a valid old journal only permits a comparison **after another stock
-lowering**. Logs explicitly say `same-journal-after-stock-lowering` and always
-report `cache_hits=0 body_codec=0`; nothing is called a hit. The stored record
-is evidence that a cold result passed this effect boundary, not reusable HIR.
+Even a valid saved tree is compared only **after another stock lowering**.
+Logs say `same-tree-and-journal-after-stock-lowering` and
+`cache_hits=0 body_codec=1 materializer=0`. Typed captures do not establish hits,
+replay correctness, useful effect/output coverage or a speed improvement.
 
-## Prepared controls and remaining work
+Prepared source tests cover duplicate/missing/out-of-range/wrong-kind tree IDs,
+journal/tree order disagreement, actual ID sentinel and prefix boundaries,
+current parameter/local/nonlocal resolution binding, UTF-8 span boundaries,
+typed literal domains, lowered assignment operator spelling, and malformed/
+checksum/key/oversized storage with old-hardlink preservation. The run-make
+fixture retains ordinary/edit/restoration, shadowing, fields/methods/traits,
+generic headers, parenthesis/empty syntax, Unicode prefix relocation and raw
+uncalled type/borrow/const/panic diagnostic controls. All are **unrun**.
 
-The patch contains five unit tests for S relocation/prefix and trait presence,
-bad journal order/duplicates/gaps, invalid prefix/overflow, the actual ID
-sentinel and exclusive-end boundary, and malformed/key/
-checksum/oversized storage with old-hardlink preservation. Its run-make fixture
-contains original/edit/restoration, local/self field/method/trait calls,
-parameter bindings, shadowing, generic headers, empty/parenthesized syntax,
-Unicode insertion before owners, and an actual trait-import edit. It compares
-normal execution and exact raw compiler diagnostics for uncalled type, borrow,
-const and constant-panic errors; damaged sidecars must still compile normally.
-These tests are prepared source only. No pass count is claimed.
+Still required: normalized persistent entry-state proof, complete current-span
+reconstruction and body materialization, prevalidated effect replay through
+ordinary allocation/binding/trait/child/debug semantics, then actual
+cold/hit/edit/error/restoration/corruption/relocation qualification. The current
+capture comparison does not substitute for any of those controls. External
+direct calls without a current legacy-const-generic proof remain excluded.
 
-The next implementation boundary is deliberately explicit:
-
-1. A closed typed HIR body wire tree matching every admitted expression,
-   statement, path, literal, pattern and span field; unknown outputs reject.
-2. A complete tree/reference validator proving every allocated ID occurs where
-   stock HIR requires, including synthetic wrappers, shared local references,
-   current parameter IDs, exact DefPathHash-to-current-DefId rebasing and the
-   current span lowerer's parent/hygiene rules. Journal well-formedness alone is
-   insufficient, and span relocation is currently exercised only by stock code.
-3. Prevalidation of normalized entry state and the entire body/journal before
-   any hit mutates a lowering context or arena; complete replay through stock
-   allocation, binding, trait/child and debug-checker semantics.
-4. Real cold/**actual hit**/edit/uncalled-error/restoration/corruption/relocation
-   controls with the compiler built from the exact patch, followed by measured
-   effect-gate coverage. The current same-journal control is not this hit test.
-
-External direct calls remain rejected without current legacy-const-generic
-metadata proof; generated hygiene, body-local type/lifetime/new-definition
-syntax, attributes and the other v2 exclusions remain unchanged. Current
-structural coverage cannot predict the stricter effect/output coverage or
-timing benefit. No full compiler build, benchmark, holdout or adoption
-qualification is authorized by this source checkpoint.
-
-Regenerate the source patch without changing the compiler checkout:
+No compiler build, benchmark, holdout or adoption qualification has run for
+this source checkpoint. Source generation, Python AST parsing, whitespace and
+patch-applicability checks are recorded separately in `source-checks.json`.
 
 ```sh
 python3 experiments/hir-body-cache/prepare_patch.py --source /path/to/exact/Cmono58
 ```
 
-`patch.json` binds all original/replacement files, the generator and candidate
-sources, qualified gate and final patch. Source generation and whitespace
-inspection are the only checks performed for this checkpoint.
+`patch.json` binds original/replacement files, generator/candidate inputs, the
+unchanged qualified gate and final patch. Historical source/evidence remains
+available at its original commits.
