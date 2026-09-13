@@ -66,7 +66,13 @@ stopping and do not treat a screen as adoption. The binding observer3.2 is
 complete:93.32ms context preparation versus4.83ms indexing rules out the
 positions-table rewrite as the first lever. Cargo attribution4.1 and reuse-miss
 classification3.1 remain useful next diagnostics. The full original dispositions
-above still apply. [New operation evidence](../results/operation-map-sampling-01/assessment.md).
+above still apply. Cargo residual suggestion4.1 now has an offline audit of all45
+saved Nushell edited custom observations: candidate Cargo5.260s, reported-unit
+union4.780s and0.469s with no reported active unit. The latter stays unattributed;
+most of the old residual is inside other reported units. Nineteen reported units
+include three distinct nu-protocol labels. Prioritize the actual unit/argument
+graph and encoding/query costs over assuming Cargo startup dominates.
+[Saved Cargo interval evidence](../results/cargo-residual-nushell-01/assessment.md). [New operation evidence](../results/operation-map-sampling-01/assessment.md).
 
 Original integration checkpoint (subsequently completed): the rebuilt VM matches
 the measured runtime exactly;428 Rust tests per profile

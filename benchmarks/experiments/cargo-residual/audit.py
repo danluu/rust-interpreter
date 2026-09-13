@@ -28,13 +28,19 @@ def main():
     assert re.fullmatch(r'cargo-residual-nushell-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45); require_space(ROOT, 8)
+        tests_path = ROOT / 'results/cargo-residual-tests-01/summary.json'
+        tests = json.loads(tests_path.read_text())
+        assert tests['status'] == 'passed' and tests['tests'] == 3
+        test_inputs = ROOT / tests['raw'] / 'inputs.json'
+        assert sha(test_inputs) == tests['inputs_sha256']
+        assert all(sha(ROOT / p) == h for p, h in json.loads(test_inputs.read_text()).items())
         summary_path = ROOT / 'results/memory-lookup-edit-nushell-01/summary.json'
         summary = json.loads(summary_path.read_text())
         assert summary['status'] == 'passed' and summary['commands'] == 132 and summary['case'] == 'nushell'
         assert not summary['private'] and summary['source_restored'] and summary['test_source_unchanged']
         assert summary['tool_keys'] == KEYS
         raw = ROOT / summary['raw']
-        paths = [summary_path, Path(__file__), Path(__file__).with_name('PLAN.md'),
+        paths = [summary_path, tests_path, test_inputs, Path(__file__), Path(__file__).with_name('PLAN.md'),
                  Path(__file__).with_name('intervals.py'), ROOT / 'scripts/cargo_timing_data.py',
                  ROOT / 'scripts/compare_saved_runtime.py', ROOT / 'scripts/workflow_io.py']
         for name, digest in summary['evidence'].items():
