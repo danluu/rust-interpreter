@@ -49,7 +49,8 @@ def position_control(original, edited, path, prefix):
 def fixture(directory):
     (directory / 'src/core/src').mkdir(parents=True)
     (directory / 'macros/src').mkdir(parents=True)
-    (directory / 'Cargo.toml').write_text('[package]\nname="std-source-observables"\nversion="0.0.0"\nedition="2024"\n'
+    (directory / 'Cargo.toml').write_text('[package]\nname="std-source-observables"\nversion="0.0.0"\nedition="2024"\nautobins=false\n'
+        '[lib]\npath="src/main.rs"\n'
         '[workspace]\nmembers=["macros"]\nresolver="2"\n'
         '[dependencies]\npath-probe={path="macros"}\n'
         '[profile.dev]\ncodegen-units=2\nincremental=true\n[profile.dev.build-override]\ncodegen-units=2\n')
@@ -199,13 +200,17 @@ def main():
             projected = sum(p.stat().st_size for root in selected_roots.values() for p in root.rglob('*') if p.is_file())
             projected += 2 * sum(p.stat().st_size for p in selected_roots['off'].rglob('*') if p.is_file())
             require(shutil.disk_usage(work).free >= projected + 8 * 2**30, 'insufficient space for independent source-control copies')
-            copies = {}
+            copies, copy_proofs = {}, {}
             for role, root in selected_roots.items():
                 target = work / 'second-prefix' / role
                 shutil.copytree(root, target, symlinks=False)
-                require(tree_files(target) == tree_files(root), 'second-prefix copy differs')
+                copied_files = tree_files(target)
+                expected_files = compiler.identity['files'] if role == 'native' else ready[role]['sysroot_files']
+                require(copied_files == expected_files, 'second-prefix copy differs')
                 copies[role] = target
                 copy_guards[target] = tree_stamps(target)
+                copy_proofs[role] = dict(path=str(target), original=str(root), files=copied_files,
+                                        files_sha256=digest(copied_files), stamps=copy_guards[target])
             second_rustc = copies['native'] / 'bin/rustc'
             require(invoke('second-prefix-version', [second_rustc, '-vV'])['stdout'] == compiler.identity['compiler'],
                     'relocated compiler version differs')
@@ -213,8 +218,8 @@ def main():
                     'relocated compiler uses a different prefix')
             plan = dict(policy=POLICY, owner=str(ROOT), compiler_key=compiler.key, tool_key=key,
                 compiler_sysroot=str(compiler.sysroot), compiler=compiler.identity, std_mir=stds, std_readiness=ready,
-                tools=json.loads((tools / 'ready.json').read_text()), scripts=scripts,
-                copied_sources={k: str(v) for k, v in copies.items()}, source_files=source_files,
+                tools=json.loads((tools / 'ready.json').read_text()), mono_wrapper=wrapper, scripts=scripts,
+                copied_sources={k: str(v) for k, v in copies.items()}, copy_proofs=copy_proofs, source_files=source_files,
                 projected_copy_bytes=projected, environment_sha256=digest(env), benchmark=False,
                 expected_application_remap='Span::file only; pinned prefer_remapped_unconditionally API')
             write_json(work / 'plan.json', plan)
@@ -342,6 +347,7 @@ def main():
                                     '--compiler-argv-record-dir', directory], application)
                                 report, artifact = validate_launch(row, compiler, mode, key, stds[mode], cache,
                                     stable_mono_cgu.receipt(mode, compiler, wrapper))
+                                row['launch'] = report
                                 workspace = Path(report['workspace_path'])
                                 selected = []
                                 for path in sorted(directory.glob('*.argv')):
@@ -354,9 +360,11 @@ def main():
                                 require(selected, 'no actual selected compiler argv for observable state')
                                 snapshot = work / (mode + '-' + phase + '.rbc'); snapshot.write_bytes(artifact.read_bytes())
                                 row.update(artifact_sha256=file_digest(snapshot), artifact_snapshot=snapshot.name)
-                            values[phase] = observable_values(row['stdout'], workspace, application)
+                            # The launcher compiles the original manifest cwd;
+                            # workspace_path owns artifacts, not copied sources.
+                            values[phase] = observable_values(row['stdout'], application, application)
                             states[phase] = dict(command_index=len(rows)-1, values=values[phase],
-                                source_sha256=file_digest(main_source), workspace=str(workspace),
+                                source_sha256=file_digest(main_source), workspace=str(workspace), source_root=str(application),
                                 rustc_flags=flags, configuration_sha256=file_digest(config_path))
                             for proof in [r for r in argv_records if (r['mode'], r['phase'], r['route']) == (mode, phase, route)]:
                                 actual = proof['argv']
@@ -367,16 +375,20 @@ def main():
                     controlled_files[main_source] = file_digest(main_source)
                     observables.append(dict(mode=mode, route=route, states=states))
                     write_json(work / 'controls.json', controls)
-            # Native and exported paths may have distinct local absolute roots.
-            # Compare their source-relative file identities and exact coordinates,
-            # while retaining every raw path/output above.
+            # Both routes compile the original source tree. Retain raw paths
+            # and compare their independently verified identities/coordinates.
             for mode in ['off', 'on']:
                 pair = [h for h in observables if h['mode'] == mode]
                 for phase in PHASES:
                     signatures = [{k: {f: v[f] for f in ['relative', 'line', 'column']} for k, v in h['states'][phase]['values'].items()} for h in pair]
                     require(signatures[0] == signatures[1], 'native/exported source observable identities differ')
             mapping.recheck(); guard()
-            require(tree_files(copies['native']) == compiler.identity['files'], 'second compiler copy changed')
+            controls['second_prefix_final'] = {}
+            for role, target in copies.items():
+                require(tree_files(target) == copy_proofs[role]['files'] and tree_stamps(target) == copy_guards[target],
+                        'second-prefix copy changed')
+                controls['second_prefix_final'][role] = dict(path=str(target), files_sha256=copy_proofs[role]['files_sha256'],
+                    files_unchanged=True, stamps_unchanged=True)
             write_json(work / 'commands.json', rows); write_json(work / 'controls.json', controls)
             evidence = {}
             for path in [*work.glob('*.json'), *work.glob('*.rs'), *work.glob('*.rbc'), *work.glob('*.native'),
