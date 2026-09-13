@@ -53,12 +53,15 @@ impl Assembler<'_> {
         self.cache_recent = recent;
         self.mask(9, (size * 8) as u8);
         #[cfg(test)]
-        {
-            self.local_forwarding.push((self.current_pc, _kind));
-            let kind = match fact { Fact::Imm(_) => "Imm", Fact::Local(_) => "Local",
-                Fact::Cached {..} => "Cached", Fact::Physical {..} => "Physical" };
-            self.local_fact_events.push((self.current_pc, _kind, kind));
-        }
+        self.observe_forwarded_fact(fact, _kind);
+    }
+
+    #[cfg(test)]
+    pub(super) fn observe_forwarded_fact(&mut self, fact: Fact, opcode: &'static str) {
+        self.local_forwarding.push((self.current_pc, opcode));
+        let kind = match fact { Fact::Imm(_) => "Imm", Fact::Local(_) => "Local",
+            Fact::Cached {..} => "Cached", Fact::Physical {..} => "Physical" };
+        self.local_fact_events.push((self.current_pc, opcode, kind));
     }
 
     #[cfg(test)]

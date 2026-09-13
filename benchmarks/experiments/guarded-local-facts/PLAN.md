@@ -31,3 +31,14 @@ within 45 seconds, require 12 GiB at admission and 8 GiB per command, and use tw
 Cargo workers. Build and invoke the selected ignored offline test three times.
 Only an informative census can justify implementation and correctness tests,
 followed by a fresh combined primary screen and all required adoption guards.
+
+The first census is complete: the primary has 60,720,128 additional weighted
+cached-value forwards, no losses, and no changed overhead spans. It also already
+forwards 105,120,193 immediate and 25,382,174 local-pointer facts. Before timing,
+inspect a distinct composed test-only treatment that retains exact static facts
+after a forwarded Load. Immediates are masked to the loaded width; local pointers
+are retained only for full eight-byte loads. Dynamic cached/physical owners are
+never aliased. Use the existing remember/definition contract, preserving its
+eviction, liveness and eventual spill rules. This census still does not qualify
+guest correctness or enable the change in ordinary VM binaries. Reconstruct
+the same saved baseline and report both gains and losses for the composition.

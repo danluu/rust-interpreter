@@ -330,6 +330,8 @@ pub(crate) struct Jit<'a> {
     disable_call_slot_hints: bool,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
+    #[cfg(test)]
+    observe_static_local_facts: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -360,6 +362,8 @@ impl<'a> Jit<'a> {
             disable_call_slot_hints: false,
             #[cfg(test)]
             observe_guarded_local_retention: false,
+            #[cfg(test)]
+            observe_static_local_facts: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -510,6 +514,8 @@ impl<'a> Jit<'a> {
                 let mut a = Assembler {
                     #[cfg(test)]
                     observe_guarded_local_retention: self.observe_guarded_local_retention,
+                    #[cfg(test)]
+                    observe_static_local_facts: self.observe_static_local_facts,
                     heap: self.uses_heap,
                     reads: &reads,
                     frame_size: f.frame_size,
@@ -955,6 +961,8 @@ enum Fact {
 struct Assembler<'a> {
     #[cfg(test)]
     observe_guarded_local_retention: bool,
+    #[cfg(test)]
+    observe_static_local_facts: bool,
     guarded_range: Option<range_groups::Plan>,
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
@@ -1773,6 +1781,22 @@ impl Assembler<'_> {
             Op::Load { dst, address, size } => {
                 let local = self.local_range(address, size as usize);
                 if let Some((_, value)) = self.local_value(local, size as usize) {
+                    #[cfg(test)]
+                    if self.observe_static_local_facts {
+                        // Follow the existing constant-definition contract. Only
+                        // self-contained facts can be copied without a new owner.
+                        let exact = match value {
+                            Fact::Imm(v) => Some(Fact::Imm(v & ((1u128 << (size as u32 * 8))-1))),
+                            Fact::Local(offset) if size == 8 => Some(Fact::Local(offset)),
+                            _ => None,
+                        };
+                        if let Some(exact) = exact {
+                            self.observe_forwarded_fact(value, "Load");
+                            self.remember(dst, exact);
+                            self.remember_local_memory(local, size as usize, dst);
+                            return;
+                        }
+                    }
                     self.forward_local_value(value, size as usize, "Load");
                 } else {
                     let immediate = self.memory_address(11, address, size as usize, false);
