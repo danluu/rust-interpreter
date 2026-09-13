@@ -13,7 +13,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 WORK = ROOT / '.work/hir-stage2-package-01'
-NATIVE = Path('/Users/danluu/dev/rust-interp-hir-native-correctness-20260913')
+NATIVE = Path('/Users/danluu/dev/rust-interp-hir-arena-native-20260913')
 NATIVE_SCRIPT = NATIVE / 'experiments/hir-native-correctness/check.py'
 
 
@@ -27,6 +27,9 @@ def load(name, path):
 
 native = load('stage2_native_prerequisite', NATIVE_SCRIPT)
 package = load('stage2_package_adapter', HERE / 'package.py')
+qualified = load('stage2_qualified_native', HERE / 'qualified_native.py')
+recipe = load('stage2_complete_recipe', HERE / 'recipe.py')
+CHECKPOINT = qualified.CHECKPOINT
 engine, old = native.engine, native.old
 SOURCE, HOST = native.SOURCE, old.HOST
 require, sha, write = engine.require, engine.sha, engine.write
@@ -51,11 +54,12 @@ COMMANDS = {
 }
 PROBES = [[str(RUSTC), '-vV'], [str(RUSTC), '--print', 'sysroot'], [str(RUSTC), '-Zhelp']]
 ACTIONS = ['stage2', 'stage2-identity', 'stage2-units', 'stage2-option', 'stage2-partition',
-           'stage2-hir', 'dist', 'package', 'package-identity', 'native15', 'strip6', 'complete']
+           'stage2-hir', 'stage2-hir-direct', 'dist', 'package', 'package-identity', 'native15', 'strip6', 'complete']
 
 
 def inputs():
-    paths = [Path(__file__), HERE / 'package.py', HERE / 'README.md', ROOT / 'tests/test_hir_stage2_package.py',
+    paths = [Path(__file__), HERE / 'package.py', HERE / 'qualified_native.py', HERE / 'recipe.py', HERE / 'README.md',
+             *sorted((HERE / 'inputs').iterdir()), ROOT / 'tests/test_hir_stage2_package.py',
              package.HERE / 'production-driver.py', package.HERE / 'package-owned.py',
              package.HERE / 'native-entry-controls.py', package.HERE / 'strip-controls.py',
              package.HERE / 'bootstrap-production-source-paths.toml', package.HERE / 'owned_stage.py',
@@ -76,17 +80,6 @@ def configurations():
     return result
 
 
-def checked_native_terminal(row, plan, artifact_hash):
-    require(row['status'] == 'passed' and row['stage'] == 'run'
-            and row['owner'] == str(NATIVE) and row['expected_plan_sha256'] == plan['sha256']
-            and row['source_revision'] == plan['value']['previous']['source']['revision']
-            and row['capacity'] == native.CAPACITY and row['bootstrap_commands_passed'] == 3
-            and row['actual_option_tests_passed'] == row['actual_native_runmake_passed'] == 1
-            and row['required_units_prerequisite'] == 26 and row['final_artifacts_sha256'] == artifact_hash
-            and row['started_at'] <= row['admitted_at'] <= row['finished_at'],
-            'complete native success with actual verified hits is required')
-
-
 def read_child(ref, parent, files):
     path = ordinary(ref['path'])
     require(path.is_relative_to(parent / 'commands') and sha(path) == ref['sha256'], 'native child binding changed')
@@ -103,63 +96,16 @@ def read_child(ref, parent, files):
     return row, text
 
 
-def previous(plan_path, digest, terminal_path, supervisor):
-    plan_path, terminal_path = ordinary(plan_path), ordinary(terminal_path)
-    require(plan_path.parent == NATIVE_SCRIPT.parent and terminal_path.is_relative_to(native.WORK / 'stages'),
-            'native history must belong to the exact owned driver')
-    frozen, (_, names) = native.inputs(), native.checkpoint()
-    plan = native.load_plan(plan_path, digest, frozen, names)
-    prior = plan['previous']
-    require(native.history(prior['plan_sha256'], prior['terminal']) == prior, 'ReadyHit source/check/unit history changed')
-    native.verify_references(prior)
-    row = json.loads(terminal_path.read_bytes())
-    final_path = ordinary(terminal_path.parent / 'final-artifacts.json')
-    final = json.loads(final_path.read_bytes())
-    checked_native_terminal(row, dict(value=plan, sha256=digest), sha(final_path))
-    built_path = ordinary(terminal_path.parent / 'built-artifacts.json')
-    built = json.loads(built_path.read_bytes())
-    require(sha(built_path) == row['built_artifacts_sha256']
-            and all(final['files'].get(p) == item for p, item in built['files'].items())
-            and final['source_links'] == built['source_links'], 'native runtime association changed')
-    files = {str(plan_path): digest, str(terminal_path): sha(terminal_path), str(final_path): sha(final_path),
-             str(built_path): sha(built_path), **frozen}
-    matched = []
-    for ref in row['commands']:
-        child, text = read_child(ref, terminal_path.parent, files)
-        if child['command'] in [*native.COMMANDS.values(), *native.PROBES]:
-            require(child['cwd'] == str(SOURCE) and child['environment'] == prior['old_plan']['environment'],
-                    'native actual compiler route changed')
-            matched.append((child['command'], text))
-    expected = [native.COMMANDS['build'], *native.PROBES, native.COMMANDS['option'], native.COMMANDS['native']]
-    require([cmd for cmd, _ in matched] == expected, 'native commands were replaced, missing or duplicated')
-    require('commit-hash: ' + prior['source']['revision'] in matched[1][1]
-            and matched[2][1].strip() == str(native.SYSROOT)
-            and all(re.search(r'(?m)^\s*-Z\s+' + option + r'=', matched[3][1]) for option in
-                    ['hir-body-cache-capture', 'hir-body-cache-reuse']), 'native actual compiler identity differs')
-    native.checked_option(matched[4][1]); native.checked_native(matched[5][1])
-    supervisor = Path(supervisor)
-    require(supervisor.resolve(strict=True) == supervisor and supervisor.parent == NATIVE / '.work/experiments',
-            'native outer supervisor must be task-owned')
-    outer = json.loads(ordinary(supervisor / 'status.json').read_bytes())
-    require(outer['status'] == 'finished' and outer['returncode'] == 0 and outer['child_pid'] == row['pid']
-            and outer['owner'] == str(NATIVE) and sha(supervisor / 'plan.json') == outer['plan_sha256']
-            and sha(supervisor / 'command.log') == outer['log_sha256'], 'native supervisor did not pass')
-    launch = json.loads((supervisor / 'plan.json').read_bytes())
-    argv = launch['command']
-    require(launch['owner'] == str(NATIVE) and argv == outer['command']
-            and '--plan' in argv and argv[argv.index('--plan') + 1] == str(plan_path)
-            and '--plan-sha256' in argv and argv[argv.index('--plan-sha256') + 1] == digest
-            and '--attempt' in argv and argv[argv.index('--attempt') + 1] == terminal_path.parent.name,
-            'native outer command differs from the retained plan/attempt')
-    for name in ['plan.json', 'status.json', 'command.log', 'supervisor.log']:
-        files[str(ordinary(supervisor / name))] = sha(supervisor / name)
-    references = [dict(paths=plan['archive_paths'], hashes=plan['archive_hashes'], required=plan['archive_required']),
-                  *prior['historical_archives']]
-    require(len(references) == 3 and references[0]['required'] == prior['files'] | prior['historical_source'],
-            'complete ReadyHit/cold/failed archive chain required')
-    return dict(plan_path=str(plan_path), plan_sha256=digest, terminal=str(terminal_path), supervisor=str(supervisor),
-                files=files, source=prior['source'], old_plan=prior['old_plan'], old_plan_path=prior['old_plan_path'],
-                stage1=final, historical_archives=references, historical_source=prior['historical_source'])
+def recipe_contract(stage):
+    build = SOURCE / 'build' / HOST
+    sysroot = build / ('stage' + str(stage))
+    return dict(source=str(SOURCE), host=HOST, stage=stage, sysroot=str(sysroot),
+        compiler=str(sysroot / 'bin/rustc'), compiletest=str(build / 'stage1-tools-bin/compiletest'),
+        recipe=str(build / 'test/run-make/hir-body-cache-capture/rmake'))
+
+
+def previous(plan_path, digest, terminal_path, supervisor, archive):
+    return qualified.previous(native, recipe, archive, plan_path, digest, terminal_path, supervisor, recipe_contract(1))
 
 
 def verify_references(prior):
@@ -174,11 +120,13 @@ def load_plan(path, expected, frozen, names):
     data = ordinary(path).read_bytes()
     require(engine.digest(data) == expected, 'reviewed stage2 plan changed')
     plan = json.loads(data)
-    require(plan['owner'] == str(ROOT) and plan['source'] == str(SOURCE) and plan['checkpoint'] == native.CHECKPOINT
+    require(plan['owner'] == str(ROOT) and plan['source'] == str(SOURCE) and plan['checkpoint'] == CHECKPOINT
             and plan['inputs'] == frozen and plan['required_units'] == names and plan['commands'] == COMMANDS
             and plan['probes'] == PROBES and plan['capacity'] == CAPACITY and plan['actions'] == ACTIONS
-            and plan['canonical_lock'] == str(engine.CANONICAL_LOCK)
-            and re.fullmatch('run-[0-9]+', plan['run_attempt']), 'fixed stage2 scope changed')
+            and plan['canonical_lock'] == str(engine.CANONICAL_LOCK) and plan['stage2_recipe'] == recipe_contract(2)
+            and re.fullmatch('run-[0-9]+', plan['run_attempt'])
+            and plan['direct_recipe_cwd'] == str(WORK/'stages'/plan['run_attempt']/'stage2-hir-direct/rmake_out'),
+            'fixed stage2 scope changed')
     return plan
 
 
@@ -210,18 +158,20 @@ def execute(args):
             receipt.update(status='running', admitted_at=time.time(),
                            free_bytes_before=engine.disk(ROOT, 24 if args.stage == 'run' else 8))
             write(output / 'receipt.json', receipt)
-            frozen, (_, names) = inputs(), native.checkpoint()
+            frozen, (_, names) = inputs(), qualified.checkpoint(native)
             if args.stage == 'plan':
                 require(args.write_plan and args.write_plan.parent == HERE and args.write_plan.is_absolute()
                         and not args.write_plan.exists() and re.fullmatch('run-[0-9]+', args.run_attempt or ''),
                         'fresh owned plan and fixed run attempt required')
                 require(not (WORK / 'stages' / args.run_attempt).exists(), 'run destination already exists')
-                prior = previous(args.native_plan, args.native_plan_sha256, args.terminal, args.native_supervisor)
                 archive_paths = {n: str(ordinary(getattr(args, n))) for n in ['archive', 'manifest', 'summary']}
-                archive_hashes = {p: sha(p) for p in archive_paths.values()}
-                plan = dict(schema_version=1, owner=str(ROOT), source=str(SOURCE), checkpoint=native.CHECKPOINT,
+                archive = qualified.Archive(native, archive_paths)
+                prior = previous(args.native_plan, args.native_plan_sha256, args.terminal, args.native_supervisor, archive)
+                archive_hashes = archive.hashes
+                plan = dict(schema_version=1, owner=str(ROOT), source=str(SOURCE), checkpoint=CHECKPOINT, stage2_recipe=recipe_contract(2),
                     inputs=frozen, required_units=names, commands=COMMANDS, probes=PROBES, capacity=CAPACITY,
                     actions=ACTIONS, canonical_lock=str(engine.CANONICAL_LOCK), run_attempt=args.run_attempt,
+                    direct_recipe_cwd=str(WORK/'stages'/args.run_attempt/'stage2-hir-direct/rmake_out'),
                     previous=prior, archive_paths=archive_paths, archive_hashes=archive_hashes,
                     archive_required=prior['files'] | prior['historical_source'], configurations=configurations(),
                     rust_src_component=package.legacy.public_component(),
@@ -231,7 +181,8 @@ def execute(args):
                 plan = load_plan(args.plan, args.plan_sha256, frozen, names)
                 require(args.attempt == plan['run_attempt'], 'run destination differs from reviewed plan')
                 prior = plan['previous']
-                require(previous(prior['plan_path'], prior['plan_sha256'], prior['terminal'], prior['supervisor']) == prior,
+                archive = qualified.Archive(native, plan['archive_paths'])
+                require(previous(prior['plan_path'], prior['plan_sha256'], prior['terminal'], prior['supervisor'], archive) == prior,
                         'native prerequisite changed')
             verify_references(prior)
             require(plan['archive_required'] == prior['files'] | prior['historical_source']
@@ -239,22 +190,23 @@ def execute(args):
             p = plan['archive_paths']; engine.verify_archive(p['archive'], p['manifest'], p['summary'], plan['archive_required'])
             require(native.artifacts() == prior['stage1'], 'native-qualified stage1 changed before continuation')
             def guard():
+                archive.guard()
                 require(inputs() == frozen and configurations() == plan['configurations']
                         and old.frozen_plan() == prior['old_plan']
-                        and all(sha(p) == h for p, h in prior['files'].items())
+                        and prior['archived_qualification_hashes'] == archive.hashes
                         and all(sha(p) == h for p, h in plan['archive_hashes'].items())
                         and all(sha(p) == h for ref in prior['historical_archives'] for p, h in ref['hashes'].items()),
                         'stage2 frozen input changed')
                 if args.stage == 'run': require(sha(args.plan) == args.plan_sha256, 'reviewed plan changed during run')
                 engine.disk(ROOT, 9)
-            def command(argv, cwd=SOURCE, fds=()):
+            def command(argv, cwd=SOURCE, fds=(), env=None):
                 argv = list(map(str, argv)); guard()
                 if argv[0] == './x': old.verify_archives(old.ARCHIVES); old.verify_copied_archives()
                 directory = output / 'commands' / f'{len(receipt["commands"]):03d}'
                 ref = dict(path=str(directory / 'receipt.json'), command=argv)
                 receipt['commands'].append(ref); write(output / 'receipt.json', receipt)
                 try:
-                    result = engine.run(argv, cwd=cwd, env=prior['old_plan']['environment'], out=directory,
+                    result = engine.run(argv, cwd=cwd, env=env if env is not None else prior['old_plan']['environment'], out=directory,
                                         capacity_root=ROOT, pass_fds=fds)
                 finally:
                     if (directory / 'receipt.json').exists():
@@ -262,12 +214,54 @@ def execute(args):
                 guard()
                 return dict(result, stdout=(directory / 'stdout').read_text(), stderr=(directory / 'stderr').read_text())
             def source_guard(): engine.source_guard(prior['source'], command, sha(prior['old_plan_path']))
-            def save_stage(name, result, roots=()):
+            def direct_recipe(compiletest_result):
+                contract = plan['stage2_recipe']
+                route = recipe.recipe_environment(compiletest_result['stdout'] + compiletest_result['stderr'],
+                                                  prior['old_plan']['environment'], contract)
+                parent = output/'stage2-hir-direct'; parent.mkdir(exist_ok=False)
+                cwd = Path(plan['direct_recipe_cwd']); cwd.mkdir(exist_ok=False)
+                fixture = SOURCE/'tests/run-make/hir-body-cache-capture/fixture.rs'
+                expected_fixture = prior['source']['files'][str(fixture.relative_to(SOURCE))]['sha256']
+                require(sha(ordinary(fixture)) == expected_fixture, 'actual stage2 fixture changed')
+                shutil.copyfile(fixture, cwd/'fixture.rs')
+                def runtime():
+                    stage2 = dict(files=package.inventory(SYSROOT,source_checkout=SOURCE),
+                                  source_links=native.bootstrap_source_links(SYSROOT,SOURCE))
+                    roots = [Path(p) for p in route['environment']['DYLD_LIBRARY_PATH'].split(':')]
+                    files = {}
+                    for root in roots:
+                        require(root.is_dir() and root.resolve(strict=True) == root, 'stage2 recipe runtime root changed')
+                        for p in root.rglob('*'):
+                            require(not p.is_symlink(), 'stage2 recipe dependency symlink')
+                            if p.is_dir(): continue
+                            files[str(ordinary(p))] = sha(p)
+                    for p in [Path(contract['recipe']),Path(contract['compiletest']),
+                              Path(route['options']['--run-make-support-rlib'][0])]:
+                        files[str(ordinary(p))] = sha(p)
+                    return dict(stage2=stage2,other_files=files)
+                before = runtime(); write(parent/'runtime-before.json',before)
+                write(parent/'route.json',route)
+                direct_result = command([contract['recipe']],cwd=cwd,env=route['environment'])
+                direct_ref = dict(receipt['commands'][-1])
+                observations = recipe.checked_replay(direct_result['stdout']+direct_result['stderr'])
+                require(sha(cwd/'fixture.rs') == sha(cwd/'input.rs') == expected_fixture,
+                        'complete stage2 recipe did not restore source')
+                after = runtime(); require(after == before, 'stage2 recipe/compiler/support bytes changed')
+                write(parent/'runtime-after.json',after);write(parent/'observations.json',observations)
+                value = dict(status='passed',returncode=0,source_revision=prior['source']['revision'],
+                    command=[contract['recipe']],cwd=str(cwd),child_receipt=direct_ref,
+                    actual_complete_recipe=True,observations=observations,
+                    evidence={str(parent/name):sha(parent/name) for name in
+                        ['runtime-before.json','runtime-after.json','route.json','observations.json']})
+                write(parent/'result.json',value)
+                return dict(path=str(parent/'result.json'),sha256=sha(parent/'result.json'))
+            def save_stage(name, result, roots=(), extra=None, child_ref=None):
                 row = dict(schema_version=1, status='passed', returncode=0, source_revision=prior['source']['revision'],
                     config_sha256=prior['source']['config_sha256'], command=result['command'],
-                    child_receipt=receipt['commands'][-1], artifact_inventories={str(p): package.inventory(p,
+                    child_receipt=child_ref or receipt['commands'][-1], artifact_inventories={str(p): package.inventory(p,
                         source_checkout=SOURCE if p == SYSROOT else None) for p in roots},
                     artifact_source_links={str(SYSROOT): native.bootstrap_source_links(SYSROOT, SOURCE)} if SYSROOT in roots else {})
+                if extra is not None: row['direct_recipe'] = extra
                 path = output / (name + '.json'); write(path, row)
                 receipt['stages'][name] = dict(path=str(path), sha256=sha(path)); write(output / 'receipt.json', receipt)
             source_guard(); old.verify_archives(old.ARCHIVES); old.verify_copied_archives()
@@ -279,15 +273,25 @@ def execute(args):
                 combined = command(['git', 'diff', '--binary', package.legacy.UPSTREAM, prior['source']['revision'], '--'])
                 (output / 'combined-upstream.patch').write_text(combined['stdout'])
                 for name, argv in COMMANDS.items():
-                    result = command(argv); text = result['stdout'] + result['stderr']
+                    result = command(argv); bootstrap_ref = dict(receipt['commands'][-1])
+                    text = result['stdout'] + result['stderr']
                     if name == 'stage2-units':
-                        engine.checked_tests(text, names, []); native.checked_result(text, 26, unfiltered=True)
+                        engine.checked_tests(text, names, []); native.checked_result(text, len(names), unfiltered=True)
                     elif name == 'stage2-option': native.checked_option(text)
                     elif name == 'stage2-partition': checked_partition(text)
-                    elif name == 'stage2-hir': native.checked_native(text)
+                    elif name == 'stage2-hir':
+                        # Keep the original complete run-make pass; compiletest
+                        # may abbreviate its raw output even with --no-capture.
+                        native.checked_result(text, 1)
+                        require(len(re.findall(r'^test \[run-make\] tests/run-make/hir-body-cache-capture \.\.\.', text, re.M)) == 1,
+                                'stage2 run-make did not execute exactly once')
+                        direct = direct_recipe(result)
+                        receipt['stage2_hir_direct'] = direct; receipt['stages']['stage2-hir-direct'] = direct
+                        write(output / 'receipt.json', receipt)
                     roots = ([SOURCE / 'build/tmp/tarball' / n / HOST / 'image' for n in ['rustc-dev', 'rust-std']]
                              if name == 'dist' else [SYSROOT])
-                    save_stage(name, result, roots); source_guard()
+                    save_stage(name, result, roots, extra=direct if name == 'stage2-hir' else None,
+                               child_ref=bootstrap_ref); source_guard()
                     if name == 'stage2': probe_identity([command(p) for p in PROBES], SYSROOT, prior['source']['revision'])
                 package_refs = package.compose(command, output, receipt['stages'], prior['source'], plan['rust_src_component'], lock_fd)
                 receipt['package'] = package_refs; write(output / 'receipt.json', receipt)
@@ -305,8 +309,8 @@ def execute(args):
                 source_guard()
                 p = json.loads(Path(package_refs['package_receipt']['path']).read_bytes())
                 require({n: r['sha256'] for n, r in package.inventory(prefix).items()} == p['files'], 'package changed during controls')
-                receipt.update(required_units_passed=26, option_tests_passed=1, partition_tests_passed=17,
-                    hir_native_runmake_passed=1, actual_verified_hits=True, package_native_commands=15, strip_commands=6,
+                receipt.update(required_units_passed=len(names), option_tests_passed=1, partition_tests_passed=17,
+                    hir_native_runmake_passed=1, hir_native_direct_recipe_passed=1, actual_verified_hits=True, package_native_commands=15, strip_commands=6,
                     package_complete=True, installed=False, interpreter_tools_built=False, performance_qualified=False)
             guard(); old.verify_archives(old.ARCHIVES); old.verify_copied_archives()
             receipt.update(status='passed', finished_at=time.time(), free_bytes_after=engine.disk(ROOT))

@@ -16,26 +16,52 @@ def result(count, filtered=0):
 
 
 class Stage2ContinuationTests(unittest.TestCase):
-    def test_failed_native_build_only_or_missing_hits_cannot_admit(self):
-        plan = dict(sha256='a'*64, value={'previous': {'source': {'revision': 'b'*40}}})
-        row = dict(status='passed', stage='run', owner=str(m.NATIVE), expected_plan_sha256='a'*64,
-            source_revision='b'*40, capacity=copy.deepcopy(m.native.CAPACITY), bootstrap_commands_passed=3,
-            actual_option_tests_passed=1, actual_native_runmake_passed=1, required_units_prerequisite=26,
-            final_artifacts_sha256='c'*64, started_at=1, admitted_at=2, finished_at=3)
-        m.checked_native_terminal(row, plan, 'c'*64)
-        for key,value in [('status','failed'),('actual_native_runmake_passed',0),('bootstrap_commands_passed',1),
-                          ('source_revision','d'*40),('required_units_prerequisite',22),('admitted_at',4)]:
-            bad=copy.deepcopy(row); bad[key]=value
-            with self.assertRaises(RuntimeError): m.checked_native_terminal(bad,plan,'c'*64)
-        with self.assertRaises(RuntimeError): m.checked_native_terminal(row,plan,'d'*64)
-        with self.assertRaises(RuntimeError): m.native.checked_native(
+    def test_failed_native_build_only_or_missing_direct_proof_cannot_admit(self):
+        row = dict(status='passed', stage='run', owner=str(m.qualified.EVID),
+            expected_plan_sha256=m.qualified.REPLAY_PLAN_SHA, actual_direct_recipe_passed=1,
+            original_outer_native_status='failed', commands=[{}] * 14, original_build_passed=True,
+            original_option_test_passed=1, original_compiletest_recipe_passed=1, performance_claim=False,
+            started_at=1, admitted_at=2, finished_at=3)
+        m.qualified.checked_replay_terminal(row)
+        for key,value in [('status','failed'),('actual_direct_recipe_passed',0),('original_build_passed',False),
+                          ('original_outer_native_status','passed'),('commands',[{}]*9),('admitted_at',4)]:
+            bad=copy.deepcopy(row);bad[key]=value
+            with self.assertRaises(RuntimeError):m.qualified.checked_replay_terminal(bad)
+        with self.assertRaises(RuntimeError):m.recipe.checked_replay(
             'test [run-make] tests/run-make/hir-body-cache-capture ... ok\n'+result(1))
+
+    def test_archived_history_never_reads_replaced_live_engine_or_runtime(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp).resolve()/'old-engine.py';path.write_bytes(b'new stage2 bytes')
+            saved=b'qualified historical bytes'
+            archive=m.qualified.Archive.__new__(m.qualified.Archive)
+            archive.data={str(path):saved}
+            import hashlib
+            self.assertEqual(archive.read(path,hashlib.sha256(saved).hexdigest()),saved)
+            path.write_bytes(b'another current revision')
+            self.assertEqual(archive.read(path),saved)
+            with self.assertRaises(RuntimeError):archive.read(path,m.sha(path))
+            del archive.data[str(path)]
+            with self.assertRaises(RuntimeError):archive.read(path)
+
+    def test_stage2_recipe_uses_stage0_support_and_actual_stage2_compiler(self):
+        raw=(ROOT/'experiments/hir-stage2-package/inputs/compiletest-command.txt').read_text()
+        stage2=raw.replace('"--stage" "1"','"--stage" "2"').replace('/stage1/','/stage2/')
+        route=m.recipe.recipe_environment(stage2,{},m.recipe_contract(2))
+        self.assertEqual(route['environment']['RUSTC'],str(m.RUSTC))
+        self.assertEqual(route['environment']['HOST_RUSTC_DYLIB_PATH'],str(m.SYSROOT/'lib'))
+        self.assertIn('/stage0/lib/rustlib/',route['environment']['DYLD_LIBRARY_PATH'])
+        self.assertNotIn('/stage2/lib:',route['environment']['DYLD_LIBRARY_PATH'])
+        self.assertEqual(route['environment']['RUSTC_FORCE_RUSTC_VERSION'],'compiletest')
+        for changed in [raw,stage2.replace('stage1-tools-bin/compiletest','stage2-tools-bin/compiletest')]:
+            with self.assertRaises(RuntimeError):m.recipe.recipe_environment(changed,{},m.recipe_contract(2))
 
     def test_reviewed_plan_rejects_rehashed_scope_capacity_and_test_drops(self):
         frozen={'helper':'a'*64}; names=['unit']
-        plan=dict(owner=str(m.ROOT),source=str(m.SOURCE),checkpoint=m.native.CHECKPOINT,inputs=frozen,
+        plan=dict(owner=str(m.ROOT),source=str(m.SOURCE),checkpoint=m.CHECKPOINT,inputs=frozen,
             required_units=names,commands=copy.deepcopy(m.COMMANDS),probes=copy.deepcopy(m.PROBES),
-            capacity=copy.deepcopy(m.CAPACITY),actions=list(m.ACTIONS),canonical_lock=str(m.engine.CANONICAL_LOCK),run_attempt='run-01')
+            capacity=copy.deepcopy(m.CAPACITY),actions=list(m.ACTIONS),canonical_lock=str(m.engine.CANONICAL_LOCK),run_attempt='run-01',stage2_recipe=m.recipe_contract(2),
+            direct_recipe_cwd=str(m.WORK/'stages/run-01/stage2-hir-direct/rmake_out'))
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp).resolve()/'plan.json'; path.write_text(json.dumps(plan)); reviewed=m.sha(path)
             self.assertEqual(m.load_plan(path,reviewed,frozen,names),plan)
@@ -45,6 +71,8 @@ class Stage2ContinuationTests(unittest.TestCase):
             bad=copy.deepcopy(plan); bad['capacity']['initial_free_gib']=16; changes.append(bad)
             bad=copy.deepcopy(plan); bad['capacity']['running_floor_gib']=1; changes.append(bad)
             bad=copy.deepcopy(plan); bad['actions'].remove('strip6'); changes.append(bad)
+            bad=copy.deepcopy(plan); bad['stage2_recipe']['compiler']=str(m.native.RUSTC); changes.append(bad)
+            bad=copy.deepcopy(plan); bad['direct_recipe_cwd']='/tmp/reused'; changes.append(bad)
             bad=copy.deepcopy(plan); bad['canonical_lock']='/tmp/other.lock'; changes.append(bad)
             bad=copy.deepcopy(plan); bad['run_attempt']='../old'; changes.append(bad)
             for bad in changes:
@@ -65,17 +93,17 @@ class Stage2ContinuationTests(unittest.TestCase):
             stdout.write_text('actual output'); row['returncode']=1; path.write_text(json.dumps(row)); ref['sha256']=m.sha(path)
             with self.assertRaises(RuntimeError): m.read_child(ref,parent,{})
 
-    def test_full_existing_partition_suites_and_all_twenty_six_units_remain_required(self):
+    def test_full_existing_partition_suites_and_all_twenty_seven_units_remain_required(self):
         text=''.join(f'test [codegen-units] tests/codegen-units/partitioning/test{i}.rs ... ok\n' for i in range(15))+result(15,33)
         for name in ['stable-cgu-partitioning','stable-mono-cgu-partitioning']:
             text+=f'test [run-make] tests/run-make/{name} ... ok\n'
         text+=result(2,528); m.checked_partition(text)
         with self.assertRaises(RuntimeError): m.checked_partition(text.replace('test14.rs ... ok','test14.rs ... ignored'))
         with self.assertRaises(RuntimeError): m.checked_partition(text.replace('stable-mono-cgu-partitioning','unrelated'))
-        names=m.native.checkpoint()[1]
-        units=''.join(f'test body_cache::{name} ... ok\n' for name in names)+result(26)
-        m.engine.checked_tests(units,names,[]); m.native.checked_result(units,26,unfiltered=True)
-        with self.assertRaises(RuntimeError): m.native.checked_result(units.replace('0 filtered out','1 filtered out'),26,unfiltered=True)
+        names=m.qualified.checkpoint(m.native)[1]
+        units=''.join(f'test body_cache::{name} ... ok\n' for name in names)+result(27)
+        m.engine.checked_tests(units,names,[]); m.native.checked_result(units,27,unfiltered=True)
+        with self.assertRaises(RuntimeError): m.native.checked_result(units.replace('0 filtered out','1 filtered out'),27,unfiltered=True)
         with self.assertRaises(RuntimeError): m.engine.checked_tests(units.replace(names[-1],'unrelated'),names,[])
 
     def test_actual_stage2_and_packaged_capabilities_are_both_required(self):

@@ -78,6 +78,18 @@ def compose(command, work, records, source_state, component, lock_fd):
                 and '--stage' in row['command']
                 and row['command'][row['command'].index('--stage') + 1] == '2',
                 'package requires actual new-source stage2 products')
+        if name == 'stage2-hir':
+            direct = row['direct_recipe']; direct_path = Path(direct['path'])
+            require(direct_path.is_relative_to(work/'stage2-hir-direct') and direct_path.is_file()
+                    and not direct_path.is_symlink() and direct_path.resolve(strict=True) == direct_path
+                    and sha(direct_path) == direct['sha256'],
+                    'stage2 complete direct-recipe evidence changed')
+            evidence = json.loads(direct_path.read_bytes())
+            require(evidence['status'] == 'passed' and evidence['returncode'] == 0
+                    and evidence['source_revision'] == revision and evidence['actual_complete_recipe'] is True
+                    and evidence['observations']['actual_verified_hits'] > 0
+                    and all(sha(p) == h for p,h in evidence['evidence'].items()),
+                    'stage2 package requires actual unabridged complete recipe proof')
 
     capability = work / 'source-capability.json'
     rust_src = work / 'rust-src'
