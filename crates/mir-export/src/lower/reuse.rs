@@ -264,10 +264,45 @@ impl<'tcx> Current<'tcx> {
     }
 }
 
+#[derive(Default, Serialize)]
+pub(super) struct ReplayCosts {
+    pub functions: usize,
+    instructions: usize,
+    immediate_sites: usize,
+    events: usize,
+    call_sites: usize,
+    setup_seconds: f64,
+    events_seconds: f64,
+    patch_seconds: f64,
+}
+
+impl ReplayCosts {
+    pub fn phase_seconds(&self) -> f64 {
+        self.setup_seconds + self.events_seconds + self.patch_seconds
+    }
+}
+
+pub(super) fn costs_enabled() -> Result<bool> {
+    match std::env::var_os("RUST_INTERP_REPLAY_COSTS") {
+        None => Ok(false),
+        Some(value) if value == "0" => Ok(false),
+        Some(value) if value == "1" => Ok(true),
+        _ => Err("RUST_INTERP_REPLAY_COSTS must be 0 or 1".into()),
+    }
+}
+
 /// Reconstruct owned output and graph effects in the original request order.
 /// Every direct function index is a typed Op::Call field, never guessed from bits.
 pub(super) fn replay<'tcx>(exporter: &mut Exporter<'tcx>, instance: Instance<'tcx>, index: usize,
     template: Template) -> Result<Function> {
+    replay_measured(exporter, instance, index, template, None)
+}
+
+/// Coarse optional observation of existing work; no program transformation.
+/// These intervals exclude payload decoding and include observer overhead.
+pub(super) fn replay_measured<'tcx>(exporter: &mut Exporter<'tcx>, instance: Instance<'tcx>, index: usize,
+    template: Template, mut costs: Option<&mut ReplayCosts>) -> Result<Function> {
+    let started = costs.as_ref().map(|_| std::time::Instant::now());
     let Template { mut function, observation: mut observed, tape } = template;
     if tape.decline.is_some() { return Err("declined binding tape".into()); }
     let mut current = Current { tcx: exporter.tcx, instance,
@@ -278,6 +313,14 @@ pub(super) fn replay<'tcx>(exporter: &mut Exporter<'tcx>, instance: Instance<'tc
             if immediates.insert(*dst, pc).is_some() { return Err("ambiguous binding immediate".into()); }
         }
     }
+    if let Some(costs) = costs.as_deref_mut() {
+        costs.setup_seconds += started.unwrap().elapsed().as_secs_f64();
+        costs.functions += 1;
+        costs.instructions += function.code.len();
+        costs.immediate_sites += immediates.len();
+        costs.events += tape.events.len();
+    }
+    let events_started = costs.as_ref().map(|_| std::time::Instant::now());
     let mut bound = HashSet::new();
     let mut calls = BTreeMap::new();
     for event in &tape.events {
@@ -299,13 +342,23 @@ pub(super) fn replay<'tcx>(exporter: &mut Exporter<'tcx>, instance: Instance<'tc
             Event::Unavailable(call) => { exporter.unavailable_calls.insert(call.clone()); }
         }
     }
+    if let Some(costs) = costs.as_deref_mut() {
+        costs.events_seconds += events_started.unwrap().elapsed().as_secs_f64();
+    }
+    let patch_started = costs.as_ref().map(|_| std::time::Instant::now());
+    let mut call_sites = 0;
     for op in &mut function.code {
         if let Op::Call { function, .. } = op {
             *function = *calls.get(function).ok_or("missing direct call binding")?;
+            call_sites += 1;
         }
     }
     observed.rebind(index, &calls)?;
     exporter.byte_writes.push(observed);
+    if let Some(costs) = costs {
+        costs.patch_seconds += patch_started.unwrap().elapsed().as_secs_f64();
+        costs.call_sites += call_sites;
+    }
     Ok(function)
 }
 

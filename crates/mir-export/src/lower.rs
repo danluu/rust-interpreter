@@ -169,6 +169,10 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         tcx.incr_comp_session.is_some(), tcx.dep_graph.is_fully_enabled());
     let cache_enabled = cache_mode != Mode::Off;
     let actual_reuse = cache_mode == Mode::Reuse;
+    let mut replay_costs = reuse::costs_enabled()?.then(reuse::ReplayCosts::default);
+    if replay_costs.is_some() && (!actual_reuse || demand) {
+        return Err("replay costs require actual function reuse and strict checking".into());
+    }
     let function_dependencies = crate::function_dependencies::enabled()? || actual_reuse;
     if function_dependencies && !tcx.dep_graph.is_fully_enabled() {
         return Err("function dependency observation requires an incremental dependency graph".into());
@@ -328,7 +332,8 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
                     let template = reuse::Template::decode(&bytes)?;
                     cache.previous_decoding_seconds += began.elapsed().as_secs_f64();
                     let began = std::time::Instant::now();
-                    let function = reuse::replay(&mut exporter, instance, index, template)
+                    let function = reuse::replay_measured(&mut exporter, instance, index, template,
+                        replay_costs.as_mut())
                         .map_err(|error| format!("reuse {name}: {error}"))?;
                     cache.previous_binding_seconds += began.elapsed().as_secs_f64();
                     cache.retain(node.to_owned(), bytes)?;
@@ -438,6 +443,22 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
             "all_functions_fully_lowered":true,"graph_matches":true,
             "scope":if cache_enabled { "prior-session payload verification; all original lowering executes" }
                 else { "same-session recipe reconstruction; no persistent cache or performance claim" }}));
+    }
+    if let Some(costs) = replay_costs {
+        let cache = function_cache.as_ref().ok_or("replay costs have no function cache")?;
+        if cache.skipped_functions != costs.functions {
+            return Err("replay cost coverage differs from reused function count".into());
+        }
+        let phase_seconds = costs.phase_seconds();
+        let binding_seconds = cache.previous_binding_seconds;
+        eprintln!("rust-interp-replay-costs: {}", serde_json::json!({
+            "schema_version": 1, "totals": costs,
+            "binding_seconds": binding_seconds,
+            "phase_seconds": phase_seconds,
+            "unassigned_seconds": binding_seconds - phase_seconds,
+            "scope": "actual prior-template reuse only; disjoint phases exclude decoding; enclosing cache binding time also includes temporary destruction and observer bookkeeping",
+            "performance_measurement": false
+        }));
     }
     if let Some(cache) = function_cache { cache.stage()?; }
     else if requested_cache_mode == Mode::Auto {
