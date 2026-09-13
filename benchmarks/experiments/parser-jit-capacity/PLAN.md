@@ -45,6 +45,33 @@ three-cycle comparison; it is not an adoption result. Do not retime a failed
 unchanged candidate. Report native ratios as well as ratios against custom16.
 Do not transfer earlier timings across the combined main exporter/launcher.
 
+The frozen implementation uses median paired32/16 wall plus the maximum
+absolute per-edit median16B/16A deviation <1. For CPU the corresponding sum must
+be <=1.03. The screen has one observation per edit, so its per-edit median is
+that observation. The full study has three. These are observed noise envelopes,
+not confidence intervals. Only a passing screen allows a fresh88-command,
+three-cycle parser comparison; do not reuse its timing observations in that
+comparison. Generated code is bounded32 MiB per owner and guest memory remains
+64 MiB with150k live allocations; host peak RSS is not measured by these bounds.
+Every successful32 MiB parser command must actually publish over16 MiB. Save all
+decline counts. Exact artifacts are compared within each cycle/state across all
+three custom arms, allowing already diagnosed rustc allocation-history changes
+between cold and restored original states without normalizing any bytes.
+
+Initial admission is24 GiB: four fresh Cargo histories versus the earlier
+three-history parser admission of18 GiB. Every command rechecks8 GiB. The driver
+records immutable tools, source/assertion fingerprints, command order, artifacts,
+native executables, child-tree CPU and complete-command wall time. Artifact
+copying and report validation happen outside timing. The two explicit16 MiB
+arms pay the same new VM-capability probe as explicit32 MiB. Native and all custom
+arms use matched CARGO_INCREMENTAL=1 and otherwise retain repository profiles.
+Valid edits rotate through a four-treatment Williams order (A B D C; B C A D;
+C D B A; D A C B), continuing across cycles. Each mode occupies each position
+equally over four edits, with at most one extra observation per position in the
+five-edit screen or15-edit full study. The older three-mode helper is unsuitable
+for this four-arm comparison. Original/wrong/restored controls have separately
+recorded orders and supply no timing ratios.
+
 Separately count the reached fraction of this function from the saved profile
 and inspect its frame/register initialization requirements. If full-function
 compilation is too expensive or mostly unused, design reached-region compilation
