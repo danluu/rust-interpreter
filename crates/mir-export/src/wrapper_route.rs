@@ -81,11 +81,12 @@ impl Environment {
             frontend_workers: std::env::var_os("RUST_INTERP_FRONTEND_WORKERS"),
             host_proc_macro_opt: std::env::var_os("RUST_INTERP_HOST_PROC_MACRO_OPT"),
             host_library_opt: std::env::var_os("RUST_INTERP_HOST_LIBRARY_OPT"),
-            frontend_compiler: option_env!("RUST_INTERP_SYSROOT").map(|root| {
-                Path::new(root)
-                    .join(format!("bin/rustc{}", std::env::consts::EXE_SUFFIX))
-                    .into_os_string()
-            }),
+            frontend_compiler: option_env!("RUST_INTERP_RUNTIME_COMPILER").map(OsString::from)
+                .or_else(|| option_env!("RUST_INTERP_SYSROOT").map(|root| {
+                    Path::new(root)
+                        .join(format!("bin/rustc{}", std::env::consts::EXE_SUFFIX))
+                        .into_os_string()
+                })),
             conflicting_frontend_policy: std::env::var_os("RUST_INTERP_COMPILER_RUSTC").is_some()
                 || ["RUST_INTERP_STABLE_CGU_PARTITIONING", "RUST_INTERP_HOST_PROC_MACRO_OPT", "RUST_INTERP_HOST_LIBRARY_OPT"]
                     .iter().any(|name| std::env::var_os(name).is_some_and(|value| value != "off")),
@@ -114,7 +115,7 @@ impl Route {
             let expected = sysroot.join("bin/rustc").canonicalize();
             let supplied = Path::new(&self.args[0]).canonicalize();
             if !matches!((&expected, &supplied), (Ok(a), Ok(b)) if a == b) {
-                return Err("compiler executable does not match the exporter's build toolchain".into());
+                return Err("compiler executable does not match the exporter's runtime toolchain".into());
             }
         }
         Ok(())
