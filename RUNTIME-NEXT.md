@@ -10,15 +10,28 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Prototype branch-based fixed-address-space selection, composed with the
-   qualified successor-only flush mechanism. Exact small-memory attribution
-   finds 188/1,651 and 66/1,439 generated samples in the current eight-word
-   selector, versus 65/18 in bounds checks. Preserve unsigned classification
-   around the actual `1 << 62` tag, including larger invalid values; a single-bit
-   test is insufficient. Keep all bounds/readonly checks, zero-size behavior,
-   copy fault order, register contracts and the 16 MiB capacity. Qualify code
-   size/declines and original executions, then use a fresh primary-first screen.
-   [Exact partition and limitations](results/memory-operation-parts-census-01/assessment.md).
+1. Investigate the existing native return-dispatch sequence using saved exact
+   code and profiles. It accounts for35/1,651 and31/1,439 generated samples.
+   Check whether a native continuation can be cached without changing guest
+   frame semantics, VM fallback, code lifetime, logical budgets or bytecode.
+   First establish coverage and added-call cost; the whole dispatch bucket is
+   only about2.1%, so do not assume a large standalone benefit. The callee-target
+   bucket is smaller (9/13 samples); do not add a new lookup table on speculation.
+   Preserve the already rejected scalar ABI, budget fusion and boundary-memory
+   changes. No next runtime candidate has been implemented or benchmarked.
+
+The branch-selected fixed-address/successor-flush composition is parked after
+its40-command primary: wall−1.37% against2.73% A/A, CPU−2.64% against0.74% A/A.
+All original/wrong/valid/restored outcomes and artifacts agree. The532 workspace
+checks per profile,119 strict controls, two full saved reconstructions and three
+exact profiles pass, but the wall gate fails. All further13 compatibility,
+21 full-harness,726 project-history commands and114 parser controls stay
+unstarted. Do not retime it unchanged. Its source remains on
+`experiment/branch-spaces-flush-20260913`; these controllers require that qualified
+source. Main retains the adopted CSEL selector and original spill rule.
+[Screen and evidence limits](results/branch-spaces-flush-screen-token-01/assessment.md),
+[closure](results/branch-spaces-flush-screen-token-01/closure.json),
+[setup cost by tool](results/branch-spaces-flush-build-02/setup-accounting.json).
 
 Successor-only flushing is parked as a possible component after its full primary
 gate fails. Its 40-command screen passed, but the fresh 154-command comparison
