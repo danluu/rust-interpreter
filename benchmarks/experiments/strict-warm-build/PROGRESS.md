@@ -177,6 +177,13 @@ disables itself whenever that override is present. No capture or reuse reports
 were emitted. The original failed attempt remains preserved; the test setup
 needs to exercise the real compiler identity and separately check the override
 refusal. Native cache-hit behavior and speed remain unqualified.
+The separate existing-compiler probe with the real version identity compiled
+the unchanged fixture successfully, but all 24 eligible bodies reported
+`rejected-body-tree`. Its full source/compiler guards passed and the produced
+native binary was not executed. The fixture environment repair is now prepared,
+along with phase-specific rejection diagnostics; those new compiler sources
+remain uncompiled. This is not evidence of a successful capture or reuse hit.
+[Direct capture diagnostic and unchanged compiler evidence](../../../results/hir-direct-capture-probe-01/README.md).
 [ReadyHit compiler check and 26-unit evidence](../../../results/hir-ready-hit-check-01/README.md).
 [Failed native attempt and unchanged compiler evidence](../../../results/hir-native-correctness-failed-01/README.md).
 [Fourteen upgrade-driver controls and retained initial launcher failure](../../../results/hir-ready-hit-upgrade-python-controls-01/README.md).
@@ -186,6 +193,9 @@ the tracked option, and running the native recipe with visible hit diagnostics.
 Its six Python boundary controls passed. This is a correctness sequence, not a
 performance qualification.
 [Six native-driver controls and archive attempts](../../../results/hir-native-correctness-controls-01/README.md).
+The parser successor also passed all seven controls, including the actual
+emitted `S`/`E` suffix and exclusive `ItemLocalId` bounds.
+[Seven corrected hit-parser controls](../../../results/hir-native-parser-controls-01/README.md).
 [Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
 [Copied archive guard evidence](../../../results/hir-capture-offline-seed-guards-01/README.md).
 
