@@ -1,0 +1,84 @@
+diff --git a/src/util/rustc.rs b/src/util/rustc.rs
+index 209ada4..4a05494 100644
+--- a/src/util/rustc.rs
++++ b/src/util/rustc.rs
+@@ -339,10 +339,11 @@ fn rustc_fingerprint(
+     };
+ 
+     hash_exe(&mut hasher, rustc)?;
+-    if let Some(wrapper) = wrapper {
++    // Empty wrappers override configuration but are not executed by ProcessBuilder::wrapped.
++    if let Some(wrapper) = wrapper.filter(|path| !path.as_os_str().is_empty()) {
+         hash_exe(&mut hasher, wrapper)?;
+     }
+-    if let Some(workspace_wrapper) = workspace_wrapper {
++    if let Some(workspace_wrapper) = workspace_wrapper.filter(|path| !path.as_os_str().is_empty()) {
+         hash_exe(&mut hasher, workspace_wrapper)?;
+     }
+ 
+diff --git a/tests/testsuite/rustc_info_cache.rs b/tests/testsuite/rustc_info_cache.rs
+index 8fa729a..2c5dc3e 100644
+--- a/tests/testsuite/rustc_info_cache.rs
++++ b/tests/testsuite/rustc_info_cache.rs
+@@ -10,6 +10,61 @@ const MISS: &str = "[..] rustc info cache miss[..]";
+ const HIT: &str = "[..]rustc info cache hit[..]";
+ const UPDATE: &str = "[..]updated rustc info cache[..]";
+ 
++#[cargo_test]
++fn rustc_info_cache_with_empty_wrappers() {
++    let normal = ("RUSTC_WRAPPER", "rustc-wrapper");
++    let workspace = ("RUSTC_WORKSPACE_WRAPPER", "rustc-workspace-wrapper");
++    for (index, wrappers) in [vec![normal], vec![workspace], vec![normal, workspace]]
++        .into_iter()
++        .enumerate()
++    {
++        let mut config = String::from("[build]\n");
++        for (_, key) in &wrappers {
++            config.push_str(&format!("{key} = 'do-not-execute-me'\n"));
++        }
++        let p = project()
++            .at(format!("empty-wrappers-{index}"))
++            .file("src/main.rs", "fn main() {}")
++            .file(".cargo/config.toml", &config)
++            .build();
++
++        for warm in [false, true] {
++            let mut command = p.cargo("build");
++            command.env("CARGO_LOG", "cargo::util::rustc=debug");
++            for (variable, _) in &wrappers {
++                command.env(variable, "");
++            }
++            command.with_stderr_does_not_contain("[..]rustc info cache disabled[..]");
++            if warm {
++                command
++                    .with_stderr_contains(HIT)
++                    .with_stderr_does_not_contain(MISS)
++                    .with_stderr_does_not_contain(UPDATE);
++            } else {
++                command
++                    .with_stderr_contains(MISS)
++                    .with_stderr_contains(UPDATE)
++                    .with_stderr_does_not_contain(HIT);
++            }
++            command.run();
++        }
++
++        let mut command = p.cargo("build");
++        command
++            .env("CARGO_LOG", "cargo::util::rustc=debug")
++            .env("CARGO_CACHE_RUSTC_INFO", "0");
++        for (variable, _) in &wrappers {
++            command.env(variable, "");
++        }
++        command
++            .with_stderr_contains("[..]rustc info cache disabled[..]")
++            .with_stderr_contains(MISS)
++            .with_stderr_does_not_contain(HIT)
++            .with_stderr_does_not_contain(UPDATE)
++            .run();
++    }
++}
++
+ #[cargo_test]
+ fn rustc_info_cache() {
+     let p = project()
