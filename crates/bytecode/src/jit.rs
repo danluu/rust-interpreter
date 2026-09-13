@@ -363,11 +363,11 @@ impl<'a> Jit<'a> {
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
-            observe_guarded_local_retention: false,
+            observe_guarded_local_retention: true,
             #[cfg(test)]
-            observe_static_local_facts: false,
+            observe_static_local_facts: true,
             #[cfg(test)]
-            observe_scalar_copy: false,
+            observe_scalar_copy: true,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -1790,7 +1790,10 @@ impl Assembler<'_> {
                 let local = self.local_range(address, size as usize);
                 if let Some((_, value)) = self.local_value(local, size as usize) {
                     #[cfg(test)]
-                    if self.observe_static_local_facts {
+                    let preserve_static = self.observe_static_local_facts;
+                    #[cfg(not(test))]
+                    let preserve_static = true;
+                    if preserve_static {
                         // Follow the existing constant-definition contract. Only
                         // self-contained facts can be copied without a new owner.
                         let exact = match value {
@@ -1799,6 +1802,7 @@ impl Assembler<'_> {
                             _ => None,
                         };
                         if let Some(exact) = exact {
+                            #[cfg(test)]
                             self.observe_forwarded_fact(value, "Load");
                             self.remember(dst, exact);
                             self.remember_local_memory(local, size as usize, dst);
@@ -1820,10 +1824,7 @@ impl Assembler<'_> {
                 self.get(9, src, false);
                 if size > 8 { self.get(10, src, true); }
                 self.store_mem_at(9, 10, 11, size as usize, immediate);
-                #[cfg(test)]
-                let retain = self.observe_retained_local_write(local, address, size as usize);
-                #[cfg(not(test))]
-                let retain = false;
+                let retain = self.preserve_guarded_local_write(local, address, size as usize);
                 if !retain { self.invalidate_local_memory(local, size as usize); }
                 self.remember_local_memory(local, size as usize, src);
             }
@@ -1836,9 +1837,12 @@ impl Assembler<'_> {
                 let destination_local = self.local_range(dst, size);
                 let forwarded = self.local_value(source_local, size);
                 #[cfg(test)]
-                if self.observe_scalar_copy && [1, 2, 4, 8, 16].contains(&size) {
-                    self.observed_scalar_copy(dst, src, size, forwarded.map(|(_, value)| value));
-                    if !self.observe_retained_local_write(destination_local, dst, size) {
+                let scalar_copy = self.observe_scalar_copy;
+                #[cfg(not(test))]
+                let scalar_copy = true;
+                if scalar_copy && [1, 2, 4, 8, 16].contains(&size) {
+                    self.scalar_copy(dst, src, size, forwarded.map(|(_, value)| value));
+                    if !self.preserve_guarded_local_write(destination_local, dst, size) {
                         self.invalidate_local_memory(destination_local, size);
                     }
                     if let Some((source, _)) = forwarded {
@@ -1886,10 +1890,7 @@ impl Assembler<'_> {
                         self.store_mem(9, 10, 12, tail);
                     }
                 }
-                #[cfg(test)]
-                let retain = self.observe_retained_local_write(destination_local, dst, size);
-                #[cfg(not(test))]
-                let retain = false;
+                let retain = self.preserve_guarded_local_write(destination_local, dst, size);
                 if !retain { self.invalidate_local_memory(destination_local, size); }
                 if let Some((source, _)) = forwarded {
                     self.remember_local_memory(destination_local, size, source);

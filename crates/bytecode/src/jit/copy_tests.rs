@@ -150,3 +150,80 @@ fn native_medium_copies_preserve_exact_budgets_and_larger_copy_fallback() {
         }
     }
 }
+
+#[test]
+fn scalar_copies_match_all_bytes_for_local_checked_heap_and_overlapping_ranges() {
+    for size in 0..=16 {
+        for (source, destination) in [(0, 0), (8, 16), (128, 136), (129, 130),
+            (256, 249), (32752, 32744), (32760, 32768), (32768, 32769)] {
+            // 0 = Local proof; 1 = checked stack; 2 = checked heap.
+            for source_kind in 0..3 { for destination_kind in 0..3 {
+                let mut p = program(size, true, false);
+                let f = &mut p.functions[0];
+                f.frame_size = 65536;
+                f.code = vec![Op::Imm { dst: 2, value: LIVE },
+                    if source_kind == 0 { Op::Local { dst: 0, offset: source } }
+                        else { Op::Imm { dst: 3, value: 19 } },
+                    if destination_kind == 0 { Op::Local { dst: 1, offset: destination } }
+                        else { Op::Imm { dst: 3, value: 19 } },
+                    Op::Copy { dst: 1, src: 0, size },
+                    Op::Unary { dst: 4, src: 2, bits: 128, op: Unary::CountOnes }, Op::Return];
+                crate::validate(&p).unwrap();
+                for profiled in [false, true] {
+                    let mut jit = Jit::new(&p, profiled, MAX_CODE_BYTES).unwrap();
+                    jit.ensure_function(0).unwrap();
+                    let mut actual = memory();
+                    actual.bytes = (0..65600).map(|i| (i * 43 + 7) as u8).collect();
+                    actual.heap.bytes = (0..65600).map(|i| (i * 71 + 19) as u8).collect();
+                    let src = source + if source_kind == 2 { crate::heap::TAG + 64 } else { 64 };
+                    let dst = destination + if destination_kind == 2 { crate::heap::TAG + 64 } else { 64 };
+                    let mut expected = memory();
+                    expected.bytes = actual.bytes.to_vec().into();
+                    expected.heap.bytes = actual.heap.bytes.clone();
+                    expected.copy(src, dst, size).unwrap();
+                    let mut registers = [src as u128, dst as u128, 0, 0, 0, LIVE];
+                    let mut hits = [0; 6];
+                    let result = unsafe { jit.run(jit.blocks[0][0].unwrap(), 6, 4,
+                        if profiled { hits.as_mut_ptr() } else { std::ptr::null_mut() },
+                        registers.as_mut_ptr(), 64, actual.bytes.as_mut_ptr(), actual.bytes.len(),
+                        64, actual.heap.bytes.as_mut_ptr(), actual.heap.bytes.len()) }.unwrap();
+                    assert_eq!(result, (4, 4));
+                    assert_eq!(&*actual.bytes, &*expected.bytes,
+                        "size={size} src={src} dst={dst} source_kind={source_kind} destination_kind={destination_kind}");
+                    assert_eq!(actual.heap.bytes, expected.heap.bytes);
+                    assert_eq!((registers[2], registers[5]), (LIVE, LIVE));
+                    assert_eq!(hits, [u64::from(profiled), 0, 0, 0, 0, 0]);
+                }
+            }}
+        }
+    }
+}
+
+#[test]
+fn scalar_copy_invalid_ranges_never_write_even_with_a_local_other_endpoint() {
+    for size in [1, 2, 4, 8, 16] {
+        for source_invalid in [false, true] {
+            let mut p = program(size, true, false);
+            p.functions[0].code = vec![Op::Local { dst: if source_invalid { 1 } else { 0 }, offset: 128 },
+                Op::Copy { dst: 1, src: 0, size }, Op::Imm { dst: 2, value: LIVE }, Op::Return];
+            let mut jit = Jit::new(&p, false, MAX_CODE_BYTES).unwrap();
+            jit.ensure_function(0).unwrap();
+            let mut bad = vec![0, 1024 - size + 1, 1024, usize::MAX,
+                crate::heap::TAG, crate::heap::TAG + 1024 - size + 1];
+            if !source_invalid { bad.extend([1, 32, 63]); }
+            for invalid in bad {
+                let mut actual = memory();
+                let before = actual.bytes.to_vec();
+                let heap_before = actual.heap.bytes.clone();
+                let mut registers = [invalid as u128; 6];
+                let error = unsafe { jit.run(jit.blocks[0][0].unwrap(), 4, 3,
+                    std::ptr::null_mut(), registers.as_mut_ptr(), 64,
+                    actual.bytes.as_mut_ptr(), actual.bytes.len(), 64,
+                    actual.heap.bytes.as_mut_ptr(), actual.heap.bytes.len()) }.unwrap_err();
+                assert_eq!(error, "JIT guest memory access failed");
+                assert_eq!(&*actual.bytes, before.as_slice());
+                assert_eq!(actual.heap.bytes, heap_before);
+            }
+        }
+    }
+}

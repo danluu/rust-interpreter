@@ -62,6 +62,34 @@ fn check(p: &Program, args: &[u128], value: Option<u128>, max: u64) {
 fn low(value:u128,size:usize)->u128 {if size==16 {value} else {value & ((1u128<<(size*8))-1)}}
 
 #[test]
+fn forwarded_immediates_preserve_exact_masks_with_aliased_destinations() {
+    for size in [1,2,4,8] { for destination in [0,1,2] {
+        let mut code=vec![Op::Local {dst:0,offset:128},Op::Imm {dst:1,value:WIDE},
+            Op::Store {address:0,src:1,size},Op::Load {dst:destination,address:0,size},
+            Op::Imm {dst:4,value:1},Op::Binary {dst:5,overflow:6,op:Binary::Add,
+                a:destination,b:4,bits:128,signed:false}];
+        output(&mut code,5);
+        check(&program(code,31,0),&[],Some(low(WIDE,size as usize)+1),12);
+    }}
+}
+
+#[test]
+fn forwarded_local_pointer_facts_require_full_width_and_preserve_later_writes() {
+    for size in [1,2,4,8] { for overwrite in [false,true] {
+        let mut code=vec![Op::Local {dst:0,offset:128},Op::Local {dst:1,offset:200},
+            Op::Imm {dst:2,value:41},Op::Store {address:1,src:2,size:8},
+            Op::Store {address:0,src:1,size},Op::Load {dst:3,address:0,size}];
+        if overwrite { code.extend([Op::Imm {dst:2,value:73},Op::Store {address:1,src:2,size:8}]); }
+        if size == 8 { code.push(Op::Load {dst:4,address:3,size:8});output(&mut code,4); }
+        else { output(&mut code,3); }
+        let p=program(code,31,0);
+        let value=execute_with_engine(&p,&[],Limits::default(),Engine::Interpreter).unwrap().value;
+        if size==8 { assert_eq!(value,if overwrite {73} else {41}); }
+        check(&p,&[],Some(value),16);
+    }}
+}
+
+#[test]
 fn local_scalar_roundtrips_truncate_and_zero_extend_all_widths() {
     for size in 0..=16 { for copied in [false,true] { for value in [0,WIDE,u128::MAX] {
         let mut code=vec![Op::Local {dst:0,offset:16},Op::Load {dst:1,address:0,size:16},

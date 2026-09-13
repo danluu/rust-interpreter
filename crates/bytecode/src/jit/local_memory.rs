@@ -64,20 +64,21 @@ impl Assembler<'_> {
         self.local_fact_events.push((self.current_pc, opcode, kind));
     }
 
-    #[cfg(test)]
-    pub(super) fn observe_retained_local_write(&mut self, local: Option<usize>, reg: Reg, size: usize) -> bool {
-        if !self.observe_guarded_local_retention || local.is_some() || size == 0 { return false; }
+    pub(super) fn preserve_guarded_local_write(&mut self, local: Option<usize>, reg: Reg, size: usize) -> bool {
+        #[cfg(test)]
+        if !self.observe_guarded_local_retention { return false; }
+        if local.is_some() || size == 0 { return false; }
         // Immutable query: no synthetic live-in use may be added after the write.
         let proven = self.guarded_range.as_ref().is_some_and(|plan| plan.frame_disjoint
             && plan.displacement(self.current_pc, reg, size, true).is_some());
+        #[cfg(test)]
         if proven {
             self.retained_local_writes.push((self.current_pc, reg, size, self.local_values.len()));
         }
         proven
     }
 
-    #[cfg(test)]
-    fn observed_local_memory_immediate(&self, reg: Reg, size: usize) -> Option<u32> {
+    fn scalar_local_memory_immediate(&self, reg: Reg, size: usize) -> Option<u32> {
         if [1, 2, 4, 8, 16].contains(&size) {
             if let Some(offset) = self.local_range(reg, size) {
                 let scale = size.min(8);
@@ -89,8 +90,7 @@ impl Assembler<'_> {
         }
         None
     }
-    #[cfg(test)]
-    pub(super) fn observed_scalar_copy(&mut self, dst: Reg, src: Reg, size: usize, forwarded: Option<Fact>) {
+    pub(super) fn scalar_copy(&mut self, dst: Reg, src: Reg, size: usize, forwarded: Option<Fact>) {
         debug_assert!([1, 2, 4, 8, 16].contains(&size));
         if let Some(value) = forwarded {
             // Preserve destination validation before materializing the captured
@@ -102,7 +102,7 @@ impl Assembler<'_> {
         }
         let high = if size <= 8 { 31 } else { 10 };
         let (source, destination_base, destination) = match (
-            self.observed_local_memory_immediate(src, size), self.observed_local_memory_immediate(dst, size),
+            self.scalar_local_memory_immediate(src, size), self.scalar_local_memory_immediate(dst, size),
         ) {
             (Some(source), Some(destination)) => {
                 // Both complete ranges are already proven in the same active
