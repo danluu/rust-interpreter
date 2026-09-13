@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -127,14 +128,17 @@ def validate_routes(routes, host):
             'no selected guest compilation')
 
 
-def validate_launch(row, compiler, mode, key, std, cache):
+def validate_launch(row, compiler, mode, key, std, cache, mono_receipt=None):
     reports = [json.loads(line.removeprefix('rust-interp-launch: '))
                for line in row['stderr'].splitlines() if line.startswith('rust-interp-launch: ')]
     require(row['returncode'] == 0 and len(reports) == 1, 'launcher did not complete exactly once')
     report = reports[0]
-    require(report['tool_key'] == key and report['custom_compiler'] == dict(key=compiler.key,
+    expected = dict(key=compiler.key,
         rustc=str(compiler.rustc), rustc_sha256=compiler.identity['files']['bin/rustc'],
-        compiler=compiler.identity['compiler'], stable_cgu_partitioning=mode), 'compiler or tools differ')
+        compiler=compiler.identity['compiler'], stable_cgu_partitioning='off' if mono_receipt else mode)
+    if mono_receipt is not None:
+        expected['stable_mono_cgu_partitioning'] = mono_receipt
+    require(report['tool_key'] == key and report['custom_compiler'] == expected, 'compiler or tools differ')
     require(report['std_mir'] == std and report['toolchain_lookup'] ==
             dict(mode='cached', outcome='owned-manifest'), 'selected std namespace differs')
     workspace = Path(report['workspace_path'])
@@ -212,6 +216,7 @@ def public_command(source, host, target):
 
 def argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--partitioning-policy', choices=['stable-cgu', 'stable-mono-cgu'], default='stable-cgu')
     parser.add_argument('--compiler-key', required=True)
     parser.add_argument('--tool-key', required=True)
     parser.add_argument('--run-id', required=True)
@@ -237,7 +242,13 @@ def qualification_scope(mode, gaps):
 
 def main():
     args = argument_parser().parse_args()
+    from mono_qualification import (POLICY as MONO_POLICY, mode_arguments, namespace,
+                                    retain_records, publish_proof, evidence_files)
+    mono = args.partitioning_policy == 'stable-mono-cgu'
     std_keys = dict(off=args.std_mir_off_key, on=args.std_mir_on_key)
+    if mono:
+        require(args.std_mir_policy == 'source-paths-v2' and all(std_keys.values())
+                and args.diagnostic_comparison == 'strict', 'per-item qualification requires prepared v2 and strict diagnostics')
     if args.std_mir_policy != 'v1' or any(std_keys.values()):
         require(args.std_mir_policy == 'source-paths-v2' and all(std_keys.values())
                 and args.diagnostic_comparison == 'strict',
@@ -247,6 +258,8 @@ def main():
     work.mkdir(parents=True, exist_ok=False)
     rows = []
     standard_sources = None
+    diagnostic_mapping = None
+    flag_records = []
     try:
         require((ROOT / '.work/benchmark.lock').is_file(), 'configure the shared campaign lock before qualification')
         with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -260,6 +273,13 @@ def main():
             for capability in ['stable-cgu-partitioning', 'function-cache-auto', 'inline-leaves',
                                'trap-unsupported-calls', 'run-try-callbacks']:
                 require_export_option(tools, key, capability)
+            mono_wrapper = None
+            if mono:
+                import stable_mono_cgu
+                compiler.require_option(stable_mono_cgu.OPTION)
+                for capability in [stable_mono_cgu.OPTION, 'compiler-argv-record-v1']:
+                    require_export_option(tools, key, capability)
+                mono_wrapper = stable_mono_cgu.require_tool_capability(tools, compiler)
             env = environment()
             compiler.environment(env)
             public_rustc = Path(subprocess.check_output(['rustup', 'which', '--toolchain', TOOLCHAIN,
@@ -267,11 +287,17 @@ def main():
             public_identity = dict(rustc=str(public_rustc), sha256=file_digest(public_rustc),
                 compiler=subprocess.check_output([str(public_rustc), '-vV'], text=True, env=env))
             frozen = {str(p): file_digest(p) for p in (ROOT / 'scripts').glob('*.py')}
+            if mono:
+                snapshots = work / 'source-snapshots'
+                snapshots.mkdir()
+                for path in frozen:
+                    shutil.copy2(path, snapshots / Path(path).name)
             write_json(work / 'plan.json', dict(kind='real-custom-compiler-integration',
                 compiler_key=compiler.key, tool_key=key, compiler=compiler.identity,
                 tool_composition=composition, environment_sha256=digest(env), scripts=frozen,
                 modes=MODES, benchmark=False, retries='none', minimum_free_gib=8,
                 std_mir_policy=args.std_mir_policy, prepared_std_keys=std_keys,
+                partitioning_policy=args.partitioning_policy,
                 **qualification_scope(args.diagnostic_comparison, []),
                 lock_path=str(Path(lock.name).resolve()), public_reference=public_identity))
 
@@ -279,6 +305,8 @@ def main():
                 require_space(work, 8)
                 require(load_compiler(ROOT, compiler.key) == compiler, 'installed compiler changed')
                 require(all(file_digest(Path(p)) == sha for p, sha in frozen.items()), 'harness changed')
+                if diagnostic_mapping is not None:
+                    diagnostic_mapping.recheck()
                 index = len(rows)
                 started = time.perf_counter()
                 child, stdout, stderr = capture(list(map(str, command)), cwd=cwd, env=env if actual_env is None else actual_env,
@@ -295,7 +323,7 @@ def main():
                 std_selection = [] if args.std_mir_policy == 'v1' else [
                     '--std-mir-policy', args.std_mir_policy, '--std-mir-key', std_keys[mode]]
                 row = invoke('std-' + mode, [sys.executable, ROOT / 'scripts/std_mir.py',
-                    '--compiler-key', compiler.key, '--stable-cgu-partitioning', mode, *std_selection])
+                    '--compiler-key', compiler.key, *mode_arguments(mono, mode), *std_selection])
                 require(row['returncode'] == 0, 'custom std setup failed')
                 result = json.loads(row['stdout'])
                 std = {field: result[field] for field in ['key', 'sysroot', 'target']}
@@ -304,7 +332,7 @@ def main():
                 identity = ready['identity']
                 if args.std_mir_policy != 'v1':
                     from std_mir_source_paths import load as load_std_v2
-                    loaded = load_std_v2(ROOT, std_keys[mode], compiler, 'stable-cgu:' + mode, rehash=True)
+                    loaded = load_std_v2(ROOT, std_keys[mode], compiler, namespace(mono, mode), rehash=True)
                     require(std == dict(key=loaded[2], sysroot=str(loaded[0]), target=loaded[1]),
                             'std v2 selected key differs')
                     stds[mode], prepared[mode] = std, ready_path
@@ -325,6 +353,13 @@ def main():
             require(stds['off']['key'] != stds['on']['key'], 'std policies share a namespace')
             source = work / 'fixture'
             fixture(source)
+            if mono:
+                from standard_diagnostic_mapping import prepare_standard_diagnostic_mapping
+                diagnostic_mapping = prepare_standard_diagnostic_mapping(source, compiler,
+                    public_rustc.parent.parent / 'lib/rustlib/src/rust/library',
+                    {mode: Path(std['sysroot']) for mode, std in stds.items()}, env,
+                    public_compiler=public_identity)
+                write_json(work / 'diagnostic-mapping.json', diagnostic_mapping.evidence())
             if args.diagnostic_comparison == 'verified-std-source':
                 standard_sources = VerifiedStandardSources(compiler,
                     public_rustc.parent.parent / 'lib/rustlib/src/rust/library', prepared)
@@ -364,6 +399,8 @@ def main():
                     # the same unfiltered fingerprint records as custom modes.
                     row['cargo_diagnostics'] = core
                     messages, files = changed_diagnostics(work / 'public-target', before)
+                    if diagnostic_mapping is not None:
+                        diagnostic_mapping.validate_diagnostics(messages, require_std=code == 'E0080')
                     core = core_diagnostics(messages, ROOT)
                     require(any(d['code'] == code and d['level'] == 'error' for d in core),
                             'retained public diagnostics lack the expected error')
@@ -382,21 +419,30 @@ def main():
                 before = diagnostic_files(workspaces[mode] / 'target') if code else {}
                 std_selection = [] if args.std_mir_policy == 'v1' else [
                     '--std-mir-policy', args.std_mir_policy, '--std-mir-key', std_keys[mode]]
+                recording = []
+                if mono:
+                    argv_directory = work / 'compiler-argv' / (label + '-' + mode)
+                    argv_directory.mkdir(parents=True)
+                    recording = ['--compiler-argv-record-dir', argv_directory]
                 row = invoke(label + '-' + mode, [sys.executable, ROOT / 'scripts/interpreter.py',
                     '--manifest-path', source / 'Cargo.toml', '--package', 'custom-compiler-fixture',
                     '--entry', 'entry', '--compiler-key', compiler.key, '--tool-key', key,
-                    '--stable-cgu-partitioning', mode, '--std-mir', '--toolchain-lookup', 'cached',
+                    *mode_arguments(mono, mode), '--std-mir', '--toolchain-lookup', 'cached',
                     '--workspace-cache-root', caches, '--cache-namespace', args.run_id,
                     '--jobs', '2', '--engine', 'jit', '--jit-resumable-calls', '--jit-persistent-registers',
                     '--function-cache', 'auto', '--inline-leaves', '--trap-unsupported-calls',
                     '--run-try-callbacks', '--instruction-limit', '100000000', '--allocation-limit', '150000',
-                    *std_selection], source)
+                    *std_selection, *recording], source)
+                if mono:
+                    flag_records.extend(retain_records(work, argv_directory, mode, compiler))
                 row['source_sha256'] = sources
                 require(sources == {'shared': file_digest(shared), 'guest': file_digest(guest)},
                         'source changed during a launcher command')
                 if code:
                     validate_failure(row, code)
                     messages, files = changed_diagnostics(workspaces[mode] / 'target', before)
+                    if diagnostic_mapping is not None:
+                        diagnostic_mapping.validate_diagnostics(messages, require_std=code == 'E0080')
                     core = core_diagnostics(messages, ROOT)
                     require(any(d['code'] == code and d['level'] == 'error' for d in core),
                             'retained compiler diagnostics lack the expected error')
@@ -405,7 +451,8 @@ def main():
                     diagnostics[label, mode] = compared
                     require(compared == diagnostics[label, 'public'], 'structured public/custom diagnostics differ')
                 else:
-                    report, artifact = validate_launch(row, compiler, mode, key, stds[mode], caches)
+                    mono_receipt = stable_mono_cgu.receipt(mode, compiler, mono_wrapper) if mono else None
+                    report, artifact = validate_launch(row, compiler, mode, key, stds[mode], caches, mono_receipt)
                     require(row['stdout'] == str(3 * (value + 55)) + '\n', 'host/guest computed a stale or wrong value')
                     workspace = Path(report['workspace_path'])
                     require(workspaces.get(mode, workspace) == workspace, 'policy workspace changed')
@@ -460,12 +507,21 @@ def main():
             if standard_sources is not None:
                 standard_sources.recheck()
                 write_json(work / 'standard-source-comparison.json', standard_sources.evidence())
+            if diagnostic_mapping is not None:
+                diagnostic_mapping.recheck()
+                write_json(work / 'diagnostic-mapping.json', diagnostic_mapping.evidence())
             result = dict(status='passed', kind='real-custom-compiler-integration', benchmark=False,
                 compiler_key=compiler.key, tool_key=key, std_mir=stds, commands=len(rows),
                 std_mir_policy=args.std_mir_policy,
                 launcher_commands=22, public_commands=11, expected_rejections=24, source_restored=True,
                 public_reference=public_identity, semantic_controls='passed',
                 **qualification_scope(args.diagnostic_comparison, standard_sources.gaps if standard_sources else []))
+            if mono:
+                require(len(rows) == 36, 'per-item integration command count differs')
+                result.update(qualification_policy=MONO_POLICY, full_presentation_qualified=True,
+                    module_policy_by_mode=dict(off='off', on='off'), mono_policy_by_mode=dict(off='off', on='on'),
+                    compiler_flag_proof=publish_proof(work, flag_records),
+                    plan_sha256=file_digest(work / 'plan.json'), evidence_files=evidence_files(work))
             write_json(work / 'result.json', result)
             print(json.dumps(result))
     except BaseException as error:
