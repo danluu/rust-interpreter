@@ -8,6 +8,9 @@ fn leaf(calls: usize, returns: usize) -> platform::Code {
     a.resumable_save_host(false);
     a.mov(19, 7);
     a.resumable_load_budget();
+    // Start all lanes dirty on every entry. In particular, FMOV D30 must
+    // clear its upper lane instead of retaining a previous host vector value.
+    for q in 29..=31 { a.emit(0x3dc00000 | (2 << 5) | q); }
     a.load_native_counters();
     for _ in 0..calls { assert!(a.increment_native_counter(state::CALLS)); }
     a.lower(&Op::Copy { dst: 1, src: 0, size: 128 }); // writes v0..v7
