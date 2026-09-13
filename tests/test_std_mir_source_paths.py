@@ -141,6 +141,18 @@ class StdSourcePathsTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'Cargo configuration'):
                 CONFIGURATION(self.root, {'CARGO_HOME': str(cargo_home)})
 
+    def test_included_cargo_configuration_is_rejected_before_any_child(self):
+        cargo_home = self.root / 'cargo-home'; cargo_home.mkdir()
+        included = cargo_home / 'host.toml'
+        included.write_text('[host.aarch64-apple-darwin]\nrustflags=["--remap-path-prefix=a=b"]\n')
+        config = cargo_home / 'config.toml'
+        for payload in ['include="host.toml"\n', 'include=["host.toml"]\n',
+                        'include=[{path="host.toml",optional=true}]\n']:
+            config.write_text(payload)
+            with self.subTest(payload=payload), self.assertRaisesRegex(RuntimeError, 'configuration: include'):
+                CONFIGURATION(self.root, {'CARGO_HOME': str(cargo_home)})
+        self.assertEqual(self.commands, [])
+
     def test_missing_published_source_or_extra_sysroot_file_is_rejected(self):
         sysroot, _, key, _ = self.prepare()
         sysroot.chmod(0o755)

@@ -112,6 +112,9 @@ def configuration(root, environment):
         if not isinstance(value, dict):
             return
         for key, child in value.items():
+            # Pinned Cargo recursively loads top-level includes, including
+            # optional/table forms. Their contents are not in this inventory.
+            require(route or key != 'include', 'std v2 conflicts with Cargo configuration: include')
             require(key not in ['rustflags', 'rustc', 'rustc-wrapper', 'rustc-workspace-wrapper',
                                'root-dir', 'trim-paths', 'host-config', 'target-applies-to-host']
                     and not (route == ('build',) and key in ['target', 'target-dir', 'incremental']),
