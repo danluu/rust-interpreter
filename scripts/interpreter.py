@@ -106,6 +106,22 @@ def _checked_tools_locked():
     return installed_tools(key)
 
 
+def require_jit_code_limit(directory, limit):
+    """Probe the exact installed VM before Cargo for this explicitly new option."""
+    result = subprocess.run([str(directory/'rust-interp-vm'),'--rust-interp-capabilities'],
+                            capture_output=True,text=True)
+    try:
+        if result.returncode or len(result.stdout) > 4096:raise ValueError('unsupported VM')
+        caps=json.loads(result.stdout)
+        bounds=caps['jit_code_limit']
+        if (caps['schema_version'] != 1 or caps['bytecode_version'] != 5 or
+                type(bounds['maximum']) is not int or type(bounds['default']) is not int or
+                bounds['default'] != 16*1024*1024 or bounds['maximum'] < limit):
+            raise ValueError('unsupported limit')
+    except (ValueError,KeyError,TypeError):
+        raise RuntimeError('selected VM does not support the requested --jit-code-limit') from None
+
+
 def require_export_option(directory, key, option):
     """Old immutable tools remain usable, but cannot silently ignore new options."""
     try:
@@ -238,6 +254,7 @@ def _main(resources):
     parser.add_argument('--no-default-features',action='store_true')
     parser.add_argument('--instruction-limit',type=int,help='maximum VM instructions (default: 100000000)')
     parser.add_argument('--allocation-limit',type=int,help='maximum live guest allocations, independent of byte memory (0..1000000; default: 100000)')
+    parser.add_argument('--jit-code-limit',type=int,help='native code bytes per JIT owner (0..33554432; default: 16777216)')
     parser.add_argument('--engine',choices=['interpreter','jit'],default='interpreter')
     parser.add_argument('--isolated-batch',choices=['fresh','prepared'],help='experimental separate guest state per selected test; runtime limits apply to each test')
     parser.add_argument('--suite-report',type=Path,help='new JSON result path for --isolated-batch')
@@ -269,6 +286,9 @@ def _main(resources):
     parser.add_argument('--test-target',help='select a named Cargo integration-test target; requires --test-body')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    if args.jit_code_limit is not None:
+        if not 0 <= args.jit_code_limit <= 32*1024*1024:parser.error('--jit-code-limit must be between 0 and33554432')
+        if args.engine != 'jit':parser.error('--jit-code-limit requires --engine=jit')
     if args.compiler_argv_record_dir is not None:
         directory=args.compiler_argv_record_dir
         if not directory.is_absolute() or directory.resolve(strict=True)!=directory or not directory.is_dir() or any(directory.iterdir()):
@@ -335,7 +355,7 @@ def _main(resources):
     if args.retain_audit_bodies and not auditing:
         parser.error('--retain-audit-bodies requires --audit-entries')
     if auditing:
-        if not args.test_body or args.arguments or args.instruction_limit is not None or args.allocation_limit is not None:
+        if not args.test_body or args.arguments or args.instruction_limit is not None or args.allocation_limit is not None or args.jit_code_limit is not None:
             parser.error('--audit-entries requires --test-body and cannot take VM arguments or execution limits')
         try:
             if args.audit_entries.stat().st_size>8*1024*1024:parser.error('audit selection exceeds 8 MiB')
@@ -368,6 +388,7 @@ def _main(resources):
     cargo=load_cargo(ROOT,args.cargo_key) if args.cargo_key is not None else None
     if cargo:cargo.environment(os.environ,TOOLCHAIN,custom) # Validate before tool/std setup.
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
+    if args.jit_code_limit is not None:require_jit_code_limit(tools,args.jit_code_limit)
     validate_tool_compiler(tools,key,custom)
     if custom:require_export_option(tools,key,'stable-cgu-partitioning')
     if args.compiler_argv_record_dir is not None:require_export_option(tools,key,'compiler-argv-record-v1')
@@ -388,6 +409,7 @@ def _main(resources):
     if stats:timings['function_cache']=args.function_cache
     if stats:timings['borrowck_cache']=args.borrowck_cache
     if stats:timings['host_proc_macro_opt']=args.host_proc_macro_opt
+    if stats:timings['jit_code_limit_bytes']=16*1024*1024 if args.jit_code_limit is None else args.jit_code_limit
     if stats and args.compiler_argv_record_dir is not None:
         timings['compiler_argv_record_dir']=str(args.compiler_argv_record_dir)
     if custom:
@@ -612,6 +634,7 @@ def _main(resources):
     if args.jit_native_call_stubs:vm_command.append('--jit-native-call-stubs')
     if args.instruction_limit is not None:vm_command+=['--instruction-limit',str(args.instruction_limit)]
     if args.allocation_limit is not None:vm_command+=['--allocation-limit',str(args.allocation_limit)]
+    if args.jit_code_limit is not None:vm_command+=['--jit-code-limit',str(args.jit_code_limit)]
     if args.isolated_batch is not None:
         vm_command+=['--isolated-batch',args.isolated_batch,'--suite-report',str(args.suite_report)]
         if args.suite_workers is not None:vm_command+=['--suite-workers',str(args.suite_workers)]
@@ -652,7 +675,7 @@ def _main(resources):
         timings['suite_report_sha256']=hashlib.sha256(args.suite_report.read_bytes()).hexdigest()
         from suite_reports import validate_runtime_limits
         suite=json.loads(args.suite_report.read_bytes())
-        validate_runtime_limits(suite,args.instruction_limit,args.allocation_limit)
+        validate_runtime_limits(suite,args.instruction_limit,args.allocation_limit,jit_code_limit=args.jit_code_limit)
         timings['suite_workers']=suite.get('workers',1)
         if 'runtime_limits' in suite:timings['runtime_limits']=suite['runtime_limits']
     timings['launcher_seconds']=time.perf_counter()-started

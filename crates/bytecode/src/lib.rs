@@ -397,6 +397,10 @@ pub fn binary(
 pub const DEFAULT_ALLOCATION_LIMIT: usize = 100_000;
 /// Bound allocator bookkeeping even when the caller requests a larger budget.
 pub const MAX_ALLOCATION_LIMIT: usize = 1_000_000;
+/// Default native code storage for each JIT owner.
+pub const DEFAULT_JIT_CODE_BYTES: usize = 16 * 1024 * 1024;
+/// Maximum supported native code storage; independent of guest memory limits.
+pub const MAX_JIT_CODE_BYTES: usize = jit::MAX_CODE_BYTES;
 
 #[derive(Clone)]
 pub struct Limits {
@@ -406,7 +410,8 @@ pub struct Limits {
     pub allocations: usize,
     pub instructions: u64,
     pub frames: usize,
-    /// Native code budget, at most 16 MiB. Declined functions use our interpreter.
+    /// Native code budget, at most 32 MiB (default 16 MiB), per JIT owner.
+    /// Declined functions use our interpreter; zero disables code publication.
     pub jit_code_bytes: usize,
     /// Experimental complete acyclic native call trees; requires Engine::Jit.
     pub jit_native_calls: bool,
@@ -431,7 +436,7 @@ impl Default for Limits {
             allocations: DEFAULT_ALLOCATION_LIMIT,
             instructions: 100_000_000,
             frames: 4096,
-            jit_code_bytes: jit::MAX_CODE_BYTES,
+            jit_code_bytes: DEFAULT_JIT_CODE_BYTES,
             jit_native_calls: false,
             jit_native_call_stubs: false,
             jit_persistent_registers: false,
@@ -440,6 +445,29 @@ impl Default for Limits {
             jit_operation_map: false,
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn explicit_code_budget_preserves_default_zero_and_maximum_behavior() {
+    assert_eq!(Limits::default().jit_code_bytes, 16 * 1024 * 1024);
+    assert_eq!(MAX_JIT_CODE_BYTES, 32 * 1024 * 1024);
+    let p = Program { version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0,
+        data: vec![], statics: vec![], thread_locals: vec![], functions: vec![Function {
+            name: "code_budget".into(), frame_size: 16, frame_align: 16, registers: 2,
+            args: vec![], result: Slot { offset: 0, size: 8 },
+            code: vec![Op::Imm { dst: 0, value: 7 }, Op::Local { dst: 1, offset: 0 },
+                Op::Store { address: 1, src: 0, size: 8 }, Op::Return] }] };
+    for capacity in [0, DEFAULT_JIT_CODE_BYTES, MAX_JIT_CODE_BYTES] {
+        let result = execute_with_engine(&p, &[], Limits { jit_code_bytes: capacity,
+            instructions: 4, ..Limits::default() }, Engine::Jit).unwrap();
+        assert_eq!(result.value, 7);
+        assert_eq!(result.instructions, 4);
+        assert!(result.jit_bytes <= capacity);
+        assert_eq!(result.jit_bytes == 0, capacity == 0);
+    }
+    assert!(execute_with_engine(&p, &[], Limits { jit_code_bytes: MAX_JIT_CODE_BYTES + 1,
+        ..Limits::default() }, Engine::Jit).unwrap_err().contains("JIT code budget exceeds supported range"));
 }
 
 #[derive(Debug)]

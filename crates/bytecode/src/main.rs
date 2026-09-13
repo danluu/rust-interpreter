@@ -15,9 +15,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut suite_report = None;
     let mut suite_catalog = None;
     let mut suite_workers = None;
+    let mut code_limit_seen = false;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-code-limit BYTES] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
     )?;
+    if path == "--rust-interp-capabilities" {
+        if args.next().is_some() { return Err("VM capabilities take no arguments".into()); }
+        println!("{}", serde_json::json!({"schema_version":1,
+            "bytecode_version":rust_interp_bytecode::VERSION,
+            "jit_code_limit":{"default":rust_interp_bytecode::DEFAULT_JIT_CODE_BYTES,
+                              "maximum":rust_interp_bytecode::MAX_JIT_CODE_BYTES}}));
+        return Ok(());
+    }
     loop {
         match path.as_str() {
             "--isolated-batch" => {
@@ -43,6 +52,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 suite_catalog = Some(args.next().ok_or("missing suite catalog path")?);
             }
             "--jit-native-calls" => limits.jit_native_calls = true,
+            "--jit-code-limit" => {
+                if code_limit_seen { return Err("duplicate JIT code limit".into()); }
+                code_limit_seen = true;
+                limits.jit_code_bytes = args.next().ok_or("missing JIT code limit")?.parse()?;
+                if limits.jit_code_bytes > rust_interp_bytecode::MAX_JIT_CODE_BYTES {
+                    return Err(format!("JIT code limit exceeds supported maximum of {}",
+                        rust_interp_bytecode::MAX_JIT_CODE_BYTES).into());
+                }
+            }
             "--jit-native-call-stubs" => limits.jit_native_call_stubs = true,
             "--jit-persistent-registers" => limits.jit_persistent_registers = true,
             "--jit-resumable-calls" => limits.jit_resumable_calls = true,
@@ -83,6 +101,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             _ => break,
         }
         path = args.next().ok_or("missing program path")?;
+    }
+    if code_limit_seen && engine != Engine::Jit {
+        return Err("--jit-code-limit requires --engine=jit".into());
     }
     if std::fs::metadata(&path)?.len() > 64 * 1024 * 1024 {
         return Err("artifact exceeds 64 MiB".into());

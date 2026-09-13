@@ -285,7 +285,7 @@ struct Assertion<'a> {
 #[derive(Debug, PartialEq, Eq)]
 enum FaultKind { Assertion, Trap }
 
-pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
+pub(crate) const MAX_CODE_BYTES: usize = 32 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
     #[cfg(test)]
