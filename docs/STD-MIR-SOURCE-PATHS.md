@@ -103,6 +103,10 @@ trim/root overrides or inherited Cargo rustflags are rejected. Other existing
 Cargo configuration is bound by file identities and absent-path guards.
 Top-level Cargo `include` is rejected, including optional/table forms: the
 initial policy does not track the transitive included-file configuration.
+Conflicting override variables are rejected by presence, even with empty
+values: empty `CARGO_ENCODED_RUSTFLAGS` would otherwise suppress the required
+MIR flags. Empty wrapper variables remain allowed. Home overrides must be
+absolute and nonempty so changing the child cwd cannot change their meaning.
 
 Publication contains every metadata file and a complete materialized source
 copy at `W/sysroot/lib/rustlib/src/rust/library`. The immutable compiler source

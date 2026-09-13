@@ -132,6 +132,17 @@ class StdSourcePathsTests(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(RuntimeError):
                 v2.validate_environment({name: 'conflicting value'})
 
+    def test_empty_override_presence_cannot_suppress_required_mir_flags(self):
+        for name in ['CARGO_ENCODED_RUSTFLAGS', 'RUSTFLAGS', 'CARGO_PROFILE_RELEASE_TRIM_PATHS',
+                     'CARGO_BUILD_RUSTFLAGS', '__CARGO_RUSTC_BOOTSTRAP_WS_REMAP', 'DYLD_LIBRARY_PATH']:
+            with self.subTest(name=name), self.assertRaises(RuntimeError):
+                v2.validate_environment({name: ''})
+        for name in ['CARGO_HOME', 'RUSTUP_HOME', 'HOME']:
+            for value in ['', 'relative-home']:
+                with self.subTest(name=name, value=value), self.assertRaises(RuntimeError):
+                    v2.validate_environment({name: value})
+        v2.validate_environment({'RUSTC_WRAPPER': '', 'RUSTC_WORKSPACE_WRAPPER': ''})
+
     def test_inherited_trim_or_rustflags_configuration_is_rejected(self):
         cargo_home = self.root / 'cargo-home'; cargo_home.mkdir()
         config = cargo_home / 'config.toml'

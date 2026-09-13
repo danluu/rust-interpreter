@@ -87,10 +87,16 @@ def validate_environment(environment):
         '__CARGO_RUSTC_BOOTSTRAP_WS_REMAP', 'CFG_VIRTUAL_RUST_SOURCE_BASE_DIR',
         'CFG_VIRTUAL_RUSTC_DEV_SOURCE_BASE_DIR', 'CARGO', 'CARGO_BUILD_DEP_INFO_BASEDIR'}
     for name, value in environment.items():
-        require(not value or not (name in forbidden or name.startswith(('LD_', 'DYLD_', 'CARGO_PROFILE_'))
+        # Presence matters: Cargo treats an empty CARGO_ENCODED_RUSTFLAGS as
+        # an explicit empty flag list, overriding even our nonempty RUSTFLAGS.
+        require(not (name in forbidden or name.startswith(('LD_', 'DYLD_', 'CARGO_PROFILE_'))
             or (name.startswith('CARGO_') and any(token in name for token in
                 ['RUSTFLAGS', 'ROOT_DIR', 'TRIM_PATHS', 'HOST_CONFIG', 'TARGET_APPLIES_TO_HOST']))),
             'std v2 conflicts with environment setting ' + name)
+    for name in ['CARGO_HOME', 'RUSTUP_HOME', 'HOME']:
+        if name in environment:
+            require(bool(environment[name]) and Path(environment[name]).is_absolute(),
+                    'std v2 requires an absolute nonempty ' + name)
     for name in ['RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER']:
         require(not environment.get(name), 'std v2 conflicts with ' + name)
     require(environment.get('RUSTUP_TOOLCHAIN', TOOLCHAIN) == TOOLCHAIN or
