@@ -9,17 +9,20 @@ Repository: `danluu/rust-interpreter` (private); qualified work goes to `main`.
 
 ## Current state
 
-The memory/lookup composition is fully qualified for main. Its726-command
-comparison passes all five gates; token gains18.35% wall versus the fixed
-anchor and still takes1.894 times ordinary native. The rebuilt complete tool
-`e729a493` passes428 Rust tests per profile,104 harness tests,223 cache/Cargo
-commands and40 real-project history commands. It preserves the exact measured
-VM and wrapper; the newly built exporter has matching project artifacts.
-Two repaired driver failures remain recorded. Sources and frozen inputs are
-verified. Next inspect current guest costs and apply the separate bounded
-binding observer; use primary-first screens for future runtime candidates.
-[Integration proof](results/memory-lookup-main-complete-01/assessment.md),
-[complete comparison](results/memory-lookup-complete-01/assessment.md).
+Main contains the qualified memory/lookup composition and current guest-cost
+attribution. Its726-command comparison passes all five gates; token improves
+18.35% versus the fixed anchor and remains1.894 times ordinary native.
+The optional binding observer passes75 exporter tests per profile, six harness
+checks,26 Cargo commands and16 current-token off/on history commands. Refined
+binding medians are93.32ms MIR-context preparation,4.83ms immediate indexing,
+28.15ms event resolution and1.15ms patching. Park the positions-table rewrite.
+Current samples put93%/86% of the two token windows inside generated code.
+Next qualify constant shift/rotate operand emission and use a primary-first
+changed-source screen. No goal-state change, unrelated process control or
+new billing path is authorized.
+[Refined binding result](results/replay-costs-token-02/assessment.md),
+[current runtime attribution](results/current-runtime-costs-01/assessment.md),
+[composition integration](results/memory-lookup-main-complete-01/assessment.md).
 
 The memory/lookup composition is qualified and its five-case comparison is
 complete under one serialized controller. The unchanged memory runtime is
