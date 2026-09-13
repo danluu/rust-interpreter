@@ -60,6 +60,7 @@ recursive validator passed all 63 actual diagnostic commands in fresh attempt02;
 full raw JSON comparisons remain unchanged. Exact compiler/std/binary and source
 identity checks bind the separately retained 67-command scope pass to Tools06.
 The original diagnostic attempt remains failed.
+[Complete scope/diagnostic/tool/workspace evidence](../../../results/trap-span-remapping-controls-01/README.md).
 
 The prepared standard libraries already have identical metadata and source
 bytes, but their different physical roots affect imported caller locations.
@@ -67,12 +68,30 @@ The reviewed [shared immutable preparation policy](../../../experiments/stable-c
 uses one new physical std key for both modes while retaining separate application
 flags and caches. Its [99 source controls](../../../results/shared-std-source-tests-01/README.md)
 and actual seven-command shared preparation passed. The new strict36 integration
-also passed with the exact same shared key in both mode arms. Source61 is running;
-a fresh screen27 still follows. Old keys/results are never relabeled.
+also passed with the exact same shared key in both mode arms. The new source61
+and full screen27 then passed with all original tests, negative controls and
+restoration. Old keys/results are never relabeled.
 Tools04, Tools05 and shared-std01 exhausted their 600-second canonical lock
 admissions before starting any compiler work; all are preserved. Tools06 and
 shared-std02 ran after the shared slot cleared. The failed cold screen supplies
 no warm-build result.
+
+The fresh MonoItem screen passed exact bytecode/catalog parity across all three
+arms and all nine source states. Edited medians were 5.3696s / 5.3454s / 5.0050s
+for off/on/off. The median paired wall change was +5.14%, with 6.90% maximum
+observed A/A wall deviation; child CPU increased 12.66%. None of the five
+candidate edits was below 0.500s. Keep the placement option off: this history
+does not establish a gain. The empty-target observations were 62.57s / 64.68s /
+64.49s. [All 27 commands and exact qualifications](../../../results/strict-warm-mono-production-screen-02/assessment.md).
+
+A general compiler/std validator change now gathers the same six per-entry
+identity fields with one no-follow file stat, plus final directory rechecks.
+It still inspects every entry on every invocation. All 33 compiler/std and
+inventory-refusal controls passed. Five alternating pairs of the complete
+compiler+shared-std loader reduced median wall time from 454.980ms to 167.079ms,
+with exact returned values and readiness. This isolates loader cost; Cargo,
+tool loading and VM execution are excluded, and no end-to-end saving or latency
+qualification is claimed. Compact evidence packaging is pending the shared slot.
 
 A separate HIR-lowering experiment now has a compiled coverage diagnostic.
 Its 54 native fixture commands passed, including exact raw error comparisons,
@@ -94,10 +113,11 @@ pass the structural gate. These are invocation-weighted input counts; they do
 not establish observed lowering IDs, captured effects, replay, cache hits or
 speed. The normal 482 bodies contain 29,817 source bytes and encode 535,975 input
 bytes. A reviewed [source-only capture checkpoint](../../../experiments/hir-body-cache/README.md)
-now records the actual lowering ID/effect journal and validates the complete
-observed context boundary after stock lowering. It remains uncompiled and has
-no hit path. The typed body codec and full tree/reference validator are in
-progress; structural input counts are not measured reusable-body coverage.
+now records the actual lowering ID/effect journal and a typed HIR body tree,
+validating the complete observed context boundary and tree/reference/allocation
+closure after stock lowering. It remains uncompiled and has no materializer or
+hit path. Twelve prepared unit controls and the native run-make sequence remain
+unrun; structural input counts are not measured reusable-body coverage.
 [Native controls](../../../results/hir-body-coverage-native-01/README.md),
 [complete development coverage](../../../results/hir-body-development-coverage-01/README.md).
 
