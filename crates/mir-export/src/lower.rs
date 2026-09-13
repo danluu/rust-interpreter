@@ -452,11 +452,11 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
         let phase_seconds = costs.phase_seconds();
         let binding_seconds = cache.previous_binding_seconds;
         eprintln!("rust-interp-replay-costs: {}", serde_json::json!({
-            "schema_version": 1, "totals": costs,
+            "schema_version": 2, "totals": costs,
             "binding_seconds": binding_seconds,
             "phase_seconds": phase_seconds,
             "unassigned_seconds": binding_seconds - phase_seconds,
-            "scope": "actual prior-template reuse only; disjoint phases exclude decoding; enclosing cache binding time also includes temporary destruction and observer bookkeeping",
+            "scope": "actual prior-template reuse only; context and immediate index partition setup and must not be added to the three top-level phases; context includes instance-MIR lookup and template unpacking; enclosing binding also includes temporary destruction and observer bookkeeping",
             "performance_measurement": false
         }));
     }

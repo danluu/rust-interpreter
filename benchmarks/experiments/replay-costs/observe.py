@@ -20,7 +20,7 @@ def observation(stderr, enabled):
         return None
     row, = rows
     cache, = messages(stderr, 'rust-interp-function-cache')
-    assert row['schema_version'] == 1 and row['performance_measurement'] is False
+    assert row['schema_version'] in [1, 2] and row['performance_measurement'] is False
     totals = row['totals']
     assert cache['mode'] == 'reuse' and totals['functions'] == cache['skipped_functions']
     for field in ['functions', 'instructions', 'immediate_sites', 'events', 'call_sites']:
@@ -32,6 +32,10 @@ def observation(stderr, enabled):
     assert abs(sum(phases) - row['phase_seconds']) < 1e-9
     assert abs(row['binding_seconds'] - sum(phases) - row['unassigned_seconds']) < 1e-9
     assert row['unassigned_seconds'] >= -1e-9
+    if row['schema_version'] == 2:
+        nested = [totals[p + '_seconds'] for p in ['current_context', 'immediate_index']]
+        assert all(math.isfinite(x) and x >= 0 for x in nested)
+        assert abs(sum(nested) - totals['setup_seconds']) < 1e-9
     if totals['functions'] == 0:
         assert not any(totals.values()) and row['binding_seconds'] == 0
     return row

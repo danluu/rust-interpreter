@@ -272,6 +272,8 @@ pub(super) struct ReplayCosts {
     events: usize,
     call_sites: usize,
     setup_seconds: f64,
+    current_context_seconds: f64,
+    immediate_index_seconds: f64,
     events_seconds: f64,
     patch_seconds: f64,
 }
@@ -307,6 +309,7 @@ pub(super) fn replay_measured<'tcx>(exporter: &mut Exporter<'tcx>, instance: Ins
     if tape.decline.is_some() { return Err("declined binding tape".into()); }
     let mut current = Current { tcx: exporter.tcx, instance,
         body: exporter.tcx.instance_mir(instance.def), constants: None };
+    let context_ready = costs.as_ref().map(|_| std::time::Instant::now());
     let mut immediates = HashMap::new();
     for (pc, op) in function.code.iter().enumerate() {
         if let Op::Imm { dst, .. } = op {
@@ -314,7 +317,10 @@ pub(super) fn replay_measured<'tcx>(exporter: &mut Exporter<'tcx>, instance: Ins
         }
     }
     if let Some(costs) = costs.as_deref_mut() {
-        costs.setup_seconds += started.unwrap().elapsed().as_secs_f64();
+        let setup_done = std::time::Instant::now();
+        costs.setup_seconds += setup_done.duration_since(started.unwrap()).as_secs_f64();
+        costs.current_context_seconds += context_ready.unwrap().duration_since(started.unwrap()).as_secs_f64();
+        costs.immediate_index_seconds += setup_done.duration_since(context_ready.unwrap()).as_secs_f64();
         costs.functions += 1;
         costs.instructions += function.code.len();
         costs.immediate_sites += immediates.len();

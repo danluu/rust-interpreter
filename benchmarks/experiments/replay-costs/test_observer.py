@@ -62,6 +62,21 @@ class ObserverTests(unittest.TestCase):
         text = 'rust-interp-replay-costs: ' + json.dumps(row) + '\nrust-interp-function-cache: ' + json.dumps(cache)
         self.assertEqual(observation(text, True), row)
 
+    def test_nested_setup_intervals_partition_setup_without_double_counting(self):
+        totals = dict(functions=1, instructions=3, immediate_sites=1, events=1,
+                      call_sites=0, setup_seconds=.03, events_seconds=.02, patch_seconds=.01,
+                      current_context_seconds=.01, immediate_index_seconds=.02)
+        row = dict(schema_version=2, performance_measurement=False, totals=totals,
+                   binding_seconds=.07, phase_seconds=.06, unassigned_seconds=.01)
+        cache = dict(mode='reuse', skipped_functions=1, previous_binding_seconds=.07)
+        def text():
+            return 'rust-interp-replay-costs: ' + json.dumps(row) + '\nrust-interp-function-cache: ' + json.dumps(cache)
+        self.assertEqual(observation(text(), True), row)
+        for wrong in [.03, -.01, float('nan')]:
+            totals['immediate_index_seconds'] = wrong
+            with self.assertRaises(AssertionError):
+                observation(text(), True)
+
 
 if __name__ == '__main__':
     unittest.main()

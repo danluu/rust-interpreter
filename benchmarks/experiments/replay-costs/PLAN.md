@@ -37,3 +37,21 @@ only after parity passes, with baseline counters and residual accounting.
 The flag may perturb execution; no timing adoption verdict follows. Choose
 a subsequent optimization from measured phase costs, not25,442 historical
 event counts or assumed hash-lookup costs.
+
+## Refinement after the first completed history
+
+The first16-command current-token diagnostic passes every off/on artifact and
+outcome check. Five valid edits show100.70ms setup,29.17ms events,1.18ms final
+patching and0.77ms unassigned; see results/replay-costs-token-01. Setup includes
+two different mechanisms, so the next observer version partitions it at one
+additional checkpoint: current-context preparation (including instance-MIR
+lookup and template unpacking), then the immediate scan/index. These are
+nested inside setup, never added again to the three top-level phases.
+
+Use schema2 with an explicit nested-sum check. Retain schema1 observations and
+their verdict. Rebuild only the exporter, reuse unchanged VM/wrapper proofs,
+run the six observer harness checks and26 fixture commands, then one complete
+16-command disabled/enabled current-token history in fresh namespaces. Raise
+the project initial reserve to16GiB for two independent cache histories. The
+purpose is to resolve this newly measured ambiguity; no timing adoption gate
+or repeat-to-pass experiment is involved.
