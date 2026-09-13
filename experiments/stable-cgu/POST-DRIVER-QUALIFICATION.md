@@ -1,6 +1,6 @@
 # Production per-item compiler handoff
 
-This is an unexecuted post-driver sequence. The actual compiler source commit is
+This handoff records the post-driver sequence. The actual compiler source commit is
 **58e1e1f5311f4424ea81def4763081f6da62d9b3**. It is neither an installation key nor
 an interpreter tool key. The original twelve driver stages remain authoritative;
 this document begins only after their final `complete` receipt passes.
@@ -22,7 +22,7 @@ Rehash the package against the complete/package receipts before importing.
 
 Freeze PRIMARY's actual Rust sources and all participating helper scripts after
 the worker campaign permits integration. Keep them fixed through tool build,
-workspace check, strict36, observable57 and the first screen27. A source change
+workspace check, strict36, observable61 and the first screen27. A source change
 requires the ordinary rebuild/requalification appropriate to that change; never
 relabel an older tool's producer. Save the actual frozen Git revision plus file
 hashes. No worker source or original DRIVER input changes are part of this work.
@@ -37,7 +37,11 @@ coordinate its start when the lock is free. Do not change the frozen importer or
 wrap it in an independently held flock. Other setup commands below request600
 seconds. Preserve failed attempts and partial prefixes without automatic retries.
 
-The following commands run from PRIMARY. `MONO_PACKAGE` and `MONO_PROVENANCE`
+The following commands run from PRIMARY. The import, tools02, workspace02,
+std-off/on01 and strict integration01 have now passed; their commands are kept
+for reconstruction and must not overwrite those completed runs. The failed
+source-observables01 attempt remains retained; the corrected pending run is02.
+`MONO_PACKAGE` and `MONO_PROVENANCE`
 come from the successful driver complete receipt; the expected current paths
 are DRIVER `.work/mono-production-build-02/packaged-stage2-01` and
 `.work/mono-production-build-02/package-01/provenance.json`. Every key variable
@@ -51,12 +55,12 @@ python3 scripts/custom_compiler.py \
 # MONO_COMPILER_KEY = returned compiler_key. Validate installed ready.json,
 # provenance source commit, complete file inventory and both -Z option proofs.
 python3 scripts/build_custom_tools.py --compiler-key "$MONO_COMPILER_KEY" \
-  --run-id mono-production-tools-01 --lock-wait-seconds 600
+  --run-id mono-production-tools-02 --lock-wait-seconds 600
 
-# MONO_TOOL_KEY = .work/mono-production-tools-01/result.json tool_key.
+# MONO_TOOL_KEY = .work/mono-production-tools-02/result.json tool_key.
 python3 experiments/stable-cgu/check-custom-workspace.py \
   --compiler-key "$MONO_COMPILER_KEY" --tool-key "$MONO_TOOL_KEY" \
-  --run-id mono-production-workspace-01 \
+  --run-id mono-production-workspace-02 \
   --workload-lock /Users/danluu/dev/rust-interp/.work/benchmark.lock \
   --lock-wait-seconds 600
 
@@ -79,7 +83,7 @@ python3 scripts/qualify_custom_compiler.py --partitioning-policy stable-mono-cgu
 python3 scripts/qualify_std_source_observables.py \
   --compiler-key "$MONO_COMPILER_KEY" --tool-key "$MONO_TOOL_KEY" \
   --std-mir-off-key "$MONO_STD_OFF_KEY" --std-mir-on-key "$MONO_STD_ON_KEY" \
-  --run-id mono-production-source-observables-01 --lock-wait-seconds 600
+  --run-id mono-production-source-observables-02 --lock-wait-seconds 600
 
 # MONO_NUSHELL_SOURCE = explicitly admitted owned Nushell source, quiescent.
 python3 benchmarks/experiments/strict-warm-build/screen.py \
@@ -88,7 +92,7 @@ python3 benchmarks/experiments/strict-warm-build/screen.py \
   --std-mir-ready "$PWD/.work/std-mir/$MONO_STD_OFF_KEY/ready.json" \
   --candidate-std-mir-ready "$PWD/.work/std-mir/$MONO_STD_ON_KEY/ready.json" \
   --compiler-qualification "$PWD/.work/mono-production-integration-01/result.json" \
-  --source-observables "$PWD/.work/mono-production-source-observables-01/result.json" \
+  --source-observables "$PWD/.work/mono-production-source-observables-02/result.json" \
   --source "$MONO_NUSHELL_SOURCE" --run-id strict-warm-mono-production-screen-01 \
   --lock-wait-seconds 600
 ```
@@ -105,7 +109,9 @@ are part of the frozen snapshot; ambient doctest flags are rejected, including
 empty values. It does not publish tools or replace strict36. Its four pure boundary
 tests passed at source `868c29d6`, with exact source snapshots and receipts in
 [`results/host-library-and-custom-workspace-source-tests-01`](../../results/host-library-and-custom-workspace-source-tests-01/README.md).
-The real custom-compiler workspace command remains unexecuted.
+The corrected real workspace02 command passed 505 tests with two existing
+artifact-dependent diagnostic tests ignored. Its five Python boundary controls
+also passed; the failed zero-command workspace01 attempt is retained.
 
 Stdv2 setup preserves `-Zalways-encode-mir=yes -Zforce-unstable-if-unmarked`, the
 backtrace feature, release profile, pinned Cargo3c0 binary/version/library proof,
@@ -123,7 +129,7 @@ proc-macro paths, edits/restoration, and uncalled type/borrow/const/panic errors
 The diagnostic-only compiler mappings must preserve actual snippets; no derived
 JSON substitution or missing-snippet normalization is accepted.
 
-Observable57 is independently required. Validate its passed receipt with
+Observable61 (`std-source-observables-v2`) is independently required. Validate its passed receipt with
 `std_source_observables.validate_source_observables`, bound to these same actual
 compiler/tool/std identities. It retains original/second-prefix native and
 prepared raw source histories, full copy proofs, deliberate invalid-source
@@ -133,9 +139,17 @@ the application values. The screen independently validates both this receipt
 and `stable_mono_qualification.validate_qualification`; neither can substitute
 for the other.
 
+The original observable01 attempt failed at command 38 because guest `println!`
+required unsupported stdout locking. The corrected fixture keeps raw native
+observations and uses exact guest byte/coordinate comparisons with an integer
+bitmask result. Four additional real altered-expectation controls bring the
+original 57-command history to 61. See [the transport contract](SOURCE-OBSERVABLE-TRANSPORT.md).
+Compiler, tool and std bytes are unchanged; strict36 remains its actual
+historical execution and is not relabeled as a run of this new fixture.
+
 Admit disk separately before each phase using actual package and copied-prefix
 sizes plus the8-GiB floor. Installation requires another complete package copy;
-observable57 intentionally makes an independent native prefix and both prepared
+observable61 intentionally makes an independent native prefix and both prepared
 prefix copies. Its controls and the screen also allocate fresh Cargo targets.
 Do not assume the driver's36-GiB initial admission reserves later space. Retain
 source, package, installation, publication and raw evidence; any later retirement

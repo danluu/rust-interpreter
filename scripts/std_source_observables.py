@@ -9,10 +9,10 @@ from types import SimpleNamespace
 from verified_std_diagnostics import source_span_text
 from stable_mono_cgu import receipt as mono_receipt
 from stable_mono_qualification import argument_values
+from source_observable_transport import (POLICY, TRANSPORT, COMMANDS, PHASES, EXPORTED_PHASES,
+    native_phase, validate_fixture, validate_transport)
 
-POLICY = 'std-source-observables-v1'
 SOURCE = 'lib/rustlib/src/rust/library/'
-PHASES = ('unmapped', 'std-only', 'application-map', 'restored')
 APP_PREFIX = '/owned-source-observable/src'
 
 
@@ -61,11 +61,12 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
     original = read(path)
     result = json.loads(original)
     expected_std = {m: {k: stds[m][k] for k in ['key', 'sysroot', 'target']} for m in ['off', 'on']}
-    expected = dict(status='passed', policy=POLICY, owner=str(owner), compiler_key=compiler_key, tool_key=tool_key,
+    expected = dict(status='passed', policy=POLICY, transport_policy=TRANSPORT, guest_negative_controls=4,
+        owner=str(owner), compiler_key=compiler_key, tool_key=tool_key,
         compiler_sysroot=str(compiler_sysroot), std_mir=expected_std, benchmark=False, diagnostics_rewritten=False,
         source_restored=True, qualification_only=True, unmapped_source_paths='passed',
         std_only_application_observables='unchanged', application_remap_sensitivity='expected-span-file-only-change',
-        disposable_source_negatives='rejected-by-raw-source-validator', commands=57)
+        disposable_source_negatives='rejected-by-raw-source-validator', commands=COMMANDS)
     require(all(result.get(k) == v for k, v in expected.items()), 'source prerequisite is missing or uses different identities/scope')
     evidence = result.get('evidence_files')
     require(isinstance(evidence, dict) and evidence, 'source prerequisite lacks retained evidence')
@@ -85,6 +86,9 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
             and plan['tool_key'] == tool_key and plan['std_mir'] == expected_std
             and plan['compiler_sysroot'] == str(compiler_sysroot) and digest(plan['compiler']) == compiler_key,
             'source prerequisite plan identities differ')
+    require(plan.get('policy') == POLICY and plan.get('transport_policy') == TRANSPORT
+            and plan.get('expected_commands') == COMMANDS, 'source prerequisite transport plan differs')
+    validate_fixture(payloads)
     sources = {p[len(SOURCE):]: h for p, h in plan['compiler']['files'].items() if p.startswith(SOURCE)}
     require(sources and sources == plan['source_files'], 'source prerequisite compiler source inventory differs')
     for mode, std in expected_std.items():
@@ -103,7 +107,7 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
                 and proof['original'] == original_root and proof['path'] == plan['copied_sources'][role]
                 and controls['second_prefix_final'][role] == dict(path=proof['path'], files_sha256=proof['files_sha256'],
                     files_unchanged=True, stamps_unchanged=True), 'second-prefix copied bytes or final equality proof differs')
-    require(len(rows) == 57, 'source prerequisite child history is incomplete')
+    require(len(rows) == COMMANDS, 'source prerequisite child history is incomplete')
     for index, row in enumerate(rows):
         child = json.loads(payloads[f'{index:03d}-child.json'])
         require(child.get('status') == 'finished' and child.get('command') == row['command']
@@ -195,8 +199,12 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
     require(len(observables) == 4 and {(h['mode'], h['route']) for h in observables}
             == {(m, r) for m in ['off', 'on'] for r in ['native', 'exported']}, 'missing observable route or mode')
     for history in observables:
-        states = history['states']; require(set(states) == set(PHASES), 'incomplete observable mapping history')
-        values = {phase: state['values'] for phase, state in states.items()}
+        states = history['states']
+        phases = PHASES if history['route'] == 'native' else EXPORTED_PHASES
+        require(set(states) == set(phases), 'incomplete observable mapping/negative history')
+        indices = [states[phase]['command_index'] for phase in phases]
+        require(indices == sorted(set(indices)), 'observable phase/negative/restoration order differs')
+        values = {phase: states[phase]['values'] for phase in PHASES}
         require(values['unmapped'] == values['std-only'] == values['restored'], 'std-only source observables changed')
         changed = copy.deepcopy(values['application-map'])
         for label, value in changed.items():
@@ -205,18 +213,48 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
             value['span_file'] = values['unmapped'][label]['span_file']
         require(changed == values['unmapped'], 'file!/local_file/coordinates changed with diagnostic-only flags')
         for phase, state in states.items():
+            base_phase = native_phase(phase)
             row = selected(state['command_index']); require(row['returncode'] == 0, 'observable program failed')
+            require(row['label'] == history['mode'] + '-' + phase +
+                    ('-native-run' if history['route'] == 'native' else '-exported'),
+                    'observable phase does not name its actual command')
             require(evidence[row['artifact_snapshot']] == row['artifact_sha256'], 'observable executed artifact snapshot differs')
-            output = {p[0]: p[1:] for line in row['stdout'].splitlines() if len(p := line.split('|')) == 6}
-            require(set(output) == set(state['values']) == {'main', 'std-looking'}, 'raw observable output differs')
+            require(set(state['values']) == {'main', 'std-looking'}, 'observable source locations differ')
+            if history['route'] == 'native':
+                lines = [line.split('|') for line in row['stdout'].splitlines()]
+                require(len(lines) == 2 and all(len(p) == 6 for p in lines), 'raw native observable output differs')
+                output = {p[0]: p[1:] for p in lines}
+                require(set(output) == set(state['values']), 'raw native observable output differs')
+                require(state['expectation_source_sha256'] == evidence['application/src/expected.rs'],
+                        'native unused expectation source differs')
+            else:
+                require(argument_values(row['command'], '--entry') == ['entry']
+                        and argument_values(row['command'], '--package') == ['std-source-observables']
+                        and argument_values(row['command'], '--manifest-path') == [str(path.parent / 'application/Cargo.toml')],
+                        'exported transport did not execute the exact observation entry')
+                native = next(h for h in observables if h['mode'] == history['mode'] and h['route'] == 'native')['states'][base_phase]
+                native_row = selected(native['command_index'])
+                require(state['values'] == native['values'] and native['command_index'] < state['command_index'],
+                        'exported expectation is not the independently recorded native basis')
+                transport = row['transport']
+                stem = 'expectations/' + history['mode'] + '-' + phase
+                require(transport == dict(policy=TRANSPORT, table=stem + '.json', source=stem + '.rs',
+                    table_sha256=evidence[stem + '.json'], source_sha256=evidence[stem + '.rs'],
+                    fixture_path='application/src/expected.rs', native_command_index=native['command_index'],
+                    expected_mask=json.loads(payloads[stem + '.json'])['expected_mask'])
+                    and state['expectation_source_sha256'] == evidence[stem + '.rs'],
+                    'actual phase expectation source/table association differs')
+                validate_transport(json.loads(payloads[stem + '.json']), payloads[stem + '.rs'], native['values'],
+                    native['command_index'], native_row['stdout'], history['mode'], phase, row['stdout'])
             for label, value in state['values'].items():
-                require(output[label] == [value['file'], value['span_file'], value['local_file'], str(value['line']), str(value['column'])],
-                        'observable value differs from the actual output')
+                if history['route'] == 'native':
+                    require(output[label] == [value['file'], value['span_file'], value['local_file'], str(value['line']), str(value['column'])],
+                            'observable value differs from the actual output')
                 relative = {'main': 'src/main.rs', 'std-looking': 'src/core/src/panic.rs'}[label]
                 require(value['relative'] == relative, 'observable function source identity differs')
                 workspace = Path(state['source_root'])
                 require(workspace == path.parent / 'application', 'observable source root differs from actual manifest cwd')
-                for field in ['file', 'local_file'] + ([] if phase == 'application-map' else ['span_file']):
+                for field in ['file', 'local_file'] + ([] if base_phase == 'application-map' else ['span_file']):
                     reported = Path(value[field])
                     require((reported if reported.is_absolute() else workspace / reported) == workspace / relative,
                             'observable does not refer to its actual source')
@@ -226,12 +264,12 @@ def validate_source_observables(path, owner, compiler_key, tool_key, stds, *, co
                 require((value['line'], value['column']) == (line + 1, lines[line].index('marker') + 1),
                         'observable coordinates disagree with retained source')
             original_main = payloads['application/src/main.rs']
-            phase_source = (original_main if phase == 'restored' else original_main.replace(
-                b'000000000000000', (str(PHASES.index(phase)) * 15).encode()))
+            phase_source = (original_main if base_phase == 'restored' else original_main.replace(
+                b'000000000000000', (str(PHASES.index(base_phase)) * 15).encode()))
             require(state['source_sha256'] == hashlib.sha256(phase_source).hexdigest(),
                     'observable phase lacks the real same-width source edit')
-            flags = [] if phase in ['unmapped', 'restored'] else mapped['rustc_flags'][:]
-            if phase == 'application-map': flags += ['--remap-path-prefix=src=' + APP_PREFIX]
+            flags = [] if base_phase in ['unmapped', 'restored'] else mapped['rustc_flags'][:]
+            if base_phase == 'application-map': flags += ['--remap-path-prefix=src=' + APP_PREFIX]
             require(state['rustc_flags'] == flags, 'observable mapping flags differ')
             if history['route'] == 'exported':
                 launches = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in row['stderr'].splitlines()
