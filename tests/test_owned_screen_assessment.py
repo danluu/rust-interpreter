@@ -28,7 +28,7 @@ class OwnedScreenAssessment(unittest.TestCase):
 
     def base(self, policy):
         return dict(owner=str(self.root), candidate_policy=policy,
-            source=str(self.root / 'source'), case=screen.CASE,
+            source=str(self.root / 'source'), case=json.loads(json.dumps(screen.CASE)),
             tools=dict.fromkeys(screen.MODES, 'a' * 64), states=[dict(index=i) for i in range(9)])
 
     def std(self, identity):
