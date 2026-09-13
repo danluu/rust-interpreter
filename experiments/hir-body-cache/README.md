@@ -1,7 +1,25 @@
 # HIR body-v2: exclusive, verified body replay
 
-This is an **uncompiled, unrun replay checkpoint**, generated against compiler
+This is an **uncompiled, unrun fixture successor** to replay checkpoint
+`5cd6acd3`, generated against compiler
 `58e1e1f5311f4424ea81def4763081f6da62d9b3`. The compiler checkout was read only.
+The production guard, grammar, flags, replay implementation and 26 unit tests
+are unchanged. Only the run-make fixture and consequent complete-patch source
+identity change.
+
+The frozen predecessor passed its selected compiler check, all 26 unit tests,
+stage1 compiler build, identity probes and tracked-option unit. Its native
+run-make then failed the initial capture assertion without emitting any capture
+or reuse reports; that failure remains in the
+[original evidence](../../results/hir-native-correctness-failed-01/README.md).
+Bootstrap's pinned `test.rs:2919` sets `RUSTC_FORCE_RUSTC_VERSION=compiletest`,
+while production `prepare` intentionally rejects every present value. The
+shared fixture constructor now removes that variable for ordinary, capture
+and reuse histories. Production refusal of version overrides is preserved.
+The original 203-member failure archive remains
+`a5a6e0e5b2c49603baa0c4d6d2e51b40f57279ab5f4f4f82d75cad0240d3e58b`;
+the new fixture has not run and does not reclassify that failure as a pass.
+
 The patch contains a closed typed body wire codec, actual cold HIR capture,
 effect journal, tree/reference validator, current typed-value preparation and
 a private cold materialization audit, and a separately selected exclusive hit
@@ -272,6 +290,16 @@ per-name counts require both `field` bodies and both trait-implementation
 `choose` bodies. Crate and enclosing-module allow→deny→allow controls require
 actual hits on the unchanged anchor while current-scope raw errors match the
 ordinary compiler. Separate CLI lint controls require first-state key misses.
+
+New override controls reintroduce both an explicit empty value and a nonempty
+`RUSTC_FORCE_RUSTC_VERSION` after the shared constructor. For each value,
+ordinary/capture/reuse modes use distinct fresh positive and error incremental
+directories, leaving every existing cold history intact. Positive info probes
+require no capture/reuse logs and compare actual native outputs. An activated
+uncalled type error must retain identical complete raw JSON diagnostics,
+including `E0308`, across all three modes. All twelve fresh directories must
+contain no HIR sidecars. These add twelve compiler commands and six native
+executions; both the new controls and their regenerated patch are unrun.
 
 Still required: actual compile/API validation, all 26 unit controls, ordinary
 and capture-only native controls, then actual verified

@@ -7,12 +7,15 @@ use std::path::{Path, PathBuf};
 use run_make_support::{Rustc, rfs, run, rustc};
 
 fn compiler(enabled: bool, info: bool) -> Rustc {
-    compiler_options(enabled, false, info)
+    compiler_options(enabled, false, info, if enabled { "cache-on" } else { "cache-off" })
 }
-fn compiler_options(enabled: bool, reuse: bool, info: bool) -> Rustc {
+fn compiler_options(enabled: bool, reuse: bool, info: bool, incremental: &str) -> Rustc {
     let mut command = rustc();
+    // Bootstrap supplies this to compiletest. Normal histories must use the
+    // real compiler version; production prepare correctly rejects any override.
+    command.env_remove("RUSTC_FORCE_RUSTC_VERSION");
     command.input("input.rs").crate_name("body_journal_test").output("body_journal_test")
-        .metadata("body_journal_test").incremental(if reuse { "cache-reuse" } else if enabled { "cache-on" } else { "cache-off" })
+        .metadata("body_journal_test").incremental(incremental)
         .arg(format!("-Zhir-body-cache-capture={enabled}"))
         .arg("-Cdebuginfo=2").arg("--edition=2024");
     if reuse { command.arg("-Zhir-body-cache-reuse=true"); }
@@ -47,7 +50,7 @@ fn records(root: &Path, prefix: &str, output: &mut Vec<PathBuf>) {
 }
 
 fn reuse_compiler(info: bool) -> Rustc {
-    compiler_options(false, true, info)
+    compiler_options(false, true, info, "cache-reuse")
 }
 fn expect_reuse(info: &str, name: &str, hit: bool) {
     expect_reuse_count(info, name, hit, 1);
@@ -197,6 +200,47 @@ fn entry_context_controls() {
     raw_control(body, &["-A", "unused_variables"], false);
 }
 
+fn version_override_controls(original: &str) {
+    let invalid = original.replace("#[cfg(type_error)] ", "");
+    assert_ne!(invalid, original);
+    for (label, version) in [("empty", ""), ("nonempty", "fixture-version-override")] {
+        let mut ordinary_output = None;
+        let mut ordinary_diagnostics = None;
+        for (mode, capture, reuse) in [("ordinary", false, false), ("capture", true, false), ("reuse", false, true)] {
+            // Every mode/value/outcome has an independent fresh incremental
+            // directory. These controls never populate a normal cold history.
+            let positive = format!("override-{label}-{mode}-positive");
+            let negative = format!("override-{label}-{mode}-negative");
+            assert!(!Path::new(&positive).exists());
+            assert!(!Path::new(&negative).exists());
+            rfs::write("input.rs", original);
+            let mut command = compiler_options(capture, reuse, true, &positive);
+            // Reintroduce the explicit value AFTER common env_remove, including
+            // the empty value: var_os(...).is_some() must reject both cases.
+            command.env("RUSTC_FORCE_RUSTC_VERSION", version);
+            let info = command.run().stderr_utf8();
+            assert!(!info.contains("[hir-body-capture]") && !info.contains("[hir-body-reuse]"), "{info}");
+            let output = run("body_journal_test").stdout_utf8();
+            if let Some(expected) = &ordinary_output { assert_eq!(&output, expected); }
+            else { ordinary_output = Some(output); }
+
+            rfs::write("input.rs", &invalid);
+            let mut command = compiler_options(capture, reuse, false, &negative);
+            command.env("RUSTC_FORCE_RUSTC_VERSION", version).arg("--error-format=json");
+            let diagnostics = command.run_fail().stderr_utf8();
+            assert!(diagnostics.contains("E0308"), "{diagnostics}");
+            assert!(!diagnostics.contains("[hir-body-capture]") && !diagnostics.contains("[hir-body-reuse]"), "{diagnostics}");
+            if let Some(expected) = &ordinary_diagnostics { assert_eq!(&diagnostics, expected); }
+            else { ordinary_diagnostics = Some(diagnostics); }
+            for directory in [&positive, &negative] {
+                let mut files = Vec::new();
+                if Path::new(directory).exists() { records(Path::new(directory), "hir-body-", &mut files); }
+                assert!(files.is_empty(), "version override unexpectedly wrote HIR sidecars: {files:?}");
+            }
+        }
+    }
+}
+
 fn main() {
     let original = rfs::read_to_string("fixture.rs");
     success(&original, false);
@@ -227,6 +271,7 @@ fn main() {
     success(&original, true);
     entry_context_controls();
     reuse_controls(&original);
+    version_override_controls(&original);
     rfs::write("input.rs", &original);
     compiler(false, false).run(); compiler(true, false).run();
 }
