@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import tarfile
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -42,6 +43,10 @@ def frozen_sources(plan_path, plan, root):
                     and file_digest(source) == expected, 'frozen input differs: ' + name)
             put(root, f'provenance/{prefix}/{name}', source.read_bytes())
     put_json(root, 'provenance/harness.json', dict(files=plan['harness']))
+    for name, expected in plan.get('prior_attempt', {}).get('records', {}).items():
+        source = ROOT / name
+        require(file_digest(source) == expected, 'prior attempt evidence changed: ' + name)
+        put(root, 'provenance/prior-attempt/' + name, source.read_bytes())
     ready_path = Path(plan['shared_std']['path'])
     require(file_digest(ready_path) == plan['shared_std']['sha256'], 'shared std readiness differs')
     put(root, 'provenance/std-ready.json', ready_path.read_bytes())
@@ -96,6 +101,40 @@ def compiler_inventory(sysroot):
     return dict(files=[file_identity(p) for p in sorted(paths)])
 
 
+def registry_files(base, locked_package):
+    """Reconcile the installed tree with its locked archive, without extracting it."""
+    require(base.parent.parent.name == 'src', 'unreviewed registry source layout')
+    archive = base.parents[2] / 'cache' / base.parent.name / (base.name + '.crate')
+    require(file_digest(archive) == locked_package['checksum'], 'registry archive differs from lockfile')
+    expected = {}
+    with tarfile.open(archive, 'r:gz') as bundle:
+        for member in bundle:
+            parts = Path(member.name).parts
+            require(parts and parts[0] == base.name and not Path(member.name).is_absolute()
+                    and all(p not in ('.', '..') for p in parts), 'unsafe registry archive member')
+            if member.isdir():continue
+            require(member.isfile() and len(parts) > 1, 'non-file registry archive member')
+            name = str(Path(*parts[1:]))
+            require(name not in expected and name not in ('.cargo-ok', '.cargo-checksum.json'),
+                    'duplicate or reserved registry archive member')
+            source = bundle.extractfile(member)
+            require(source is not None, 'missing registry archive member bytes')
+            with source:expected[name] = sha(source.read())
+    entries = list(base.rglob('*'))
+    require(not any(p.is_symlink() for p in entries), 'registry source contains a symlink')
+    actual = {str(p.relative_to(base)): p for p in entries if p.is_file()}
+    extras = set(actual) - set(expected)
+    require(expected and set(expected) <= actual.keys()
+            and extras <= {'.cargo-ok', '.cargo-checksum.json'}, 'registry source file inventory differs')
+    for name, checksum in expected.items():
+        require(file_digest(actual[name]) == checksum, 'registry source differs from archive')
+    if '.cargo-checksum.json' in actual:
+        checksum = json.loads(actual['.cargo-checksum.json'].read_bytes())
+        require(checksum['package'] == locked_package['checksum'] and checksum['files'] == expected,
+                'registry checksum inventory differs from archive')
+    return [*actual.values(), archive]
+
+
 def dependency_inventory(metadata, env, config):
     lock = tomllib.loads((ROOT / 'Cargo.lock').read_text())
     locked = {(row['name'], row['version'], row.get('source')): row for row in lock['package']}
@@ -107,15 +146,7 @@ def dependency_inventory(metadata, env, config):
         locked_package = locked[(package['name'], package['version'], package.get('source'))]
         if package.get('source'):
             require(package['source'].startswith('registry+'), 'unreviewed non-registry external dependency')
-            checksum_path = base / '.cargo-checksum.json'
-            checksum = json.loads(checksum_path.read_bytes())
-            require(checksum['package'] == locked_package['checksum'], 'registry archive checksum differs from lockfile')
-            paths = [base / name for name in checksum['files']]
-            for name, expected in checksum['files'].items():
-                path = base / name
-                require(path.resolve(strict=True).is_relative_to(base) and file_digest(path) == expected,
-                        'registry source differs from checksum inventory')
-            paths.append(checksum_path)
+            paths = registry_files(base, locked_package)
         else:
             require(base.is_relative_to(ROOT / 'crates'), 'path dependency escapes frozen workspace crates')
             paths = [p for p in base.rglob('*') if p.is_file()]

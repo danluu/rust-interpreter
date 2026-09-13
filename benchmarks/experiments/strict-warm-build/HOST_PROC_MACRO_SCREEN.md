@@ -49,8 +49,9 @@ The publication contract is
 `planned-build-01.json` is retained unchanged as superseded and not executed.
 Its `f77229…` value is a source-input fingerprint, not a qualified tool key.
 The replacement plan records `source_input_key`, leaves `tool_key` and
-`screen_command` null, and uses a fresh build-03 directory. Plans01/02 remain
-unexecuted records; support changes also invalidate plan02's old harness hashes. Only completed
+`screen_command` null, and uses a fresh build-04 directory. Plans01/02 remain
+unexecuted records; plan03 retains its dependency-inventory failure before any
+qualification command. Support changes invalidate their old harness hashes. Only completed
 qualification and publication can supply the actual composition key and
 materialize a screen command. No workload should consume the old plan.
 

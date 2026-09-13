@@ -4,9 +4,9 @@ The pure validator and its five boundary tests are in commits `f8c46ef` and
 `7d6dc95`; root ran them together with the saved assessor's controls under the
 canonical lock (16 tests passed). This is correctness evidence for the Python
 provenance checks, not qualification of the macro compiler policy.
-That run predates the configuration-input guards and automatic runner added in
-this checkpoint; the updated five validator tests and five publication tests
-must pass under the canonical lock before the recorded build starts.
+Root subsequently ran the updated validator, publication and assessor controls
+(21 tests, zero skips) before plan03. The archive-inventory correction below
+changes the publication test and must pass again before plan04 starts.
 
 `scripts/public_tool_publication.py` supplies the build supervisor primitives:
 
@@ -46,15 +46,21 @@ not benchmark profiles. Configured compiler/wrapper/Rustflags/environment-table
 overrides fail before qualification; configuration files and absent search
 paths become guarded inputs. Registry credentials and arbitrary inherited
 environment values are not copied into published provenance.
+Registry archives are hashed against `Cargo.lock`, read without extraction, and
+compared member-for-member with the local source tree. Cargo-generated
+`.cargo-ok` and optional reconciled `.cargo-checksum.json` files are retained as
+inputs; any other extra source file, missing member or changed byte fails.
 
 The runner writes `published.json` and `result.json` with the actual tool key and
 a concrete materialization command. After the exact screen harness and owned
 source are prepared, run `build.py --plan <same-plan> --materialize
 <build-work>/published.json` to write the screen argv under a separate bounded
 lock admission. It never executes a benchmark. Any failure keeps its work and
-partial publication for review. No build, publication or benchmark has run
-through this support. Five dummy-byte publication/runner boundary tests are
-prepared but unrun; they execute no Rust/Cargo command.
+partial publication for review. Plan03 stopped during dependency inventory after
+three successful metadata/Git commands and before any of the eight qualification
+commands. No Rust build, test, publication or benchmark has run through this
+support. Five dummy-byte publication/runner boundary tests execute no Rust/Cargo
+command; the updated registry case still needs qualification.
 
 `screen.py` now calls the same pure validator at macro admission. It freezes all
 recursive installation provenance and the initial guard. Saved guard references
@@ -72,8 +78,11 @@ identity. All 56 records are required. Guard verification runs outside the
 timed command, alongside existing frozen-input checks, and cannot substitute
 for launcher/Cargo/compiler/VM work or any of the 14 tests.
 
-`planned-build-03.json` records the completed runner and a 600-second canonical
-admission bound. It remains unexecuted. Plans01 and02 are retained unchanged as
-superseded, unexecuted plans; their old harness hashes must fail preflight.
+`planned-build-04.json` records the archive-compatible runner and a 600-second
+canonical admission bound. It remains unexecuted. Plans01 and02 are retained
+unchanged as superseded, unexecuted plans. Plan03 and both its initial missing
+`.work` parent failure and later inventory failure are retained, with exact
+metadata commands and receipts. Plan04 uses a fresh destination and copies those
+prior records into publication provenance. Old harness hashes fail preflight.
 Production crates remain `01e36c0`; the source input key remains `f77229…`.
 No final tool key or screen argv is known yet.
