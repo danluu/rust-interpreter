@@ -1,0 +1,3 @@
+Retired remaining compiler intermediates in the 20 exact cache roots of five completed public cases from the recovered corpus. The existing recovery/workflow verifiers revalidated each 63-command/21-check history, paired artifacts, source pins and custom namespace derivation. The private and formerly incomplete cases were excluded. Some selected roots had already been retired and contributed zero files; their prior evidence remains unchanged.
+
+All 1,048 protected files remain byte-identical. Removed 8,492 files containing 1,765,857,899 logical bytes; observed free space rose by 963,207,168 bytes. No workflow or performance measurement was rerun.
