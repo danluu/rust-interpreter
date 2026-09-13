@@ -5,8 +5,11 @@ The pure validator and its five boundary tests are in commits `f8c46ef` and
 canonical lock (16 tests passed). This is correctness evidence for the Python
 provenance checks, not qualification of the macro compiler policy.
 Root subsequently ran the updated validator, publication and assessor controls
-(21 tests, zero skips) before plan03. The archive-inventory correction below
-changes the publication test and must pass again before plan04 starts.
+(21 tests, zero skips) before plan03, then the five updated publication controls
+before plan04. The five updated logical-loader validator tests passed, followed
+by all eight retained rustc inspector records replayed under the canonical lock
+(supervisor93504, replay child94349, zero new inspector/compiler children).
+These are preflight correctness controls for plan05, not macro qualification.
 
 `scripts/public_tool_publication.py` supplies the build supervisor primitives:
 
@@ -56,11 +59,14 @@ a concrete materialization command. After the exact screen harness and owned
 source are prepared, run `build.py --plan <same-plan> --materialize
 <build-work>/published.json` to write the screen argv under a separate bounded
 lock admission. It never executes a benchmark. Any failure keeps its work and
-partial publication for review. Plan03 stopped during dependency inventory after
-three successful metadata/Git commands and before any of the eight qualification
+partial publication for review. Plan03 stopped during dependency inventory;
+plan04 passed that inventory and stopped at pure loader-path validation. Both
+retained three successful metadata/Git commands; plan04 also retained eight
+successful otool inspections. Neither started any of the eight qualification
 commands. No Rust build, test, publication or benchmark has run through this
 support. Five dummy-byte publication/runner boundary tests execute no Rust/Cargo
-command; the updated registry case still needs qualification.
+command. `replay_closure.py` uses saved inspection output without starting an
+inspector, and checks current bytes against the prior compiler inventory.
 
 `screen.py` now calls the same pure validator at macro admission. It freezes all
 recursive installation provenance and the initial guard. Saved guard references
@@ -78,11 +84,13 @@ identity. All 56 records are required. Guard verification runs outside the
 timed command, alongside existing frozen-input checks, and cannot substitute
 for launcher/Cargo/compiler/VM work or any of the 14 tests.
 
-`planned-build-04.json` records the archive-compatible runner and a 600-second
-canonical admission bound. It remains unexecuted. Plans01 and02 are retained
-unchanged as superseded, unexecuted plans. Plan03 and both its initial missing
-`.work` parent failure and later inventory failure are retained, with exact
-metadata commands and receipts. Plan04 uses a fresh destination and copies those
-prior records into publication provenance. Old harness hashes fail preflight.
+`planned-build-05.json` records the compatible runner and a 600-second canonical
+admission bound. It remains unexecuted. Plans01 and02 are retained unchanged as
+superseded, unexecuted plans. Plans03/04 retain both inventory/loader failures
+and03's initial missing `.work` parent failure, with exact metadata commands
+and receipts. Plan05 uses a fresh destination and copies prior records and the
+retained closure replay into publication provenance. Loader search strings keep
+their exact logical spelling, including `..`; independently resolved paths and
+all byte/stat/symlink guards remain mandatory. Old harness hashes fail preflight.
 Production crates remain `01e36c0`; the source input key remains `f77229…`.
 No final tool key or screen argv is known yet.

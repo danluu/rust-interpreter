@@ -51,11 +51,13 @@ def main():
     if any(p.is_symlink() for p in [*workspace_entries, *workspace_inputs]):
         raise RuntimeError('source inventory requires regular files, not unresolved source symlinks')
     contract = Path(__file__).with_name('PUBLICATION.md')
-    superseded = [Path(__file__).with_name(f'planned-build-{index:02}.json') for index in (1, 2, 3)]
-    previous_work = ROOT / '.work/host-proc-macro-build-03'
-    prior_receipts = [ROOT / '.work/host-proc-macro-admission-03-failed.json', previous_work / 'supervisor.json',
-                      *sorted((previous_work / 'metadata').glob('*'))]
-    work = ROOT / '.work/host-proc-macro-build-04'
+    superseded = [Path(__file__).with_name(f'planned-build-{index:02}.json') for index in (1, 2, 3, 4)]
+    prior_work = [ROOT / f'.work/host-proc-macro-build-{index:02}' for index in (3, 4)]
+    prior_receipts = [ROOT / '.work/host-proc-macro-admission-03-failed.json',
+        *[p for work in prior_work for p in [work / 'supervisor.json', *sorted((work / 'metadata').glob('*'))]],
+        ROOT / '.work/host-proc-macro-closure-replay-01/summary.json',
+        *sorted(p for p in (ROOT / '.work/host-proc-macro-closure-replay-supervisor-01').rglob('*') if p.is_file())]
+    work = ROOT / '.work/host-proc-macro-build-05'
     target = work / 'target'
     screen_work = screen_root / '.work/strict-warm-proc-macro-screen-01'
     source = screen_root / '.work/sources/nushell-proc-macro-opt'
@@ -88,7 +90,8 @@ def main():
         command.update(cwd=str(ROOT), receipt=str(work / (command['label'] + '-process.json')),
                        stdout=str(work / (command['label'] + '.stdout')),
                        stderr=str(work / (command['label'] + '.stderr')))
-    paths = [Path(__file__), Path(__file__).with_name('build.py'), Path(__file__).with_name('SUPERVISOR.md'),
+    paths = [Path(__file__), Path(__file__).with_name('build.py'), Path(__file__).with_name('replay_closure.py'),
+        Path(__file__).with_name('SUPERVISOR.md'),
         contract, ROOT / 'rust-toolchain.toml', ROOT / 'benchmarks/corpus.json',
         *sorted((ROOT / 'scripts').glob('*.py')),
         *[ROOT / 'tests' / name for name in ['test_host_proc_macro_launcher.py', 'test_host_proc_macro_native.py',
@@ -108,10 +111,11 @@ def main():
         workspace_sources={str(p.relative_to(ROOT)): sha(p) for p in workspace_inputs},
         harness={str(p.relative_to(ROOT)): sha(p) for p in paths},
         supersedes=[dict(path=str(p.relative_to(ROOT)), sha256=sha(p),
-                        status='failed-before-qualification' if p.name == 'planned-build-03.json' else 'superseded-not-executed')
+                        status='failed-before-qualification' if p.name in ('planned-build-03.json', 'planned-build-04.json')
+                        else 'superseded-not-executed')
                     for p in superseded],
-        prior_attempt=dict(status='failed-before-qualification', work=str(previous_work),
-            reason='registry sources omit .cargo-checksum.json; use locked archive reconciliation',
+        prior_attempt=dict(status='failed-before-qualification', work=[str(p) for p in prior_work],
+            reason='03 registry layout assumption; 04 pure logical loader-path normalization mismatch',
             qualification_commands_started=0, records={str(p.relative_to(ROOT)): sha(p) for p in prior_receipts}),
         implementation_contract_tests=dict(required_before_build=True, run_separately_under_canonical_lock=True,
             commands=[dict(argv=[sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', name, '-v'],
