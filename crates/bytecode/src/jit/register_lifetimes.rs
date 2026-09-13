@@ -109,6 +109,9 @@ fn remap(f: &Function, plan: &Plan) -> Function {
             Op::DescriptorClose { dst, descriptor, errno } | Op::DescriptorGetFd { dst, descriptor, errno } => {
                 for value in [dst, descriptor, errno] { r(value); }
             }
+            Op::DescriptorStat { dst, descriptor, address, errno } => {
+                for value in [dst, descriptor, address, errno] { r(value); }
+            }
             Op::CurrentDirectory { dst, address, size, errno } => {
                 for value in [dst, address, size, errno] { r(value); }
             }

@@ -6,10 +6,14 @@ const FIRST_FD: i32 = 3;
 const FD_COUNT: usize = 256;
 const EBADF: u128 = 9;
 const O_CREAT: i32 = 0x0200;
+// Pinned AArch64 Darwin ABI; independently checked against SDK stat.h by the native suite.
+const STAT_BYTES: usize = 144;
+#[repr(C, align(8))]
+struct StatBuffer([u8; STAT_BYTES]);
 
 pub(super) fn is_descriptor_op(op: &Op) -> bool {
     matches!(op, Op::DescriptorOpen { .. } | Op::DescriptorWrite { .. }
-        | Op::DescriptorClose { .. } | Op::DescriptorGetFd { .. })
+        | Op::DescriptorClose { .. } | Op::DescriptorGetFd { .. } | Op::DescriptorStat { .. })
 }
 
 pub(super) struct State { fds: Vec<Option<i32>> }
@@ -82,6 +86,28 @@ impl State {
         Ok(result as u64 as u128)
     }
 
+    pub(super) fn stat(&mut self, memory: &mut Memory, descriptor: u128,
+        address: u128, errno: u128) -> Result<u128, String> {
+        let descriptor = integer(descriptor)?;
+        let address = memory.c_output(address, STAT_BYTES)?;
+        let error = memory.c_output(errno, 4)?;
+        let prior = memory.load(error, 4)? as u32 as i32;
+        let Some(fd) = self.host_fd(descriptor) else {
+            memory.store(error, 4, EBADF)?;
+            return Ok(u32::MAX as u128);
+        };
+        // Seed every byte, including padding. libc sees only an aligned private
+        // buffer; failed calls and untouched bytes retain their native behavior.
+        let mut buffer = StatBuffer([0; STAT_BYTES]);
+        buffer.0.copy_from_slice(memory.read(address, STAT_BYTES)?);
+        let (result, after) = host::stat(fd, &mut buffer, prior)?;
+        let (heap, range) = memory.range(address, STAT_BYTES)?;
+        if heap { memory.heap.bytes[range].copy_from_slice(&buffer.0); }
+        else { memory.bytes[range].copy_from_slice(&buffer.0); }
+        memory.store(error, 4, after as u32 as u128)?;
+        Ok(result as u32 as u128)
+    }
+
     pub(super) fn close(&mut self, memory: &mut Memory, descriptor: u128,
         errno: u128) -> Result<u128, String> {
         let descriptor = integer(descriptor)?;
@@ -137,11 +163,13 @@ fn c_path(memory: &Memory, address: u128) -> Result<&[u8], String> {
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod host {
+    use super::StatBuffer;
     unsafe extern "C" {
         #[link_name = "open"] fn c_open(path: *const std::ffi::c_char, flags: i32, ...) -> i32;
         #[link_name = "write"] fn c_write(fd: i32, bytes: *const std::ffi::c_void, size: usize) -> isize;
         #[link_name = "close"] fn c_close(fd: i32) -> i32;
         #[link_name = "fcntl"] fn c_fcntl(fd: i32, command: i32, ...) -> i32;
+        #[link_name = "fstat"] fn c_fstat(fd: i32, output: *mut StatBuffer) -> i32;
         fn __error() -> *mut i32;
     }
     fn invoke<T>(prior: i32, call: impl FnOnce() -> T) -> (T, i32) {
@@ -166,6 +194,9 @@ mod host {
     pub(super) fn write(fd: i32, bytes: &[u8], prior: i32) -> Result<(isize, i32), String> {
         Ok(invoke(prior, || unsafe { c_write(fd, bytes.as_ptr().cast(), bytes.len()) }))
     }
+    pub(super) fn stat(fd: i32, output: &mut StatBuffer, prior: i32) -> Result<(i32, i32), String> {
+        Ok(invoke(prior, || unsafe { c_fstat(fd, output) }))
+    }
     pub(super) fn close(fd: i32, prior: i32) -> Result<(i32, i32), String> {
         Ok(invoke(prior, || unsafe { c_close(fd) }))
     }
@@ -178,9 +209,13 @@ mod host {
 mod host {
     pub(super) fn open(_: &[u8], _: i32, _: Option<i32>, _: i32) -> Result<(i32, i32), String> { Err("descriptor host unavailable".into()) }
     pub(super) fn write(_: i32, _: &[u8], _: i32) -> Result<(isize, i32), String> { Err("descriptor host unavailable".into()) }
+    pub(super) fn stat(_: i32, _: &mut super::StatBuffer, _: i32) -> Result<(i32, i32), String> { Err("descriptor host unavailable".into()) }
     pub(super) fn close(_: i32, _: i32) -> Result<(i32, i32), String> { Err("descriptor host unavailable".into()) }
     pub(super) fn get_fd(_: i32, _: i32) -> Result<(i32, i32), String> { Err("descriptor host unavailable".into()) }
 }
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod stat_tests;

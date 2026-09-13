@@ -271,6 +271,8 @@ pub enum Op {
     DescriptorGetFd { dst: Reg, descriptor: Reg, errno: Reg },
     /// Opt-in Darwin getcwd; NULL allocates an owned guest C buffer.
     CurrentDirectory { dst: Reg, address: Reg, size: Reg, errno: Reg },
+    /// Darwin fstat writes the complete, pointer-free 144-byte stat ABI.
+    DescriptorStat { dst: Reg, descriptor: Reg, address: Reg, errno: Reg },
 }
 
 fn mask(bits: u8) -> u128 {
@@ -1003,6 +1005,10 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                     r[*dst as usize] = descriptors.as_mut().ok_or("missing guest descriptor table")?
                         .get_fd(&mut memory, r[*descriptor as usize], r[*errno as usize])?;
                 }
+                Op::DescriptorStat { dst, descriptor, address, errno } => {
+                    r[*dst as usize] = descriptors.as_mut().ok_or("missing guest descriptor table")?
+                        .stat(&mut memory, r[*descriptor as usize], r[*address as usize], r[*errno as usize])?;
+                }
                 Op::CurrentDirectory { dst, address, size, errno } => {
                     r[*dst as usize] = memory.getcwd(r[*address as usize], r[*size as usize],
                         r[*errno as usize], register_bytes)?;
@@ -1494,6 +1500,9 @@ pub fn validate(program: &Program) -> Result<(), String> {
                 }
                 Op::DescriptorWrite { dst, descriptor, address, size, errno } => {
                     for r in [dst, descriptor, address, size, errno] { reg(*r)?; }
+                }
+                Op::DescriptorStat { dst, descriptor, address, errno } => {
+                    for r in [dst, descriptor, address, errno] { reg(*r)?; }
                 }
                 Op::DescriptorClose { dst, descriptor, errno } | Op::DescriptorGetFd { dst, descriptor, errno } => {
                     for r in [dst, descriptor, errno] { reg(*r)?; }

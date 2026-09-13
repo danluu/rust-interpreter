@@ -105,7 +105,7 @@ impl<'a> Facts<'a> {
             }
             Op::CopyDynamic {..}|Op::FillBytes {..}|Op::Call {..}|Op::CallIndirect {..}
             |Op::Allocate {..}|Op::Deallocate {..}|Op::Reallocate {..}|Op::ResetThreadLocals
-            |Op::DescriptorOpen {..}|Op::DescriptorWrite {..}|Op::DescriptorClose {..}|Op::DescriptorGetFd {..}|Op::CurrentDirectory {..}
+            |Op::DescriptorOpen {..}|Op::DescriptorWrite {..}|Op::DescriptorClose {..}|Op::DescriptorGetFd {..}|Op::CurrentDirectory {..}|Op::DescriptorStat {..}
             |Op::RandomBytes {..}|Op::CpuFeatureQuery {..}|Op::EnvironmentGet {..}|Op::CAllocate {..}|Op::CDeallocate {..}
             |Op::CReallocate {..}|Op::CAlignedAllocate {..}|Op::RegisterTlsDestructor {..} => self.bytes.clear(),
             Op::Unary {..}|Op::FloatBinary {..}|Op::FloatUnary {..}|Op::FloatConvert {..}

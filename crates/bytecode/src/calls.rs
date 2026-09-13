@@ -51,7 +51,7 @@ pub(crate) fn local_arguments(program: &Program) -> Vec<Vec<bool>> {
                 | Op::CpuFeatureQuery { dst, .. }
                 | Op::DescriptorOpen { dst, .. } | Op::DescriptorWrite { dst, .. }
                 | Op::DescriptorClose { dst, .. } | Op::DescriptorGetFd { dst, .. }
-                | Op::CurrentDirectory { dst, .. }
+                | Op::CurrentDirectory { dst, .. } | Op::DescriptorStat { dst, .. }
                 | Op::EnvironmentGet { dst, .. }
                 | Op::CAllocate { dst, .. } | Op::CReallocate { dst, .. } | Op::CAlignedAllocate { dst, .. }
                 | Op::FloatBinary { dst, .. } | Op::FloatUnary { dst, .. } | Op::FloatConvert { dst, .. } => {
@@ -125,6 +125,7 @@ fn every_register_writer_invalidates_its_destination() {
         Op::DescriptorClose { dst: 0, descriptor: 1, errno: 1 },
         Op::DescriptorGetFd { dst: 0, descriptor: 1, errno: 1 },
         Op::CurrentDirectory { dst: 0, address: 1, size: 1, errno: 1 },
+        Op::DescriptorStat { dst: 0, descriptor: 1, address: 1, errno: 1 },
         Op::CAllocate { dst: 0, count: 1, size: 1, errno: 0, zeroed: true },
         Op::CReallocate { dst: 0, pointer: 0, size: 1, errno: 1 },
         Op::CAlignedAllocate { dst: 0, output: 0, align: 1, size: 1 },
