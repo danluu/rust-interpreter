@@ -40,6 +40,14 @@ implementation path. The next candidate simplifies memory operand generation
 on the wide baseline: preserve checks and full register writes, remove unused
 temporary reads/clears, and fold already proven local offsets into hardware
 memory operands. [Census and constraints](results/address-check-reuse-census-01/assessment.md).
+The refined memory-operand candidate now passes 428 Rust tests per profile,
+131 harness checks, seven real tests, nine suite commands, 203 strict
+cache/native checks and three profiles. Every per-PC operation count, native
+interval, memory peak and entropy record matches the wide control. Generated
+code is 5.15% / 5.12% / 5.63% smaller on the three profiled tests; this is not
+a latency result. The prospective 462-command token/folded/pgrust comparison
+is next, with the same controls and documented engineering margins.
+[Qualified mechanism](results/memory-operands-profile-01/assessment.md).
 [Complete comparison](results/paired-registers-complete-01/assessment.md). [Scope and next constraints](docs/REGISTER-TRANSFER-NEXT.md).
 [Token result](results/guarded-indirect-edit-token-02/stage-assessment.md),
 [design and qualification](docs/INDIRECT-CALL-NEXT.md).
