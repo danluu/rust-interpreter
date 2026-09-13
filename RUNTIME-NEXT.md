@@ -10,11 +10,15 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Use the actual emitter to count local-value forwarding blocked by writes
-   whose new guard already proves disjoint from the current frame. Reconstruct
-   saved baseline code exactly before comparing a test-only alternative. Count
-   lost forwarding, spills and flushes too. Static words are not retired
-   instructions or latency. Choose an implementation from that evidence.
+1. Qualify the selected composition of guarded local-value retention, exact
+   static facts after forwarded loads, and scalar-copy address folding. Three
+   offline censuses reproduce all saved baselines and expose both savings and
+   increased flush code. The candidate is implemented on its experiment branch;
+   runtime checks and timing have not passed. Complete debug/release tests,
+   strict Cargo/cache checks and bound real-test profile/entropy replays before
+   a fresh token-first changed-source screen. Preserve the old failed scalar-copy
+   performance verdict and cancel unstarted guards if this primary fails.
+   [Selection evidence](results/guarded-local-facts-composed-census-01/assessment.md).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
