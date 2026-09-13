@@ -40,16 +40,33 @@ native values through integer returns. Its 27 focused controls and all 61 actual
 qualification commands passed, including deliberately incorrect expected file
 and line values. Raw diagnostics and source validation remain unchanged.
 [Fixture controls](../../../results/source-observable-transport-tests-01/README.md).
+[Complete actual 61-command history and retained first failure](../../../results/mono-production-source-observables-02/README.md).
 
 The subsequent MonoItem Nushell screen stopped after its three cold commands:
 64.1687s / 64.4294s / 63.9284s, each passing all 14 tests. Baseline and duplicate
 bytecode were identical; candidate bytecode differed, so the unchanged artifact
 parity gate rejected the history before any edited timing. Source restoration
-passed. Initial inspection identifies embedded standard-library source paths
-from the two prepared sysroots. The exporter uses diagnostic span formatting
-inside runtime trap messages, contrary to rustc's artifact API contract. A
-runtime-remapping correction and full structured mismatch diagnosis are underway;
-the failed history is retained and supplies no warm-build result.
+passed. Complete typed inspection identifies 153 trap-message path differences
+and 18 constant-data source paths from the two physical standard-library
+sysroots; all other typed program fields matched. This comparison does not
+qualify the unequal artifacts. The runtime trap formatter now uses rustc's
+runtime/macro remapping scope. Its matched Tools03 and Workspace03 passed
+(505 Rust tests, four ignored); the explicit artifact/scope regression passed
+67 actual compiler/VM commands. A separate diagnostic test retained matching
+native/exported raw JSON but failed its extra top-level-only filename check on
+an E0080 nested expansion span. The corrected recursive validator and its fresh
+tool/workspace/diagnostic run remain pending.
+
+The prepared standard libraries already have identical metadata and source
+bytes, but their different physical roots affect imported caller locations.
+The reviewed [shared immutable preparation policy](../../../experiments/stable-cgu/SHARED-IMMUTABLE-STD.md)
+uses one new physical std key for both modes while retaining separate application
+flags and caches. Its 99 source controls passed. Fresh preparation, strict36,
+source61 and screen27 are required; old keys/results are never relabeled.
+Tools04 and shared-std01 exhausted their 600-second canonical lock admissions
+before starting any compiler work, while an unrelated workload held the lock.
+Those attempts are preserved. Tools05 is queued; remaining admissions wait for
+the shared slot. The failed cold screen supplies no warm-build result.
 
 A separate HIR-lowering experiment now has a compiled coverage diagnostic.
 Its 54 native fixture commands passed, including exact raw error comparisons,
@@ -62,8 +79,26 @@ only 3 of 3,941 free-function records qualified: the same one function in three
 This coverage is too narrow to justify compiling the current cache for Nushell.
 [Full coverage and limits](../../../results/hir-owner-development-coverage-01/README.md).
 The actual HIR cache patch remains uncompiled. A separate body-only redesign
-preserves ordinary attributes, parameters, signature and generics lowering;
-its diagnostic gate remains in development.
+preserves ordinary attributes, parameters, signature and generics lowering.
+Its diagnostic passed 66 native controls and a complete native Nushell check,
+again accounting for all 742 reports with zero owner gaps. The ordinary
+`nu-protocol` configurations each admit 482 bodies; the test configuration admits
+489. Across 37 incremental invocations, 3,536 of 26,469 body-scope owner records
+pass the structural gate. These are invocation-weighted input counts; they do
+not establish observed lowering IDs, captured effects, replay, cache hits or
+speed. The normal 482 bodies contain 29,817 source bytes and encode 535,975 input
+bytes. The next source-only deliverable captures the actual lowering ID/effect
+journal; no hit path is implemented yet.
+[Native controls](../../../results/hir-body-coverage-native-01/README.md),
+[complete development coverage](../../../results/hir-body-development-coverage-01/README.md).
+
+The [external trait-name index](../../../experiments/external-trait-index/README.md)
+is a reviewed, uncompiled compiler prototype. It preserves ordinary external
+table construction, retains the exact name/namespace projection, and keeps local
+mutable tables on the existing path. Prepared controls include an explicit
+default-off shadow comparison, internal hygiene/disambiguator/namespace tests,
+and native alias/reexport/ambiguity/error histories. Actual hits, memory costs,
+compiler qualification and performance remain unmeasured.
 
 The proposed proc-macro span-handle table passed four standalone container
 controls against the exact patched source. This does not qualify bridge
