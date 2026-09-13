@@ -113,8 +113,10 @@ Homebrew libraries if reached. Unresolved or ambiguous non-system edges fail
 publication. `platform.json` binds architecture, macOS version/build and the
 system dyld-library assumption. Verify hashes and resolution at build capture,
 qualification completion and screen admission; guard resolution/stat identity
-through the history and rehash on change. Changing an external library cannot
-silently retain readiness. This is a required supervisor/publication check;
+through the history and fail on any change, requiring fresh qualification.
+The current implementation rejects changed stamps even if bytes might still
+match; it does not implement a rehash-and-accept fallback. Changing an external
+library cannot silently retain readiness. This is a required supervisor/publication check;
 the existing launcher binary-hash check alone does not implement it.
 
 ## Qualification and acyclic publication
