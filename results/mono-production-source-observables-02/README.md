@@ -1,0 +1,5 @@
+The fresh source-observable qualification passed all 61 commands and the shared archived-byte validator. Both modes returned 1023 for each normal phase, 1022 for the altered filename expectation and 767 for the altered line expectation, followed by restored success. Raw native observations, exact expectation tables/source, actual fixture bytecode/native artifacts, compiler argv, diagnostics and copy proofs are retained.
+
+The earlier 38-command failure is preserved: its exported fixture reached unsupported pthread stdout locking. The corrected fixture uses exact guest byte/coordinate comparisons and the existing integer-return ABI. Compiler, tool and std identities were unchanged; no diagnostic rewriting or comparison relaxation was used.
+
+This is correctness evidence, not a latency or holdout result. Large compiler/std copies and Cargo caches remain outside the archive; their complete declared identities are retained. All archive member hashes were verified under the canonical lock. The 27 Python controls are separately archived in ../source-observable-transport-tests-01.
