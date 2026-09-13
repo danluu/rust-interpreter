@@ -159,10 +159,6 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
     let library = args
         .windows(2)
         .any(|a| a[0] == "--crate-type" && a[1].split(',').any(|t| t == "lib" || t == "rlib"));
-    if wrapper && library {
-        // Retain the qualified dependency MIR policy, including flag precedence.
-        args.push("-Zalways-encode-mir=yes".into());
-    }
     let wrong_package = env
         .export_package
         .as_ref()
@@ -182,10 +178,55 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
             || (env.export_package.is_some() && !env.export_test && !library)
             || wrong_manifest
             || (env.export_test && !test_compilation));
+    // With --std-mir, the launcher gives every guest Cargo unit an explicit
+    // --target, even when the guest target is the host triple. Unselected
+    // libraries without that flag are native build-script/proc-macro inputs.
+    // Their ordinary metadata already retains the generic/inline/const MIR
+    // needed by native consumers. Do not force extra interpreter-only MIR.
+    // Response files can hide a target argument, so retain the existing policy
+    // for those calls and for incomplete or non-Cargo std-MIR context.
+    let native_host = wrapper
+        && !export
+        && env.std_sysroot.is_some()
+        && env.std_target.is_some()
+        && explicitly_emits_link(&args)
+        && !args.iter().any(|arg| arg.starts_with("-Zlink-only"))
+        && !args.windows(2).any(|pair| pair[0] == "-Z" && pair[1].starts_with("link-only"))
+        && !args.iter().any(|arg| {
+            arg == "--target" || arg.starts_with("--target=") || arg.starts_with('@')
+        });
+    if wrapper && library && !native_host {
+        // Preserve the qualified guest dependency policy and flag precedence.
+        args.push("-Zalways-encode-mir=yes".into());
+    }
     Ok(Route {
         args,
         wrapper,
         export,
         borrowck_cache,
     })
+}
+
+fn explicitly_emits_link(args: &[String]) -> bool {
+    // Codegen builds check every body's MIR, including constant-panic lints.
+    // A metadata-only check need not force those same queries without complete
+    // MIR encoding. Preserve the old forcing policy unless native codegen is
+    // definitely requested. Decline repeated or unfamiliar --emit syntax.
+    let mut output = None;
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        let value = if arg == "--emit" {
+            let Some(value) = args.next() else { return false; };
+            Some(value.as_str())
+        } else {
+            arg.strip_prefix("--emit=")
+        };
+        if let Some(value) = value {
+            if output.replace(value).is_some() { return false; }
+        }
+    }
+    let Some(output) = output else { return false; };
+    let kinds: Vec<_> = output.split(',').collect();
+    kinds.contains(&"link") && kinds.iter().all(|kind| matches!(*kind,
+        "asm" | "llvm-bc" | "llvm-ir" | "obj" | "metadata" | "link" | "dep-info" | "mir"))
 }

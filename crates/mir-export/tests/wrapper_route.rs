@@ -123,6 +123,62 @@ fn std_env() -> Environment {
 }
 
 #[test]
+fn native_host_libraries_keep_ordinary_mir_policy_and_explicit_user_flags() {
+    let mut env = std_env();
+    env.primary_package = false;
+    for kind in ["lib", "rlib", "rlib,cdylib"] {
+        for explicit in [None, Some("-Zalways-encode-mir=no"), Some("-Zalways-encode-mir=yes")] {
+            let mut flags = vec!["--crate-type", kind, "--emit=dep-info,metadata,link", "source.rs"];
+            flags.extend(explicit);
+            let result = invoke(&flags, &env).unwrap();
+            assert!(!result.export);
+            assert_eq!(result.args.iter().filter(|a| a.starts_with("-Zalways-encode-mir=")).count(),
+                usize::from(explicit.is_some()));
+            if let Some(flag) = explicit {
+                assert!(result.args.iter().any(|a| a == flag));
+            }
+        }
+    }
+}
+
+#[test]
+fn guest_exports_and_ambiguous_calls_keep_complete_dependency_mir() {
+    for context in ["selected", "guest", "response", "missing-target", "missing-sysroot"] {
+        let mut env = std_env();
+        env.primary_package = context == "selected";
+        let mut flags = vec!["--crate-type", "lib", "--emit=dep-info,metadata,link", "source.rs"];
+        match context {
+            "guest" => flags.push("--target=aarch64-apple-darwin"),
+            "response" => flags.push("@extra-arguments"),
+            "missing-target" => env.std_target = None,
+            "missing-sysroot" => env.std_sysroot = None,
+            _ => (),
+        }
+        let result = invoke(&flags, &env).unwrap();
+        assert_eq!(result.args.last().unwrap(), "-Zalways-encode-mir=yes", "{context}");
+    }
+}
+
+#[test]
+fn metadata_only_or_unclear_host_outputs_keep_mir_checking_and_encoding() {
+    let mut env = std_env();
+    env.primary_package = false;
+    for outputs in [
+        &[][..], &["--emit=metadata"], &["--emit=dep-info,metadata"],
+        &["--emit=link=custom-name"], &["--emit=metadata", "--emit=link"],
+        &["--emit"], &["--emit=link,unknown"],
+        &["--emit=link", "-Zlink-only"], &["--emit=link", "-Z", "link-only=yes"],
+    ] {
+        let flags = ["--crate-type", "lib", "source.rs"].into_iter()
+            .chain(outputs.iter().copied()).collect::<Vec<_>>();
+        let result = invoke(&flags, &env).unwrap();
+        assert_eq!(result.args.last().unwrap(), "-Zalways-encode-mir=yes", "{outputs:?}");
+    }
+    let result = invoke(&["--crate-type", "lib", "--emit", "metadata,link", "source.rs"], &env).unwrap();
+    assert!(!result.args.iter().any(|a| a == "-Zalways-encode-mir=yes"));
+}
+
+#[test]
 fn target_sysroot_is_added_for_selected_and_unselected_units() {
     let mut env = std_env();
     for selected in [true, false] {
