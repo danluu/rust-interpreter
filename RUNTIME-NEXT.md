@@ -10,14 +10,22 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Implement the test-only local-value-transfer observer from the reviewed
-   [design](benchmarks/experiments/local-value-transfer/DESIGN.md). Reconstruct
-   all three saved candidate317 code/maps with the observer disabled, then count
-   actual lost Cached-source references, width-compatible transfers, exclusions,
-   new/lost forwarding, emitted bytes and spill/flush changes. Preserve bounded
-   fact order and existing cache ownership. No guest execution or executable
-   publication is needed for this diagnostic. A useful result is required before
-   another runtime screen. Do not restore values from an evicted register slot.
+1. Partition the current native Call/Return emitter with test-only labels for
+   admission, charging/spills, frame clearing, argument address/copy, frame
+   publication, result transfer and dispatch. Reconstruct the two already
+   sampled unprofiled code/maps exactly, then attribute their saved PCs to these
+   parts. No new guest execution is needed. Native Call/Return accounts for
+   26.23% /34.68% of generated samples and flushes add8.18% /12.51%; these partial
+   windows guide diagnosis rather than establish timing gains. Keep runtime
+   guards and failure ordering. Select a compatible protocol mechanism from
+   the finer attribution, then require a primary screen and all adoption gates.
+   [Current evidence](results/adopted-runtime-sampling-01/assessment.md).
+
+The local-value-transfer hypothesis is parked. Its observer passes408 bytecode
+checks/profile and reconstructs all three baseline maps exactly, but saves only
+8 /8 /0 bytes and1,792 /8 /0 weighted forwarded accesses. Large metadata-transfer
+counts are not avoided loads. No timing screen or production activation follows.
+[Negative census](results/local-value-transfer-census-01/assessment.md).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
