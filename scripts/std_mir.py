@@ -30,20 +30,32 @@ def source_digest(directory):
     return h.hexdigest()
 
 
-def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None):
+def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None,custom=None,namespace=''):
     """Install a frozen source snapshot once; validate metadata stamps on reuse."""
+    if custom is not None:custom.environment(os.environ)
     (ROOT/'.work').mkdir(exist_ok=True)
-    lock=(ROOT/'.work/std-mir.lock').open('a')
-    fcntl.flock(lock,fcntl.LOCK_EX)
+    with (ROOT/'.work/std-mir.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        return _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace)
+
+
+def _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace):
     started=time.perf_counter()
     from toolchain_lookup import compiler_identity
     if lookup not in ['fresh','cached']:raise ValueError('unknown toolchain lookup mode')
-    compiler,original,outcome=compiler_identity(toolchain,ROOT/'.work/toolchain-lookup' if lookup=='cached' else None)
+    if custom is None:
+        compiler,original,outcome=compiler_identity(toolchain,ROOT/'.work/toolchain-lookup' if lookup=='cached' else None)
+    else:
+        # The caller validates the immutable installation before entering here;
+        # standalone std setup loads it through the same manifest validator.
+        compiler,original,outcome=custom.identity['compiler'],custom.sysroot,'owned-manifest'
     if lookup_stats is not None:lookup_stats.update(mode=lookup,outcome=outcome)
     target=next(line.removeprefix('host: ') for line in compiler.splitlines() if line.startswith('host: '))
     source=original/'lib/rustlib/src/rust/library'
     identity=dict(policy=POLICY,compiler=compiler,target=target,flags=FLAGS,
                   lock_sha256=hashlib.sha256((source/'Cargo.lock').read_bytes()).hexdigest())
+    if custom is not None:
+        identity.update(compiler_key=custom.key,source_sha256=custom.identity['source_sha256'],namespace=namespace)
     key=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
     work=ROOT/'.work/std-mir'/key
     ready=work/'ready.json'
@@ -80,6 +92,7 @@ def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None):
             env.pop(name,None)
     env['RUSTFLAGS']=FLAGS
     env['CARGO_TERM_COLOR']='never'
+    if custom is not None:env=custom.environment(env)
     fetch_seconds=0
     if fetch:
         before=time.perf_counter()
@@ -121,9 +134,16 @@ def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--fetch',action='store_true',help='download missing pinned dependencies before building')
+    parser.add_argument('--compiler-key',help='use an owned complete stage2 compiler')
+    parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off')
     args=parser.parse_args()
     toolchain=json.loads((ROOT/'benchmarks/corpus.json').read_text())['toolchain']
-    sysroot,target,key,result=checked_std_mir(toolchain,fetch=args.fetch)
+    if args.stable_cgu_partitioning!='off' and args.compiler_key is None:
+        parser.error('--stable-cgu-partitioning=on requires --compiler-key')
+    from custom_compiler import load_compiler
+    custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
+    options={} if custom is None else dict(custom=custom,namespace='stable-cgu:'+args.stable_cgu_partitioning)
+    sysroot,target,key,result=checked_std_mir(toolchain,fetch=args.fetch,**options)
     print(json.dumps(dict(sysroot=str(sysroot),target=target,key=key,setup_seconds=result['setup_seconds'],
                          build_seconds=result['build_seconds'],metadata_bytes=result['metadata_bytes']),indent=2))
 

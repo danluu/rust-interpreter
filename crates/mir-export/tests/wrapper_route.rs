@@ -25,6 +25,77 @@ fn invoke(extra: &[&str], env: &Environment) -> Result<Route, String> {
 }
 
 #[test]
+fn custom_policy_reaches_host_and_guest_without_changing_existing_arguments() {
+    for policy in ["off", "on"] {
+        for primary in [false, true] {
+            for flags in [
+                &["--crate-type", "rlib", "--emit=dep-info,metadata,link"][..],
+                &["--crate-type", "proc-macro", "--emit=link"],
+                &["--crate-type", "bin", "--emit=link"],
+                &["--crate-type", "rlib", "--target=aarch64-apple-darwin", "--emit=metadata"],
+            ] {
+                let mut env = std_env();
+                env.primary_package = primary;
+                let original = invoke(flags, &env).unwrap();
+                env.compiler_rustc = Some("/toolchain/bin/rustc".into());
+                env.stable_cgu_partitioning = Some(policy.into());
+                let custom = invoke(flags, &env).unwrap();
+                assert!(custom.custom_compiler);
+                assert_eq!(custom.export, original.export);
+                let expected = format!("-Zstable-cgu-partitioning={}", if policy == "on" { "yes" } else { "no" });
+                assert_eq!(custom.args.iter().filter(|arg| **arg == expected).count(), 1);
+                assert_eq!(custom.args.into_iter().filter(|arg| *arg != expected).collect::<Vec<_>>(), original.args);
+            }
+        }
+    }
+}
+
+#[test]
+fn custom_policy_rejects_incomplete_settings_response_files_and_flag_conflicts() {
+    let mut env = selected();
+    env.compiler_rustc = Some("/toolchain/bin/rustc".into());
+    assert!(invoke(&[], &env).is_err());
+    for policy in ["", "yes", "invalid"] {
+        env.stable_cgu_partitioning = Some(policy.into());
+        assert!(invoke(&[], &env).is_err());
+    }
+    env.stable_cgu_partitioning = Some("on".into());
+    for flags in [
+        &["@response-file"][..], &["-Zstable-cgu-partitioning=yes"],
+        &["-Z", "stable-cgu-partitioning=no"], &["-Zstable_cgu_partitioning=yes"],
+        &["--sysroot=/another/compiler"],
+    ] {
+        assert!(invoke(flags, &env).is_err(), "{flags:?}");
+    }
+    env.compiler_rustc = Some("/another/bin/rustc".into());
+    assert!(invoke(&[], &env).is_err());
+    env.compiler_rustc = None;
+    assert!(invoke(&[], &env).is_err());
+}
+
+#[test]
+fn compiler_guard_covers_selected_exports_and_custom_native_jobs() {
+    let root = std::env::temp_dir().join(format!("rust-interp-compiler-route-{}-{}", std::process::id(),
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+    std::fs::create_dir_all(root.join("bin")).unwrap();
+    std::fs::write(root.join("bin/rustc"), b"fixture").unwrap();
+    let rustc = root.join("bin/rustc").to_string_lossy().into_owned();
+    for primary in [false, true] {
+        let mut env = selected();
+        env.primary_package = primary;
+        env.compiler_rustc = Some(rustc.clone().into());
+        env.stable_cgu_partitioning = Some("off".into());
+        let invocation = route(["wrapper", &rustc, "--crate-type", "rlib"].map(str::to_owned).to_vec(), &env).unwrap();
+        assert!(invocation.check_compiler(&root).is_ok());
+        assert!(invocation.check_compiler(&root.join("different")).is_err());
+    }
+    let invocation = route(["wrapper", &rustc, "--crate-type", "rlib"].map(str::to_owned).to_vec(), &selected()).unwrap();
+    assert!(invocation.check_compiler(&root).is_ok());
+    assert!(invocation.check_compiler(&root.join("different")).is_err());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn package_and_manifest_both_identify_the_selected_library() {
     let mut env = selected();
     assert!(invoke(&["--crate-type", "lib"], &env).unwrap().export);

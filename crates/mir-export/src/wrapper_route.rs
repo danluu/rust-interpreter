@@ -36,6 +36,8 @@ pub struct Environment {
     pub primary_package: bool,
     pub manifest: Option<OsString>,
     pub borrowck_cache: Option<OsString>,
+    pub compiler_rustc: Option<OsString>,
+    pub stable_cgu_partitioning: Option<OsString>,
 }
 
 impl Environment {
@@ -51,6 +53,8 @@ impl Environment {
             primary_package: std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some(),
             manifest: std::env::var_os("CARGO_MANIFEST_DIR"),
             borrowck_cache: std::env::var_os("RUST_INTERP_BORROWCK_CACHE"),
+            compiler_rustc: std::env::var_os("RUST_INTERP_COMPILER_RUSTC"),
+            stable_cgu_partitioning: std::env::var_os("RUST_INTERP_STABLE_CGU_PARTITIONING"),
         }
     }
 }
@@ -61,11 +65,23 @@ pub struct Route {
     pub wrapper: bool,
     pub export: bool,
     pub borrowck_cache: BorrowckCacheMode,
+    pub custom_compiler: bool,
 }
 
 impl Route {
     pub fn requires_exporter(&self) -> bool {
         self.export || borrowck_driver_required(&self.args, self.borrowck_cache)
+    }
+
+    pub fn check_compiler(&self, sysroot: &Path) -> Result<(), String> {
+        if self.wrapper && (self.custom_compiler || self.requires_exporter()) {
+            let expected = sysroot.join("bin/rustc").canonicalize();
+            let supplied = Path::new(&self.args[0]).canonicalize();
+            if !matches!((&expected, &supplied), (Ok(a), Ok(b)) if a == b) {
+                return Err("compiler executable does not match the exporter's build toolchain".into());
+            }
+        }
+        Ok(())
     }
 }
 
@@ -125,6 +141,46 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
         .is_some_and(|s| Path::new(s).file_stem().is_some_and(|s| s == "rustc"));
     if wrapper {
         args.remove(0);
+    }
+    let custom_compiler = env.compiler_rustc.is_some();
+    match (&env.compiler_rustc, &env.stable_cgu_partitioning) {
+        (None, None) => {}
+        (Some(compiler), Some(policy)) if wrapper => {
+            if Path::new(compiler) != Path::new(&args[0]) || !Path::new(compiler).is_absolute() {
+                return Err("custom compiler setting does not match Cargo's rustc executable".into());
+            }
+            let value = match policy.to_str() {
+                Some("off") => "no",
+                Some("on") => "yes",
+                _ => return Err("RUST_INTERP_STABLE_CGU_PARTITIONING must be off or on".into()),
+            };
+            if args.iter().any(|arg| arg.starts_with('@')) {
+                return Err("custom compiler policy does not support response files".into());
+            }
+            let mut options = args.iter().skip(1);
+            while let Some(option) = options.next() {
+                let unstable = if option == "-Z" { options.next().map(String::as_str) }
+                    else { option.strip_prefix("-Z") };
+                if let Some(unstable) = unstable {
+                    let unstable = unstable.replace('_', "-");
+                    if unstable.split('=').next() == Some("stable-cgu-partitioning") {
+                        return Err("custom compiler policy conflicts with an explicit stable-CGU flag".into());
+                    }
+                }
+                let sysroot = if option == "--sysroot" { options.next().map(String::as_str) }
+                    else { option.strip_prefix("--sysroot=") };
+                if let Some(sysroot) = sysroot {
+                    let native = Path::new(compiler).parent().and_then(Path::parent);
+                    let explicit_target = args.iter().any(|arg| arg == "--target" || arg.starts_with("--target="));
+                    let guest = explicit_target.then(|| env.std_sysroot.as_deref().map(Path::new)).flatten();
+                    if Some(Path::new(sysroot)) != native && Some(Path::new(sysroot)) != guest {
+                        return Err("custom compiler conflicts with an explicit sysroot".into());
+                    }
+                }
+            }
+            args.push(format!("-Zstable-cgu-partitioning={value}"));
+        }
+        _ => return Err("custom compiler and stable-CGU policy require a complete Cargo wrapper invocation".into()),
     }
     if wrapper && let Some(sysroot) = &env.std_sysroot {
         let value = |flag: &str| {
@@ -187,5 +243,6 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
         wrapper,
         export,
         borrowck_cache,
+        custom_compiler,
     })
 }
