@@ -30,16 +30,17 @@ def source_digest(directory):
     return h.hexdigest()
 
 
-def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None,custom=None,namespace=''):
+def checked_std_mir(toolchain,fetch=False,lookup='fresh',lookup_stats=None,custom=None,namespace='',cargo=None):
     """Install a frozen source snapshot once; validate metadata stamps on reuse."""
     if custom is not None:custom.environment(os.environ)
+    if cargo is not None:cargo.environment(os.environ,toolchain,custom)
     (ROOT/'.work').mkdir(exist_ok=True)
     with (ROOT/'.work/std-mir.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
-        return _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace)
+        return _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace,cargo)
 
 
-def _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace):
+def _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace,cargo):
     started=time.perf_counter()
     from toolchain_lookup import compiler_identity
     if lookup not in ['fresh','cached']:raise ValueError('unknown toolchain lookup mode')
@@ -49,6 +50,10 @@ def _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace
         # The caller validates the immutable installation before entering here;
         # standalone std setup loads it through the same manifest validator.
         compiler,original,outcome=custom.identity['compiler'],custom.sysroot,'owned-manifest'
+    if cargo is not None and custom is None:
+        binding=cargo.identity['pinned_compiler']
+        if compiler!=binding['compiler'] or original!=Path(binding['sysroot']):
+            raise RuntimeError('std MIR compiler differs from selected Cargo compiler')
     if lookup_stats is not None:lookup_stats.update(mode=lookup,outcome=outcome)
     target=next(line.removeprefix('host: ') for line in compiler.splitlines() if line.startswith('host: '))
     source=original/'lib/rustlib/src/rust/library'
@@ -56,6 +61,7 @@ def _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace
                   lock_sha256=hashlib.sha256((source/'Cargo.lock').read_bytes()).hexdigest())
     if custom is not None:
         identity.update(compiler_key=custom.key,source_sha256=custom.identity['source_sha256'],namespace=namespace)
+    if cargo is not None:identity['cargo']=cargo.receipt(custom)
     key=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()
     work=ROOT/'.work/std-mir'/key
     ready=work/'ready.json'
@@ -92,22 +98,28 @@ def _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace
             env.pop(name,None)
     env['RUSTFLAGS']=FLAGS
     env['CARGO_TERM_COLOR']='never'
-    if custom is not None:env=custom.environment(env)
+    if custom is not None and cargo is None:env=custom.environment(env)
+    if cargo is not None:env=cargo.environment(env,toolchain,custom)
+    cargo_command=[str(cargo.executable)] if cargo is not None else ['cargo','+'+toolchain]
     fetch_seconds=0
     if fetch:
         before=time.perf_counter()
-        command=['cargo','+'+toolchain,'fetch','--manifest-path',str(snapshot/'Cargo.toml'),'--locked','--target',target]
+        command=cargo_command+['fetch','--manifest-path',str(snapshot/'Cargo.toml'),'--locked','--target',target]
         with (work/'fetch.log').open('w') as log:
             subprocess.run(command,cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
         fetch_seconds=time.perf_counter()-before
-    command=['cargo','+'+toolchain,'check','--manifest-path',str(snapshot/'Cargo.toml'),
+    command=cargo_command+['check','--manifest-path',str(snapshot/'Cargo.toml'),
              '-p','sysroot','--release','--target',target,'--features','backtrace',
              '--locked','--offline','--jobs','4','--target-dir',str(work/'target')]
     before=time.perf_counter()
     with (work/'build.log').open('w') as log:
         process=subprocess.Popen(command,cwd=ROOT,env=env,stdout=log,stderr=subprocess.STDOUT)
-        (work/'command.json').write_text(json.dumps(dict(pid=process.pid,command=command,flags=FLAGS),indent=2)+'\n')
-        code=process.wait()
+        try:
+            receipt=dict(pid=process.pid,command=command,flags=FLAGS)
+            if cargo is not None:receipt['cargo']=cargo.receipt(custom)
+            (work/'command.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        finally:
+            code=process.wait()
     if code:
         tail='\n'.join((work/'build.log').read_text().splitlines()[-25:])
         raise RuntimeError('standard-library metadata build failed; log: '+str(work/'build.log')+'\n'+tail)
@@ -135,14 +147,17 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--fetch',action='store_true',help='download missing pinned dependencies before building')
     parser.add_argument('--compiler-key',help='use an owned complete stage2 compiler')
+    parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off')
     args=parser.parse_args()
     toolchain=json.loads((ROOT/'benchmarks/corpus.json').read_text())['toolchain']
     if args.stable_cgu_partitioning!='off' and args.compiler_key is None:
         parser.error('--stable-cgu-partitioning=on requires --compiler-key')
     from custom_compiler import load_compiler
+    from custom_cargo import load_cargo
     custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
     options={} if custom is None else dict(custom=custom,namespace='stable-cgu:'+args.stable_cgu_partitioning)
+    if args.cargo_key is not None:options['cargo']=load_cargo(ROOT,args.cargo_key)
     sysroot,target,key,result=checked_std_mir(toolchain,fetch=args.fetch,**options)
     print(json.dumps(dict(sysroot=str(sysroot),target=target,key=key,setup_seconds=result['setup_seconds'],
                          build_seconds=result['build_seconds'],metadata_bytes=result['metadata_bytes']),indent=2))

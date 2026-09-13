@@ -245,6 +245,7 @@ def _main(resources):
     parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
     parser.add_argument('--compiler-key',help='use an owned complete stage2 compiler; requires preinstalled matching --tool-key')
+    parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable with the selected compiler')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off',help='custom compiler CGU grouping policy (default: off)')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
     parser.add_argument('--function-cache',choices=['off','reuse','auto'],default='off',help='experimental compiler-validated function cache: reuse requires incremental tracking; auto uses full lowering when tracking is disabled; strict checking always runs (default: off)')
@@ -338,8 +339,11 @@ def _main(resources):
     manifest=args.manifest_path.resolve()
     stage=time.perf_counter()
     from custom_compiler import load_compiler, validate_tool_compiler
+    from custom_cargo import load_cargo
     custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
     if custom:custom.environment(os.environ) # Reject conflicts before any compilation.
+    cargo=load_cargo(ROOT,args.cargo_key) if args.cargo_key is not None else None
+    if cargo:cargo.environment(os.environ,TOOLCHAIN,custom) # Validate before tool/std setup.
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
     validate_tool_compiler(tools,key,custom)
     if custom:require_export_option(tools,key,'stable-cgu-partitioning')
@@ -359,12 +363,14 @@ def _main(resources):
         timings['custom_compiler']=dict(key=custom.key,rustc=str(custom.rustc),
             rustc_sha256=custom.identity['files']['bin/rustc'],compiler=custom.identity['compiler'],
             stable_cgu_partitioning=args.stable_cgu_partitioning)
+    if cargo:timings['custom_cargo']=cargo.receipt(custom)
     std=None
     if args.std_mir:
         from std_mir import checked_std_mir
         stage=time.perf_counter()
         lookup_stats={}
         std_options={} if custom is None else dict(custom=custom,namespace='stable-cgu:'+args.stable_cgu_partitioning)
+        if cargo:std_options['cargo']=cargo
         std=checked_std_mir(TOOLCHAIN,lookup=args.toolchain_lookup,lookup_stats=lookup_stats,**std_options)
         timings['std_mir_seconds']=time.perf_counter()-stage
         if stats:
@@ -385,6 +391,7 @@ def _main(resources):
         identity_input='borrowck-cache-v1\0'+args.borrowck_cache+'\0'+identity_input
     if custom:
         identity_input='custom-compiler-v1\0'+custom.key+'\0'+args.stable_cgu_partitioning+'\0'+identity_input
+    if cargo:identity_input='custom-cargo-v1\0'+cargo.key+'\0'+identity_input
     identity=hashlib.sha256(identity_input.encode()).hexdigest()[:24]
     if args.workspace_cache_root is None:
         work=cache_base/key/identity
@@ -404,7 +411,8 @@ def _main(resources):
     # and compiler selection are isolated from native build directories.
     for name in list(env):
         if name.startswith('RUST_INTERP_'):env.pop(name)
-    if custom:env=custom.environment(env)
+    if custom and cargo is None:env=custom.environment(env)
+    if cargo:env=cargo.environment(env,TOOLCHAIN,custom)
     tool_manifest=json.loads((tools/'ready.json').read_text())
     wrapper_name='rust-interp-rustc-wrapper' if 'rust-interp-rustc-wrapper' in tool_manifest else 'rust-interp-mir-export'
     timings['compiler_wrapper']=dict(name=wrapper_name,sha256=tool_manifest[wrapper_name])
@@ -439,7 +447,7 @@ def _main(resources):
         env['RUST_INTERP_STD_SYSROOT']=str(std[0])
         env['RUST_INTERP_STD_TARGET']=std[1]
     if stats:env['RUST_INTERP_VM_STATS']='1'
-    command=['cargo','+'+TOOLCHAIN,'check','--manifest-path',str(manifest),'--package',args.package]
+    command=([str(cargo.executable)] if cargo else ['cargo','+'+TOOLCHAIN])+['check','--manifest-path',str(manifest),'--package',args.package]
     command+=['--lib'] if args.test_target is None else ['--test',args.test_target]
     command+=['--locked','--offline','--jobs',str(args.jobs),'--message-format=json-render-diagnostics']
     if args.features:command+=['--features',args.features]
