@@ -45,8 +45,13 @@ The refined memory-operand candidate now passes 428 Rust tests per profile,
 cache/native checks and three profiles. Every per-PC operation count, native
 interval, memory peak and entropy record matches the wide control. Generated
 code is 5.15% / 5.12% / 5.63% smaller on the three profiled tests; this is not
-a latency result. The prospective 462-command token/folded/pgrust comparison
-is next, with the same controls and documented engineering margins.
+a latency result. Token now completes all154 expected commands and passes
+its prospective gate: paired wall−6.60%, CPU−5.93% versus the wide control,
+with1.82% wall/0.53% CPU A/A. Versus the fixed anchor, wall improves17.82%
+and CPU18.07%. The candidate still takes1.862× ordinary native Cargo.
+Folded and pgrust remain mandatory in the frozen462-command comparison;
+no source adoption follows from the primary result alone.
+[Token result](results/memory-operands-edit-token-01/stage-assessment.md).
 [Qualified mechanism](results/memory-operands-profile-01/assessment.md).
 [Complete comparison](results/paired-registers-complete-01/assessment.md). [Scope and next constraints](docs/REGISTER-TRANSFER-NEXT.md).
 [Token result](results/guarded-indirect-edit-token-02/stage-assessment.md),
