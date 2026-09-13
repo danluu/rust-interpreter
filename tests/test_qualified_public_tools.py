@@ -108,7 +108,7 @@ def archive(change=None, std_change=None):
         harness_inventory_sha256=put('provenance/harness.json', dict(files=harness)),
         dependency_inventory_sha256=put('provenance/dependencies.json', dict(lock_sha256=files['Cargo.lock'],
             packages=[dict(name='fixture', version='1', files=[file('/registry/fixture/src/lib.rs')])],
-            configuration=dict(environment_overrides=env))))
+            configuration=dict(environment_overrides=env, files=[], searches={}))))
     raw_capability_sha = q.sha(data[next(c['stdout'] for c in commands if c['label'] == 'capabilities')])
     correctness = dict(schema_version=1, status='passed', source_input_key=source_key, plan_sha256=build['plan_sha256'],
         binaries=binaries, results=results, commands=commands, compiler_identity_sha256=q.digest(compiler),

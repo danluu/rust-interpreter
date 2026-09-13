@@ -313,6 +313,14 @@ def validate_public_tool(tool, key, read_bytes):
             record_file(record)
             require(records.setdefault(record['path'], record) == record, 'conflicting input identity')
 
+        configuration = dependencies['configuration']
+        for record in configuration['files']:add(record)
+        config_paths = {r['path'] for r in configuration['files']}
+        for name, exists in configuration['searches'].items():
+            absolute(name)
+            require(type(exists) is bool and exists == (name in config_paths), 'Cargo configuration search differs')
+            searches[name] = exists
+        require(config_paths <= searches.keys(), 'Cargo configuration lacks search identity')
         require(compiler_inputs['files'], 'empty compiler input inventory')
         for record in compiler_inputs['files']:add(record)
         for package in dependencies['packages']:

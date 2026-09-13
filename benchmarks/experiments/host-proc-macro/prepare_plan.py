@@ -51,14 +51,15 @@ def main():
     if any(p.is_symlink() for p in [*workspace_entries, *workspace_inputs]):
         raise RuntimeError('source inventory requires regular files, not unresolved source symlinks')
     contract = Path(__file__).with_name('PUBLICATION.md')
-    superseded = Path(__file__).with_name('planned-build-01.json')
-    work = ROOT / '.work/host-proc-macro-build-02'
+    superseded = [Path(__file__).with_name(f'planned-build-{index:02}.json') for index in (1, 2)]
+    work = ROOT / '.work/host-proc-macro-build-03'
     target = work / 'target'
     screen_work = screen_root / '.work/strict-warm-proc-macro-screen-01'
     source = screen_root / '.work/sources/nushell-proc-macro-opt'
-    env = dict(CARGO_TERM_COLOR='never', CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
+    env = dict(CARGO_TERM_COLOR='never', CARGO_TERM_VERBOSE='true', CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
                CARGO_PROFILE_TEST_DEBUG='0', CARGO_PROFILE_RELEASE_DEBUG='1',
-               RUSTC=str(sysroot / 'bin/rustc'), RUSTUP_TOOLCHAIN=TOOLCHAIN + '-' + host)
+               RUSTC=str(sysroot / 'bin/rustc'), RUSTDOC=str(sysroot / 'bin/rustdoc'),
+               RUSTUP_TOOLCHAIN=TOOLCHAIN + '-' + host)
     common = ['--release', '--locked', '--offline', '--jobs', '2', '--target-dir', str(target)]
     commands = [
         dict(label='public-rustc-identity', argv=[str(sysroot / 'bin/rustc'), '-vV']),
@@ -84,11 +85,13 @@ def main():
         command.update(cwd=str(ROOT), receipt=str(work / (command['label'] + '-process.json')),
                        stdout=str(work / (command['label'] + '.stdout')),
                        stderr=str(work / (command['label'] + '.stderr')))
-    paths = [Path(__file__), contract, ROOT / 'rust-toolchain.toml', ROOT / 'benchmarks/corpus.json',
+    paths = [Path(__file__), Path(__file__).with_name('build.py'), Path(__file__).with_name('SUPERVISOR.md'),
+        contract, ROOT / 'rust-toolchain.toml', ROOT / 'benchmarks/corpus.json',
         *sorted((ROOT / 'scripts').glob('*.py')),
         *[ROOT / 'tests' / name for name in ['test_host_proc_macro_launcher.py', 'test_host_proc_macro_native.py',
             'test_strict_warm_screen.py', 'test_strict_warm_cargo_screen.py', 'test_strict_warm_proc_macro_screen.py',
-            'test_custom_cargo.py', 'test_custom_compiler.py', 'test_borrowck_cache.py']],
+            'test_custom_cargo.py', 'test_custom_compiler.py', 'test_borrowck_cache.py',
+            'test_qualified_public_tools.py', 'test_public_tool_publication.py']],
         *[ROOT / 'benchmarks/experiments/strict-warm-build' / name for name in
             ['screen.py', 'PROTOCOL.md', 'HOST_PROC_MACRO_OPT.md', 'HOST_PROC_MACRO_SCREEN.md']]]
     plan = dict(schema_version=2, kind='source-only-build-qualification-plan', status='not-executed',
@@ -101,18 +104,21 @@ def main():
         tool_sources={str(p.relative_to(ROOT)): sha(p) for p in inputs},
         workspace_sources={str(p.relative_to(ROOT)): sha(p) for p in workspace_inputs},
         harness={str(p.relative_to(ROOT)): sha(p) for p in paths},
-        supersedes=dict(path=str(superseded.relative_to(ROOT)), sha256=sha(superseded),
-            status='superseded-not-executed', reason='source-content fingerprint was incorrectly used as the final composition key'),
+        supersedes=[dict(path=str(p.relative_to(ROOT)), sha256=sha(p), status='superseded-not-executed')
+                    for p in superseded],
+        implementation_contract_tests=dict(required_before_build=True, run_separately_under_canonical_lock=True,
+            commands=[dict(argv=[sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', name, '-v'],
+                           expected_tests=5) for name in ['test_qualified_public_tools.py', 'test_public_tool_publication.py']]),
         shared_std=dict(path=str(ready_path), sha256=sha(ready_path), key=ready_path.parent.name,
             compiler=identity['compiler'], target=host, identity=identity),
         workload_admission=dict(lock='/Users/danluu/dev/rust-interp/.work/benchmark.lock',
-            wait_seconds=45, after=['custom compiler integration and stable-CGU screen', 'Cargo-info-cache setup and screen'],
+            wait_seconds=600, after=['custom compiler integration and stable-CGU screen', 'Cargo-info-cache setup and screen'],
             supervisor_must_wait_children_on_receipt_failure=True, tool_build_minimum_free_gib=12,
             screen_initial_minimum_free_gib=16, per_command_minimum_free_gib=8),
         clean_environment=dict(remove_prefixes=['RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'],
             remove=['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'CARGO_BUILD_RUSTC', 'RUSTC_WRAPPER',
                     'RUSTC_WORKSPACE_WRAPPER', 'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET',
-                    'RUST_TEST_THREADS', 'CARGO', 'RUSTUP_TOOLCHAIN'],
+                    'RUST_TEST_THREADS', 'RUSTDOC', 'CARGO', 'RUSTUP_TOOLCHAIN'],
             reject_prefixes=['LD_', 'DYLD_'], overrides=env),
         commands=commands,
         publication=dict(status='pending-qualification', contract=str(contract.relative_to(ROOT)),

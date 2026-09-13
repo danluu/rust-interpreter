@@ -31,7 +31,7 @@ def build_admission(plan):
             'build work directory must be new and owned')
     admission = plan['workload_admission']
     require(admission['lock'] == '/Users/danluu/dev/rust-interp/.work/benchmark.lock'
-            and 0 < admission['wait_seconds'] <= 45, 'unexpected workload lock/admission bound')
+            and 0 < admission['wait_seconds'] <= 1800, 'unexpected workload lock/admission bound')
     with Path(admission['lock']).open('a') as lock:
         acquire_lock(lock, admission['wait_seconds'])
         require_space(owner, admission['tool_build_minimum_free_gib'])
