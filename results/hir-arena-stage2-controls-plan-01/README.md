@@ -1,0 +1,5 @@
+# HIR stage2 continuation controls and metadata plan
+
+All eight Python controls passed without skips at source447d4054. The metadata plan2b839347 then passed all five source guards against compiler source7efc. The archive retains all145 exact frozen input files and copied snapshots, raw outputs, environments and child/outer receipts. The complete native qualification archive373719 and its seven earlier archives were verified in full and retained by reference; their tar payloads are not nested.
+
+The plan keeps all27 compiler units, exact stage2 bootstrap commands, complete direct native recipe, package/native15/strip6 scope and24/9/8 capacity policy. No compiler build, test, package or source mutation occurred during metadata planning or this archive. These controls do not establish stage2 qualification or a performance result. The original outer native attempt remains failed; its separate complete direct recipe pass is retained in the referenced native archive. Every new archive member and captured source was rechecked.
