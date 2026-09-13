@@ -5,7 +5,8 @@ It changes five exporter files, preserving the cache format, function-dependency
 observer, compiler query order, eager MIR materialization and emitted program.
 Apply only after the scalar Copy comparison is terminal and after checking the
 recorded source preimage hashes (`git apply --unidiff-zero`). The Python reader
-and its eight tests are also drafts and have not run. Choose the then-qualified VM as a retained
+and its eight tests, the launcher and its four tests, and the build/fixture
+drivers are also drafts and have not run. Choose the then-qualified VM as a retained
 binary; rebuild only the exporter package. Do not overlap builds or diagnostics
 with that comparison, mutate its helpers or restart a completed case.
 
@@ -47,7 +48,10 @@ Qualification, to freeze with executable drivers before running:
    catalog and original outcome parity; no guest launch for compiler errors.
    Cover absent/0/1/invalid options, off/verify/no-incremental cache modes and
    incompatible replay-cost observation. Check option-only Cargo invalidation.
-   Declare the exact expanded command count with the executable schedule.
+   The draft executable schedule declares28 commands: one lockfile command,
+   six states across three modes, three option-only toggles, five invalid/missing
+   cache configurations and one incompatible-observer check. Freeze these
+   helpers and the chosen retained build before executing.
 4. Run one16-command off/on current-token history in fresh namespaces with
    all12 original tests, fixed entropy policy, guest budgets and two prepared
    workers. Admission16GiB, per-command floor8GiB. Require identical bytecode,
