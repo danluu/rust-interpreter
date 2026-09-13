@@ -71,12 +71,16 @@ result. Return to actual-emitter local-value forwarding composition evidence.
 [Matched incremental](results/pgrust-parser-edits-incremental-history-01/assessment.md).
 [Combined compatibility](results/environment-main-final-audit-01/assessment.md).
 The actual-emitter local-value censuses are complete. All three public baselines
-reconstruct exactly. A composition of guarded local-value retention, preserved
-static facts and scalar-copy address folding is selected for qualification;
-both reduced operation spans and increased flush code remain reported. No
-runtime correctness or performance verdict is claimed for this candidate yet.
-The first build admission timed out on the shared lock with zero build commands.
-[Composition evidence](results/guarded-local-facts-composed-census-01/assessment.md).
+reconstruct exactly. Composition `317a0bf1` of guarded local-value retention,
+preserved static facts and scalar-copy address folding now passes 504 workspace
+tests per profile, 119 strict/cache controls and three exact real-test profiles.
+Both reduced operation spans and increased flush code remain reported; the
+profiled emitted sizes match the independent census. Earlier fixture-setup and
+admission failures remain recorded. The token-first changed-source screen is
+unstarted, so there is no performance or adoption verdict. The runtime remains
+on its experiment branch while completed qualification reports are on main.
+[Composition evidence](results/guarded-local-facts-composed-census-01/assessment.md),
+[qualification](results/guarded-local-facts-profile-01/assessment.md).
 The automatic tool cache now includes its selected toolchain identifier: the
 retained regression fails before the fix, and 123 runnable root tests pass after
 it (10 existing skips). Explicit immutable keys remain usable. The unrelated
