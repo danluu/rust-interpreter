@@ -16,6 +16,12 @@ and do not retime it. The next composition targets frontend overhead in pgrust
 while retaining the measured token component. It needs new full-command
 measurements and large/private guards, not multiplied historical ratios.
 [Mechanism and qualification](results/memory-operands-profile-01/assessment.md).
+The new composition passes 138 harness tests and 20 strict real Cargo checks.
+Its 726-command controller is active, with Nushell first, then private rg-aot,
+token, folded and pgrust. Finish every mandatory case and assess the frozen
+rules before importing runtime source or changing defaults. No other own
+build, test or profile runs alongside the timed comparison.
+[Prospective comparison](benchmarks/experiments/memory-lookup/WORKFLOW.md).
 
 1. **Keep the completed host-MIR decision.** Wrapper466c60a2 completed all264
    Nushell/pgrust commands with matching artifacts and original assertions.
