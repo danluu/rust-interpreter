@@ -29,7 +29,7 @@ def sha(payload):
     return hashlib.sha256(payload).hexdigest()
 
 
-def fixture():
+def fixture(shared=False):
     owner, files = Path('/owned/project'), {}
     source = b'example source\n'
     sources = {name: sha(source) for name in v2.REQUIRED_SOURCES}
@@ -55,7 +55,7 @@ def fixture():
         return entries
 
     def std(mode):
-        identity = v2.make_identity(compiler, cargo, 'stable-mono-cgu:' + mode, {})
+        identity = v2.make_identity(compiler, cargo, v2.SHARED_NAMESPACE if shared else 'stable-mono-cgu:' + mode, {})
         key = custom.digest(identity)
         work = owner / '.work/std-mir' / key
         metadata = {'lib/rustlib/' + host + '/lib/lib' + crate + '-fixture.rmeta': '3' * 64 for crate in v2.CRATES}
@@ -107,9 +107,10 @@ def fixture():
         artifacts = {str(work / 'sysroot' / name): dict(sha256=h, stamp=[1, 2, 10, 1]) for name, h in metadata.items()}
         return dict(path=str(work / 'ready.json'), sha256=sha(encoded(ready)), key=key, artifacts=artifacts,
             compiler=compiler.identity['compiler'], rustc=str(compiler.rustc), rustc_sha256='1' * 64,
-            sysroot=str(work / 'sysroot'), target=host, policy=v2.POLICY, identity=identity, readiness=ready)
+            sysroot=str(work / 'sysroot'), target=host, policy=identity['policy'], identity=identity, readiness=ready)
 
-    off, on = std('off'), std('on')
+    off = std('off')
+    on = copy.deepcopy(off) if shared else std('on')
     plan = dict(owner=str(owner), candidate_policy='stable-mono-cgu', case=json.loads(json.dumps(screen.CASE)),
         source=str(owner / 'source'), states=[dict(index=i) for i in range(9)],
         custom_compiler=dict(key=compiler.key, sysroot=str(compiler.sysroot),
@@ -151,6 +152,36 @@ class OwnedMonoAssessmentTests(unittest.TestCase):
             assess.tool_identity(plan, plan['tools']['baseline'], compiler, snapshot(files))
         wrong = copy.deepcopy(plan)
         wrong['std_mir_by_mode']['candidate'] = wrong['std_mir_by_mode']['baseline']
+        with self.assertRaises(RuntimeError):
+            assess.selection(wrong, snapshot(files))
+
+    def test_shared_std_archive_requires_identical_physical_input_and_keeps_mono_modes(self):
+        plan, compiler, files = fixture(shared=True)
+        with patch.object(Path, 'read_bytes', side_effect=AssertionError('live read')):
+            assess.selection(plan, snapshot(files))
+        std = plan['std_mir']
+        for mode in screen.MODES:
+            command = screen.command_for(mode, plan['tools'][mode], Path(plan['source']), Path('/owned/run'),
+                plan['states'][0], candidate_policy='stable-mono-cgu', compiler_key=compiler.key,
+                prepared_std=std)
+            self.assertEqual(command[command.index('--std-mir-policy') + 1], v2.SHARED_SELECTION)
+            self.assertEqual(command[command.index('--std-mir-key') + 1], std['key'])
+            self.assertEqual(command[command.index('--stable-mono-cgu-partitioning') + 1],
+                             'on' if mode == 'candidate' else 'off')
+            settings = screen.launch_settings(mode, plan['tools'][mode], 'stable-mono-cgu', compiler,
+                mono_wrapper=plan['mono_wrapper'], prepared_std=std)
+            self.assertEqual(settings['std_mir_policy'], v2.SHARED_POLICY)
+            launch = settings | dict(toolchain_lookup=dict(mode='cached', outcome='owned-manifest'))
+            assess.mono_launch_identity(plan, dict(mode=mode, launch=launch), compiler)
+            launch['std_mir_policy'] = v2.POLICY
+            with self.assertRaises(RuntimeError):
+                assess.mono_launch_identity(plan, dict(mode=mode, launch=launch), compiler)
+        wrong = copy.deepcopy(plan)
+        wrong['std_mir_by_mode']['candidate']['sysroot'] += '-different'
+        with self.assertRaises(RuntimeError):
+            assess.selection(wrong, snapshot(files))
+        wrong = copy.deepcopy(plan)
+        wrong['std_mir_by_mode']['candidate'] = fixture()[0]['std_mir_by_mode']['candidate']
         with self.assertRaises(RuntimeError):
             assess.selection(wrong, snapshot(files))
 

@@ -17,11 +17,14 @@ SPEC.loader.exec_module(screen)
 import stable_mono_qualification as qualification
 
 
-def fixture():
+def fixture(shared=False):
     owner = Path('/owned/project')
     path = owner / '.work/integration/result.json'
     stds = {mode: dict(key=letter * 64, sysroot='/std/' + mode, target='host')
             for mode, letter in [('off', 'd'), ('on', 'e')]}
+    if shared:
+        stds['on'] = stds['off'].copy()
+    std_selection = 'source-paths-v2-shared' if shared else 'source-paths-v2'
     files = {}
     def put(name, data):
         files[name] = data if isinstance(data, bytes) else json.dumps(data, sort_keys=True).encode()
@@ -32,9 +35,9 @@ def fixture():
         diagnostic_presentation='strict-structured-match', presentation_gap_count=0,
         semantic_controls='passed', source_restored=True, compiler_key='c' * 64,
         tool_key='a' * 64, commands=36, launcher_commands=22, public_commands=11,
-        expected_rejections=24, std_mir_policy='source-paths-v2', std_mir=stds,
+        expected_rejections=24, std_mir_policy=std_selection, std_mir=stds,
         module_policy_by_mode=dict(off='off', on='off'), mono_policy_by_mode=dict(off='off', on='on'))
-    result['plan_sha256'] = put('plan.json', dict(compiler_key='c' * 64, tool_key='a' * 64))
+    result['plan_sha256'] = put('plan.json', dict(compiler_key='c' * 64, tool_key='a' * 64, std_mir_policy=std_selection))
     commands = []
     artifact_labels = ['original-off', 'original-on', 'edited-off', 'edited-on',
                        'restored-off', 'restored-on']
@@ -46,6 +49,9 @@ def fixture():
             digest = put(label + '.rbc', content)
             row.update(label=label, validated=True, artifact=str(path.parent / (label + '.rbc')),
                        artifact_sha256=digest, launch=dict(tool_key='a' * 64, artifact_sha256=digest))
+        if shared and index < len(artifact_labels):
+            from std_mir_source_paths import SHARED_POLICY
+            row['launch'].update(std_mir=stds['off'], std_mir_policy=SHARED_POLICY)
         commands.append(row)
         put(f'{index:02d}-child.json', row | dict(status='finished', started_at=1, finished_at=2))
     put('commands.json', commands)
@@ -78,6 +84,22 @@ def fixture():
 
 
 class MonoScreenContracts(unittest.TestCase):
+    def test_shared_qualification_binds_actual_launcher_and_rejects_old_label(self):
+        result, files, put, validate = fixture(shared=True)
+        validate()
+        rows = json.loads(files['commands.json'])
+        rows[1]['launch']['std_mir']['sysroot'] = '/different/std'
+        put('commands.json', rows)
+        child = json.loads(files['01-child.json'])
+        child['launch'] = rows[1]['launch']
+        put('01-child.json', child)
+        with self.assertRaisesRegex(RuntimeError, 'shared std qualification launcher'):
+            validate()
+        result, files, put, validate = fixture(shared=True)
+        result['std_mir_policy'] = 'source-paths-v2'
+        with self.assertRaisesRegex(RuntimeError, 'separate namespaces'):
+            validate()
+
     def test_qualification_freeze_accepts_raw_digest_and_rejects_changed_bytes(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory).resolve() / 'evidence'
@@ -204,12 +226,13 @@ class MonoScreenContracts(unittest.TestCase):
             directory = root / '.work/std-mir' / ('d' * 64)
             directory.mkdir(parents=True)
             ready_path = directory / 'ready.json'
-            ready_path.write_text('{}')
+            # The loader selection is read from the actual ready identity.
             custom = SimpleNamespace(rustc=Path('/compiler/bin/rustc'),
                 identity=dict(compiler='compiler', files={'bin/rustc': 'f' * 64}))
             ready = dict(identity=dict(policy=qualification.STD_POLICY),
                          full_presentation_qualified=False, metadata={})
-            module = SimpleNamespace(POLICY=qualification.STD_POLICY)
+            ready_path.write_text(json.dumps(ready))
+            import std_mir_source_paths as module
             with patch.dict('sys.modules', std_mir_source_paths=module), patch.object(screen, 'ROOT', root):
                 with patch.object(module, 'load', create=True,
                         return_value=(directory / 'sysroot', 'host', 'd' * 64, ready)) as load:
