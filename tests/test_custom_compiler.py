@@ -22,7 +22,7 @@ def thaw(root):
             path.chmod(0o755 if path.is_dir() else 0o644)
 
 
-def fake_install(root):
+def fake_install(root, *, mono=False):
     source = root / 'packaged'
     files = [*custom.compiler_programs(HOST), 'lib/librustc_driver-fixture.dylib']
     lib = 'lib/rustlib/' + HOST + '/lib/'
@@ -42,7 +42,7 @@ def fake_install(root):
         if command[-1] == 'sysroot':
             return str(Path(command[0]).parents[1]) + '\n'
         if command[-1] == '-Zhelp':
-            return 'stable-cgu-partitioning = val\n'
+            return 'stable-cgu-partitioning = val\n' + ('    -Z stable-mono-cgu-partitioning=val -- fixture\n' if mono else '')
         raise AssertionError(command)
     with patch.object(custom, 'audit_macos_libraries'), \
          patch.object(custom.subprocess, 'check_output', side_effect=probe):
@@ -64,6 +64,40 @@ class CustomCompilerTests(unittest.TestCase):
         probe.assert_not_called()
         hash_file.assert_not_called()
         self.assertEqual(self.compiler.rustc, self.compiler.sysroot / 'bin/rustc')
+
+    def test_recorded_help_proves_only_actual_options_and_legacy_keys_still_load(self):
+        self.compiler.require_option('stable-cgu-partitioning')
+        with self.assertRaisesRegex(RuntimeError, 'no recorded -Zhelp support'):
+            self.compiler.require_option('stable-mono-cgu-partitioning')
+        proof = custom.compiler_options('example stable-mono-cgu-partitioning = val\n')
+        self.assertEqual(proof['supported'], [])
+        # Model the old format in an entirely synthetic installation. Loading
+        # it must not probe, rewrite, or silently add new compiler capabilities.
+        old_directory = self.compiler.sysroot.parent
+        ready = json.loads((old_directory / 'ready.json').read_text())
+        del ready['identity']['unstable_options']
+        ready['key'] = custom.digest(ready['identity'])
+        directory = old_directory.with_name(ready['key'])
+        (old_directory / 'ready.json').chmod(0o644)
+        (old_directory / 'ready.json').write_text(json.dumps(ready))
+        old_directory.rename(directory)
+        with patch.object(custom.subprocess, 'check_output') as probe:
+            legacy = custom.load_compiler(self.root, ready['key'])
+        probe.assert_not_called()
+        self.assertNotIn('unstable_options', legacy.identity)
+        with self.assertRaisesRegex(RuntimeError, 'no recorded -Zhelp support'):
+            legacy.require_option('stable-mono-cgu-partitioning')
+
+    def test_imported_mono_help_is_bound_into_identity_and_cannot_be_relabelled(self):
+        root = self.root / 'mono'; root.mkdir()
+        compiler = fake_install(root, mono=True)
+        compiler.require_option('stable-mono-cgu-partitioning')
+        self.assertNotEqual(compiler.key, self.compiler.key)
+        proof = compiler.identity['unstable_options']
+        self.assertEqual(proof, custom.compiler_options(proof['output']))
+        changed = dict(compiler.identity, unstable_options=dict(proof, supported=[]))
+        with self.assertRaisesRegex(RuntimeError, 'no recorded -Zhelp support'):
+            replace(compiler, identity=changed).require_option('stable-mono-cgu-partitioning')
 
     def test_changed_bytes_with_restored_size_mtime_and_permissions_are_rejected(self):
         path = self.compiler.sysroot / 'lib/librustc_driver-fixture.dylib'

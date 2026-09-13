@@ -74,6 +74,86 @@ fn custom_policy_rejects_incomplete_settings_response_files_and_flag_conflicts()
 }
 
 #[test]
+fn mono_policy_appends_both_flags_once_to_native_guest_and_probe_routes() {
+    for mode in ["off", "on"] {
+        for primary in [false, true] {
+            for flags in [
+                &["--crate-type", "rlib", "--emit=dep-info,metadata,link"][..],
+                &["--crate-type", "proc-macro", "--emit=link"],
+                &["--crate-type", "bin", "--emit=link", "-Copt-level=0"],
+                &["--crate-type", "lib", "--target=aarch64-apple-darwin", "--emit=metadata"],
+                &["--print=cfg"],
+                &["-vV"],
+            ] {
+                let mut env = std_env();
+                env.primary_package = primary;
+                let original = invoke(flags, &env).unwrap();
+                env.compiler_rustc = Some("/toolchain/bin/rustc".into());
+                env.stable_cgu_partitioning = Some("off".into());
+                env.stable_mono_cgu_partitioning = Some(mode.into());
+                let result = invoke(flags, &env).unwrap();
+                assert_eq!(result.export, original.export);
+                assert_eq!(result.requires_exporter(), original.requires_exporter());
+                let module = "-Zstable-cgu-partitioning=no";
+                let mono = format!("-Zstable-mono-cgu-partitioning={}", if mode == "on" { "yes" } else { "no" });
+                assert_eq!(result.args.iter().filter(|a| a.as_str() == module).count(), 1);
+                assert_eq!(result.args.iter().filter(|a| **a == mono).count(), 1);
+                assert_eq!(result.args.into_iter().filter(|a| a != module && *a != mono).collect::<Vec<_>>(), original.args);
+            }
+        }
+    }
+}
+
+#[test]
+fn mono_policy_rejects_conflicts_and_incomplete_configuration() {
+    let mut env = Environment {
+        compiler_rustc: Some("/toolchain/bin/rustc".into()),
+        stable_cgu_partitioning: Some("off".into()),
+        stable_mono_cgu_partitioning: Some("on".into()),
+        ..Environment::default()
+    };
+    for flags in [
+        &["@response"][..], &["-Zstable-mono-cgu-partitioning=no"],
+        &["-Z", "stable_mono_cgu_partitioning=yes"], &["-Zstable-cgu-partitioning=no"],
+        &["-Zthreads=1"], &["-Z", "proc-macro-execution-strategy=cross-thread"],
+        &["--jobs-frontend=2"], &["--jobs", "2"], &["-j2"],
+    ] {
+        assert!(invoke(flags, &env).is_err(), "{flags:?}");
+    }
+    assert!(invoke(&["--jobs-backend=2", "--jobs-linker=1"], &env).is_ok());
+    for invalid in ["", "yes", "invalid"] {
+        env.stable_mono_cgu_partitioning = Some(invalid.into());
+        assert!(invoke(&["-vV"], &env).is_err());
+    }
+    env.stable_mono_cgu_partitioning = Some("off".into());
+    env.stable_cgu_partitioning = Some("on".into());
+    assert!(invoke(&[], &env).is_err());
+    env.stable_cgu_partitioning = Some("off".into());
+    env.frontend_workers = Some("1".into());
+    assert!(invoke(&[], &env).is_err());
+    env.frontend_workers = None;
+    env.host_proc_macro_opt = Some("on".into());
+    assert!(invoke(&[], &env).is_err());
+    env.host_proc_macro_opt = None;
+    env.borrowck_cache = Some("reuse".into());
+    assert!(invoke(&[], &env).is_err());
+    env.borrowck_cache = None;
+    env.compiler_rustc = None;
+    assert!(invoke(&[], &env).is_err());
+}
+
+#[cfg(unix)]
+#[test]
+fn mono_policy_rejects_non_unicode_environment_values() {
+    use std::os::unix::ffi::OsStringExt;
+    let env = Environment {
+        stable_mono_cgu_partitioning: Some(std::ffi::OsString::from_vec(vec![255])),
+        ..Environment::default()
+    };
+    assert!(invoke(&["-vV"], &env).is_err());
+}
+
+#[test]
 fn compiler_guard_covers_selected_exports_and_custom_native_jobs() {
     let root = std::env::temp_dir().join(format!("rust-interp-compiler-route-{}-{}", std::process::id(),
         std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));

@@ -248,9 +248,11 @@ def _main(resources):
     parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
     parser.add_argument('--compiler-key',help='use an owned complete stage2 compiler; requires preinstalled matching --tool-key')
+    parser.add_argument('--compiler-argv-record-dir',type=Path,help='retain actual compiler argv in an existing empty directory for qualification')
     parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable with the selected compiler')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off',help='custom compiler CGU grouping policy (default: off)')
     parser.add_argument('--host-proc-macro-opt',choices=['off','on'],default='off',help='experimental O1 codegen for unoptimized host proc-macro dylibs, retaining checks; requires --std-mir (default: off)')
+    parser.add_argument('--stable-mono-cgu-partitioning',choices=['off','on'],help='explicit custom compiler per-item CGU policy; requires recorded compiler and wrapper support')
     parser.add_argument('--cache-namespace',default='',help='use an independent artifact cache, for reproducible cold-build comparisons')
     parser.add_argument('--function-cache',choices=['off','reuse','auto'],default='off',help='experimental compiler-validated function cache: reuse requires incremental tracking; auto uses full lowering when tracking is disabled; strict checking always runs (default: off)')
     parser.add_argument('--borrowck-cache',choices=['off','verify','reuse'],default='off',help='experimental compiler-validated borrow-check query cache for all compiled Cargo units; verify compares cached results while checking; reuse retains strict checking (default: off)')
@@ -259,16 +261,29 @@ def _main(resources):
     parser.add_argument('--trap-unsupported-calls',action='store_true',help='experimental: stop execution at unavailable direct foreign calls and catch_unwind intrinsics instead of rejecting their export')
     parser.add_argument('--run-try-callbacks',action='store_true',help='experimental: execute catch_unwind try callbacks; actual panic/unwinding still fails; requires --trap-unsupported-calls')
     parser.add_argument('--std-mir',action='store_true',help='use reusable standard-library metadata with complete MIR')
+    parser.add_argument('--std-mir-policy',choices=['v1','source-paths-v2'],default='v1',help='explicit prepared std policy; v1 behavior is unchanged')
+    parser.add_argument('--std-mir-key',help='preinstalled source-paths-v2 key; requires custom compiler and --std-mir')
     parser.add_argument('--toolchain-lookup',choices=['fresh','cached'],default='fresh',help='experimental dated-rustup identity cache; requires --std-mir (default: fresh)')
     parser.add_argument('--timings',action='store_true',help='write Cargo\'s compilation timing report for this command')
     parser.add_argument('--test-body',action='store_true',help='invoke a function from the library unit-test target directly; libtest attributes are not implemented')
     parser.add_argument('--test-target',help='select a named Cargo integration-test target; requires --test-body')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    if args.compiler_argv_record_dir is not None:
+        directory=args.compiler_argv_record_dir
+        if not directory.is_absolute() or directory.resolve(strict=True)!=directory or not directory.is_dir() or any(directory.iterdir()):
+            parser.error('--compiler-argv-record-dir requires an ordinary absolute empty directory')
     if args.compiler_key is not None and args.tool_key is None:parser.error('--compiler-key requires preinstalled --tool-key')
     if args.stable_cgu_partitioning!='off' and args.compiler_key is None:parser.error('--stable-cgu-partitioning=on requires --compiler-key')
     if args.host_proc_macro_opt!='off' and (not args.std_mir or args.compiler_key is not None or args.cargo_key is not None or args.borrowck_cache!='off'):
         parser.error('--host-proc-macro-opt=on requires --std-mir, public compiler/stock Cargo and --borrowck-cache=off')
+    if args.std_mir_policy!='v1' or args.std_mir_key is not None:
+        if args.std_mir_policy!='source-paths-v2' or args.std_mir_key is None or not args.std_mir or args.compiler_key is None or args.cargo_key is not None:
+            parser.error('source-paths-v2 requires --std-mir, --std-mir-key and --compiler-key, without --cargo-key')
+    if args.stable_mono_cgu_partitioning is not None:
+        import stable_mono_cgu
+        try:stable_mono_cgu.validate_selection(args,os.environ)
+        except ValueError as error:parser.error(str(error))
     if args.toolchain_lookup!='fresh' and not args.std_mir:parser.error('--toolchain-lookup=cached requires --std-mir')
     if args.test_target is not None:
         if not args.test_body:parser.error('--test-target requires --test-body')
@@ -348,11 +363,17 @@ def _main(resources):
     from custom_cargo import load_cargo
     custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
     if custom:custom.environment(os.environ) # Reject conflicts before any compilation.
+    if args.stable_mono_cgu_partitioning is not None:
+        custom.require_option(stable_mono_cgu.OPTION)
     cargo=load_cargo(ROOT,args.cargo_key) if args.cargo_key is not None else None
     if cargo:cargo.environment(os.environ,TOOLCHAIN,custom) # Validate before tool/std setup.
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
     validate_tool_compiler(tools,key,custom)
     if custom:require_export_option(tools,key,'stable-cgu-partitioning')
+    if args.compiler_argv_record_dir is not None:require_export_option(tools,key,'compiler-argv-record-v1')
+    if args.stable_mono_cgu_partitioning is not None:
+        require_export_option(tools,key,stable_mono_cgu.OPTION)
+        mono_wrapper=stable_mono_cgu.require_tool_capability(tools,custom)
     if args.function_cache!='off':require_export_option(tools,key,'function-cache-'+args.function_cache)
     if args.borrowck_cache!='off':require_export_option(tools,key,'borrowck-cache')
     if args.host_proc_macro_opt!='off':require_export_option(tools,key,'host-proc-macro-opt-v1')
@@ -367,10 +388,15 @@ def _main(resources):
     if stats:timings['function_cache']=args.function_cache
     if stats:timings['borrowck_cache']=args.borrowck_cache
     if stats:timings['host_proc_macro_opt']=args.host_proc_macro_opt
+    if stats and args.compiler_argv_record_dir is not None:
+        timings['compiler_argv_record_dir']=str(args.compiler_argv_record_dir)
     if custom:
         timings['custom_compiler']=dict(key=custom.key,rustc=str(custom.rustc),
             rustc_sha256=custom.identity['files']['bin/rustc'],compiler=custom.identity['compiler'],
             stable_cgu_partitioning=args.stable_cgu_partitioning)
+        if args.stable_mono_cgu_partitioning is not None:
+            timings['custom_compiler']['stable_mono_cgu_partitioning']=stable_mono_cgu.receipt(
+                args.stable_mono_cgu_partitioning,custom,mono_wrapper)
     if cargo:timings['custom_cargo']=cargo.receipt(custom)
     std=None
     if args.std_mir:
@@ -378,12 +404,16 @@ def _main(resources):
         stage=time.perf_counter()
         lookup_stats={}
         std_options={} if custom is None else dict(custom=custom,namespace='stable-cgu:'+args.stable_cgu_partitioning)
+        if args.stable_mono_cgu_partitioning is not None:
+            std_options['namespace']=stable_mono_cgu.namespace(args.stable_mono_cgu_partitioning)
         if cargo:std_options['cargo']=cargo
+        if args.std_mir_policy!='v1':std_options.update(policy=args.std_mir_policy,prepared_key=args.std_mir_key)
         std=checked_std_mir(TOOLCHAIN,lookup=args.toolchain_lookup,lookup_stats=lookup_stats,**std_options)
         timings['std_mir_seconds']=time.perf_counter()-stage
         if stats:
             timings['toolchain_lookup']=lookup_stats
             timings['std_mir']=dict(key=std[2],sysroot=str(std[0]),target=std[1])
+            if args.std_mir_policy!='v1':timings['std_mir_policy']=std[3]['identity']['policy']
     selection=args.entry[0] if len(args.entry)==1 else json.dumps(args.entry,separators=(',',':'))
     identity_input='shared-entries-v1\0'+str(manifest)+'\0'+args.package+'\0'+str(args.test_body)
     # Cargo already separates selected test units by target identity. Share
@@ -399,6 +429,8 @@ def _main(resources):
         identity_input='borrowck-cache-v1\0'+args.borrowck_cache+'\0'+identity_input
     if custom:
         identity_input='custom-compiler-v1\0'+custom.key+'\0'+args.stable_cgu_partitioning+'\0'+identity_input
+        if args.stable_mono_cgu_partitioning is not None:
+            identity_input=stable_mono_cgu.namespace(args.stable_mono_cgu_partitioning)+'\0'+identity_input
     if cargo:identity_input='custom-cargo-v1\0'+cargo.key+'\0'+identity_input
     if args.host_proc_macro_opt!='off':
         identity_input='host-proc-macro-opt-v1\0'+args.host_proc_macro_opt+'\0'+identity_input
@@ -422,6 +454,8 @@ def _main(resources):
     for name in list(env):
         if name.startswith('RUST_INTERP_'):env.pop(name)
     if custom and cargo is None:env=custom.environment(env)
+    if args.compiler_argv_record_dir is not None:
+        env['RUST_INTERP_COMPILER_ARGV_RECORD_DIR']=str(args.compiler_argv_record_dir)
     if cargo:env=cargo.environment(env,TOOLCHAIN,custom)
     tool_manifest=json.loads((tools/'ready.json').read_text())
     wrapper_name='rust-interp-rustc-wrapper' if 'rust-interp-rustc-wrapper' in tool_manifest else 'rust-interp-mir-export'
@@ -478,6 +512,8 @@ def _main(resources):
         if custom:
             cargo_env['RUST_INTERP_COMPILER_RUSTC']=str(custom.rustc)
             cargo_env['RUST_INTERP_STABLE_CGU_PARTITIONING']=args.stable_cgu_partitioning
+            if args.stable_mono_cgu_partitioning is not None:
+                cargo_env['RUST_INTERP_STABLE_MONO_CGU_PARTITIONING']=args.stable_mono_cgu_partitioning
         if args.function_cache!='off':cargo_env['RUST_INTERP_FUNCTION_CACHE']=args.function_cache
         if args.borrowck_cache!='off':cargo_env['RUST_INTERP_BORROWCK_CACHE']=args.borrowck_cache
         if args.host_proc_macro_opt!='off':cargo_env['RUST_INTERP_HOST_PROC_MACRO_OPT']=args.host_proc_macro_opt

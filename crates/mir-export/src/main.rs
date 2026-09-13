@@ -18,6 +18,7 @@ mod audit;
 mod test_metadata;
 mod names;
 mod wrapper_route;
+mod compiler_argv;
 mod export_timings;
 mod function_costs;
 mod typed_relocations;
@@ -272,7 +273,7 @@ fn main() -> std::process::ExitCode {
     if args.len() == 2 && args[1] == "--rust-interp-capabilities" {
         println!("{}", serde_json::json!({"schema_version":1,"bytecode_version":rust_interp_bytecode::VERSION,
             "compiler_sysroot":env!("RUST_INTERP_SYSROOT"),
-            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1"]}));
+            "export_options":["inline-leaves","trap-unsupported-calls","run-try-callbacks","allocation-trace","entry-catalog","list-tests","filtered-tests","function-cache-reuse","function-cache-auto","borrowck-cache","stable-cgu-partitioning","host-proc-macro-opt-v1","stable-mono-cgu-partitioning","compiler-argv-record-v1"]}));
         return std::process::ExitCode::SUCCESS;
     }
     let environment = wrapper_route::Environment::read();
@@ -294,7 +295,15 @@ fn main() -> std::process::ExitCode {
             if !args.iter().any(|arg| arg == "--sysroot" || arg.starts_with("--sysroot=")) {
                 args.extend(["--sysroot".into(), env!("RUST_INTERP_SYSROOT").into()]);
             }
+            if let Err(error) = compiler_argv::record("native-driver", &args) {
+                eprintln!("cannot retain compiler argv: {error}");
+                return std::process::ExitCode::from(2);
+            }
             return native_driver::run(&args, borrowck_mode);
+        }
+        if let Err(error) = compiler_argv::record("native", &args) {
+            eprintln!("cannot retain compiler argv: {error}");
+            return std::process::ExitCode::from(2);
         }
         let status = std::process::Command::new(&args[0])
             .args(&args[1..])
@@ -545,6 +554,10 @@ fn main() -> std::process::ExitCode {
         allocation_trace,
         borrowck_cache: borrowck_mode,
     };
+    if let Err(error) = compiler_argv::record("exported", &args) {
+        eprintln!("cannot retain compiler argv: {error}");
+        return std::process::ExitCode::from(2);
+    }
     let result = rustc_driver::catch_fatal_errors(|| rustc_driver::run_compiler(&args, &mut callbacks));
     borrowck_cache::report();
     if result.is_err() { std::process::ExitCode::FAILURE } else { std::process::ExitCode::SUCCESS }
