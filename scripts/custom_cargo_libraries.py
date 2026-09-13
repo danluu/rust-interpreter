@@ -31,7 +31,7 @@ def library_state(identity):
     return dict(libraries=libraries, searches=searches)
 
 
-def library_closure(executable, host):
+def library_closure(executable, host, *, inspect=None):
     """Resolve all non-system dependencies, failing on ambiguous/unproved paths.
 
     System dyld-cache libraries are bound to uname's kernel/platform build
@@ -41,6 +41,7 @@ def library_closure(executable, host):
     results are retained so a later library cannot silently shadow that choice.
     """
     require(sys.platform == 'darwin', 'Cargo library import currently requires macOS closure validation')
+    inspect = inspect or subprocess.check_output
     arch = {'aarch64': 'arm64', 'x86_64': 'x86_64'}.get(host.split('-')[0])
     require(arch is not None, 'unsupported Cargo Mach-O architecture')
     executable = executable.resolve(strict=True)
@@ -65,10 +66,10 @@ def library_closure(executable, host):
         require(len(contexts) <= 256, 'Cargo library closure is unexpectedly large')
         name = '$CARGO' if resolved == executable else str(logical)
         if name not in nodes:
-            links = subprocess.check_output(['/usr/bin/otool', '-arch', arch, '-L', str(logical)], text=True)
+            links = inspect(['/usr/bin/otool', '-arch', arch, '-L', str(logical)], text=True)
             tokens = [line.strip().split(' (compatibility version ', 1)[0]
                       for line in links.splitlines() if line.startswith('\t')]
-            commands = subprocess.check_output(['/usr/bin/otool', '-arch', arch, '-l', str(logical)], text=True)
+            commands = inspect(['/usr/bin/otool', '-arch', arch, '-l', str(logical)], text=True)
             rpaths, active = [], False
             for line in commands.splitlines():
                 if line.strip().startswith('cmd '):
