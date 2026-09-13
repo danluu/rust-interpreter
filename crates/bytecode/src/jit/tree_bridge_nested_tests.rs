@@ -1,5 +1,5 @@
 use super::*;
-use crate::{Slot, VERSION};
+use crate::{Limits, Slot, VERSION};
 
 fn function(size: usize, align: usize, code: Vec<Op>) -> Function {
     Function { name: "same bridge fixture name".into(), frame_size: size, frame_align: align,
