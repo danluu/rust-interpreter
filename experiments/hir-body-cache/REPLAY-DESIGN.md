@@ -1,8 +1,10 @@
-# Next boundary: prevalidated body materialization and effect replay
+# Body materialization and effect replay contract
 
-Design only, against typed capture checkpoint `2e60d5fb` and exact compiler
-`58e1e1f5311f4424ea81def4763081f6da62d9b3`. No replay implementation or workload
-is added by this document. The historical journal checkpoint's actual compiler
+Originally designed against typed capture checkpoint `2e60d5fb` and exact
+compiler `58e1e1f5311f4424ea81def4763081f6da62d9b3`. The current source-only
+checkpoint implements the private exclusive adapter in `prepared_replay.rs`;
+the README and source-check receipt distinguish implementation from unrun
+qualification. The historical journal checkpoint's actual compiler
 check remains separate: its first attempt failed on three borrowed-key API
 errors, now corrected in the prepared-value checkpoint. That failed result
 cannot qualify this new codec or a future replay implementation.
@@ -12,21 +14,22 @@ conversion prerequisite: it revalidates the supplied tree against the exact
 current input, checks current S/E/prefix/local/resolution bindings, and prepares
 actual pinned enum/ID/numeric values and checked absolute span recipes without
 HIR/symbol/span interning. Its private `PreparedBody` token is intentionally
-weaker than the `ReadyHit` below. The next source checkpoint borrows its exact
+weaker than the `ReadyHit` below. The later cold checkpoint borrows its exact
 current input and adds a private cold-only materialization/recapture audit.
 That audit receives only arena/span facilities after owner/E/source/context
 checks and returns no HIR. It provides no exclusive context, vacancy/effect
-replay or hit commit. Both saved and cold evidence must pass typed conversion;
-every invocation still lowers stock. Cold arena roundtrip correctness remains
-unrun and does not establish hit semantics or useful performance.
+replay or hit commit by itself. Both saved and cold evidence must pass typed
+conversion. Capture-only mode still lowers stock; explicit reuse alone selects
+the new exclusive adapter. The new cold and replay controls remain unrun and
+do not establish hit semantics or useful performance.
 
-## Proposed API and miss boundary
+## API and miss boundary
 
 Keep the current capture path unchanged. A separate tracked, default-off reuse
 policy gets a fresh record namespace and source identity. Do not interpret old
 capture-only sidecars as qualified reusable bodies.
 
-The eventual API should have this shape (illustrative, not Rust implementation):
+The implemented private API has this shape (names simplified):
 
 ```text
 prepare_hit(&mut LoweringContext, current Candidate, saved Payload)
@@ -38,7 +41,10 @@ ReadyHit::commit(self) -> hir::Expr
 fully prepared tree/event plan. It cannot outlive that context or be applied to
 another context. No public constructor or `CheckedTree -> Expr` shortcut exists.
 Every `Miss` occurs before changing the context, allocating HIR or interning
-symbols. Commit has no fallible decoding, lookups, parsing, queries or fallback.
+symbols. Construction during commit has no fallible decoding, lookups, parsing,
+queries or fallback. The first experimental policy also reruns fallible
+capture/validation as mandatory post-effect invariant checks; failure is an
+internal assertion, never a miss. These audits remain inside every hit.
 Normal allocator failure remains process failure; this does not promise OOM
 rollback. An internal postcondition failure must never retry stock lowering on
 a partly advanced context.
@@ -83,8 +89,8 @@ conservative guard. Exact state is required; a length check is insufficient.
 ## Crate features and ambient-state audit
 
 The journal/tree checkpoint `2e60d5fb` omitted active crate features. The new
-`entry.rs` capture-key component addresses that part of this audit; a complete
-future replay entry proof remains outstanding. `Options::dep_tracking_hash(false)`
+`entry.rs` key component addresses that part of this audit; the source-only
+exclusive adapter additionally binds the actual current entry. `Options::dep_tracking_hash(false)`
 covers command-line settings, but active
 `#![feature(...)]` values come from current crate attributes and are fed into
 `features_query` separately (interface/passes.rs1020; expand/config.rs47).
@@ -141,7 +147,7 @@ AST/resolver inputs (lib.rs583–587); interface/passes.rs1133/1225/1245 retains
 delayed-lint emission, late lint checking and expectation checking afterward.
 
 Additional controls, all with byte-identical function bodies (crate-feature,
-crate-lint and CLI variants now prepared in run-make; module variant planned):
+crate/module-lint and CLI variants now prepared in run-make):
 
 1. Cold/repeated anchor, then add/remove crate `#![feature(async_fn_track_caller)]`;
    require the normalized language-feature key and allowed-feature-array input
@@ -156,8 +162,9 @@ crate-lint and CLI variants now prepared in run-make; module variant planned):
    Capture stderr without the optional cache-info logs. Also switch `-A` to
    `-D unused_variables` to require the existing session-option key to miss.
 
-These invalidation/presentation controls are unrun. The capture record now binds
-features/allow arrays; it does not yet provide the complete `ReadyHit` contract.
+These invalidation/presentation controls are unrun. The record binds
+features/allow arrays; only the separate exclusive preflight can construct
+`ReadyHit` from it.
 
 ## Commit effects and materialization
 
@@ -192,8 +199,11 @@ legacy-const-generic helper can query attributes for them (lib.rs406–437).
 Ordinary local calls return before that query. Do not widen this exclusion while
 implementing replay.
 
-Finally check counter E and the expected binding/trait/debug delta as internal
-postconditions, return the Expr, and let stock `record_body`, owner indexing,
+The current first implementation always records a replay Trace, compares it
+with the complete checked journal, removes it, and recaptures/revalidates the
+constructed tree for exact equality. Finally check counter E, absent
+trace/candidate, no new compiler error and complete expected binding/trait/debug
+and unchanged-state maps as internal postconditions. Return the Expr and let stock `record_body`, owner indexing,
 hashing, delayed checking, type/borrow/const checking and codegen proceed.
 Empty-body-attribute alias operations have no effect because preflight proves
 all their source slots empty (lib.rs1242–1248). No diagnostics are synthesized,
@@ -201,8 +211,8 @@ suppressed or substituted.
 
 ## Small executable qualification required afterward
 
-The first replay implementation should add only a prepared-value converter,
-an exhaustive materializer and this commit adapter; keep the input grammar and
+The first replay source checkpoint adds the private exclusive adapter to the
+prepared converter and exhaustive materializer, keeping the input grammar and
 all fallbacks fixed. Before any workload coverage claim, compile the exact
 patch and run cold/**actual hit**/edit/restoration controls with an asserted
 positive hit counter. Reuse the fixture's ordinary raw diagnostic comparisons

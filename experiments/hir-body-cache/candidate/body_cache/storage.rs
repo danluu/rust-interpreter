@@ -1,5 +1,5 @@
 //! Versioned, bounded evidence sidecars in rustc's existing incremental session.
-//! Shares v1's fresh-inode COW discipline; stores no executable HIR payload.
+//! Shares v1's fresh-inode COW discipline. Every payload needs current preflight.
 use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
@@ -81,6 +81,33 @@ mod tests {
         record.payload.journal.end_delta = 2;
         fs::write(&path, serde_json::to_vec(&record).unwrap()).unwrap();
         assert!(read(&path, b"key").is_none());
+        fs::remove_dir_all(directory).unwrap();
+    }
+    #[test]
+    fn valid_checksum_does_not_bypass_tree_preflight() {
+        use super::super::{validate, wire};
+        let directory = std::env::temp_dir().join(format!("hir-body-tree-{}-{}",
+            std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+        fs::create_dir(&directory).unwrap(); let path = directory.join("tree.json");
+        let checked = validate::tests::checked(); let current = validate::tests::current(&checked);
+        let good = Payload { journal: checked.journal().clone(), tree: validate::tests::tree() };
+        assert!(write(&path, b"key", &good));
+        assert!(validate::check(read(&path, b"key").unwrap().tree, &current).is_some());
+        // Each write computes a fresh VALID checksum. These must survive the
+        // storage layer and be rejected by complete tree/current preflight.
+        for fault in 0..3 {
+            let mut bad = good.clone();
+            match fault {
+                0 => bad.tree.value.node.relative = 0, // duplicates the block ID
+                1 => bad.tree.value.node.relative = 99, // absent/out-of-range ID
+                _ => bad.tree.value.node.span = wire::SourceSpan::Relative { lo: 2, hi: 3 }, // inside é
+            }
+            assert!(write(&path, b"key", &bad));
+            let decoded = read(&path, b"key").unwrap();
+            assert_eq!(decoded, bad); assert!(validate::check(decoded.tree, &current).is_none());
+        }
+        assert!(write(&path, b"key", &good));
+        assert!(validate::check(read(&path, b"key").unwrap().tree, &current).is_some());
         fs::remove_dir_all(directory).unwrap();
     }
 }

@@ -220,7 +220,7 @@ diff --git a/compiler/rustc_ast_lowering/src/body_cache/effects.rs b/compiler/ru
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/effects.rs
-@@ -0,0 +1,180 @@
+@@ -0,0 +1,343 @@
 +//! Exact cold-boundary effects. Process-local pointer identities never persist.
 +use std::collections::BTreeMap;
 +use std::sync::Arc;
@@ -230,10 +230,10 @@ new file mode 100644
 +use crate::{LoweringContext, PerOwnerLoweringState, TryBlockScope};
 +use super::{Candidate, journal};
 +
-+#[derive(PartialEq, Eq)]
++#[derive(Clone, PartialEq, Eq)]
 +enum Child { Owner(usize), NonOwner(hir::HirId) }
 +
-+#[derive(PartialEq, Eq)]
++#[derive(Clone, PartialEq, Eq)]
 +struct Unchanged {
 +    resolver: usize,
 +    arena: usize,
@@ -308,7 +308,124 @@ new file mode 100644
 +    pub prefix: BTreeMap<u32, u32>,
 +}
 +
++/// Actual current IDs and immutable current trait slices, never deserialized.
++pub(super) enum ReplayEvent {
++    Ast { node: NodeId, id: hir::HirId },
++    Synthetic(hir::HirId),
++    Bind { node: NodeId, local: hir::ItemLocalId },
++}
++pub(super) struct ReplayExit<'hir> {
++    unchanged: Unchanged,
++    end: u32,
++    bindings: NodeMap<hir::ItemLocalId>,
++    traits: BTreeMap<u32, &'hir [hir::TraitCandidate<'hir>]>,
++    #[cfg(debug_assertions)] debug_nodes: NodeMap<hir::ItemLocalId>,
++}
++fn trait_values<'hir>(lctx: &LoweringContext<'_, 'hir>) -> BTreeMap<u32, &'hir [hir::TraitCandidate<'hir>]> {
++    lctx.curr_owner.trait_map.items().map(|(id, value)| (id.as_u32(), *value))
++        .into_sorted_stable_ord_by_key(|x| &x.0).into_iter().collect()
++}
++fn same_traits(a: &[hir::TraitCandidate<'_>], b: &[hir::TraitCandidate<'_>]) -> bool {
++    a.len() == b.len() && a.iter().zip(b).all(|(a, b)| {
++        let hir::TraitCandidate { def_id: a_def, import_ids: a_imports, lint_ambiguous: a_lint } = a;
++        let hir::TraitCandidate { def_id: b_def, import_ids: b_imports, lint_ambiguous: b_lint } = b;
++        a_def == b_def && a_imports == b_imports && a_lint == b_lint
++    })
++}
++fn vacant_range(start: u32, end: u32, occupied: impl IntoIterator<Item = u32>) -> bool {
++    start > 0 && start < end && end <= hir::ItemLocalId::INVALID.as_u32()
++        && !occupied.into_iter().any(|id| start <= id && id < end)
++}
++fn reserve_node(map: &mut NodeMap<hir::ItemLocalId>, node: NodeId, local: hir::ItemLocalId) -> Option<()> {
++    if map.contains_key(&node) { return None; }
++    map.insert(node, local);
++    Some(())
++}
++impl ReplayExit<'_> {
++    pub(super) fn assert_matches(&self, lctx: &LoweringContext<'_, '_>) {
++        assert!(lctx.body_trace.is_none(), "HIR body replay retained its trace");
++        assert!(lctx.body_candidate.is_none(), "HIR body replay introduced a candidate");
++        assert!(lctx.tcx.dcx().has_errors().is_none(), "HIR body replay emitted diagnostics");
++        assert!(unchanged(lctx).is_some_and(|value| value == self.unchanged), "HIR body replay changed an excluded effect");
++        assert_eq!(lctx.curr_owner.item_local_id_counter.as_u32(), self.end);
++        assert!(lctx.curr_owner.ident_and_label_to_local_id == self.bindings, "HIR body replay binding mismatch");
++        let actual = trait_values(lctx);
++        assert!(actual.len() == self.traits.len() && actual.iter().all(|(id, actual)|
++            self.traits.get(id).is_some_and(|expected| same_traits(actual, expected))), "HIR body replay trait mismatch");
++        #[cfg(debug_assertions)]
++        assert!(lctx.curr_owner.relowering_checker.body_snapshot().is_some_and(|actual| actual == self.debug_nodes));
++    }
++}
++
 +impl Frame {
++    fn same_entry(&self, lctx: &LoweringContext<'_, '_>) -> bool {
++        lctx.body_trace.is_none() && lctx.body_candidate.is_none() && lctx.tcx.dcx().has_errors().is_none()
++            && unchanged(lctx).is_some_and(|value| value == self.unchanged)
++            && lctx.curr_owner.item_local_id_counter.as_u32() == self.start
++            && lctx.curr_owner.ident_and_label_to_local_id == self.bindings && traits(lctx) == self.traits
++            && {
++                #[cfg(debug_assertions)]
++                { lctx.curr_owner.relowering_checker.body_snapshot().is_some_and(|value| value == self.debug_nodes) }
++                #[cfg(not(debug_assertions))]
++                { true }
++            }
++    }
++    pub(super) fn assert_unchanged_miss(&self, lctx: &LoweringContext<'_, '_>) {
++        assert!(self.same_entry(lctx), "HIR body miss mutated its entry context");
++    }
++    pub(super) fn replay_plan<'hir>(&self, lctx: &LoweringContext<'_, 'hir>, candidate: &Candidate,
++        checked: &journal::Checked) -> Option<(Vec<ReplayEvent>, ReplayExit<'hir>)> {
++        if !self.same_entry(lctx) || candidate.owner != lctx.curr_owner.owner_id
++            || checked.start != self.start || checked.prefix_bindings != self.prefix { return None; }
++        let reserved = |id: u32| self.start <= id && id < checked.end;
++        // All body attribute/alias source slots are empty. No preexisting body,
++        // trait or debug entry may be overwritten by a recorded destination.
++        if !vacant_range(self.start, checked.end,
++            lctx.curr_owner.attrs.iter().map(|(id, _)| id.as_u32())
++                .chain(lctx.curr_owner.bodies.iter().map(|(id, _)| id.as_u32()))
++                .chain(self.traits.keys().copied())) { return None; }
++        for &(node, body) in &candidate.ast_nodes {
++            if body && lctx.opt_local_def_id(node).is_some() { return None; }
++        }
++        let mut bindings = self.bindings.clone(); let mut traits = trait_values(lctx);
++        #[cfg(debug_assertions)] let mut debug_nodes = self.debug_nodes.clone();
++        let mut plan = Vec::with_capacity(checked.journal().events.len());
++        for event in &checked.journal().events {
++            match *event {
++                journal::Event::Allocate { ref source, relative } => {
++                    let local = self.start.checked_add(relative)?;
++                    if !reserved(local) || local >= hir::ItemLocalId::INVALID.as_u32() { return None; }
++                    let id = hir::HirId { owner: candidate.owner, local_id: hir::ItemLocalId::from_u32(local) };
++                    match *source {
++                        journal::Allocation::Synthetic => plan.push(ReplayEvent::Synthetic(id)),
++                        journal::Allocation::Ast(ordinal) => {
++                            let (node, body) = *candidate.ast_nodes.get(ordinal as usize)?;
++                            if !body || node == rustc_ast::DUMMY_NODE_ID || lctx.opt_local_def_id(node).is_some() { return None; }
++                            #[cfg(debug_assertions)]
++                            reserve_node(&mut debug_nodes, node, id.local_id)?;
++                            let slice = lctx.curr_owner.owner.trait_map.get(&node).copied();
++                            if slice.is_some() != checked.trait_allocations.contains(&relative) { return None; }
++                            if let Some(slice) = slice {
++                                if traits.insert(local, slice).is_some() { return None; }
++                            }
++                            plan.push(ReplayEvent::Ast { node, id });
++                        }
++                    }
++                }
++                journal::Event::Bind { ast, relative } => {
++                    let (node, body) = *candidate.ast_nodes.get(ast as usize)?;
++                    if !body || checked.bindings.get(&ast) != Some(&relative) { return None; }
++                    let local = self.start.checked_add(relative)?;
++                    if !reserved(local) || local >= hir::ItemLocalId::INVALID.as_u32() { return None; }
++                    let local = hir::ItemLocalId::from_u32(local);
++                    reserve_node(&mut bindings, node, local)?;
++                    plan.push(ReplayEvent::Bind { node, local });
++                }
++            }
++        }
++        Some((plan, ReplayExit { unchanged: self.unchanged.clone(), end: checked.end,
++            bindings, traits, #[cfg(debug_assertions)] debug_nodes }))
++    }
 +    pub(super) fn enter(lctx: &LoweringContext<'_, '_>, candidate: &Candidate) -> Option<Self> {
 +        if lctx.body_trace.is_some() || lctx.tcx.dcx().has_errors().is_some() { return None; }
 +        let start = lctx.curr_owner.item_local_id_counter.as_u32();
@@ -360,6 +477,52 @@ new file mode 100644
 +            if expected != lctx.curr_owner.relowering_checker.body_snapshot()? { return None; }
 +        }
 +        Some(())
++    }
++}
++
++#[cfg(test)]
++mod replay_tests {
++    use super::*;
++    #[test]
++    fn preflight_rejects_occupied_body_slots_and_preserves_exclusive_end() {
++        assert!(vacant_range(3, 6, [1, 2, 6, 20]));
++        for occupied in [3, 4, 5] { assert!(!vacant_range(3, 6, [1, occupied, 6])); }
++        let invalid = hir::ItemLocalId::INVALID.as_u32();
++        assert!(vacant_range(invalid - 1, invalid, [1, invalid - 2]));
++        for (start, end) in [(0, 3), (3, 3), (6, 3), (invalid, invalid + 1), (invalid - 1, invalid + 1)] {
++            assert!(!vacant_range(start, end, []));
++        }
++    }
++    #[test]
++    fn preflight_binding_and_debug_reservations_never_overwrite() {
++        let node = NodeId::from_u32(7); let other = NodeId::from_u32(8);
++        let old = hir::ItemLocalId::from_u32(2); let new = hir::ItemLocalId::from_u32(3);
++        let mut map = NodeMap::default(); map.insert(node, old);
++        let original = map.clone();
++        assert!(reserve_node(&mut map, node, new).is_none());
++        assert_eq!(map, original);
++        assert!(reserve_node(&mut map, other, new).is_some());
++        assert_eq!(map.get(&node), Some(&old)); assert_eq!(map.get(&other), Some(&new));
++        let expected = map.clone();
++        assert!(reserve_node(&mut map, other, new).is_none()); assert_eq!(map, expected);
++    }
++    #[test]
++    fn replay_trait_equality_retains_imports_lints_order_and_duplicates() {
++        let id = rustc_span::def_id::CRATE_DEF_ID;
++        fn candidate(imports: &[rustc_span::def_id::LocalDefId], lint: bool) -> hir::TraitCandidate<'_> {
++            hir::TraitCandidate { def_id: rustc_span::def_id::CRATE_DEF_ID.to_def_id(),
++                import_ids: imports, lint_ambiguous: lint }
++        }
++        let imports = [id];
++        assert!(same_traits(&[candidate(&imports, false)], &[candidate(&imports, false)]));
++        let mut other_definition = candidate(&imports, false);
++        other_definition.def_id.index = rustc_span::def_id::DefIndex::from_u32(1);
++        assert!(!same_traits(&[candidate(&imports, false)], &[other_definition]));
++        assert!(!same_traits(&[candidate(&imports, false)], &[candidate(&[], false)]));
++        assert!(!same_traits(&[candidate(&imports, false)], &[candidate(&imports, true)]));
++        assert!(!same_traits(&[candidate(&[], false), candidate(&[], true)],
++            &[candidate(&[], true), candidate(&[], false)]));
++        assert!(!same_traits(&[candidate(&[], false)], &[candidate(&[], false), candidate(&[], false)]));
 +    }
 +}
 +
@@ -918,8 +1081,8 @@ new file mode 100644
 +
 +/// Opaque, checked event layout. No lowering context or arena was mutated.
 +/// It is deliberately not convertible into a HIR expression: the complete
-+/// body wire-tree/reference validator must additionally succeed. A separate
-+/// cold-only audit is not a journal-to-HIR or hit replay API.
++/// body wire-tree/reference validator and exclusive replay preflight must
++/// additionally succeed. This token alone is never a journal-to-HIR API.
 +pub(super) struct Checked {
 +    journal: Journal,
 +    pub start: u32,
@@ -1146,8 +1309,8 @@ diff --git a/compiler/rustc_ast_lowering/src/body_cache/mod.rs b/compiler/rustc_
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/mod.rs
-@@ -0,0 +1,171 @@
-+//! Actual body lowering capture checkpoint. Never substitutes a cached body.
+@@ -0,0 +1,183 @@
++//! Checked body capture and separately selected, fully verified replay.
 +use std::path::PathBuf;
 +use rustc_ast::{self as ast, node_id::NodeMap};
 +use rustc_data_structures::fingerprint::Fingerprint;
@@ -1173,6 +1336,7 @@ new file mode 100644
 +pub(super) use effects::Trace;
 +
 +const FORMAT: &str = "hir-body-capture-v2-cold-materialization-1";
++const REUSE_POLICY: &str = "hir-body-reuse-v2-ready-hit-1";
 +
 +pub(super) struct Candidate {
 +    owner: hir::OwnerId,
@@ -1199,7 +1363,7 @@ new file mode 100644
 +
 +pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'tcx>,
 +    owner: ast::NodeId, span: Span, function: &ast::Fn, role: &'static str) -> Option<Candidate> {
-+    if !tcx.sess.opts.unstable_opts.hir_body_cache_capture
++    if !(tcx.sess.opts.unstable_opts.hir_body_cache_capture || tcx.sess.opts.unstable_opts.hir_body_cache_reuse)
 +        || std::env::var_os("RUSTC_FORCE_RUSTC_VERSION").is_some() { return None; }
 +    let session = tcx.incr_comp_session?;
 +    let probe = input::probe(tcx, resolver, owner, span, function, role).ok()?;
@@ -1216,7 +1380,8 @@ new file mode 100644
 +    let resolutions = ast_nodes.iter().map(|(id, _)|
 +        resolver.partial_res_map.get(id).and_then(|res| res.full_res())).collect();
 +    let mut encoder = MemEncoder::new();
-+    FORMAT.encode(&mut encoder);
++    let policy = if tcx.sess.opts.unstable_opts.hir_body_cache_reuse { REUSE_POLICY } else { FORMAT };
++    policy.encode(&mut encoder);
 +    source_identity::SOURCE_IDENTITY.encode(&mut encoder);
 +    cfg!(debug_assertions).encode(&mut encoder);
 +    tcx.sess.cfg_version.encode(&mut encoder);
@@ -1227,7 +1392,7 @@ new file mode 100644
 +    Some(Candidate {
 +        owner: hir::OwnerId { def_id: resolver.owners[&owner].def_id },
 +        body: function.body.as_deref()?.id, name: function.ident.name.as_str().to_owned(),
-+        path: session.session_directory.join(format!("{FORMAT}-{}.json", hex(probe.input.owner.0))),
++        path: session.session_directory.join(format!("{policy}-{}.json", hex(probe.input.owner.0))),
 +        key, ast_nodes, ordinals, nodes, kinds, resolutions, current_span: span,
 +        source: probe.input.owner_source.clone(),
 +        input_statistics: [probe.body_bytes, probe.body_nodes, probe.parameter_nodes,
@@ -1263,8 +1428,18 @@ new file mode 100644
 +        return lctx.lower_block_expr(body);
 +    };
 +    let entry = journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix };
-+    // Reading/decoding and the validation boundary require only immutable
-+    // current input. There is NO conversion from Checked to a HIR expression.
++    if lctx.tcx.sess.opts.unstable_opts.hir_body_cache_reuse {
++        if let Some(value) = prepared::try_reuse(lctx, &candidate, &record_key, &frame) {
++            if lctx.tcx.sess.opts.unstable_opts.incremental_info {
++                eprintln!("[hir-body-reuse] {} hit cache_hits=1 verify_tree=1 verify_journal=1 verify_poststate=1 S={} E={}", candidate.name,
++                    frame.start, lctx.curr_owner.item_local_id_counter.as_u32());
++            }
++            return value;
++        }
++        frame.assert_unchanged_miss(lctx);
++    }
++    // Capture-only mode and replay misses both continue through ordinary
++    // lowering. Reading/decoding below mutates no lowering state.
 +    let previous = storage::read(&candidate.path, &record_key).and_then(|payload| {
 +        let checked = journal::check(payload.journal.clone(), &entry)?;
 +        let current = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)?;
@@ -1273,7 +1448,7 @@ new file mode 100644
 +        Some(payload)
 +    });
 +    lctx.body_trace = Some(Trace::new());
-+    let value = lctx.lower_block_expr(body); // Always ordinary lowering.
++    let value = lctx.lower_block_expr(body); // Ordinary lowering on every miss.
 +    let trace = lctx.body_trace.take();
 +    let end = lctx.curr_owner.item_local_id_counter.as_u32();
 +    let captured = trace.and_then(|trace| trace.finish(&candidate, frame.start, end, value.hir_id))
@@ -1301,8 +1476,8 @@ new file mode 100644
 +        Some(_) => "changed-tree-or-journal-after-stock-lowering",
 +        None => "cold-tree-and-journal-after-stock-lowering",
 +    };
-+    // Typed evidence only: no hit path exists. Every comparison follows stock
-+    // lowering, a cold materialization/recapture audit and exit-effect checks.
++    // A record is written only after stock lowering, cold materialization/
++    // recapture and exact exit checks, in the selected policy's own namespace.
 +    let stored = storage::write(&candidate.path, &record_key, &payload);
 +    report(lctx, &candidate, if stored { state } else { "tree-write-unavailable" },
 +        frame.start, end, checked.journal().events.len());
@@ -1322,12 +1497,12 @@ diff --git a/compiler/rustc_ast_lowering/src/body_cache/prepared.rs b/compiler/r
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/prepared.rs
-@@ -0,0 +1,395 @@
+@@ -0,0 +1,408 @@
 +//! Owned, typed values for a checked current-session body. This module performs
 +//! no HIR allocation, symbol/span interning, query or LoweringContext mutation.
-+//! Its opaque result is NOT a ReadyHit: no exclusive context, vacancy/effect
-+//! preflight or hit commit exists. The separate private child audits cold
-+//! materialization only after stock lowering, which always supplies the result.
++//! Its opaque result is NOT a ReadyHit. The cold child consumes the borrowed
++//! token after stock lowering; the replay child must separately acquire the
++//! exclusive context and validate all current vacancies/effects before commit.
 +use std::collections::BTreeMap;
 +use rustc_ast as ast;
 +use rustc_hir::{self as hir, def::Res};
@@ -1335,12 +1510,20 @@ new file mode 100644
 +use super::{validate::{self, CheckedTree, Current}, wire as w};
 +#[path = "prepared_audit.rs"]
 +mod cold;
++#[path = "prepared_replay.rs"]
++mod replay;
 +
-+/// No public fields, deserializer, unchecked constructor or hit materializer.
++/// No public fields, deserializer, unchecked constructor or direct HIR conversion.
 +/// Immutable borrowing binds this token to the exact Current until consumed;
 +/// it does not grant exclusive access to the LoweringContext.
 +pub(super) struct PreparedBody<'current, 'input> {
 +    current: &'current Current<'input>,
++    body: BodyValues,
++}
++
++/// Owned values have no Current or context borrow; only the private exclusive
++/// ReadyHit constructor may detach them for a real commit.
++struct BodyValues {
 +    expected: w::BodyTree,
 +    owner: hir::OwnerId,
 +    start: u32,
@@ -1353,7 +1536,7 @@ new file mode 100644
 +}
 +
 +/// Coordinates are absolute in this current SourceMap, UTF-8 checked against
-+/// the exact current owner source. A future exclusive commit must use current
++/// the exact current owner source. The private exclusive commit uses current
 +/// root hygiene and the ordinary lower_span parent policy, including Dummy.
 +/// Constructing this recipe does not construct or intern a rustc Span.
 +enum SpanRecipe { Dummy, Current { owner: hir::OwnerId, lo: BytePos, hi: BytePos } }
@@ -1397,10 +1580,10 @@ new file mode 100644
 +    let prefix = current_state(current)?;
 +    let checked = validate::check(tree.tree().clone(), current)?;
 +    let value = Convert { current }.expr(&checked.tree().value)?;
-+    Some(PreparedBody { current, expected: checked.tree().clone(),
++    Some(PreparedBody { current, body: BodyValues { expected: checked.tree().clone(),
 +        owner: current.owner, start: current.start, end: current.journal.end,
 +        source_start: BytePos(current.source_start), source_end: BytePos(current.source_end),
-+        source: current.source.to_owned(), prefix, value })
++        source: current.source.to_owned(), prefix, value } })
 +}
 +
 +/// Cold-only API: returns no HIR and offers no materialization/commit shortcut.
@@ -1408,6 +1591,11 @@ new file mode 100644
 +pub(super) fn audit(lctx: &crate::LoweringContext<'_, '_>, candidate: &super::Candidate,
 +    expected: &CheckedTree, prepared: PreparedBody<'_, '_>) -> Option<()> {
 +    cold::audit(lctx, candidate, expected, prepared)
++}
++
++pub(super) fn try_reuse<'hir>(lctx: &mut crate::LoweringContext<'_, 'hir>, candidate: &super::Candidate,
++    key: &[u8], frame: &super::effects::Frame) -> Option<hir::Expr<'hir>> {
++    replay::try_reuse(lctx, candidate, key, frame)
 +}
 +
 +fn current_state(current: &Current<'_>) -> Option<BTreeMap<u32, hir::HirId>> {
@@ -1623,9 +1811,9 @@ new file mode 100644
 +        let checked = validate::check(tree(), &current).unwrap();
 +        current.source_start = 200; current.source_end = 204;
 +        let prepared = prepare(&checked, &current).unwrap();
-+        assert_eq!(prepared.value.node.id.local_id.as_u32(), 5);
-+        assert_eq!(prepared.value.node.id.owner, current.owner);
-+        let SpanRecipe::Current { owner, lo, hi } = prepared.value.node.span else { panic!() };
++        assert_eq!(prepared.body.value.node.id.local_id.as_u32(), 5);
++        assert_eq!(prepared.body.value.node.id.owner, current.owner);
++        let SpanRecipe::Current { owner, lo, hi } = prepared.body.value.node.span else { panic!() };
 +        assert_eq!(owner, current.owner); assert_eq!((lo.0, hi.0), (200, 202));
 +        assert!(span(&w::SourceSpan::Relative { lo: 2, hi: 4 }, &current).is_some());
 +        assert!(span(&w::SourceSpan::Relative { lo: 3, hi: 4 }, &current).is_none());
@@ -1642,8 +1830,8 @@ new file mode 100644
 +            start: invalid - 3, nodes: &nodes, prefix_bindings: &BTreeMap::new() }).unwrap();
 +        let mut relocated = validate::tests::current(&boundary); relocated.start = boundary.start;
 +        let prepared = prepare(&checked, &relocated).unwrap();
-+        assert_eq!(prepared.value.node.id.local_id.as_u32(), invalid - 1);
-+        assert_eq!(prepared.end, invalid);
++        assert_eq!(prepared.body.value.node.id.local_id.as_u32(), invalid - 1);
++        assert_eq!(prepared.body.end, invalid);
 +        assert!(current_id(&relocated, boundary.journal().end_delta).is_none());
 +    }
 +
@@ -1678,7 +1866,7 @@ new file mode 100644
 +        current.resolutions.push(Some(Res::Local(id)));
 +        current.references.push(Some(w::Resolution::Local(reference.clone())));
 +        let checked = validate::check(tree(), &current).unwrap();
-+        assert_eq!(prepare(&checked, &current).unwrap().prefix[&2], id);
++        assert_eq!(prepare(&checked, &current).unwrap().body.prefix[&2], id);
 +        current.locals.get_mut(&reference).unwrap().owner = hir::OwnerId {
 +            def_id: rustc_span::def_id::LocalDefId { local_def_index: rustc_span::def_id::DefIndex::from_u32(1) } };
 +        assert!(prepare(&checked, &current).is_none());
@@ -1740,12 +1928,12 @@ new file mode 100644
 +}
 +fn compatible(prepared: &PreparedBody<'_, '_>, observed: &Observed<'_>) -> bool {
 +    let current = prepared.current;
-+    prepared.owner == observed.owner && prepared.owner == current.owner
-+        && prepared.start == current.start && prepared.end == current.journal.end
-+        && prepared.end == observed.counter && prepared.source_start == observed.source_start
-+        && prepared.source_end == observed.source_end && prepared.source == observed.source
-+        && prepared.source_start.0 == current.source_start && prepared.source_end.0 == current.source_end
-+        && prepared.source == current.source && current.context_identity == observed.context_identity
++    prepared.body.owner == observed.owner && prepared.body.owner == current.owner
++        && prepared.body.start == current.start && prepared.body.end == current.journal.end
++        && prepared.body.end == observed.counter && prepared.body.source_start == observed.source_start
++        && prepared.body.source_end == observed.source_end && prepared.body.source == observed.source
++        && prepared.body.source_start.0 == current.source_start && prepared.body.source_end.0 == current.source_end
++        && prepared.body.source == current.source && current.context_identity == observed.context_identity
 +}
 +
 +pub(super) fn audit(lctx: &crate::LoweringContext<'_, '_>, candidate: &Candidate,
@@ -1764,18 +1952,18 @@ new file mode 100644
 +    if !compatible(&prepared, &observed) || candidate.owner != observed.owner
 +        || candidate.context_identity != observed.context_identity
 +        || !candidate.current_span.ctxt().is_root() || lctx.tcx.sess.opts.incremental.is_none()
-+        || lctx.body_trace.is_some() || prepared.expected != *expected.tree()
-+        || current_state(current)? != prepared.prefix { return None; }
-+    let rebuilt = Builder { arena: lctx.arena, spans: lctx.span_lowerer() }.expr(&prepared.value);
++        || lctx.body_trace.is_some() || prepared.body.expected != *expected.tree()
++        || current_state(current)? != prepared.body.prefix { return None; }
++    let rebuilt = Builder { arena: lctx.arena, spans: lctx.span_lowerer() }.expr(&prepared.body.value);
 +    // Fallible validation after allocation is an audit rejection, never a
 +    // reason to re-lower an already advanced context. No reconstructed node is
 +    // registered as an owner/body or returned to ordinary compiler queries.
 +    let recaptured = capture::capture(candidate, current, &rebuilt)?;
 +    let checked = validate::check(recaptured, current)?;
-+    (checked.tree() == &prepared.expected).then_some(())
++    (checked.tree() == &prepared.body.expected).then_some(())
 +}
 +
-+struct Builder<'hir> { arena: &'hir hir::Arena<'hir>, spans: crate::SpanLowerer }
++pub(super) struct Builder<'hir> { pub(super) arena: &'hir hir::Arena<'hir>, pub(super) spans: crate::SpanLowerer }
 +impl<'hir> Builder<'hir> {
 +    fn span(&self, value: &SpanRecipe) -> Span {
 +        let span = match *value {
@@ -1824,7 +2012,7 @@ new file mode 100644
 +    fn optional(&self, value: &Option<Box<Expr>>) -> Option<&'hir hir::Expr<'hir>> {
 +        value.as_ref().map(|value| self.expr_ref(value))
 +    }
-+    fn expr(&self, value: &Expr) -> hir::Expr<'hir> {
++    pub(super) fn expr(&self, value: &Expr) -> hir::Expr<'hir> {
 +        use ExprKind as E; use hir::ExprKind as H;
 +        let Expr { node: Node { id, span }, kind } = value;
 +        let kind = match kind {
@@ -1926,26 +2114,113 @@ new file mode 100644
 +                tail.kind = w::ExprKind::Literal { span: w::SourceSpan::Relative { lo: 2, hi: 4 }, value: literal };
 +                let checked = validate::check(wire, &current).unwrap();
 +                let prepared = prepare(&checked, &current).unwrap();
-+                let rebuilt = builder.expr(&prepared.value);
++                let rebuilt = builder.expr(&prepared.body.value);
 +                let recaptured = capture::capture(&candidate, &current, &rebuilt).unwrap();
 +                assert_eq!(validate::check(recaptured, &current).unwrap().tree(), checked.tree());
 +            }
 +        });
 +    }
 +}
+diff --git a/compiler/rustc_ast_lowering/src/body_cache/prepared_replay.rs b/compiler/rustc_ast_lowering/src/body_cache/prepared_replay.rs
+new file mode 100644
+--- /dev/null
++++ b/compiler/rustc_ast_lowering/src/body_cache/prepared_replay.rs
+@@ -0,0 +1,82 @@
++//! The only real commit adapter. No public token constructor or HIR shortcut.
++//! Every None is produced before constructing ReadyHit or changing the context.
++use super::*;
++use super::super::{Candidate, capture, effects::{Frame, ReplayEvent, ReplayExit, Trace}, entry, journal, storage};
++
++struct ReadyHit<'context, 'candidate, 'ast, 'hir> {
++    context: &'context mut crate::LoweringContext<'ast, 'hir>,
++    candidate: &'candidate Candidate,
++    checked: journal::Checked,
++    body: BodyValues,
++    events: Vec<ReplayEvent>,
++    expected_exit: ReplayExit<'hir>,
++}
++impl<'hir> ReadyHit<'_, '_, '_, 'hir> {
++    /// No failure return and no cold retry after the first recorded effect.
++    /// OOM/internal invariant failure remains ordinary compiler failure.
++    fn commit(self) -> hir::Expr<'hir> {
++        let Self { context, candidate, checked, body, events, expected_exit } = self;
++        assert_eq!(context.curr_owner.owner_id, body.owner);
++        assert_eq!(context.curr_owner.item_local_id_counter.as_u32(), body.start);
++        assert!(context.body_trace.is_none());
++        // First context mutation. This deliberately retained verification is
++        // part of every experimental hit, including any future timing of it.
++        context.body_trace = Some(Trace::new());
++        for event in events {
++            match event {
++                ReplayEvent::Ast { node, id } => assert_eq!(context.lower_node_id(node), id),
++                ReplayEvent::Synthetic(id) => assert_eq!(context.next_id(), id),
++                ReplayEvent::Bind { node, local } => context.insert_body_binding(node, local),
++            }
++        }
++        let value = cold::Builder { arena: context.arena, spans: context.span_lowerer() }.expr(&body.value);
++        let trace = context.body_trace.take().expect("HIR body replay lost its trace");
++        let actual = trace.finish(candidate, body.start, body.end, value.hir_id)
++            .expect("HIR body replay produced an invalid trace");
++        assert_eq!(&actual, checked.journal(), "HIR body replay journal mismatch");
++        // Post-effect verification can fail only as an internal invariant. No
++        // Option escapes commit and stock lowering is never retried here.
++        let current = Current::new(candidate, body.start, &checked.prefix_bindings, &checked)
++            .expect("HIR body replay lost its current input");
++        let actual = capture::capture(candidate, &current, &value)
++            .and_then(|tree| validate::check(tree, &current))
++            .expect("HIR body replay produced an invalid tree");
++        assert_eq!(actual.tree(), &body.expected, "HIR body replay tree mismatch");
++        expected_exit.assert_matches(context);
++        assert_eq!(context.curr_owner.item_local_id_counter.as_u32(), body.end);
++        value
++    }
++}
++
++fn ready<'context, 'candidate, 'ast, 'hir>(context: &'context mut crate::LoweringContext<'ast, 'hir>,
++    candidate: &'candidate Candidate, key: &[u8], frame: &Frame) -> Option<ReadyHit<'context, 'candidate, 'ast, 'hir>> {
++    if !context.tcx.sess.opts.unstable_opts.hir_body_cache_reuse
++        || context.tcx.sess.opts.incremental.is_none() || context.body_trace.is_some()
++        || context.body_candidate.is_some() || candidate.owner != context.curr_owner.owner_id
++        || candidate.context_identity != [context.tcx.sess as *const _ as usize,
++            context.arena as *const _ as usize, context.resolver as *const _ as usize]
++        || entry::bind(context, &candidate.key)?.as_slice() != key { return None; }
++    // The gate/resolver Candidate and entry key were produced in this normal
++    // parsing/expansion/resolution invocation. Storage validates that exact key
++    // and policy, not just a tree checksum or an old-session pointer identity.
++    let payload = storage::read(&candidate.path, key)?;
++    let checked = journal::check(payload.journal,
++        &journal::Entry { start: frame.start, nodes: &candidate.nodes, prefix_bindings: &frame.prefix })?;
++    let (body, events, expected_exit) = {
++        let current = Current::new(candidate, frame.start, &frame.prefix, &checked)?;
++        let tree = validate::check(payload.tree, &current)?;
++        let prepared = prepare(&tree, &current)?;
++        let (events, expected_exit) = frame.replay_plan(context, candidate, &checked)?;
++        // Move only owned converted values. No Current/CheckedTree reference is
++        // retained, extended or placed next to its owner in a self-reference.
++        let PreparedBody { current: _, body } = prepared;
++        (body, events, expected_exit)
++    };
++    Some(ReadyHit { context, candidate, checked, body, events, expected_exit })
++}
++
++pub(super) fn try_reuse<'hir>(context: &mut crate::LoweringContext<'_, 'hir>,
++    candidate: &Candidate, key: &[u8], frame: &Frame) -> Option<hir::Expr<'hir>> {
++    let ready = ready(context, candidate, key, frame)?;
++    Some(ready.commit())
++}
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/source_identity.rs
 @@ -0,0 +1 @@
-+pub(super) const SOURCE_IDENTITY: &str = "9ec60c2dea9e2c30a30c868dcf17afa030ecaa267d56f17bbfe5e36e5f60515f";
++pub(super) const SOURCE_IDENTITY: &str = "50ecfb157fd227791b2dbb196c6c795d8c999a37017fed3be938c672a8a85818";
 diff --git a/compiler/rustc_ast_lowering/src/body_cache/storage.rs b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
 new file mode 100644
 --- /dev/null
 +++ b/compiler/rustc_ast_lowering/src/body_cache/storage.rs
-@@ -0,0 +1,86 @@
+@@ -0,0 +1,113 @@
 +//! Versioned, bounded evidence sidecars in rustc's existing incremental session.
-+//! Shares v1's fresh-inode COW discipline; stores no executable HIR payload.
++//! Shares v1's fresh-inode COW discipline. Every payload needs current preflight.
 +use std::fs::{self, File, OpenOptions};
 +use std::io::{Read, Write};
 +use std::path::Path;
@@ -2027,6 +2302,33 @@ new file mode 100644
 +        record.payload.journal.end_delta = 2;
 +        fs::write(&path, serde_json::to_vec(&record).unwrap()).unwrap();
 +        assert!(read(&path, b"key").is_none());
++        fs::remove_dir_all(directory).unwrap();
++    }
++    #[test]
++    fn valid_checksum_does_not_bypass_tree_preflight() {
++        use super::super::{validate, wire};
++        let directory = std::env::temp_dir().join(format!("hir-body-tree-{}-{}",
++            std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
++        fs::create_dir(&directory).unwrap(); let path = directory.join("tree.json");
++        let checked = validate::tests::checked(); let current = validate::tests::current(&checked);
++        let good = Payload { journal: checked.journal().clone(), tree: validate::tests::tree() };
++        assert!(write(&path, b"key", &good));
++        assert!(validate::check(read(&path, b"key").unwrap().tree, &current).is_some());
++        // Each write computes a fresh VALID checksum. These must survive the
++        // storage layer and be rejected by complete tree/current preflight.
++        for fault in 0..3 {
++            let mut bad = good.clone();
++            match fault {
++                0 => bad.tree.value.node.relative = 0, // duplicates the block ID
++                1 => bad.tree.value.node.relative = 99, // absent/out-of-range ID
++                _ => bad.tree.value.node.span = wire::SourceSpan::Relative { lo: 2, hi: 3 }, // inside é
++            }
++            assert!(write(&path, b"key", &bad));
++            let decoded = read(&path, b"key").unwrap();
++            assert_eq!(decoded, bad); assert!(validate::check(decoded.tree, &current).is_none());
++        }
++        assert!(write(&path, b"key", &good));
++        assert!(validate::check(read(&path, b"key").unwrap().tree, &current).is_some());
 +        fs::remove_dir_all(directory).unwrap();
 +    }
 +}
@@ -2847,23 +3149,26 @@ diff --git a/compiler/rustc_hir_id/src/definitions.rs b/compiler/rustc_hir_id/sr
 diff --git a/compiler/rustc_interface/src/tests.rs b/compiler/rustc_interface/src/tests.rs
 --- a/compiler/rustc_interface/src/tests.rs
 +++ b/compiler/rustc_interface/src/tests.rs
-@@ -882,6 +882,7 @@
+@@ -882,6 +882,8 @@
      tracked!(regparm, Some(3));
      tracked!(relax_elf_relocations, Some(true));
      tracked!(remap_cwd_prefix, Some(PathBuf::from("abc")));
 +    tracked!(hir_body_cache_capture, true);
++    tracked!(hir_body_cache_reuse, true);
      tracked!(sanitizer, SanitizerSet::ADDRESS);
      tracked!(sanitizer_cfi_canonical_jump_tables, None);
      tracked!(sanitizer_cfi_generalize_pointers, Some(true));
 diff --git a/compiler/rustc_session/src/options.rs b/compiler/rustc_session/src/options.rs
 --- a/compiler/rustc_session/src/options.rs
 +++ b/compiler/rustc_session/src/options.rs
-@@ -2810,6 +2810,8 @@
+@@ -2810,6 +2810,10 @@
      retpoline_external_thunk: bool = (false, parse_bool, [TRACKED] { TARGET_MODIFIER: RetpolineExternalThunk },
          "enables retpoline-external-thunk, retpoline-indirect-branches and retpoline-indirect-calls \
          target features (default: no)"),
 +    hir_body_cache_capture: bool = (false, parse_bool, [TRACKED],
 +        "capture conservative HIR body trees/journals without reusing HIR (default: no)"),
++    hir_body_cache_reuse: bool = (false, parse_bool, [TRACKED],
++        "reuse checked HIR bodies through exclusive current-context replay (default: no)"),
      #[rustc_lint_opt_deny_field_access("use `Session::sanitizers()` instead of this field")]
      sanitizer: SanitizerSet = (SanitizerSet::empty(), parse_sanitizers, [TRACKED] { TARGET_MODIFIER: Sanitizer },
          "use a sanitizer"),
@@ -2959,20 +3264,25 @@ diff --git a/tests/run-make/hir-body-cache-capture/rmake.rs b/tests/run-make/hir
 new file mode 100644
 --- /dev/null
 +++ b/tests/run-make/hir-body-cache-capture/rmake.rs
-@@ -0,0 +1,117 @@
+@@ -0,0 +1,232 @@
 +//@ ignore-cross-compile
 +
-+// Unrun capture checkpoint controls. A repeated journal is explicitly NOT a
-+// cache hit: both arms always perform stock lowering and normal compilation.
++// Unrun capture and separately selected reuse controls. Capture comparisons
++// remain stock lowering. Reuse hits must pass the built-in tree/journal/state
++// verifier as well as these ordinary native behavior/diagnostic controls.
 +use std::path::{Path, PathBuf};
 +use run_make_support::{Rustc, rfs, run, rustc};
 +
 +fn compiler(enabled: bool, info: bool) -> Rustc {
++    compiler_options(enabled, false, info)
++}
++fn compiler_options(enabled: bool, reuse: bool, info: bool) -> Rustc {
 +    let mut command = rustc();
 +    command.input("input.rs").crate_name("body_journal_test").output("body_journal_test")
-+        .metadata("body_journal_test").incremental(if enabled { "cache-on" } else { "cache-off" })
++        .metadata("body_journal_test").incremental(if reuse { "cache-reuse" } else if enabled { "cache-on" } else { "cache-off" })
 +        .arg(format!("-Zhir-body-cache-capture={enabled}"))
 +        .arg("-Cdebuginfo=2").arg("--edition=2024");
++    if reuse { command.arg("-Zhir-body-cache-reuse=true"); }
 +    if info { command.arg("-Zincremental-info"); }
 +    command
 +}
@@ -2994,13 +3304,122 @@ new file mode 100644
 +    }
 +}
 +
-+fn records(root: &Path, output: &mut Vec<PathBuf>) {
++fn records(root: &Path, prefix: &str, output: &mut Vec<PathBuf>) {
 +    for entry in std::fs::read_dir(root).unwrap() {
 +        let path = entry.unwrap().path();
-+        if path.is_dir() { records(&path, output); }
-+        else if path.file_name().unwrap().to_string_lossy().starts_with("hir-body-capture-v2-")
++        if path.is_dir() { records(&path, prefix, output); }
++        else if path.file_name().unwrap().to_string_lossy().starts_with(prefix)
 +            && path.extension().is_some_and(|ext| ext == "json") { output.push(path); }
 +    }
++}
++
++fn reuse_compiler(info: bool) -> Rustc {
++    compiler_options(false, true, info)
++}
++fn expect_reuse(info: &str, name: &str, hit: bool) {
++    expect_reuse_count(info, name, hit, 1);
++}
++fn expect_reuse_count(info: &str, name: &str, hit: bool, count: usize) {
++    let expected = if hit {
++        format!("[hir-body-reuse] {name} hit cache_hits=1 verify_tree=1 verify_journal=1 verify_poststate=1")
++    } else {
++        format!("[hir-body-capture] {name} cold-tree-and-journal-after-stock-lowering")
++    };
++    assert_eq!(info.matches(&expected).count(), count, "expected {count} copies of {expected}\n{info}");
++}
++fn reuse_success(source: &str, hit: bool) -> String {
++    rfs::write("input.rs", source);
++    compiler(false, false).run();
++    let ordinary = run("body_journal_test").stdout_utf8();
++    let info = reuse_compiler(true).run().stderr_utf8();
++    assert_eq!(ordinary, run("body_journal_test").stdout_utf8());
++    for name in ["anchor", "add", "method", "double", "shadow", "generic",
++        "conditional", "array_index", "uninitialized", "raw", "arithmetic", "literals", "unsafe_block", "flow", "early"] {
++        expect_reuse(&info, name, hit);
++    }
++    // Distinguish inherent field from the DefaultBody trait implementation,
++    // and require both Left/Right trait-implementation choose bodies.
++    expect_reuse_count(&info, "field", hit, 2);
++    expect_reuse_count(&info, "choose", hit, 2);
++    info
++}
++fn reuse_raw_control(source: &str, flags: &[&str], error: Option<&str>) {
++    rfs::write("input.rs", source);
++    let compile = |mut command: Rustc| {
++        command.arg("--error-format=json");
++        for flag in flags { command.arg(flag); }
++        if error.is_some() { command.run_fail().stderr_utf8() } else { command.run().stderr_utf8() }
++    };
++    let ordinary = compile(compiler(false, false));
++    let candidate = compile(reuse_compiler(false));
++    assert_eq!(ordinary, candidate);
++    if let Some(code) = error { assert!(candidate.contains(code), "{candidate}"); }
++    else { run("body_journal_test"); }
++}
++fn reuse_info(source: &str, flags: &[&str], fails: bool) -> String {
++    rfs::write("input.rs", source);
++    let mut command = reuse_compiler(true);
++    for flag in flags { command.arg(flag); }
++    if fails { command.run_fail().stderr_utf8() } else { command.run().stderr_utf8() }
++}
++fn reuse_controls(original: &str) {
++    reuse_success(original, false);
++    reuse_success(&original.replace("x + 3", "x + 17"), true);
++    reuse_success(&original.replace("struct Counter", "// Rebase current spans: λ 🚀\nstruct Counter"), true);
++    reuse_success(original, true);
++    let info = reuse_success(&original.replace("Left as Selected", "Right as Selected"), true);
++    expect_reuse(&info, "selected", false); // exact current trait/import input changed
++    let info = reuse_success(original, true); expect_reuse(&info, "selected", false);
++    // Activate real uncalled failures by source edits, keeping cfg/options
++    // unchanged so the unaffected anchor can actually hit in the failing run.
++    for (cfg, code) in [("type_error", "E0308"), ("borrow_error", "E0382"),
++                       ("const_error", "E0080"), ("panic_error", "unconditional_panic")] {
++        let source = original.replace(&format!("#[cfg({cfg})] "), "");
++        reuse_raw_control(&source, &[], Some(code));
++        let info = reuse_compiler(true).run_fail().stderr_utf8();
++        expect_reuse(&info, "anchor", true);
++        reuse_success(original, true);
++    }
++    let mut paths = Vec::new(); records(Path::new("cache-reuse"), "hir-body-reuse-v2-", &mut paths);
++    assert!(!paths.is_empty());
++    for path in paths { rfs::write(path, b"{\"truncated\":"); }
++    reuse_success(&original.replace("x + 3", "x + 29"), false);
++    reuse_success(original, true);
++    let anchor = "fn anchor() -> u32 { 3 }\nfn main() { assert_eq!(anchor(), 3); }\n";
++    reuse_raw_control(anchor, &[], None);
++    for feature in ["async_fn_track_caller", "iter_next_chunk"] {
++        let source = format!("#![feature({feature})]\n{anchor}");
++        rfs::write("input.rs", &source);
++        let info = reuse_compiler(true).run().stderr_utf8();
++        expect_reuse(&info, "anchor", false);
++        reuse_raw_control(&source, &[], None); reuse_raw_control(anchor, &[], None);
++    }
++    let body = "fn anchor() -> u32 { let unused = 1; 0 }\nfn main() { assert_eq!(anchor(), 0); }\n";
++    for (index, (level, error)) in [("allow", None), ("deny", Some("unused_variables")), ("allow", None)].into_iter().enumerate() {
++        let source = format!("#![{level}(unused_variables)]\n{body}");
++        reuse_raw_control(&source, &[], error);
++        if index > 0 {
++            expect_reuse(&reuse_info(&source, &[], error.is_some()), "anchor", true);
++        }
++    }
++    for (index, (level, error)) in [("allow", None), ("deny", Some("unused_variables")), ("allow", None)].into_iter().enumerate() {
++        let source = format!("mod outer {{ #![{level}(unused_variables)]\n\
++            pub(super) fn anchor() -> u32 {{ let unused = 1; 0 }} }}\n\
++            fn main() {{ assert_eq!(outer::anchor(), 0); }}\n");
++        reuse_raw_control(&source, &[], error);
++        if index > 0 {
++            expect_reuse(&reuse_info(&source, &[], error.is_some()), "anchor", true);
++        }
++    }
++    // Command-line lint flags are tracked-key changes, unlike the current
++    // crate/module lint queries above. Probe each new flag state BEFORE the
++    // raw comparison populates it; no assertion about failed-session reuse.
++    for (flag, error) in [("-A", None), ("-D", Some("unused_variables"))] {
++        expect_reuse(&reuse_info(body, &[flag, "unused_variables"], error.is_some()), "anchor", false);
++        reuse_raw_control(body, &[flag, "unused_variables"], error);
++    }
++    reuse_raw_control(body, &["-A", "unused_variables"], None);
++    reuse_raw_control(original, &[], None);
 +}
 +
 +// No diagnostics are filtered or rewritten. Cache-info probes are separate
@@ -3068,12 +3487,13 @@ new file mode 100644
 +        // relabeled a cold/hit test, and restoration still compiles normally.
 +        success(&original, true);
 +    }
-+    let mut paths = Vec::new(); records(Path::new("cache-on"), &mut paths);
++    let mut paths = Vec::new(); records(Path::new("cache-on"), "hir-body-capture-v2-", &mut paths);
 +    assert!(!paths.is_empty());
 +    for path in paths { rfs::write(path, b"{\"truncated\":"); }
 +    success(&original.replace("x + 3", "x + 29"), false);
 +    success(&original, true);
 +    entry_context_controls();
++    reuse_controls(&original);
 +    rfs::write("input.rs", &original);
 +    compiler(false, false).run(); compiler(true, false).run();
 +}

@@ -40,8 +40,8 @@ pub(super) struct Entry<'a> {
 
 /// Opaque, checked event layout. No lowering context or arena was mutated.
 /// It is deliberately not convertible into a HIR expression: the complete
-/// body wire-tree/reference validator must additionally succeed. A separate
-/// cold-only audit is not a journal-to-HIR or hit replay API.
+/// body wire-tree/reference validator and exclusive replay preflight must
+/// additionally succeed. This token alone is never a journal-to-HIR API.
 pub(super) struct Checked {
     journal: Journal,
     pub start: u32,

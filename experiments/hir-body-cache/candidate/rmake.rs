@@ -1,16 +1,21 @@
 //@ ignore-cross-compile
 
-// Unrun capture checkpoint controls. A repeated journal is explicitly NOT a
-// cache hit: both arms always perform stock lowering and normal compilation.
+// Unrun capture and separately selected reuse controls. Capture comparisons
+// remain stock lowering. Reuse hits must pass the built-in tree/journal/state
+// verifier as well as these ordinary native behavior/diagnostic controls.
 use std::path::{Path, PathBuf};
 use run_make_support::{Rustc, rfs, run, rustc};
 
 fn compiler(enabled: bool, info: bool) -> Rustc {
+    compiler_options(enabled, false, info)
+}
+fn compiler_options(enabled: bool, reuse: bool, info: bool) -> Rustc {
     let mut command = rustc();
     command.input("input.rs").crate_name("body_journal_test").output("body_journal_test")
-        .metadata("body_journal_test").incremental(if enabled { "cache-on" } else { "cache-off" })
+        .metadata("body_journal_test").incremental(if reuse { "cache-reuse" } else if enabled { "cache-on" } else { "cache-off" })
         .arg(format!("-Zhir-body-cache-capture={enabled}"))
         .arg("-Cdebuginfo=2").arg("--edition=2024");
+    if reuse { command.arg("-Zhir-body-cache-reuse=true"); }
     if info { command.arg("-Zincremental-info"); }
     command
 }
@@ -32,13 +37,122 @@ fn success(source: &str, repeated_anchor: bool) {
     }
 }
 
-fn records(root: &Path, output: &mut Vec<PathBuf>) {
+fn records(root: &Path, prefix: &str, output: &mut Vec<PathBuf>) {
     for entry in std::fs::read_dir(root).unwrap() {
         let path = entry.unwrap().path();
-        if path.is_dir() { records(&path, output); }
-        else if path.file_name().unwrap().to_string_lossy().starts_with("hir-body-capture-v2-")
+        if path.is_dir() { records(&path, prefix, output); }
+        else if path.file_name().unwrap().to_string_lossy().starts_with(prefix)
             && path.extension().is_some_and(|ext| ext == "json") { output.push(path); }
     }
+}
+
+fn reuse_compiler(info: bool) -> Rustc {
+    compiler_options(false, true, info)
+}
+fn expect_reuse(info: &str, name: &str, hit: bool) {
+    expect_reuse_count(info, name, hit, 1);
+}
+fn expect_reuse_count(info: &str, name: &str, hit: bool, count: usize) {
+    let expected = if hit {
+        format!("[hir-body-reuse] {name} hit cache_hits=1 verify_tree=1 verify_journal=1 verify_poststate=1")
+    } else {
+        format!("[hir-body-capture] {name} cold-tree-and-journal-after-stock-lowering")
+    };
+    assert_eq!(info.matches(&expected).count(), count, "expected {count} copies of {expected}\n{info}");
+}
+fn reuse_success(source: &str, hit: bool) -> String {
+    rfs::write("input.rs", source);
+    compiler(false, false).run();
+    let ordinary = run("body_journal_test").stdout_utf8();
+    let info = reuse_compiler(true).run().stderr_utf8();
+    assert_eq!(ordinary, run("body_journal_test").stdout_utf8());
+    for name in ["anchor", "add", "method", "double", "shadow", "generic",
+        "conditional", "array_index", "uninitialized", "raw", "arithmetic", "literals", "unsafe_block", "flow", "early"] {
+        expect_reuse(&info, name, hit);
+    }
+    // Distinguish inherent field from the DefaultBody trait implementation,
+    // and require both Left/Right trait-implementation choose bodies.
+    expect_reuse_count(&info, "field", hit, 2);
+    expect_reuse_count(&info, "choose", hit, 2);
+    info
+}
+fn reuse_raw_control(source: &str, flags: &[&str], error: Option<&str>) {
+    rfs::write("input.rs", source);
+    let compile = |mut command: Rustc| {
+        command.arg("--error-format=json");
+        for flag in flags { command.arg(flag); }
+        if error.is_some() { command.run_fail().stderr_utf8() } else { command.run().stderr_utf8() }
+    };
+    let ordinary = compile(compiler(false, false));
+    let candidate = compile(reuse_compiler(false));
+    assert_eq!(ordinary, candidate);
+    if let Some(code) = error { assert!(candidate.contains(code), "{candidate}"); }
+    else { run("body_journal_test"); }
+}
+fn reuse_info(source: &str, flags: &[&str], fails: bool) -> String {
+    rfs::write("input.rs", source);
+    let mut command = reuse_compiler(true);
+    for flag in flags { command.arg(flag); }
+    if fails { command.run_fail().stderr_utf8() } else { command.run().stderr_utf8() }
+}
+fn reuse_controls(original: &str) {
+    reuse_success(original, false);
+    reuse_success(&original.replace("x + 3", "x + 17"), true);
+    reuse_success(&original.replace("struct Counter", "// Rebase current spans: λ 🚀\nstruct Counter"), true);
+    reuse_success(original, true);
+    let info = reuse_success(&original.replace("Left as Selected", "Right as Selected"), true);
+    expect_reuse(&info, "selected", false); // exact current trait/import input changed
+    let info = reuse_success(original, true); expect_reuse(&info, "selected", false);
+    // Activate real uncalled failures by source edits, keeping cfg/options
+    // unchanged so the unaffected anchor can actually hit in the failing run.
+    for (cfg, code) in [("type_error", "E0308"), ("borrow_error", "E0382"),
+                       ("const_error", "E0080"), ("panic_error", "unconditional_panic")] {
+        let source = original.replace(&format!("#[cfg({cfg})] "), "");
+        reuse_raw_control(&source, &[], Some(code));
+        let info = reuse_compiler(true).run_fail().stderr_utf8();
+        expect_reuse(&info, "anchor", true);
+        reuse_success(original, true);
+    }
+    let mut paths = Vec::new(); records(Path::new("cache-reuse"), "hir-body-reuse-v2-", &mut paths);
+    assert!(!paths.is_empty());
+    for path in paths { rfs::write(path, b"{\"truncated\":"); }
+    reuse_success(&original.replace("x + 3", "x + 29"), false);
+    reuse_success(original, true);
+    let anchor = "fn anchor() -> u32 { 3 }\nfn main() { assert_eq!(anchor(), 3); }\n";
+    reuse_raw_control(anchor, &[], None);
+    for feature in ["async_fn_track_caller", "iter_next_chunk"] {
+        let source = format!("#![feature({feature})]\n{anchor}");
+        rfs::write("input.rs", &source);
+        let info = reuse_compiler(true).run().stderr_utf8();
+        expect_reuse(&info, "anchor", false);
+        reuse_raw_control(&source, &[], None); reuse_raw_control(anchor, &[], None);
+    }
+    let body = "fn anchor() -> u32 { let unused = 1; 0 }\nfn main() { assert_eq!(anchor(), 0); }\n";
+    for (index, (level, error)) in [("allow", None), ("deny", Some("unused_variables")), ("allow", None)].into_iter().enumerate() {
+        let source = format!("#![{level}(unused_variables)]\n{body}");
+        reuse_raw_control(&source, &[], error);
+        if index > 0 {
+            expect_reuse(&reuse_info(&source, &[], error.is_some()), "anchor", true);
+        }
+    }
+    for (index, (level, error)) in [("allow", None), ("deny", Some("unused_variables")), ("allow", None)].into_iter().enumerate() {
+        let source = format!("mod outer {{ #![{level}(unused_variables)]\n\
+            pub(super) fn anchor() -> u32 {{ let unused = 1; 0 }} }}\n\
+            fn main() {{ assert_eq!(outer::anchor(), 0); }}\n");
+        reuse_raw_control(&source, &[], error);
+        if index > 0 {
+            expect_reuse(&reuse_info(&source, &[], error.is_some()), "anchor", true);
+        }
+    }
+    // Command-line lint flags are tracked-key changes, unlike the current
+    // crate/module lint queries above. Probe each new flag state BEFORE the
+    // raw comparison populates it; no assertion about failed-session reuse.
+    for (flag, error) in [("-A", None), ("-D", Some("unused_variables"))] {
+        expect_reuse(&reuse_info(body, &[flag, "unused_variables"], error.is_some()), "anchor", false);
+        reuse_raw_control(body, &[flag, "unused_variables"], error);
+    }
+    reuse_raw_control(body, &["-A", "unused_variables"], None);
+    reuse_raw_control(original, &[], None);
 }
 
 // No diagnostics are filtered or rewritten. Cache-info probes are separate
@@ -106,12 +220,13 @@ fn main() {
         // relabeled a cold/hit test, and restoration still compiles normally.
         success(&original, true);
     }
-    let mut paths = Vec::new(); records(Path::new("cache-on"), &mut paths);
+    let mut paths = Vec::new(); records(Path::new("cache-on"), "hir-body-capture-v2-", &mut paths);
     assert!(!paths.is_empty());
     for path in paths { rfs::write(path, b"{\"truncated\":"); }
     success(&original.replace("x + 3", "x + 29"), false);
     success(&original, true);
     entry_context_controls();
+    reuse_controls(&original);
     rfs::write("input.rs", &original);
     compiler(false, false).run(); compiler(true, false).run();
 }

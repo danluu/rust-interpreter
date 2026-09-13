@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the capture-only compiler patch; never modify its source checkout."""
+"""Generate the checked body replay patch; never modify its source checkout."""
 import argparse
 import difflib
 import hashlib
@@ -108,10 +108,12 @@ def changes(original):
     result[path] = replace(result[path], '    #[rustc_lint_opt_deny_field_access("use `Session::sanitizers()` instead of this field")]\n',
         '    hir_body_cache_capture: bool = (false, parse_bool, [TRACKED],\n'
         '        "capture conservative HIR body trees/journals without reusing HIR (default: no)"),\n'
+        '    hir_body_cache_reuse: bool = (false, parse_bool, [TRACKED],\n'
+        '        "reuse checked HIR bodies through exclusive current-context replay (default: no)"),\n'
         '    #[rustc_lint_opt_deny_field_access("use `Session::sanitizers()` instead of this field")]\n')
     path = 'compiler/rustc_interface/src/tests.rs'
     result[path] = replace(result[path], '    tracked!(sanitizer, SanitizerSet::ADDRESS);',
-        '    tracked!(hir_body_cache_capture, true);\n    tracked!(sanitizer, SanitizerSet::ADDRESS);')
+        '    tracked!(hir_body_cache_capture, true);\n    tracked!(hir_body_cache_reuse, true);\n    tracked!(sanitizer, SanitizerSet::ADDRESS);')
     return result
 
 
@@ -175,12 +177,14 @@ def main():
         files[name] = dict(before_sha256=sha(before.encode()) if name in original else None, after_sha256=sha(after.encode()))
     patch = ''.join(pieces).encode()
     (ROOT / 'capture-body-journals.patch').write_bytes(patch)
-    manifest = dict(status='source-only-uncompiled-unrun-typed-capture-boundary', base_commit=BASE,
+    manifest = dict(status='source-only-uncompiled-unrun-exclusive-body-replay', base_commit=BASE,
         gate_sha256=GATE_SHA, candidate_inputs=inputs, generator_sha256=sha(Path(__file__).read_bytes()),
         files=files, source_identity=identity, patch_bytes=len(patch), patch_sha256=sha(patch),
         compiler_checkout_modified=False, builds_or_tests_run=False,
         typed_hir_body_codec=True, normalized_feature_entry=True, prepared_current_values=True,
-        cold_materialization_audit=True, cached_body_materialization=False, actual_cache_hit_path=False)
+        cold_materialization_audit=True, cached_body_materialization=True, actual_cache_hit_path=True,
+        reuse_default=False, replay_verification='always-on-tree-journal-poststate',
+        grammar_widened=False, performance_claim=False)
     (ROOT / 'patch.json').write_text(json.dumps(manifest, sort_keys=True, indent=2) + '\n')
     print(json.dumps({name: manifest[name] for name in ['status', 'patch_bytes', 'patch_sha256', 'source_identity']}))
 
