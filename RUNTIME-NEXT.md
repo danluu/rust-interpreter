@@ -4,22 +4,16 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: finish qualification of the generic guarded-range runtime,
-then run its prospective changed-source token screen. The conditional census
-found265.03M redundant-check opportunities in the block test, including229.94M
-in two generic SipHash regions. The prototype guards one complete range per
-resumable native region and falls back to original ordered interpretation on
-failure. It passes478 Rust tests per debug/release profile, one ignored, and
-219 real selection/suite/cache commands. All three profiled guest runs succeed;
-the validator stopped because the folded control has no active guard. Its
-revised rule permits that only with zero cached reloads and byte-identical
-adopted code. A separately recorded offline repair, after the revised143-test
-harness, must finish without repeating guest commands. The screen is unstarted.
-The runtime remains experimental; main retains the adopted memory/lookup VM.
-[Prototype and entry/fault contract](benchmarks/experiments/guarded-ranges/PLAN.md),
-[qualification build](results/guarded-ranges-build-01/summary.json),
-[retained validator failure](results/guarded-ranges-profile-01-failure/summary.json),
-[repair requirements](benchmarks/experiments/guarded-ranges/PROFILE-REPAIR.md).
+Current action: qualify and freeze the full guarded-range comparison. The
+prototype passes478 Rust tests/profile and222 real qualification commands.
+An offline repair proves the inactive folded profile byte-identical, retaining
+the original overstrict-validator failure without repeating guest execution.
+The40-command changed-source screen passes narrowly: wall−1.84% against1.74%
+A/A. No runtime adoption follows. Run token first, then folded, pgrust, private
+rg-aot and Nushell only while every preceding complete case passes. All five
+and a serialized final audit are required. Recheck disk admission; retire only
+completed owned public intermediates if a later unstarted case needs room.
+[Screen](results/guarded-ranges-screen-token-01/assessment.md).
 
 The scalar-Copy full comparison, Copy/budget screen and checked-address screen
 remain failed adoption attempts. Smaller emitted code does not establish a

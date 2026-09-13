@@ -133,6 +133,14 @@ a bounded guarded region, with complete range/alias proofs and original ordered
 fallback, under suggestion2.5. It does not establish guard hit rate or speedup.
 [Conditional census and next qualification](../results/disjoint-frame-census-01/assessment.md).
 
+The resulting guarded-range prototype passes478 Rust tests/profile and222 real
+qualification commands. Its40-command screen narrowly passes (wall−1.84%,
+observed A/A1.74%). Continue the suggestions1.2/1.3 policy: fresh full histories,
+primary first, every guard mandatory for adoption, no reuse of screen pairs.
+The inactive folded profile required an offline validator repair; retain that
+failure and byte-identity evidence, with no repeated guest command.
+[Screen and qualification limits](../results/guarded-ranges-screen-token-01/assessment.md).
+
 Original integration checkpoint (subsequently completed): the rebuilt VM matches
 the measured runtime exactly;428 Rust tests per profile
 and223 new cache/Cargo commands pass. The first project qualification stopped

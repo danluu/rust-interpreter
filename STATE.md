@@ -36,14 +36,16 @@ ordered interpreter fallback on preflight failure. No execution change or
 latency gain is established by these counts.
 [Conditional evidence](results/disjoint-frame-census-01/assessment.md).
 
-The guarded prototype now passes478 Rust tests/profile and219 real selection,
-suite and cache/Cargo commands. All three profiled guest processes succeed.
-Validation stopped on an overstrict positive-guard assertion for the inactive
-folded control; the retained offline repair must prove its code byte-identical
-to the adopted VM. Revised143-test harness qualification and that zero-guest
-repair are pending shared-lock admission. The timing screen is unstarted.
-[Prototype qualification](results/guarded-ranges-build-01/summary.json),
-[profile failure and retained runs](results/guarded-ranges-profile-01-failure/summary.json).
+The guarded prototype passes478 Rust tests/profile,143 harness checks and222
+real qualification/profile commands. The retained validator failure was
+repaired offline with zero repeated guest commands: the inactive folded
+control has byte-identical adopted code. Its40-command changed-source screen
+passes narrowly: wall−1.84% with1.74% A/A, CPU−1.14% with1.16% A/A. All original
+assertions, wrong edits, restoration and artifact identity checks pass.
+Proceed to a separately qualified full comparison, primary first; all five
+cases and a final serialized audit remain required for adoption.
+[Complete qualification](results/guarded-ranges-validation-repair-01/assessment.md),
+[screen and limits](results/guarded-ranges-screen-token-01/assessment.md).
 
 [Range-group evidence](results/range-groups-census-01/assessment.md).
 [Region-fact decision](results/region-facts-census-01/assessment.md).
