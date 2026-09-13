@@ -24,7 +24,8 @@ Build02 passed 505 Rust tests (two existing ignored), ten Python controls and
 all three native/edit/diagnostic histories. The earlier metadata-flag rejection
 remains separately [retained](../../../results/host-library-build-failure-01/README.md).
 
-Stable per-MonoItem code-generation placement remains in qualification.
+Stable per-MonoItem code-generation placement completed qualification and its
+development screen without establishing a performance gain.
 All twelve optimized-compiler bootstrap/package stages passed for source
 `58e1e1f5311f4424ea81def4763081f6da62d9b3`, including option tracking,
 partitioning, native entry and stripping controls.
@@ -91,7 +92,12 @@ inventory-refusal controls passed. Five alternating pairs of the complete
 compiler+shared-std loader reduced median wall time from 454.980ms to 167.079ms,
 with exact returned values and readiness. This isolates loader cost; Cargo,
 tool loading and VM execution are excluded, and no end-to-end saving or latency
-qualification is claimed. Compact evidence packaging is pending the shared slot.
+qualification is claimed. [Complete first comparison](../../../results/owned-tree-validation-01/README.md).
+A follow-up avoids eagerly formatting error paths for successful checks, with
+the same predicates, exceptions and messages. All 33 controls passed again;
+five new alternating pairs reduced loader median wall time from 157.917ms to
+111.974ms, with exact outputs and readiness. This remains a component comparison.
+[Complete follow-up comparison](../../../results/owned-tree-validation-02/README.md).
 
 A separate HIR-lowering experiment now has a compiled coverage diagnostic.
 Its 54 native fixture commands passed, including exact raw error comparisons,
@@ -120,6 +126,12 @@ hit path. Twelve prepared unit controls and the native run-make sequence remain
 unrun; structural input counts are not measured reusable-body coverage.
 [Native controls](../../../results/hir-body-coverage-native-01/README.md),
 [complete development coverage](../../../results/hir-body-development-coverage-01/README.md).
+A separate [limited compiler check driver](../../../experiments/hir-capture-check/README.md)
+freezes the earlier journal-only checkpoint `3f3e9c28`; its two configuration
+guards passed with no skips. The actual independent compiler checkout, selected
+crate check and unit tests still await the planned 24 GiB free-space baseline.
+They cannot qualify the newer typed codec or a cache hit.
+[Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
 
 The [external trait-name index](../../../experiments/external-trait-index/README.md)
 is a reviewed, uncompiled compiler prototype. It preserves ordinary external
@@ -128,6 +140,10 @@ mutable tables on the existing path. Prepared controls include an explicit
 default-off shadow comparison, internal hygiene/disambiguator/namespace tests,
 and native alias/reexport/ambiguity/error histories. Actual hits, memory costs,
 compiler qualification and performance remain unmeasured.
+The unchanged production compiler passed all 33 commands in the ordinary
+fixture baseline, covering 18 source states and restoration. The index was not
+enabled, so this verifies fixture behavior only.
+[Ordinary fixture evidence](../../../results/external-trait-index-ordinary-fixtures-01/README.md).
 
 The proposed proc-macro span-handle table passed four standalone container
 controls against the exact patched source. This does not qualify bridge
@@ -143,6 +159,10 @@ The three completed host-library screen targets were also retired after retainin
 and checking their required artifacts, bindings and publication proofs, reclaiming
 an observed 8.16 GiB. All original screen evidence remains available.
 [Host target retirement](../../../results/host-library-screen-target-retirement-01/README.md).
+The three failed first MonoItem screen targets were subsequently retired after
+retaining and rechecking their source, artifacts and compiler dependency proofs.
+The observed recovery was 6.57 GiB; original failed-screen evidence remains
+available. [Exact retirement evidence](../../../results/mono-failed-screen-target-retirement-01/README.md).
 
 The unchanged [protocol](PROTOCOL.md) requires all fifteen final Nushell edits
 below 0.500 seconds, then frozen fresh-project checks for generalization. These
