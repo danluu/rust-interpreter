@@ -524,11 +524,14 @@ impl<'a> Jit<'a> {
                 // one instruction at a time, preserving fault ordering.
                 let budget = if resumable { resumable::BUDGET_REGISTER } else { 9 };
                 if !resumable { a.emit(0xf9400269); } // ordinary Cursor.remaining
-                a.imm(10, (pc - start) as u64);
-                a.cmp(budget, 10);
+                let region_cost = (pc - start) as u32;
+                assert!((1..=1024).contains(&region_cost));
+                // SUBS tests unsigned sufficiency and debits in one instruction.
+                // Its underflow branch restores the original value before the
+                // VM executes any part of this region, including profile hits.
+                a.emit(0xf1000000 | (region_cost << 10) | (budget << 5) | budget);
                 let budget_exit = a.words.len();
                 a.emit(0x54000003); // b.lo budget_exit
-                a.three(0xcb000000, budget, budget, 10);
                 if !resumable { a.emit(0xf9000269); }
                 span!(Budget, None);
                 if self.profiled {
@@ -590,6 +593,10 @@ impl<'a> Jit<'a> {
                     a.patch_conditional(at, target)?;
                 }
                 let target = a.words.len();
+                // Undo the speculative debit modulo 64 bits. Ordinary cursor
+                // memory was not written; resumable x22 must be restored before
+                // return_pc publishes it through the common native epilogue.
+                a.emit(0x91000000 | (region_cost << 10) | (budget << 5) | budget);
                 a.return_pc(start);
                 span!(BudgetFallback, None);
                 a.patch_conditional(budget_exit, target)?;
@@ -776,6 +783,45 @@ fn patch_jump(words: &mut [u32], at: usize, target: usize) -> Result<(), EmitErr
 mod link_tests {
     use super::*;
     use crate::{Slot, VERSION};
+
+    #[test]
+    fn budget_underflow_restores_cursor_across_maximum_sized_linked_regions() {
+        let mut code = vec![Op::Imm { dst: 0, value: 41 }; 1023];
+        code.extend([Op::Jump { target: 1024 }, Op::Local { dst: 1, offset: 0 },
+            Op::Store { address: 1, src: 0, size: 8 }, Op::Jump { target: 1027 }, Op::Return]);
+        let program = Program { version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0,
+            data: vec![0;16], statics: vec![], thread_locals: vec![],
+            functions: vec![Function { name: "budget_boundaries".into(), frame_size: 16,
+                frame_align: 16, registers: 2, args: vec![], result: Slot { offset: 0, size: 8 }, code }] };
+        crate::validate(&program).unwrap();
+        for profiled in [false, true] {
+            let mut jit = Jit::new(&program, profiled, MAX_CODE_BYTES).unwrap();
+            jit.ensure_function(0).unwrap();
+            for budget in [0, 1, 1023, 1024, 1025, 1026, 1027, 1028, u64::MAX] {
+                let mut registers = vec![0xdead_u128; 2];
+                let mut memory = vec![0u8;32];
+                let mut hits = vec![0u64;1028];
+                let mut cursor = Cursor { remaining: budget,
+                    profile_hits: if profiled { hits.as_mut_ptr() } else { std::ptr::null_mut() } };
+                let arguments = [registers.as_mut_ptr() as usize, 16, memory.as_mut_ptr() as usize,
+                    memory.len(), 16, 0, 0, std::ptr::addr_of_mut!(cursor) as usize];
+                // Valid program and exclusively owned initialized backing storage.
+                let output = unsafe { jit.code.as_ref().unwrap().abi_probe(jit.blocks[0][0].unwrap().offset, arguments) };
+                let consumed = if budget < 1024 { 0 } else if budget < 1027 { 1024 } else { 1027 };
+                assert_eq!(output[0], consumed as usize);
+                assert_eq!(cursor.remaining, budget - consumed);
+                if consumed == 0 { assert_eq!(registers, vec![0xdead;2]); }
+                if consumed == 1024 { assert_eq!(registers, vec![41,0xdead]); }
+                let mut expected_memory = vec![0;32];
+                if consumed == 1027 { expected_memory[16..24].copy_from_slice(&41u64.to_le_bytes()); }
+                assert_eq!(memory, expected_memory);
+                assert_eq!(output[1], 0x1357); assert_eq!(output[2], output[3]);
+                assert_eq!(hits[0], u64::from(profiled && budget >= 1024));
+                assert_eq!(hits[1024], u64::from(profiled && budget >= 1027));
+                assert_eq!(hits.iter().sum::<u64>(), hits[0] + hits[1024]);
+            }
+        }
+    }
 
     #[test]
     fn every_linked_exit_preserves_the_native_abi_and_cursor() {
@@ -1401,20 +1447,60 @@ impl Assembler<'_> {
     /// active-frame ranges can use a displaced base; all other addresses retain
     /// the original validation and an immediate of zero.
     fn memory_address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) -> u32 {
+        if let Some(immediate) = self.local_memory_immediate(reg, size) {
+            // x1 is the current logical frame base; x2 is the current
+            // linear-memory base. Neither can move inside this region.
+            self.three(0x8b000000, rd, 2, 1);
+            return immediate;
+        }
+        self.address(rd, reg, size, write);
+        0
+    }
+    fn local_memory_immediate(&self, reg: Reg, size: usize) -> Option<u32> {
         if [1, 2, 4, 8, 16].contains(&size) {
             if let Some(offset) = self.local_range(reg, size) {
                 let scale = size.min(8);
                 let immediate = offset / scale;
                 if offset % scale == 0 && immediate < 4096 - usize::from(size == 16) {
-                    // x1 is the current logical frame base; x2 is the current
-                    // linear-memory base. Neither can move inside this region.
-                    self.three(0x8b000000, rd, 2, 1);
-                    return immediate as u32;
+                    return Some(immediate as u32);
                 }
             }
         }
-        self.address(rd, reg, size, write);
-        0
+        None
+    }
+    fn scalar_copy(&mut self, dst: Reg, src: Reg, size: usize, forwarded: Option<Fact>) {
+        debug_assert!([1, 2, 4, 8, 16].contains(&size));
+        if let Some(value) = forwarded {
+            // Preserve destination validation before materializing the captured
+            // value, including the original cache replacement order.
+            let immediate = self.memory_address(12, dst, size, true);
+            self.forward_local_value(value, size, "Copy");
+            self.store_mem_at(9, 31, 12, size, immediate);
+            return;
+        }
+        let high = if size <= 8 { 31 } else { 10 };
+        let (source, destination_base, destination) = match (
+            self.local_memory_immediate(src, size), self.local_memory_immediate(dst, size),
+        ) {
+            (Some(source), Some(destination)) => {
+                // Both complete ranges are already proven in the same active
+                // frame. Share its host base; only the memory displacements
+                // differ. Neither load overwrites this base.
+                self.three(0x8b000000, 11, 2, 1);
+                (source, 11, destination)
+            }
+            _ => {
+                // Preserve source-before-destination checks and validate both
+                // entire ranges before touching any bytes.
+                let source = self.memory_address(11, src, size, false);
+                let destination = self.memory_address(12, dst, size, true);
+                (source, 12, destination)
+            }
+        };
+        // Even a sixteen-byte overlapping copy loads both words before its
+        // first store. Narrow copies never consume or define the high scratch.
+        self.load_mem_at(9, high, 11, size, source);
+        self.store_mem_at(9, high, destination_base, size, destination);
     }
     fn fold(&mut self, op: &Op) -> bool {
         match *op {
@@ -1747,6 +1833,14 @@ impl Assembler<'_> {
                 let source_local = self.local_range(src, size);
                 let destination_local = self.local_range(dst, size);
                 let forwarded = self.local_value(source_local, size);
+                if [1, 2, 4, 8, 16].contains(&size) {
+                    self.scalar_copy(dst, src, size, forwarded.map(|(_, value)| value));
+                    self.invalidate_local_memory(destination_local, size);
+                    if let Some((source, _)) = forwarded {
+                        self.remember_local_memory(destination_local, size, source);
+                    }
+                    return;
+                }
                 if forwarded.is_none() { self.address(11, src, size, false); }
                 self.address(12, dst, size, true);
                 // Read all bytes before writing so even overlapping copies

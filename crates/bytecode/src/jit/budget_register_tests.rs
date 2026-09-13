@@ -114,3 +114,39 @@ fn arithmetic_memory_and_assertion_exits_publish_the_same_budget() {
         Op::Return,
     ])]));
 }
+
+#[test]
+fn maximum_region_boundary_preserves_exact_tail_faults_and_profile_counts() {
+    for invalid_address in [false, true] {
+        let mut code = vec![Op::Imm { dst: 0, value: 41 }; 1023];
+        code.push(Op::Jump { target: 1024 });
+        code.push(if invalid_address { Op::Imm { dst: 1, value: 0 } }
+                  else { Op::Local { dst: 1, offset: 0 } });
+        code.extend([Op::Store { address: 1, src: 0, size: 8 }, Op::Return]);
+        let p = program(vec![function(code)]);
+        crate::validate(&p).unwrap();
+        for budget in [0, 1, 1023, 1024, 1025, 1026, 1027, 1028, u64::MAX] {
+            let reference = execute_profiled(&p, &[], Limits { instructions: budget, ..Limits::default() }, Engine::Interpreter);
+            for resumable in [false, true] {
+                for persistent in [false, true] {
+                    for capacity in [0, MAX_CODE_BYTES] {
+                        let limits = || Limits { instructions: budget, jit_resumable_calls: resumable,
+                            jit_persistent_registers: persistent, jit_code_bytes: capacity, ..Limits::default() };
+                        let actual = execute_profiled(&p, &[], limits(), Engine::Jit);
+                        match (actual, &reference) {
+                            (Ok((a, ap)), Ok((b, bp))) => {
+                                assert_eq!((a.value, a.instructions, a.peak_memory), (b.value, b.instructions, b.peak_memory));
+                                assert_eq!(logical(&ap), logical(bp));
+                                let plain = execute_with_engine(&p, &[], limits(), Engine::Jit).unwrap();
+                                assert_eq!((plain.value, plain.instructions, plain.peak_memory), (a.value, a.instructions, a.peak_memory));
+                            }
+                            (Err(a), Err(b)) if a == "JIT guest memory access failed" => assert_eq!(b, "invalid guest memory access"),
+                            (Err(a), Err(b)) => assert_eq!(a, *b),
+                            (a, b) => panic!("budget={budget}, resumable={resumable}, persistent={persistent}, capacity={capacity}: {a:?} vs {b:?}"),
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
