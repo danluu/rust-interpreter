@@ -36,6 +36,7 @@ macro_rules! memory_access {
 // Its metadata becomes live when the opt-in native transition is connected.
 #[allow(dead_code)]
 mod trees;
+mod tree_bridge;
 #[allow(dead_code)]
 mod native_calls;
 mod native_regions;
@@ -1070,6 +1071,7 @@ struct Assembler<'a> {
     guarded_range: Option<range_groups::Plan>,
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
+    tree_bridge_frame: Option<(usize, usize)>,
     resumable: bool,
     local_values: Vec<local_memory::Value>,
     #[cfg(test)]

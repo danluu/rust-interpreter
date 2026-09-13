@@ -388,11 +388,11 @@ pub(super) enum Cond {
 }
 
 impl Assembler<'_> {
-    fn load64(&mut self, rd: u32, base: u32, offset: usize) {
+    pub(super) fn load64(&mut self, rd: u32, base: u32, offset: usize) {
         assert!(offset % 8 == 0 && offset / 8 < 4096);
         self.emit(0xf9400000 | ((offset as u32 / 8) << 10) | (base << 5) | rd);
     }
-    fn store64(&mut self, src: u32, base: u32, offset: usize) {
+    pub(super) fn store64(&mut self, src: u32, base: u32, offset: usize) {
         assert!(offset % 8 == 0 && offset / 8 < 4096);
         self.emit(0xf9000000 | ((offset as u32 / 8) << 10) | (base << 5) | src);
     }
@@ -400,7 +400,7 @@ impl Assembler<'_> {
         assert!(shift > 0 && shift < 64);
         self.emit(0xd3400000 | ((64 - shift) << 16) | ((63 - shift) << 10) | (src << 5) | dst);
     }
-    fn add_imm(&mut self, dst: u32, src: u32, immediate: usize) {
+    pub(super) fn add_imm(&mut self, dst: u32, src: u32, immediate: usize) {
         assert!(immediate < 4096);
         self.emit(0x91000000 | ((immediate as u32) << 10) | (src << 5) | dst);
     }
