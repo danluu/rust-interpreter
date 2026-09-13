@@ -76,9 +76,13 @@ preserved static facts and scalar-copy address folding now passes 504 workspace
 tests per profile, 119 strict/cache controls and three exact real-test profiles.
 Both reduced operation spans and increased flush code remain reported; the
 profiled emitted sizes match the independent census. Earlier fixture-setup and
-admission failures remain recorded. The token-first changed-source screen is
-unstarted, so there is no performance or adoption verdict. The runtime remains
-on its experiment branch while completed qualification reports are on main.
+admission failures remain recorded. The 40-command token screen now passes:
+paired wall is 7.91% lower and CPU 6.19% lower, with A/A envelopes 5.002% and
+3.814%; the command remains 1.727 times native. A workspace-library parser repair
+retains one completed native control and executes only 39 new commands. All 13
+additional real controls and 21 full-protocol checks pass. Fresh full histories
+and complete parser compatibility remain required before adoption. The runtime
+stays on its experiment branch; completed reports are published to main.
 [Composition evidence](results/guarded-local-facts-composed-census-01/assessment.md),
 [qualification](results/guarded-local-facts-profile-01/assessment.md).
 The automatic tool cache now includes its selected toolchain identifier: the

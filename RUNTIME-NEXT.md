@@ -10,20 +10,18 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Screen the qualified composition of guarded local-value retention, exact
-   static facts after forwarded loads, and scalar-copy address folding. Tool
-   `317a0bf1` passes 504 workspace tests per profile, 119 strict/cache controls,
-   and three exact real-test profile/entropy replays. Two fixture-setup failures
-   are retained beside the passing build. The 40-command token screen remains
-   unstarted after a zero-test harness-lock timeout. Resume its nine harness
-   checks when admitted, then run the frozen screen. Additional 13 real controls
-   and the full comparison are prepared conditionally on a passing primary;
-   their drivers still need validation. Preserve the old failed scalar-copy
-   verdict and cancel unstarted guards if this primary fails. The runtime stays
-   experimental; reports are published on main.
-   [Build](results/guarded-local-facts-build-03/assessment.md),
-   [strict controls](results/guarded-local-facts-qualification-01/assessment.md),
-   [real profiles](results/guarded-local-facts-profile-01/assessment.md).
+1. Continue the guarded local-value composition's fresh full comparison, primary
+   first. Tool `317a0bf1` passes 504 workspace tests/profile, 119 strict controls,
+   three exact real profiles, 13 additional real controls and 21 full-protocol
+   checks. The 40-command screen passes with paired wall 0.920880 and CPU
+   0.938077 against baseline; candidate/native wall remains 1.726757. Its one
+   retained original native control and 39 new commands preserve the workspace
+   parser failure and repair without repeating a measurement. Complete the
+   separate original 114-test parser control and all five full project gates
+   before adoption. Stop before unstarted cases on any failed gate; keep the
+   same resource floors and preserve the older scalar-copy rejection.
+   [Screen](results/guarded-local-facts-screen-token-continuation-01/assessment.md),
+   [real controls](results/guarded-local-facts-real-controls-01/assessment.md).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
