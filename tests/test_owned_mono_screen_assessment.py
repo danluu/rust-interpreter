@@ -181,9 +181,10 @@ class OwnedMonoAssessmentTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             assess.selection(wrong, snapshot(files))
         wrong = copy.deepcopy(plan)
-        wrong['std_mir_by_mode']['candidate'] = fixture()[0]['std_mir_by_mode']['candidate']
-        with self.assertRaises(RuntimeError):
-            assess.selection(wrong, snapshot(files))
+        old, _, old_files = fixture()
+        wrong['std_mir_by_mode']['candidate'] = old['std_mir_by_mode']['candidate']
+        with self.assertRaisesRegex(RuntimeError, 'mixed MonoItem std policy'):
+            assess.selection(wrong, snapshot(files | old_files))
 
     def test_v2_rejects_self_consistently_rehashed_missing_real_snippet(self):
         plan, compiler, files = fixture()
