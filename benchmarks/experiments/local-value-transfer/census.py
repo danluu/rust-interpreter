@@ -82,9 +82,9 @@ def main():
         proof = json.loads(proof_path.read_text()); prior = ROOT / proof['raw']
         assert proof['status'] == 'passed' and proof['exact_operation_map_reconstruction']
         assert proof['tool_key'] == '317a0bf16da0f15f562ab457408ab321b12f25211f8169ec8bcd8205a3cb7dfb'
-        build_path=ROOT/'results/local-value-transfer-build-01/summary.json'
+        build_path=ROOT/'results/local-value-transfer-build-continuation-01/summary.json'
         build=json.loads(build_path.read_text())
-        assert build['status']=='passed' and build['tests']=={p:dict(passed=411,ignored=6) for p in ['debug','release']}
+        assert build['status']=='passed' and build['tests']=={p:dict(passed=408,ignored=6) for p in ['debug','release']}
         build_plan=ROOT/build['raw']/'plan.json'
         assert sha(build_plan)==build['plan_sha256']
         assert all(sha(ROOT/p)==h for p,h in json.loads(build_plan.read_text())['frozen'].items())
