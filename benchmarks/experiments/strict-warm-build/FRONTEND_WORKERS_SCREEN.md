@@ -29,6 +29,12 @@ does not change any cache implementation or reuse a compiled edited hash.
 The updated qualification recipe records
 `policy=frontend-workers-qualification-v1`, the source owner, complete crate
 inputs and per-child fixture hashes. Old untyped summaries are insufficient.
+All eight copied fixture files are bound to the published harness. Every child
+guards the six immutable manifest/build-script/proc-macro files as well as the
+two controlled edit files; the complete copied source set is checked before and
+after each command. The archived consumer binds the qualifier, scripts and
+fixture templates to that same published harness. Screen freezing hashes the
+exact bytes read by the typed validator and rejects changes before admission.
 Its 30 commands are two compiler identity probes, 22 real launcher invocations,
 and six direct native diagnostic controls. Source edits3→7→3 affect a shared
 dependency used by native build scripts, a proc macro and guest code. Type,
@@ -95,7 +101,7 @@ are complete, the intended command is the existing screen with
 `--candidate-policy frontend-workers`, identical baseline/candidate tool keys,
 one `--std-mir-ready`, `--frontend-worker-qualification <run>/result.json`, and
 `--workload-lock /Users/danluu/dev/rust-interp/.work/benchmark.lock` on this host.
-The explicit existing absolute lock is required; the worker policy never
+This exact existing canonical lock is required; the worker policy never
 silently creates a worktree-local substitute.
 No custom compiler, Cargo or candidate std argument is allowed. Use the verified
 canonical campaign lock for all eventual tests and workloads; setup must not

@@ -3,13 +3,17 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
+import time
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from custom_compiler import require
+from compare_saved_runtime import acquire_lock, lock_wait_seconds
+from frontend_worker_screen import CAMPAIGN_LOCK
 from qualified_public_tools import BINARIES, COMPILER_REVISION, TOOLCHAIN, WORKER_BUILD_POLICY
 from workflow_io import write_json
 
@@ -21,9 +25,36 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--screen-root', type=Path, required=True)
     parser.add_argument('--std-mir-ready', type=Path, required=True)
-    parser.add_argument('--run-id', default='frontend-worker-build-01')
+    parser.add_argument('--run-id', required=True)
+    parser.add_argument('--supersedes', type=Path, action='append', default=[])
+    parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=600)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
+    # Source/ready metadata hashing shares the same campaign admission as the
+    # later build. This command never executes compiler, Cargo or test probes.
+    require(CAMPAIGN_LOCK.is_file() and CAMPAIGN_LOCK.resolve(strict=True) == CAMPAIGN_LOCK,
+            'metadata freeze requires the canonical campaign lock')
+    waiting_at = time.time()
+    with CAMPAIGN_LOCK.open('a') as lock:
+        acquire_lock(lock,args.lock_wait_seconds)
+        receipt_path = args.output.with_suffix('.process.json')
+        require(not receipt_path.exists() and not receipt_path.is_symlink(), 'metadata receipt already exists')
+        receipt = dict(schema_version=1,status='running',kind='source-metadata-only',
+            pid=os.getpid(),parent_pid=os.getppid(),cwd=os.getcwd(),command=sys.argv,
+            lock=str(CAMPAIGN_LOCK),waiting_at=waiting_at,started_at=time.time(),workloads_executed=0)
+        write_json(receipt_path,receipt)
+        try:
+            freeze(args)
+            receipt.update(status='passed',plan_sha256=sha(args.output))
+        except BaseException as error:
+            receipt.update(status='failed',error=str(error))
+            raise
+        finally:
+            receipt['finished_at']=time.time()
+            write_json(receipt_path,receipt)
+
+
+def freeze(args):
     import re
     require(re.fullmatch('[a-z0-9][a-z0-9-]{0,95}', args.run_id), 'invalid run ID')
     owner = args.screen_root.resolve(strict=True)
@@ -34,6 +65,18 @@ def main():
             and not any(k in identity for k in ['compiler_key','cargo','namespace','source_sha256']),
             'worker plan requires the existing public std owned by the future qualifier/screen')
     require(not args.output.exists() and args.output.parent.is_dir(), 'plan output must be new')
+    superseded = []
+    for previous in args.supersedes:
+        previous = previous.resolve(strict=True)
+        require(previous.parent == Path(__file__).resolve().parent and previous.name.startswith('planned-build-'),
+                'superseded plan is outside the owned worker experiment')
+        payload = previous.read_bytes(); prior = json.loads(payload)
+        require(prior['owner'] == str(ROOT) and prior['status'] == 'not-executed'
+                and prior['workloads_executed'] == 0 and prior['tool_key'] is None
+                and not Path(prior['commands'][0]['receipt']).parent.exists(),
+                'only an unexecuted owned plan can be superseded')
+        superseded.append(dict(path=str(previous),sha256=hashlib.sha256(payload).hexdigest(),
+            status='superseded-not-executed',source_revision=prior['production_source_revision']))
     revision = subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     subprocess.check_call(['git','diff','--exit-code',revision,'--','Cargo.toml','Cargo.lock','rust-toolchain.toml','crates'],cwd=ROOT)
     work = ROOT / '.work' / args.run_id
@@ -73,6 +116,7 @@ def main():
     qualification = owner/'.work/frontend-worker-qualification-01'
     plan = dict(schema_version=2,kind='source-only-build-qualification-plan',status='not-executed',
         qualification_policy=WORKER_BUILD_POLICY,owner=str(ROOT),screen_owner=str(owner),
+        superseded_plans=superseded,
         production_source_revision=revision,public_compiler_source_revision=COMPILER_REVISION,
         source_input_key=source_key,source_input_paths=[str(p.relative_to(ROOT)) for p in tool_paths],
         tool_sources=relative(tool_paths),workspace_sources=relative(workspace),harness=relative(harness),

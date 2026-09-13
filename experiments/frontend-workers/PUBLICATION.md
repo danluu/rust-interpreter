@@ -50,13 +50,19 @@ screen: explicit workers 1/2/1, identical tools and public std, four Cargo jobs,
 two suite workers, all 14 original tests and the unchanged 0.500-second gate.
 The build/qualification driver never executes that screen.
 
-The source-only plan is generated with:
+Plan 01 is preserved as superseded and unexecuted. Plan 02 incorporates the
+reviewed fixture/lock/frozen-byte checks and main `a7c9c9ce`, retaining both the
+MonoItem source-observable prerequisite and its typed frozen-evidence checks.
+The source-only metadata freeze acquires the canonical lock, records its process,
+and emits no compiler, Cargo, test or benchmark command:
 
 ```sh
 python3 experiments/frontend-workers/prepare_plan.py \
+  --run-id frontend-worker-build-02 \
+  --supersedes experiments/frontend-workers/planned-build-01.json \
   --screen-root /Users/danluu/dev/rust-interp-semantic-reuse-20260913 \
   --std-mir-ready /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/std-mir/bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef/ready.json \
-  --output experiments/frontend-workers/planned-build-01.json
+  --output experiments/frontend-workers/planned-build-02.json
 ```
 
 After review, the source tests and each actual stage need separate coordinated
@@ -66,13 +72,13 @@ unrun at this checkpoint. The runner itself uses the absolute canonical lock,
 a bounded 600-second wait, a 12-GiB build entry gate and 8-GiB command gates.
 
 ```sh
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-01.json
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-01.json \
-  --qualify .work/frontend-worker-build-01/published.json
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-01.json \
-  --materialize .work/frontend-worker-build-01/published.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-02.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-02.json \
+  --qualify .work/frontend-worker-build-02/published.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-02.json \
+  --materialize .work/frontend-worker-build-02/published.json
 ```
 
-The last command creates `.work/frontend-worker-build-01/screen-command.json`
+The last command creates `.work/frontend-worker-build-02/screen-command.json`
 only after strict prerequisites. Its final-key argv requires another admission;
 no timing, speedup, adoption or holdout claim follows from publication.
