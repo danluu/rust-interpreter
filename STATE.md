@@ -45,8 +45,14 @@ checks. The workspace passes 484 tests per profile, the final exporter passes
 89 per profile, and 119 focused/cache/strict Cargo commands pass. All 4,918 parser
 inputs verify; source and assertions are unchanged.
 [Complete parser support](results/pgrust-parser-support-04/assessment.md).
-Next measure complete parser edit/build/test commands with explicit matched
-incremental controls, preserving pgrust's other profile choices.
+The complete 66-command default-profile parser comparison now passes its
+correctness controls but is 15.78% slower than native on edited wall time
+(8.29% more child CPU). The matched incremental comparison stops after22
+commands because restoring the original source changes constant layout while
+all114 tests still pass. Typed decoding finds32 extra readonly bytes and only
+immediate changes, resembling the previously diagnosed compiler allocation
+sharing. Paired observer-off/on histories with function reuse disabled are next.
+[Parser baseline](results/pgrust-parser-edits-repository-continuation-01/assessment.md).
 The actual-emitter local-value census is a separate next optimization candidate.
 The automatic tool cache now includes its selected toolchain identifier: the
 retained regression fails before the fix, and 123 runnable root tests pass after

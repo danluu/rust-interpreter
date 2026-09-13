@@ -10,13 +10,14 @@ checks, with 10 existing skips. Archived backend crates are not custom-tool
 dependencies and remain excluded; explicit immutable tool keys remain usable.
 [Cache fix](results/toolchain-cache-after-01/assessment.md).
 
-1. Qualify the general capacity/environment changes against the existing five
-   project edit histories, then measure all 114 original gram_core parser tests
-   through production-source edits. Full parser support now passes with strict
-   checking and unchanged assertions; the workspace has 484 tests per profile.
-   Keep a wrong production edit and restoration. Compare project-default and
-   explicitly enabled incremental profiles using matched native/custom settings.
-   Do not turn the successful support command into a performance claim.
+1. Diagnose the restored parser's constant-layout difference with paired bounded
+   allocation traces and function-template reuse disabled. The default-profile
+   full114-test comparison passes66 commands but is15.78% slower than native;
+   the incremental run stops after22 commands with no performance verdict.
+   Preserve that failure. Determine whether this is compiler MIR allocation
+   sharing before changing cache logic or a future comparison protocol. Complete
+   the existing five-project edit qualification before publishing capacity and
+   environment support; they remain experimental.
 2. Use the actual emitter to count local-value forwarding blocked by writes
    whose new guard already proves disjoint from the current frame. Reconstruct
    saved baseline code exactly before comparing a test-only alternative. Count
