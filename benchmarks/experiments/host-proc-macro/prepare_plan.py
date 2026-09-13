@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write exact source-only build/qualification/screen commands; execute none."""
+"""Write a source-only build plan; defer tool key and screen argv to publication."""
 import argparse
 import hashlib
 import json
@@ -44,13 +44,18 @@ def main():
     key_hash = hashlib.sha256()
     for path in inputs:
         key_hash.update(str(path.relative_to(ROOT)).encode() + b'\0' + path.read_bytes())
-    key = key_hash.hexdigest()
-    work = ROOT / '.work/host-proc-macro-build-01'
+    source_input_key = key_hash.hexdigest()
+    workspace_entries = sorted((ROOT / 'crates').rglob('*'))
+    workspace_inputs = [ROOT / 'Cargo.toml', ROOT / 'Cargo.lock', ROOT / 'rust-toolchain.toml',
+                        *[p for p in workspace_entries if p.is_file()]]
+    if any(p.is_symlink() for p in [*workspace_entries, *workspace_inputs]):
+        raise RuntimeError('source inventory requires regular files, not unresolved source symlinks')
+    contract = Path(__file__).with_name('PUBLICATION.md')
+    superseded = Path(__file__).with_name('planned-build-01.json')
+    work = ROOT / '.work/host-proc-macro-build-02'
     target = work / 'target'
-    tools = ROOT / '.work/interpreter-tools' / key
     screen_work = screen_root / '.work/strict-warm-proc-macro-screen-01'
     source = screen_root / '.work/sources/nushell-proc-macro-opt'
-    installed_screen_tools = screen_root / '.work/interpreter-tools' / key
     env = dict(CARGO_TERM_COLOR='never', CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
                CARGO_PROFILE_TEST_DEBUG='0', CARGO_PROFILE_RELEASE_DEBUG='1',
                RUSTC=str(sysroot / 'bin/rustc'), RUSTUP_TOOLCHAIN=TOOLCHAIN + '-' + host)
@@ -79,23 +84,25 @@ def main():
         command.update(cwd=str(ROOT), receipt=str(work / (command['label'] + '-process.json')),
                        stdout=str(work / (command['label'] + '.stdout')),
                        stderr=str(work / (command['label'] + '.stderr')))
-    screen_command = [sys.executable, str(screen_root / 'benchmarks/experiments/strict-warm-build/screen.py'),
-        '--run-id', screen_work.name, '--source', str(source), '--candidate-policy', 'host-proc-macro-opt',
-        '--baseline-tool-key', key, '--candidate-tool-key', key,
-        '--std-mir-ready', str(ready_path), '--lock-wait-seconds', '45']
-    paths = [Path(__file__), ROOT / 'rust-toolchain.toml', ROOT / 'benchmarks/corpus.json',
+    paths = [Path(__file__), contract, ROOT / 'rust-toolchain.toml', ROOT / 'benchmarks/corpus.json',
         *sorted((ROOT / 'scripts').glob('*.py')),
         *[ROOT / 'tests' / name for name in ['test_host_proc_macro_launcher.py', 'test_host_proc_macro_native.py',
             'test_strict_warm_screen.py', 'test_strict_warm_cargo_screen.py', 'test_strict_warm_proc_macro_screen.py',
             'test_custom_cargo.py', 'test_custom_compiler.py', 'test_borrowck_cache.py']],
         *[ROOT / 'benchmarks/experiments/strict-warm-build' / name for name in
             ['screen.py', 'PROTOCOL.md', 'HOST_PROC_MACRO_OPT.md', 'HOST_PROC_MACRO_SCREEN.md']]]
-    plan = dict(schema_version=1, kind='source-only-build-qualification-plan', status='not-executed',
+    plan = dict(schema_version=2, kind='source-only-build-qualification-plan', status='not-executed',
         owner=str(ROOT), screen_owner=str(screen_root), production_source_revision='01e36c0426afbd61bbfe540af6673a5e7db2f87c',
         public_compiler_source_revision='cea272fa356e94bd2ee2cadf376630aa0683867a',
-        tool_key=key, key_algorithm='interpreter.py ordered source-content fingerprint',
+        source_input_key=source_input_key,
+        source_input_key_algorithm='sha256 of ordered relative path + NUL + file bytes, without separators between entries',
+        source_input_paths=[str(p.relative_to(ROOT)) for p in inputs],
+        tool_key=None, tool_key_algorithm='sha256 of json.dumps(composition, sort_keys=True, separators=(\",\", \":\")).encode()',
         tool_sources={str(p.relative_to(ROOT)): sha(p) for p in inputs},
+        workspace_sources={str(p.relative_to(ROOT)): sha(p) for p in workspace_inputs},
         harness={str(p.relative_to(ROOT)): sha(p) for p in paths},
+        supersedes=dict(path=str(superseded.relative_to(ROOT)), sha256=sha(superseded),
+            status='superseded-not-executed', reason='source-content fingerprint was incorrectly used as the final composition key'),
         shared_std=dict(path=str(ready_path), sha256=sha(ready_path), key=ready_path.parent.name,
             compiler=identity['compiler'], target=host, identity=identity),
         workload_admission=dict(lock='/Users/danluu/dev/rust-interp/.work/benchmark.lock',
@@ -108,12 +115,17 @@ def main():
                     'RUST_TEST_THREADS', 'CARGO', 'RUSTUP_TOOLCHAIN'],
             reject_prefixes=['LD_', 'DYLD_'], overrides=env),
         commands=commands,
-        publication=dict(status='pending-qualification', tools=str(tools), screen_tools=str(installed_screen_tools),
+        publication=dict(status='pending-qualification', contract=str(contract.relative_to(ROOT)),
+            contract_sha256=sha(contract), composition_kind='qualified-public-toolset-v1',
+            tools=None, screen_tools=None, installation_parents=[str(p / '.work/interpreter-tools') for p in [ROOT, screen_root]],
             source_binaries={name: str(target / 'release' / name) for name in CURRENT_TOOL_BINARIES},
             require_new_destinations=True, same_all_arm_binaries=True,
-            retain=['source inventory', 'public compiler/Cargo/driver hashes', 'exact command receipts and logs',
+            retain=['source and workspace inventories with exact bytes', 'public compiler/Cargo/sysroot identities',
+                    'resolved non-system dynamic-library closure and platform identity',
+                    'exact build profile and dependency inventory', 'exact command receipts and logs',
                     'test counts and zero real-fixture skips', 'capability output', 'all binary hashes',
-                    'source.json', 'capabilities.json', 'ready.json'],
+                    'pre-publication correctness receipt', 'source.json', 'capabilities.json', 'ready.json',
+                    'post-publication installation guards and materialized screen command'],
             qualify_before_install=True, preserve_all_prior_tools=True),
         project_preparation=dict(status='pending', destination=str(source),
             revision='9d3157963241cf89447119d34d6e887859f5e7e8',
@@ -123,14 +135,23 @@ def main():
                            '9d3157963241cf89447119d34d6e887859f5e7e8'],
             owner_marker={'owner': str(screen_root), 'revision': '9d3157963241cf89447119d34d6e887859f5e7e8'},
             forbid_alternates=True, initially_empty_project_targets=True),
-        screen_command=screen_command, screen_ready=False, build_qualified=False,
+        screen_command=None,
+        screen_request=dict(status='pending-qualified-publication', python=sys.executable,
+            driver=str(screen_root / 'benchmarks/experiments/strict-warm-build/screen.py'),
+            run_id=screen_work.name, source=str(source), candidate_policy='host-proc-macro-opt',
+            std_mir_ready=str(ready_path), lock_wait_seconds=45,
+            baseline_tool_key=None, candidate_tool_key=None, same_published_key_required=True,
+            materialize_to=str(work / 'screen-command.json')),
+        screen_ready=False, build_qualified=False,
         final_qualification=False, performance_claim=False,
         pending=['coordinate shared lock', 'run build and correctness commands with exact receipts',
-                 'publish immutable qualified toolset', 'integrate reviewed screen harness in screen root',
-                 'prepare owned source snapshot', 'run separate 27-command screen after releasing build lock'])
+                 'compute complete composition key and publish immutable qualified toolset',
+                 'integrate reviewed screen harness in screen root', 'prepare owned source snapshot',
+                 'validate publication and materialize exact screen command with its actual key',
+                 'run separate 27-command screen after releasing build lock'])
     write_json(args.output, plan)
     print(json.dumps(dict(plan=str(args.output.absolute()), sha256=sha(args.output),
-        tool_key=key, screen_ready=False, workloads_executed=0)))
+        source_input_key=source_input_key, tool_key=None, screen_ready=False, workloads_executed=0)))
 
 
 if __name__ == '__main__':
