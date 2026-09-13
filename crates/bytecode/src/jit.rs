@@ -31,6 +31,8 @@ mod scratch_locals;
 #[cfg(test)]
 mod flush_census;
 #[cfg(test)]
+mod successor_flush_tests;
+#[cfg(test)]
 mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
@@ -346,6 +348,8 @@ pub(crate) struct Jit<'a> {
     observe_scratch_locals: bool,
     #[cfg(test)]
     observe_flush: bool,
+    #[cfg(test)]
+    omit_dead_exit_spills: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -384,6 +388,8 @@ impl<'a> Jit<'a> {
             observe_scratch_locals: false,
             #[cfg(test)]
             observe_flush: false,
+            #[cfg(test)]
+            omit_dead_exit_spills: true,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -618,7 +624,11 @@ impl<'a> Jit<'a> {
                 }
                 #[cfg(test)]
                 { a.flush_tail_consumed = terminal.is_none(); }
-                a.flush_facts(start, pc);
+                #[cfg(test)]
+                let retain_tail_reads = !self.omit_dead_exit_spills;
+                #[cfg(not(test))]
+                let retain_tail_reads = false;
+                a.flush_facts(start, pc, retain_tail_reads);
                 span!(Flush, None);
                 a.exit(terminal, pc)?;
                 if terminal.is_some() { span!(Operation, Some(pc - 1)); }
@@ -1498,7 +1508,7 @@ impl Assembler<'_> {
             }
         }
     }
-    fn flush_facts(&mut self, start: usize, end: usize) {
+    fn flush_facts(&mut self, start: usize, end: usize, retain_tail_reads: bool) {
         // Registers are not guest-addressable. A value used only inside this
         // straight-line region needs no spill. Conservatively retain every
         // value read elsewhere. Also retain values read before their first
@@ -1507,7 +1517,12 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
+                // Ordinary exit() reads its branch operand from these same
+                // facts after this loop. Flushing does not clear facts or
+                // overwrite x5/x6, so a last branch use needs no array spill.
+                // The separate tree-call tail retains its prior contract.
+                return (values.live.after(end - 1, reg)
+                    || retain_tail_reads && values.live.at(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))

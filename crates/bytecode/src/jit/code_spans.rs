@@ -15,6 +15,8 @@ mod protocol_census;
 mod scratch_census;
 #[cfg(test)]
 mod flush_census;
+#[cfg(test)]
+mod successor_flush;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]

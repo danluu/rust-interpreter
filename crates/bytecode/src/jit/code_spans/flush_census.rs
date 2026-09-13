@@ -21,8 +21,10 @@ fn observe_saved_consumed_flush_values() {
     }
     assert_eq!(number(&mapping,"code_bytes"),bytes.len());
     assert_eq!(mapping["code_sha256"],format!("{:x}",Sha256::digest(&bytes)));
-    let plain = Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+    let mut plain = Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
     let mut observer = Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+    plain.omit_dead_exit_spills = false;
+    observer.omit_dead_exit_spills = false;
     observer.observe_flush = true;
     let (mut cursor,mut assertions) = (0,0);
     let mut seen = BTreeSet::new(); let mut output = vec![];
