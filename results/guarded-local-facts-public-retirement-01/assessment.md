@@ -1,0 +1,3 @@
+Retired compiler intermediates from 26 exact completed public cache histories after revalidating the 594-command prefix and completed token screen. All 4,019 protected files, including bytecode, native executable snapshots and raw benchmark evidence, remained byte-identical. No private, unstarted Nushell, installed-tool or other-worktree cache was selected.
+
+Removed 29,762 files containing 8,555,754,729 logical bytes. Observed free space rose by 5,472,481,280 bytes during this cleanup; concurrent work and APFS sharing mean this is not an exclusive physical-space attribution. This is storage maintenance, with no performance measurement.
