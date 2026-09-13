@@ -13,7 +13,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
-WORK = ROOT / '.work/interpreted-build-scripts-native-02'
+WORK = ROOT / '.work/interpreted-build-scripts-native-03'
 FIXTURE = HERE / 'fixture'
 APP = WORK / 'fixture'
 HOST = 'aarch64-apple-darwin'
@@ -278,8 +278,18 @@ def arg_value(args, flag):
 
 
 def externs(args):
-    return {value.split('=', 1)[0]: value.split('=', 1)[1] for i, arg in enumerate(args)
-            if arg == '--extern' and i + 1 < len(args) and '=' in (value := args[i + 1])}
+    result = {}
+    for i, arg in enumerate(args):
+        if arg == '--extern':
+            require(i + 1 < len(args), 'missing extern argument')
+            value = args[i + 1]
+        elif arg.startswith('--extern='): value = arg[len('--extern='):]
+        else: continue
+        if '=' not in value: continue  # Bare sysroot proc_macro has no file binding.
+        name, path = value.split('=', 1)
+        require(name and path, 'empty extern name/path')
+        result.setdefault(name, []).append(path)
+    return result
 
 
 def native_macro_proof(case, compiler, records, target):
@@ -294,7 +304,7 @@ def native_macro_proof(case, compiler, records, target):
     require(len(app) <= 1 and len(macro) <= 1, 'ambiguous actual compiler routes')
     if app:
         require(arg_value(app[0]['argv'], '--target') == HOST
-                and externs(app[0]['argv']).get('ibs_fixture_macros') == str(dylib),
+                and externs(app[0]['argv']).get('ibs_fixture_macros') == [str(dylib)],
                 'application did not receive the actual native macro dylib')
     else: require(case['label'] == 'unchanged', 'changed application compiler route absent')
     if macro:
@@ -309,12 +319,22 @@ def native_macro_proof(case, compiler, records, target):
                and arg_value(r['argv'], '--target') is None]
     require(len(macro) == len(app) == len(helpers) == 1, 'actual shared native compiler routes absent')
     require('link' in (arg_value(helpers[0]['argv'], '--emit') or '').split(','), 'helper omitted native link emission')
-    helper = contained(externs(macro[0]['argv'])['ibs_fixture_helper'], target)
-    require(helper.suffix == '.rlib', 'native macro received metadata-only helper')
-    files = {str(p) for r in artifacts for p in r['filenames']}
-    require(str(helper) in files, 'native helper extern lacks Cargo artifact association')
-    return dict(helper=identity(helper), proc_macro=identity(dylib), compiler_pids=[helpers[0]['pid'], macro[0]['pid'], app[0]['pid']],
-        basis='actual host link emission/rlib extern, native proc-macro dylib extern and executed unchanged macro assertion; helper may inline')
+    bindings = externs(macro[0]['argv']).get('ibs_fixture_helper', [])
+    require(1 <= len(bindings) <= 2 and len(set(bindings)) == len(bindings), 'ambiguous native helper extern bindings')
+    files = [contained(path, target) for path in bindings]
+    rlibs = [path for path in files if path.suffix == '.rlib']
+    require(len(rlibs) == 1, 'native macro received metadata-only helper')
+    helper = rlibs[0]
+    require(str(helper.parent) == arg_value(helpers[0]['argv'], '--out-dir')
+            and all(path == helper or (path.suffix == '.rmeta' and path.parent == helper.parent
+                and path.stem == helper.stem) for path in files), 'native helper paths differ from the actual host output/stem')
+    associated = [r for r in artifacts if r['target']['name'] == 'ibs_fixture_helper'
+                  and r['target']['kind'] == ['lib'] and str(helper) in r['filenames']]
+    require(len(associated) == 1 and all(str(path) in associated[0]['filenames'] for path in files),
+            'native helper extern lacks a single Cargo artifact association')
+    return dict(helper=identity(helper), helper_extern_bindings=[identity(path) for path in files],
+        proc_macro=identity(dylib), compiler_pids=[helpers[0]['pid'], macro[0]['pid'], app[0]['pid']],
+        basis='actual host link emission/native rlib plus paired metadata externs, native proc-macro dylib extern and executed unchanged macro assertion; helper may inline')
 
 
 def case_environment(case, ordinal, env, public, frozen):
@@ -355,7 +375,7 @@ def freeze_sources(destination, frozen):
 def main():
     parser = argparse.ArgumentParser(__doc__); parser.add_argument('stage', choices=['plan', 'run'])
     parser.add_argument('--plan', type=Path, required=True); parser.add_argument('--plan-sha256')
-    args = parser.parse_args(); work = ROOT / '.work' / ('interpreted-build-scripts-plan-02' if args.stage == 'plan' else WORK.name)
+    args = parser.parse_args(); work = ROOT / '.work' / ('interpreted-build-scripts-plan-03' if args.stage == 'plan' else WORK.name)
     work.mkdir(parents=True, exist_ok=False)
     receipt = dict(status='waiting', pid=os.getpid(), parent_pid=os.getppid(), started_at=time.time(), commands=[],
         canonical_lock=str(CANONICAL_LOCK), lock_wait_seconds=600, native_baseline_only=True, interpreted_scripts=False, performance_claim=False)

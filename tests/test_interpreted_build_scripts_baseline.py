@@ -107,7 +107,7 @@ class NativeBuildScriptBaselineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary).resolve(); helper=target/'libibs_fixture_helper.rlib'; dylib=target/'libibs_fixture_macros.dylib'
             helper.write_bytes(b'actual-test-artifact'); dylib.write_bytes(b'actual-test-macro')
-            compiler=[dict(pid=1,argv=[str(b.RUSTC),'--crate-name','ibs_fixture_helper','--emit=dep-info,link']),
+            compiler=[dict(pid=1,argv=[str(b.RUSTC),'--crate-name','ibs_fixture_helper','--emit=dep-info,link','--out-dir',str(target)]),
                 dict(pid=2,argv=[str(b.RUSTC),'--crate-name','ibs_fixture_macros','--crate-type','proc-macro','--extern','ibs_fixture_helper='+str(helper)]),
                 dict(pid=3,argv=[str(b.RUSTC),'--crate-name','ibs_fixture_app','--target',b.HOST,'--extern','ibs_fixture_macros='+str(dylib)])]
             records=[dict(reason='compiler-artifact',target=dict(name='ibs_fixture_helper',kind=['lib']),filenames=[str(helper)]),
@@ -115,12 +115,35 @@ class NativeBuildScriptBaselineTests(unittest.TestCase):
             case=b.cases()[24]; proof=b.native_macro_proof(case,compiler,records,target)
             self.assertEqual(proof['helper']['path'],str(helper))
             mutations=[]
-            x=copy.deepcopy(compiler);x[0]['argv'][-1]='--emit=metadata';mutations.append((x,records))
+            x=copy.deepcopy(compiler);x[0]['argv'][3]='--emit=metadata';mutations.append((x,records))
             x=copy.deepcopy(compiler);x[1]['argv'][-1]=str(helper);mutations.append((x,records))
             mutations.append((compiler,records[1:]))
             for actual, artifacts in mutations:
                 with self.subTest(actual=actual), self.assertRaises((RuntimeError,KeyError)):
                     b.native_macro_proof(case,actual,artifacts,target)
+
+    def test_native_helper_keeps_ordered_rlib_and_separate_metadata_bindings(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            target=Path(temporary).resolve()
+            helper=target/'libibs_fixture_helper-hash.rlib'; metadata=helper.with_suffix('.rmeta')
+            wrong=target/'libibs_fixture_helper-other.rmeta'; dylib=target/'libibs_fixture_macros.dylib'
+            for path in [helper,metadata,wrong,dylib]: path.write_bytes(path.name.encode())
+            host=dict(pid=1,argv=[str(b.RUSTC),'--crate-name','ibs_fixture_helper','--emit=dep-info,metadata,link','--out-dir',str(target)])
+            app=dict(pid=3,argv=[str(b.RUSTC),'--crate-name','ibs_fixture_app','--target',b.HOST,'--extern','ibs_fixture_macros='+str(dylib)])
+            records=[dict(reason='compiler-artifact',target=dict(name='ibs_fixture_helper',kind=['lib']),filenames=[str(helper),str(metadata)]),
+                dict(reason='compiler-artifact',target=dict(name='ibs_fixture_macros',kind=['proc-macro']),filenames=[str(dylib)])]
+            def check(paths, artifacts=records):
+                args=[str(b.RUSTC),'--crate-name','ibs_fixture_macros','--crate-type','proc-macro']
+                for path in paths: args.extend(['--extern','ibs_fixture_helper='+str(path)])
+                macro=dict(pid=2,argv=args)
+                proof=b.native_macro_proof(b.cases()[24],[host,macro,app],artifacts,target)
+                self.assertEqual(b.externs(args)['ibs_fixture_helper'],list(map(str,paths)))
+                self.assertEqual([r['path'] for r in proof['helper_extern_bindings']],list(map(str,paths)))
+            check([helper,metadata]); check([metadata,helper])
+            for paths in [[metadata],[helper,wrong],[helper,helper]]:
+                with self.subTest(paths=paths), self.assertRaises(RuntimeError): check(paths)
+            incomplete=copy.deepcopy(records); incomplete[0]['filenames']=[str(helper)]
+            with self.assertRaises(RuntimeError): check([helper,metadata],incomplete)
 
     def test_explicit_environment_and_fixed_plan_reject_policy_drift(self):
         inherited={'HOME':str(Path.home()),'PATH':'untrusted','RUSTFLAGS':'-Zdanger','CARGO_BUILD_JOBS':'99',
