@@ -24,6 +24,8 @@ mod transfers;
 
 #[cfg(test)]
 mod limit_tests;
+#[cfg(test)]
+mod register_pair_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
 // Its pointers never enter guest registers or addressable guest memory.
@@ -287,7 +289,6 @@ struct CompiledFunction<'a> {
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
     resumes: Vec<Option<usize>>,
-    indirect: bool,
     operations: usize,
     assertions: Vec<Assertion<'a>>,
     register_pairs: usize,
@@ -399,12 +400,6 @@ impl<'a> Jit<'a> {
             return Ok(true);
         }
         resumes.resize(staged.resumes.len(), 0usize);
-        let indirect_len = if staged.indirect { self.program.functions[id].code.len() } else { 0 };
-        let Some(indirect) = resumable::Indirect::try_new(indirect_len) else {
-            self.prepared[id] = true;
-            self.declined_functions += 1;
-            return Ok(true);
-        };
         if !staged.words.is_empty() {
             self.assertions.try_reserve(staged.assertions.len())
                 .map_err(|_| "JIT assertion table allocation failed")?;
@@ -415,7 +410,7 @@ impl<'a> Jit<'a> {
                 for (out, entry) in resumes.iter_mut().zip(&staged.resumes) {
                     if let Some(entry) = entry { *out = arena + offset + entry * 4; }
                 }
-                tables.publish(id, resumes, indirect);
+                tables.publish(id, resumes);
             }
             for entry in staged.entries.iter_mut().flatten() { entry.offset += offset; }
             self.bytes += staged.words.len() * 4;
@@ -437,8 +432,7 @@ impl<'a> Jit<'a> {
 
     fn emit_function(&self, f: &'a Function, word_budget: usize) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         let resumable = self.resumable.is_some();
-        let indirect = resumable && f.code.iter().any(|op| matches!(op, Op::CallIndirect { .. }));
-        if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len(), indirect)) { return Ok(None); }
+        if self.resumable.as_ref().is_some_and(|tables| !tables.fits(f.code.len())) { return Ok(None); }
         let mut words = vec![];
         #[cfg(test)]
         let mut local_forwarding = vec![];
@@ -589,9 +583,9 @@ impl<'a> Jit<'a> {
                 operations += pc - start;
             }
             if pc == start {
-                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::CallIndirect { .. } | Op::Return) {
+                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice), None)?;
+                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
                     resumes[pc] = Some(words.len() + resume);
                     internal_entries[pc] = Some(words.len() + internal);
@@ -624,7 +618,7 @@ impl<'a> Jit<'a> {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
-        Ok(Some(CompiledFunction { words, entries, resumes, indirect, operations, assertions,
+        Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
             #[cfg(test)] local_forwarding }))
@@ -1303,9 +1297,24 @@ impl Assembler<'_> {
         } else { self.raw_spill(reg, lo, hi); }
     }
     fn raw_spill(&mut self, reg: Reg, lo: u32, hi: u32) {
+        self.transfer_register_pair(false, reg, lo, hi);
+    }
+    fn transfer_register_pair(&mut self, load: bool, reg: Reg, lo: u32, hi: u32) {
+        // Non-writeback LDP/STP has a signed seven-bit offset scaled by eight.
+        // A VM register occupies sixteen initialized, host-owned bytes. Keep
+        // two scalar accesses where a pair would need an extra address add;
+        // for far registers, materialize their common base only once.
+        if reg < 32 || reg >= 2048 {
+            let (base, offset) = self.reg_address(reg, false);
+            debug_assert!(offset < 64);
+            self.emit((if load { 0xa9400000 } else { 0xa9000000 })
+                | (offset << 15) | (hi << 10) | (base << 5) | lo);
+            return;
+        }
         for (high, rs) in [(false, lo), (true, hi)] {
             let (base, offset) = self.reg_address(reg, high);
-            self.emit(0xf9000000 | (offset << 10) | (base << 5) | rs);
+            self.emit((if load { 0xf9400000 } else { 0xf9000000 })
+                | (offset << 10) | (base << 5) | rs);
         }
     }
     fn remember(&mut self, reg: Reg, fact: Fact) {

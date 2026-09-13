@@ -3,9 +3,6 @@ use crate::{
     Engine, Execution, ExecutionProfile, Slot, VERSION, execute_profiled, execute_with_engine,
 };
 
-#[path = "indirect_tests.rs"]
-mod indirect;
-
 #[test]
 fn fixed_zeroing_matches_every_dirty_extent_and_unaligned_start() {
     let mut code = platform::Code::reserve(32768).unwrap();
@@ -832,7 +829,6 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 frames: frames.as_mut_ptr(),
                                 registers: registers.as_mut_ptr(),
                                 entries: jit.resumable.as_ref().unwrap().pointers.as_ptr(),
-                                indirect: jit.resumable.as_ref().unwrap().indirect_pointers.as_ptr(),
                                 profiles: profiles.as_ptr(),
                                 memory_end,
                                 register_end,

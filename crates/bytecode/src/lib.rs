@@ -1131,8 +1131,6 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                 | Op::CallIndirect {
                     args, destination, ..
                 } => {
-                    let indirect_site = (RESUMABLE && matches!(instruction, Op::CallIndirect { .. }))
-                        .then_some((frame.function, frame.pc - 1));
                     let callee_id = match instruction {
                         Op::Call { function, .. } => *function,
                         Op::CallIndirect {
@@ -1235,9 +1233,6 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                         tls_callback: false,
                     });
                     prepare_jit::<PROFILE>(jit, callee_id, &mut profile)?;
-                    if let Some((caller, pc)) = indirect_site {
-                        jit.as_mut().unwrap().prepare_indirect(caller, pc, callee_id)?;
-                    }
                     break 'dispatch;
                 }
                 Op::Return => {

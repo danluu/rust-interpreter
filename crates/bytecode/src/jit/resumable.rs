@@ -1,4 +1,4 @@
-//! Calls and Returns over initialized guest frames, with checked VM exits.
+//! Direct Calls and Returns over initialized guest frames, with VM exits.
 use super::*;
 use crate::frames::{Frame, Frames, layout as frame};
 use crate::native_continuation::{
@@ -29,28 +29,9 @@ fn fixed_frame_clear_size(caller: &Function, callee: &Function) -> Option<usize>
     (size <= 256).then_some(size)
 }
 
-#[derive(Clone, Default)]
-pub(super) struct Indirect {
-    entries: Vec<usize>,
-    attempted: Vec<bool>,
-    ranges: Vec<(usize, usize)>, // (caller PC, published thunk start)
-}
-impl Indirect {
-    pub(super) fn try_new(len: usize) -> Option<Self> {
-        let mut result = Self::default();
-        result.entries.try_reserve_exact(len).ok()?;
-        result.attempted.try_reserve_exact(len).ok()?;
-        result.entries.resize(len, 0);
-        result.attempted.resize(len, false);
-        Some(result)
-    }
-}
-
 pub(super) struct Entries {
     owned: Vec<Vec<usize>>,
     pointers: Vec<*const usize>,
-    indirect: Vec<Indirect>,
-    indirect_pointers: Vec<*const usize>,
     bytes: usize,
     pub zeroes: Vec<bool>,
 }
@@ -59,8 +40,6 @@ impl Entries {
         Self {
             owned: vec![vec![]; program.functions.len()],
             pointers: vec![std::ptr::null(); program.functions.len()],
-            indirect: vec![Indirect::default(); program.functions.len()],
-            indirect_pointers: vec![std::ptr::null(); program.functions.len()],
             bytes: 0,
             zeroes: program
                 .functions
@@ -69,26 +48,17 @@ impl Entries {
                 .collect(),
         }
     }
-    pub fn fits(&self, code_len: usize, indirect: bool) -> bool {
+    pub fn fits(&self, code_len: usize) -> bool {
         code_len
             .checked_add(1)
             .and_then(|n| n.checked_mul(8))
-            .and_then(|n| if indirect { n.checked_add(code_len.checked_mul(9)?) } else { Some(n) })
             .is_some_and(|n| n <= MAX_ENTRY_BYTES - self.bytes)
     }
-    pub fn publish(&mut self, id: usize, entries: Vec<usize>, indirect: Indirect) {
+    pub fn publish(&mut self, id: usize, entries: Vec<usize>) {
         debug_assert!(self.pointers[id].is_null());
-        self.bytes += entries.len() * 8 + indirect.entries.len() * 9;
+        self.bytes += entries.len() * 8;
         self.owned[id] = entries;
         self.pointers[id] = self.owned[id].as_ptr();
-        self.indirect[id] = indirect;
-        if !self.indirect[id].entries.is_empty() {
-            self.indirect_pointers[id] = self.indirect[id].entries.as_ptr();
-        }
-    }
-    pub(super) fn indirect_ranges(&self) -> impl Iterator<Item = (usize, usize, usize)> + '_ {
-        self.indirect.iter().enumerate().flat_map(|(function, table)|
-            table.ranges.iter().map(move |&(pc, offset)| (function, pc, offset)))
     }
 }
 
@@ -104,7 +74,6 @@ struct ResumeCursor {
     // Effective backing/logical depth bound, fixed before native execution.
     frame_end: usize,
     working_budget: usize,
-    indirect: *const *const usize,
 }
 
 use continuation::layout as state;
@@ -116,7 +85,6 @@ const MEMORY_END: usize = std::mem::offset_of!(ResumeCursor, memory_end);
 const REGISTER_END: usize = std::mem::offset_of!(ResumeCursor, register_end);
 const FRAME_END: usize = std::mem::offset_of!(ResumeCursor, frame_end);
 const WORKING_BUDGET: usize = std::mem::offset_of!(ResumeCursor, working_budget);
-const INDIRECT: usize = std::mem::offset_of!(ResumeCursor, indirect);
 const _: () = {
     assert!(std::mem::offset_of!(ResumeCursor, state) == 0);
 };
@@ -127,8 +95,7 @@ const _: () = {
     assert!(FRAMES == 64 && REGISTERS == 72 && ENTRIES == 80 && PROFILES == 88);
     assert!(MEMORY_END == 96 && REGISTER_END == 104 && FRAME_END == 112);
     assert!(WORKING_BUDGET == 120);
-    assert!(INDIRECT == 128);
-    assert!(std::mem::size_of::<ResumeCursor>() == 136);
+    assert!(std::mem::size_of::<ResumeCursor>() == 128);
 };
 
 impl<'a> Jit<'a> {
@@ -145,64 +112,6 @@ impl<'a> Jit<'a> {
 
     pub(crate) fn resumable_register_zeroes(&self) -> &[bool] {
         &self.resumable.as_ref().unwrap().zeroes
-    }
-
-    /// Specialize one already validated target per indirect site. Publication
-    /// is confined to the owning thread between synchronous native entries.
-    /// A target mismatch, exhausted code budget or unready callee always keeps
-    /// the original interpreter path. No executable caller code is rewritten.
-    #[inline]
-    pub(crate) fn prepare_indirect(&mut self, caller: usize, pc: usize, callee: usize) -> Result<bool, String> {
-        if !self.resumable.as_ref()
-            .and_then(|tables| tables.indirect.get(caller))
-            .and_then(|table| table.attempted.get(pc))
-            .is_some_and(|attempted| !attempted) {
-            return Ok(false);
-        }
-        let Some(f) = self.program.functions.get(caller) else { return Ok(false); };
-        let Some(Op::CallIndirect { arg_sizes, result_size, .. }) = f.code.get(pc) else { return Ok(false); };
-        let Some(target) = self.program.functions.get(callee) else { return Ok(false); };
-        if target.args.len() != arg_sizes.len() || target.result.size != *result_size
-            || target.args.iter().zip(arg_sizes).any(|(slot, size)| slot.size != *size) {
-            return Ok(false);
-        }
-        self.resumable.as_mut().unwrap().indirect[caller].attempted[pc] = true;
-        let started = std::time::Instant::now();
-        let result = self.compile_indirect(caller, pc, callee);
-        self.compile_nanos += started.elapsed().as_nanos();
-        result
-    }
-
-    #[cold]
-    fn compile_indirect(&mut self, caller: usize, pc: usize, callee: usize) -> Result<bool, String> {
-        let f = &self.program.functions[caller];
-        // These deterministic analyses use the same immutable body as caller
-        // preparation, so the thunk inherits the exact physical assignment.
-        let reads = read_registers(f);
-        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
-        let staged = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), None, Some(callee));
-        let (a, _, internal) = match staged {
-            Ok(staged) => staged,
-            Err(EmitError::Limit(_)) => return Ok(false),
-            Err(EmitError::InvalidRelocation(message)) => return Err(message.into()),
-        };
-        if a.words.len() > (self.capacity - self.bytes) / 4 { return Ok(false); }
-        let tables = self.resumable.as_mut().unwrap();
-        let range_bytes = std::mem::size_of::<(usize, usize)>();
-        if tables.bytes.checked_add(range_bytes).is_none_or(|n| n > MAX_ENTRY_BYTES)
-            || tables.indirect[caller].ranges.try_reserve_exact(1).is_err() {
-            return Ok(false);
-        }
-        let Some(code) = self.code.as_mut() else { return Ok(false); };
-        let offset = code.append(&a.words)?;
-        let entry = code.published().0 + offset + internal * 4;
-        self.bytes += a.words.len() * 4;
-        tables.indirect[caller].ranges.push((pc, offset));
-        tables.bytes += range_bytes;
-        // Both vectors have their final length and never move while native
-        // execution is active. Publishing the data slot is the final mutation.
-        tables.indirect[caller].entries[pc] = entry;
-        Ok(true)
     }
 
     /// Run prepared native regions, possibly switching guest frames.
@@ -301,7 +210,6 @@ impl<'a> Jit<'a> {
             register_end,
             frame_end: frame_end.min(limits.frames),
             working_budget,
-            indirect: self.resumable.as_ref().unwrap().indirect_pointers.as_ptr(),
         };
         // SAFETY: all preparation precedes these fresh exclusive pointers.
         // Native guards bound every push, zero/copy and profile/table access.
@@ -348,7 +256,6 @@ impl<'a> Jit<'a> {
         reads: &'b [Option<(usize, usize)>],
         values: Option<&'b values::Allocation>,
         slots: Option<&[Option<usize>]>,
-        indirect_target: Option<usize>,
     ) -> Result<(Assembler<'b>, usize, usize), EmitError> {
         let mut a = Assembler {
             heap: self.uses_heap,
@@ -387,29 +294,6 @@ impl<'a> Jit<'a> {
                 )?;
             }
             Op::Return => a.resumable_return(f, pc, self.profiled, &mut declines)?,
-            Op::CallIndirect { callee, args, destination, .. } => {
-                if let Some(id) = indirect_target {
-                    let handle = u64::try_from(id).ok().and_then(|id| id.checked_add(1))
-                        .filter(|id| id & crate::FUNCTION_POINTER_TAG == 0)
-                        .ok_or(EmitError::InvalidRelocation("invalid indirect target handle"))?
-                        | crate::FUNCTION_POINTER_TAG;
-                    // Check all128 bits before charging or modifying guest
-                    // state. Signature validation happened before publication;
-                    // full handle equality selects that exact immutable body.
-                    a.get(9, *callee, false);
-                    a.get(10, *callee, true);
-                    a.cmp(10, 31);
-                    a.decline(Cond::Ne, &mut declines);
-                    a.imm(10, handle);
-                    a.cmp(9, 10);
-                    a.decline(Cond::Ne, &mut declines);
-                    a.resumable_call(f, pc, id, &self.program.functions[id], args,
-                        None, *destination, self.resumable.as_ref().unwrap().zeroes[id],
-                        self.profiled, &mut declines)?;
-                } else {
-                    a.resumable_indirect_dispatch(pc, &mut declines);
-                }
-            }
             _ => return Err(EmitError::InvalidRelocation("invalid resumable transition")),
         }
         let failures = std::mem::take(&mut a.failures);
@@ -450,22 +334,6 @@ pub(super) enum Cond {
 }
 
 impl Assembler<'_> {
-    fn resumable_indirect_dispatch(&mut self, pc: usize, declines: &mut Vec<usize>) {
-        self.load64(9, 19, INDIRECT);
-        self.load64(10, 20, frame::FUNCTION);
-        self.lsl_imm(10, 10, 3);
-        self.three(0x8b000000, 9, 9, 10);
-        self.load64(9, 9, 0);
-        self.cmp(9, 31);
-        self.decline(Cond::Eq, declines);
-        self.imm(10, pc as u64 * 8);
-        self.three(0x8b000000, 9, 9, 10);
-        self.load64(16, 9, 0);
-        self.cmp(16, 31);
-        self.decline(Cond::Eq, declines);
-        self.emit(0xd61f0200); // br x16: fully published internal thunk entry
-    }
-
     fn load64(&mut self, rd: u32, base: u32, offset: usize) {
         assert!(offset % 8 == 0 && offset / 8 < 4096);
         self.emit(0xf9400000 | ((offset as u32 / 8) << 10) | (base << 5) | rd);
