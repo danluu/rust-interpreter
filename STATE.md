@@ -70,7 +70,13 @@ result. Return to actual-emitter local-value forwarding composition evidence.
 [Parser baseline](results/pgrust-parser-edits-repository-continuation-01/assessment.md).
 [Matched incremental](results/pgrust-parser-edits-incremental-history-01/assessment.md).
 [Combined compatibility](results/environment-main-final-audit-01/assessment.md).
-The actual-emitter local-value census is a separate next optimization candidate.
+The actual-emitter local-value censuses are complete. All three public baselines
+reconstruct exactly. A composition of guarded local-value retention, preserved
+static facts and scalar-copy address folding is selected for qualification;
+both reduced operation spans and increased flush code remain reported. No
+runtime correctness or performance verdict is claimed for this candidate yet.
+The first build admission timed out on the shared lock with zero build commands.
+[Composition evidence](results/guarded-local-facts-composed-census-01/assessment.md).
 The automatic tool cache now includes its selected toolchain identifier: the
 retained regression fails before the fix, and 123 runnable root tests pass after
 it (10 existing skips). Explicit immutable keys remain usable. The unrelated
