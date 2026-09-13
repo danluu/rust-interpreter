@@ -43,8 +43,12 @@ assertion or backend/target diagnostic. MentionedItems traversal alone does not
 preserve the full ordinary used graph and validation obligations. Do not adopt
 that flag on the native host route without preserving every original check.
 
-The current HIR experiment is a cumulative prerequisite, with conservative
-structural coverage and no qualified hits yet. Its selected-unit lowering event
+The current HIR experiment has passed all 27 compiler controls and the
+unchanged native fixture, with 335 verified cache hits under the required tree,
+journal and poststate audits.
+[Native qualification evidence](../../../results/hir-arena-native-qualification-01/README.md).
+Application/exporter integration and a latency gain remain unqualified; its
+structural coverage remains conservative. The selected-unit lowering event
 was 251.869ms; that event is not an established removable budget. The separate
 [span-handle map candidate](../../../experiments/proc-macro-span-handles/README.md)
 preserves macro execution and compiler API calls while changing numeric lookup.
