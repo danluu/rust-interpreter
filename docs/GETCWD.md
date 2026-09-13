@@ -53,7 +53,9 @@ ignored, and none failed or were filtered. Both native comparison tests and
 all 33 child commands passed. Complete source snapshots, command/output
 receipts and native comparisons are retained in the
 [qualification archive](../results/getcwd-native-qualification-01/README.md).
-The integrated production sources match that tested checkpoint.
+The later integration with compiler-role defaults passed 548 release workspace
+tests and the same 33 native comparison children.
+[Merged qualification](../results/exporter-roles-getcwd-qualification-01/README.md).
 
 Before execution, freeze the complete source and helper/test inputs, an actual
 public compiler/loader closure, prepared std, sanitized environment and fresh
@@ -80,6 +82,8 @@ Both engines must match native across six cases and a deliberately wrong
 expected path. Disabled and invalid guest pointer/size cases do not invoke a
 native invalid-pointer control. Four incompatible foreign ABIs must fail export.
 
-The sequence above completed successfully. A future unchanged-build.rs export-only
-census must use the newly built and qualified tools to observe any next blocker;
-the earlier census's exact `libc::unix::getcwd` reports stay historical.
+The sequence above completed successfully. The subsequent unchanged-build.rs
+export-only census used the qualified getcwd tools and advanced to `fstat` in
+the default and shared-helper configurations, and `_exit` in the subprocess
+configuration. No build script executed; later support remains unknown.
+[Subsequent export census](../results/build-script-export-census-03/README.md).

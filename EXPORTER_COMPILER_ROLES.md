@@ -90,14 +90,20 @@ The existing worker and host-library compiler commit fields refer to the
 runtime frontend. Moving or replacing bound runtime files requires rebuilding
 the exporter with a new binding; this change does not relabel old binaries.
 
-Eight pure Rust controls are prepared in
+Eight pure Rust controls are defined in
 `crates/mir-export/tests/compiler_roles.rs`. They cover crossed build/runtime
 identities, actual probe output substitution, environment overrides, private
 sysroot selection, exhaustive file tampering, strict schema/hash checks,
 default behavior and loaded-image/identity rejection, and Cargo routing to
-the runtime compiler. They have not been executed. Default wrapper tests are
-retained unchanged. These controls cannot establish private metadata/linker
-compatibility or actual dylib discovery.
+the runtime compiler. All eight passed in the default-mode qualification. The merged
+source `56e9aea9` subsequently passed all 548 release workspace tests (10
+ignored, none failed or filtered), including all eight role controls and four
+getcwd controls, plus both getcwd native tests and their 33 child commands.
+The actual exporter retained its default capabilities and the wrapper's role
+probe returned exactly `null` followed by a newline.
+[Merged qualification evidence](results/exporter-roles-getcwd-qualification-01/README.md).
+These checks do not establish private metadata/linker compatibility or actual
+split-role dylib discovery.
 
 The next bounded qualification must assemble `B` from verified beta payloads
 and the full successful native rustc build stamp, freeze both role bindings

@@ -260,9 +260,20 @@ The subsequent opt-in Darwin `getcwd` implementation passed 540 release
 workspace tests (10 ignored, none failed or filtered), both native comparison
 tests and all 33 child commands. It supports native NULL allocation semantics,
 checked guest buffers, shared allocation budgets and errno preservation. The
-integrated production source matches that tested checkpoint. Later build-script
-blockers and any latency improvement remain unknown.
+getcwd implementation then advanced the unchanged build-script export census
+to `fstat` in the default/shared-helper configurations and `_exit` in the
+subprocess configuration. No guest or native build script executed.
 [Getcwd correctness evidence](../../../results/getcwd-native-qualification-01/README.md).
+[Subsequent export census](../../../results/build-script-export-census-03/README.md).
+
+Explicit build/runtime compiler-role binding is implemented with the default
+route preserved. Its integration with getcwd passed 548 release workspace
+tests (10 ignored, none failed or filtered), all twelve required controls,
+and both native getcwd tests with 33 child commands. Default exporter
+capabilities and the wrapper's null role probe passed. Building an exporter
+against the modified frontend still needs actual private metadata/linker and
+loaded-driver qualification. No latency improvement is established.
+[Merged default qualification](../../../results/exporter-roles-getcwd-qualification-01/README.md).
 
 The [external trait-name index](../../../experiments/external-trait-index/README.md)
 is a reviewed, uncompiled compiler prototype. It preserves ordinary external
