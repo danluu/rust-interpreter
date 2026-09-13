@@ -10,21 +10,32 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Prototype native Call/Return counters retained in caller-saved SIMD registers
-   across internal edges, with exact publication at every VM exit. Saved adopted
-   code puts their three-word updates at32/1,651 and45/1,439 generated samples.
-   Account for new entry/exit words, register use, ABI and all fallback paths;
-   preserve wrapping counters, profiles, budgets, faults, TLS and capacity.
-   Consider the qualified successor-only spill component, then require a fresh
-   changed-source screen. Do not include the rejected selector or budget fusion.
-   No counter runtime candidate has been implemented or benchmarked yet.
-   [Diagnostic and limits](results/native-continuation-census-01/assessment.md),
-   [closed evidence](results/native-continuation-census-01/closure.json).
+1. Inspect adjacent loads/stores in the saved memory-data spans. Count actual
+   instruction pairs that can use an AArch64 pair instruction without adding
+   address work or changing complete-range validation, fault order, aliasing,
+   register publication or bytecode semantics. Attribute their sampled PCs and
+   static/weighted words before deciding whether to prototype. The whole memory
+   bucket is not an eligibility count. No paired-memory candidate exists yet.
 
-   Defer cached native return offsets. Every executed native Call in both
-   captures has a compiled continuation, but storing it adds199.2M/210.2M
-   weighted emitted words at Calls. Native Returns exceed native Calls, so
-   VM-entered frames still require lookup. Coverage alone establishes no gain.
+The native-counter/successor-flush composition is parked after its40-command
+screen: wall−0.114% against2.254% A/A; CPU−0.018% against2.029% A/A. All commands
+were correct and source was restored, but the predeclared gate failed. No full
+comparison or held-out controls started; do not retime this unchanged candidate.
+Its532 tests/profile,119 strict/cache controls, three exact profiles,12 harness
+controls and complete offline reconstruction passed. Counter initialization and
+publication added more static words than hot updates removed: net composed
+code growth was439,656/504,548 bytes in the two captures. Main retains the adopted
+runtime; the qualified experimental source is on
+`experiment/native-counter-flush-20260913`. Controllers archived here require
+that branch's qualified source.
+[Outcome](results/native-counter-flush-screen-token-01/assessment.md),
+[closed evidence](results/native-counter-flush-screen-token-01/closure.json),
+[complete setup cost](results/native-counter-flush-build-03/setup-accounting.json).
+
+Cached native return offsets remain deferred. The diagnostic proved complete
+coverage of executed native Calls, but caching adds work at Calls and VM-entered
+frames still need lookup. Coverage alone establishes no gain.
+[Diagnostic and limits](results/native-continuation-census-01/assessment.md).
 
 The branch-selected fixed-address/successor-flush composition is parked after
 its40-command primary: wall−1.37% against2.73% A/A, CPU−2.64% against0.74% A/A.
