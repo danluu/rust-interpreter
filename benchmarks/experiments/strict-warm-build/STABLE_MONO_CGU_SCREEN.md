@@ -20,6 +20,13 @@ Cargo's command before wrapper routing is insufficient. A preliminary diagnostic
 comparison, old module-only integration result or std smoke result is rejected.
 Recording is confined to qualification; the measured commands omit it.
 
+Admission also requires the independent `std-source-observables-v1` result for
+the same compiler, tools and both std keys. Its real source-position histories,
+second-prefix copies, missing/corrupt source controls and native/exported
+proc-macro observables are separate from the 36-command integration. The screen
+validates this result and freezes every linked evidence file around all timed
+commands; neither prerequisite may substitute for the other.
+
 Both prepared std directories must use `source-paths-v2` and the authoritative
 `std_mir_source_paths.load` validator, in `stable-mono-cgu:off` and
 `stable-mono-cgu:on` namespaces. Their source-containing sysroots, compiler/Cargo
@@ -38,12 +45,14 @@ python3 benchmarks/experiments/strict-warm-build/screen.py \
   --source "$OWNED_NUSHELL_SOURCE" --candidate-policy stable-mono-cgu \
   --baseline-tool-key "$TOOLS" --candidate-tool-key "$TOOLS" \
   --compiler-key "$COMPILER" --compiler-qualification "$STRICT_RESULT_JSON" \
+  --source-observables "$SOURCE_OBSERVABLES_RESULT_JSON" \
   --std-mir-ready "$OFF_READY_JSON" --candidate-std-mir-ready "$ON_READY_JSON" \
   --lock-wait-seconds 45
 ```
 
 This is an unexecuted template, not a prepared or admitted run. The strict
-qualifier and v2 loader must be integrated before it can run. Custom Cargo,
+qualifier, source-observable prerequisite and v2 std preparation must pass before
+it can run. Custom Cargo,
 module grouping, host-macro optimization, frontend-worker tuning, demand
 retention and borrow-check shortcuts cannot be combined with this screen.
 
