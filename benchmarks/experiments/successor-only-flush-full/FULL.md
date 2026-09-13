@@ -1,5 +1,7 @@
-This is preparation for a conditional full comparison. The primary screen has
-not yet run. No full comparison may start without its passing result, the
+This is preparation for a conditional full comparison. The primary screen now
+passes: wall ratio 0.96663 with a 2.09% A/A envelope, CPU ratio 0.97578 with a
+2.37% envelope. Its 40 commands are sealed and will not be reused as full pairs.
+No full comparison may start without its passing result, the
 candidate's 525 workspace tests per profile, 119 strict/cache controls, three
 exact real-test profiles, two exact adopted-code emission controls, 13 additional selected/prepared compatibility commands,
 and 21 full-protocol checks. Preserve every failed or declined admission.
@@ -8,8 +10,9 @@ Candidate `f23d72d4` uses VM `cd6ed101` from source `0cd5b296`. Baseline and
 duplicate use adopted tool `35df4077` / VM `f0e5f2ea`. These three treatments
 share the exact `cf4b3499` exporter and `45bca4f2` wrapper. The fixed anchor
 remains `fe9dcae0`. Only ordinary-region register flushing changes. The offline comparison proves
-that only dead-after flush words disappear; real workload profiles are still
-pending. Smaller native code is not performance evidence. All original strict checks and selected assertions stay.
+that only dead-after flush words disappear; all three real workload profiles
+preserve exact per-PC counts, outcomes, memory and entropy. Smaller native code
+is not performance evidence. All original strict checks and selected assertions stay.
 
 Use fresh namespaces and the existing full protocol: token, folded, pgrust hash
 selection, private rg-aot, then Nushell type relations. Stop before the next case
