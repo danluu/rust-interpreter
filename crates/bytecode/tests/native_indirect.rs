@@ -57,10 +57,12 @@ fn pointer(id:usize)->u128 {(FUNCTION_POINTER_TAG|(id as u64+1)) as u128}
 fn native_indirect_multiple_targets_layouts_and_large_registers() {
     for registers in [4,2048,2049,3005] {for persistent in [false,true] {
         let p=fixture(registers);let l=options(persistent);let mut prepared=PreparedJit::new(&p,&l).unwrap();
-        for id in [1,2,3,1,2,3] {
+        for (iteration,id) in [1,2,3,1,2,3].into_iter().enumerate() {
             let want=execute_with_engine(&p,&[pointer(id)],Limits::default(),Engine::Interpreter);
             let run=prepared.execute(&[pointer(id)],l.clone()).unwrap();
-            assert_eq!(run.value,if id==3 {0}else{43});compare(&want,Ok(run));
+            assert_eq!(run.value,if id==3 {0}else{43});
+            if iteration>=3 {assert_eq!(run.jit_resumable_calls,1);}
+            compare(&want,Ok(run));
         }
         let run=prepared.execute(&[pointer(1)],l).unwrap();assert_eq!(run.jit_resumable_calls,1);
     }}
@@ -88,7 +90,9 @@ fn native_indirect_full_handles_and_signatures_reject_after_warming() {
 
 #[test]
 fn native_indirect_budget_memory_depth_and_code_capacity_boundaries() {
-    let p=fixture(4);
+    let mut p=fixture(4);
+    // The second call has a warm native target even in one-shot profiled runs.
+    p.functions[0].code.insert(7,p.functions[0].code[6].clone());
     let total=execute_with_engine(&p,&[pointer(1)],Limits::default(),Engine::Interpreter).unwrap().instructions;
     for instructions in 0..=total+1 {same(&p,&[pointer(1)],Limits{instructions,..Limits::default()});}
     for frames in 0..=3 {for memory in [0,16,64,128,175,176,200,255,256,4096] {
@@ -96,6 +100,20 @@ fn native_indirect_budget_memory_depth_and_code_capacity_boundaries() {
     }}
     for capacity in [0,4,128,1024,4096] {
         same(&p,&[pointer(1)],Limits{jit_code_bytes:capacity,..Limits::default()});
+    }
+    for persistent in [false,true] {
+        let l=options(persistent);let mut prepared=PreparedJit::new(&p,&l).unwrap();
+        for id in [1,2] {prepared.execute(&[pointer(id)],l.clone()).unwrap();}
+        for instructions in 0..=total+1 {
+            let plain=Limits{instructions,..Limits::default()};
+            let want=execute_with_engine(&p,&[pointer(1)],plain,Engine::Interpreter);
+            compare(&want,prepared.execute(&[pointer(1)],Limits{instructions,..l.clone()}));
+        }
+        for id in [1,2] {for frames in 0..=3 {for memory in [0,16,64,128,167,168,175,176,200,255,256,4096,48288,48289,65536] {
+            let plain=Limits{memory,frames,..Limits::default()};
+            let want=execute_with_engine(&p,&[pointer(id)],plain,Engine::Interpreter);
+            compare(&want,prepared.execute(&[pointer(id)],Limits{memory,frames,..l.clone()}));
+        }}}
     }
 }
 
@@ -132,6 +150,12 @@ fn native_indirect_ordered_aliasing_empty_and_faulting_argument_copies() {
         for frames in [1,2,3] {same(&p,&[],Limits{frames,..Limits::default()});}
         for persistent in [false,true] {
             let l=options(persistent);let mut prepared=PreparedJit::new(&p,&l).unwrap();
+            // Even faulting caller arguments must reach the native admission/copy path.
+            // These separate invocations prepare each target without sharing guest state.
+            for id in 1..p.functions.len() {
+                let zeroes=vec![0;p.functions[id].args.len()];
+                let _=prepared.execute_entry(id,&zeroes,l.clone());
+            }
             compare(&want,prepared.execute(&[],l.clone()));compare(&want,prepared.execute(&[],l));
         }
     }
