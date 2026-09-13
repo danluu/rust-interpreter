@@ -20,9 +20,13 @@ Current samples put93%/86% of the two token windows inside generated code.
 The constant shift/rotate candidate passes432 tests per profile,107 harness
 checks and222 real correctness/profile commands. Its40-command primary screen
 finds wall+0.90%/CPU+1.19%, inside3.07%/3.00% A/A; no useful gain. Park it and
-cancel unstarted guards. Next qualify direct operands for modular arithmetic
-and bitwise operations on the adopted baseline. No goal-state change, unrelated process control or
+cancel unstarted guards. Direct operands for modular arithmetic and bitwise
+operations now pass433 Rust tests per profile,123 current harness checks and
+222 real correctness/profile commands. The40-command screen improves wall5.49%
+and CPU4.66%, beyond3.73%/3.11% A/A. A separately frozen full five-case
+comparison is next; no adoption follows from the screen alone. No goal-state change, unrelated process control or
 new billing path is authorized.
+[Direct-operand screen](results/direct-operands-screen-token-01/assessment.md),
 [Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
 [Refined binding result](results/replay-costs-token-02/assessment.md),
 [current runtime attribution](results/current-runtime-costs-01/assessment.md),
