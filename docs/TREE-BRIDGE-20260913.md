@@ -48,3 +48,11 @@ The [closure](../results/tree-bridge-screen-token-01/closure.json) verifies
 cost is separately recorded as 117.71 seconds for this qualified tool build.
 Next examine the cursor and budget adaptation paid by the many small trees;
 choose a materially different implementation before another performance test.
+
+The [saved-profile census](../results/tree-bridge-cursor-census-01/summary.json)
+counts 180.36M / 381.02M tree regions. The old ABI emits two budget memory
+accesses and four instructions per region. A separate shared-cursor experiment
+keeps the outer cursor and budget register across these regions. Its focused
+ABI checks pass; full qualification and new end-to-end evidence remain pending.
+The two completed-cache retirements preserve all protected hashes and increase
+free space by about 3.4 GiB in total; no shared target or peer cache is removed.
