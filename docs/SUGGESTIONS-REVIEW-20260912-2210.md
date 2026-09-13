@@ -230,3 +230,13 @@ liveness conservative, then qualify and screen under1.2/1.3. This uses2.4 actual
 emission evidence without a new sample or premature arena redesign. Scratch
 forwarding stays parked; the larger mechanism has a smaller implementation.
 [Flush evidence](../results/consumed-flush-values-census-01/assessment.md).
+
+Successor-only flushing passes its 40-command screen but fails the fresh full
+primary gate: wall−3.25% is inside 7.32% A/A, while CPU improves 4.62%. All 154
+commands retain expected assertions and restored sources. Apply suggestions
+1.2/1.3 without an exception: the other four full cases and parser guard remain
+unstarted, and the adopted runtime stays unchanged. Keep this as a possible
+component under 1.4. Next refine actual small-memory-operation spans under 2.4
+using the saved samples, separating address/checking work from data movement
+before choosing another composition or revisiting the conditional 2.5 design.
+[Full primary decision](../results/successor-only-flush-full-01/assessment.md).
