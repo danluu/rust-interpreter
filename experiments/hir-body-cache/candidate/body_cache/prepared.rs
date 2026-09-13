@@ -1,17 +1,22 @@
 //! Owned, typed values for a checked current-session body. This module performs
 //! no HIR allocation, symbol/span interning, query or LoweringContext mutation.
 //! Its opaque result is NOT a ReadyHit: no exclusive context, vacancy/effect
-//! preflight or commit/materializer exists. Stock lowering always runs.
-// The prepared fields deliberately have no HIR consumer at this checkpoint.
-#![allow(dead_code)]
+//! preflight or hit commit exists. The separate private child audits cold
+//! materialization only after stock lowering, which always supplies the result.
 use std::collections::BTreeMap;
 use rustc_ast as ast;
 use rustc_hir::{self as hir, def::Res};
 use rustc_span::BytePos;
 use super::{validate::{self, CheckedTree, Current}, wire as w};
+#[path = "prepared_audit.rs"]
+mod cold;
 
-/// No public fields, deserializer, unchecked constructor or materializer.
-pub(super) struct PreparedBody {
+/// No public fields, deserializer, unchecked constructor or hit materializer.
+/// Immutable borrowing binds this token to the exact Current until consumed;
+/// it does not grant exclusive access to the LoweringContext.
+pub(super) struct PreparedBody<'current, 'input> {
+    current: &'current Current<'input>,
+    expected: w::BodyTree,
     owner: hir::OwnerId,
     start: u32,
     end: u32, // Exclusive; may equal ItemLocalId::INVALID, never a node ID.
@@ -62,13 +67,22 @@ struct Block {
 /// Repeat full tree/reference/order validation with THIS Current. A CheckedTree
 /// produced against another Current is not a transferable proof. Valid trees
 /// may rebase to new IDs/coordinates; only these newly checked values survive.
-pub(super) fn prepare(tree: &CheckedTree, current: &Current<'_>) -> Option<PreparedBody> {
+pub(super) fn prepare<'current, 'input>(tree: &CheckedTree,
+    current: &'current Current<'input>) -> Option<PreparedBody<'current, 'input>> {
     let prefix = current_state(current)?;
     let checked = validate::check(tree.tree().clone(), current)?;
     let value = Convert { current }.expr(&checked.tree().value)?;
-    Some(PreparedBody { owner: current.owner, start: current.start, end: current.journal.end,
+    Some(PreparedBody { current, expected: checked.tree().clone(),
+        owner: current.owner, start: current.start, end: current.journal.end,
         source_start: BytePos(current.source_start), source_end: BytePos(current.source_end),
         source: current.source.to_owned(), prefix, value })
+}
+
+/// Cold-only API: returns no HIR and offers no materialization/commit shortcut.
+/// The caller has already run stock lowering and checked the exact exit frame.
+pub(super) fn audit(lctx: &crate::LoweringContext<'_, '_>, candidate: &super::Candidate,
+    expected: &CheckedTree, prepared: PreparedBody<'_, '_>) -> Option<()> {
+    cold::audit(lctx, candidate, expected, prepared)
 }
 
 fn current_state(current: &Current<'_>) -> Option<BTreeMap<u32, hir::HirId>> {

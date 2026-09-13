@@ -12,9 +12,13 @@ conversion prerequisite: it revalidates the supplied tree against the exact
 current input, checks current S/E/prefix/local/resolution bindings, and prepares
 actual pinned enum/ID/numeric values and checked absolute span recipes without
 HIR/symbol/span interning. Its private `PreparedBody` token is intentionally
-weaker than the `ReadyHit` below. It owns no exclusive context and provides no
-vacancy/effect preflight, current-span materializer or commit. Both saved and
-cold evidence must pass this conversion; every invocation still lowers stock.
+weaker than the `ReadyHit` below. The next source checkpoint borrows its exact
+current input and adds a private cold-only materialization/recapture audit.
+That audit receives only arena/span facilities after owner/E/source/context
+checks and returns no HIR. It provides no exclusive context, vacancy/effect
+replay or hit commit. Both saved and cold evidence must pass typed conversion;
+every invocation still lowers stock. Cold arena roundtrip correctness remains
+unrun and does not establish hit semantics or useful performance.
 
 ## Proposed API and miss boundary
 

@@ -23,7 +23,7 @@ mod storage;
 mod source_identity;
 pub(super) use effects::Trace;
 
-const FORMAT: &str = "hir-body-capture-v2-tree-prepared-1";
+const FORMAT: &str = "hir-body-capture-v2-cold-materialization-1";
 
 pub(super) struct Candidate {
     owner: hir::OwnerId,
@@ -39,6 +39,8 @@ pub(super) struct Candidate {
     current_span: Span,
     source: String,
     input_statistics: [usize; 6],
+    // Cold-audit guard only; never enters the persistent key or payload.
+    context_identity: [usize; 3],
 }
 
 fn hex(value: Fingerprint) -> String {
@@ -81,6 +83,8 @@ pub(super) fn prepare<'tcx>(tcx: TyCtxt<'tcx>, resolver: &ResolverAstLowering<'t
         source: probe.input.owner_source.clone(),
         input_statistics: [probe.body_bytes, probe.body_nodes, probe.parameter_nodes,
             probe.trait_entries, probe.trait_candidates, probe.external_resolutions],
+        context_identity: [tcx.sess as *const _ as usize, tcx.hir_arena as *const _ as usize,
+            resolver as *const _ as usize],
     })
 }
 
@@ -88,7 +92,7 @@ fn report(lctx: &LoweringContext<'_, '_>, candidate: &Candidate, state: &str,
     start: u32, end: u32, events: usize) {
     if lctx.tcx.sess.opts.unstable_opts.incremental_info {
         let [bytes, ast, params, traits, candidates, externals] = candidate.input_statistics;
-        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=1 prepared_values=1 materializer=0 \
+        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=1 prepared_values=1 cold_materialization_audit=1 hit_materializer=0 \
             body_bytes={bytes} body_ast={ast} param_ast={params} trait_entries={traits} trait_candidates={candidates} external_refs={externals}",
             candidate.name);
     }
@@ -133,7 +137,9 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
         .and_then(|current| capture::capture(&candidate, &current, &value)
             .and_then(|tree| {
                 let tree = validate::check(tree, &current)?;
-                let _prepared = prepared::prepare(&tree, &current)?;
+                let prepared = prepared::prepare(&tree, &current)?;
+                prepared::audit(lctx, &candidate, &tree, prepared)?;
+                frame.validate_exit(lctx, &candidate, &checked)?;
                 Some(tree)
             }));
     let Some(tree) = captured_tree else {
@@ -146,8 +152,8 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
         Some(_) => "changed-tree-or-journal-after-stock-lowering",
         None => "cold-tree-and-journal-after-stock-lowering",
     };
-    // Typed evidence only: no cached HIR materializer exists. Every comparison
-    // follows stock lowering, complete cold capture and exit-effect checks.
+    // Typed evidence only: no hit path exists. Every comparison follows stock
+    // lowering, a cold materialization/recapture audit and exit-effect checks.
     let stored = storage::write(&candidate.path, &record_key, &payload);
     report(lctx, &candidate, if stored { state } else { "tree-write-unavailable" },
         frame.start, end, checked.journal().events.len());
