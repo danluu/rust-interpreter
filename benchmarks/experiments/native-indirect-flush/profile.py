@@ -93,7 +93,8 @@ def main():
             assert selection['name']==item['name'] and selection['artifact_sha256']==item['artifact_sha256']
             assert selection['catalog_sha256']==item['catalog_sha256']
             stats={k:int(v) for k,v in re.findall(r'\b([a-z_]+)=(\d+)\b',err)}
-            for name in ['instructions','peak_guest_memory','entropy_calls','entropy_bytes','jit_entries','jit_instructions','jit_resumable_calls','jit_resumable_returns']:
+            for name in ['instructions','peak_guest_memory','entropy_calls','entropy_bytes','jit_entries','jit_instructions','jit_resumable_calls','jit_resumable_returns','jit_operations','jit_compiled_functions',
+                         'jit_register_functions','jit_register_pairs','jit_liveness_declines']:
                 assert stats[name]==previous['statistics'][name],(index,name,stats[name],previous['statistics'][name])
             assert stats['jit_declined_functions']==0
             profile=json.loads(profile_path.read_text()); prior=json.loads((old/f'{index}-profile.json').read_text())
