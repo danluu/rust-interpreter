@@ -10,16 +10,20 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Implement one native boundary memory composition: wider exact frame clears,
-   pair-at-a-time large ABI copies, and the compatible previously qualified
-   paired private-register transfers. The finer diagnostic reconciles all433/499
-   transition samples with zero unassigned. Frame clearing covers110/100 samples;
-   exact ABI byte loops account for13/89, including136-/304-byte transfers in
-   exhaustive. Keep every initialization, check, overlap rule and fault order.
-   Qualify the bundle, then use one fresh40-command primary screen before any
-   full adoption study. No isolated tiny-component retiming.
-   [Evidence](results/native-protocol-census-01/assessment.md),
-   [implementation plan](benchmarks/experiments/native-boundary-memory/PLAN.md).
+1. Inspect redundant local-memory traffic in the adopted emitter before choosing
+   another runtime mechanism. In particular, distinguish a virtual register's
+   redefinition from a real clobber of the native bits that previously held its
+   value. Any retained memory-value fact must still be tied to exact unchanged
+   bytes, native-register identity and conservative alias/control-flow handling.
+   Start with an offline census against existing exact code/maps and profiles;
+   avoid repeating the negligible source-to-destination transfer experiment.
+
+The native boundary memory bundle is parked after its40-command primary screen:
+wall−0.66% versus3.30% A/A, CPU−2.18% versus2.79% A/A. All519 workspace checks per
+profile,119 strict controls and three exact workload profiles pass, but no useful
+complete-command gain is established. Its full histories remain unstarted.
+The adopted VMf0e5f2ea remains the baseline; do not retime this bundle unchanged.
+[Screen and closure](results/native-boundary-memory-screen-token-01/assessment.md).
 
 The local-value-transfer hypothesis is parked. Its observer passes408 bytecode
 checks/profile and reconstructs all three baseline maps exactly, but saves only

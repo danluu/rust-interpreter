@@ -206,3 +206,10 @@ paired-register composition, retaining all checks and initialization. The old
 argument-only/whole-frame elision and width-packing proposals remain parked.
 Keep the existing1.2/1.3 primary-first screen and mandatory adoption guards.
 [Protocol evidence](../results/native-protocol-census-01/assessment.md).
+
+The resulting native-boundary memory bundle fails its40-command primary screen:
+wall−0.66% within3.30% A/A, despite complete correctness qualification. Follow
+suggestions1.2/1.3: park the bundle and leave every full comparison unstarted.
+Continue with actual-emitter local-memory traffic evidence before another
+mechanism; no isolated repeat of wider copying, clearing or register pairing.
+[Closed screen](../results/native-boundary-memory-screen-token-01/assessment.md).
