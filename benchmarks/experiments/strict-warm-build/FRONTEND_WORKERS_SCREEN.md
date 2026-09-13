@@ -1,7 +1,18 @@
-# Prepared frontend-worker mechanism screen
+# Frontend-worker mechanism screen
 
-This source-only extension has not been tested or benchmarked. The shared publisher now supports its explicit public-build policy, but real
-build and 30-command qualification remain pending. The existing strict 27-command
+The first completed screen found no material improvement. All 27 commands,
+the separate 30-command qualification and source restoration passed. Edited
+complete-command medians were 3.9612s / 3.9807s / 3.9678s for workers1/2/1.
+The median paired wall change was -0.12%, against 3.08% maximum A/A deviation;
+child CPU increased 2.51%. None of the five candidate edits finished below
+0.5s. Keep this option off. This is a negative mechanism screen, with no final
+latency or holdout qualification claim. The
+[saved assessment](../../../results/strict-warm-frontend-worker-screen-01/assessment.md)
+retains the exact history and qualification evidence. The earlier publication
+and assembly-diagnostic qualification failure are retained separately in
+`results/frontend-worker-build03-qualification01`.
+
+The implementation uses the existing strict 27-command
 history is unchanged: one original anchor, a wrong production edit, compiled
 recovery, five cumulative first-seen edits, and compiled final restoration in
 three balanced arms. All 14 original Nushell type-relation tests, manifests,
