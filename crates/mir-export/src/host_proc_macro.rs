@@ -37,6 +37,15 @@ impl HostKind {
     fn label(self) -> &'static str {
         match self { Self::ProcMacro => "proc-macro", Self::Library => "library" }
     }
+
+    fn preserves_metadata_option(self, option: &str) -> bool {
+        // Cargo can emit separate metadata alongside an ordinary native rlib.
+        // Keep its exact embedding choice; this does not select optimization
+        // or alter checking. The existing proc-macro policy stays unchanged.
+        if !matches!(self, Self::Library) { return false; }
+        let (name, value) = option.split_once('=').map_or((option, None), |(n, v)| (n, Some(v)));
+        name.replace('_', "-") == "embed-metadata" && boolean(value).is_some()
+    }
 }
 
 fn additions_for(args: &[String], selected: bool, kind: HostKind) -> Result<Vec<String>, String> {
@@ -111,6 +120,7 @@ fn additions_for(args: &[String], selected: bool, kind: HostKind) -> Result<Vec<
                 } else { Some(tail) };
                 match (option, value) {
                     ('C', Some(value)) => invocation.codegen.push(value),
+                    ('Z', Some(value)) if kind.preserves_metadata_option(value) => {}
                     ('Z', _) | (_, None) => invocation.unsupported = true,
                     _ => {}
                 }

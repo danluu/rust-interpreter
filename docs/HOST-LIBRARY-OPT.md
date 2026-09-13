@@ -44,9 +44,11 @@ proc-macro optimization, stable partition and borrowck policies cannot combine
 with this option. Guest and host dependency caches are therefore not reused
 across the enabled/default policy transition.
 
-Focused Rust routing and mocked launcher/publication controls are prepared in
+Focused Rust routing and mocked launcher/publication controls are in
 `crates/mir-export/tests/host_library.rs` and
-`tests/test_host_library_launcher.py`; none has run for this source-only change.
+`tests/test_host_library_launcher.py`. Build01 passed the original five Rust
+routing tests and five launcher tests. The metadata-embedding correction adds
+a sixth Rust routing test, requiring execution in the fresh build.
 Before timing, qualify the unchanged proc-macro parser controls plus native
 checks, actual macro/build-script outputs, cold/edit/restore exports, and compiler
 argv for host/guest roles. The shared publisher's explicit host-library handoff
@@ -87,7 +89,11 @@ complete forwarded argv must equal the original plus existing std/MIR routing
 and, only for eligible on-arm libraries, the explicit O1/check-preserving flags.
 The same final-argv check covers successful and failed direct library compiles.
 
-No history has run yet. After a caller acquires the canonical workload lock and
+Build01 passed two native histories but its shared-library history rejected
+Cargo's metadata-embedding flag before qualification completed. The failure is
+retained in `.work/host-library-build-01`; no performance screen ran. The corrected
+parser preserves that ordinary Cargo flag and requires a new complete history.
+After a caller acquires the canonical workload lock and
 freezes one supporting public exporter/wrapper/VM plus a complete prepared std
 sysroot, the focused commands are:
 
