@@ -982,6 +982,8 @@ struct Assembler<'a> {
     local_fact_events: Vec<(usize, &'static str, &'static str)>,
     #[cfg(test)]
     retained_local_writes: Vec<(usize, Reg, usize, usize)>,
+    #[cfg(test)]
+    protocol_spans: Vec<resumable::ProtocolSpan>,
     words: Vec<u32>,
     links: Vec<(usize, usize)>,
     failures: Vec<(usize, Failure)>,
@@ -1017,6 +1019,7 @@ impl Default for Assembler<'_> {
             local_forwarding: Default::default(),
             local_fact_events: Default::default(),
             retained_local_writes: Default::default(),
+            protocol_spans: Default::default(),
             words: Default::default(),
             links: Default::default(),
             failures: Default::default(),

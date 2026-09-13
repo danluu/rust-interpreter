@@ -35,6 +35,36 @@ pub(super) struct Entries {
     bytes: usize,
     pub zeroes: Vec<bool>,
 }
+// Test-only byte ownership: these labels emit no instructions and never enter
+// the production VM or its artifact/code-map formats.
+#[cfg(test)]
+#[derive(Debug, serde::Serialize)]
+pub(super) struct ProtocolSpan {
+    pub offset: usize,
+    pub end: usize,
+    pub kind: &'static str,
+    pub argument: Option<usize>,
+}
+
+macro_rules! protocol_mark {
+    ($a:expr, $kind:literal, $argument:expr) => {
+        #[cfg(test)]
+        $a.mark_protocol($kind, $argument);
+    };
+}
+
+#[cfg(test)]
+impl Assembler<'_> {
+    fn mark_protocol(&mut self, kind: &'static str, argument: Option<usize>) {
+        let offset = self.protocol_spans.last().map_or(0, |s| s.end);
+        let end = self.words.len() * 4;
+        assert!(offset <= end);
+        if offset < end {
+            self.protocol_spans.push(ProtocolSpan { offset, end, kind, argument });
+        }
+    }
+}
+
 impl Entries {
     fn new(program: &Program) -> Self {
         Self {
@@ -270,10 +300,12 @@ impl<'a> Jit<'a> {
             ..Assembler::default()
         };
         let resume = a.external_entry();
+        protocol_mark!(a, "entry", None);
         let internal = a.words.len();
         let mut declines = vec![];
         a.cmp(BUDGET_REGISTER, 31);
         a.decline(Cond::Eq, &mut declines);
+        protocol_mark!(a, "entry_budget", None);
         match &f.code[pc] {
             Op::Call {
                 function,
@@ -315,11 +347,13 @@ impl<'a> Jit<'a> {
                 }
             }
         }
+        protocol_mark!(a, "fault_tail", None);
         let target = a.words.len();
         a.return_pc(pc);
         for at in declines {
             a.patch_conditional(at, target)?;
         }
+        protocol_mark!(a, "admission_fallback", None);
         Ok((a, resume, internal))
     }
 }
@@ -366,6 +400,7 @@ impl Assembler<'_> {
     }
     fn charge_transition(&mut self, pc: usize, profiled: bool) {
         self.sub_imm(BUDGET_REGISTER, BUDGET_REGISTER, 1);
+        protocol_mark!(self, "charge_budget", None);
         if profiled {
             self.load64(10, 19, state::PROFILE_HITS);
             self.imm(11, pc as u64 * 8);
@@ -546,10 +581,12 @@ impl Assembler<'_> {
         declines: &mut Vec<usize>,
     ) -> Result<(), EmitError> {
         self.callee_target(id, Some(&mut *declines));
+        protocol_mark!(self, "call_target", None);
         self.load64(9, 19, state::FRAME_LEN);
         self.load64(10, 19, FRAME_END);
         self.cmp(9, 10);
         self.decline(Cond::Hs, declines);
+        protocol_mark!(self, "call_frame_capacity", None);
         self.imm(10, callee.frame_align as u64 - 1);
         self.three(0xab000000, 21, 3, 10); // adds; carry means alignment overflow
         self.decline(Cond::Hs, declines);
@@ -561,6 +598,7 @@ impl Assembler<'_> {
         self.load64(10, 19, MEMORY_END);
         self.cmp(11, 10);
         self.decline(Cond::Hi, declines);
+        protocol_mark!(self, "call_memory_capacity", None);
         self.load64(12, 19, state::REGISTER_LEN);
         self.imm(10, callee.registers as u64);
         self.three(0xab000000, 17, 12, 10);
@@ -568,6 +606,7 @@ impl Assembler<'_> {
         self.load64(10, 19, REGISTER_END);
         self.cmp(17, 10);
         self.decline(Cond::Hi, declines);
+        protocol_mark!(self, "call_register_capacity", None);
         // The register bound is the length of an initialized Vec<u128>, so
         // multiplying a bounded slot count by 16 cannot overflow.
         self.lsl_imm(13, 17, 4);
@@ -577,33 +616,44 @@ impl Assembler<'_> {
         self.cmp(13, 10);
         self.decline(Cond::Hi, declines);
 
+        protocol_mark!(self, "call_working_budget", None);
         self.charge_transition(pc, profiled);
+        protocol_mark!(self, "charge_profile", None);
         self.spill_values_at(pc + 1);
+        protocol_mark!(self, "call_spill", None);
         self.three(0x8b000000, 11, 2, 3);
         self.imm(9, callee.frame_size.max(1) as u64);
         self.three(0x8b000000, 3, 21, 9);
         self.three(0x8b000000, 12, 2, 3);
         self.clear_call_frame(caller, callee)?;
+        protocol_mark!(self, "call_frame_clear", None);
         self.load64(9, 19, state::PEAK_LINEAR);
         self.cmp(3, 9);
         self.emit(0x9a892069); // csel x9,x3,x9,hs
         self.store64(9, 19, state::PEAK_LINEAR);
+        protocol_mark!(self, "call_peak_memory", None);
         for (index, (source, slot)) in args.iter().zip(&callee.args).enumerate() {
             self.call_argument_address(*source, slot.size, slots.and_then(|s| s.get(index).copied()).flatten())?;
+            protocol_mark!(self, "argument_source", Some(index));
             self.imm(12, slot.offset as u64);
             self.three(0x8b000000, 12, 21, 12);
             self.three(0x8b000000, 12, 2, 12);
+            protocol_mark!(self, "argument_destination", Some(index));
             self.abi_copy(slot.size)?;
+            protocol_mark!(self, "argument_copy", Some(index));
         }
         self.imm(9, caller.registers as u64 * 16);
         self.three(0x8b000000, 17, 0, 9);
+        protocol_mark!(self, "call_register_cursor", None);
         if zeroes {
             self.mov(11, 17);
             self.imm(12, callee.registers as u64 * 16);
             self.three(0x8b000000, 12, 17, 12);
             self.zero_range_at_least(callee.registers as usize * 16)?;
         }
+        protocol_mark!(self, "call_register_clear", None);
         self.get(15, destination, false);
+        protocol_mark!(self, "call_result_pointer", None);
         self.resumable_save_pc(pc + 1);
         self.add_imm(20, 20, frame::SIZE);
         self.imm(9, id as u64);
@@ -621,13 +671,16 @@ impl Assembler<'_> {
         self.increment_cursor(state::CALLS);
         self.mov(0, 17);
         self.mov(1, 21);
+        protocol_mark!(self, "call_publish_frame", None);
         self.switch_profile(profiled);
+        protocol_mark!(self, "profile_switch", None);
         // reg_address uses x16 only beyond its scaled imm12 range. Both
         // halves of all validated caller registers fit when there are <=2048
         // slots. Other successful call helpers preserve x16; larger callers
         // retain the reload after argument/result access and live-value spills.
         if caller.registers > 2048 { self.callee_target(id, None); }
         self.emit(0xd61f0200); // br x16, no host-stack recursion
+        protocol_mark!(self, "call_dispatch", None);
         Ok(())
     }
 
@@ -645,14 +698,19 @@ impl Assembler<'_> {
         self.emit(0x39400000 | ((frame::TLS_CALLBACK as u32) << 10) | (20 << 5) | 9);
         self.cmp(9, 31);
         self.decline(Cond::Ne, declines);
+        protocol_mark!(self, "return_admission", None);
         self.charge_transition(pc, profiled);
+        protocol_mark!(self, "charge_profile", None);
         self.mov(21, 1);
         self.imm(11, f.result.offset as u64);
         self.three(0x8b000000, 11, 1, 11);
         self.three(0x8b000000, 11, 2, 11);
+        protocol_mark!(self, "result_source", None);
         self.load64(12, 20, frame::RETURN_ADDRESS);
         self.checked_address(12, f.result.size, true);
+        protocol_mark!(self, "result_destination", None);
         self.abi_copy(f.result.size)?;
+        protocol_mark!(self, "result_copy", None);
         self.mov(3, 21);
         // The checked result copy can clobber x17. Frame metadata is private
         // host storage and unchanged by that copy; read it only after success.
@@ -668,7 +726,9 @@ impl Assembler<'_> {
         self.load64(0, 19, REGISTERS);
         self.three(0x8b000000, 0, 0, 9);
         self.load64(1, 20, frame::BASE);
+        protocol_mark!(self, "return_restore_frame", None);
         self.switch_profile(profiled);
+        protocol_mark!(self, "profile_switch", None);
         self.load64(9, 20, frame::FUNCTION);
         self.lsl_imm(9, 9, 3);
         self.load64(10, 19, ENTRIES);
@@ -684,6 +744,7 @@ impl Assembler<'_> {
         self.cmp(16, 31);
         self.decline(Cond::Eq, &mut vm);
         self.emit(0xd61f0200);
+        protocol_mark!(self, "return_dispatch", None);
         let target = self.words.len();
         // Caller values were spilled when it called; its assignment has not
         // been loaded yet. Do not spill this callee's stale physical pairs.
@@ -692,6 +753,7 @@ impl Assembler<'_> {
         for at in vm {
             self.patch_conditional(at, target)?;
         }
+        protocol_mark!(self, "return_dispatch_fallback", None);
         Ok(())
     }
 }
