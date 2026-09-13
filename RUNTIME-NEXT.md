@@ -10,14 +10,16 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Refresh current native-PC attribution with two bounded owned executions of the
-   original block and exhaustive token tests. Use the exact adopted VM, original
-   catalog/artifact, same-process code/maps and explicit unassigned samples.
-   Reuse saved per-PC profiles for labels and boundary counts. These perturbed
-   partial samples are diagnostics, not timings; native Call/Return spans are
-   not equivalent to VM exits. Choose the next mechanism from the current cost
-   distribution, then require a primary screen and all five adoption gates.
-   [Prospective plan](benchmarks/experiments/adopted-runtime-sampling/PLAN.md).
+1. Partition the current native Call/Return emitter with test-only labels for
+   admission, charging/spills, frame clearing, argument address/copy, frame
+   publication, result transfer and dispatch. Reconstruct the two already
+   sampled unprofiled code/maps exactly, then attribute their saved PCs to these
+   parts. No new guest execution is needed. Native Call/Return accounts for
+   26.23% /34.68% of generated samples and flushes add8.18% /12.51%; these partial
+   windows guide diagnosis rather than establish timing gains. Keep runtime
+   guards and failure ordering. Select a compatible protocol mechanism from
+   the finer attribution, then require a primary screen and all adoption gates.
+   [Current evidence](results/adopted-runtime-sampling-01/assessment.md).
 
 The local-value-transfer hypothesis is parked. Its observer passes408 bytecode
 checks/profile and reconstructs all three baseline maps exactly, but saves only
