@@ -59,6 +59,17 @@ fn frontend_policy_preserves_selection_and_requires_no_exporter_for_native_work(
         assert!(!result.export);
         assert!(!result.requires_exporter());
     }
+    let mut ordinary = frontend_env("2");
+    ordinary.primary_package = false;
+    ordinary.frontend_workers = None;
+    for flags in [&["-vV"][..], &["--print=sysroot"],
+        &["-", "--crate-type", "rlib", "--print=file-names", "--print=cfg"]] {
+        let baseline = invoke(flags, &ordinary).unwrap();
+        let mut result = invoke(flags, &env).unwrap();
+        result.args.retain(|arg| arg != "-Zthreads=2");
+        assert_eq!(result.args, baseline.args, "metadata probe MIR policy changed");
+        assert!(!result.requires_exporter());
+    }
     env.conflicting_frontend_policy = true;
     assert!(invoke(&["-vV"], &env).is_err());
     env.conflicting_frontend_policy = false;
