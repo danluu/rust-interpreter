@@ -1,20 +1,22 @@
 # Next work
 
 The guarded-runtime campaign and complete-tool correctness qualification pass.
-Publish the exact qualified runtime/helper sources and evidence to main, keeping
-the newer compiler work. Continue manual work with the saved goal paused.
+The exact qualified runtime/helper sources are published on main (`4dcc889`),
+preserving the newer compiler work. Continue manual work with the goal paused.
 [Integration and identities](results/guarded-ranges-main-qualification-01/assessment.md).
 
-1. Verify the automatic tool-build fingerprint covers every local workspace
-   dependency and the pinned toolchain. Inspect existing tests before changing it;
-   a stale tool after a shared-crate edit would be a correctness issue.
-2. Qualify the drafted complete pgrust `gram_core` support probe: one ordinary
+The selected-toolchain cache regression is fixed and passes 123 runnable root
+checks, with 10 existing skips. Archived backend crates are not custom-tool
+dependencies and remain excluded; explicit immutable tool keys remain usable.
+[Cache fix](results/toolchain-cache-after-01/assessment.md).
+
+1. Qualify the drafted complete pgrust `gram_core` support probe: one ordinary
    unfiltered native library command, then the exact same original test bodies
    through the normal custom launcher. Static inspection finds 114 tests; actual
    inventory/support is unverified. Preserve every assertion and report failures.
    Native defaults use line tables and disable incremental compilation. Any
    subsequent warm timing needs explicit matched incremental controls.
-3. Use the actual emitter to count local-value forwarding blocked by writes
+2. Use the actual emitter to count local-value forwarding blocked by writes
    whose new guard already proves disjoint from the current frame. Reconstruct
    saved baseline code exactly before comparing a test-only alternative. Count
    lost forwarding, spills and flushes too. Static words are not retired
