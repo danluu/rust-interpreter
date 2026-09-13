@@ -13,15 +13,18 @@ dependencies and remain excluded; explicit immutable tool keys remain usable.
 1. Finish the guarded local-value composition's sole remaining full guard,
    Nushell type relations. Token, folded, pgrust and private rg-aot pass594
    commands; the token gain is4.73% wall/3.83% CPU and its native ratio is1.641.
-   All114 original parser tests also pass. Nushell's47.0325 GiB cache admission
-   was refused before any command. The continuation must audit and retain the
-   four-case prefix, pass its27 protocol controls, keep the original Nushell
-   driver/settings/gate, and execute only132 new commands. Preserve the admission
-   failure and never repeat completed cases. Reclaim only completed owned public
-   compiler caches to restore headroom. The runtime remains experimental until
-   all five gates pass; the saved goal stays paused.
+   All114 original parser tests also pass. The27 continuation controls and the
+   complete594-command prefix audit pass. After verified retirement of completed
+   public/private and explicitly assessed closed compiler caches, the original
+   Nushell case passed its unchanged47.0325 GiB admission and is running under
+   `guarded-local-facts-full-continuation-01` (outer admission02). It executes
+   only the remaining132 commands with the original driver/settings/gate. Keep
+   its active source and caches intact, preserve both earlier admissions, and
+   never repeat completed cases. The runtime remains experimental until all
+   five gates pass; the saved goal stays paused.
    [Primary](results/guarded-local-facts-edit-token-01/assessment.md),
-   [Nushell admission](results/guarded-local-facts-full-admission-01/summary.json).
+   [Retained prefix](results/guarded-local-facts-full-prefix-01/summary.json),
+   [Original admission](results/guarded-local-facts-full-admission-01/summary.json).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
