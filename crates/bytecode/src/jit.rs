@@ -22,6 +22,7 @@ mod code_dump;
 mod code_spans;
 mod values;
 mod transfers;
+mod guarded_ranges;
 
 #[cfg(test)]
 mod limit_tests;
@@ -448,6 +449,7 @@ impl<'a> Jit<'a> {
         let mut local_forwarding = vec![];
         let mut assertions = vec![];
         let mut operations = 0;
+        let mut range_work = 4_000_000;
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
@@ -519,6 +521,13 @@ impl<'a> Jit<'a> {
                 span!(Entry, None);
                 if resumable { resumes[start] = Some(words.len() + resume); }
                 internal_entries[start] = Some(words.len() + a.words.len());
+                // Every internal/resume entry runs this preflight. Declines
+                // consume no guest work and use the existing resumable tail.
+                let range_declines = if resumable {
+                    let plan = range_groups::runtime_plan(f, start, pc, &mut range_work);
+                    a.prepare_guarded_range(plan)?
+                } else { vec![] };
+                span!(RangeGuard, None);
                 // Every native cycle consumes virtual instructions. When
                 // the next block does not fit, let the VM execute its tail
                 // one instruction at a time, preserving fault ordering.
@@ -593,6 +602,7 @@ impl<'a> Jit<'a> {
                 a.return_pc(start);
                 span!(BudgetFallback, None);
                 a.patch_conditional(budget_exit, target)?;
+                for at in range_declines { a.patch_conditional(at, target)?; }
                 // Give each edge a safe VM exit first. After all blocks in
                 // this function are laid out, compiled successors replace
                 // these edges with direct branches to internal entries.
@@ -925,6 +935,7 @@ enum Fact {
 
 #[derive(Default)]
 struct Assembler<'a> {
+    guarded_range: Option<range_groups::Plan>,
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
     resumable: bool,
@@ -1384,6 +1395,14 @@ impl Assembler<'_> {
         }
     }
     fn address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) {
+        if let Some(offset) = self.guarded_displacement(reg, size, write) {
+            self.guarded_base(rd);
+            if offset != 0 {
+                self.imm(14, offset as u64);
+                self.three(0x8b000000, rd, rd, 14);
+            }
+            return;
+        }
         if let Some(Fact::Local(offset)) = self.facts.get(&reg).copied() {
             if offset.checked_add(size).is_some_and(|end| end <= self.frame_size) {
                 // The VM has allocated the complete active frame above the
@@ -1401,6 +1420,15 @@ impl Assembler<'_> {
     /// active-frame ranges can use a displaced base; all other addresses retain
     /// the original validation and an immediate of zero.
     fn memory_address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) -> u32 {
+        if [1, 2, 4, 8, 16].contains(&size) {
+            if let Some(offset) = self.guarded_displacement(reg, size, write) {
+                let scale = size.min(8);
+                if offset % scale == 0 && offset / scale < 4096 - usize::from(size == 16) {
+                    self.guarded_base(rd);
+                    return (offset / scale) as u32;
+                }
+            }
+        }
         if [1, 2, 4, 8, 16].contains(&size) {
             if let Some(offset) = self.local_range(reg, size) {
                 let scale = size.min(8);
@@ -1765,8 +1793,8 @@ impl Assembler<'_> {
                     self.emit(0x91004000 | (12 << 5) | 12);
                     self.store_mem(5, 6, 12, size - 16);
                 } else {
-                    // Bounded memmove: v0..v7 are caller-saved and no other
-                    // emitter operation keeps values in vector registers.
+                    // Bounded memmove uses v0..v7. The guarded range's d16
+                    // cache is separate and remains intact for this region.
                     // Both complete ranges were validated above. Read every
                     // source byte before the first destination store.
                     let chunks = size / 16;
