@@ -133,6 +133,18 @@ fn diagnostics(result: &Output) -> Vec<Value> {
     String::from_utf8(result.stderr.clone()).unwrap().lines().filter_map(|line|
         serde_json::from_str::<Value>(line).ok()).filter(|value| value["$message_type"] == "diagnostic").collect()
 }
+fn has_source_span(value: &Value, filename: &str) -> bool {
+    match value {
+        Value::Object(fields) => {
+            (fields.get("file_name").and_then(Value::as_str)==Some(filename)
+                && fields.get("byte_start").is_some_and(Value::is_number)
+                && fields.get("byte_end").is_some_and(Value::is_number))
+                || fields.values().any(|child|has_source_span(child,filename))
+        }
+        Value::Array(items) => items.iter().any(|child|has_source_span(child,filename)),
+        _ => false,
+    }
+}
 fn program(path: &Path) -> Program {
     let bytes = fs::read(path).unwrap();
     let p: Program = bincode::DefaultOptions::new().with_fixint_encoding().with_limit(64*1024*1024)
@@ -233,7 +245,9 @@ fn uncalled_errors_keep_full_native_diagnostics_for_every_scope() {
             // Nothing from either actual compiler output is replaced or normalized.
             assert_eq!(actual,expected);
             let filename=if ["diagnostics","all"].contains(&scope) {format!("{MAPPED}/fixture.rs")} else {source.display().to_string()};
-            assert!(actual.iter().flat_map(|d|d["spans"].as_array().unwrap()).any(|span|span["file_name"]==filename));
+            // E0080's primary span is in core's panic macro. The application
+            // callsite is a real nested expansion span, not a top-level span.
+            assert!(actual.iter().any(|diagnostic|has_source_span(diagnostic,&filename)));
             fs::write(&source,original).unwrap();
             let (native,_)=run.compile(&source,scope,&format!("{label}-restored-native"),false,false);success(&native);
             let (export,artifact)=run.compile(&source,scope,&format!("{label}-restored"),true,false);success(&export);
