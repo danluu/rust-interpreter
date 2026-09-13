@@ -10,12 +10,19 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Select a broader runtime mechanism from the remaining typed call/memory
-   costs. The constant-memory initialization extension passes ten controls per
-   profile and its 6,400-case oracle, but covers only 16 / 20 clearing samples:
-   0.97% / 1.39% of generated-code samples before padding and address-guard costs.
-   Defer runtime clear elision. Earlier narrow-register packing and local-value
-   transfer diagnostics are also negative; do not retime unchanged mechanisms.
+1. Measure current bounded call-tree eligibility and protocol-cost coverage
+   before designing a bridge into the resumable engine. The old whole-tree
+   option uses a different cursor, budget register and host-stack convention;
+   enabling both flags is insufficient. Capacity-credit batching already has a
+   parked implementation and will not be recreated or retimed unchanged.
+
+Local-write elision is also deferred. Its six controls/profile and independent
+10,000-history byte oracle pass, but 1,580 / 1,925 typed candidates cover only
+one / two generated-code samples. No executed function is omitted; bounded
+region declines account for 0.035% / 0.00057% of native bytecode operations.
+The audit verifies 85 inputs and 552 Git bindings. No runtime change or guest
+benchmark follows. Controllers require `experiment/local-overwrite-census-20260913`.
+[Overwrite result](results/local-overwrite-coverage-01/assessment.md).
 
 The constant extension examines 5,468 functions; 669 are confined, and 1,150
 pass initialization with callee summaries. Its 13,645,013 / 18,496,781 eligible
