@@ -1,0 +1,1645 @@
+{
+  "schema_version": 1,
+  "status": "saved diagnostic evidence validated and packaged",
+  "performance_measurement": false,
+  "source": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/sources/nushell",
+  "revision": "9d3157963241cf89447119d34d6e887859f5e7e8",
+  "project": "nushell",
+  "workflow": "type-relations",
+  "tests": [
+    "ty::tests::oneof::oneof_lhs",
+    "ty::tests::oneof::oneof_rhs",
+    "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+    "ty::tests::oneof_flattening::test_oneof_deduplicates",
+    "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+    "ty::tests::subtype_relation::table_list_oneof_covariance",
+    "ty::tests::subtype_relation::test_any_is_top_type",
+    "ty::tests::subtype_relation::test_list_covariance",
+    "ty::tests::subtype_relation::test_number_supertype",
+    "ty::tests::subtype_relation::test_reflexivity",
+    "ty::tests::widen_shortcuts::test_chain_shortcut",
+    "ty::tests::widen_shortcuts::test_glob_string_union",
+    "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+    "ty::tests::widen_shortcuts::test_widen_subtype_shortcut"
+  ],
+  "edits": [
+    "combine-equal-and-supertype-widening-arms",
+    "collect-oneof-from-explicit-iterator"
+  ],
+  "edit_index": 2,
+  "original_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+  "edited_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+  "compiler": "rustc 1.100.0-nightly (cea272fa3 2026-09-07)\nbinary: rustc\ncommit-hash: cea272fa356e94bd2ee2cadf376630aa0683867a\ncommit-date: 2026-09-07\nhost: aarch64-apple-darwin\nrelease: 1.100.0-nightly\nLLVM version: 23.1.1\n",
+  "compiler_sysroot": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin",
+  "rustc_path": "/Users/danluu/.rustup/toolchains/nightly-2026-09-08-aarch64-apple-darwin/bin/rustc",
+  "std_mir_sysroot": "/Users/danluu/dev/rust-interp/.work/std-mir/bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef/sysroot",
+  "std_mir_artifacts": {
+    "libaddr2line-b45562fe75ef50c0.rmeta": {
+      "sha256": "8df1f861ae8400ffa0daf3010105da6f8981fce8cbc3c7d9fa7c1eeedf6f5334",
+      "bytes": 358557
+    },
+    "libadler2-9da6b8121d871ae3.rmeta": {
+      "sha256": "3edbd14da83f76500ec3ba3ce981cc957c014abef459a1b44a58448c1135a971",
+      "bytes": 38665
+    },
+    "liballoc-a260deb530e41473.rmeta": {
+      "sha256": "1f2971e8b2183236a34f71af1165529c45fee073e7ae7a68fc82206d8f70b0c2",
+      "bytes": 8531070
+    },
+    "libcfg_if-a82f7087f5b9b4d5.rmeta": {
+      "sha256": "618e904d5c82b35e79ea19cd2d2708de071dda907967c05bfeaf4fbcd7d5abf8",
+      "bytes": 5628
+    },
+    "libcompiler_builtins-724c40566f4699f2.rmeta": {
+      "sha256": "95ad09c5c28195e76868a4ab09f9831cc57d9dfc54a9ce33b6cd28c6b01f681a",
+      "bytes": 2786291
+    },
+    "libcore-5c9928837802a29a.rmeta": {
+      "sha256": "5fef0987f147e4063d85e3e87b8d68c2f0864b68064287e93dd7897cb5465d80",
+      "bytes": 67307775
+    },
+    "libgetopts-910b689a68ee6bee.rmeta": {
+      "sha256": "d7989a7675ea8e916364292c7099471cea2c71750f50900e7aac1b8ed038623c",
+      "bytes": 317197
+    },
+    "libgimli-ce76a94851bd84a2.rmeta": {
+      "sha256": "671426f5ff96d1ef4da3510cc6f0fb0ada1fd81f1e0369e532a6ff69609b6c57",
+      "bytes": 5387827
+    },
+    "libhashbrown-f28230ae652e7b77.rmeta": {
+      "sha256": "7365c407e1bb5d7099f457029277f7363b6a672ed7b37ffe1cf2f296d497c7d7",
+      "bytes": 1676895
+    },
+    "liblibc-72dd88d4fea0d10e.rmeta": {
+      "sha256": "9019b7ad9ef2865422cff06f783603aa5af72bc62e15926e4d16f5b46a58b51b",
+      "bytes": 2600370
+    },
+    "libmemchr-cb152814a4dd9080.rmeta": {
+      "sha256": "551151eecefc1cae73c366674138b7988097dc67c415e7874e055267adad7084",
+      "bytes": 1184780
+    },
+    "libminiz_oxide-fb5923caf30cdeb1.rmeta": {
+      "sha256": "a077c0df726468801cfce47bf386355d3dcebe75b35715bbd32feb9569eb40e3",
+      "bytes": 252156
+    },
+    "libobject-152aa58365713c36.rmeta": {
+      "sha256": "7b492df10ac01d38e26b3383d1c51466316bb2d790e6e213a1154a6af0c50cfd",
+      "bytes": 8787514
+    },
+    "libpanic_abort-a06799b06188b5e9.rmeta": {
+      "sha256": "e2611f3d43e781ab58797fd6b392978589c2884fc629d72992eb9a58ac7100d4",
+      "bytes": 3502
+    },
+    "libpanic_unwind-5a89fc7673b843f6.rmeta": {
+      "sha256": "b50093eb22388b38a199693f751f0fd3623dd6e04d59851e45145890f3492cbd",
+      "bytes": 12476
+    },
+    "libproc_macro-3e888da222e33d8d.rmeta": {
+      "sha256": "473702abbcd6c9794b2690b5d9e80b03925b456e833f6b39d1b2b82869cf7c89",
+      "bytes": 1964343
+    },
+    "librustc_demangle-d8b140692a86520e.rmeta": {
+      "sha256": "6e61373480e100b7362415fce1394c29aa5a7064f8d95c66a3f69832cd631c2d",
+      "bytes": 296693
+    },
+    "librustc_literal_escaper-8323c3c09bc5fa11.rmeta": {
+      "sha256": "2e3f6902c6e55fbb6f95f67adfc505396114890c306d5cb7e10b78383bda8c75",
+      "bytes": 122429
+    },
+    "librustc_std_workspace_alloc-f5df3f20e4d5083d.rmeta": {
+      "sha256": "799b256124c42e17a4547ba53bb843337c3dd2975d16a31bcc1feb125a635294",
+      "bytes": 2192
+    },
+    "librustc_std_workspace_core-790b13288f1ea8f7.rmeta": {
+      "sha256": "940b5d07a6a113b27dbeeef2f97567f4381e00af4697fa32ca47debdf32db091",
+      "bytes": 6091
+    },
+    "librustc_std_workspace_std-5c01245b02d62cac.rmeta": {
+      "sha256": "867c9a5f28b07ac01d1380f627346c13d9812b22d96e441392dd33c8bb0b35f1",
+      "bytes": 7129
+    },
+    "libstd-63d9f0cbf89e04cd.rmeta": {
+      "sha256": "4a53ccffe6b55bcd63afa153eeba3af1bbbbca997a18a8956dd8742fbdd49b34",
+      "bytes": 9322529
+    },
+    "libstd_detect-def1d018b2c40bf6.rmeta": {
+      "sha256": "6730ef8fde6f6429f9e1d29175ea85a31308dff74a29f26a41c9361dc773d4b7",
+      "bytes": 350380
+    },
+    "libsysroot-b98a69b52717f813.rmeta": {
+      "sha256": "6c447ecb997ecca7ab3acd14f6fc2387946ba9be570f49bb9ba8ce78b20bbc66",
+      "bytes": 2195
+    },
+    "libtest-5df533e7f3d8513c.rmeta": {
+      "sha256": "fc60247ce3020f46760e76ceaf6c8da7db8178dfc4d927db99f1aef739ef796f",
+      "bytes": 1611789
+    },
+    "libunwind-d437059f61fc86df.rmeta": {
+      "sha256": "200bd2a431f1148cc66a60c2c83b8c0d7881ea06c579146539c5bfc953dc8627",
+      "bytes": 21552
+    }
+  },
+  "target": "aarch64-apple-darwin",
+  "target_directory": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-profile-01/target",
+  "tool": {
+    "tool_key": "923ad6d94c365365f15322ee65d32dca6ba9ccc4fd07a8147111329ea1955c86",
+    "directory": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/interpreter-tools/923ad6d94c365365f15322ee65d32dca6ba9ccc4fd07a8147111329ea1955c86",
+    "binaries": {
+      "rust-interp-vm": "83ca5b7882debeae37af8099c99c5cfb1a3829ed969444ee350eee12aa72b4df",
+      "rust-interp-mir-export": "cccdc9092c63bad8f0a8c8bd7bb8ca88e21bf7c83895749ed21ac1cfdf9e4783",
+      "rust-interp-rustc-wrapper": "10fb76569f0e1b13c10090a84f47be539cc27d1c6546f9e1f29d1029adfa57fa"
+    },
+    "capabilities_sha256": "68c1b24ab637c8b4079b9edbe5cbae7b4cc934d8e7ce23b23611cf5d7d91b4ab",
+    "source_sha256": "fdc962a42d96a4bc02f0b27869d7699d82767895767ed17e2266862918eef2ca"
+  },
+  "jobs": 4,
+  "suite_workers": 2,
+  "borrowck_cache": "off",
+  "function_cache": "auto",
+  "frozen_scripts": {
+    "benchmarks/experiments/strict-warm-build/profile.py": "950d5eb14782b1caab3581e4adba6671451493c494bfb010b93da11ea7caa6c2",
+    "benchmarks/experiments/strict-warm-build/profile_wrapper.py": "edeec1da190892ca7fbebe16c58fff6daa026852107d57a73fb6e115a8f43bf3",
+    "scripts/workflow_cases.py": "dac664b0e2aa4cc6c2f854daa47ccf4feec218a2a7a6db28f537255edce6d632",
+    "scripts/suite_reports.py": "8c3f13a9812041bfd7e426ba37296e8f416eec95336dc9ac67e9c4ae27d98e7f",
+    "scripts/cargo_timing_data.py": "07964be4f340c274331e68b642a00e41687435acb97dce8868db10b8ca3bec45",
+    "scripts/interpreter.py": "6012470e7b1220a1bd8ecc207a0e3ffeb2ea23564ea557fe509d901a2c546035",
+    "scripts/workflow_io.py": "c159a3152a0019e0d9ebe189ca4b1c48927cc45623d729ed3fd6edf0b13c2acb"
+  },
+  "history_kind": "warm continuation; not independent",
+  "continuation": {
+    "kind": "warm continuation; not an independent cold history",
+    "prior_report": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-profile-01/report.json",
+    "prior_report_sha256": "abc25224a69e529fcf6d7a1320e97fbd5c9fef9e4a1de4ebcdd43e8dd3ef5bb8",
+    "prior_cargo_command": [
+      "cargo",
+      "+nightly-2026-09-08",
+      "check",
+      "--manifest-path",
+      "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/sources/nushell/Cargo.toml",
+      "--package",
+      "nu-protocol",
+      "--lib",
+      "--profile",
+      "test",
+      "--locked",
+      "--offline",
+      "--jobs",
+      "4",
+      "--message-format=json-render-diagnostics",
+      "--timings",
+      "-vv",
+      "--target",
+      "aarch64-apple-darwin"
+    ],
+    "history_receipt": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-profile-01/target/.strict-warm-profile-history.json",
+    "history_before_sha256": null,
+    "previously_compiled_edit_indices": [
+      1
+    ],
+    "previously_compiled_source_hashes": [
+      "2b991eae528eb2f8824ff145397ffa0dd83e271515525c10bd8938e20bcbdafa"
+    ],
+    "verified_live_cache_sidecars": {
+      "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-profile-01/target/aarch64-apple-darwin/debug/build/nu-protocol/1b8effee6618964c/out/libnu_protocol-1b8effee6618964c.rmeta.rbc": "88c394ea2db95092a4b82f82fbda3557f531c967d61abc8e2ee569cedd29c5cc",
+      "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-profile-01/target/aarch64-apple-darwin/debug/build/nu-protocol/1b8effee6618964c/out/libnu_protocol-1b8effee6618964c.rmeta.rbc.entries.json": "0b625c3610e1e298391fea7cb9677242c7ff4e83b64dc33ae8607f76fdcab06d",
+      "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-profile-01/target/aarch64-apple-darwin/debug/build/nu-protocol/1b8effee6618964c/out/libnu_protocol-1b8effee6618964c.rmeta.rbc.calls.json": "ea5c5092b119c45a42552fad2734156e9028c126b3bdbe396e46b0fc1fc84088"
+    },
+    "prime_skipped": true,
+    "limitation": "fresh relative to this recorded diagnostic target history; no 0.5 second acceptance evidence"
+  },
+  "integrity": {
+    "source_restored": true,
+    "assertions_unchanged": true,
+    "tool_inputs_unchanged": true,
+    "scripts_unchanged": true,
+    "std_mir_unchanged": true,
+    "previous_reports_unchanged": true
+  },
+  "states": [
+    {
+      "state": "edited",
+      "source_sha256": "ce9b6269e9a6e2dfe958fe0437651f9919e1bdffcaf0e4b033e3762736b5c318",
+      "cargo_seconds": 9.909496416017646,
+      "vm_seconds": 0.0378107909928076,
+      "direct_cargo_to_validated_artifact_seconds": 9.916095583001152,
+      "selected_exporter_stages": {
+        "scalar-frames": 0.000412,
+        "scalar-promotion": 0.000396,
+        "inline": 0.003236,
+        "cfg": 0.004456,
+        "frontend": 2.185139,
+        "lowering": 0.08598399999999999
+      },
+      "cargo_unit_count": 19,
+      "compiler_unit_count": 18,
+      "information_probe_count": 5,
+      "build_script_run_count": 1,
+      "build_script_runs": [
+        {
+          "i": 395,
+          "name": "nu-cmd-extra",
+          "version": "0.115.2",
+          "mode": "run-custom-build",
+          "target": " build-script (run)",
+          "features": [],
+          "start": 5.66,
+          "duration": 0.24,
+          "unblocked_units": [
+            394
+          ],
+          "unblocked_rmeta_units": [],
+          "sections": null
+        }
+      ],
+      "artifact_sha256": "71b41b1c23bd856a7f00c0f781dc4aa572aca0f0400587da844819bdec720f57",
+      "artifact_bytes": 1059016,
+      "suite_sha256": "325ebf2d252f4f6755f2fff69a8815e3cd68b412251914612c699517e7ba2432",
+      "test_outcomes": [
+        [
+          "ty::tests::oneof::oneof_lhs",
+          "passed"
+        ],
+        [
+          "ty::tests::oneof::oneof_rhs",
+          "passed"
+        ],
+        [
+          "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+          "passed"
+        ],
+        [
+          "ty::tests::oneof_flattening::test_oneof_deduplicates",
+          "passed"
+        ],
+        [
+          "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::table_list_oneof_covariance",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::test_any_is_top_type",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::test_list_covariance",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::test_number_supertype",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::test_reflexivity",
+          "passed"
+        ],
+        [
+          "ty::tests::widen_shortcuts::test_chain_shortcut",
+          "passed"
+        ],
+        [
+          "ty::tests::widen_shortcuts::test_glob_string_union",
+          "passed"
+        ],
+        [
+          "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+          "passed"
+        ],
+        [
+          "ty::tests::widen_shortcuts::test_widen_subtype_shortcut",
+          "passed"
+        ]
+      ],
+      "profiling": "self"
+    },
+    {
+      "state": "restored",
+      "source_sha256": "bb6638b0eab439e04f4e30bde3e6145422594e7d71da116f478864bdf3c61d54",
+      "cargo_seconds": 5.604304000007687,
+      "vm_seconds": 0.012538084003608674,
+      "direct_cargo_to_validated_artifact_seconds": 5.60863120900467,
+      "selected_exporter_stages": {
+        "scalar-frames": 0.000214,
+        "scalar-promotion": 0.000194,
+        "inline": 0.001829,
+        "cfg": 0.002305,
+        "frontend": 0.952416,
+        "lowering": 0.038467
+      },
+      "cargo_unit_count": 19,
+      "compiler_unit_count": 18,
+      "information_probe_count": 5,
+      "build_script_run_count": 1,
+      "build_script_runs": [
+        {
+          "i": 395,
+          "name": "nu-cmd-extra",
+          "version": "0.115.2",
+          "mode": "run-custom-build",
+          "target": " build-script (run)",
+          "features": [],
+          "start": 3.83,
+          "duration": 0.21,
+          "unblocked_units": [
+            394
+          ],
+          "unblocked_rmeta_units": [],
+          "sections": null
+        }
+      ],
+      "artifact_sha256": "88c394ea2db95092a4b82f82fbda3557f531c967d61abc8e2ee569cedd29c5cc",
+      "artifact_bytes": 1058094,
+      "suite_sha256": "bdda588146e10c564b2ec9ccf5ca048977cc115fd70d66efaebf63734ea86d53",
+      "test_outcomes": [
+        [
+          "ty::tests::oneof::oneof_lhs",
+          "passed"
+        ],
+        [
+          "ty::tests::oneof::oneof_rhs",
+          "passed"
+        ],
+        [
+          "ty::tests::oneof_flattening::test_oneof_creation_flattens",
+          "passed"
+        ],
+        [
+          "ty::tests::oneof_flattening::test_oneof_deduplicates",
+          "passed"
+        ],
+        [
+          "ty::tests::oneof_flattening::test_widen_flattens_oneof",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::table_list_oneof_covariance",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::test_any_is_top_type",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::test_list_covariance",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::test_number_supertype",
+          "passed"
+        ],
+        [
+          "ty::tests::subtype_relation::test_reflexivity",
+          "passed"
+        ],
+        [
+          "ty::tests::widen_shortcuts::test_chain_shortcut",
+          "passed"
+        ],
+        [
+          "ty::tests::widen_shortcuts::test_glob_string_union",
+          "passed"
+        ],
+        [
+          "ty::tests::widen_shortcuts::test_list_table_widen_preserves_list",
+          "passed"
+        ],
+        [
+          "ty::tests::widen_shortcuts::test_widen_subtype_shortcut",
+          "passed"
+        ]
+      ],
+      "profiling": "off"
+    }
+  ],
+  "units": [
+    {
+      "package": "nu-protocol",
+      "role": "ordinary library check",
+      "crate_name": "nu_protocol",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [
+        "default",
+        "os",
+        "os_pipe"
+      ],
+      "wrapper_pid": 54383,
+      "child_pid": 54384,
+      "cargo_unit_ids": [
+        417
+      ],
+      "wrapper_child_elapsed_seconds": 1.6189961670024786,
+      "receipt_sha256": "7180e1015162978d6460300901752e0edf9599cba79a359cf6a6f1fd243f1172",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/54383/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/54383/self-profile/nu_protocol-0054384.mm_profdata",
+        "bytes": 67256134,
+        "sha256": "3ccc01e0b05088f6ea583e2260d2b3325bf3e6f67a9340de88edad7f8e9a307f"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/54384.json",
+        "bytes": 122842,
+        "sha256": "908d8342968555a2d2b66d96695358e2ecafe2fad2bd287d3988f1a27daebdd0"
+      },
+      "query_label_count": 393,
+      "reader_thread_span_sum_seconds": 1.593544917,
+      "codegen_activity_counts": {},
+      "top_queries_by_self_time": [
+        {
+          "label": "expand_proc_macro",
+          "self_seconds": 0.174471876,
+          "inclusive_seconds": 0.174471876,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 308,
+          "number_of_cache_misses": 308,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "typeck_root",
+          "self_seconds": 0.149283448,
+          "inclusive_seconds": 0.176515001,
+          "incremental_load_seconds": 0.133144206,
+          "incremental_hashing_seconds": 0.000168082,
+          "blocked_seconds": 0.0,
+          "invocation_count": 15,
+          "number_of_cache_misses": 15,
+          "number_of_cache_hits": 10128
+        },
+        {
+          "label": "metadata_register_crate",
+          "self_seconds": 0.126931999,
+          "inclusive_seconds": 0.429079418,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 183,
+          "number_of_cache_misses": 183,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "expand_crate",
+          "self_seconds": 0.110315034,
+          "inclusive_seconds": 0.460420334,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "lower_to_hir",
+          "self_seconds": 0.105809252,
+          "inclusive_seconds": 0.147162438,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.001831452,
+          "blocked_seconds": 0.0,
+          "invocation_count": 28758,
+          "number_of_cache_misses": 28758,
+          "number_of_cache_hits": 65110
+        },
+        {
+          "label": "incr_comp_load_dep_graph",
+          "self_seconds": 0.09003925,
+          "inclusive_seconds": 0.09003925,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "generate_crate_metadata",
+          "self_seconds": 0.087130793,
+          "inclusive_seconds": 0.203020792,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "late_resolve_crate",
+          "self_seconds": 0.05868524,
+          "inclusive_seconds": 0.067438291,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "encode_query_results_for",
+          "self_seconds": 0.056191456,
+          "inclusive_seconds": 0.056191456,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 58,
+          "number_of_cache_misses": 58,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "optimized_mir",
+          "self_seconds": 0.041099122,
+          "inclusive_seconds": 0.041574869,
+          "incremental_load_seconds": 0.040758745,
+          "incremental_hashing_seconds": 1.3958e-05,
+          "blocked_seconds": 0.0,
+          "invocation_count": 2,
+          "number_of_cache_misses": 2,
+          "number_of_cache_hits": 0
+        }
+      ]
+    },
+    {
+      "package": "nu-protocol",
+      "role": "host library build",
+      "crate_name": "nu_protocol",
+      "target_context": "host context",
+      "explicit_targets": [],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata",
+        "link"
+      ],
+      "features": [
+        "os",
+        "os_pipe"
+      ],
+      "wrapper_pid": 54385,
+      "child_pid": 54386,
+      "cargo_unit_ids": [
+        416
+      ],
+      "wrapper_child_elapsed_seconds": 3.6100940000033006,
+      "receipt_sha256": "2d0cbc89471c29795e71199712ddf2dbff53df5087e5173dad3dbd2cdcf18f0b",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/54385/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/54385/self-profile/nu_protocol-0054386.mm_profdata",
+        "bytes": 95568661,
+        "sha256": "b4fc59c4174e57aa0c0589af2ad0eadf8ba31e3a6e43c8a57010901d345d6e5c"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/54386.json",
+        "bytes": 148106,
+        "sha256": "7240c388794755090bc8310a3d2bc287f527956a92471c8165d80e72cc584269"
+      },
+      "query_label_count": 470,
+      "reader_thread_span_sum_seconds": 5.580467423,
+      "codegen_activity_counts": {
+        "codegen_module": 46,
+        "codegen_copy_artifacts_from_incr_cache": 210,
+        "LLVM_module_codegen_emit_obj": 46
+      },
+      "top_queries_by_self_time": [
+        {
+          "label": "LLVM_passes",
+          "self_seconds": 1.121396959,
+          "inclusive_seconds": 1.121396959,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "LLVM_module_codegen_emit_obj",
+          "self_seconds": 0.622037374,
+          "inclusive_seconds": 0.622037374,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 46,
+          "number_of_cache_misses": 46,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "codegen_module",
+          "self_seconds": 0.426785517,
+          "inclusive_seconds": 0.804312126,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 46,
+          "number_of_cache_misses": 46,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "link_rlib",
+          "self_seconds": 0.317634667,
+          "inclusive_seconds": 0.317634667,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "codegen_crate",
+          "self_seconds": 0.315424954,
+          "inclusive_seconds": 1.138857292,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "codegen_copy_artifacts_from_incr_cache",
+          "self_seconds": 0.165597166,
+          "inclusive_seconds": 0.165597166,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 210,
+          "number_of_cache_misses": 210,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "expand_proc_macro",
+          "self_seconds": 0.14083258,
+          "inclusive_seconds": 0.14083258,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 308,
+          "number_of_cache_misses": 308,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "generate_crate_metadata",
+          "self_seconds": 0.13404796,
+          "inclusive_seconds": 0.663553667,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "typeck_root",
+          "self_seconds": 0.129120046,
+          "inclusive_seconds": 0.170103815,
+          "incremental_load_seconds": 0.122294565,
+          "incremental_hashing_seconds": 0.00015054,
+          "blocked_seconds": 0.0,
+          "invocation_count": 15,
+          "number_of_cache_misses": 15,
+          "number_of_cache_hits": 10128
+        },
+        {
+          "label": "lower_to_hir",
+          "self_seconds": 0.115964241,
+          "inclusive_seconds": 0.156661198,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.002117294,
+          "blocked_seconds": 0.0,
+          "invocation_count": 28758,
+          "number_of_cache_misses": 28758,
+          "number_of_cache_hits": 65110
+        }
+      ]
+    },
+    {
+      "package": "nu-engine",
+      "role": "ordinary library check",
+      "crate_name": "nu_engine",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [
+        "os"
+      ],
+      "wrapper_pid": 55819,
+      "child_pid": 55823,
+      "cargo_unit_ids": [
+        405
+      ],
+      "wrapper_child_elapsed_seconds": 0.3692594580061268,
+      "receipt_sha256": "1a647d8a347c66cac5874951139a5185157afaaa48acf83bac2829fb93bfc8a7",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55819/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55819/self-profile/nu_engine-0055823.mm_profdata",
+        "bytes": 10974711,
+        "sha256": "aa63fa40a5e256cee3b2623a0baafb8c5c2f49b5eff2b22f13f9e203fdbe53fc"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55823.json",
+        "bytes": 110700,
+        "sha256": "807c8706bb20ad34fdb47529a0200b2270303767968d6a4836e81d94d6a7710c"
+      },
+      "query_label_count": 355,
+      "reader_thread_span_sum_seconds": 0.333522708,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-heavy-utils",
+      "role": "ordinary library check",
+      "crate_name": "nu_heavy_utils",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [
+        "endian",
+        "merge",
+        "yaml"
+      ],
+      "wrapper_pid": 55820,
+      "child_pid": 55822,
+      "cargo_unit_ids": [
+        410
+      ],
+      "wrapper_child_elapsed_seconds": 0.3038284580106847,
+      "receipt_sha256": "606cf82d1b47ee6a9156d094da43fcd990a3d9158c961cd5ab905edaa72a43e6",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55820/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55820/self-profile/nu_heavy_utils-0055822.mm_profdata",
+        "bytes": 8608288,
+        "sha256": "598e54d93c7bf71c98edb68b4c41f97518fa2dad17ecfcb596d59d6c8378a379"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55822.json",
+        "bytes": 90024,
+        "sha256": "0c7bc442c0c618de9bcdc03b4ba8c1f2b73c141ea625c150a7775be23cd3c087"
+      },
+      "query_label_count": 289,
+      "reader_thread_span_sum_seconds": 0.26786975,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-json",
+      "role": "ordinary library check",
+      "crate_name": "nu_json",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [
+        "linked-hash-map",
+        "nu-protocol",
+        "preserve_order"
+      ],
+      "wrapper_pid": 55821,
+      "child_pid": 55824,
+      "cargo_unit_ids": [
+        411
+      ],
+      "wrapper_child_elapsed_seconds": 0.22286654100753367,
+      "receipt_sha256": "e4f874d775898d9f378fa67be0d32f0c8ccfea4915d9173ecef8c2356c5edd3c",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55821/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55821/self-profile/nu_json-0055824.mm_profdata",
+        "bytes": 6975294,
+        "sha256": "4586220296ba59132ec9cf50fd95a731a24ce93df4de6bf3d0914b503b40a9dd"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55824.json",
+        "bytes": 86498,
+        "sha256": "477b06001332674485d8811069fe04fe5841c61e3ec66dd5590f20d12a35cb90"
+      },
+      "query_label_count": 278,
+      "reader_thread_span_sum_seconds": 0.189633708,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-parser",
+      "role": "ordinary library check",
+      "crate_name": "nu_parser",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [],
+      "wrapper_pid": 55831,
+      "child_pid": 55834,
+      "cargo_unit_ids": [
+        412
+      ],
+      "wrapper_child_elapsed_seconds": 0.39000333298463374,
+      "receipt_sha256": "bb2752133b214187eb121afbbe80a8d16c7e81ad6636e48ad79f0c3da2b58ff4",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55831/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55831/self-profile/nu_parser-0055834.mm_profdata",
+        "bytes": 11772706,
+        "sha256": "3bef1a1f8912452577b17c77d02d10cb436fdb92d4382b5f6d0874bb7e88801d"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55834.json",
+        "bytes": 110789,
+        "sha256": "d6cdb1694135b84de55c80f50bc2e9638c6dc25ea201ab5afa43b84f3c06aab5"
+      },
+      "query_label_count": 355,
+      "reader_thread_span_sum_seconds": 0.35722825,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-color-config",
+      "role": "ordinary library check",
+      "crate_name": "nu_color_config",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [],
+      "wrapper_pid": 55832,
+      "child_pid": 55835,
+      "cargo_unit_ids": [
+        400
+      ],
+      "wrapper_child_elapsed_seconds": 0.14284391698311083,
+      "receipt_sha256": "5002c1c47518ac6a953da1b8495c7bf7dd57cc58f37e6430a293781399c15d79",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55832/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55832/self-profile/nu_color_config-0055835.mm_profdata",
+        "bytes": 4027392,
+        "sha256": "96dc21c0b2a90487d4bb0eaa132860730988ee5def38fe83578a897fe39f7bec"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55835.json",
+        "bytes": 89431,
+        "sha256": "dfce88382e5c5ca3f3e403f1c8e12edcc28de4e94d08b3d9be52e873942f0bb1"
+      },
+      "query_label_count": 288,
+      "reader_thread_span_sum_seconds": 0.113475208,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-table",
+      "role": "ordinary library check",
+      "crate_name": "nu_table",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [],
+      "wrapper_pid": 55836,
+      "child_pid": 55837,
+      "cargo_unit_ids": [
+        422
+      ],
+      "wrapper_child_elapsed_seconds": 0.19280291700852104,
+      "receipt_sha256": "1e5268c070867f28435918b42e3b53061aa15eb9d58573ec60a78464b3db30de",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55836/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55836/self-profile/nu_table-0055837.mm_profdata",
+        "bytes": 6036712,
+        "sha256": "087d87c09586c067f996ecd48a0ca63ea317bd49b4a271e7020902ddd507ad34"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55837.json",
+        "bytes": 88301,
+        "sha256": "fcd85e70ab02b2925ade597e5f50b3a95c6bd88aad2ef040c7cf89605f734518"
+      },
+      "query_label_count": 284,
+      "reader_thread_span_sum_seconds": 0.164181792,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nuon",
+      "role": "ordinary library check",
+      "crate_name": "nuon",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [],
+      "wrapper_pid": 55838,
+      "child_pid": 55841,
+      "cargo_unit_ids": [
+        445
+      ],
+      "wrapper_child_elapsed_seconds": 0.16374395799357444,
+      "receipt_sha256": "576025e68e071fe2ec67066ab74dd2ad2e4e749e1f38f817762ffd9b4dc2b1a9",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55838/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55838/self-profile/nuon-0055841.mm_profdata",
+        "bytes": 3927930,
+        "sha256": "ca02ff40ca4c51ec8bdfc813917013743124528a1bab48dc24415dd7c2f93bec"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55841.json",
+        "bytes": 90072,
+        "sha256": "d8d642060aaf26fe96dcd73f4e36d647be80f69746182d16c8e9d86c10979ec6"
+      },
+      "query_label_count": 290,
+      "reader_thread_span_sum_seconds": 0.132780958,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-cmd-base",
+      "role": "ordinary library check",
+      "crate_name": "nu_cmd_base",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [],
+      "wrapper_pid": 55839,
+      "child_pid": 55842,
+      "cargo_unit_ids": [
+        393
+      ],
+      "wrapper_child_elapsed_seconds": 0.1378936670080293,
+      "receipt_sha256": "14e0933b3db032aa816b52c45a73d2c3eb8471db1ed7e462260a9473de3922e5",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55839/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55839/self-profile/nu_cmd_base-0055842.mm_profdata",
+        "bytes": 3635935,
+        "sha256": "bda22e81ba5e817b310ec04b2c88f818bca6cfcfd79a006ceb5c6c1e5a5db8b3"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55842.json",
+        "bytes": 86305,
+        "sha256": "a36d219906a57cb2e5e57c17c6d09a93b044c24402b9569a7d879b8a667ffaa7"
+      },
+      "query_label_count": 278,
+      "reader_thread_span_sum_seconds": 0.106616917,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-cmd-lang",
+      "role": "ordinary library check",
+      "crate_name": "nu_cmd_lang",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [
+        "os"
+      ],
+      "wrapper_pid": 55843,
+      "child_pid": 55845,
+      "cargo_unit_ids": [
+        397
+      ],
+      "wrapper_child_elapsed_seconds": 0.3515840839827433,
+      "receipt_sha256": "9ec4f4128e23ceeddda4e257578c18b7eb909d56129ae5cb978559b6e77a6fdd",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55843/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55843/self-profile/nu_cmd_lang-0055845.mm_profdata",
+        "bytes": 8626220,
+        "sha256": "cc2f0976d86be1411670455b26708aa09b21e23cf94d411bdd03a5e565665c53"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55845.json",
+        "bytes": 90363,
+        "sha256": "7f23b98fe904b3458c02f6fa6c53d1dcff47761702e71ad8cff8dc7cb395378e"
+      },
+      "query_label_count": 290,
+      "reader_thread_span_sum_seconds": 0.318008125,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-command",
+      "role": "ordinary library check",
+      "crate_name": "nu_command",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [
+        "aegis-password-generator",
+        "crossterm",
+        "getrandom",
+        "js",
+        "notify-debouncer-full",
+        "open",
+        "os",
+        "os_pipe",
+        "rand",
+        "reedline",
+        "uu_cp",
+        "uu_mkdir",
+        "uu_mktemp",
+        "uu_mv",
+        "uu_touch",
+        "uu_uname",
+        "uu_whoami",
+        "uuid",
+        "which"
+      ],
+      "wrapper_pid": 55844,
+      "child_pid": 55847,
+      "cargo_unit_ids": [
+        401
+      ],
+      "wrapper_child_elapsed_seconds": 2.3332292910199612,
+      "receipt_sha256": "36543647370d1284f92888e8884e4ec93f4a7f1518130c8b077b3737b7fc647d",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55844/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55844/self-profile/nu_command-0055847.mm_profdata",
+        "bytes": 68863248,
+        "sha256": "11abefa540c213a46eb26ef1172f52a6dcb0eaba051c4aaad6a37348fd8e93ae"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55847.json",
+        "bytes": 99252,
+        "sha256": "d65b9b95c4577fb74bc6c5e33b03dffdab4204b691c943d5613ce369a1013981"
+      },
+      "query_label_count": 316,
+      "reader_thread_span_sum_seconds": 2.284861542,
+      "codegen_activity_counts": {},
+      "top_queries_by_self_time": [
+        {
+          "label": "expand_crate",
+          "self_seconds": 0.263840452,
+          "inclusive_seconds": 0.531804041,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "metadata_register_crate",
+          "self_seconds": 0.183636588,
+          "inclusive_seconds": 0.501083125,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 419,
+          "number_of_cache_misses": 419,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "incr_comp_load_dep_graph",
+          "self_seconds": 0.143869167,
+          "inclusive_seconds": 0.143869167,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "generate_crate_metadata",
+          "self_seconds": 0.14095473,
+          "inclusive_seconds": 0.3944845,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "lower_to_hir",
+          "self_seconds": 0.135795126,
+          "inclusive_seconds": 0.191490524,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.002091901,
+          "blocked_seconds": 0.0,
+          "invocation_count": 19608,
+          "number_of_cache_misses": 19608,
+          "number_of_cache_hits": 44666
+        },
+        {
+          "label": "metadata_decode_entry_module_children",
+          "self_seconds": 0.131193139,
+          "inclusive_seconds": 0.131193139,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 4125,
+          "number_of_cache_misses": 4125,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "optimized_mir",
+          "self_seconds": 0.130819501,
+          "inclusive_seconds": 0.130819501,
+          "incremental_load_seconds": 0.130819501,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 0,
+          "number_of_cache_misses": 0,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "typeck_root",
+          "self_seconds": 0.118685083,
+          "inclusive_seconds": 0.20222191,
+          "incremental_load_seconds": 0.054367908,
+          "incremental_hashing_seconds": 0.000860793,
+          "blocked_seconds": 0.0,
+          "invocation_count": 21,
+          "number_of_cache_misses": 21,
+          "number_of_cache_hits": 1715
+        },
+        {
+          "label": "incr_comp_garbage_collect_session_directories",
+          "self_seconds": 0.103269334,
+          "inclusive_seconds": 0.103269334,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "late_resolve_crate",
+          "self_seconds": 0.093475794,
+          "inclusive_seconds": 0.138765542,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        }
+      ]
+    },
+    {
+      "package": "nu-std",
+      "role": "ordinary library check",
+      "crate_name": "nu_std",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [],
+      "wrapper_pid": 55846,
+      "child_pid": 55848,
+      "cargo_unit_ids": [
+        419
+      ],
+      "wrapper_child_elapsed_seconds": 0.11748716700822115,
+      "receipt_sha256": "df915dc326b63f4898558e38a72faeff85d86ea91834c1858026f6dc487e2968",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55846/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55846/self-profile/nu_std-0055848.mm_profdata",
+        "bytes": 2040923,
+        "sha256": "16ba71b6886dbdd436ceb8ed8b19a7d06ce2d2de790ea52dbcb4666036364cc7"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55848.json",
+        "bytes": 81369,
+        "sha256": "90a240cd530070ea13d96f21674a42baba89453068b6ce668ed2d953633d82b6"
+      },
+      "query_label_count": 263,
+      "reader_thread_span_sum_seconds": 0.088373291,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-cmd-extra",
+      "role": "host build-script compilation",
+      "crate_name": "build_script_build",
+      "target_context": "host context",
+      "explicit_targets": [],
+      "crate_types": [
+        "bin"
+      ],
+      "emissions": [
+        "dep-info",
+        "link"
+      ],
+      "features": [],
+      "wrapper_pid": 55849,
+      "child_pid": 55850,
+      "cargo_unit_ids": [
+        396
+      ],
+      "wrapper_child_elapsed_seconds": 0.7096417499997187,
+      "receipt_sha256": "ca50be82983b8f4d74af5888b3f1662c4677b285f4066d6a60d06296aa500148",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55849/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55849/self-profile/build_script_build-0055850.mm_profdata",
+        "bytes": 4656251,
+        "sha256": "346ac853af303cbda22d8fde0bf3ff59d69448ead1a01608b53df3830ecb5f54"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55850.json",
+        "bytes": 109821,
+        "sha256": "f87c53037a710319d38e53b2685ac669c17d0616396abd2cbb1cd042625ab774"
+      },
+      "query_label_count": 351,
+      "reader_thread_span_sum_seconds": 0.754162545,
+      "codegen_activity_counts": {
+        "codegen_copy_artifacts_from_incr_cache": 57,
+        "LLVM_module_codegen_emit_obj": 3,
+        "codegen_module": 2
+      }
+    },
+    {
+      "package": "nu-cmd-extra",
+      "role": "ordinary library check",
+      "crate_name": "nu_cmd_extra",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [],
+      "wrapper_pid": 55862,
+      "child_pid": 55863,
+      "cargo_unit_ids": [
+        394
+      ],
+      "wrapper_child_elapsed_seconds": 0.29645266698207706,
+      "receipt_sha256": "a6218ca7431dd2765aff5872e07e90592cc03d14f3b68ff8f31a7e56a097a351",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55862/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55862/self-profile/nu_cmd_extra-0055863.mm_profdata",
+        "bytes": 10186823,
+        "sha256": "a9e3848b480bdb139b7627afacacabd33f6a77a4034ddbeac7bb1b9606337e52"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55863.json",
+        "bytes": 92834,
+        "sha256": "7bff6dc546083862ca80c621cbf946813c6e0cadc841f8ac5011c16d6f30e5a6"
+      },
+      "query_label_count": 298,
+      "reader_thread_span_sum_seconds": 0.264461042,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-cli",
+      "role": "ordinary library check",
+      "crate_name": "nu_cli",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [],
+      "wrapper_pid": 55866,
+      "child_pid": 55867,
+      "cargo_unit_ids": [
+        392
+      ],
+      "wrapper_child_elapsed_seconds": 0.44080783298704773,
+      "receipt_sha256": "e9628f9e6780612d3a2fd92171a5328bd41051348c10c027b8bffecd8fb66d8b",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55866/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/55866/self-profile/nu_cli-0055867.mm_profdata",
+        "bytes": 16095384,
+        "sha256": "b92f9d53ce855ff3619cdb44c43b16dc57222516f16ec54d8f0fbf10473c2d14"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/55867.json",
+        "bytes": 96946,
+        "sha256": "891ce6e40af900a239c545019209e56fa623ce62c11a5d42f0fbb69d7fad1cb9"
+      },
+      "query_label_count": 310,
+      "reader_thread_span_sum_seconds": 0.395319792,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-test-support",
+      "role": "ordinary library check",
+      "crate_name": "nu_test_support",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [
+        "nu-cli",
+        "os"
+      ],
+      "wrapper_pid": 56096,
+      "child_pid": 56123,
+      "cargo_unit_ids": [
+        424
+      ],
+      "wrapper_child_elapsed_seconds": 0.4983300410094671,
+      "receipt_sha256": "169b60992c83f48f354b1999496bd449c111223b1e7471a08842fae667adb77e",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/56096/invocation.json",
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/56096/self-profile/nu_test_support-0056123.mm_profdata",
+        "bytes": 12658282,
+        "sha256": "d8e8a440520e16bf13bd2ca9bb8fdcb62f53b8dd955b0cac0c653c51c604b06b"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/56123.json",
+        "bytes": 92613,
+        "sha256": "e03625e396280586922265d1d4dce130e2fce36b8b83e532f2c572c9a75b4dfa"
+      },
+      "query_label_count": 297,
+      "reader_thread_span_sum_seconds": 0.446768333,
+      "codegen_activity_counts": {}
+    },
+    {
+      "package": "nu-protocol",
+      "role": "selected library test check",
+      "crate_name": "nu_protocol",
+      "target_context": "explicit target",
+      "explicit_targets": [
+        "aarch64-apple-darwin"
+      ],
+      "crate_types": [],
+      "emissions": [
+        "dep-info",
+        "metadata"
+      ],
+      "features": [
+        "default",
+        "os",
+        "os_pipe"
+      ],
+      "wrapper_pid": 56451,
+      "child_pid": 56462,
+      "cargo_unit_ids": [
+        418
+      ],
+      "wrapper_child_elapsed_seconds": 2.5011518340033945,
+      "receipt_sha256": "c409e0c87edd1d37e0935f0aa0a44e68e15e7c31d9af949db7dbe0550180b7dd",
+      "source_receipt_path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/56451/invocation.json",
+      "selected_exporter_capture": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/56451/exporter-args.json",
+        "sha256": "8904bba6eb8f9d1c7921f5e030f78bc3b06664cef19aa2db3802290cf4220851"
+      },
+      "raw_profile": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/edited/units/56451/self-profile/nu_protocol-0056462.mm_profdata",
+        "bytes": 76161804,
+        "sha256": "9763efe98c2a3a40de3721ce51429cd987b06c0dc8cb7661c6213865e09ae5be"
+      },
+      "query_summary": {
+        "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/strict-warm-self-profile-02/query-summaries/56462.json",
+        "bytes": 124001,
+        "sha256": "9ab32ccd52aa67ba087382b4c010fc4369e409fe4e8cbd170bd8f07a9d00cc94"
+      },
+      "query_label_count": 395,
+      "reader_thread_span_sum_seconds": 2.428755584,
+      "codegen_activity_counts": {},
+      "top_queries_by_self_time": [
+        {
+          "label": "expand_proc_macro",
+          "self_seconds": 0.391138496,
+          "inclusive_seconds": 0.391138496,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 966,
+          "number_of_cache_misses": 966,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "expand_crate",
+          "self_seconds": 0.295754538,
+          "inclusive_seconds": 0.832410333,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "lower_to_hir",
+          "self_seconds": 0.251869,
+          "inclusive_seconds": 0.332831036,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.003345913,
+          "blocked_seconds": 0.0,
+          "invocation_count": 28327,
+          "number_of_cache_misses": 28327,
+          "number_of_cache_hits": 77130
+        },
+        {
+          "label": "typeck_root",
+          "self_seconds": 0.203306148,
+          "inclusive_seconds": 0.262250485,
+          "incremental_load_seconds": 0.115839904,
+          "incremental_hashing_seconds": 0.001762007,
+          "blocked_seconds": 0.0,
+          "invocation_count": 90,
+          "number_of_cache_misses": 90,
+          "number_of_cache_hits": 8534
+        },
+        {
+          "label": "late_resolve_crate",
+          "self_seconds": 0.119315151,
+          "inclusive_seconds": 0.123600125,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "incr_comp_load_dep_graph",
+          "self_seconds": 0.0910225,
+          "inclusive_seconds": 0.0910225,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1,
+          "number_of_cache_misses": 1,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "metadata_register_crate",
+          "self_seconds": 0.085301667,
+          "inclusive_seconds": 0.325216289,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 455,
+          "number_of_cache_misses": 455,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "incr_comp_encode_dep_graph",
+          "self_seconds": 0.065862411,
+          "inclusive_seconds": 0.065862411,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 1115524,
+          "number_of_cache_misses": 1115524,
+          "number_of_cache_hits": 0
+        },
+        {
+          "label": "trait_impls_of",
+          "self_seconds": 0.049737481,
+          "inclusive_seconds": 0.074484208,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.001817754,
+          "blocked_seconds": 0.0,
+          "invocation_count": 193,
+          "number_of_cache_misses": 193,
+          "number_of_cache_hits": 9582
+        },
+        {
+          "label": "encode_query_results_for",
+          "self_seconds": 0.048737216,
+          "inclusive_seconds": 0.048737216,
+          "incremental_load_seconds": 0.0,
+          "incremental_hashing_seconds": 0.0,
+          "blocked_seconds": 0.0,
+          "invocation_count": 58,
+          "number_of_cache_misses": 58,
+          "number_of_cache_hits": 0
+        }
+      ]
+    }
+  ],
+  "source_report": {
+    "path": ".work/strict-warm-self-profile-02/report.json",
+    "bytes": 3898148,
+    "sha256": "9c977a4fa412d1e2dd97afaf76acef96bd66a41223a6568ff3f78dbe4941da37"
+  },
+  "reader": {
+    "version": "12.0.3",
+    "source_commit": "5ac839c602b59eee9c908b3b35b6d6c0cd1c42f7",
+    "binary_sha256": "748510b478136ead21d185fccb317eb8ea5128f7d78343b395d1e4b645fce9d8",
+    "lock_sha256": "3ed2d9ccc55bc6b469689013720def5566e544eab4d00f7897408759ffa0fc7c",
+    "build_report": {
+      "path": ".work/strict-warm-build/measureme-build-01/summary.json",
+      "sha256": "3f59bec0d3f30c6450aeae05b5179a2a594f24ad71ba464f622f930ba6a7471f"
+    },
+    "analysis_source": {
+      "path": "/Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/sources/measureme-12.0.3/analyzeme/src/analysis.rs",
+      "bytes": 29375,
+      "sha256": "876b31d114eb52e260f52a1bfff602cd532ae9055a00e437c30c7de91b2965f8"
+    },
+    "successful_reader_commands": 18
+  },
+  "archives": {
+    "report.json.gz": {
+      "bytes": 425908,
+      "sha256": "def3fb183e0773b125f571f00887c707cda8684154871d39d502d63bf102f781",
+      "gzip_mtime": 0,
+      "exact_decompression": true
+    },
+    "query-summaries.json.gz": {
+      "bytes": 160622,
+      "sha256": "62a85618f61da417354c63807b27423e95fdad0716d1f6a87c2896a4466bbaf5",
+      "gzip_mtime": 0,
+      "exact_decompression": true
+    }
+  },
+  "archive_member_hashes_verified": true,
+  "raw_profile_hashes_verified": true,
+  "raw_profile_total_bytes": 418072698,
+  "packaging_script_sha256": "be702eaa097ecf6fb9168322b97dbd14915bc38cf1557bcfd11d06f4206becfc",
+  "role_and_state_validator_sha256": "0edc6c681fe1749b620e35e14aec2fae6a4954a6378a6f3a228987d5bbbe218b",
+  "timing_semantics": "Query self time excludes nested child events per thread; inclusive time overlaps. Incremental load/hash counters are included in self time. Reader total_time is a sum of thread spans, not process CPU time. Overlapping compiler units do not sum to command wall time.",
+  "qualification": "Continuation edit is fresh only relative to recorded target history; different edited/restored states cannot estimate profiling overhead. No speedup or 0.5 s acceptance claim."
+}

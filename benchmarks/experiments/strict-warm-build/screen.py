@@ -39,6 +39,17 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def frozen_input_hash(path):
+    """Freeze a tracked link itself, including directory and dangling fixtures."""
+    path = Path(path)
+    if path.is_symlink():
+        data = b'symlink\0' + os.fsencode(os.readlink(path))
+    else:
+        require(path.is_file(), 'frozen input is not a file or symlink: ' + str(path))
+        data = b'file\0' + path.read_bytes()
+    return hashlib.sha256(data).hexdigest()
+
+
 def protocol_states(original, case=CASE):
     """Each of five cumulative valid edits is new in every arm's cache."""
     states = list(source_states(original.decode(), case, 1, MODES, True))
@@ -262,7 +273,7 @@ def main():
             paths += [p for tool in set(tools.values()) for p in tool.iterdir() if p.is_file()]
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
             paths += [source / name for name in tracked if name and source / name != changed]
-            frozen = {str(p): sha(p) for p in paths}
+            frozen = {str(p): frozen_input_hash(p) for p in paths}
             plan = dict(schema_version=1, kind='mechanism-screen', owner=str(ROOT), project='nushell',
                 workflow='type-relations', revision=revision, source=str(source), case=CASE,
                 original_source_sha256=hashlib.sha256(original).hexdigest(), frozen=frozen, std_mir=std,
@@ -280,7 +291,7 @@ def main():
 
             def verify_inputs(expected):
                 require(changed.read_bytes() == expected and not changed.is_symlink(), 'production source changed')
-                require(all(sha(p) == digest for p, digest in frozen.items()), 'frozen source, tool or harness changed')
+                require(all(frozen_input_hash(p) == digest for p, digest in frozen.items()), 'frozen source, tool or harness changed')
                 require(all(stamp(Path(p)) == proof['stamp'] for p, proof in std['artifacts'].items()),
                         'prepared standard-library artifact changed')
                 current = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
