@@ -5,7 +5,7 @@ The task is a general custom Rust interpreter/direct AArch64 JIT, guided by
 real changed-source build/test commands across small and large projects.
 Private repository: `danluu/rust-interpreter`. Qualified changes go to main.
 
-The guarded-range runtime is qualified for adoption. It validates one bounded
+The guarded-range runtime is adopted on main (`4dcc889`). It validates one bounded
 related-pointer range at native-region entry, reuses its translated base, and
 falls back to the original ordered path if the stronger guard fails. Rust type
 and borrow checking still finish before guest execution. No external guest
@@ -32,13 +32,17 @@ history. Main's compiler observers/query reuse and validator fixes are preserved
 Borrow-check reuse remains off by default; execution options remain explicit.
 [Integration](results/guarded-ranges-main-qualification-01/assessment.md).
 
-Next: publish the qualified runtime, then probe the full original pgrust
+Next: probe the full original pgrust
 SQL-parser library target before declaring new edit timings. Static source
 inspection finds 113 parser tests and one tree-parity test; actual native
 inventory and custom support remain unverified. Preserve pgrust's profile
 choices and use matched incremental settings for any later warm comparison.
 The actual-emitter local-value census is a separate next optimization candidate.
-Verify the possible automatic tool-source fingerprint omission before fixing it.
+The automatic tool cache now includes its selected toolchain identifier: the
+retained regression fails before the fix, and 123 runnable root tests pass after
+it (10 existing skips). Explicit immutable keys remain usable. The unrelated
+archived backend crates correctly remain excluded.
+[Cache fix](results/toolchain-cache-after-01/assessment.md).
 
 Every latest suggestion has an [explicit disposition](docs/SUGGESTIONS-REVIEW-20260912-2210.md).
 `suggestions.txt` remains user-owned, unmodified and untracked. Update short
