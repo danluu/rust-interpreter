@@ -22,6 +22,9 @@ token, folded and pgrust. Finish every mandatory case and assess the frozen
 rules before importing runtime source or changing defaults. No other own
 build, test or profile runs alongside the timed comparison.
 [Prospective comparison](benchmarks/experiments/memory-lookup/WORKFLOW.md).
+Nushell now completes 132 expected commands and passes its regression margin;
+its 0.93% wall change is inside 5.73% A/A and is not an established speedup.
+Finish private rg-aot, token, folded and pgrust without retiming Nushell.
 
 1. **Keep the completed host-MIR decision.** Wrapper466c60a2 completed all264
    Nushell/pgrust commands with matching artifacts and original assertions.

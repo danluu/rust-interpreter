@@ -19,6 +19,12 @@ and pgrust commands are required. No partial timing result establishes a
 gain or changes the completed memory-only and lookup-only failed decisions.
 [Frozen comparison](benchmarks/experiments/memory-lookup/WORKFLOW.md),
 [Cargo qualification](results/memory-lookup-cargo-01/summary.json).
+Nushell completes all 132 commands and passes the regression guard: paired
+wall ratio 0.99073 plus 5.732% A/A gives 1.04804; CPU margin is 1.01638.
+The small wall change is inside observed variation and establishes no useful
+Nushell speedup. Candidate/ordinary-native wall ratio is 0.629. Private rg-aot
+and the three compute cases remain mandatory before adoption.
+[Nushell result](results/memory-lookup-edit-nushell-01/assessment.md).
 
 Guarded native indirect-call specialization passes424 Rust tests per profile,
 123 harness checks, seven exact real tests, nine suite commands and203 strict
