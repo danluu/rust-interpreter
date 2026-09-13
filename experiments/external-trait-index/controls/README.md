@@ -48,5 +48,12 @@ a helper that accepts keys independently of any declaration value.
 The default-off `-Zverify-external-trait-item-index=yes` shadow comparison at every actual indexed lookup must
 also match the original predicate before any timing run. The shadow work must
 remain absent from performance runs. Option tracking and memory/size checks are
-still required. No native runner, full compiler build, shadow result, or speedup
-is supplied by these source fixtures.
+still required. No full compiler build, shadow result, or speedup is supplied by
+these source fixtures.
+
+`check-fixtures.py` is a prepared, unrun validation of the fixtures themselves
+with the unchanged owned Cmono compiler. It checks all source states and error
+codes, preserves complete outputs and binaries, and validates the installed
+compiler and source inputs under the canonical workload lock. It never enables
+the new index and cannot qualify the compiler patch. Its eventual successful
+result is a prerequisite for the real off/on/shadow histories above.
