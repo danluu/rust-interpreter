@@ -2,11 +2,18 @@
 //! in this process. Selected exports and opt-in compiler query caching exec
 //! the adjacent, installed exporter.
 mod wrapper_route;
+mod compiler_argv;
 
 use std::process::{Command, ExitCode};
 
 fn main() -> ExitCode {
     let original: Vec<String> = std::env::args().collect();
+    if original.len() == 2 && original[1] == "--rust-interp-stable-mono-capability" {
+        // A publication-only, std-only protocol also binds this physical
+        // wrapper's compiled sysroot. Normal Cargo routing stays unchanged.
+        println!("stable-mono-cgu-routing-v1\n{}", env!("RUST_INTERP_SYSROOT"));
+        return ExitCode::SUCCESS;
+    }
     let route = match wrapper_route::route(original.clone(), &wrapper_route::Environment::read()) {
         Ok(route) if route.wrapper => route,
         Ok(_) => {
@@ -36,6 +43,10 @@ fn main() -> ExitCode {
         command.args(&original[1..]);
         command
     } else {
+        if let Err(error) = compiler_argv::record("native", &route.args) {
+            eprintln!("cannot retain compiler argv: {error}");
+            return ExitCode::from(2);
+        }
         let mut command = Command::new(&route.args[0]);
         command.args(&route.args[1..]);
         command
