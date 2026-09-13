@@ -169,15 +169,23 @@ semantically valid payload with a recomputed checksum. This implementation
 passed the actual selected compiler check and all 26 unit controls with zero
 warnings, failures, ignored or filtered tests. The truthful compiler source is
 `3d7ad8282c5695196f4a4dcfd0bdceacac3f79b9`, parent `9d21c2ba`; all 61 commands,
-four supervisors and complete source inventories are archived. Native
-hit/error/restoration histories remain unrun, so these unit results establish
-no actual native hit count or speedup.
+four supervisors and complete source inventories are archived. The subsequent
+native stage1 compiler/std build, three identity probes and tracked-option test
+passed. Its run-make failed the first capture assertion before testing hits:
+bootstrap sets `RUSTC_FORCE_RUSTC_VERSION=compiletest`, while the cache correctly
+disables itself whenever that override is present. No capture or reuse reports
+were emitted. The original failed attempt remains preserved; the test setup
+needs to exercise the real compiler identity and separately check the override
+refusal. Native cache-hit behavior and speed remain unqualified.
 [ReadyHit compiler check and 26-unit evidence](../../../results/hir-ready-hit-check-01/README.md).
+[Failed native attempt and unchanged compiler evidence](../../../results/hir-native-correctness-failed-01/README.md).
 [Fourteen upgrade-driver controls and retained initial launcher failure](../../../results/hir-ready-hit-upgrade-python-controls-01/README.md).
 The [native correctness driver](../../../experiments/hir-native-correctness/README.md)
 requires this exact successful history before building stage1 rustc/std, testing
-the tracked option, and running the unchanged native recipe with visible hit
-diagnostics. This is a correctness sequence, not a performance qualification.
+the tracked option, and running the native recipe with visible hit diagnostics.
+Its six Python boundary controls passed. This is a correctness sequence, not a
+performance qualification.
+[Six native-driver controls and archive attempts](../../../results/hir-native-correctness-controls-01/README.md).
 [Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
 [Copied archive guard evidence](../../../results/hir-capture-offline-seed-guards-01/README.md).
 
@@ -198,10 +206,13 @@ controls against the exact patched source. A separate source-only bridge
 integration fixture now covers real transport and compiler-server boundaries,
 with explicit side effects, stale handles and same/cross-thread controls. Its
 four Python expectation tests passed against the unchanged fixture and span
-patch. The Rust bridge and compiler-server controls remain unrun; standalone
-and Python results do not qualify bridge integration or establish a gain.
+patch. The installed stock-store compiler subsequently built the real bridge
+test executable, and all four native tests passed together, serially and without
+filtering. This qualifies the fixture against the stock store; the patched
+store and compiler-server histories remain unrun, and no gain is established.
 [Control evidence](../../../results/proc-macro-span-handle-controls-01/README.md).
 [Four expectation tests](../../../results/span-bridge-expectations-tests-01/README.md).
+[Actual stock-store native bridge baseline](../../../results/span-bridge-native-baseline-01/README.md).
 
 Three generated Cargo target directories from the completed worker screen
 were retired. Original bytecode, source, cache metadata, publication inputs and
