@@ -53,7 +53,7 @@ pub(super) struct Checked {
 }
 
 impl Checked {
-    pub fn journal(&self) -> &Journal { &self.journal }
+    pub(super) fn journal(&self) -> &Journal { &self.journal }
 }
 
 pub(super) fn check(journal: Journal, entry: &Entry<'_>) -> Option<Checked> {

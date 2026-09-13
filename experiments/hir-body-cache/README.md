@@ -13,12 +13,20 @@ Its separate actual compiler check failed with three `E0308` errors in
 This checkpoint corrects all three projections, retaining numeric ordering
 (including a stored numeric key for `NodeId`, which lacks `StableCompare`).
 That historical failure does not qualify this new, still-uncompiled checkpoint.
+The separate prepared-value checkpoint `33f4c4e4` then reached the compiler
+without type errors but failed the unchanged warnings-as-errors policy: nineteen
+unreachable public declarations, one private-interface warning and one unordered
+feature-set iteration warning. This successor narrows the declared visibility
+and obtains feature names through the stable declaration iterator, retaining
+independent cardinality/membership equality against the actual enabled set.
+No warning policy was relaxed. Its 22 unit controls remain unrun.
 
 `capture-body-journals.patch` adds `-Zhir-body-cache-capture`, default off and
 tracked by the normal incremental option hash. It prepares inputs for ordinary
 free, provided-trait and implementation functions using the exact qualified
-gate (SHA256 `6df8b5b4fe1c0c88f6c21acbbf0514a61b48173bd037456b7563755c50ca15d1`).
-The appended adapter invokes that same private walker and byte-compares its
+gate input (SHA256 `6df8b5b4fe1c0c88f6c21acbbf0514a61b48173bd037456b7563755c50ca15d1`).
+The six top-level gate declarations have narrower module visibility; walker
+logic and original gate bytes remain checked. The appended adapter invokes that same private walker and byte-compares its
 encoded input before exposing the current AST ordinal table. The qualified
 diagnostic, earlier patches and retained coverage evidence are unchanged.
 

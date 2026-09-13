@@ -121,8 +121,10 @@ speed. The normal 482 bodies contain 29,817 source bytes and encode 535,975 inpu
 bytes. A reviewed [source-only capture checkpoint](../../../experiments/hir-body-cache/README.md)
 now records the actual lowering ID/effect journal and a typed HIR body tree,
 validating the complete observed context boundary and tree/reference/allocation
-closure after stock lowering. It remains uncompiled and has no materializer or
-hit path. Twenty prepared unit controls and the native run-make sequence remain
+closure after stock lowering. The latest checkpoint also reconstructs HIR privately after stock lowering,
+recaptures the complete tree, and rechecks the exit effects; the original stock
+HIR remains the result. This cold audit is uncompiled and has no hit path.
+Twenty-two prepared unit controls and the native run-make sequence remain
 unrun; structural input counts are not measured reusable-body coverage.
 The latest capture key also binds active language/library feature declarations
 and all eight ordered allow-lists at the actual body-lowering entry. This covers
@@ -140,8 +142,16 @@ The independent checkout preparation passed after the 24 GiB free-space gate.
 The actual selected-crate check then failed with three `E0308` borrowed-key API
 errors in the journal's sorting calls; no unit stage ran. Those projections are
 corrected in the new full typed/prepared checkpoint, preserving numeric order.
-Its new check and all twenty unit controls remain pending. The original failed
-journal-only check cannot qualify the newer codec or a cache hit.
+The upgraded prepared-value checkpoint `33f4c4e4` passed all six runner controls
+and its exact source application. Its actual compiler check had no remaining
+`E0308` but failed the unchanged warnings-as-errors policy: nineteen unreachable
+public declarations, one private-interface warning and one unordered feature-set
+iteration warning. No unit stage ran. The current successor narrows visibility
+and uses stable feature enumeration with independent exact-set validation;
+its compiler check and all twenty-two controls remain pending. Both failed
+histories remain separate and cannot qualify the newer codec or a cache hit.
+[Original failed check and exact source archive](../../../results/hir-capture-check-failed-01/README.md).
+[Six upgrade-runner controls](../../../results/hir-upgrade-controls-01/README.md).
 [Configuration guard evidence](../../../results/hir-capture-configuration-guards-01/README.md).
 [Copied archive guard evidence](../../../results/hir-capture-offline-seed-guards-01/README.md).
 

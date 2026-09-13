@@ -84,7 +84,14 @@ pub(super) fn bind(lctx: &LoweringContext<'_, '_>, base: &[u8]) -> Option<Vec<u8
         name: f.gate_name.as_str().to_owned(), stable_since: f.stable_since.map(|s| s.as_str().to_owned()),
     }).collect();
     let library = features.enabled_lib_features().iter().map(|f| f.gate_name.as_str().to_owned()).collect();
-    let enabled = features.enabled_features().iter().map(|s| s.as_str().to_owned()).collect();
+    let enabled: BTreeSet<_> = features.enabled_features_iter_stable_order()
+        .map(|(symbol, _)| symbol.as_str().to_owned()).collect();
+    // Stable declarations produce the names; cardinality plus membership
+    // independently proves equality with the actual enabled set. No hash-set
+    // iteration or boolean feature getter (and thus no TRACK_FEATURE) occurs.
+    if enabled.len() != features.enabled_features().len()
+        || features.enabled_features_iter_stable_order()
+            .any(|(symbol, _)| !features.enabled_features().contains(&symbol)) { return None; }
     let allowed = Allowed {
         contracts: names(&lctx.allow_contracts), try_trait: names(&lctx.allow_try_trait),
         gen_future: names(&lctx.allow_gen_future), pattern_type: names(&lctx.allow_pattern_type),
