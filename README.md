@@ -65,7 +65,7 @@ semantics are not implemented by this mode.
 Use `--engine interpreter` for the reference engine. Some standard-library paths
 require `--std-mir`, which prepares a reusable metadata sysroot.
 
-The qualified development configuration uses the memory-operand JIT, prepared
+The qualified development configuration uses the guarded-range JIT, prepared
 test isolation, two explicit workers, function reuse and cached toolchain
 discovery. For the measured fre token selection:
 
@@ -79,12 +79,15 @@ python3 scripts/interpreter.py --manifest-path .work/sources/fre/Cargo.toml \
   --instruction-limit 100000000000 --suite-report token-suite.json
 ```
 
-Type and borrow checking still complete before execution; cached discovery
-only avoids repeated compiler-identity lookup. Defaults remain explicit in
-this example. The five-case comparison passes all726 commands: token improves
-18.35% versus its fixed custom anchor, but remains1.894 times ordinary native.
-The rebuilt full tool passes428 Rust tests per profile,104 harness tests and
-263 cache/Cargo/project commands. [Integration and exact identities](results/memory-lookup-main-complete-01/assessment.md).
+Type and borrow checking still complete before execution. Cached discovery
+avoids repeated compiler-identity lookup; guarded native regions reuse a checked
+pointer range while preserving original-path fallback and fault ordering.
+The 726-command five-case comparison passes: token improves wall time by 2.55%
+against the prior custom runtime, with a narrow pass beyond observed variation,
+and remains 1.773 times ordinary native. Other selections pass regression guards.
+The complete tool preserves the exact qualified VM and newer compiler binaries;
+132 harness checks and 263 fresh strict cache/Cargo/project commands pass.
+[Integration, coverage and exact identities](results/guarded-ranges-main-qualification-01/assessment.md).
 
 `--borrowck-cache verify|reuse` experimentally reconstructs successful empty
 borrow-check results when rustc proves their dependencies unchanged. It needs
