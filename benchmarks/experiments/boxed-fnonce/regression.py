@@ -48,7 +48,7 @@ def main():
                              'RUSTC_WORKSPACE_WRAPPER', 'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR',
                              'CARGO_BUILD_TARGET', 'CARGO_BUILD_BUILD_DIR', 'RUST_TEST_THREADS']}
         assert not any(k.startswith('DYLD_') for k in env)
-        env.update(CARGO_TERM_COLOR='never', PYTHONDONTWRITEBYTECODE='1')
+        env.update(CARGO_TERM_COLOR='never', PYTHONDONTWRITEBYTECODE='1', RUST_INTERP_LAUNCH_STATS='1')
         rows = []
 
         def run_command(label, command, expected=0):
@@ -66,31 +66,29 @@ def main():
 
         if args.phase == 'before':
             assert args.key == CONTROL
-            command = ['cargo', '+nightly-2026-09-08', 'test', '--manifest-path', str(fixture / 'Cargo.toml'),
-                '--lib', '--locked', '--offline', '--jobs', '2', '--target-dir', str(work / 'native'), '--message-format=json']
-            out, _ = run_command('native', command)
-            names = native_inventory(out, count=6)
-            targets = [json.loads(line) for line in out.splitlines() if line.startswith('{')]
-            targets = [r for r in targets if r.get('reason') == 'compiler-artifact' and r.get('executable')]
-            target, = targets
-            assert target['target']['name'] == 'boxed_fnonce_regression' and target['profile']['test']
-            executable = Path(target['executable']).resolve(strict=True)
-            assert executable.is_relative_to(work / 'native')
-            write(work / 'native.json', dict(names=names, executable=str(executable.relative_to(ROOT)),
-                  executable_sha256=sha(executable), fixture={str(p.relative_to(ROOT)): sha(p) for p in fixture.rglob('*') if p.is_file()}))
-            modes = [('jit', ['--engine', 'jit'], 101)]
-        else:
+            # The prior driver reached all six native passes, then rejected
+            # its own missing resumable flag. Reuse that exact native proof.
             before = ROOT / '.work/boxed-fnonce-before-02'
-            proof = json.loads((ROOT / 'results/boxed-fnonce-before-02/summary.json').read_text())
+            proof = json.loads((ROOT / 'results/boxed-fnonce-before-02-failure/summary.json').read_text())
+            assert proof['status'] == 'driver invocation rejected' and proof['native_tests'] == 6
+            assert sha(before / 'native.json') == proof['native_sha256']
+            native = json.loads((before / 'native.json').read_text())
+            assert all(sha(ROOT / p) == h for p, h in native['fixture'].items())
+            assert sha(ROOT / native['executable']) == native['executable_sha256']
+            names = native['names']
+            assert native_inventory((before / 'native.stdout').read_text(), count=6) == names
+            write(work / 'native.json', native)
+            modes = [('resumable', ['--engine', 'jit', '--jit-resumable-calls', '--jit-persistent-registers'], 101)]
+        else:
+            before = ROOT / '.work/boxed-fnonce-before-03'
+            proof = json.loads((ROOT / 'results/boxed-fnonce-before-03/summary.json').read_text())
             assert proof['status'] == 'expected lowering failure verified'
             assert sha(before / 'native.json') == proof['native_sha256']
             native = json.loads((before / 'native.json').read_text())
             assert all(sha(ROOT / p) == h for p, h in native['fixture'].items())
             assert sha(ROOT / native['executable']) == native['executable_sha256']
             names = native['names']
-            modes = [('interpreter', ['--engine', 'interpreter'], 0),
-                     ('jit', ['--engine', 'jit'], 0),
-                     ('resumable', ['--engine', 'jit', '--jit-resumable-calls', '--jit-persistent-registers'], 0)]
+            modes = [('resumable', ['--engine', 'jit', '--jit-resumable-calls', '--jit-persistent-registers'], 0)]
         for mode, flags, expected in modes:
             suite = work / (mode + '.suite.json')
             command = [sys.executable, str(ROOT / 'scripts/interpreter.py'), '--manifest-path', str(fixture / 'Cargo.toml'),
@@ -111,6 +109,18 @@ def main():
                 validate_runtime_limits(report, 10000000, 150000, required=True)
                 rows[-1]['suite_sha256'] = digest
                 write(work / 'records.json', rows)
+                launch, = [json.loads(line.split(': ', 1)[1]) for line in err.splitlines() if line.startswith('rust-interp-launch: ')]
+                assert launch['tool_key'] == args.key and launch['borrowck_cache'] == 'off'
+                artifact = Path(launch['artifact_path'])
+                catalog = Path(launch['entry_catalog_path'])
+                assert sha(artifact) == launch['artifact_sha256'] and sha(catalog) == launch['entry_catalog_sha256']
+                for engine in ['interpreter', 'jit']:
+                    for index, name in enumerate(names):
+                        out, detail = run_command(engine + '-' + str(index), [str(tool / 'rust-interp-vm'),
+                            '--engine', engine, '--select-test', name, '--suite-catalog', str(catalog),
+                            '--instruction-limit', '10000000', '--allocation-limit', '150000', str(artifact)])
+                        assert out == '0\n' and 'rust-interp-test-selection: ' in detail
+                assert sha(artifact) == launch['artifact_sha256'] and sha(catalog) == launch['entry_catalog_sha256']
             print(mode, 'verified', flush=True)
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
         result = ROOT / 'results' / run
@@ -119,7 +129,7 @@ def main():
               commands=len(rows), native_tests=6, guest_tests=0 if args.phase == 'before' else 18,
               tool_key=args.key, raw=str(work.relative_to(ROOT)), plan_sha256=sha(work / 'plan.json'),
               records_sha256=sha(work / 'records.json'), performance_measurement=False,
-              native_sha256=sha((work if args.phase == 'before' else ROOT / '.work/boxed-fnonce-before-02') / 'native.json')))
+              native_sha256=sha((work if args.phase == 'before' else ROOT / '.work/boxed-fnonce-before-03') / 'native.json')))
 
 
 if __name__ == '__main__':
