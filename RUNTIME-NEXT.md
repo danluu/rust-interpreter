@@ -10,15 +10,21 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Investigate the existing native return-dispatch sequence using saved exact
-   code and profiles. It accounts for35/1,651 and31/1,439 generated samples.
-   Check whether a native continuation can be cached without changing guest
-   frame semantics, VM fallback, code lifetime, logical budgets or bytecode.
-   First establish coverage and added-call cost; the whole dispatch bucket is
-   only about2.1%, so do not assume a large standalone benefit. The callee-target
-   bucket is smaller (9/13 samples); do not add a new lookup table on speculation.
-   Preserve the already rejected scalar ABI, budget fusion and boundary-memory
-   changes. No next runtime candidate has been implemented or benchmarked.
+1. Prototype native Call/Return counters retained in caller-saved SIMD registers
+   across internal edges, with exact publication at every VM exit. Saved adopted
+   code puts their three-word updates at32/1,651 and45/1,439 generated samples.
+   Account for new entry/exit words, register use, ABI and all fallback paths;
+   preserve wrapping counters, profiles, budgets, faults, TLS and capacity.
+   Consider the qualified successor-only spill component, then require a fresh
+   changed-source screen. Do not include the rejected selector or budget fusion.
+   No counter runtime candidate has been implemented or benchmarked yet.
+   [Diagnostic and limits](results/native-continuation-census-01/assessment.md),
+   [closed evidence](results/native-continuation-census-01/closure.json).
+
+   Defer cached native return offsets. Every executed native Call in both
+   captures has a compiled continuation, but storing it adds199.2M/210.2M
+   weighted emitted words at Calls. Native Returns exceed native Calls, so
+   VM-entered frames still require lookup. Coverage alone establishes no gain.
 
 The branch-selected fixed-address/successor-flush composition is parked after
 its40-command primary: wall−1.37% against2.73% A/A, CPU−2.64% against0.74% A/A.
