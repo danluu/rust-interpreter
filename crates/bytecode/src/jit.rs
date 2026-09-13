@@ -2067,6 +2067,12 @@ pub fn register_width_profile_census(program: &Program, profile: &[u8]) -> Resul
 mod constant_arguments;
 
 mod address_reuse;
+mod region_facts;
+
+/// Offline normal-entry must-facts; does not alter or authorize native entries.
+pub fn region_fact_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
+    region_facts::census(program, profile)
+}
 
 /// Count repeated validation in a verified saved profile; never executes guest code.
 pub fn address_reuse_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
