@@ -7,6 +7,9 @@ use std::io::{self, Write};
 const MAX_SPANS: usize = 2_000_000;
 const MAX_OUTPUT_BYTES: usize = 256 * 1024 * 1024;
 
+#[cfg(test)]
+mod local_census;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Kind {
