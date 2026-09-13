@@ -44,6 +44,15 @@ lock, after the compiler integration/screen and queued Cargo-only setup/screen.
 Do not acquire the lock recursively around `screen.py`; the screen owns its own
 bounded admission. There are no workload commands in the plan generator.
 
+The publication contract is
+[`../host-proc-macro/PUBLICATION.md`](../host-proc-macro/PUBLICATION.md).
+`planned-build-01.json` is retained unchanged as superseded and not executed.
+Its `f77229…` value is a source-input fingerprint, not a qualified tool key.
+The replacement plan records `source_input_key`, leaves `tool_key` and
+`screen_command` null, and uses a fresh build-02 directory. Only completed
+qualification and publication can supply the actual composition key and
+materialize a screen command. No workload should consume the old plan.
+
 The initial plan builds in the isolated macro worktree and proposes a later
 screen in the primary worktree, using its already prepared public std. Before
 that screen, integrate the reviewed harness, copy only the newly qualified
@@ -56,7 +65,12 @@ Use the recorded DEBUG=1 release build profile for the entire new toolset and
 the same output binaries in every arm. Record the exact public rustc/Cargo
 identities, source inventory, command PIDs/receipts, test counts, capability
 output, all three binary hashes and compiler dynamic-library inputs before
-publication. The initial fresh target reserves 4 GiB above the 8 GiB free-space
+publication. Bind those identities, resolved dynamic libraries, exact profile,
+source inventory, capability output and the pre-publication correctness receipt
+inside the complete composition hashed for the final key. Add that key to the
+capability envelope after hashing; readiness remains the three-binary hash map.
+Per-owner copy receipts remain outside that composition. The fresh target
+reserves 4 GiB above the 8 GiB free-space
 floor; the later project screen reserves 8 GiB above that floor. These are
 admission budgets to verify against current space, not measured footprints.
 Tests must pass without skipping the real Cargo history or VM execution.
@@ -69,7 +83,11 @@ For this policy it should reconstruct and require:
 - One identical public tool key and complete binary manifest in all arms,
   no `compiler.json` association, and the bound v1 capability from frozen
   capability bytes. Verify the copied source/build/correctness provenance and
-  public compiler association for this new installation.
+  public compiler association for this new installation against the typed
+  `qualified-public-toolset-v1` contract. Recompute the separate source key from
+  retained source bytes, reconcile the qualification receipt with actual
+  command outcomes/binaries, and verify the raw capability output before its
+  final-key envelope. A self-consistent composition digest alone is insufficient.
 - One identical prepared std record in every arm, no custom compiler/Cargo
   fields, exact off/on/off policy map, and the frozen explicit amendment.
   Distinguish unchanged Cargo profiles from the recorded macro codegen change.
