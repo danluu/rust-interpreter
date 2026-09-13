@@ -14,15 +14,21 @@ fn read_bounded(path: &Path, limit: u64) -> Result<Vec<u8>, Box<dyn std::error::
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    let mut args: Vec<_> = std::env::args_os().skip(1).collect();
+    let region_facts = args.first().is_some_and(|a| a == "--region-facts");
+    if region_facts { args.remove(0); }
     if args.len() != 3 {
-        return Err("usage: rust-interp-address-census PROGRAM NEW_REPORT.json PROFILE.json".into());
+        return Err("usage: rust-interp-address-census [--region-facts] PROGRAM NEW_REPORT.json PROFILE.json".into());
     }
     let bytes = read_bounded(Path::new(&args[0]), 64 * 1024 * 1024)?;
     let program: rust_interp_bytecode::Program = bincode::DefaultOptions::new()
         .with_fixint_encoding().with_limit(64 * 1024 * 1024).reject_trailing_bytes().deserialize(&bytes)?;
     let profile = read_bounded(Path::new(&args[2]), 256 * 1024 * 1024)?;
-    let mut report = rust_interp_bytecode::address_reuse_census(&program, &profile)?;
+    let mut report = if region_facts {
+        rust_interp_bytecode::region_fact_census(&program, &profile)?
+    } else {
+        rust_interp_bytecode::address_reuse_census(&program, &profile)?
+    };
     report["artifact_sha256"] = format!("{:x}", Sha256::digest(&bytes)).into();
     report["profile_sha256"] = format!("{:x}", Sha256::digest(&profile)).into();
     let output = serde_json::to_vec_pretty(&report)?;

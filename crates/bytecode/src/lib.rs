@@ -35,6 +35,7 @@ pub use profile::{ExecutionProfile, FunctionProfile};
 pub use prepared::PreparedJit;
 pub use jit::{register_width_census, register_width_profile_census, register_lifetime_census, constant_call_argument_census};
 pub use jit::address_reuse_census;
+pub use jit::region_fact_census;
 pub use entry_catalog::{EntryCatalog, SelectedEntry};
 pub use optimize::{remove_fallthrough_jumps, optimize_calls, CallOptimizationReport};
 pub use control_flow::{optimize_control_flow, ControlFlowReport, FunctionControlFlowReport};
