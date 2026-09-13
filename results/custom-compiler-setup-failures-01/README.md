@@ -2,6 +2,8 @@
 
 This archive preserves two setup failures and their narrow importer fixes. It contains no benchmark or speedup result and does not qualify a compiler/tool pair for workload timing.
 
+Admission correction: the nine/ten mocked tests below used an ordinary worktree-local lock, so any earlier claim of canonical campaign serialization is withdrawn. Their recorded outputs remain unchanged. The later [diagnostic and admission evidence](../custom-compiler-source-diagnostics-01/README.md) preserves this finding and a passing ten-test importer rerun under the explicit canonical lock.
+
 - Installer attempt01 rejected an absolute `LC_ID_DYLIB` self identity. The actual library load was the system library. The corrected importer distinguishes identity from actual ordinary, weak, reexport, upward and lazy load edges. Nine focused synthetic tests passed.
 - Installer attempt02 published package05 after validating its complete recorded 6,982-file inventory. The first matching tool build then failed because that package omitted `rust-objcopy`, which normal Darwin release build-script stripping requires. No matching tools were published and real integration never started. The importer now requires and audits the executable support tool; ten focused synthetic tests passed.
 
