@@ -17,9 +17,18 @@ in the two dominant tests. The complete token comparison passes154 expected
 commands but misses its prospective performance gate: wall−1.44%, CPU−0.97%
 against the wide-operation baseline, versus4.75% wall A/A. The full stack gains
 12.44% wall/13.98% CPU over the fixed anchor and takes1.768× ordinary native.
-The runtime remains experimental. Folded's first admission timed out after45s
-with zero commands; another workload owns the shared lock. Folded and pgrust
-remain mandatory and will run only after admission becomes available.
+The runtime remains experimental. All 462 commands across token, folded and
+pgrust now pass their expected outcomes. Folded's wall guard fails with 10.39%
+A/A. Pgrust passes the documented margins but fails the frozen executable's
+extra CPU ceiling; a conservative intersection was recorded before either
+held-out ran. No complete case will be retimed.
+[Complete comparison and rule discrepancy](results/guarded-indirect-complete-01/assessment.md).
+
+The next candidate pairs existing VM-register spills and reloads at offsets
+where this reduces emitted instructions. It starts from the qualified wide
+runtime, preserving both words and existing register assignment. Source and
+new boundary checks are committed on `experiment/paired-registers-20260912`;
+host qualification is in progress. No speedup or adoption is yet established.
 [Token result](results/guarded-indirect-edit-token-02/stage-assessment.md),
 [design and qualification](docs/INDIRECT-CALL-NEXT.md).
 

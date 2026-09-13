@@ -1,4 +1,4 @@
-# Next compute-bound candidate: guarded indirect calls
+# Guarded indirect calls: completed experiment
 
 The guarded implementation on `experiment/guarded-indirect-20260912` now
 passes 424 debug and release tests, 123 Python checks, seven exact real tests,
@@ -13,8 +13,13 @@ Tool `9e219e2e` retains the wide-operation exporter/wrapper. The complete
 154-command token comparison changes paired wall−1.44% and CPU−0.97%, below
 4.75% wall A/A, so it misses its prospective component gate. The full stack
 improves12.44% wall against the fixed anchor but takes1.768× ordinary native.
-Keep this runtime experimental and do not retime it to seek a pass. Folded and
-pgrust remain mandatory; folded first encountered a zero-command lock timeout.
+Keep this runtime experimental and do not retime it to seek a pass. All 462
+commands now have their expected outcomes. Folded changes wall −0.59% and
+CPU +0.48%, with 10.39% wall A/A, and fails its guard. Pgrust changes wall
++0.53% and CPU +0.37%; it passes the documented margins but fails the frozen
+executable's extra CPU ceiling. Before either held-out started, the discovered
+rule discrepancy was recorded with a requirement that both rules pass.
+[Complete result](../results/guarded-indirect-complete-01/assessment.md).
 [Completed token](../results/guarded-indirect-edit-token-02/stage-assessment.md).
 
 The earlier52-command token attempt stopped at its disk floor and was kept
@@ -43,7 +48,7 @@ operations removed the larger bitwise boundary count; this makes indirect
 calls a plausible next target. Counts do not establish time or monomorphism.
 [Current census](../results/current-runtime-boundaries-02/assessment.md).
 
-Current native resumable transitions support direct Call and Return. They
+The wide-operation baseline supports native direct Call and Return. They
 already preserve exact budgets, initialized register storage, argument-copy
 order, alignment padding, independent memory/depth limits and checked result
 copies. Indirect calls exit to the VM, which validates the full function
@@ -56,7 +61,7 @@ indirect edge and would need new dynamic-copy, clearing and limit proofs.
 Static expansion over every signature-compatible function risks code growth;
 the function signature alone does not identify the actual target.
 
-Proposed first version:
+Implemented first version, retained on the experimental branch:
 
 1. Allocate bounded, stable dispatch slots only for indirect call sites in a
    prepared function. A slot is initially empty. Native code checks the slot
@@ -88,7 +93,7 @@ returns to interpreted instructions, and profiled PC counts. Compare against
 the interpreter and independent native Rust expectations using valid programs;
 all mismatch/failure behavior must preserve the original VM semantics.
 
-Then replay the exact current saved assertions and entropy streams. Record
+The completed qualification replayed the exact current assertions and entropy streams. Record
 published thunks, native hits, remaining VM calls, compile cost and code size;
 the VM count combines first use, mismatches and other declines. a single-target
 assumption must be measured, not inferred from the function name. Only a
