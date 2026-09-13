@@ -13,7 +13,10 @@ queried by this predicate, then performs ordinary set membership.
 
 The experimental `-Zindex-external-trait-items=yes` option is tracked and off by
 default. The patch adds its unrun assertion to the compiler's existing tracked
-option test. Both paths first call the ordinary `resolutions` method, including its
+option test. The separate tracked, default-off
+`-Zverify-external-trait-item-index=yes` option compares every actual indexed
+lookup with the original predicate during qualification. It must stay off during
+timing; its presence is not an executed shadow result. Both paths first call the ordinary `resolutions` method, including its
 lazy metadata/reduced-graph construction. External resolution tables are
 published through `OnceLock`; `resolutions_mut` rejects external tables. Only
 the immutable binding-key projection is retained for this compiler session.
@@ -38,11 +41,14 @@ test `late_resolve_crate`, but does not attribute time to this predicate. It
 cannot establish the proposed saving. This patch alone is not evidence of a
 route below 0.5 seconds.
 
-Before a compiler build, independently review the immutable-table proof and
-prepare native off/on controls for present and absent names, all namespaces,
-hygiene/disambiguator projection, aliases, macro-created local traits, reexports,
-unused imports and ambiguous methods. The eventual full compiler needs its own
+The [uncompiled controls](controls/README.md) cover present and absent names,
+aliases, macro-created local traits, reexports, unused imports, ambiguous methods
+and uncalled errors. The compiler patch also contains an unrun projection unit
+test using actual binding keys with all namespaces, distinct hygiene contexts
+and underscore disambiguators. The helper takes keys only, preserving entries
+independently of their best declaration. Before a compiler build, independently
+review these additions and the immutable-table proof. The eventual full compiler needs its own
 identity and ordinary option-hash, raw-diagnostic, native/edit/restore and strict
-export qualification. An exact predicate shadow check can establish actual
+export qualification. The exact predicate shadow check must establish actual
 equivalence during qualification; timing must use the ordinary fast path with
 no shadow work. Those compiler builds and controls remain unrun.

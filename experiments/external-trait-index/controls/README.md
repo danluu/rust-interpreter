@@ -41,10 +41,11 @@ the same incremental directory, and require `448`. A failed compile cannot
 serve as successful cache validation. Diagnostic order, source text, labels,
 expansion information, rendered output and warnings remain part of equality.
 
-These fixtures cannot construct all internal `BindingKey` states. Separate
-compiler unit controls must exercise duplicate `(Symbol, Namespace)` projections
-with distinct hygiene/disambiguators and bindings without a best declaration.
-A qualification-only shadow comparison at every actual indexed lookup must
+These native fixtures cannot construct all internal `BindingKey` states. The
+separate, unrun compiler unit control in `projection.rs` exercises duplicate
+`(Symbol, Namespace)` projections with distinct hygiene/disambiguators, using
+a helper that accepts keys independently of any declaration value.
+The default-off `-Zverify-external-trait-item-index=yes` shadow comparison at every actual indexed lookup must
 also match the original predicate before any timing run. The shadow work must
 remain absent from performance runs. Option tracking and memory/size checks are
 still required. No native runner, full compiler build, shadow result, or speedup
