@@ -68,17 +68,17 @@ impl State {
                     (Value::Imm(a),Value::Imm(b)) => crate::binary(op,a,b,bits,signed).ok()
                         .map(|(v,flag)| (Value::Imm(v),Value::Imm(flag as u128))),
                     (Value::Frame(offset),Value::Imm(add)) | (Value::Imm(add),Value::Frame(offset))
-                        if op == Binary::Add && bits == 64 && !signed => offset.checked_add(add as u64 as usize)
+                        if matches!(op,Binary::Add) && bits == 64 && !signed => offset.checked_add(add as u64 as usize)
                             .filter(|&end| end <= frame).map(|end| (Value::Frame(end),Value::Imm(0))),
                     (Value::Pointer(root,offset),Value::Imm(add)) if bits == 64 && !signed
                         && matches!(op,Binary::Add|Binary::Sub) => {
                         let delta = add as u64 as i64;
-                        let delta = if op == Binary::Sub { delta.checked_neg() } else { Some(delta) };
+                        let delta = if matches!(op,Binary::Sub) { delta.checked_neg() } else { Some(delta) };
                         delta.and_then(|delta| offset.checked_add(delta))
                             .filter(|offset| (-MAX_SPAN..=MAX_SPAN).contains(offset))
                             .map(|offset| (Value::Pointer(root,offset),Value::Opaque))
                     }
-                    (Value::Imm(add),Value::Pointer(root,offset)) if op == Binary::Add && bits == 64 && !signed =>
+                    (Value::Imm(add),Value::Pointer(root,offset)) if matches!(op,Binary::Add) && bits == 64 && !signed =>
                         offset.checked_add(add as u64 as i64).filter(|offset| (-MAX_SPAN..=MAX_SPAN).contains(offset))
                             .map(|offset| (Value::Pointer(root,offset),Value::Opaque)),
                     _ => None,
