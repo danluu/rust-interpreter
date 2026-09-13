@@ -159,7 +159,7 @@ fn operation_maps_cover_real_backedges_and_never_publish_after_budget_failure() 
     f.args = vec![Slot { offset: 0, size: 8 }];
     f.code = vec![Op::Local { dst: 0, offset: 0 }, Op::Load { dst: 1, address: 0, size: 8 },
         Op::Imm { dst: 2, value: 1 },
-        Op::Binary { dst: 1, overflow: 3, kind: Binary::Sub, left: 1, right: 2, bits: 64, signed: false },
+        Op::Binary { dst: 1, overflow: 3, op: Binary::Sub, a: 1, b: 2, bits: 64, signed: false },
         Op::Imm { dst: 4, value: 0 }, Op::Switch { value: 1, cases: vec![(0, 6)], otherwise: 3 },
         Op::Store { address: 0, src: 1, size: 8 }, Op::Return];
     for resumable in [false, true] { for persistent in [false, true] {

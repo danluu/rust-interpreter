@@ -8,7 +8,7 @@ fn fixture() -> Program {
             Op::Local { dst: 0, offset: 0 }, Op::Imm { dst: 1, value: 1 },
             Op::Assert { value: 1, expected: true, message: format!("assertion_{id}") },
             Op::Store { address: 0, src: 1, size: 8 },
-            Op::Binary { dst: 2, overflow: 3, kind: Binary::Div, left: 1, right: 1, bits: 64, signed: true },
+            Op::Binary { dst: 2, overflow: 3, op: Binary::Div, a: 1, b: 1, bits: 64, signed: true },
             Op::Switch { value: 2, cases: vec![(1, 6)], otherwise: 0 },
             Op::Imm { dst: 4, value: 0 }, Op::Copy { dst: 0, src: 0, size: 8 },
             Op::Call { function: 2, args: vec![], destination: 0 }, Op::Return,
