@@ -22,16 +22,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
+    parser.add_argument('--expected-exporter-tests', type=int, choices=[83, 88], default=83)
     args = parser.parse_args()
     assert args.run_id.startswith('reuse-misses-fixture-') and Path(args.run_id).name == args.run_id
     build_path = args.build.resolve(strict=True)
     build = json.loads(build_path.read_text())
-    assert build['status'] == 'passed' and build['tests'] == {'test-debug': 83, 'test-release': 83}
-    BASELINE = build['composition']['wrapper_and_vm_source_key']
+    assert build['status'] == 'passed' and build['tests'] == dict.fromkeys(['test-debug', 'test-release'], args.expected_exporter_tests)
+    BASELINE = build['composition'].get('control_tool_key') or build['composition']['wrapper_and_vm_source_key']
     candidate, key = installed_tools(build['tool_key'])
     baseline, _ = installed_tools(BASELINE)
     for name in ['rust-interp-vm', 'rust-interp-rustc-wrapper']:
-        assert sha(candidate / name) == sha(baseline / name) == build['binaries'][name]
+        assert sha(candidate / name) == build['binaries'][name]
+        if name == 'rust-interp-vm' or args.expected_exporter_tests == 83:
+            assert sha(candidate / name) == sha(baseline / name)
+    if args.expected_exporter_tests == 88:
+        assert build['composition']['kind'] == 'reuse-miss-main-integration'
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
         require_space(ROOT, 8)

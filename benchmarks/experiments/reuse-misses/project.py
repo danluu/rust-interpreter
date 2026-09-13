@@ -24,13 +24,16 @@ def main():
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--build', type=Path, required=True)
     parser.add_argument('--qualification', type=Path, required=True)
+    parser.add_argument('--expected-exporter-tests', type=int, choices=[83, 88], default=83)
     args = parser.parse_args()
     assert args.run_id.startswith('reuse-misses-token-') and Path(args.run_id).name == args.run_id
     build_path, qualification_path = [p.resolve(strict=True) for p in [args.build, args.qualification]]
     build, qualified = [json.loads(p.read_text()) for p in [build_path, qualification_path]]
     assert build['status'] == qualified['status'] == 'passed' and qualified['commands'] == 28
     assert qualified['tool_key'] == build['tool_key']
-    assert build['tests'] == {'test-debug':83,'test-release':83}
+    assert build['tests'] == dict.fromkeys(['test-debug', 'test-release'], args.expected_exporter_tests)
+    if args.expected_exporter_tests == 88:
+        assert build['composition']['kind'] == 'reuse-miss-main-integration'
     tools, key = installed_tools(build['tool_key'])
     assert all(sha(tools / name) == h for name, h in build['binaries'].items())
     reference_path = ROOT / 'results/memory-lookup-edit-token-01/summary.json'
