@@ -30,10 +30,12 @@ original measured compiler binaries; these integration checks establish
 compatibility without repeating the timing campaign.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-Next inspect local-value losses during register eviction with the actual emitter.
-Reconstruct the saved current code/maps exactly before counting any transfer
-opportunities. Require meaningful coverage before implementing another timed
-candidate; primary screens precede full five-case adoption histories.
+The local-value-transfer observer reconstructs all three current code/maps exactly
+but saves only8 /8 /0 static bytes and1,792 /8 /0 weighted forwarded accesses.
+Park it without timing; its test-only implementation remains experimental.
+Next refresh owned-process native-PC attribution for the adopted VM's block and
+exhaustive tests before selecting another guest mechanism.
+[Eviction-loss result](results/local-value-transfer-census-01/assessment.md).
 
 The general boxed `FnOnce` receiver fix is qualified:88 exporter tests per
 profile,18 focused guest tests across interpreter/JIT modes and78 existing

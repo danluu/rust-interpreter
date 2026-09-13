@@ -10,14 +10,20 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Implement the test-only local-value-transfer observer from the reviewed
-   [design](benchmarks/experiments/local-value-transfer/DESIGN.md). Reconstruct
-   all three saved candidate317 code/maps with the observer disabled, then count
-   actual lost Cached-source references, width-compatible transfers, exclusions,
-   new/lost forwarding, emitted bytes and spill/flush changes. Preserve bounded
-   fact order and existing cache ownership. No guest execution or executable
-   publication is needed for this diagnostic. A useful result is required before
-   another runtime screen. Do not restore values from an evicted register slot.
+1. Refresh current native-PC attribution with two bounded owned executions of the
+   original block and exhaustive token tests. Use the exact adopted VM, original
+   catalog/artifact, same-process code/maps and explicit unassigned samples.
+   Reuse saved per-PC profiles for labels and boundary counts. These perturbed
+   partial samples are diagnostics, not timings; native Call/Return spans are
+   not equivalent to VM exits. Choose the next mechanism from the current cost
+   distribution, then require a primary screen and all five adoption gates.
+   [Prospective plan](benchmarks/experiments/adopted-runtime-sampling/PLAN.md).
+
+The local-value-transfer hypothesis is parked. Its observer passes408 bytecode
+checks/profile and reconstructs all three baseline maps exactly, but saves only
+8 /8 /0 bytes and1,792 /8 /0 weighted forwarded accesses. Large metadata-transfer
+counts are not avoided loads. No timing screen or production activation follows.
+[Negative census](results/local-value-transfer-census-01/assessment.md).
 
 The explicit 16/32 MiB parser screen is complete and the larger-capacity
 treatment is parked: 0.69% paired wall improvement is inside 4.04% A/A variation.
