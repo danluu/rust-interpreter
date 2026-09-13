@@ -15,7 +15,11 @@ expected outcomes. The new option skips repeated compiler identity discovery
 only; Cargo checking, runtime and exporter bytes remain identical. Seven driver
 checks pass after an earlier zero-test lock-admission timeout. The frozen
 three-project comparison is running pgrust, private rg-aot and Nushell,132
-changed-source commands each. No performance result is claimed yet.
+changed-source commands each. Pgrust completes132 expected commands and
+passes: paired wall−5.96%, CPU−5.16%, beyond1.52% wall/1.43% CPU A/A.
+Std-MIR lookup falls from38ms to6ms; artifacts remain identical.
+Private rg-aot and Nushell guards remain mandatory.
+[Pgrust result](results/toolchain-lookup-edit-pgrust-01/assessment.md).
 [Qualification](results/toolchain-lookup-cargo-01/summary.json),
 [prospective comparison](benchmarks/experiments/toolchain-lookup/WORKFLOW.md).
 The source is on `experiment/toolchain-lookup-20260912` and defaults stay unchanged.

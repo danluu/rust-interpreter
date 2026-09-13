@@ -45,8 +45,10 @@ suggestion. Historical experiments retain their original decisions.
    The optional compiler-identity lookup cache passes115 harness checks,
    20 real Cargo checks and seven driver tests. Its fixed pgrust/rg-aot/
    Nushell comparison is running, with identical runtime/compiler binaries
-   and strict checking in every custom arm. Finish all396 commands before
-   assessing adoption. Full-catalog selection remains later work;
+   and strict checking in every custom arm. Pgrust passes with wall−5.96%
+   and CPU−5.16%; complete both remaining guards before adoption.
+   The next compute-bound design is bounded guarded indirect-call
+   specialization; [design](docs/INDIRECT-CALL-NEXT.md), no implementation yet. Full-catalog selection remains later work;
    original checking and artifact identity requirements remain intact.
 5. **Use the stronger native controls already established.** Every current
    comparison uses matched two-worker Cargo and ordinary native libtest
