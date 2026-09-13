@@ -27,8 +27,12 @@ held-out ran. No complete case will be retimed.
 The next candidate pairs existing VM-register spills and reloads at offsets
 where this reduces emitted instructions. It starts from the qualified wide
 runtime, preserving both words and existing register assignment. Source and
-new boundary checks are committed on `experiment/paired-registers-20260912`;
-host qualification is in progress. No speedup or adoption is yet established.
+new boundary checks are committed on `experiment/paired-registers-20260912`.
+All 421 Rust tests per profile, 131 harness checks, seven exact real tests,
+nine suite commands, 203 strict cache/native checks and three profile replays
+pass. Every VM operation count and native interval matches the wide control.
+The complete token/folded/pgrust comparison is active; no speedup or adoption
+is yet established. [Scope and next constraints](docs/REGISTER-TRANSFER-NEXT.md).
 [Token result](results/guarded-indirect-edit-token-02/stage-assessment.md),
 [design and qualification](docs/INDIRECT-CALL-NEXT.md).
 
