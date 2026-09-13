@@ -17,12 +17,15 @@ mod trees;
 mod native_calls;
 mod native_regions;
 mod resumable;
+mod call_slots;
 mod code_dump;
 mod values;
 mod transfers;
 
 #[cfg(test)]
 mod limit_tests;
+#[cfg(test)]
+mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
 // Its pointers never enter guest registers or addressable guest memory.
@@ -315,6 +318,8 @@ pub(crate) struct Jit<'a> {
     pub call_stubs: usize,
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
+    #[cfg(test)]
+    disable_call_slot_hints: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -341,6 +346,8 @@ impl<'a> Jit<'a> {
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
             assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
+            #[cfg(test)]
+            disable_call_slot_hints: false,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -434,6 +441,9 @@ impl<'a> Jit<'a> {
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
+        let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
+        #[cfg(test)]
+        let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
             || (resumable && transfers::supported(&f.code[pc]));
         let mut entries = vec![None; f.code.len()];
@@ -493,13 +503,14 @@ impl<'a> Jit<'a> {
                 // Every native cycle consumes virtual instructions. When
                 // the next block does not fit, let the VM execute its tail
                 // one instruction at a time, preserving fault ordering.
-                a.emit(0xf9400269); // ldr x9, [x19]
+                let budget = if resumable { resumable::BUDGET_REGISTER } else { 9 };
+                if !resumable { a.emit(0xf9400269); } // ordinary Cursor.remaining
                 a.imm(10, (pc - start) as u64);
-                a.cmp(9, 10);
+                a.cmp(budget, 10);
                 let budget_exit = a.words.len();
                 a.emit(0x54000003); // b.lo budget_exit
-                a.three(0xcb000000, 9, 9, 10);
-                a.emit(0xf9000269); // str x9, [x19]
+                a.three(0xcb000000, budget, budget, 10);
+                if !resumable { a.emit(0xf9000269); }
                 if self.profiled {
                     // The VM supplies this function's stable counter array.
                     // The emitted offset is a validated PC, never guest data.
@@ -574,7 +585,7 @@ impl<'a> Jit<'a> {
             if pc == start {
                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref())?;
+                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
                     resumes[pc] = Some(words.len() + resume);
                     internal_entries[pc] = Some(words.len() + internal);
@@ -851,7 +862,8 @@ fn supported(op: &Op) -> bool {
         Op::Copy { size, .. } => *size <= 128,
         Op::Binary { bits, op, .. } => *bits <= 64 || (*bits == 128 && matches!(op,
             Binary::Sub | Binary::Eq | Binary::Ne | Binary::Lt | Binary::Le
-                | Binary::Gt | Binary::Ge | Binary::Cmp)),
+                | Binary::Gt | Binary::Ge | Binary::Cmp | Binary::And | Binary::Or
+                | Binary::Xor | Binary::Shl | Binary::Shr)),
         Op::Unary { bits, .. } => *bits <= 64,
         _ => false,
     }
@@ -917,7 +929,10 @@ impl Assembler<'_> {
         self.emit(if expected { 0x54000000 } else { 0x54000001 }); // b.eq / b.ne failure
     }
     fn return_to_vm(&mut self) {
-        if self.resumable { self.resumable_save_memory(); }
+        if self.resumable {
+            self.resumable_save_memory();
+            self.resumable_save_budget();
+        }
         self.restore_external_values();
         self.emit(0xd65f03c0);
     }
@@ -1083,6 +1098,53 @@ impl Assembler<'_> {
         self.get(12, b, true);
         let observed = matches!(op, Binary::Sub) && self.reads[overflow as usize].is_some();
         match op {
+            Binary::And | Binary::Or | Binary::Xor => {
+                let opcode = match op {
+                    Binary::And => 0x8a000000,
+                    Binary::Or => 0xaa000000,
+                    Binary::Xor => 0xca000000,
+                    _ => unreachable!(),
+                };
+                self.three(opcode, 9, 9, 10);
+                self.three(opcode, 11, 11, 12);
+                self.put(dst, 9, 11);
+            }
+            Binary::Shl | Binary::Shr => {
+                // Bytecode shifts mask the complete count modulo128. The low
+                // seven bits suffice, regardless of the count's upper word.
+                // A64 variable shifts mask modulo64; handle the cross-word
+                // contribution at zero and select the >=64 result explicitly.
+                self.mask(10, 7);
+                self.three(0xcb000000, 12, 31, 10); // -count
+                let left = matches!(op, Binary::Shl);
+                self.three(if left { 0x9ac02400 } else { 0x9ac02000 },
+                    13, if left { 9 } else { 11 }, 12);
+                self.cmp(10, 31);
+                self.emit(0x9a800000 | (13 << 16) | (31 << 5) | 13); // csel x13,xzr,x13,eq
+                if left {
+                    self.three(0x9ac02000, 11, 11, 10);
+                    self.three(0xaa000000, 11, 11, 13);
+                    self.three(0x9ac02000, 9, 9, 10);
+                } else {
+                    self.three(0x9ac02400, 9, 9, 10);
+                    self.three(0xaa000000, 9, 9, 13);
+                    self.three(if signed { 0x9ac02800 } else { 0x9ac02400 }, 11, 11, 10);
+                    if signed {
+                        self.emit(0x9340fc00 | (63 << 16) | (11 << 5) | 14); // asr x14,x11,#63
+                    }
+                }
+                self.imm(12, 64);
+                self.cmp(10, 12);
+                if left {
+                    self.emit(0x9a800000 | (11 << 16) | (2 << 12) | (9 << 5) | 11); // csel hi,lo,hi,hs
+                    self.emit(0x9a800000 | (9 << 16) | (2 << 12) | (31 << 5) | 9); // csel lo,zr,lo,hs
+                } else {
+                    self.emit(0x9a800000 | (9 << 16) | (2 << 12) | (11 << 5) | 9); // csel lo,hi,lo,hs
+                    self.emit(0x9a800000 | (11 << 16) | (2 << 12)
+                        | ((if signed { 14 } else { 31 }) << 5) | 11); // csel hi,sign,hi,hs
+                }
+                self.put(dst, 9, 11);
+            }
             Binary::Sub => {
                 self.three(0xeb000000, 9, 9, 10); // SUBS low half, setting no-borrow
                 self.three(if observed { 0xfa000000 } else { 0xda000000 }, 11, 11, 12); // SBCS/SBC high
@@ -1302,6 +1364,25 @@ impl Assembler<'_> {
         self.get(rd, reg, false);
         self.checked_address(rd, size, write);
     }
+    /// Return the unsigned, size-scaled memory immediate. Only already proven
+    /// active-frame ranges can use a displaced base; all other addresses retain
+    /// the original validation and an immediate of zero.
+    fn memory_address(&mut self, rd: u32, reg: Reg, size: usize, write: bool) -> u32 {
+        if [1, 2, 4, 8, 16].contains(&size) {
+            if let Some(offset) = self.local_range(reg, size) {
+                let scale = size.min(8);
+                let immediate = offset / scale;
+                if offset % scale == 0 && immediate < 4096 - usize::from(size == 16) {
+                    // x1 is the current logical frame base; x2 is the current
+                    // linear-memory base. Neither can move inside this region.
+                    self.three(0x8b000000, rd, 2, 1);
+                    return immediate as u32;
+                }
+            }
+        }
+        self.address(rd, reg, size, write);
+        0
+    }
     fn fold(&mut self, op: &Op) -> bool {
         match *op {
             Op::Imm {dst, value} => self.remember(dst, Fact::Imm(value)),
@@ -1501,21 +1582,29 @@ impl Assembler<'_> {
     }
 
     fn load_mem(&mut self, lo: u32, hi: u32, base: u32, size: usize) {
-        self.mov(lo, 31);
-        self.mov(hi, 31);
+        self.load_mem_at(lo, hi, base, size, 0);
+    }
+    fn load_mem_at(&mut self, lo: u32, hi: u32, base: u32, size: usize, immediate: u32) {
         // Use byte assembly for unusual scalar widths (e.g. enum layouts).
         if [1, 2, 4, 8, 16].contains(&size) {
+            debug_assert!(immediate < 4096 - u32::from(size == 16));
+            // LDRB/LDRH/LDR W zero-extend the whole low word. The low
+            // accumulator is overwritten, and a 16-byte load also defines hi.
+            if size <= 8 && hi != 31 { self.mov(hi, 31); }
             let opcode = match size {
                 1 => 0x39400000,
                 2 => 0x79400000,
                 4 => 0xb9400000,
                 _ => 0xf9400000,
             };
-            self.emit(opcode | (base << 5) | lo);
+            self.emit(opcode | (immediate << 10) | (base << 5) | lo);
             if size == 16 {
-                self.emit(0xf9400000 | (1 << 10) | (base << 5) | hi);
+                self.emit(0xf9400000 | ((immediate + 1) << 10) | (base << 5) | hi);
             }
         } else {
+            debug_assert_eq!(immediate, 0);
+            self.mov(lo, 31);
+            if hi != 31 { self.mov(hi, 31); }
             for i in 0..size {
                 self.emit(0x39400000 | ((i as u32) << 10) | (base << 5) | 13);
                 self.emit(
@@ -1529,18 +1618,23 @@ impl Assembler<'_> {
         }
     }
     fn store_mem(&mut self, lo: u32, hi: u32, base: u32, size: usize) {
+        self.store_mem_at(lo, hi, base, size, 0);
+    }
+    fn store_mem_at(&mut self, lo: u32, hi: u32, base: u32, size: usize, immediate: u32) {
         if [1, 2, 4, 8, 16].contains(&size) {
+            debug_assert!(immediate < 4096 - u32::from(size == 16));
             let opcode = match size {
                 1 => 0x39000000,
                 2 => 0x79000000,
                 4 => 0xb9000000,
                 _ => 0xf9000000,
             };
-            self.emit(opcode | (base << 5) | lo);
+            self.emit(opcode | (immediate << 10) | (base << 5) | lo);
             if size == 16 {
-                self.emit(0xf9000000 | (1 << 10) | (base << 5) | hi);
+                self.emit(0xf9000000 | ((immediate + 1) << 10) | (base << 5) | hi);
             }
         } else {
+            debug_assert_eq!(immediate, 0);
             for i in 0..size {
                 let shift = ((i % 8) * 8) as u32;
                 self.emit(0xd340fc00 | (shift << 16) | ((if i < 8 { lo } else { hi }) << 5) | 13); // lsr
@@ -1596,18 +1690,19 @@ impl Assembler<'_> {
                 if let Some((_, value)) = self.local_value(local, size as usize) {
                     self.forward_local_value(value, size as usize, "Load");
                 } else {
-                    self.address(11, address, size as usize, false);
-                    self.load_mem(9, 10, 11, size as usize);
+                    let immediate = self.memory_address(11, address, size as usize, false);
+                    // put() supplies the narrow result's zero high word below.
+                    self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
                 }
                 self.put(dst, 9, if size <= 8 { 31 } else { 10 });
                 self.remember_local_memory(local, size as usize, dst);
             }
             Op::Store { address, src, size } => {
                 let local = self.local_range(address, size as usize);
-                self.address(11, address, size as usize, true);
+                let immediate = self.memory_address(11, address, size as usize, true);
                 self.get(9, src, false);
-                self.get(10, src, true);
-                self.store_mem(9, 10, 11, size as usize);
+                if size > 8 { self.get(10, src, true); }
+                self.store_mem_at(9, 10, 11, size as usize, immediate);
                 self.invalidate_local_memory(local, size as usize);
                 self.remember_local_memory(local, size as usize, src);
             }
@@ -1937,6 +2032,13 @@ pub fn register_width_profile_census(program: &Program, profile: &[u8]) -> Resul
 }
 
 mod constant_arguments;
+
+mod address_reuse;
+
+/// Count repeated validation in a verified saved profile; never executes guest code.
+pub fn address_reuse_census(program: &Program, profile: &[u8]) -> Result<serde_json::Value, String> {
+    address_reuse::census(program, profile)
+}
 
 /// Offline argument-byte coverage; never changes or executes the program.
 pub fn constant_call_argument_census(program: &Program, profile: Option<&[u8]>) -> Result<serde_json::Value, String> {

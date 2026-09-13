@@ -39,6 +39,7 @@ fn scalar_leaf(f: &Function) -> bool {
             | Op::Jump { .. }
             | Op::Return
             | Op::Trap { .. } => true,
+            Op::Call { .. } | Op::CompareBytes { .. } => true,
             Op::Copy { size, .. } => *size <= MAX_COPY_BYTES,
             Op::Binary { bits, .. } | Op::Unary { bits, .. } => *bits <= 64,
             Op::Switch { cases, .. } => cases.len() <= 16,
@@ -189,6 +190,12 @@ fn relocated(
             src: r(*src),
             size: *size,
         },
+        Op::Call { function, args, destination } => Op::Call {
+            function: *function, args: args.iter().map(|reg| r(*reg)).collect(), destination: r(*destination),
+        },
+        Op::CompareBytes { dst, left, right, size } => Op::CompareBytes {
+            dst: r(*dst), left: r(*left), right: r(*right), size: r(*size),
+        },
         Op::Binary {
             dst,
             overflow,
@@ -264,7 +271,7 @@ fn relocated(
             message: format!("{message} [inlined from {origin}]"),
         },
         Op::Return => Op::Jump { target: epilogue },
-        _ => unreachable!("selection excludes non-scalar leaf operations"),
+        _ => unreachable!("selection excludes unsupported body operations"),
     }
 }
 
@@ -319,17 +326,20 @@ fn prepare(original: &Program, options: Options) -> Result<Prepared, String> {
     {
         return Err("leaf inlining options exceed bounded limits".into());
     }
+    let nonrecursive = crate::inline_graph::nonrecursive(original);
     let eligible: Vec<_> = original
         .functions
         .iter()
-        .map(|f| {
-            scalar_leaf(f)
+        .enumerate()
+        .map(|(id, f)| {
+            let calls = f.code.iter().filter(|op| matches!(op, Op::Call { .. })).count();
+            scalar_leaf(f) && calls <= 1 && (calls == 0 || nonrecursive[id])
                 && f.code.len() <= options.leaf_operations
                 && f.frame_size <= 512
                 && f.registers <= 256
                 && f.result.size <= MAX_COPY_BYTES
                 && f.args.iter().all(|slot| slot.size <= MAX_COPY_BYTES)
-                && !crate::registers::needs_initial_zeroes_for_inlining(f)
+                && !crate::registers::needs_initial_zeroes(f)
         })
         .collect();
     let original_operations: usize = original.functions.iter().map(|f| f.code.len()).sum();
@@ -527,8 +537,8 @@ fn prepare(original: &Program, options: Options) -> Result<Prepared, String> {
         };
         // Reject an expansion that introduces whole-caller register clearing.
         // This is a performance guard, never a trusted semantic annotation.
-        if !crate::registers::needs_initial_zeroes_for_inlining(caller)
-            && crate::registers::needs_initial_zeroes_for_inlining(&output)
+        if !crate::registers::needs_initial_zeroes(caller)
+            && crate::registers::needs_initial_zeroes(&output)
         {
             growth -= caller_growth;
             sites -= selected_count;
@@ -538,7 +548,7 @@ fn prepare(original: &Program, options: Options) -> Result<Prepared, String> {
         changed.push(json!({"function":id,"name":caller.name,"sites":selected_count,
             "old_operations":caller.code.len(),"new_operations":output.code.len(),"removed_jumps":removed,
             "old_frame_size":caller.frame_size,"new_frame_size":output.frame_size,"old_registers":caller.registers,"new_registers":output.registers,
-            "needed_register_zeroes_before":crate::registers::needs_initial_zeroes_for_inlining(caller),"needed_register_zeroes_after":crate::registers::needs_initial_zeroes_for_inlining(&output)}));
+            "needed_register_zeroes_before":crate::registers::needs_initial_zeroes(caller),"needed_register_zeroes_after":crate::registers::needs_initial_zeroes(&output)}));
         replacements.push((id, output));
     }
     Ok(Prepared { replacements, sites, original_operations, growth, changed, options, diagnostics })

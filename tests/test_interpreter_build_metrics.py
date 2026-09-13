@@ -17,6 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import allocation_trace
 import interpreter
 
+checked_export_option = interpreter.require_export_option
+
 
 class FakeClock:
     def __init__(self):
@@ -194,6 +196,67 @@ class InterpreterBuildMetricsTests(unittest.TestCase):
             self.launch()
         self.assertEqual(len(self.invocations), 1)
         self.assertEqual(self.launch_stats(), [])
+
+    def test_function_reuse_is_explicit_and_applies_only_to_the_cargo_child(self):
+        self.assertEqual(self.launch(['--function-cache', 'reuse']), 0)
+        cargo, vm = self.invocations
+        self.assertEqual(cargo[1]['env']['RUST_INTERP_FUNCTION_CACHE'], 'reuse')
+        self.assertNotIn('RUST_INTERP_FUNCTION_CACHE', vm[1]['env'])
+        interpreter.require_export_option.assert_called_once_with(
+            self.tools, 'a' * 64, 'function-cache-reuse')
+        self.assertEqual(self.launch_stats()[0]['function_cache'], 'reuse')
+
+    def test_automatic_function_cache_requires_its_own_exporter_capability(self):
+        self.assertEqual(self.launch(['--function-cache', 'auto']), 0)
+        cargo, vm = self.invocations
+        self.assertEqual(cargo[1]['env']['RUST_INTERP_FUNCTION_CACHE'], 'auto')
+        self.assertNotIn('RUST_INTERP_FUNCTION_CACHE', vm[1]['env'])
+        interpreter.require_export_option.assert_called_once_with(
+            self.tools, 'a' * 64, 'function-cache-auto')
+        self.assertEqual(self.launch_stats()[0]['function_cache'], 'auto')
+
+    def test_ambient_function_reuse_cannot_enable_the_default_route(self):
+        with patch.dict(os.environ, {'RUST_INTERP_FUNCTION_CACHE': 'reuse'}):
+            self.assertEqual(self.launch(), 0)
+        self.assertTrue(all('RUST_INTERP_FUNCTION_CACHE' not in args['env']
+                            for _, args in self.invocations))
+        self.assertEqual(self.launch_stats()[0]['function_cache'], 'off')
+
+    def test_function_reuse_does_not_launch_vm_after_a_failed_check(self):
+        self.cargo_returncode = 101
+        for mode in ['reuse', 'auto']:
+            with self.subTest(mode=mode):
+                self.invocations.clear()
+                self.assertEqual(self.launch(['--function-cache', mode]), 101)
+                self.assertEqual(len(self.invocations), 1)
+                self.assertEqual(self.invocations[0][0][0], 'cargo')
+                self.assertIsNone(self.before_vm)
+                self.assertEqual(self.launch_stats(), [])
+
+    def test_function_reuse_rejects_an_older_installed_exporter(self):
+        (self.tools / 'capabilities.json').write_text(json.dumps(dict(
+            schema_version=1, bytecode_version=5, tool_key='a' * 64,
+            exporter_sha256='b' * 64, export_options=['entry-catalog'])))
+        with patch.object(interpreter, 'require_export_option', checked_export_option):
+            for mode in ['reuse', 'auto']:
+                with self.assertRaisesRegex(RuntimeError,
+                        'installed exporter does not support --function-cache-' + mode):
+                    self.launch(['--function-cache', mode])
+        self.assertEqual(self.invocations, [])
+
+    def test_function_reuse_rejects_unqualified_modes_before_starting_work(self):
+        for mode, selection in [(mode, selection) for mode in ['reuse', 'auto'] for selection in [
+                          ['--test-body', '--list-tests'],
+                          ['--test-body', '--audit-entries', str(self.root / 'absent.json')],
+                          ['--entry', 'selected', '--allocation-trace']]]:
+            with self.subTest(mode=mode, selection=selection):
+                argv = ['interpreter.py', '--package', 'fixture',
+                        '--function-cache', mode, *selection]
+                with patch.object(sys, 'argv', argv), redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as error:
+                        interpreter.main()
+                self.assertEqual(error.exception.code, 2)
+        self.assertEqual(self.invocations, [])
 
     def test_failed_call_report_validation_does_not_claim_ready_or_start_vm(self):
         report = json.loads(self.call_report.read_text())

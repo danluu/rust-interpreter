@@ -54,15 +54,27 @@ fn later_callers_keep_edges_to_original_nonleaf_functions() {
     let mut p = identity_program();
     let mut later = p.functions[0].clone();
     later.name = "later caller".into();
-    // Function 0 expands first. Function 2 still calls that original nonleaf,
-    // then independently expands its own direct edge to leaf 1.
+    // Keep function 0 outside the composed one-call eligibility bound. Its
+    // two leaf edges expand first; function 2 still calls that original graph
+    // node, then independently expands its own direct edge to leaf 1.
+    p.functions[0].code.insert(2, Op::Call { function: 1, args: vec![0], destination: 1 });
     later.code.insert(2, Op::Call { function: 0, args: vec![0], destination: 1 });
+    // Call-site discovery deliberately forgets slot facts across a Call.
+    // Restate them before the second site in both original callers.
+    for caller in [&mut p.functions[0], &mut later] {
+        caller.code.splice(3..3, [Op::Local { dst: 0, offset: 0 },
+                                 Op::Local { dst: 1, offset: 32 }]);
+    }
+    // Three 12-operation expansions must fit the original program's 100%
+    // growth bound; preserve the fixture's otherwise unused-register padding.
+    let end = p.functions[0].code.len() - 1;
+    p.functions[0].code.splice(end..end, (0..4).map(|_| Op::Imm { dst: 3, value: 0 }));
     p.functions.push(later);
     p.entry = 2;
     let original_leaf = bincode::serialize(&p.functions[1]).unwrap();
     let (q, report) = checked_transform(&p, options()).unwrap();
-    assert_eq!(report["selected_sites"], 2);
-    assert_eq!(report["added_operations_upper_bound"], 24);
+    assert_eq!(report["selected_sites"], 3);
+    assert_eq!(report["added_operations_upper_bound"], 36);
     let changed: Vec<_> = report["changed_callers"].as_array().unwrap().iter()
         .map(|caller| caller["function"].as_u64().unwrap()).collect();
     assert_eq!(changed, [0, 2]);
@@ -92,15 +104,26 @@ fn rejected_caller_restores_budget_before_later_admission() {
     p.functions.push(later);
     p.functions[0].code.insert(0, Op::Imm { dst: 3, value: 43 });
     p.functions[0].code.insert(3, Op::Store { address: 0, src: 3, size: 8 });
+    // Before expansion, each read is defined in its own block. Inlining
+    // introduces a branch between caller definition and read, requiring the
+    // bounded CFG proof. Crossing its register bound must conservatively keep
+    // this caller unchanged, with exact growth/diagnostic budget rollback.
+    // A fallthrough Jump would be removed before the proof; retain an actual
+    // branch boundary with both initialized, valid paths reaching the body.
+    p.functions[0].code.splice(0..0, [Op::Imm { dst: 2, value: 1 },
+        Op::Switch { value: 2, cases: vec![(1, 2)], otherwise: 2 }]);
+    let opts = inline::Options { program_growth_percent: 50, ..options() };
+    let (_, small) = checked_transform(&p, opts).unwrap();
+    assert_eq!(small["changed_callers"][0]["function"], 0);
+    p.functions[0].registers = 65_536;
+    assert!(!crate::registers::needs_initial_zeroes(&p.functions[0]));
     let rejected = bincode::serialize(&p.functions[0]).unwrap();
-    // Original size is 29 operations; the 14-operation growth allowance can
-    // admit either 11-operation expansion, but not both without rollback.
-    // Diagnostic accounting must also undo the rejected copy of "check".
-    let (q, report) = checked_transform(&p,
-        inline::Options { program_growth_percent: 50, ..options() }).unwrap();
-    assert_eq!(bincode::serialize(&q.functions[0]).unwrap(), rejected);
+    // Thirty-one original operations allow either 11-operation expansion, but
+    // not both without rollback. All programs remain valid and initialized.
+    let (q, report) = checked_transform(&p, opts).unwrap();
+    assert!(bincode::serialize(&q.functions[0]).unwrap() == rejected, "rejected caller was modified");
     assert_eq!(report, serde_json::json!({
-        "selected_sites": 1, "original_operations": 29, "new_operations": 38,
+        "selected_sites": 1, "original_operations": 31, "new_operations": 40,
         "added_operations_upper_bound": 11, "max_leaf_operations": 192,
         "max_program_growth_percent": 50, "cloned_diagnostic_bytes": 27,
         "changed_callers": [{"function": 2, "name": "later admitted", "sites": 1,

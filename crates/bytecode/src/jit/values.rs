@@ -187,7 +187,11 @@ impl Assembler<'_> {
         }
         self.mov(19, 7);
         if self.heap { self.mov(7, 5); self.mov(8, 6); }
-        if self.resumable { self.resumable_current_frame(); }
+        if self.resumable {
+            self.resumable_current_frame();
+            self.resumable_load_budget();
+        }
+        // Native callees inherit x22; only external Rust entries load memory.
         let resume = self.words.len();
         self.load_values();
         resume

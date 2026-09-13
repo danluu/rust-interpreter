@@ -5,6 +5,15 @@ const LIVE: u128 = 0xfedc_ba98_7654_3210_0123_4567_89ab_cdef;
 
 // Independent native Rust oracle; do not use the bytecode implementation here.
 fn expected(op: Binary, a: u128, b: u128, signed: bool) -> (u128, bool) {
+    match op {
+        Binary::And => return (a & b, false),
+        Binary::Or => return (a | b, false),
+        Binary::Xor => return (a ^ b, false),
+        Binary::Shl => return (a.wrapping_shl(b as u32), false),
+        Binary::Shr => return (if signed { (a as i128).wrapping_shr(b as u32) as u128 }
+            else { a.wrapping_shr(b as u32) }, false),
+        _ => {}
+    }
     if matches!(op, Binary::Sub) {
         return if signed {
             let (value, overflow) = (a as i128).overflowing_sub(b as i128);
@@ -43,6 +52,10 @@ fn wide_native_results_match_rust_including_aliases_and_far_registers() {
     let mut pairs = Vec::new();
     for a in boundaries { for b in boundaries { pairs.push((a, b)); } }
     for bit in 0..128 { pairs.extend([(1 << bit, 1), (0, 1 << bit), (1 << bit, 1 << bit)]); }
+    // Every shift residue, its >=128 wrap, and counts with nonzero upper words.
+    for count in 0..256 {
+        pairs.extend([(LIVE, count), (!LIVE, count), (LIVE, (1 << 127) | count)]);
+    }
     let mut seed = LIVE;
     for _ in 0..512 {
         let a = seed;
@@ -50,7 +63,8 @@ fn wide_native_results_match_rust_including_aliases_and_far_registers() {
         pairs.push((a, seed));
     }
     for op in [Binary::Sub, Binary::Eq, Binary::Ne, Binary::Lt, Binary::Le,
-        Binary::Gt, Binary::Ge, Binary::Cmp] {
+        Binary::Gt, Binary::Ge, Binary::Cmp, Binary::And, Binary::Or,
+        Binary::Xor, Binary::Shl, Binary::Shr] {
         for signed in [false, true] {
             for offset in [0, 2050] {
                 for (dst, overflow) in [(2, 3), (0, 3), (1, 3), (2, 0), (2, 1),
@@ -199,6 +213,71 @@ fn wide_comparison_assertions_preserve_fault_order() {
         for engine in [Engine::Interpreter, Engine::Jit] {
             assert_eq!(execute_with_engine(&p, &[1 << 127], limits(), engine).unwrap_err(), reference);
             assert_eq!(execute_profiled(&p, &[1 << 127], limits(), engine).unwrap_err(), reference);
+        }
+    }
+}
+
+#[test]
+fn wide_bitwise_calls_preserve_budget_tails_profiles_and_initial_zeroes() {
+    for op in [Binary::And, Binary::Or, Binary::Xor, Binary::Shl, Binary::Shr] {
+        for signed in [false, true] {
+            let mut p = program(3, vec![Slot { offset: 16, size: 16 }, Slot { offset: 32, size: 16 }], vec![
+                Op::Local { dst: 0, offset: 0 }, Op::Local { dst: 1, offset: 16 },
+                Op::Local { dst: 2, offset: 32 },
+                Op::Call { function: 1, args: vec![1, 2], destination: 0 },
+                Op::Call { function: 1, args: vec![0, 2], destination: 0 }, Op::Return,
+            ]);
+            p.functions.push(Function {
+                name: "wide_bitwise_callee".into(), frame_size: 64, frame_align: 16, registers: 8,
+                args: vec![Slot { offset: 16, size: 16 }, Slot { offset: 32, size: 16 }],
+                result: Slot { offset: 0, size: 16 }, code: vec![
+                    Op::Local { dst: 0, offset: 0 }, Op::Local { dst: 1, offset: 16 },
+                    Op::Local { dst: 2, offset: 32 }, Op::Load { dst: 3, address: 1, size: 16 },
+                    Op::Load { dst: 4, address: 2, size: 16 },
+                    Op::Binary { dst: 3, overflow: 5, op, a: 3, b: 4, bits: 128, signed },
+                    Op::Store { address: 0, src: 3, size: 16 },
+                    // Keep a real VM exit and observe the complete overflow word.
+                    Op::Unary { dst: 6, src: 5, bits: 128, op: Unary::CountOnes },
+                    Op::Assert { value: 6, expected: false, message: "bitwise overflow is false".into() },
+                    Op::Return,
+                ],
+            });
+            crate::validate(&p).unwrap();
+            for (a, b) in [(LIVE, 0), (!LIVE, (1 << 127) | 64)] {
+                let answer = expected(op, expected(op, a, b, signed).0, b, signed).0;
+                for budget in 0..=27 {
+                    let reference = execute_with_engine(&p, &[a, b],
+                        Limits { instructions: budget, ..Limits::default() }, Engine::Interpreter);
+                    for capacity in [0, MAX_CODE_BYTES] {
+                        for persistent in [false, true] { for resumable in [false, true] {
+                            let limits = || Limits { instructions: budget, jit_code_bytes: capacity,
+                                jit_persistent_registers: persistent, jit_resumable_calls: resumable,
+                                ..Limits::default() };
+                            let actual = execute_with_engine(&p, &[a, b], limits(), Engine::Jit);
+                            let profiled = execute_profiled(&p, &[a, b], limits(), Engine::Jit);
+                            if let Err(error) = &reference {
+                                assert_eq!(actual.unwrap_err(), *error);
+                                assert_eq!(profiled.unwrap_err(), *error);
+                            } else {
+                                let actual = actual.unwrap(); let (observed, profile) = profiled.unwrap();
+                                assert_eq!(actual.value, answer);
+                                assert_eq!(observed.value, answer);
+                                assert_eq!(actual.instructions, 26);
+                                assert_eq!(observed.instructions, 26);
+                                assert_eq!(actual.peak_memory, reference.as_ref().unwrap().peak_memory);
+                                assert_eq!(observed.peak_memory, actual.peak_memory);
+                                for (id, f) in profile.functions.iter().enumerate() {
+                                    let mut counts = f.interpreted.clone();
+                                    for (pc, &hits) in f.jit_blocks.iter().enumerate() {
+                                        if hits != 0 { for count in &mut counts[pc..f.jit_block_ends[pc]] { *count += hits; } }
+                                    }
+                                    assert_eq!(counts, vec![if id == 0 { 1 } else { 2 }; p.functions[id].code.len()]);
+                                }
+                            }
+                        } }
+                    }
+                }
+            }
         }
     }
 }
