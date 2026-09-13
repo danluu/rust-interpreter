@@ -42,6 +42,7 @@ fn observe_native_counter_flush_code() {
         km.validate(f,&k).unwrap();
         assert_eq!(cm.rows.len(),km.rows.len());
         let mut delta_words=0isize;
+        let (mut entry_count,mut exit_count,mut update_count)=(0,0,0);
         for (old,new) in cm.rows.iter().zip(&km.rows) {
             assert_eq!((old.kind,old.region_pc,old.pc),(new.kind,new.region_pc,new.pc));
             let words=&a.words[old.offset/4..old.end/4];
@@ -50,9 +51,13 @@ fn observe_native_counter_flush_code() {
             let entries=usize::from(matches!(old.kind,Kind::Entry|Kind::Transition));
             let delta=(5*entries+exits) as isize-2*updates as isize;
             assert_eq!((new.end-new.offset) as isize-(old.end-old.offset) as isize,delta*4);
-            delta_words+=delta;
+            delta_words+=delta;entry_count+=entries;exit_count+=exits;update_count+=updates;
         }
         assert_eq!(k.words.len() as isize-a.words.len() as isize,delta_words);
+        assert_eq!(entry_count,a.entries.iter().filter(|e|e.is_some()).count());
+        assert_eq!(k.words.iter().filter(|&&w|w==0x3dc00e7d).count(),entry_count);
+        assert_eq!(k.words.iter().filter(|&&w|w==0x3d800e7d).count(),exit_count);
+        assert_eq!(k.words.iter().filter(|&&w|matches!(w,0x4efe87bd|0x4eff87bd)).count(),update_count);
         let mut om=Collector {rows:vec![],limit:MAX_SPANS};let b=candidate.emit_function_inner(f,MAX_CODE_BYTES/4,assertions,Some(&mut om)).unwrap().unwrap();
         om.validate(f,&b).unwrap();assert_eq!(a.operations,b.operations);assert_eq!(a.assertions,b.assertions);
         assert_eq!(a.local_fact_events,b.local_fact_events);assert_eq!(a.retained_local_writes,b.retained_local_writes);
@@ -72,6 +77,7 @@ fn observe_native_counter_flush_code() {
         for s in &mut cm.rows {s.offset+=offset;s.end+=offset;}
         assert_eq!(serde_json::to_value(&cm.rows).unwrap(),saved["spans"]);
         output.push(json!({"function":id,"name":f.name,"baseline_bytes":a.words.len()*4,"candidate_bytes":b.words.len()*4,"counter_bytes":k.words.len()*4,"counter_delta_bytes":delta_words*4,
+            "external_entries":entry_count,"vm_exit_sites":exit_count,"counter_update_sites":update_count,
             "removed_flush_bytes":removed_bytes,"removed_values":removed}));
         candidate_bytes+=b.words.len()*4;counter_bytes+=k.words.len()*4;cursor=end;assertions+=a.assertions.len();
     }
