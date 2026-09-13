@@ -460,7 +460,8 @@ def main():
                         args.compiler_key, args.candidate_std_mir_ready,
                         args.baseline_cargo_key, args.candidate_cargo_key, args.compiler_qualification, args.frontend_worker_qualification)
     if args.candidate_policy == 'frontend-workers':
-        require(args.workload_lock is not None and args.workload_lock.is_absolute()
+        from frontend_worker_screen import CAMPAIGN_LOCK
+        require(args.workload_lock == CAMPAIGN_LOCK
                 and args.workload_lock.resolve(strict=True) == args.workload_lock
                 and args.workload_lock.is_file(), 'worker screen requires the existing explicit campaign lock')
     else:
@@ -557,7 +558,9 @@ def main():
                     path = Path(path)
                     require(path.resolve(strict=True) == path and path.is_file(), 'worker proof path is indirect')
                     data = path.read_bytes()
-                    worker_files[str(path)] = frozen_input_hash(path)
+                    digest = hashlib.sha256(b'file\0' + data).hexdigest()
+                    require(worker_files.setdefault(str(path), digest) == digest,
+                            'worker proof or public payload changed between reads')
                     return data
                 tool, key = tools['baseline'], keys['baseline']
                 validate_tool_compiler(tool, key, None)
@@ -599,6 +602,8 @@ def main():
             tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=source).decode().split('\0')
             paths += [source / name for name in tracked if name and source / name != changed]
             frozen = {str(p): frozen_input_hash(p) for p in paths}
+            require(all(frozen.get(path) == digest for path,digest in worker_files.items()),
+                    'worker proof or public payload changed while freezing screen inputs')
             plan = dict(schema_version=1, kind='mechanism-screen', owner=str(ROOT), project='nushell',
                 workflow='type-relations', candidate_policy=args.candidate_policy,
                 revision=revision, source=str(source), case=CASE,

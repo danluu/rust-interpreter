@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock, lock_wait_seconds
 from frontend_workers import COMPILER_COMMIT, require_capability
-from frontend_worker_screen import public_build, standard_binding, validate_qualification
+from frontend_worker_screen import (CAMPAIGN_LOCK, EDIT_FILES, FIXTURE_PREFIX,
+    public_build, qualification_harness, standard_binding, validate_qualification)
 from qualified_public_tools import validate_live_inputs
 from interpreter import TOOLCHAIN, installed_tools, require_export_option
 from std_mir import FLAGS, POLICY, stamp
@@ -85,7 +86,7 @@ def main():
     parser.add_argument('--lock', type=Path, required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=600)
     args = parser.parse_args()
-    require(args.lock.is_absolute() and args.lock.is_file()
+    require(args.lock == CAMPAIGN_LOCK and args.lock.is_file()
             and args.lock.resolve(strict=True) == args.lock, 'qualification requires an existing explicit campaign lock')
     run = args.run_dir.resolve()
     require(not run.exists() and run.parent.is_dir(), 'run directory must be new in an existing parent')
@@ -138,16 +139,31 @@ def qualify_locked(args,run):
     environment = {k:v for k,v in os.environ.items() if not k.startswith('RUST_INTERP_')}
     environment.update(RUST_INTERP_LAUNCH_STATS='1',CARGO_TERM_COLOR='never',CARGO_TERM_VERBOSE='true')
     records = []
+    project = run/'fixture'
+    fixture_inputs, backups = {}, []
+
+    def fixture_guard():
+        if not project.exists():
+            return {}
+        paths = [p for p in project.rglob('*') if p not in backups and (p.is_file() or p.is_symlink())]
+        require(not any(p.is_symlink() for p in paths)
+                and {str(p.relative_to(project)) for p in paths} == set(fixture_inputs),
+                'copied worker fixture file set changed')
+        current = {str(p.relative_to(project)):sha(p) for p in paths}
+        require(all(current[name] == value for name,value in fixture_inputs.items() if name not in EDIT_FILES),
+                'immutable worker fixture changed')
+        return {'fixture/'+name:value for name,value in current.items()}
 
     def invoke(label, command, env=environment):
         require_space(run,8)
-        inputs = [run/'fixture/shared/src/lib.rs',run/'fixture/src/lib.rs']
-        if '-native-diagnostic-' in label:inputs.append(run/'diagnostic.rs')
-        sources = {str(p.relative_to(run)):sha(p) for p in inputs if p.is_file()}
+        sources = fixture_guard()
+        if '-native-diagnostic-' in label:sources['diagnostic.rs'] = sha(run/'diagnostic.rs')
         child,stdout,stderr = capture(command,cwd=run,env=env,
             receipt_path=run/'logs'/f'{label}-process.json',
             receipt=dict(label=label,environment=compiler_environment(env),sources=sources))
         require(all(sha(run/name)==value for name,value in sources.items()),'qualification source changed during child')
+        require(fixture_guard() == {k:v for k,v in sources.items() if k.startswith('fixture/')},
+                'copied worker fixture changed during child')
         row = dict(label=label,command=command,returncode=child.returncode,stdout=stdout,stderr=stderr,sources=sources)
         write_json(run/'logs'/f'{label}.json',row)
         records.append(row)
@@ -155,6 +171,13 @@ def qualify_locked(args,run):
 
     require(all(sha(Path(path)) == digest for path,digest in frozen.items()),'source changed before admission')
     public = public_build(tools,key,Path.read_bytes)
+    published_harness = qualification_harness(public)
+    require(all(frozen.get(str(ROOT/name)) == value for name,value in published_harness.items()),
+            'qualification differs from its published harness')
+    fixture_inputs = {name.removeprefix(FIXTURE_PREFIX):value for name,value in published_harness.items()
+                      if name.startswith(FIXTURE_PREFIX)}
+    plan['fixture_inputs'] = fixture_inputs
+    write_json(run/'plan.json',plan)
     write_json(run/'public-before.json',validate_live_inputs(public,rehash=True))
     compiler_path = invoke('compiler-path',['rustup','which','--toolchain',TOOLCHAIN,'rustc'])
     require(compiler_path['returncode']==0,'pinned compiler lookup failed')
@@ -180,8 +203,9 @@ def qualify_locked(args,run):
     std = dict(path=str(std_work/'ready.json'),sha256=plan['std_ready_sha256'],key=std_key,
         compiler=version['stdout'],target=host,rustc=str(rustc),rustc_sha256=sha(rustc),sysroot=str(std_work/'sysroot'))
     standard_binding(public,std)
-    project = run/'fixture'
     shutil.copytree(Path(__file__).parent/'fixture',project)
+    require(fixture_guard() == {'fixture/'+name:value for name,value in fixture_inputs.items()},
+            'copied worker fixture differs from the published template')
     shared = project/'shared/src/lib.rs'
     library = project/'src/lib.rs'
     shared_original,library_original = shared.read_bytes(),library.read_bytes()
@@ -216,6 +240,7 @@ def qualify_locked(args,run):
         return payload
 
     with SourceEdit(shared,shared_original) as shared_edit, SourceEdit(library,library_original) as library_edit:
+        backups[:] = [shared_edit.backup,library_edit.backup]
         original = None
         for phase,value in [('cold',3),('edited',7),('restored',3)]:
             shared_edit.replace(f'pub fn value() -> u64 {{ {value} }}\n'.encode())

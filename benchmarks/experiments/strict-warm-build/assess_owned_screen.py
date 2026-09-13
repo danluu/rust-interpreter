@@ -205,12 +205,12 @@ def selection(plan, snapshot):
         public = json.loads(snapshot(Path(plan['owner']) / '.work/interpreter-tools' / key /
                                      'source.json')['utf8'])['composition']['public_compiler']
     elif policy == 'frontend-workers':
-        from frontend_worker_screen import COUNTS, BUILD_POLICY
+        from frontend_worker_screen import COUNTS, BUILD_POLICY, CAMPAIGN_LOCK
         require(not any(k in plan for k in ['custom_compiler', 'cgu_policy_by_mode', 'cargo_comparison', 'cargos_by_mode'])
                 and plan['frontend_workers_by_mode'] == COUNTS
                 and plan['worker_public_build_policy'] == BUILD_POLICY, 'worker policy is mixed or differs')
         lock = Path(plan['workload_lock'])
-        require(lock.is_absolute() and str(lock) == os.path.normpath(str(lock)), 'worker lock identity differs')
+        require(lock == CAMPAIGN_LOCK, 'worker lock identity differs')
         public = json.loads(snapshot(Path(plan['owner']) / '.work/interpreter-tools' / plan['tools']['baseline'] / 'source.json')['utf8'])['composition']['public_compiler']
     for mode in modes:
         from std_mir import FLAGS, POLICY

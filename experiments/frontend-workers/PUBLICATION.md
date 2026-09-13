@@ -33,7 +33,13 @@ The qualifier acquires the canonical lock before source inventories or tool
 input checks. It uses the shared publication validator and full input guards
 before and after the existing 30 commands, retains their exact receipts and
 bytecode, and calls the shared typed worker-history validator before publishing
-success. The existing 3→7→3 edit, all error/recovery controls, duplicate-preserving
+success. Both qualifier and screen reject any substitute lock path. The complete
+copied fixture inventory is bound to the published harness: every child guards
+the Cargo manifests/lock, build script and proc-macro inputs, while only the two
+recorded edit files may change. Exact staged restoration backups are the only
+additional fixture files allowed while an edit is active. The archived consumer
+rechecks those same inputs and all controlled edit/restoration hashes.
+The existing 3→7→3 edit, all error/recovery controls, duplicate-preserving
 structured diagnostics and bytecode parity are unchanged. Its supervisor waits
 for the qualifier without holding a second lock. Qualification results and
 failed destinations are retained; no automatic retry replaces them.

@@ -86,8 +86,16 @@ class WorkerScreenContracts(unittest.TestCase):
         original = b'pub fn answer() -> u64 { 20 }\n'
         data[str(owner / 'experiments/frontend-workers/fixture/src/lib.rs')] = original
         data[str(owner / 'experiments/frontend-workers/fixture/shared/src/lib.rs')] = b'pub fn value() -> u64 { 3 }\n'
+        for relative in ['Cargo.toml','Cargo.lock','build.rs','shared/Cargo.toml','macros/Cargo.toml','macros/src/lib.rs']:
+            data[str(owner / worker.FIXTURE_PREFIX / relative)] = ('fixture '+relative+'\n').encode()
+        data[str(owner / 'experiments/frontend-workers/qualify.py')] = b'qualifier source\n'
+        data[str(owner / 'scripts/interpreter.py')] = b'launcher source\n'
+        public['plan'] = dict(harness={str(Path(name).relative_to(owner)):sha(value) for name,value in data.items()
+            if name != str(owner/'Cargo.toml')})
+        fixture = {name.removeprefix(worker.FIXTURE_PREFIX):value for name,value in public['plan']['harness'].items()
+                   if name.startswith(worker.FIXTURE_PREFIX)}
         plan = dict(policy=worker.QUALIFICATION_POLICY, owner=str(owner), tool_key=key,
-            lock='/campaign/benchmark.lock',
+            lock=str(worker.CAMPAIGN_LOCK), fixture_inputs=fixture,
             tools=binaries, capability=caps, jobs=2, rustc=std['rustc'], rustc_sha256=std['rustc_sha256'],
             std_key=std['key'], std_ready_sha256=std['sha256'], frozen={name: sha(value) for name, value in data.items()})
         labels = ['compiler-path', 'compiler-version']
@@ -107,6 +115,7 @@ class WorkerScreenContracts(unittest.TestCase):
                 phase, count = label.rsplit('-', 1); count = int(count)
                 sources = {'fixture/shared/src/lib.rs': sha(f'pub fn value() -> u64 {{ {7 if phase == "edited" else 3} }}\n'.encode()),
                     'fixture/src/lib.rs': sha(original + worker.ERROR_BODIES.get(phase, '').encode())}
+                sources.update({'fixture/'+name:value for name,value in fixture.items() if name not in worker.EDIT_FILES})
                 if '-native-diagnostic' in phase:
                     kind = phase.removesuffix('-native-diagnostic')
                     sources['diagnostic.rs'] = sha(('pub fn good() -> u32 { 1 }\n' + worker.ERROR_BODIES[kind]).encode())
@@ -134,7 +143,7 @@ class WorkerScreenContracts(unittest.TestCase):
             child = dict(label=label, command=command, returncode=status, cwd=str(run), status='finished', pid=index+1,
                          started_at=index * 2, finished_at=index * 2 + 1, environment=env, sources=sources)
             write(run / 'logs' / (label + '.json'), row); write(run / 'logs' / (label + '-process.json'), child)
-        for relative in ['src/lib.rs', 'shared/src/lib.rs']:
+        for relative in fixture:
             data[str(run / 'fixture' / relative)] = data[str(owner / 'experiments/frontend-workers/fixture' / relative)]
         result = dict(status='passed', policy=worker.QUALIFICATION_POLICY, commands=30, tool_key=key,
             workspaces={str(n): str(run / 'cache' / str(n)) for n in [1, 2]}, original_artifact_sha256=sha(original_bytecode),
@@ -160,15 +169,26 @@ class WorkerScreenContracts(unittest.TestCase):
                 worker.validate_qualification(path, key, public, std, lambda p: changed[str(p)])
 
     def test_rehashed_noop_command_and_changed_source_cannot_fake_actual_qualification(self):
-        for fault in ['noop', 'source', 'overlap', 'restoration']:
+        for fault in ['noop', 'source', 'overlap', 'restoration', 'lock', 'harness', 'fixture-copy', 'fixture-child']:
             path, key, public, std, data = self.bundle(); run = path.parent
             if fault == 'restoration':
                 data[str(run / 'fixture/src/lib.rs')] = b'not restored'
+            elif fault == 'fixture-copy':
+                data[str(run / 'fixture/build.rs')] = b'fn main() {}\n'
+            elif fault in ['lock','harness']:
+                plan_path = run/'plan.json'; plan = json.loads(data[str(plan_path)])
+                if fault == 'lock':plan['lock'] = '/another/benchmark.lock'
+                else:
+                    source = '/owned/experiments/frontend-workers/qualify.py'
+                    data[source] = b'a self-consistent different qualifier\n'
+                    plan['frozen'][source] = sha(data[source])
+                data[str(plan_path)] = json.dumps(plan).encode()
             else:
                 label = 'edited-2'; row_path = run / 'logs' / (label + '.json'); child_path = run / 'logs' / (label + '-process.json')
                 row, child = [json.loads(data[str(p)]) for p in [row_path, child_path]]
                 if fault == 'noop':row['command'] = child['command'] = ['/usr/bin/true']
                 if fault == 'source':row['sources']['fixture/shared/src/lib.rs'] = child['sources']['fixture/shared/src/lib.rs'] = '0' * 64
+                if fault == 'fixture-child':row['sources']['fixture/macros/src/lib.rs'] = child['sources']['fixture/macros/src/lib.rs'] = '0' * 64
                 if fault == 'overlap':child['started_at'] = 0
                 result = json.loads(data[str(path)])
                 for p, record in [(row_path, row), (child_path, child)]:

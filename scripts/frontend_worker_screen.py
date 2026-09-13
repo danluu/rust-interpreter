@@ -14,6 +14,9 @@ from frontend_workers import receipt, require_capability
 BUILD_POLICY = 'frontend-workers-public-build-v1'
 QUALIFICATION_POLICY = 'frontend-workers-qualification-v1'
 COUNTS = dict(baseline=1, candidate=2, duplicate=1)
+CAMPAIGN_LOCK = Path('/Users/danluu/dev/rust-interp/.work/benchmark.lock')
+FIXTURE_PREFIX = 'experiments/frontend-workers/fixture/'
+EDIT_FILES = {'shared/src/lib.rs', 'src/lib.rs'}
 ERROR_BODIES = {
     'type': 'fn unused() { let _: u32 = false; }\n',
     'borrow': 'fn unused() { let x = vec![1]; let y = &x; drop(x); println!("{:?}", y); }\n',
@@ -56,6 +59,18 @@ def qualification_labels():
     return result
 
 
+def qualification_harness(public):
+    """Exact published inputs used by the external correctness history."""
+    result = {name: value for name, value in public['plan']['harness'].items()
+              if name.startswith(('scripts/', FIXTURE_PREFIX))
+              or name == 'experiments/frontend-workers/qualify.py'}
+    require('experiments/frontend-workers/qualify.py' in result
+            and all(FIXTURE_PREFIX + name in result for name in EDIT_FILES)
+            and FIXTURE_PREFIX + 'Cargo.toml' in result,
+            'published worker qualification harness is incomplete')
+    return result
+
+
 def validate_qualification(result_path, key, public, std, read_bytes):
     """Verify actual saved 30-command evidence, bound to a final published key.
 
@@ -73,7 +88,8 @@ def validate_qualification(result_path, key, public, std, read_bytes):
     def read(path):
         data = read_bytes(path)
         require(isinstance(data, bytes), 'worker qualification reader must return bytes')
-        read_paths[str(path)] = sha(data)
+        digest = sha(data)
+        require(read_paths.setdefault(str(path), digest) == digest, 'worker input changed between reads')
         return data
     def load(path):return json.loads(read(path))
     result, plan = load(result_path), load(run / 'plan.json')
@@ -83,7 +99,7 @@ def validate_qualification(result_path, key, public, std, read_bytes):
             'missing actual typed 30-command worker qualification')
     owner = Path(plan['owner'])
     lock = Path(plan['lock'])
-    require(lock.is_absolute() and '..' not in lock.parts, 'worker qualification lock is not explicit')
+    require(lock == CAMPAIGN_LOCK, 'worker qualification must use the canonical campaign lock')
     require(owner.is_absolute() and run.is_relative_to(owner / '.work')
             and plan['tools'] == public['composition']['binaries']
             and plan['capability'] == public['capability'] and plan['jobs'] == 2,
@@ -105,6 +121,12 @@ def validate_qualification(result_path, key, public, std, read_bytes):
                 or name in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml']}
     require(required and all(plan['frozen'].get(str(owner / name)) == value
                              for name, value in required.items()), 'worker qualification source inventory differs')
+    harness = qualification_harness(public)
+    require(all(plan['frozen'].get(str(owner / name)) == value for name, value in harness.items()),
+            'worker qualification differs from its published harness')
+    fixture = {name.removeprefix(FIXTURE_PREFIX): value for name, value in harness.items()
+               if name.startswith(FIXTURE_PREFIX)}
+    require(plan.get('fixture_inputs') == fixture, 'worker copied fixture inventory differs')
     # Bind all qualification source/fixture/harness bytes, rather than trusting
     # a summary hash map. Readers archive these exact bytes for later review.
     for name, expected in plan['frozen'].items():
@@ -159,9 +181,10 @@ def validate_qualification(result_path, key, public, std, read_bytes):
         phase, count = label.rsplit('-', 1)
         count = int(count)
         error = error_codes.get(phase)
-        source_expected = {'fixture/shared/src/lib.rs': sha(
+        source_expected = {'fixture/' + name: value for name, value in fixture.items() if name not in EDIT_FILES}
+        source_expected.update({'fixture/shared/src/lib.rs': sha(
             ('pub fn value() -> u64 { ' + ('7' if phase == 'edited' else '3') + ' }\n').encode()),
-            'fixture/src/lib.rs': sha(original_guest + ERROR_BODIES.get(phase, '').encode())}
+            'fixture/src/lib.rs': sha(original_guest + ERROR_BODIES.get(phase, '').encode())})
         if phase.endswith('-native-diagnostic'):
             kind = phase.removesuffix('-native-diagnostic')
             source_expected['diagnostic.rs'] = sha(('pub fn good() -> u32 { 1 }\n' + ERROR_BODIES[kind]).encode())
@@ -221,7 +244,7 @@ def validate_qualification(result_path, key, public, std, read_bytes):
                 'worker edit/restoration or pair bytecode differs')
     require(all(native_errors[kind, 1] == native_errors[kind, 2] for kind in error_codes),
             'worker raw diagnostic comparison differs')
-    for relative in ['shared/src/lib.rs', 'src/lib.rs']:
+    for relative in fixture:
         original_path = owner / 'experiments/frontend-workers/fixture' / relative
         require(read(project / relative) == read(original_path), 'worker fixture was not restored')
     return dict(policy=QUALIFICATION_POLICY, result_path=str(result_path), result_sha256=read_paths[str(result_path)],
