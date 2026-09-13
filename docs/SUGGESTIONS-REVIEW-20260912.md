@@ -227,3 +227,26 @@ local cache, lifetime allocator and scalar-ABI experiments. Source is committed
 and host qualification is in progress; no performance claim is made. The new
 comparison tests both boundaries of the documented held-out CPU margin.
 [Indirect result](../results/guarded-indirect-complete-01/assessment.md).
+
+### Register transfers and address-check census completed
+
+The paired-register experiment completes all 462 expected commands. Token
+gains 0.71% wall and 0.09% CPU, within 1.77% wall A/A; both held-outs pass.
+Its smaller generated code does not establish useful end-to-end improvement.
+Keep it experimental without retiming. The following typed offline census
+passes ten commands but finds zero fully reusable same-register address
+checks in the three profiles, without analysis declines. Drop that proposed
+check cache; do not weaken its proof to manufacture an opportunity.
+
+For suggestions 2.5–2.8, the next measured candidate simplifies existing
+Load/Store operands. The profiles contain 0.35–1.00 billion narrow stores per
+test, and source inspection finds unused temporary reads, overwritten clears
+and two-step construction of already proven local addresses. The candidate
+starts from the wide baseline, excluding paired/indirect changes. Full VM
+register initialization, exact memory faults and strict compiler checks remain
+required. No upper-word VM-register store omission or new memory model is
+included. Qualify actual execution and then measure changed-source commands.
+
+[Paired comparison](../results/paired-registers-complete-01/assessment.md),
+[zero check reuse and counting limits](../results/address-check-reuse-census-01/assessment.md),
+[memory-operand plan](../benchmarks/experiments/memory-operands/PLAN.md).
