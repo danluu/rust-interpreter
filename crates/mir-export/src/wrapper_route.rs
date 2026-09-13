@@ -24,6 +24,23 @@ impl BorrowckCacheMode {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum QueryCacheRetentionMode {
+    #[default]
+    Off,
+    Demand,
+}
+
+impl QueryCacheRetentionMode {
+    pub fn parse(value: Option<&OsStr>) -> Result<Self, String> {
+        match value.map(OsStr::to_str) {
+            None | Some(Some("off")) => Ok(Self::Off),
+            Some(Some("demand")) => Ok(Self::Demand),
+            _ => Err("RUST_INTERP_QUERY_CACHE_RETENTION must be off or demand".into()),
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Environment {
     pub std_sysroot: Option<String>,
@@ -36,6 +53,7 @@ pub struct Environment {
     pub primary_package: bool,
     pub manifest: Option<OsString>,
     pub borrowck_cache: Option<OsString>,
+    pub query_cache_retention: Option<OsString>,
 }
 
 impl Environment {
@@ -51,6 +69,7 @@ impl Environment {
             primary_package: std::env::var_os("CARGO_PRIMARY_PACKAGE").is_some(),
             manifest: std::env::var_os("CARGO_MANIFEST_DIR"),
             borrowck_cache: std::env::var_os("RUST_INTERP_BORROWCK_CACHE"),
+            query_cache_retention: std::env::var_os("RUST_INTERP_QUERY_CACHE_RETENTION"),
         }
     }
 }
@@ -61,11 +80,14 @@ pub struct Route {
     pub wrapper: bool,
     pub export: bool,
     pub borrowck_cache: BorrowckCacheMode,
+    pub query_cache_retention: QueryCacheRetentionMode,
 }
 
 impl Route {
     pub fn requires_exporter(&self) -> bool {
         self.export || borrowck_driver_required(&self.args, self.borrowck_cache)
+            || compiler_driver_required(&self.args,
+                self.query_cache_retention != QueryCacheRetentionMode::Off)
     }
 }
 
@@ -73,7 +95,11 @@ impl Route {
 /// Cargo can include stdin and a crate name in these queries. Unknown options,
 /// source paths and response files conservatively retain cache callbacks.
 pub fn borrowck_driver_required(args: &[String], mode: BorrowckCacheMode) -> bool {
-    if mode == BorrowckCacheMode::Off {
+    compiler_driver_required(args, mode != BorrowckCacheMode::Off)
+}
+
+fn compiler_driver_required(args: &[String], enabled: bool) -> bool {
+    if !enabled {
         return false;
     }
     // Keep this list deliberately narrow. In particular, link-args and
@@ -119,6 +145,7 @@ pub fn borrowck_driver_required(args: &[String], mode: BorrowckCacheMode) -> boo
 
 pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> {
     let borrowck_cache = BorrowckCacheMode::parse(env.borrowck_cache.as_deref())?;
+    let query_cache_retention = QueryCacheRetentionMode::parse(env.query_cache_retention.as_deref())?;
     // Preserve the existing wrapper convention, including standalone exports.
     let wrapper = args
         .get(1)
@@ -187,5 +214,6 @@ pub fn route(mut args: Vec<String>, env: &Environment) -> Result<Route, String> 
         wrapper,
         export,
         borrowck_cache,
+        query_cache_retention,
     })
 }

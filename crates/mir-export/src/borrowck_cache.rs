@@ -32,6 +32,10 @@ static FINGERPRINT_MISSES: AtomicU64 = AtomicU64::new(0);
 static REUSED: AtomicU64 = AtomicU64::new(0);
 static VERIFIED: AtomicU64 = AtomicU64::new(0);
 
+pub(crate) fn owns_override(callback: fn(&Session, &mut Providers)) -> bool {
+    std::ptr::fn_addr_eq(callback, install as fn(&Session, &mut Providers))
+}
+
 fn increment(counter: &AtomicU64) { counter.fetch_add(1, Ordering::Relaxed); }
 
 pub(crate) fn configure(config: &mut interface::Config, mode: BorrowckCacheMode) {
