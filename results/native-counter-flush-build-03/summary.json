@@ -1,0 +1,133 @@
+{
+  "status": "passed",
+  "source_commit": "d576bb0edde521690cd2167885a2c42778bc4904",
+  "tool_key": "ab753e4c1af64892e18766a6adc2f0abe6c1809680b92d17c291d3b61d4f01b5",
+  "binaries": {
+    "rust-interp-vm": "8ce8dcc33a9fb7285a28a9fbe445d0a9d64cc8bb0698d4bdec22c8fcbedfe0db",
+    "rust-interp-mir-export": "cf4b3499912506b9ebaed30e6f84e250fccba2d343558dd8cccc847e8a0be96d",
+    "rust-interp-rustc-wrapper": "45bca4f272e994bff2564c8f5ccbd7f0d2e52cd4235a3105b4af5764e8ed7fc5"
+  },
+  "composition": {
+    "kind": "native-counter-flush-composition",
+    "schema_version": 1,
+    "source_commit": "d576bb0edde521690cd2167885a2c42778bc4904",
+    "compiler_source_key": "35df4077b5cfb466cf1a7155374abb867fb8fadeb4f5dbedffe766d5b3621bc1",
+    "binaries": {
+      "rust-interp-vm": "8ce8dcc33a9fb7285a28a9fbe445d0a9d64cc8bb0698d4bdec22c8fcbedfe0db",
+      "rust-interp-mir-export": "cf4b3499912506b9ebaed30e6f84e250fccba2d343558dd8cccc847e8a0be96d",
+      "rust-interp-rustc-wrapper": "45bca4f272e994bff2564c8f5ccbd7f0d2e52cd4235a3105b4af5764e8ed7fc5"
+    }
+  },
+  "tests": {
+    "test-debug": 532,
+    "test-release": 532
+  },
+  "commands": [
+    {
+      "label": "assemble-control",
+      "command": [
+        "/usr/bin/clang",
+        "-target",
+        "arm64-apple-macos11",
+        "-c",
+        "/Users/danluu/dev/rust-interp/benchmarks/experiments/native-counter-flush/counters.s",
+        "-o",
+        "/Users/danluu/dev/rust-interp/.work/native-counter-flush-build-03/counters.o"
+      ],
+      "pid": 87683,
+      "returncode": 0,
+      "started_at": 1789333503.8109329,
+      "finished_at": 1789333503.830824,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "inspect-control",
+      "command": [
+        "/usr/bin/otool",
+        "-s",
+        "__TEXT",
+        "__text",
+        "/Users/danluu/dev/rust-interp/.work/native-counter-flush-build-03/counters.o"
+      ],
+      "pid": 87691,
+      "returncode": 0,
+      "started_at": 1789333503.8309782,
+      "finished_at": 1789333503.841245,
+      "stdout_sha256": "9939cf7a5cea5dc6bc0940bb941066063a462d126bcddb4cd93ea031cd5525ed",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "test-debug",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/fixed-frame-clear-combined-build-01/target",
+        "--workspace"
+      ],
+      "pid": 87696,
+      "returncode": 0,
+      "started_at": 1789333503.841524,
+      "finished_at": 1789333561.048917,
+      "stdout_sha256": "d9a2f81c29ee624c401785de7e116e00e56d2ab3b5858847ec779de658243711",
+      "stderr_sha256": "7c35cb2faa56f2b72c003050fdf0ec4197883dde0fb4db0ff998fba9f56a9af1"
+    },
+    {
+      "label": "test-release",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "test",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/fixed-frame-clear-combined-build-01/target",
+        "--workspace"
+      ],
+      "pid": 93145,
+      "returncode": 0,
+      "started_at": 1789333561.049402,
+      "finished_at": 1789333614.954237,
+      "stdout_sha256": "c595e316ada3bf60a5f2d1aac959f894aa64232f53bca3f9de89531e8536fd9b",
+      "stderr_sha256": "cc1126e819e3cfc50b6f9f72f09d2aa20354ca0f1ca09c859f4d9fa54433db2f"
+    },
+    {
+      "label": "build-release",
+      "command": [
+        "cargo",
+        "+nightly-2026-09-08",
+        "build",
+        "--release",
+        "--locked",
+        "--offline",
+        "--jobs",
+        "2",
+        "--target-dir",
+        "/Users/danluu/dev/rust-interp/.work/fixed-frame-clear-combined-build-01/target",
+        "-p",
+        "rust-interp-bytecode",
+        "--bin",
+        "rust-interp-vm"
+      ],
+      "pid": 1545,
+      "returncode": 0,
+      "started_at": 1789333614.9553962,
+      "finished_at": 1789333615.1413,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_sha256": "0acb0a2bff112598410ca24f63b4158caab27357f014792e2fc332a5208bbbe4"
+    }
+  ],
+  "source_manifest": ".work/native-counter-flush-build-03/plan.json",
+  "source_manifest_sha256": "071f0d21cce516220a5d02354b4ac73870e042119b3149be0d7df52e647fd3dc",
+  "raw": ".work/native-counter-flush-build-03",
+  "performance_measurement": false
+}
