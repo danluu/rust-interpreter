@@ -10,20 +10,23 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. Extend the typed initialization diagnostic to constant-length memory
-   operations and bounded Local-plus-constant offsets. The first CFG/callee
-   summary version covers zero of the 110 / 100 saved clearing samples, despite
-   admitting 1,629,854 / 1,152,565 native calls. No runtime elision follows.
-   Its declines include explicit constant FillBytes and an in-frame constant
-   address offset; prove these forms and remeasure coverage before deciding.
+1. Select a broader runtime mechanism from the remaining typed call/memory
+   costs. The constant-memory initialization extension passes ten controls per
+   profile and its 6,400-case oracle, but covers only 16 / 20 clearing samples:
+   0.97% / 1.39% of generated-code samples before padding and address-guard costs.
+   Defer runtime clear elision. Earlier narrow-register packing and local-value
+   transfer diagnostics are also negative; do not retime unchanged mechanisms.
 
-The initial diagnostic passes eight controls per profile, including 6,400
-independent byte-mask oracle cases. It examines 5,468 functions; 342 are confined
-and 635 pass the combined initialization proof. The failed first standalone
-compile executed no tests and is retained. The coverage audit verifies 53 frozen
-inputs and 313 source bindings. Controllers require the original
-`experiment/frame-initialization-cfg-20260913` source boundary.
-[Coverage and limitations](results/frame-initialization-cfg-coverage-01/assessment.md).
+The constant extension examines 5,468 functions; 669 are confined, and 1,150
+pass initialization with callee summaries. Its 13,645,013 / 18,496,781 eligible
+native calls do not imply a useful latency gain. Callee summaries add no clearing
+samples beyond the version without summaries. The audit verifies 67 frozen
+inputs and 462 source bindings, retaining the initial CFG version's zero
+coverage and failed standalone build. Setup takes 2.64 seconds, analysis 1.53.
+No runtime change or guest execution occurs. Controllers require the original
+`experiment/frame-initialization-constants-20260913` source boundary.
+[Coverage and limits](results/frame-initialization-constants-coverage-01/assessment.md),
+[initial CFG result](results/frame-initialization-cfg-coverage-01/assessment.md).
 
 The saved call-cost join reconciles 66,403,920 / 70,368,216 native direct calls
 and all 433 / 499 transition samples. Two join controls pass; 26 frozen inputs
