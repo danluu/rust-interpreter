@@ -111,12 +111,21 @@ def main():
     inputs_path = ROOT / harness['raw'] / 'inputs.json'
     assert sha(inputs_path) == harness['inputs_sha256']
     assert all(sha(ROOT / p) == h for p, h in json.loads(inputs_path.read_text()).items())
+    space_path = ROOT / 'results/environment-main-space-estimate-01/summary.json'
+    space = json.loads(space_path.read_text())
+    assert space['status'] == 'passed'
+    assert [c['case'] for c in space['cases']] == CASES
+    assert space['initial_free_gib'] == 8 + (sum(c['logical_bytes'] for c in space['cases']) * 1.2 + 512 * 1024**2) / 1024**3
+    assert all(c['minimum_free_gib'] == 8 + (c['logical_bytes'] * 1.2 + 512 * 1024**2) / 1024**3 for c in space['cases'])
+    inventory_path = ROOT / space['raw'] / 'inventories.json'
+    assert sha(inventory_path) == space['inventories_sha256']
     work = ROOT / '.work' / args.run_id
     work.mkdir(exist_ok=False)
     records, completed = [], []
     frozen = {str(p.relative_to(ROOT)): fingerprint(p) for p in
               [Path(__file__), Path(__file__).with_name('PLAN.md'),
-               build_path, harness_path, runtime_path, focused_path, proof_path, inputs_path, prior_records_path]}
+               build_path, harness_path, runtime_path, focused_path, proof_path, inputs_path, prior_records_path,
+               space_path, inventory_path]}
     frozen.update({str((tools / name).relative_to(ROOT)): fingerprint(tools / name)
                    for name in build['binaries']})
     env = {k: v for k, v in os.environ.items()
@@ -128,7 +137,7 @@ def main():
     env.update(CARGO_TERM_COLOR='never', RUST_INTERP_LAUNCH_STATS='1')
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
-        require_space(ROOT, 16)
+        require_space(ROOT, space['initial_free_gib'])
         for case_name in cases:
             reference = ROOT / 'results' / ('guarded-ranges-edit-' + case_name + '-01') / 'summary.json'
             row, = [c for c in prior_records if c['case'] == case_name]
@@ -149,16 +158,16 @@ def main():
             assert not subprocess.check_output(['git', 'diff', '--name-only', 'HEAD'], cwd=source).strip()
             if case_name == 'nushell':
                 case = WORKFLOW_VARIANTS['nushell', 'type-relations']
-                estimate = json.loads((ROOT / 'results/aggregate-relocation-space-nu-native-01/summary.json').read_text())
-                needed = 8 + estimate['unique_original_bytes'] * 1.2 / 1024**3
             elif case_name == 'rg-aot':
                 adapter_path = ROOT / '.work/private/workflow-rg-aot.json'
                 adapter = json.loads(adapter_path.read_text())
                 assert adapter['owner'] == str(ROOT) and adapter['revision'] == plan['revision']
-                case, needed = adapter['case'], 8
+                case = adapter['case']
                 frozen[str(adapter_path.relative_to(ROOT))] = fingerprint(adapter_path)
             else:
-                case, needed = plan['case'], 12 if project == 'fre' else 8
+                case = plan['case']
+            case_space, = [c for c in space['cases'] if c['case'] == case_name]
+            needed = case_space['minimum_free_gib']
             require_space(ROOT, needed)
             changed = source / case['file']
             original = changed.read_bytes()

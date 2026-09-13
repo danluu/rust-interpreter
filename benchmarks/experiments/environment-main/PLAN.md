@@ -31,6 +31,16 @@ Check the complete original parser with the new tool as well. Reuse measured
 VM proofs only by exact binary identity; do not transfer old complete-command
 timings to the changed launcher/exporter composition.
 
+Before the project run, the completed matching five-project caches were
+inventoried (including the exact retired Nushell files). Their total is
+4,267,091,571 logical bytes. Initial admission requires 120% of that total plus
+512 MiB for temporary files, above the unchanged 8 GiB floor: 13.268847 GiB.
+Each case rechecks its corresponding complete-cache estimate with the same
+allowances, and every command rechecks 8 GiB. This replaces the earlier generic
+16 GiB/fre12 GiB estimates prospectively; no started run or timing gate changes.
+The new compiler uses the same public toolchain and leaves macro optimization
+off. Private inventory paths remain local; the report exposes only aggregates.
+
 All substantial work holds the shared benchmark lock with 45-second admission.
 No goal-state changes, unrelated process control, private evidence publication,
 subagents, AWS activation or new cleanup service.
