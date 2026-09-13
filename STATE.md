@@ -35,6 +35,16 @@ a bounded guarded prototype on the existing resumable path, with original
 ordered interpreter fallback on preflight failure. No execution change or
 latency gain is established by these counts.
 [Conditional evidence](results/disjoint-frame-census-01/assessment.md).
+
+The guarded prototype now passes478 Rust tests/profile and219 real selection,
+suite and cache/Cargo commands. All three profiled guest processes succeed.
+Validation stopped on an overstrict positive-guard assertion for the inactive
+folded control; the retained offline repair must prove its code byte-identical
+to the adopted VM. Revised143-test harness qualification and that zero-guest
+repair are pending shared-lock admission. The timing screen is unstarted.
+[Prototype qualification](results/guarded-ranges-build-01/summary.json),
+[profile failure and retained runs](results/guarded-ranges-profile-01-failure/summary.json).
+
 [Range-group evidence](results/range-groups-census-01/assessment.md).
 [Region-fact decision](results/region-facts-census-01/assessment.md).
 [Qualification](results/checked-addresses-validation-01/assessment.md),

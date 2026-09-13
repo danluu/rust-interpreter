@@ -4,42 +4,42 @@ Use [STATUS.md](STATUS.md) for measured controls and
 [the September12 review](docs/SUGGESTIONS-REVIEW-20260912-2210.md) for every new
 suggestion. Historical experiments retain their original decisions.
 
-Current action: qualify the bounded reuse-miss/current-MIR observer. The scalar
-Copy candidate is now parked: all726 commands and the final8,999-input audit
-pass correctness, token improves5.11% wall/3.91% CPU beyond3.62%/2.45% A/A, and
-three other guards pass. Nushell's wall margin1.09305 fails the1.05 bound because
-A/A is10.53%; its point estimate is−1.22%, not an observed slowdown. Keep every
-result and do not rerun the unchanged candidate. The emitter change remains
-experimental despite441 Rust tests/profile,125 harness checks, five continuation
-checks and222 real correctness/profile commands. Current Copy sample shares
-24.34%/18.26% explain its implementation, but do not override the complete gate.
-The new diagnostic joins cache payload absence/redness to lowering costs and
-classifies already-decoded replay recipes; it changes no checking or reuse.
-Post-execution maps pass436 Rust tests per profile,
-103 harness checks and10 real-test commands; all three current generated code
-dumps and per-PC profiles match the adopted runtime exactly.
-The433-test direct-operand candidate passed its40-command screen, but the full
-154-command token comparison finds wall+0.78%/CPU+0.06%, inside4.84%/2.25% A/A.
-Its primary gate fails. Keep the runtime experimental and the other four cases
-unstarted; do not retime it. The immediate shift/rotate screen
-completed40 commands with all original outcomes and artifacts matching, but
-wall+0.90%/CPU+1.19% gives no gain against3.07%/3.00% A/A. Keep that runtime
-experimental and cancel its unstarted guards; do not retime the screen. Current samples show
-generated code dominates both token tests. The separate binding diagnostic
-passes complete off/on artifact histories and attributes93.32ms to current-MIR
-context, but only4.83ms to indexing. Park the positions-table rewrite; lazy MIR
-must avoid work rather than move it between phases. Runtime candidates use
-predeclared screens and cancel unstarted guards on primary failure; adoption
-still requires every declared guard.
-[Direct-operand final decision](results/direct-operands-full-01/assessment.md),
-[Verified operation maps](results/operation-map-validation-01/assessment.md),
-[Operation attribution](results/operation-map-sampling-01/assessment.md),
-[Scalar-copy screen](results/scalar-copy-operands-screen-token-01/assessment.md),
-[Complete scalar-copy decision](results/scalar-copy-operands-admission-resume-01/assessment.md),
-[Full protocol](benchmarks/experiments/scalar-copy-operands/FULL.md),
-[Shift screen decision](results/immediate-shifts-screen-token-01/assessment.md),
-[Binding decision](results/replay-costs-token-02/assessment.md),
-[current native regions](results/current-runtime-costs-01/assessment.md),
+Current action: finish qualification of the generic guarded-range runtime,
+then run its prospective changed-source token screen. The conditional census
+found265.03M redundant-check opportunities in the block test, including229.94M
+in two generic SipHash regions. The prototype guards one complete range per
+resumable native region and falls back to original ordered interpretation on
+failure. It passes478 Rust tests per debug/release profile, one ignored, and
+219 real selection/suite/cache commands. All three profiled guest runs succeed;
+the validator stopped because the folded control has no active guard. Its
+revised rule permits that only with zero cached reloads and byte-identical
+adopted code. A separately recorded offline repair, after the revised143-test
+harness, must finish without repeating guest commands. The screen is unstarted.
+The runtime remains experimental; main retains the adopted memory/lookup VM.
+[Prototype and entry/fault contract](benchmarks/experiments/guarded-ranges/PLAN.md),
+[qualification build](results/guarded-ranges-build-01/summary.json),
+[retained validator failure](results/guarded-ranges-profile-01-failure/summary.json),
+[repair requirements](benchmarks/experiments/guarded-ranges/PROFILE-REPAIR.md).
+
+The scalar-Copy full comparison, Copy/budget screen and checked-address screen
+remain failed adoption attempts. Smaller emitted code does not establish a
+complete-command gain. Keep every completed sample; do not repeat unchanged
+candidates. Screens are primary-first and adoption requires every full guard.
+[Checked-address decision](results/checked-addresses-screen-token-01/assessment.md),
+[scalar-Copy decision](results/scalar-copy-operands-admission-resume-01/assessment.md),
+[Copy/budget decision](results/scalar-copy-budget-screen-token-01/assessment.md).
+
+Exporter diagnostics are complete: the172 green misses are unsupported recipes;
+only32 of204 lowered functions in the representative edit are red. Declined
+lowering costs22.88ms and body-free MIR context4.55ms, so standalone broad recipe
+expansion and lazy MIR are parked. The bounded whole-CFG census also found few
+new local addresses. Current per-operation evidence and conditional range
+coverage justify the guarded prototype; those counts are not guard hit rates
+or latency estimates. Preserve the other session's compiler/Cargo work and the
+paused goal. Do not compete for its lock or alter its processes.
+[Reuse evidence](results/reuse-misses-analysis-01/assessment.md),
+[local-fact census](results/region-facts-census-01/assessment.md),
+[conditional range census](results/disjoint-frame-census-01/assessment.md),
 [adopted composition](results/memory-lookup-main-complete-01/assessment.md).
 
 Completed comparison context: the new composition combines memory operands
