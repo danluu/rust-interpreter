@@ -1,12 +1,14 @@
 # Darwin fstat
 
-Qualification remains incomplete. Metadata attempt01 stopped at the selected
-C compiler/SDK guard. Attempt02 completed metadata, then failed while compiling
-the exporter because the pinned field.ty() API returns an unnormalized type;
-no tests ran. This checkpoint normalizes that type through the existing rustc
-API. The next qualification must use a fresh target and retain both failures.
-The proposed primitive does not establish complete filesystem, stdio or Cargo
-build-script support.
+Source `a8b93b65` passed 551 release workspace tests (10 ignored, none failed
+or filtered), all 15 required controls and both native tests with 49 child
+commands. This qualifies the narrow primitive; complete filesystem, stdio and
+Cargo build-script support remain unestablished.
+[Qualification evidence](../results/fstat-native-qualification-03/README.md).
+
+The archive preserves metadata attempt01's C compiler/SDK selection failure
+and attempt02's compiler API failure, before any tests ran. Attempt03 normalizes
+the field type through the existing rustc API and passed using a fresh target.
 
 `DescriptorStat` is appended as V5 opcode 39 after CurrentDirectory 38. It uses
 the existing, default-disabled `guest_descriptor_io` capability and the same
@@ -34,7 +36,7 @@ admission, full native bytes/independent MetadataExt fields/size changes/errno,
 and invalid memory/unowned or closed descriptors. Existing generic register and
 memory-barrier cases include the new operation.
 
-The opt-in `tests/test_fstat_native.py` suite contains two controls and 49 planned
+The opt-in `tests/test_fstat_native.py` suite contains two controls and 49 recorded
 child commands: 42 for SDK/native/engine histories and 7 incompatible signatures.
 The caller must provide the existing explicit Rust tools/std/evidence variables,
 plus `RUST_INTERP_TEST_CC` and `RUST_INTERP_TEST_SDK`. The qualification helper
@@ -55,7 +57,7 @@ compared, without inode/time normalization. Closed/-1 native failures,
 default refusal, invalid guest pointers and two actual byte/field expectation
 tamper executions are retained. The suite never runs invalid native pointers.
 
-No compiler/test command is admitted by this document. Source review, a frozen
-supervised plan and canonical workload admission precede execution. Census 03's
-fstat blocker motivates this scope; later read/stream/main blockers remain
-unknown until actual renewed strict export.
+Qualification03 used a frozen supervised plan and canonical workload admission.
+Its actual C depfile matched all 133 frozen SDK and compiler-resource headers.
+Census03's fstat blocker motivated this scope; remaining build-script blockers
+require a renewed strict export with the qualified tools.

@@ -266,6 +266,14 @@ subprocess configuration. No guest or native build script executed.
 [Getcwd correctness evidence](../../../results/getcwd-native-qualification-01/README.md).
 [Subsequent export census](../../../results/build-script-export-census-03/README.md).
 
+The subsequent default-disabled Darwin fstat primitive passed 551 release
+workspace tests (10 ignored), all 15 required controls and 49 native comparison
+commands. Its complete result bytes, SDK layout, errno and descriptor ownership
+checks passed in both engines. The archive preserves the earlier SDK-selection
+and compiler-API failures. Full build-script execution and a latency improvement
+remain unestablished.
+[Fstat qualification](../../../results/fstat-native-qualification-03/README.md).
+
 Explicit build/runtime compiler-role binding is implemented with the default
 route preserved. Its integration with getcwd passed 548 release workspace
 tests (10 ignored, none failed or filtered), all twelve required controls,
