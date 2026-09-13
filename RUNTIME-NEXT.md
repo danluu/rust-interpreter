@@ -26,7 +26,10 @@ Nushell now completes 132 expected commands and passes its regression margin;
 its 0.93% wall change is inside 5.73% A/A and is not an established speedup.
 Private rg-aot also completes 132 expected commands and passes, improving
 wall 12.55% and CPU 11.53% beyond 2.46%/1.61% A/A. Both large/private guards
-pass. Finish token, folded and pgrust without retiming either completed case.
+pass. Token completes all 154 commands and passes: wall improves 7.66% and CPU
+6.78% versus wide, with 5.25%/3.94% A/A; wall improves 18.35% versus the fixed
+anchor. It still takes 1.894 times ordinary native Cargo. Finish folded and
+pgrust without retiming any completed case.
 
 1. **Keep the completed host-MIR decision.** Wrapper466c60a2 completed all264
    Nushell/pgrust commands with matching artifacts and original assertions.

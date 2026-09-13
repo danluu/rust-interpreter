@@ -27,9 +27,15 @@ Nushell speedup. Candidate/ordinary-native wall ratio is 0.629.
 Private rg-aot also completes all 132 commands and passes: paired wall
 improves 12.55% and CPU 11.53%, beyond 2.46% wall/1.61% CPU A/A. Its lookup
 stage falls from about 39 ms to 6 ms, with identical artifacts and strict
-checking. Candidate/ordinary-native wall ratio is 0.396. Token, folded and
-pgrust remain mandatory; token is now running. Private source and names stay
-local. [Private aggregate result](results/memory-lookup-edit-rg-aot-01/assessment.md).
+checking. Candidate/ordinary-native wall ratio is 0.396. Private source and
+names stay local. [Private aggregate result](results/memory-lookup-edit-rg-aot-01/assessment.md).
+Token completes all 154 commands and passes its primary gate: paired wall
+improves 7.66% and CPU 6.78% versus wide, with 5.25% wall/3.94% CPU A/A.
+Versus the fixed anchor, wall improves 18.35% and CPU 17.88%; the candidate
+still takes 1.894 times ordinary native Cargo. Its median VM stage is 3.077 s
+and lowering is 0.612 s, including 0.124 s binding. Folded and pgrust remain
+mandatory before adoption; folded is running.
+[Token result](results/memory-lookup-edit-token-01/stage-assessment.md).
 
 Guarded native indirect-call specialization passes424 Rust tests per profile,
 123 harness checks, seven exact real tests, nine suite commands and203 strict
