@@ -1,22 +1,39 @@
 # HIR body-v2: exclusive, verified body replay
 
-This is an **uncompiled, unrun diagnostic successor** to fixture checkpoint
-`75b5a567` and replay checkpoint `5cd6acd3`, generated against compiler
-`58e1e1f5311f4424ea81def4763081f6da62d9b3`. The compiler checkout was read only.
-The production guard, grammar, flags, replay implementation and 26 unit tests
-are unchanged. This keeps the fixture environment repair and adds a suffix to
-body-tree rejection reports identifying the first failed boundary: current
-input, capture, validation, preparation, cold audit or post-audit exit. Every
-check, its order, publication condition and ordinary-lowering fallback remain
-unchanged. Reports still require `-Zincremental-info`.
+This is an **uncompiled, unrun arena-identity correction** to diagnostic
+checkpoint `3b34821e`, generated against compiler
+`58e1e1f5311f4424ea81def4763081f6da62d9b3`. Only the candidate's arena identity
+construction changes in production code. All checks, phase diagnostics, grammar,
+flags, fallback, storage and replay operations remain unchanged. One new unit
+control brings the required total to 27; none has run for this source identity.
 
-The existing compiler's separate direct probe used its real version identity.
-It compiled the unchanged fixture successfully but emitted 24 body-tree
-rejections and no successful captures or hits. A subsequent HIR dump showed
-the minimal literal function had the expected IDs and visible spans. The new
-phase labels are diagnostic instrumentation, not a claimed fix or speedup.
-[Direct probe evidence](../../results/hir-direct-capture-probe-01/README.md)
-retains the original rejection reports and unchanged source/compiler guards.
+The predecessor's actual source `0bc623ee` passed its selected compiler check,
+all 26 units, stage1 build, three identity probes and one direct fixture compile.
+That diagnostic retained 24 `rejected-body-tree-cold-audit` records. Current
+construction, HIR capture, full tree validation and typed preparation therefore
+succeeded for those bodies; cold audit failed. No native binary ran and no
+capture or hit qualification was established. Raw observations are retained at
+`hir-diagnostic-native-01/stages/run-01/observations.json`, SHA
+`f559c4479feed224a5bb331b2a35f46555a035dc323313f510626116dbc0aac0`.
+
+The pinned types explain the uniform rejection. `GlobalCtxt::hir_arena` is
+`&WorkerLocal<hir::Arena>` (`rustc_middle/src/ty/context.rs:739`), while
+`LoweringContext::arena` is `&hir::Arena` (`rustc_ast_lowering/src/lib.rs`). Its
+constructor's `arena: tcx.hir_arena` uses deref coercion to the current worker's
+arena. The old candidate cast `tcx.hir_arena as *const _` instead recorded the
+wrapper address, which differs from the actual arena address compared by the
+cold audit and replay preflight.
+
+The private `current_hir_arena_identity` helper now takes the actual
+`WorkerLocal<Arena>` and explicitly binds an `&Arena` before converting its
+address. This is the same current-thread selection used by stock lowering.
+Every subsequent identity equality remains intact. `WorkerLocal::Deref` checks
+the thread's registry and returns that worker's live arena; no TLS registry,
+allocation policy or threading behavior is changed. No pointer enters the
+persistent key or payload. The unrun regression exercises this exact helper on
+a fresh registered thread, proves equality with the deref-coerced arena and
+inequality with both the wrapper and a second live arena. Full actual native
+capture/reuse controls remain required; this source fix is not a speedup claim.
 
 The frozen predecessor passed its selected compiler check, all 26 unit tests,
 stage1 compiler build, identity probes and tracked-option unit. Its native
@@ -55,7 +72,7 @@ No warning policy was relaxed. The warning-fixed cold checkpoint remains
 separately frozen at `60d5be45`. Its selected compiler check and all 22 unit
 controls passed with zero warnings/errors; its native cold run-make remains
 unrun. Those results do not qualify this new replay implementation. This
-checkpoint's 26 unit controls remain unrun.
+checkpoint's 27 unit controls remain unrun.
 
 `capture-body-journals.patch` adds `-Zhir-body-cache-capture` and
 `-Zhir-body-cache-reuse`, both default off and tracked by the normal incremental
@@ -312,7 +329,7 @@ including `E0308`, across all three modes. All twelve fresh directories must
 contain no HIR sidecars. These add twelve compiler commands and six native
 executions; both the new controls and their regenerated patch are unrun.
 
-Still required: actual compile/API validation, all 26 unit controls, ordinary
+Still required: actual compile/API validation, all 27 unit controls, ordinary
 and capture-only native controls, then actual verified
 cold/hit/edit/error/restoration/corruption/relocation qualification on this
 exact source. Earlier capture comparisons do not substitute for replay
