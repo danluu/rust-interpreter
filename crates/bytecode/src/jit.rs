@@ -923,6 +923,11 @@ enum Fact {
     Physical { lo: u32 },
 }
 
+enum RangeSize {
+    Constant(usize),
+    Register(u32),
+}
+
 #[derive(Default)]
 struct Assembler<'a> {
     values: Option<&'a values::Allocation>,
@@ -1445,6 +1450,26 @@ impl Assembler<'_> {
         }
         true
     }
+    /// Check count <= length - address without accepting subtraction wrap.
+    /// A failed subtraction makes CCMP supply C=0, so the common b.lo fails
+    /// even when the wrapped difference would otherwise look large enough.
+    fn check_range_size(&mut self, address: u32, length: u32, count: RangeSize) {
+        let compare = match count {
+            RangeSize::Constant(size) if size < 32 => 0xfa402800 | ((size as u32) << 16),
+            RangeSize::Constant(size) => {
+                self.imm(13, size as u64);
+                0xfa402000 | (13 << 16)
+            }
+            RangeSize::Register(count) => {
+                debug_assert_ne!(count, 15);
+                0xfa402000 | (count << 16)
+            }
+        };
+        debug_assert_ne!(address, 15);
+        self.three(0xeb000000, 15, length, address); // subs x15,length,address
+        self.emit(compare | (15 << 5)); // ccmp x15,count,#0,hs
+        self.fail(3);
+    }
     fn checked_address(&mut self, address: u32, size: usize, write: bool) {
         if size == 0 {
             // Nothing dereferences this address for a zero-byte operation.
@@ -1453,21 +1478,17 @@ impl Assembler<'_> {
         }
         if self.heap {
             self.imm(14, crate::heap::TAG as u64);
-            self.cmp(address, 14);
-            self.three(0xcb000000, 13, address, 14); // heap-relative offset
-            // All four CSELs use the original unsigned address < heap tag.
-            for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8), (14, 4, 31)]
+            self.three(0xeb000000, 13, address, 14); // subs: exact tag comparison and heap-relative offset
+            // CSELs retain the original unsigned address < heap tag rule,
+            // including addresses above twice the tag. Reads need no readonly base.
+            for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8)]
             {
                 self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (stack << 5) | dst);
             }
+            if write { self.emit(0x9a800000 | (31 << 16) | (3 << 12) | (4 << 5) | 14); }
             self.cmp(address, 31);
             self.fail(0);
-            self.cmp(address, 15);
-            self.fail(8);
-            self.three(0xcb000000, 15, 15, address);
-            self.imm(13, size as u64);
-            self.cmp(15, 13);
-            self.fail(3);
+            self.check_range_size(address, 15, RangeSize::Constant(size));
             if write {
                 self.cmp(address, 14);
                 self.fail(3);
@@ -1481,12 +1502,7 @@ impl Assembler<'_> {
             self.cmp(address, 31);
             self.fail(0);
         }
-        self.cmp(address, 3);
-        self.fail(8); // hi: address > length
-        self.three(0xcb000000, 15, 3, address);
-        self.imm(14, size as u64);
-        self.cmp(15, 14);
-        self.fail(3); // lo: remaining < size
+        self.check_range_size(address, 3, RangeSize::Constant(size));
         if write && size != 0 {
             self.cmp(address, 4);
             self.fail(3);
@@ -1504,8 +1520,7 @@ impl Assembler<'_> {
     fn dynamic_address(&mut self, address: u32, count: u32, write: bool) {
         if self.heap {
             self.imm(14, crate::heap::TAG as u64);
-            self.cmp(address, 14);
-            self.three(0xcb000000, 13, address, 14);
+            self.three(0xeb000000, 13, address, 14);
             for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8)] {
                 self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (stack << 5) | dst);
             }
@@ -1515,11 +1530,7 @@ impl Assembler<'_> {
             }
             self.cmp(address, 31);
             self.fail(0);
-            self.cmp(address, 15);
-            self.fail(8);
-            self.three(0xcb000000, 15, 15, address);
-            self.cmp(15, count);
-            self.fail(3);
+            self.check_range_size(address, 15, RangeSize::Register(count));
             if write {
                 self.cmp(address, 14);
                 self.fail(3);
@@ -1528,11 +1539,7 @@ impl Assembler<'_> {
         } else {
             self.cmp(address, 31);
             self.fail(0);
-            self.cmp(address, 3);
-            self.fail(8);
-            self.three(0xcb000000, 15, 3, address);
-            self.cmp(15, count);
-            self.fail(3);
+            self.check_range_size(address, 3, RangeSize::Register(count));
             if write {
                 self.cmp(address, 4);
                 self.fail(3);

@@ -150,3 +150,52 @@ fn native_medium_copies_preserve_exact_budgets_and_larger_copy_fallback() {
         }
     }
 }
+
+#[test]
+fn compact_bounds_match_complete_copy_ranges_at_tag_and_immediate_boundaries() {
+    for size in [0,1,2,3,4,7,8,15,16,17,31,32,33,128] {
+        for heap in [false,true] {
+            let p=program(size,heap,false);crate::validate(&p).unwrap();
+            let mut addresses=vec![0,1,32,63,64,65,256,1024-size,1024-size+1,1024,1025,usize::MAX];
+            if heap {
+                let tag=crate::heap::TAG;
+                addresses.extend([tag-1,tag,tag+1,tag+64,tag+1024-size,tag+1024-size+1,
+                                  tag+1024,tag*2-1,tag*2,tag*2+1,tag*3,tag*3+64]);
+            }
+            for profiled in [false,true] {
+                let mut jit=Jit::new(&p,profiled,MAX_CODE_BYTES).unwrap();
+                jit.ensure_function(0).unwrap();
+                for &src in &addresses { for &dst in &addresses {
+                    let mut expected=memory();let reference=expected.copy(src,dst,size);
+                    let mut actual=memory();let native=probe(&jit,&mut actual,src,dst,profiled);
+                    assert_eq!(native.is_ok(),reference.is_ok(),"size={size} heap={heap} src={src} dst={dst}");
+                    if native.is_err() { assert_eq!(native.unwrap_err(),"JIT guest memory access failed"); }
+                    assert_eq!(&*actual.bytes,&*expected.bytes,"linear size={size} src={src} dst={dst}");
+                    assert_eq!(actual.heap.bytes,expected.heap.bytes,"heap size={size} src={src} dst={dst}");
+                }}
+            }
+        }
+    }
+}
+
+#[test]
+fn compact_range_encodings_preserve_unsigned_failure_flags_and_size_boundaries() {
+    for size in [0,1,8,16,31,32,128,4096,usize::MAX] {
+        let mut a=Assembler::default();
+        a.check_range_size(11,15,RangeSize::Constant(size));
+        let words=&a.words[a.words.len()-3..];
+        assert_eq!(words[0],0xeb0b01ef); // subs x15,x15,x11
+        let compare=if size<32 {0xfa4029e0 | ((size as u32)<<16)} else {0xfa4d21e0};
+        assert_eq!(words[1],compare); // ccmp x15,#size (or x13),#0,hs
+        assert_eq!(words[2],0x54000003); // b.lo Memory
+        assert_eq!(a.failures.len(),1);
+    }
+    let mut a=Assembler::default();a.check_range_size(11,15,RangeSize::Register(10));
+    assert_eq!(a.words,[0xeb0b01ef,0xfa4a21e0,0x54000003]);
+    for (heap,write,expected) in [(false,false,6),(false,true,8),(true,false,11),(true,true,14)] {
+        let mut a=Assembler {heap,..Assembler::default()};a.checked_address(11,8,write);
+        assert_eq!(a.words.len(),expected);
+        let mut dynamic=Assembler {heap,..Assembler::default()};dynamic.dynamic_address(11,10,write);
+        assert_eq!(dynamic.words.len(),expected);
+    }
+}
