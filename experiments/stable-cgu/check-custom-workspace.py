@@ -37,14 +37,32 @@ def source_files():
     paths += [p for p in (ROOT / 'crates').rglob('*')
               if p.is_file() and (p.suffix == '.rs' or p.name == 'Cargo.toml')]
     paths += list((ROOT / 'scripts').glob('*.py')) + [Path(__file__).resolve()]
-    return {str(p.relative_to(ROOT)): file_digest(p) for p in sorted(set(paths))}
+    configuration = ROOT / '.cargo'
+    require(not configuration.is_symlink(), 'repository Cargo configuration directory is indirect')
+    if configuration.exists():
+        require(configuration.is_dir(), 'repository .cargo is not a directory')
+        for path in configuration.rglob('*'):
+            require(not path.is_symlink() and (path.is_file() or path.is_dir()),
+                    'repository Cargo configuration has an indirect or unsupported entry')
+            if path.is_file():
+                paths.append(path)
+    result = {str(p.relative_to(ROOT)): file_digest(p) for p in sorted(set(paths))}
+    # Adding either discovered config after admission must invalidate the
+    # snapshot too. Other .cargo files (including local includes) are inventoried.
+    for name in ['.cargo/config', '.cargo/config.toml']:
+        require(not (ROOT / name).exists() or (ROOT / name).is_file(),
+                'repository Cargo discovery path is not a file')
+        result.setdefault(name, None)
+    return result
 
 
 def test_environment(compiler, environment):
     # Match build_custom_tools' ordinary release environment; the two explicit
     # additions select matching doctests and bound test execution concurrency.
     compiler.environment(environment)
-    require('RUSTDOC' not in environment, 'do not inherit a different doctest compiler')
+    require(not any(name in environment for name in
+                    ['RUSTDOC', 'RUSTDOCFLAGS', 'CARGO_ENCODED_RUSTDOCFLAGS']),
+            'do not inherit a different doctest compiler or doctest flags')
     env = {k: v for k, v in environment.items()
            if not k.startswith(('RUST_INTERP_', 'CARGO_PROFILE_'))
            and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
@@ -95,7 +113,9 @@ def main():
                     and os.access(rustdoc, os.X_OK), 'complete matching rustdoc is required for workspace doctests')
             env = test_environment(compiler, os.environ)
             frozen = source_files()
-            for name in frozen:
+            for name, expected in frozen.items():
+                if expected is None:
+                    continue
                 destination = work / 'source' / name
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_bytes((ROOT / name).read_bytes())
@@ -139,7 +159,8 @@ def main():
                     'doctest compiler commit differs')
             code, stdout, _ = invoke('workspace-tests', command)
             counts = test_results(code, stdout)
-            require(all(file_digest(work / 'source' / name) == h for name, h in frozen.items()),
+            require(all((not (work / 'source' / name).exists()) if h is None else
+                        file_digest(work / 'source' / name) == h for name, h in frozen.items()),
                     'archived source differs')
             result.update(status='passed', finished_at=time.time(), compiler_key=compiler.key, tool_key=key,
                 returncode=code, frozen_sources_unchanged=True, **counts,
