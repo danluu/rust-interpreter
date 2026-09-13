@@ -291,6 +291,15 @@ against the modified frontend still needs actual private metadata/linker and
 loaded-driver qualification. No latency improvement is established.
 [Merged default qualification](../../../results/exporter-roles-getcwd-qualification-01/README.md).
 
+The composed private build sysroot subsequently passed the stock compiler
+smoke test: 18 correctness controls and ten source guards, with actual cache
+hits, matching raw uncalled type errors and restored source. The genuine beta
+compiler built unchanged stock rustc main, whose executable loaded the qualified
+modified driver and LLVM. All earlier inspection, metadata, compiler build and archive
+failures remain preserved. This qualifies that composition and stock executable;
+the exporter build and application latency checks remain pending.
+[Stock compiler compatibility evidence](../../../results/embedded-frontend-stock-smoke-01/README.md).
+
 The [external trait-name index](../../../experiments/external-trait-index/README.md)
 is a reviewed, uncompiled compiler prototype. It preserves ordinary external
 table construction, retains the exact name/namespace projection, and keeps local
