@@ -78,6 +78,22 @@ def fixture():
 
 
 class MonoScreenContracts(unittest.TestCase):
+    def test_qualification_freeze_accepts_raw_digest_and_rejects_changed_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory).resolve() / 'evidence'
+            path.write_bytes(b'validated evidence')
+            proof = dict(evidence_files={str(path): hashlib.sha256(path.read_bytes()).hexdigest()})
+            frozen = {str(path): screen.frozen_input_hash(path)}
+            screen.verify_qualification_freeze([None, proof], frozen)
+            path.write_bytes(b'changed evidence')
+            with self.assertRaises(RuntimeError):
+                screen.verify_qualification_freeze([proof], frozen)
+            with self.assertRaises(RuntimeError):
+                screen.verify_qualification_freeze([proof], {str(path): screen.frozen_input_hash(path)})
+            replacement = dict(evidence_files={str(path): hashlib.sha256(path.read_bytes()).hexdigest()})
+            with self.assertRaises(RuntimeError):
+                screen.verify_qualification_freeze([replacement], frozen)
+
     def test_comparison_and_all_27_commands_keep_exact_common_work(self):
         key, compiler, std, receipt = 'a' * 64, 'c' * 64, Path('/std/on/ready.json'), Path('/owned/result.json')
         screen.validate_comparison('stable-mono-cgu', key, key, compiler, std,
