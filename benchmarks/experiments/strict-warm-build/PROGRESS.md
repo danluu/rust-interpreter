@@ -274,6 +274,14 @@ and compiler-API failures. Full build-script execution and a latency improvement
 remain unestablished.
 [Fstat qualification](../../../results/fstat-native-qualification-03/README.md).
 
+The unchanged build-script export census subsequently advanced to
+`pthread_mutex_lock` in the default/shared-helper configurations; the subprocess
+configuration still stops at `_exit`. All four compiler commands passed, with
+no build-script or guest execution. Supporting the printing path requires the
+mutex initialization, ownership and destruction lifecycle as well as lock and
+unlock operations.
+[Post-fstat export census](../../../results/build-script-export-census-04/README.md).
+
 Explicit build/runtime compiler-role binding is implemented with the default
 route preserved. Its integration with getcwd passed 548 release workspace
 tests (10 ignored, none failed or filtered), all twelve required controls,
