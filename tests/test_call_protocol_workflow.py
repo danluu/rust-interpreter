@@ -70,3 +70,18 @@ class CallProtocolWorkflowTests(unittest.TestCase):
 
 class CapacityCreditWorkflowTests(CallProtocolWorkflowTests):
     workflow = load_workflow('call-capacity-credit', 'capacity_credit_workflow')
+
+
+class WideBitwiseWorkflowTests(CallProtocolWorkflowTests):
+    workflow = load_workflow('wide-bitwise', 'wide_bitwise_workflow')
+
+    def test_primary_rejects_cpu_increase_even_inside_the_noise_allowance(self):
+        for control, cpu in [('baseline', 2.0), ('anchor', 1.7)]:
+            rows = self.rows()
+            for row in rows:
+                if row['mode'] in [control, 'candidate']:
+                    row['cpu']['total_seconds'] = cpu
+            self.assertTrue(self.workflow.assessment(rows, 'token')['gate_passed'])
+            for row in rows:
+                if row['mode'] == 'candidate': row['cpu']['total_seconds'] += .0001
+            self.assertFalse(self.workflow.assessment(rows, 'token')['gate_passed'])
