@@ -1,6 +1,13 @@
 # Frontend-worker build and qualification handoff
 
-This source checkpoint and its plan are unexecuted. The public compiler remains
+Plan 03 completed its eight build commands and published tool
+`7191cec48448ea59dd85f330a417074d07390e6a1b1bf4f33f75c8a8a1172c02`.
+Its first qualification stopped at command 27: the selected assembly entry was
+rejected correctly, but the harness expected `InlineAsm` while the actual MIR
+diagnostic renders `asm!(...)`. That failed history and publication remain
+retained. The next plan uses a fresh qualification directory and matches the
+actual entry-specific diagnostic in both producer and archived consumer. Its
+full 30-command qualification and timing remain required. The public compiler remains
 nightly-2026-09-08 (`cea272fa356e94bd2ee2cadf376630aa0683867a`). No custom compiler,
 custom Cargo, macro optimization, borrow-check cache or analysis bypass is part
 of this experiment. Omission remains compatible with existing installed tools.
@@ -50,35 +57,44 @@ screen: explicit workers 1/2/1, identical tools and public std, four Cargo jobs,
 two suite workers, all 14 original tests and the unchanged 0.500-second gate.
 The build/qualification driver never executes that screen.
 
-Plan 01 is preserved as superseded and unexecuted. Plan 02 incorporates the
-reviewed fixture/lock/frozen-byte checks and main `a7c9c9ce`, retaining both the
-MonoItem source-observable prerequisite and its typed frozen-evidence checks.
+Plans 01 and 02 are preserved as superseded and unexecuted. The first combined
+159-test run completed at source `759498fe9e187ada955eb362e374287390682cb5`:
+158 passed and one publication test errored because its mock did not accept the
+new explicit qualification-policy keyword. Plan 03 updates that mock to require
+the keyword and assert the unchanged default macro policy; its intended rejected
+publication and absent-readiness assertions remain intact. No runtime code is
+changed by this correction. The failed run and all its exact sources are retained
+in PRIMARY `.work/worker-prerequisite-tests-01`; a fresh full run is required.
+The reviewed fixture/lock/frozen-byte checks, MonoItem source-observable gate and
+corrected raw/tagged evidence validation remain required.
 The source-only metadata freeze acquires the canonical lock, records its process,
 and emits no compiler, Cargo, test or benchmark command:
 
 ```sh
 python3 experiments/frontend-workers/prepare_plan.py \
-  --run-id frontend-worker-build-02 \
+  --run-id frontend-worker-build-04 \
+  --qualification-run-id frontend-worker-qualification-02 \
   --supersedes experiments/frontend-workers/planned-build-01.json \
+  --supersedes experiments/frontend-workers/planned-build-02.json \
   --screen-root /Users/danluu/dev/rust-interp-semantic-reuse-20260913 \
   --std-mir-ready /Users/danluu/dev/rust-interp-semantic-reuse-20260913/.work/std-mir/bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef/ready.json \
-  --output experiments/frontend-workers/planned-build-02.json
+  --output experiments/frontend-workers/planned-build-04.json
 ```
 
-After review, the source tests and each actual stage need separate coordinated
-admission. Both shared-public validator/publication suites (5+5 tests), the two
-new worker publication boundaries, and merged launcher/screen contracts remain
-unrun at this checkpoint. The runner itself uses the absolute canonical lock,
+After review, the corrected source tests and each actual stage need separate
+coordinated admission. The fresh combined 159-test run includes both shared-public
+validator/publication suites (5+5 tests), the two worker publication boundaries,
+and merged launcher/screen contracts. The runner itself uses the canonical lock,
 a bounded 600-second wait, a 12-GiB build entry gate and 8-GiB command gates.
 
 ```sh
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-02.json
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-02.json \
-  --qualify .work/frontend-worker-build-02/published.json
-python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-02.json \
-  --materialize .work/frontend-worker-build-02/published.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-04.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-04.json \
+  --qualify .work/frontend-worker-build-04/published.json
+python3 experiments/frontend-workers/build.py --plan experiments/frontend-workers/planned-build-04.json \
+  --materialize .work/frontend-worker-build-04/published.json
 ```
 
-The last command creates `.work/frontend-worker-build-02/screen-command.json`
+The last command creates `.work/frontend-worker-build-04/screen-command.json`
 only after strict prerequisites. Its final-key argv requires another admission;
 no timing, speedup, adoption or holdout claim follows from publication.

@@ -214,7 +214,7 @@ def validate_qualification(result_path, key, public, std, read_bytes):
         reports = [json.loads(line.removeprefix('rust-interp-launch: ')) for line in row['stderr'].splitlines()
                    if line.startswith('rust-interp-launch: ')]
         if error or phase == 'assembly-rejection':
-            expected_error = error or 'unsupported terminator InlineAsm'
+            expected_error = error or 'custom interpreter cannot lower this entry: assembly: unsupported terminator asm!('
             require(row['returncode'] != 0 and row['stdout'] == '' and not reports
                     and expected_error in row['stderr'], 'worker error control accepted or executed')
             continue

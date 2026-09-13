@@ -131,7 +131,8 @@ class WorkerScreenContracts(unittest.TestCase):
                         '--function-cache', 'auto', '--frontend-workers', str(count), '--workspace-cache-root', str(run / 'cache'),
                         '--entry', 'assembly' if phase == 'assembly-rejection' else 'answer']
                     if phase in codes or phase == 'assembly-rejection':
-                        status = 1; stderr = codes.get(phase, 'unsupported terminator InlineAsm')
+                        status = 1; stderr = codes.get(phase,
+                            'custom interpreter cannot lower this entry: assembly: unsupported terminator asm!(')
                     else:
                         payload = b'edited' if phase == 'edited' else original_bytecode
                         path = run / 'cache' / str(count)
@@ -170,7 +171,7 @@ class WorkerScreenContracts(unittest.TestCase):
                 worker.validate_qualification(path, key, public, std, lambda p: changed[str(p)])
 
     def test_rehashed_noop_command_and_changed_source_cannot_fake_actual_qualification(self):
-        for fault in ['noop', 'source', 'overlap', 'restoration', 'lock', 'harness', 'fixture-copy', 'fixture-child']:
+        for fault in ['noop', 'source', 'overlap', 'restoration', 'lock', 'harness', 'fixture-copy', 'fixture-child', 'assembly-message']:
             path, key, public, std, data = self.bundle(); run = path.parent
             if fault == 'restoration':
                 data[str(run / 'fixture/src/lib.rs')] = b'not restored'
@@ -185,12 +186,14 @@ class WorkerScreenContracts(unittest.TestCase):
                     plan['frozen'][source] = sha(data[source])
                 data[str(plan_path)] = json.dumps(plan).encode()
             else:
-                label = 'edited-2'; row_path = run / 'logs' / (label + '.json'); child_path = run / 'logs' / (label + '-process.json')
+                label = 'assembly-rejection-1' if fault == 'assembly-message' else 'edited-2'
+                row_path = run / 'logs' / (label + '.json'); child_path = run / 'logs' / (label + '-process.json')
                 row, child = [json.loads(data[str(p)]) for p in [row_path, child_path]]
                 if fault == 'noop':row['command'] = child['command'] = ['/usr/bin/true']
                 if fault == 'source':row['sources']['fixture/shared/src/lib.rs'] = child['sources']['fixture/shared/src/lib.rs'] = '0' * 64
                 if fault == 'fixture-child':row['sources']['fixture/macros/src/lib.rs'] = child['sources']['fixture/macros/src/lib.rs'] = '0' * 64
                 if fault == 'overlap':child['started_at'] = 0
+                if fault == 'assembly-message':row['stderr'] = 'unsupported terminator InlineAsm'
                 result = json.loads(data[str(path)])
                 for p, record in [(row_path, row), (child_path, child)]:
                     data[str(p)] = json.dumps(record).encode(); result['logs'][str(p.relative_to(run))] = sha(data[str(p)])
