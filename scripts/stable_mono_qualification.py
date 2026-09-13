@@ -109,6 +109,28 @@ def validate_qualification(path, owner, compiler_key, tool_key, stds, *, compile
                 and child.get('label') == row.get('label')
                 and child.get('finished_at', -1) >= child.get('started_at', 0),
                 'qualification child completion differs')
+    artifacts = {}
+    for state in ['original', 'edited', 'restored']:
+        for mode in ['off', 'on']:
+            label = state + '-' + mode
+            matches = [row for row in commands if row.get('label') == label]
+            require(len(matches) == 1, 'qualification lacks a unique successful artifact command')
+            row = matches[0]
+            name = label + '.rbc'
+            launch = row.get('launch', {})
+            require(row.get('validated') is True and row.get('returncode') == 0
+                    and row.get('artifact') == str(path.parent / name) and name in payloads
+                    and row.get('artifact_sha256') == evidence[name] == launch.get('artifact_sha256')
+                    and launch.get('tool_key') == tool_key and payloads[name],
+                    'qualification bytecode differs from its successful command receipt')
+            artifacts[state, mode] = payloads[name]
+    for state in ['original', 'edited', 'restored']:
+        require(artifacts[state, 'off'] == artifacts[state, 'on'],
+                'qualification off/on bytecode differs: ' + state)
+    for mode in ['off', 'on']:
+        require(artifacts['original', mode] == artifacts['restored', mode]
+                and artifacts['original', mode] != artifacts['edited', mode],
+                'qualification bytecode edit/restoration control differs')
     reference = result.get('compiler_flag_proof', {})
     require(reference.get('path') in evidence
             and reference.get('sha256') == evidence[reference['path']], 'missing actual compiler argv proof')

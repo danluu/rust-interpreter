@@ -36,8 +36,16 @@ def fixture():
         module_policy_by_mode=dict(off='off', on='off'), mono_policy_by_mode=dict(off='off', on='on'))
     result['plan_sha256'] = put('plan.json', dict(compiler_key='c' * 64, tool_key='a' * 64))
     commands = []
+    artifact_labels = ['original-off', 'original-on', 'edited-off', 'edited-on',
+                       'restored-off', 'restored-on']
     for index in range(36):
         row = dict(label=str(index), command=['/compiler', str(index)], returncode=0)
+        if index < len(artifact_labels):
+            label = artifact_labels[index]
+            content = b'edited bytecode\x00\xff' if label.startswith('edited-') else b'original bytecode\x00\xff'
+            digest = put(label + '.rbc', content)
+            row.update(label=label, validated=True, artifact=str(path.parent / (label + '.rbc')),
+                       artifact_sha256=digest, launch=dict(tool_key='a' * 64, artifact_sha256=digest))
         commands.append(row)
         put(f'{index:02d}-child.json', row | dict(status='finished', started_at=1, finished_at=2))
     put('commands.json', commands)
@@ -120,6 +128,29 @@ class MonoScreenContracts(unittest.TestCase):
         result['compiler_flag_proof']['sha256'] = put('flags.json', proof)
         with self.assertRaisesRegex(RuntimeError, 'raw recorder bytes'):
             validate()
+
+    def test_rehashed_bytecode_must_match_receipts_and_real_edit_restoration_controls(self):
+        for change in ['receipt-mismatch', 'cross-mode-mismatch', 'stale-edit', 'changed-restoration']:
+            result, files, put, validate = fixture()
+            self.assertEqual(validate()['result']['commands'], 36)
+            labels = ['edited-on'] if change in ['receipt-mismatch', 'cross-mode-mismatch'] else [
+                ('edited-' if change == 'stale-edit' else 'restored-') + mode for mode in ['off', 'on']]
+            replacement = files['original-off.rbc'] if change == 'stale-edit' else b'different bytecode\x00\xff'
+            commands = json.loads(files['commands.json'])
+            for label in labels:
+                digest = put(label + '.rbc', replacement)
+                if change != 'receipt-mismatch':
+                    row = next(row for row in commands if row['label'] == label)
+                    row['artifact_sha256'] = row['launch']['artifact_sha256'] = digest
+            put('commands.json', commands)
+            # validate() rehashes the complete evidence inventory. Even a
+            # consistent archive must still agree with the actual controls.
+            expected = {'receipt-mismatch': 'successful command receipt',
+                        'cross-mode-mismatch': 'off/on bytecode',
+                        'stale-edit': 'edit/restoration control',
+                        'changed-restoration': 'edit/restoration control'}[change]
+            with self.subTest(change=change), self.assertRaisesRegex(RuntimeError, expected):
+                validate()
 
     def test_missing_completion_or_actual_role_cannot_qualify(self):
         result, files, put, validate = fixture()
