@@ -71,6 +71,10 @@ def main():
         evidence += [vm_proof_path, vm_plan_path, retained / 'source.json', retained / 'ready.json', retained / 'rust-interp-vm']
         assert not subprocess.check_output(['git', 'status', '--porcelain'], cwd=SOURCE).strip()
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=SOURCE, text=True).strip()
+        compiler_command = ['rustc', '+nightly-2026-09-08', '-vV']
+        compiler = subprocess.run(compiler_command, capture_output=True, text=True, check=True)
+        assert 'commit-hash: cea272fa356e94bd2ee2cadf376630aa0683867a' in compiler.stdout.splitlines()
+        assert 'host: aarch64-apple-darwin' in compiler.stdout.splitlines()
         tracked = [p for p in subprocess.check_output(['git', 'ls-files', '-z'], cwd=SOURCE).decode().split('\0') if p]
         current = {p: sha(SOURCE / p) for p in tracked if rust_input(p)}
         actual_rust = {str(p.relative_to(SOURCE)): sha(p) for p in (SOURCE / 'crates').rglob('*')
@@ -79,7 +83,8 @@ def main():
         require_vm_sources(current, qualified)
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in evidence}
         for name in tracked:
-            if rust_input(name) or (name.startswith(('scripts/', 'tests/')) and name.endswith('.py')):
+            if (rust_input(name) or name.endswith('.rs') or name.startswith(('scripts/', 'tests/', '.cargo/'))
+                    or name == 'benchmarks/corpus.json'):
                 path = SOURCE / name
                 frozen[str(path.relative_to(ROOT))] = sha(path)
         for path in Path(__file__).parent.iterdir():
@@ -93,12 +98,14 @@ def main():
                 '--jobs', '2', '--target-dir', str(TARGET), '-p', 'rust-interp-mir-export'], SOURCE))
         write(work / 'plan.json', dict(owner=str(ROOT), source=str(SOURCE), source_commit=revision,
             frozen=frozen, rust_inputs=current, target=str(TARGET), vm_source_key=VM_KEY,
+            compiler_identity_command=compiler_command, compiler_identity_stdout=compiler.stdout,
             previous_workspace_tests_per_profile=504, commands=[dict(label=l, command=c, cwd=str(d)) for l, c, d in commands],
             admitted_free_bytes=shutil.disk_usage(ROOT).free, minimum_initial_free_gib=16,
             scope='Compiler and launcher compatibility qualification; measured VM binary reused only with exact component/shared input inventory. The prior504 tests are a whole-workspace result, not504 VM-only tests. No timing repetition or claim about newer optional compiler routes.'))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_PROFILE_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER',
-                             'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET', 'CARGO_BUILD_BUILD_DIR', 'RUST_TEST_THREADS']}
+                             'CARGO_INCREMENTAL', 'CARGO_TARGET_DIR', 'CARGO_BUILD_TARGET', 'CARGO_BUILD_BUILD_DIR',
+                             'CARGO_BUILD_RUSTC', 'CARGO_BUILD_RUSTC_WRAPPER', 'CARGO_BUILD_RUSTC_WORKSPACE_WRAPPER', 'RUST_TEST_THREADS']}
         assert not any(k.startswith('DYLD_') for k in env)
         env.update(CARGO_TERM_COLOR='never', CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
                    CARGO_PROFILE_TEST_DEBUG='0', CARGO_PROFILE_RELEASE_DEBUG='1', PYTHONDONTWRITEBYTECODE='1')
