@@ -21,8 +21,9 @@ introduced. The existing emitter already uses pair encodings for host-stack
 preservation. Reduced emitted word count is a mechanism, not a speedup claim.
 
 Two new tests cover encoding/count boundaries, full-width values, spills and
-reloads around an unsupported operation, persistent assignment on/off and
-every instruction-budget tail. Provisional host count is421 per debug/release
+reloads around an unsupported operation, ordinary/resumable execution,
+persistent assignment on/off and every instruction-budget tail. Provisional
+host count is421 per debug/release
 profile. Qualify those tests and existing exact real-program/suite/cache
 controls before any new runtime timing. Current guarded-indirect folded and
 pgrust guards take priority; do not build or execute this candidate while an

@@ -60,9 +60,9 @@ fn register_pairs_preserve_both_words_across_vm_exits_and_every_budget_tail() {
         for value in [0, 1 << 64, MASK, !MASK] {
             let reference = execute_with_engine(&program, &[value], Limits::default(), Engine::Interpreter).unwrap();
             assert_eq!(reference.value, value.wrapping_sub(value ^ MASK));
-            for persistent in [false, true] {
+            for (persistent, resumable) in [(false, false), (true, false), (false, true), (true, true)] {
                 for budget in 0..=reference.instructions + 1 {
-                    let limits = || Limits { instructions: budget, jit_resumable_calls: true,
+                    let limits = || Limits { instructions: budget, jit_resumable_calls: resumable,
                         jit_persistent_registers: persistent, ..Limits::default() };
                     let expected = execute_with_engine(&program, &[value],
                         Limits { instructions: budget, ..Limits::default() }, Engine::Interpreter);
