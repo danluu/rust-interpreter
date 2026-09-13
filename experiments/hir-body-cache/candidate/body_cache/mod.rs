@@ -14,6 +14,7 @@ mod capture;
 mod effects;
 mod entry;
 mod kinds;
+mod prepared;
 mod validate;
 mod wire;
 mod input;
@@ -22,7 +23,7 @@ mod storage;
 mod source_identity;
 pub(super) use effects::Trace;
 
-const FORMAT: &str = "hir-body-capture-v2-tree-entry-1";
+const FORMAT: &str = "hir-body-capture-v2-tree-prepared-1";
 
 pub(super) struct Candidate {
     owner: hir::OwnerId,
@@ -87,7 +88,7 @@ fn report(lctx: &LoweringContext<'_, '_>, candidate: &Candidate, state: &str,
     start: u32, end: u32, events: usize) {
     if lctx.tcx.sess.opts.unstable_opts.incremental_info {
         let [bytes, ast, params, traits, candidates, externals] = candidate.input_statistics;
-        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=1 materializer=0 \
+        eprintln!("[hir-body-capture] {} {state} S={start} E={end} events={events} cache_hits=0 body_codec=1 prepared_values=1 materializer=0 \
             body_bytes={bytes} body_ast={ast} param_ast={params} trait_entries={traits} trait_candidates={candidates} external_refs={externals}",
             candidate.name);
     }
@@ -114,7 +115,8 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
     let previous = storage::read(&candidate.path, &record_key).and_then(|payload| {
         let checked = journal::check(payload.journal.clone(), &entry)?;
         let current = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)?;
-        validate::check(payload.tree.clone(), &current)?;
+        let tree = validate::check(payload.tree.clone(), &current)?;
+        let _prepared = prepared::prepare(&tree, &current)?;
         Some(payload)
     });
     lctx.body_trace = Some(Trace::new());
@@ -129,7 +131,11 @@ pub(super) fn lower<'hir>(lctx: &mut LoweringContext<'_, 'hir>, body: &ast::Bloc
     };
     let captured_tree = validate::Current::new(&candidate, frame.start, &frame.prefix, &checked)
         .and_then(|current| capture::capture(&candidate, &current, &value)
-            .and_then(|tree| validate::check(tree, &current)));
+            .and_then(|tree| {
+                let tree = validate::check(tree, &current)?;
+                let _prepared = prepared::prepare(&tree, &current)?;
+                Some(tree)
+            }));
     let Some(tree) = captured_tree else {
         report(lctx, &candidate, "rejected-body-tree", frame.start, end, checked.journal().events.len());
         return value;

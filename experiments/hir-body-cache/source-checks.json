@@ -2,9 +2,9 @@
   "status": "source-checks-only",
   "compiler_base_commit": "58e1e1f5311f4424ea81def4763081f6da62d9b3",
   "historical_journal_only_checkpoint": "3f3e9c28704a7866f72ad0974336d79671714ae9",
-  "patch_sha256": "1071bd3969817054188fbd1f794fce09cc6000c7bb4fdcb3c21be34110bd42ba",
-  "patch_files": 22,
-  "patch_bytes": 126640,
+  "patch_sha256": "2c6fe23823d5f247ef614c0cd4d5fcd102bbc04c5cff600988e56b4f1d3e52e4",
+  "patch_files": 23,
+  "patch_bytes": 151142,
   "qualified_gate_sha256": "6df8b5b4fe1c0c88f6c21acbbf0514a61b48173bd037456b7563755c50ca15d1",
   "checks": [
     {
@@ -27,8 +27,8 @@
       "note": "Unified-diff blank context lines retain their mandatory single-space marker"
     }
   ],
-  "review": "Independent source read confirmed pinned feature slice/set APIs avoid boolean TRACK_FEATURE hooks, all eight actual entry arrays are bound after Frame::enter, and storage uses the composed key. Four new pure controls and native feature/lint raw controls remain unrun. Native cold-state checks do not isolate key-field causality.",
-  "prepared_unit_tests": 16,
+  "review": "Independent root and frontend source reviews found no concrete blocker in typed conversion, full current/tree revalidation, complete unused-prefix/local/resolution binding, UTF-8/BytePos overflow and no interning/mutation boundary. Four new pure controls remain unrun. The three inherited unordered-map projection API errors were corrected after the separate actual old-checkpoint failure, retaining numeric ordering.",
+  "prepared_unit_tests": 20,
   "rust_compiler_builds": 0,
   "tests_run": 0,
   "benchmarks_run": 0,
@@ -36,6 +36,15 @@
   "hir_body_codec_implemented": true,
   "hit_path_implemented": false,
   "materializer_implemented": false,
-  "next_required": "Compile/API validation and prepared cold capture/entry controls. Complete ReadyHit entry-vacancy proof, prepared-value conversion, current-span materialization and effect replay remain separate work.",
-  "normalized_feature_entry_implemented": true
+  "next_required": "Compile/API validation and prepared cold capture/entry controls. Complete ReadyHit exclusive-context entry/vacancy/event proof, current-span materialization and effect replay remain separate work. The immutable historical 3f3e9c journal-only compiler check does not qualify this new checkpoint.",
+  "normalized_feature_entry_implemented": true,
+  "prepared_current_values_implemented": true,
+  "source_identity": "696d6a44477d5fcb837ea67e73c89cf5155d872d8ff18e3e3cff67b9e44f6a69",
+  "historical_compiler_check": {
+    "checkpoint": "3f3e9c28704a7866f72ad0974336d79671714ae9",
+    "status": "failed",
+    "errors": "Three E0308 errors in effects.rs key projections: pinned into_sorted_stable_ord_by_key requires a borrowed StableCompare key.",
+    "current_source_fix": "Borrow stored numeric tuple keys; for binding NodeIds explicitly project to an owned u32 key before stable sorting. NodeId itself lacks StableCompare.",
+    "does_not_qualify_current_checkpoint": true
+  }
 }
