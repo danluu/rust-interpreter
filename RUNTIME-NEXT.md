@@ -53,8 +53,10 @@ suggestion. Historical experiments retain their original decisions.
    The next compute-bound design is bounded guarded indirect-call
    specialization; [design](docs/INDIRECT-CALL-NEXT.md). It passes424 tests
    per profile,123 harness checks, seven exact tests, nine suite commands and
-   203 strict native/cache checks. Current profiles precede full edited-command
-   comparisons against the wide-operation baseline and fixed anchor. Full-catalog selection remains later work;
+   203 strict native/cache checks. Three profiles preserve every logical PC
+   count and confirm1.03million/0.74million native indirect calls in the two
+   dominant tests. Full edited-command comparisons against the wide-operation
+   baseline and fixed anchor are active; all three cases remain mandatory. Full-catalog selection remains later work;
    original checking and artifact identity requirements remain intact.
 5. **Use the stronger native controls already established.** Every current
    comparison uses matched two-worker Cargo and ordinary native libtest

@@ -2,9 +2,16 @@
 
 The guarded implementation on `experiment/guarded-indirect-20260912` now
 passes 424 debug and release tests, 123 Python checks, seven exact real tests,
-nine suite commands and 203 native/cache checks. The three current profile
-replays are active. Tool `9e219e2e` retains the wide-operation exporter/wrapper;
-no new runtime performance result is available yet.
+nine suite commands and 203 native/cache checks. All three current profile
+replays preserve every logical PC count, memory peak and recorded entropy.
+The block-boundary test executes 1,025,924 of 1,025,947 indirect calls natively
+with 23 published thunks; the exhaustive test executes 737,989 of 843,776 with
+21 thunks. Folded has only 28 native indirect calls and is an overhead guard.
+[Current profiles](../results/guarded-indirect-profile-01/assessment.md).
+
+Tool `9e219e2e` retains the wide-operation exporter/wrapper. The full changed-
+source token/folded/pgrust comparison is now active, 154 commands per case.
+These counts do not establish a latency gain; no timing result is available yet.
 
 The first host build stopped at two existing test fixture initializers missing
 the new cursor pointer. Both fixtures were corrected; the failed receipt stays
