@@ -1,0 +1,3 @@
+Retired the exact completed host-check cache from the 88-command Nushell native calibration. All 22 checking controls, source restoration, original test outcomes and controller evidence were verified first. The three native profile caches were outside the deletion scope. All 4,921 protected files remain byte-identical.
+
+Removed 2,687 files containing 1,635,387,329 logical bytes; observed free space rose by 1,598,894,080 bytes. Two prior shared-lock attempts timed out before inventory or deletion and are retained separately. The third admission completed successfully. No guest command or performance measurement was repeated.
