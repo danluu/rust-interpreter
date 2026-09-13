@@ -103,6 +103,24 @@ class QualificationTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'did not retain'):
                 qualification.changed_diagnostics(target, qualification.diagnostic_files(target))
 
+    def test_raw_diagnostic_comparison_retains_summaries_and_both_host_target_units(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            error = dict(level='error', code={'code': 'E0308'}, message='mismatched types', spans=[], children=[])
+            abort = dict(level='error', code=None, message='aborting due to 1 previous error', spans=[], children=[])
+            note = dict(level='failure-note', code=None, message='For more information, use rustc --explain E0308.', spans=[], children=[])
+            payload = '\n'.join(json.dumps(m | {'$message_type': 'diagnostic'}) for m in [error, abort, note])
+            for unit in ['host', 'target']:
+                directory = root / unit; directory.mkdir()
+                (directory / 'output-lib-shared').write_text(payload)
+            records, files = qualification.changed_diagnostics(root, {})
+            core = qualification.core_diagnostics(records, root)
+            self.assertEqual(len(files), 2)
+            self.assertEqual(len(core), 6)
+            self.assertEqual(sum(item['message'] == abort['message'] for item in core), 2)
+            self.assertEqual(sum(item['code'] == 'E0308' for item in core), 2)
+            self.assertEqual(sum(item['level'] == 'failure-note' for item in core), 2)
+
 
 if __name__ == '__main__':
     unittest.main()

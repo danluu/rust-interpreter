@@ -297,6 +297,7 @@ def main():
 
             def public(label, value=None, code=None):
                 require(file_digest(public_rustc) == public_identity['sha256'], 'public rustc changed')
+                before = diagnostic_files(work / 'public-target') if code else {}
                 row = invoke(label + '-public', public_command(source, compiler.host,
                     work / 'public-target'), source,
                     dict(env, RUSTC=str(public_rustc), RUSTC_WRAPPER='', RUSTC_WORKSPACE_WRAPPER=''))
@@ -307,6 +308,14 @@ def main():
                     require(row['returncode'] != 0 and output == ''
                             and any(d['code'] == code and d['level'] == 'error' for d in core),
                             'ordinary public compiler did not reject the expected uncalled error')
+                    # Cargo's JSON stream omits compiler abort summaries. Use
+                    # the same unfiltered fingerprint records as custom modes.
+                    row['cargo_diagnostics'] = core
+                    messages, files = changed_diagnostics(work / 'public-target', before)
+                    core = core_diagnostics(messages, ROOT)
+                    require(any(d['code'] == code and d['level'] == 'error' for d in core),
+                            'retained public diagnostics lack the expected error')
+                    row['diagnostic_outputs'] = files
                     diagnostics[label, 'public'] = core
                 else:
                     require(row['returncode'] == 0 and output == str(3 * (value + 55)),
