@@ -205,7 +205,7 @@ fn scalar_copy_invalid_ranges_never_write_even_with_a_local_other_endpoint() {
         for source_invalid in [false, true] {
             let mut p = program(size, true, false);
             p.functions[0].code = vec![Op::Local { dst: if source_invalid { 1 } else { 0 }, offset: 128 },
-                Op::Copy { dst: 1, src: 0, size }, Op::Return];
+                Op::Copy { dst: 1, src: 0, size }, Op::Imm { dst: 2, value: LIVE }, Op::Return];
             let mut jit = Jit::new(&p, false, MAX_CODE_BYTES).unwrap();
             jit.ensure_function(0).unwrap();
             let mut bad = vec![0, 1024 - size + 1, 1024, usize::MAX,
@@ -216,7 +216,7 @@ fn scalar_copy_invalid_ranges_never_write_even_with_a_local_other_endpoint() {
                 let before = actual.bytes.to_vec();
                 let heap_before = actual.heap.bytes.clone();
                 let mut registers = [invalid as u128; 6];
-                let error = unsafe { jit.run(jit.blocks[0][0].unwrap(), 3, 2,
+                let error = unsafe { jit.run(jit.blocks[0][0].unwrap(), 4, 3,
                     std::ptr::null_mut(), registers.as_mut_ptr(), 64,
                     actual.bytes.as_mut_ptr(), actual.bytes.len(), 64,
                     actual.heap.bytes.as_mut_ptr(), actual.heap.bytes.len()) }.unwrap_err();
