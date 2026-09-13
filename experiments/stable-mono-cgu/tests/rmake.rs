@@ -1,0 +1,269 @@
+//@ ignore-cross-compile
+//@ ignore-backends: gcc
+
+use std::collections::{BTreeMap, BTreeSet};
+
+use run_make_support::{Rustc, bin_name, rfs, run, rustc, target};
+
+#[derive(Debug)]
+struct Partition {
+    items: BTreeMap<String, String>,
+    reuse: BTreeMap<String, String>,
+}
+
+fn compiler(count: usize, enabled: bool, cache: Option<&str>, opt: &str, native: bool) -> Rustc {
+    let mut command = rustc();
+    command
+        .input("library.rs")
+        .crate_name("stable_mono_test")
+        .crate_type(if native { "bin" } else { "rlib" })
+        .output(if native { bin_name("native") } else { "libstable_mono_test.rlib".to_owned() })
+        .metadata("stable_mono_cgu_partitioning_test")
+        .codegen_units(count)
+        .opt_level(opt)
+        .arg("-Cdebuginfo=2")
+        .arg("-Zhuman-readable-cgu-names")
+        .arg("-Zprint-mono-items=yes")
+        .arg("-Zquery-dep-graph")
+        .arg(format!("-Zstable-mono-cgu-partitioning={enabled}"));
+    if let Some(cache) = cache {
+        command.incremental(cache);
+    }
+    command
+}
+
+fn compile(mut command: Rustc) -> Partition {
+    let output = command.run().stdout_utf8();
+    let mut result = Partition { items: BTreeMap::new(), reuse: BTreeMap::new() };
+    for line in output.lines() {
+        if let Some(item) = line.strip_prefix("MONO_ITEM ") {
+            let (name, units) = item.split_once(" @@ ").unwrap();
+            assert!(result.items.insert(name.to_owned(), units.to_owned()).is_none());
+        } else if let Some(reuse) = line.strip_prefix("CGU_REUSE ") {
+            let (name, kind) = reuse.split_once(' ').unwrap();
+            assert!(result.reuse.insert(name.to_owned(), kind.to_owned()).is_none());
+        }
+    }
+    assert!(!result.items.is_empty());
+    result
+}
+
+fn source(roots: usize, delta: usize, added: bool) -> String {
+    let mut source = String::from(
+        "#![allow(dead_code)]\n\
+         pub static VALUE: u64 = 9;\n\
+         pub static REFERENCE: &u64 = &VALUE;\n\
+         static DROPS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);\n\
+         struct Value(u64);\n\
+         impl Drop for Value { fn drop(&mut self) { DROPS.fetch_add(1, std::sync::atomic::Ordering::SeqCst); } }\n\
+         #[inline(always)] pub fn twice<T: Into<u64>>(x: T) -> u64 { let v = Value(x.into()); v.0 * 2 }\n\
+         std::thread_local! { static LOCAL: std::cell::Cell<u64> = const { std::cell::Cell::new(7) }; }\n",
+    );
+    for index in 0..roots {
+        let value = if index == 0 { delta } else { index };
+        source += &format!(
+            "#[inline(never)] pub fn root_{index}(x: u64) -> u64 {{ let x = std::hint::black_box(x); twice(x) + {value:03} }}\n",
+        );
+    }
+    source += "pub fn evaluate() -> u64 { assert_eq!(*REFERENCE, 9); LOCAL.with(|v| { assert_eq!(v.replace(8), 7); v.set(7); }); DROPS.store(0, std::sync::atomic::Ordering::SeqCst); let value = 0";
+    for index in 0..roots {
+        source += &format!(" + root_{index}(10)");
+    }
+    source += &format!(
+        "; assert_eq!(DROPS.load(std::sync::atomic::Ordering::SeqCst), {roots}); value }}\n",
+    );
+    if added {
+        source += "#[inline(never)] pub fn added(x: u64) -> u64 { twice(x) + 73 }\n";
+    }
+    source
+}
+
+fn execute(expected: usize) {
+    rfs::write(
+        "main.rs",
+        format!(
+            "extern crate stable_mono_test; fn main() {{ assert_eq!(stable_mono_test::evaluate(), {expected}); }}\n",
+        ),
+    );
+    rustc()
+        .input("main.rs")
+        .extern_("stable_mono_test", "libstable_mono_test.rlib")
+        .run();
+    run("main");
+}
+
+fn roots(partition: &Partition) -> BTreeMap<&str, &str> {
+    partition
+        .items
+        .iter()
+        .filter(|(name, _)| name.starts_with("fn root_"))
+        .map(|(name, units)| (name.as_str(), units.as_str()))
+        .collect()
+}
+
+fn active(partition: &Partition) -> bool {
+    partition.items.values().any(|units| units.contains("stable-mono-cgu-v1"))
+}
+
+fn fallback(text: String, coverage: bool, incremental: bool, label: &str) {
+    rfs::write("library.rs", text);
+    let mut results = Vec::new();
+    for enabled in [false, true] {
+        let cache = format!("{label}-{enabled}");
+        let mut command = compiler(4, enabled, incremental.then_some(cache.as_str()), "0", false);
+        if coverage {
+            command.arg("-Cinstrument-coverage");
+        }
+        let result = compile(command);
+        assert!(!active(&result));
+        execute(16 * 20 + 16 * 15 / 2);
+        results.push(result);
+    }
+    assert_eq!(results[0].items, results[1].items);
+}
+
+fn main() {
+    let count_roots = 16;
+    let expected = count_roots * 20 + count_roots * (count_roots - 1) / 2;
+    for (count, opt) in [(1, "0"), (4, "0"), (4, "2")] {
+        let cache = format!("history-{count}-{opt}");
+        rfs::write("library.rs", source(count_roots, 0, false));
+        let original = compile(compiler(count, true, Some(&cache), opt, false));
+        assert!(active(&original));
+        assert_eq!(original.reuse.len(), count);
+        assert_eq!(roots(&original).len(), count_roots);
+        execute(expected);
+
+        rfs::write("library.rs", source(count_roots, 100, false));
+        let edited = compile(compiler(count, true, Some(&cache), opt, false));
+        execute(expected + 100);
+        assert_eq!(original.items, edited.items);
+        assert_eq!(original.reuse.keys().collect::<Vec<_>>(), edited.reuse.keys().collect::<Vec<_>>());
+        assert!(edited.reuse.values().any(|kind| kind == "No"));
+        if count > 1 {
+            assert!(edited.reuse.values().any(|kind| kind != "No"));
+        }
+
+        rfs::write("library.rs", source(count_roots, 100, true));
+        let added = compile(compiler(count, true, Some(&cache), opt, false));
+        execute(expected + 100);
+        assert_eq!(roots(&edited), roots(&added));
+        assert!(added.items.keys().any(|item| item == "fn added"));
+
+        rfs::write("library.rs", source(count_roots, 0, false));
+        let restored = compile(compiler(count, true, Some(&cache), opt, false));
+        execute(expected);
+        assert_eq!(original.items, restored.items);
+        for enabled in [false, true] {
+            compile(compiler(count, enabled, Some(&cache), opt, false));
+            execute(expected);
+        }
+    }
+
+    let mut identities = Vec::new();
+    for count in [2, 4, 2] {
+        let result = compile(compiler(count, true, Some("change-count"), "0", false));
+        assert_eq!(result.reuse.len(), count);
+        execute(expected);
+        identities.push(result.reuse.into_keys().collect::<BTreeSet<_>>());
+    }
+    assert_eq!(identities[0], identities[2]);
+    assert!(identities[0].is_disjoint(&identities[1]));
+
+    for opt in ["0", "2"] {
+        for total in [3, 4, 5, 4, 3, 5] {
+            let mut text = String::from("#![no_std]\n");
+            for index in 0..total {
+                text += &format!("#[inline(never)] pub fn root_{index}() -> u64 {{ {index} }}\n");
+            }
+            rfs::write("library.rs", text);
+            let result = compile(compiler(4, true, Some(&format!("threshold-{opt}")), opt, false));
+            assert_eq!(result.items.len(), total);
+            assert_eq!(active(&result), total > 4);
+            if total > 4 {
+                assert_eq!(result.reuse.len(), 4);
+            }
+        }
+    }
+
+    let mut many_roots = String::from("#![no_std]\n");
+    for index in 0..65 {
+        many_roots += &format!("#[inline(never)] pub fn root_{index}() -> u64 {{ {index} }}\n");
+    }
+    rfs::write("library.rs", many_roots);
+    let sparse = compile(compiler(64, true, Some("empty-buckets"), "2", false));
+    assert!(active(&sparse));
+    assert_eq!(sparse.reuse.len(), 64);
+    assert_eq!(sparse.items.len(), 65);
+    let occupied: BTreeSet<_> = sparse
+        .items
+        .values()
+        .flat_map(|units| units.split_whitespace().map(|unit| unit.split_once('[').unwrap().0))
+        .collect();
+    assert!(occupied.len() < 64);
+    rfs::write(
+        "main.rs",
+        "extern crate stable_mono_test; fn main() { assert_eq!(stable_mono_test::root_64(), 64); }\n",
+    );
+    rustc().input("main.rs").extern_("stable_mono_test", "libstable_mono_test.rlib").run();
+    run("main");
+    compile(compiler(64, true, Some("empty-buckets"), "2", false));
+
+    fallback(source(16, 0, false), true, true, "coverage");
+    fallback(source(16, 0, false), false, false, "nonincremental");
+    let explicit = format!(
+        "#![feature(linkage)]\n{}\n\
+         #[linkage = \"internal\"] static EXPLICIT: u64 = 11;\n\
+         #[linkage = \"internal\"] #[inline(never)] fn explicit_read() -> u64 {{ *std::hint::black_box(&EXPLICIT) }}\n\
+         #[inline(never)] pub fn explicit_value() -> u64 {{ explicit_read() }}\n",
+        source(16, 0, false).replace("let value = 0", "let value = explicit_value() - 11"),
+    );
+    fallback(explicit, false, true, "explicit-linkage");
+    if target().starts_with("aarch64-") || target().starts_with("x86_64-") {
+        fallback(
+            source(16, 0, false) + "core::arch::global_asm!(\"\");\n",
+            false,
+            true,
+            "global-assembly",
+        );
+        fallback(
+            source(16, 0, false)
+                + "#[unsafe(naked)] pub unsafe extern \"C\" fn naked_entry() { core::arch::naked_asm!(\"ret\"); }\n",
+            false,
+            true,
+            "naked-assembly",
+        );
+    }
+
+    for (bad_body, code) in [
+        ("fn unused() { let _: u32 = \"bad\"; }", "E0308"),
+        ("fn unused() { let v = vec![1]; let r = &v; drop(v); println!(\"{:?}\", r); }", "E0505"),
+    ] {
+        rfs::write("library.rs", source(count_roots, 0, false) + bad_body);
+        compiler(4, true, Some("history-4-0"), "0", false).run_fail().assert_stderr_contains(code);
+        rfs::write("library.rs", source(count_roots, 0, false));
+        compile(compiler(4, true, Some("history-4-0"), "0", false));
+        execute(expected);
+    }
+
+    for opt in ["0", "2"] {
+        for (enabled, delta) in [(false, 0), (true, 0), (true, 100), (true, 0)] {
+            let mut text = source(count_roots, delta, false);
+            text += &format!("fn main() {{ assert_eq!(evaluate(), {}); }}\n", expected + delta);
+            rfs::write("library.rs", text);
+            let result = compile(compiler(4, enabled, Some(&format!("native-{opt}")), opt, true));
+            assert_eq!(active(&result), enabled);
+            run("native");
+        }
+    }
+
+    rfs::write("library.rs", "#![no_std]\npub fn value() -> u64 { 3 }\n");
+    rustc()
+        .input("library.rs")
+        .crate_type("rlib")
+        .arg("--emit=metadata")
+        .arg("-Zstable-cgu-partitioning=yes")
+        .arg("-Zstable-mono-cgu-partitioning=yes")
+        .run_fail()
+        .assert_stderr_contains("cannot be enabled together");
+}
