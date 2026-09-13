@@ -90,7 +90,7 @@ def main():
             assert 'independent_byte_oracle_checks_10000_four_event_histories' in out
             print(profile,'PASS 6 controls including 10000 oracle cases',flush=True)
         invoke('build',['cargo','+nightly-2026-09-08','build','--release',*common,'--bin','local-overwrite-census'])
-        binary=work/'local-overwrite-census';shutil.copy2(target/'release/local-overwrite-census-census',binary)
+        binary=work/'local-overwrite-census';shutil.copy2(target/'release/local-overwrite-census',binary)
         binary_sha=sha(binary);cases=[]
         for label,mapping in zip(['block','exhaustive'],maps):
             started=time.time();typed_path=work/(label+'.json')

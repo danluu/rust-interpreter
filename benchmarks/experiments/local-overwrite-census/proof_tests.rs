@@ -38,6 +38,8 @@ fn errors_unknown_accesses_and_region_entries_are_observation_barriers() {
     let barriers=vec![read(7,8),store(7,8),Op::Copy {src:7,dst:0,size:8},
         Op::Copy {src:0,dst:7,size:8},Op::Return,Op::Jump {target:0},
         Op::Trap {message:"stop".into()},
+        Op::Assert {value:7,expected:true,message:"check".into()},
+        Op::Call {function:0,args:vec![0],destination:0},
         Op::Binary {dst:3,overflow:4,op:Binary::Div,a:5,b:6,bits:64,signed:false},
         Op::Binary {dst:3,overflow:4,op:Binary::Rem,a:5,b:6,bits:64,signed:true}];
     for barrier in barriers {
