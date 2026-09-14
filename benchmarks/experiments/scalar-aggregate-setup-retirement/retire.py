@@ -8,7 +8,7 @@ from workflow_io import write_json as write
 from native_suite import test_status
 from suite_reports import validate_report
 
-NAME='closed-scalar-aggregate-setup-retirement-01'
+NAME='closed-scalar-aggregate-setup-retirement-02'
 RUNS=['scalar-aggregate-screen-exhaustive-01']
 
 def identity(path):
@@ -80,7 +80,10 @@ with ExitStack() as stack:
     from workflow_io import require_space
     from workflow_cases import WORKFLOW_VARIANTS
     require_space(ROOT,8)
-    roots=set();proofs={};process_checks=[];evidence_roots=set();pids=set()
+    roots=set();proofs={};process_checks=[];evidence_roots=set();pids=set();historical_sources={}
+    failed=bind(ROOT/'results/closed-scalar-aggregate-setup-retirement-01/summary.json');assert failed['files_removed']==0
+    bind(ROOT/'results/closed-scalar-aggregate-setup-retirement-01/closure.json')
+    bind(ROOT/'results/closed-scalar-aggregate-setup-retirement-01/terminal.json',failed['terminal_sha256'])
     for run in RUNS:
         base=ROOT/'.work'/run;evidence_roots.add(base)
         result=bind(ROOT/'results'/run/'summary.json')
@@ -93,7 +96,16 @@ with ExitStack() as stack:
         assert closure['terminal_sha256']==sha(ROOT/'results'/run/'terminal.json')
         evidence=bind(ROOT/closure['bindings'],closure['bindings_sha256'])
         assert len(evidence['files'])==closure['evidence_files']
-        for path,digest in evidence['files'].items():bind(ROOT/path,digest)
+        for path,digest in evidence['files'].items():
+            if path in evidence['git_bindings']:
+                import hashlib
+                historical=evidence['git_bindings'][path]
+                assert historical['sha256']==digest
+                spec=historical['revision']+':'+path
+                assert hashlib.sha256(subprocess.check_output(['git','show',spec],cwd=ROOT)).hexdigest()==digest
+                historical_sources[path]=dict(git_source=spec,sha256=digest)
+                bind(ROOT/path) # Protect current source too; never confuse it with the historical input.
+            else:bind(ROOT/path,digest)
         terminal(run)
         for name in ['plan','records']:bind(base/(name+'.json'),result[name+'_sha256'])
         plan=json.loads((base/'plan.json').read_text());rows=json.loads((base/'records.json').read_text())
@@ -160,7 +172,7 @@ with ExitStack() as stack:
     assert rows, 'no eligible compiler intermediates remain; no deletion attempted'
     before=shutil.disk_usage(ROOT).free;started=time.time()
     write(work/'plan.json',dict(owner=str(ROOT),script_sha256=sha(Path(__file__)),completed_runs=RUNS,
-        roots=sizes,process_checks=process_checks,open_checks=open_checks,files=len(rows),
+        roots=sizes,historical_sources=historical_sources,process_checks=process_checks,open_checks=open_checks,files=len(rows),
         logical_bytes=sum(r['size'] for r in rows),free_before=before,started_at=started,
         scope='Two exact completed ROOT public compiler caches from the closed aggregate setup failure. The supervisor failed only after native and baseline cold commands passed. No candidate or edited pair ran. Source pins/restoration, original assertions and snapshots are verified. Only nonexecutable compiler intermediates are eligible. Preserve every executable, bytecode/catalog snapshot and raw proof under shared/invocation locks and fresh process/open-file checks. No private cache, shared target, installed tool, current full history or peer cache.'))
     assert all(sha(ROOT/p)==h for p,h in proofs.items())

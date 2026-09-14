@@ -13,3 +13,9 @@ hashes afterward. Retain source, binaries, artifacts, logs and all qualification
 proof; preserve shared targets/tools and private or peer caches. This dedicated
 prefix policy does not weaken the full-screen retirement contract. Eight GiB
 admission/floor; no new compilation, benchmark or performance inference.
+
+The first retirement admission stopped before inventory/deletion because the
+current harness had changed since the setup failure. Retain that zero-deletion
+terminal. The second verifies historical source through exact Git objects and
+protects the current sources separately; all non-source evidence must still
+match its saved hash. No historical hash requirement is dropped.
