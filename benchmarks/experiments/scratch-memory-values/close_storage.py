@@ -8,7 +8,10 @@ from workflow_io import write_json as write
 
 def main():
     name,revision=sys.argv[1:]
-    assert name in ['runtime-storage-inventory-20260914-01','closed-scratch-memory-values-parser-incremental-retirement-01']
+    retired_commands={'closed-scratch-memory-values-parser-incremental-retirement-01':88,
+                      'closed-early-public-compiler-retirement-02':42,
+                      'closed-scratch-memory-values-full-folded-retirement-01':154}
+    assert name=='runtime-storage-inventory-20260914-01' or name in retired_commands
     raw=ROOT/'.work'/name;outer=ROOT/'.work/experiments'/name;out=ROOT/'results'/name
     summary=json.loads((raw/'summary.json').read_text());terminal=json.loads((outer/'status.json').read_text())
     assert summary['status']=='passed' and terminal['status']=='finished' and terminal['returncode']==0
@@ -27,7 +30,7 @@ def main():
             for stream in ['stdout','stderr']:
                 p=raw/(row['label']+'.'+stream);assert sha(p)==row[stream+'_sha256'];proofs[str(p.relative_to(ROOT))]=sha(p)
     else:
-        assert summary['completed_commands']==88 and summary['all_protected_hashes_unchanged']
+        assert summary['completed_commands']==retired_commands[name] and summary['all_protected_hashes_unchanged']
         for file,key in [('plan','plan_sha256'),('inventory','inventory_sha256'),('protected','protected_manifest_sha256')]:
             assert sha(raw/(file+'.json'))==summary[key]
         plan=json.loads((raw/'plan.json').read_text());assert plan['owner']==str(ROOT) and plan['script_sha256']==script_hash
