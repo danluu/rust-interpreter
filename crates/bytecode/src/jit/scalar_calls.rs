@@ -32,6 +32,10 @@ pub(super) struct Entry {
     target: usize,
 }
 impl Jit<'_> {
+    #[cfg(test)]
+    pub(crate) fn scalar_transaction_test_map(&self)->serde_json::Value {
+        serde_json::to_value(self.operation_map().unwrap()).unwrap()
+    }
     pub(crate) fn enable_scalar_calls(&mut self) {
         assert!(self.resumable.is_some() && self.scalar.is_none());
         self.scalar = Some(State {tried:vec![false;self.program.functions.len()],

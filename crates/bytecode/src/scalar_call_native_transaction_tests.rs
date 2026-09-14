@@ -135,11 +135,11 @@ fn native_private_store_limits_shared_arena_reconstruction_and_closed_admission(
         let mut code=prefix();code.extend((0..stores).map(|_|Op::Store{address:1,src:4,size:8}));code.push(Op::Return);
         let p=fixture(code);assert_eq!(compare(&p,&[tag+16,0],100,65536,8),usize::from(stores<=16));
         let mut ordinary=crate::jit::Jit::new_resumable(&p,false,16*1024*1024,true).unwrap();ordinary.enable_scalar_calls();ordinary.ensure_function(0).unwrap();
-        let map=serde_json::to_value(ordinary.operation_map().unwrap()).unwrap();
+        let map=ordinary.scalar_transaction_test_map();
         assert!(map["functions"].as_array().unwrap().iter().filter(|f|f["function"]==1).all(|f|f["spans"][0]["kind"]!="scalar_leaf"));
         for profiled in [false,true] {
             let native=NativeEnabled::new();let mut jit=crate::jit::Jit::new_resumable(&p,profiled,16*1024*1024,true).unwrap();
-            jit.enable_scalar_calls();jit.ensure_function(0).unwrap();let map=serde_json::to_value(jit.operation_map().unwrap()).unwrap();
+            jit.enable_scalar_calls();jit.ensure_function(0).unwrap();let map=jit.scalar_transaction_test_map();
             assert_eq!(map["complete"],true);assert_eq!(map["reconstructed_bytes_match"],true);
             let present=map["functions"].as_array().unwrap().iter().any(|f|f["function"]==1 && f["spans"][0]["kind"]=="scalar_leaf");
             assert_eq!(present,stores<=16);drop(native);
