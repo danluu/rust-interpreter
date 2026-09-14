@@ -298,3 +298,9 @@ Both completed cases are closed in the same campaign; advance to pgrust before
 private rg-aot and the resource-intensive Nushell guard. Full and edited parser
 qualification remain necessary for adoption.
 [Folded result](../results/scratch-memory-values-edit-folded-01/ASSESSMENT.md).
+
+Pgrust hash passes its full regression guard: 154 commands, wall 0.993862,
+CPU 0.994779, wall A/A 0.014998. Treat the small change as unchanged within
+control variation. Candidate/native is 0.846553. The three-case checkpoint
+admits private rg-aot; full parser coverage remains a separate obligation.
+[Pgrust hash result](../results/scratch-memory-values-edit-pgrust-01/ASSESSMENT.md).
