@@ -8,7 +8,7 @@ from workflow_io import write_json as write
 from native_suite import test_status
 from suite_reports import validate_report
 
-NAME='closed-scratch-memory-values-full-pgrust-retirement-01'
+NAME='closed-scratch-memory-values-full-pgrust-retirement-02'
 RUNS=['scratch-memory-values-edit-pgrust-01']
 
 def identity(path):
@@ -79,7 +79,7 @@ with ExitStack() as stack:
     lock=stack.enter_context((ROOT/'.work/benchmark.lock').open('a'));acquire_lock(lock,45)
     from workflow_io import require_space
     require_space(ROOT,8)
-    roots=set();proofs={};process_checks=[];evidence_roots=set();pids=set()
+    roots=set();proofs={};process_checks=[];evidence_roots=set();pids=set();archived_sources={}
     terminal('scratch-memory-values-full-pgrust-01')
     full='scratch-memory-values-full-01'
     closure=bind(ROOT/'results/scratch-memory-values-edit-pgrust-01/closure.json')
@@ -108,11 +108,16 @@ with ExitStack() as stack:
         assert plan['tools']==result['tool_keys']
         import hashlib
         for path,digest in plan['frozen'].items():
-            if path.startswith(('.work/','results/')):bind(ROOT/path,digest)
+            if path.startswith(('.work/','results/')) or ((ROOT/path).is_file() and sha(ROOT/path)==digest):bind(ROOT/path,digest)
             else:
-                archived=sources[path];assert archived['sha256']==digest,path
-                payload=subprocess.check_output(['git','show',archived['revision']+':'+path],cwd=ROOT)
-                assert hashlib.sha256(payload).hexdigest()==digest,path
+                archived=sources.get(path)
+                revisions=[archived['revision']] if archived else subprocess.check_output(['git','log','--all','--format=%H','--',path],cwd=ROOT,text=True).splitlines()
+                if archived:assert archived['sha256']==digest,path
+                for revision in revisions:
+                    payload=subprocess.run(['git','show',revision+':'+path],cwd=ROOT,capture_output=True)
+                    if payload.returncode==0 and hashlib.sha256(payload.stdout).hexdigest()==digest:
+                        archived_sources[path]=dict(revision=revision,sha256=digest);break
+                else:raise AssertionError('no exact historical source: '+path)
         source=source_pin('pgrust','38d2517d3e09168a8fe222837730d435238ff358',plan['case']['file'],plan['original_source_sha256'])
         assert plan['revision']=='38d2517d3e09168a8fe222837730d435238ff358'
         schedule=[(cycle,state) for cycle in range(3) for state in [0,-1,1,2,3,4,5]]+[(3,0)]
@@ -154,6 +159,7 @@ with ExitStack() as stack:
             invocation=stack.enter_context((root/'invocation.lock').open('r+'));acquire_lock(invocation,45)
     assert all(sha(ROOT/path)==digest for path,digest in proofs.items())
     work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
+    write(work/'archived-sources.json',archived_sources)
     rows=[];protected=dict(proofs);open_checks=[];sizes=[]
     for root in roots:
         open_checks.append(check_open(root))
@@ -185,7 +191,7 @@ with ExitStack() as stack:
     assert rows, 'no eligible compiler intermediates remain; no deletion attempted'
     before=shutil.disk_usage(ROOT).free;started=time.time()
     write(work/'plan.json',dict(owner=str(ROOT),script_sha256=sha(Path(__file__)),completed_runs=RUNS,
-        roots=sizes,process_checks=process_checks,open_checks=open_checks,files=len(rows),
+        archived_sources=archived_sources,roots=sizes,process_checks=process_checks,open_checks=open_checks,files=len(rows),
         logical_bytes=sum(r['size'] for r in rows),free_before=before,started_at=started,
         scope='Seven exact completed public compiler caches from the closed scratch-memory-values full pgrust history. Successful supervisors, source pins/restoration, original assertions and snapshots are verified. Only nonexecutable compiler intermediates are eligible. Preserve every executable, bytecode/catalog snapshot and raw proof under shared/invocation locks and fresh process/open-file checks. No private cache, shared target, installed tool, unstarted later-case cache or peer cache.'))
     assert all(sha(ROOT/p)==h for p,h in proofs.items())
