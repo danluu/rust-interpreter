@@ -45,7 +45,7 @@ fn check(p:&Program,args:&[u128],max:u64) {
     for budget in 0..=max {for capacity in [0,super::super::MAX_CODE_BYTES] {for persistent in [false,true] {for resumable in [false,true] {
         let limits=||Limits{instructions:budget,jit_code_bytes:capacity,jit_persistent_registers:persistent,
             jit_resumable_calls:resumable,..Limits::default()};
-        let expected=execute_profiled(p,args,limits(),Engine::Interpreter);
+        let expected=execute_profiled(p,args,Limits{instructions:budget,..Limits::default()},Engine::Interpreter);
         let plain=execute_with_engine(p,args,limits(),Engine::Jit);
         let profiled=execute_profiled(p,args,limits(),Engine::Jit);
         match expected {
