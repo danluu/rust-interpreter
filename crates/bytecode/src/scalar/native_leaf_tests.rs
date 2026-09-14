@@ -25,9 +25,42 @@ fn compare(p:&Program,plan:&Plan,native:&Native,args:&[u128],budget:usize) {
     }
 }
 
-fn variants(p: &Program, plan: &Plan, profiled: bool) -> [Native; 3] {
-    [0, 1, 2].map(|variant| {
-        let emitted = if variant == 2 { emit(plan, profiled) }
+// Adapt the private convention to the standard test entry. This wrapper is
+// test-only: it captures inputs, initializes private Output from the sentinel,
+// checks every additional preserved register, and copies back even on failure.
+fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
+    let body=emit_call(plan,profiled).unwrap();
+    let saved=CALL_ARGUMENTS+argument_count*16;
+    let stack=(saved+5*8+15)&!15;
+    let mut a=Emitter{plan,words:vec![],slots:vec![],stack_bytes:stack,registers:vec![],
+        labels:vec![],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame:false};
+    a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);
+    let short=a.words.len();a.emit(0x54000003);
+    a.stack(false);
+    for (r,offset) in [(0,0),(1,8),(2,16),(21,24),(30,32)] {a.store(r,31,offset);}
+    for r in 4..9 {a.store(r,31,saved+(r as usize-4)*8);}
+    for i in 0..argument_count*2 {a.load(9,0,i*8);a.store(9,31,CALL_ARGUMENTS+i*8);}
+    // Output's final eight bytes are padding; copy only its initialized fields.
+    for offset in (0..88).step_by(8) {a.load(9,2,offset);a.store(9,31,CALL_OUTPUT+offset);}
+    a.mov(21,1);
+    let call=a.words.len();a.emit(0x94000000);
+    a.mov(17,9);a.imm(11,2);
+    for (r,offset) in [(0,0),(1,8),(2,16),(21,8)].into_iter()
+        .chain((4..9).map(|r|(r,saved+(r as usize-4)*8))) {
+        a.load(10,31,offset);a.cmp(r,10);a.csel(17,17,11,0);
+    }
+    a.load(2,31,16);
+    for offset in (0..88).step_by(8) {a.load(9,31,CALL_OUTPUT+offset);a.store(9,2,offset);}
+    a.load(21,31,24);a.load(30,31,32);a.stack(true);a.mov(0,17);a.emit(0xd65f03c0);
+    let declined=a.words.len();a.imm(0,1);a.emit(0xd65f03c0);a.patch(short,declined,true).unwrap();
+    a.patch(call,a.words.len(),false).unwrap();a.words.extend(body.words);
+    Emitted{words:a.words,stack_bytes:stack+body.stack_bytes,profiled,register_values:body.register_values}
+}
+
+fn variants(p: &Program, plan: &Plan, profiled: bool) -> [Native; 4] {
+    [0, 1, 2, 3].map(|variant| {
+        let emitted = if variant == 3 { Ok(call_wrapper(plan,profiled,p.functions[0].args.len())) }
+            else if variant == 2 { emit(plan, profiled) }
             else { emit_with_registers(plan, profiled, variant == 1) }.unwrap();
         let mut code = memory::Code::reserve(MAX_CODE_BYTES).unwrap();
         assert_eq!(code.append(&emitted.words).unwrap(), 0);
@@ -56,7 +89,7 @@ fn native_scalar_register_pressure_reuses_values_and_spills_complete_intervals()
     p.functions[0].registers = 64;
     let plan = make_plan(&p);
     for profiled in [false, true] {
-        let [spilled, allocated, optimized] = variants(&p, &plan, profiled);
+        let [spilled, allocated, optimized, call] = variants(&p, &plan, profiled);
         assert!(allocated.emitted.register_values > 4);
         assert!(allocated.emitted.stack_bytes < spilled.emitted.stack_bytes);
         assert!(allocated.emitted.stack_bytes > 0);
@@ -67,6 +100,7 @@ fn native_scalar_register_pressure_reuses_values_and_spills_complete_intervals()
                 compare(&p, &plan, &optimized, &[input], budget);
                 assert_eq!(allocated.attempt(&[input], 16, budget).unwrap(), spilled.attempt(&[input], 16, budget).unwrap());
                 assert_eq!(optimized.attempt(&[input], 16, budget).unwrap(), spilled.attempt(&[input], 16, budget).unwrap());
+                assert_eq!(call.attempt(&[input], 16, budget).unwrap(), spilled.attempt(&[input], 16, budget).unwrap());
             }
         }
     }
@@ -90,7 +124,7 @@ fn native_scalar_registers_preserve_cross_block_values_phis_and_wide_results() {
     p.functions[0].registers = 32;
     let plan = make_plan(&p);
     for profiled in [false, true] {
-        let [spilled, allocated, optimized] = variants(&p, &plan, profiled);
+        let [spilled, allocated, optimized, call] = variants(&p, &plan, profiled);
         assert!(allocated.emitted.register_values > 0);
         for a in [0, 1, 1 << 63, u64::MAX as u128] {
             for b in [0, 255, 1 << 63, u64::MAX as u128] {
@@ -122,7 +156,7 @@ fn native_scalar_registers_preserve_nonmonotonic_cfg_and_private_faults() {
     let p = program(code, 16, vec![Slot { offset: 0, size: 8 }, Slot { offset: 8, size: 8 }], Slot { offset: 0, size: 8 });
     let plan = make_plan(&p);
     for profiled in [false, true] {
-        let [spilled, allocated, optimized] = variants(&p, &plan, profiled);
+        let [spilled, allocated, optimized, call] = variants(&p, &plan, profiled);
         assert!(allocated.emitted.register_values > 0);
         for args in [[0, 0], [1, 1], [128, u64::MAX as u128], [0xabcdef, 3], [u64::MAX as u128, 1]] {
             for budget in 0..=plan.maximum_steps + 1 {
@@ -130,6 +164,7 @@ fn native_scalar_registers_preserve_nonmonotonic_cfg_and_private_faults() {
                 compare(&p, &plan, &optimized, &args, budget);
                 assert_eq!(allocated.attempt(&args, 16, budget).unwrap(), spilled.attempt(&args, 16, budget).unwrap());
                 assert_eq!(optimized.attempt(&args, 16, budget).unwrap(), spilled.attempt(&args, 16, budget).unwrap());
+                assert_eq!(call.attempt(&args, 16, budget).unwrap(), spilled.attempt(&args, 16, budget).unwrap());
             }
         }
     }
@@ -227,4 +262,36 @@ fn native_scalar_unsupported_width_and_storage_code_bounds_decline_before_public
     let p=program(vec![Op::Switch{value:0,cases:(0..8191).map(|i|(i,1)).collect(),otherwise:1},Op::Return],0,vec![],Slot{offset:0,size:0});
     let plan=super::super::lower(&p.functions[0],&crate::proof::memory_plan(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone()),250_000).unwrap();
     assert!(matches!(emit(&plan,false),Err("native_word_limit")));
+}
+
+#[test]
+fn native_scalar_call_frame_abi_preserves_live_pointers_and_private_failure_output() {
+    let p=program(vec![local(0,0),load(1,0,8),
+        Op::Assert{value:1,expected:true,message:"argument zero".into()},
+        local(2,504),load(3,2,8),store(0,3,8),local(4,8),store(4,2,8),Op::Return],
+        512,(0..64).map(|i|Slot{offset:i*8,size:8}).collect(),Slot{offset:0,size:16});
+    let plan=make_plan(&p);
+    for profiled in [false,true] {
+        let mut code=memory::Code::reserve(MAX_CODE_BYTES).unwrap();
+        code.append(&call_wrapper(&plan,profiled,64).words).unwrap();
+        let mut reference=memory::Code::reserve(MAX_CODE_BYTES).unwrap();
+        reference.append(&emit_prechecked(&plan,profiled).unwrap().words).unwrap();
+        for first in [0,1,u64::MAX as u128] {for last in [0,1,1<<63,u64::MAX as u128] {
+            let mut args=[0u128;64];args[0]=first;args[63]=last;
+            let mut output=Output{value:u128::MAX,steps:123,visited:[456;8]};let mut expected=output.clone();
+            let status=unsafe {reference.call(0,args.as_mut_ptr(),0x1000,std::ptr::from_mut(&mut expected).cast(),100,
+                0,std::ptr::null_mut(),0,std::ptr::null_mut())};
+            let actual=unsafe {code.tree_abi_probe(0,[args.as_ptr() as usize,0x1000,
+                std::ptr::from_mut(&mut output) as usize,100,0x123,0x456,0x789,0xabc])};
+            assert_eq!(actual[0],status);assert_eq!(output,expected);
+            assert_eq!([actual[1],actual[2],actual[3],actual[4],actual[7],actual[8],actual[9],actual[10],actual[11],actual[12]],
+                [0x1357,0x2468,0x3579,0x468a,0x579b,0x68ac,0x79bd,0x8ace,0x9bdf,0xace0]);assert_eq!(actual[5],actual[6]);
+        }}
+    }
+    let p=program(vec![Op::Return],0,vec![],Slot{offset:0,size:0});let mut large=make_plan(&p);
+    for _ in 0..2040 {large.nodes.push(Node{value:Value::Pack(vec![]),width:16,pc:None});large.live.push(true);}
+    assert!(emit(&large,false).is_ok());
+    assert!(matches!(emit_call(&large,false),Err("native_call_stack_limit")));
+    let mut invalid=make_plan(&p);invalid.nodes.push(Node{value:Value::Input(64),width:8,pc:None});invalid.live.push(true);
+    assert!(matches!(emit_call(&invalid,false),Err("native_argument_limit")));
 }

@@ -44,7 +44,7 @@ impl Jit<'_> {
         let plan=scalar_ir::lower(f,&memory,limit);
         scalar.scalar_work=scalar.scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
         let Ok(plan)=plan else {return Ok(());};
-        let Ok(emitted)=scalar_ir::native_leaf::emit_prechecked(&plan,self.profiled) else {return Ok(());};
+        let Ok(emitted)=scalar_ir::native_leaf::emit_call(&plan,self.profiled) else {return Ok(());};
         let bytes=emitted.words.len()*4;
         if bytes>self.capacity-self.bytes {return Ok(());}
         if self.code.is_none() {self.code=Some(platform::Code::reserve(self.capacity)?);}
@@ -60,14 +60,14 @@ impl Jit<'_> {
         let memory=proof::memory_plan(self.program,id,&mut work);
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).map_err(str::to_string)?;
         if plan.maximum_steps!=entry.maximum_steps {return Err("scalar reconstruction budget mismatch".into());}
-        let emitted=scalar_ir::native_leaf::emit_prechecked(&plan,self.profiled).map_err(str::to_string)?;
+        let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).map_err(str::to_string)?;
         if emitted.words.len()*4!=entry.bytes {return Err("scalar reconstruction extent mismatch".into());}
         Ok(emitted.words)
     }
 }
 
-const OUTPUT:usize=64;
-const ARGUMENTS:usize=160;
+const OUTPUT:usize=scalar_ir::native_leaf::CALL_OUTPUT;
+const ARGUMENTS:usize=scalar_ir::native_leaf::CALL_ARGUMENTS;
 const _:()={assert!(std::mem::size_of::<scalar_ir::native_leaf::Output>()==96);};
 impl Assembler<'_> {
     fn scalar_guard_address(&mut self,address:u32,size:usize,write:bool,declines:&mut Vec<usize>) {
@@ -78,7 +78,7 @@ impl Assembler<'_> {
         declines.extend(self.failures.drain(prior..).map(|(at,kind)|{assert!(kind==Failure::Memory);at}));
     }
     fn scalar_restore(&mut self,stack:usize) {
-        for (reg,offset) in [(0,0),(1,8),(2,16),(3,24),(30,32)] {self.load64(reg,31,offset);}
+        for (reg,offset) in [(3,24),(30,32)] {self.load64(reg,31,offset);}
         self.add_imm(31,31,stack);
     }
     #[allow(clippy::too_many_arguments)]
@@ -103,7 +103,7 @@ impl Assembler<'_> {
 
         let stack=ARGUMENTS+args.len()*16;assert!(stack%16==0 && stack<4096);
         self.sub_imm(31,31,stack);
-        for (reg,offset) in [(0,0),(1,8),(2,16),(3,24),(30,32),(11,48)] {self.store64(reg,31,offset);}
+        for (reg,offset) in [(3,24),(30,32),(11,48)] {self.store64(reg,31,offset);}
         self.get(11,destination,false);self.scalar_guard_address(11,f.result.size,true,&mut private);self.store64(11,31,40);
         for (index,(&source,slot)) in args.iter().zip(&f.args).enumerate() {
             let prior=self.failures.len();
@@ -115,18 +115,16 @@ impl Assembler<'_> {
             self.load_mem(9,10,11,slot.size);
             self.store64(9,31,ARGUMENTS+index*16);self.store64(10,31,ARGUMENTS+index*16+8);
         }
-        // Native scalar ABI: args, original logical base, private Output,
-        // remaining budget. The guard above proves maximum_steps + Call, so
-        // this private entry omits the redundant body check. x4-x8 and x19-x29
-        // are preserved by the leaf.
-        self.add_imm(0,31,ARGUMENTS);self.mov(1,21);self.add_imm(2,31,OUTPUT);
-        self.sub_imm(3,BUDGET_REGISTER,1);self.imm(16,entry.target as u64);
+        // Private leaf inputs and Output live at fixed caller-SP offsets;
+        // x21 is the prechecked logical base. x0–x2, x4–x8 and x19–x29 stay
+        // live. Only the allocator's x3 and the link register need restoring.
+        self.imm(16,entry.target as u64);
         self.emit(0xd63f0200); // blr x16: one nonrecursive native leaf
-        self.cmp(0,31);self.decline(Cond::Ne,&mut private);
+        self.cmp(9,31);self.decline(Cond::Ne,&mut private);
 
         // Restore the parent's live ABI while retaining private output. No
         // fallible action follows success; this is the transaction commit.
-        for (reg,offset) in [(0,0),(1,8),(2,16),(3,24),(30,32)] {self.load64(reg,31,offset);}
+        for (reg,offset) in [(3,24),(30,32)] {self.load64(reg,31,offset);}
         self.charge_transition(pc,profiled);
         self.load64(9,31,OUTPUT+16);self.three(0xcb000000,BUDGET_REGISTER,BUDGET_REGISTER,9);
         self.three(0x8b000000,11,2,3);self.three(0x8b000000,12,2,21);

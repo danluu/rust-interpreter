@@ -14,7 +14,7 @@ enum Branch { None, Direct, Conditional, Return }
 #[derive(Clone, Copy)]
 struct Word { reads: u64, writes: u64, pure: bool, next: [usize; 2], count: usize, branch: Branch }
 
-fn decode(w: u32, pc: usize, len: usize) -> Result<Word, &'static str> {
+fn decode(w: u32, pc: usize, len: usize, return_reads: u64) -> Result<Word, &'static str> {
     let (rd, rn, rm) = (w & 31, (w >> 5) & 31, (w >> 16) & 31);
     let item = |reads, writes, pure, next: [usize; 2], count, branch| {
         if next[..count].iter().any(|&p| p >= len) { return Err("native_dead_external_edge"); }
@@ -22,9 +22,7 @@ fn decode(w: u32, pc: usize, len: usize) -> Result<Word, &'static str> {
     };
     let ordinary = |reads, writes, pure| item(reads, writes, pure, [pc + 1, 0], 1, Branch::None);
     if w == 0xd65f03c0 {
-        // Scalar ABI status, preserved x4–x8/x18–x30, and SP. x18 is never used.
-        let preserved = (4..9).chain(18..32).fold(1, |m, r| m | (1 << r));
-        return item(preserved, 0, false, [0, 0], 0, Branch::Return);
+        return item(return_reads, 0, false, [0, 0], 0, Branch::Return);
     }
     if w & 0xfc000000 == 0x14000000 {
         let delta = ((w << 6) as i32 >> 6) as i64;
@@ -87,9 +85,18 @@ fn decode(w: u32, pc: usize, len: usize) -> Result<Word, &'static str> {
 }
 
 pub(crate) fn eliminate(words: &[u32]) -> Result<Vec<u32>, &'static str> {
+    eliminate_inner(words, false)
+}
+pub(crate) fn eliminate_call(words: &[u32]) -> Result<Vec<u32>, &'static str> {
+    eliminate_inner(words, true)
+}
+fn eliminate_inner(words: &[u32], call_frame: bool) -> Result<Vec<u32>, &'static str> {
+    // Both entries preserve x4–x8/x18–x30 and SP. The Call entry also
+    // preserves the caller's x0–x2 and returns its status in x9.
+    let returns = (4..9).chain(18..32).fold(if call_frame { 7 | (1 << 9) } else { 1 }, |m, r| m | (1 << r));
     let len = words.len();
     if len == 0 || len > MAX_WORDS { return Err("native_dead_word_limit"); }
-    let mut ops = words.iter().enumerate().map(|(pc, &w)| decode(w, pc, len)).collect::<Result<Vec<_>, _>>()?;
+    let mut ops = words.iter().enumerate().map(|(pc, &w)| decode(w, pc, len, returns)).collect::<Result<Vec<_>, _>>()?;
     let mut incoming = vec![(0usize, 0usize); len];
     for (pc, op) in ops.iter().enumerate() {
         for &to in &op.next[..op.count] { incoming[to].0 += 1; incoming[to].1 = pc; }

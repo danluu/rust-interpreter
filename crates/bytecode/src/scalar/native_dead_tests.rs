@@ -15,7 +15,11 @@ fn native_scalar_dead_registers_keep_flags_memory_and_vector_operands() {
     let before = [0x9e670120, 0x0e205800, 0x0e31b800, 0x0e013c09, 0xf9000049, OK, RET];
     assert_eq!(eliminate(&before).unwrap(), before);
     assert_eq!(eliminate(&[before[0], before[1], before[2], before[3], OK, RET]).unwrap(), [OK, RET]);
-    assert_eq!(decode(0xeb0a013f, 0, 2).unwrap().writes, FLAGS);
+    assert_eq!(decode(0xeb0a013f, 0, 2, 0).unwrap().writes, FLAGS);
+    // The private return observes x9 status and the live VM pointers x0–x2.
+    let call=[0xd2800020,0xd2800041,0xd2800062,0xaa1f03e9,RET];
+    assert_eq!(eliminate_call(&call).unwrap(),call);
+    assert_eq!(eliminate(&call).unwrap(),[call[0],RET]);
     // Two incoming definitions must both survive the merge before a store.
     let before = [0x54000060, ZERO10, 0x14000002, 0xd280002a, 0xf900044a, OK, RET];
     assert_eq!(eliminate(&before).unwrap(), before);

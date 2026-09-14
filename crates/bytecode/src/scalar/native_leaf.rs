@@ -5,6 +5,10 @@ use super::*;
 mod registers;
 #[path="native_dead.rs"]
 mod dead;
+// Fixed offsets from the caller's SP at private native Call entry. Leaf
+// spills grow below that SP; inputs and Output remain in caller-owned scratch.
+pub(crate) const CALL_OUTPUT:usize=64;
+pub(crate) const CALL_ARGUMENTS:usize=160;
 const MAX_WORDS:usize=65536;
 const MAX_CODE_BYTES:usize=MAX_WORDS*4;
 #[repr(C)]
@@ -23,7 +27,7 @@ struct Emitter<'a> {
     plan:&'a Plan, words:Vec<u32>, slots:Vec<Option<usize>>, stack_bytes:usize,
     registers:Vec<Option<u32>>,
     labels:Vec<Option<usize>>, jumps:Vec<(usize,usize)>, failures:Vec<usize>,
-    exhausted:bool, profiled:bool,
+    exhausted:bool, profiled:bool, call_frame:bool,
 }
 impl Emitter<'_> {
     fn emit(&mut self,word:u32) {if self.words.len()<MAX_WORDS {self.words.push(word);} else {self.exhausted=true;}}
@@ -42,6 +46,15 @@ impl Emitter<'_> {
     fn lsl(&mut self,rd:u32,rn:u32,shift:u8) {assert!(shift<64);if shift==0 {self.mov(rd,rn);} else {self.emit(0xd3400000|((64-shift as u32)<<16)|((63-shift as u32)<<10)|(rn<<5)|rd);}}
     fn load(&mut self,rd:u32,base:u32,offset:usize) {assert!(offset%8==0 && offset/8<4096);self.emit(0xf9400000|((offset as u32/8)<<10)|(base<<5)|rd);}
     fn store(&mut self,rd:u32,base:u32,offset:usize) {assert!(offset%8==0 && offset/8<4096);self.emit(0xf9000000|((offset as u32/8)<<10)|(base<<5)|rd);}
+    fn output_address(&self,offset:usize)->(u32,usize) {
+        if self.call_frame {(31,self.stack_bytes+CALL_OUTPUT+offset)} else {(2,offset)}
+    }
+    fn output_load(&mut self,rd:u32,offset:usize) {
+        let (base,offset)=self.output_address(offset);self.load(rd,base,offset);
+    }
+    fn output_store(&mut self,rd:u32,offset:usize) {
+        let (base,offset)=self.output_address(offset);self.store(rd,base,offset);
+    }
     fn stack(&mut self,restore:bool) {
         let opcode=if restore {0x91000000} else {0xd1000000};
         if self.stack_bytes/4096!=0 {self.emit(opcode|(1<<22)|((self.stack_bytes as u32/4096)<<10)|(31<<5)|31);}
@@ -60,9 +73,10 @@ impl Emitter<'_> {
         match node.value {
             Value::Constant(v)=>self.imm(rd,(if high {v>>64} else {v}) as u64),
             Value::Input(index)=>{if node.width==0 {self.mov(rd,31);} else {
-                self.load(rd,0,index*16+usize::from(high)*8);
+                let offset=index*16+usize::from(high)*8;
+                if self.call_frame {self.load(rd,31,self.stack_bytes+CALL_ARGUMENTS+offset);} else {self.load(rd,0,offset);}
                 self.mask(rd,if high {(node.width-8)*8} else {node.width.min(8)*8});}},
-            Value::Base(offset)=>{if high {self.mov(rd,31);} else {self.imm(rd,offset as u64);self.three(0x8b000000,rd,1,rd);}},
+            Value::Base(offset)=>{if high {self.mov(rd,31);} else {self.imm(rd,offset as u64);self.three(0x8b000000,rd,if self.call_frame {21} else {1},rd);}},
             _=>if let Some(register)=self.registers[id] {self.mov(rd,register);} else {
                 self.load(rd,31,self.slots[id].expect("live scalar storage")+usize::from(high)*8)
             },
@@ -195,49 +209,64 @@ impl Emitter<'_> {
     }
     fn charge_block(&mut self,block:usize) {
         let b=&self.plan.blocks[block];let (start,end)=(b.start,b.end);
-        self.load(9,2,16);self.emit(0x91000000|(((end-start) as u32)<<10)|(9<<5)|9);self.store(9,2,16);
+        self.output_load(9,16);self.emit(0x91000000|(((end-start) as u32)<<10)|(9<<5)|9);self.output_store(9,16);
         if self.profiled {
             for word in start/64..=(end-1)/64 {
                 let left=start.max(word*64)-word*64;let right=end.min((word+1)*64)-word*64;
                 let bits=if right-left==64 {u64::MAX} else {((1u64<<(right-left))-1)<<left};
-                self.load(9,2,24+word*8);self.imm(10,bits);self.three(0xaa000000,9,9,10);self.store(9,2,24+word*8);
+                self.output_load(9,24+word*8);self.imm(10,bits);self.three(0xaa000000,9,9,10);self.output_store(9,24+word*8);
             }
         }
     }
 }
 
 pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,true,true)
+    emit_inner(plan,profiled,true,true,true,false)
 }
 #[cfg(test)]
 fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emitted,&'static str> {
     // Preserve exact pre-elimination reference bytes for the archived census.
-    emit_inner(plan,profiled,use_registers,true,false)
+    emit_inner(plan,profiled,use_registers,true,false,false)
 }
-/// For the private JIT Call entry only: its immutable entry metadata and
-/// preflight must prove remaining budget >= maximum_steps before entry.
-/// Standalone Native::compile continues to emit its own entry budget guard.
+/// Historical pointer-argument entry retained as an independent test reference.
+#[cfg(test)]
+#[allow(dead_code)]
 pub(crate) fn emit_prechecked(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true)
+    emit_inner(plan,profiled,true,false,true,false)
 }
-fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool)->Result<Emitted,&'static str> {
+/// Private Call entry: captured inputs/Output use fixed caller-SP offsets,
+/// logical base is x21, status is x9, and x0–x2 remain live. Its caller must
+/// preflight maximum_steps + Call. Standalone emission retains its budget guard.
+pub(crate) fn emit_call(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
+    emit_inner(plan,profiled,true,false,true,true)
+}
+fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool)->Result<Emitted,&'static str> {
     let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
     let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;
     for (id,node) in plan.nodes.iter().enumerate() {
         if !plan.live[id] {continue;}
         if matches!(node.value,Value::Binary{bits:128,..}|Value::Unary{bits:128,..}) {return Err("native_integer_128");}
-        if let Value::Input(index)=node.value {if index>=2048 {return Err("native_argument_limit");}}
+        if let Value::Input(index)=node.value {if index>=if call_frame {64} else {2048} {return Err("native_argument_limit");}}
         if registers[id].is_none() && !matches!(node.value,Value::Constant(_)|Value::Input(_)|Value::Base(_)) {slots[id]=Some(bytes);bytes+=if node.width>8 {16} else {8};}
     }
     let stack_bytes=(bytes+15)&!15;if stack_bytes>32752 {return Err("native_stack_limit");}
-    let mut a=Emitter{plan,words:vec![],slots,stack_bytes,registers,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled};
+    if call_frame {
+        // Scaled LDR/STR offsets must fit even after allocating private spills.
+        let mut end=CALL_OUTPUT+std::mem::size_of::<Output>();
+        for (id,node) in plan.nodes.iter().enumerate() {
+            if plan.live[id] {if let Value::Input(index)=node.value {end=end.max(CALL_ARGUMENTS+(index+1)*16);}}
+        }
+        if stack_bytes+end>32768 {return Err("native_call_stack_limit");}
+    }
+    let status=if call_frame {9} else {0};
+    let mut a=Emitter{plan,words:vec![],slots,stack_bytes,registers,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame};
     // This function owns only its private scratch/output. The standalone
     // guard returns before touching either; other failures discard private work.
     let short=if check_budget {
         a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);let at=a.words.len();a.emit(0x54000003);Some(at)
     } else {None};
-    a.stack(false);a.store(31,2,16);if profiled {for i in 0..8 {a.store(31,2,24+i*8);}}
+    a.stack(false);a.output_store(31,16);if profiled {for i in 0..8 {a.output_store(31,24+i*8);}}
     for block in 0..plan.blocks.len() {
         if !plan.reachable[block] {continue;}a.labels[block]=Some(a.words.len());a.charge_block(block);
         for pc in plan.blocks[block].start..plan.blocks[block].end {
@@ -246,7 +275,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
                 Effect::None=>{},
                 Effect::Assert{value,expected,..}=>{a.get(9,*value,false);a.get(10,*value,true);a.three(0xaa000000,9,9,10);a.cmp(9,31);a.fail(if *expected {0} else {1});},
                 Effect::Trap(_)=>{a.cmp(31,31);a.fail(0);},
-                Effect::Return(value)=>{a.get(9,*value,false);a.get(10,*value,true);a.store(9,2,0);a.store(10,2,8);a.stack(true);a.mov(0,31);a.emit(0xd65f03c0);},
+                Effect::Return(value)=>{a.get(9,*value,false);a.get(10,*value,true);a.output_store(9,0);a.output_store(10,8);a.stack(true);a.mov(status,31);a.emit(0xd65f03c0);},
                 Effect::Jump(pc)=>a.edge(block,plan.at[*pc])?,
                 Effect::Switch{value,cases,otherwise}=>{
                     a.get(9,*value,false);a.get(10,*value,true);let mut targets=vec![];
@@ -263,7 +292,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
         let end=plan.blocks[block].end;
         if !matches!(plan.effects[end-1],Effect::Return(_)|Effect::Trap(_)|Effect::Jump(_)|Effect::Switch{..}) {a.edge(block,plan.at[end])?;}
     }
-    let failed=a.words.len();a.stack(true);let declined=a.words.len();a.imm(0,1);a.emit(0xd65f03c0);
+    let failed=a.words.len();a.stack(true);let declined=a.words.len();a.imm(status,1);a.emit(0xd65f03c0);
     if let Some(short)=short {a.patch(short,declined,true)?;}
     for at in std::mem::take(&mut a.failures) {a.patch(at,failed,true)?;}
     for (at,block) in std::mem::take(&mut a.jumps) {a.patch(at,a.labels[block].ok_or("native_missing_block")?,false)?;}
@@ -271,7 +300,8 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
     if eliminate_dead {
         // Unknown future encodings or nonconforming CFGs keep their original
         // qualified emission. All branch relocations finish before publication.
-        if let Ok(compact)=dead::eliminate(&a.words) {a.words=compact;}
+        let compact=if call_frame {dead::eliminate_call(&a.words)} else {dead::eliminate(&a.words)};
+        if let Ok(compact)=compact {a.words=compact;}
     }
     Ok(Emitted{words:a.words,stack_bytes,profiled,register_values})
 }
