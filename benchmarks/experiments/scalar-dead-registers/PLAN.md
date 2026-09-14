@@ -33,3 +33,11 @@ register-pressure, cross-block and private-fault controls to the optimized
 variant. Use the same 40-command edited-source token gate. Only a passing screen
 permits the full project comparisons and parser compatibility work. No runtime
 adoption follows from static counts, preliminary tests or a point estimate.
+
+The saved-word probe passes in both profiles. An additional isolated std-only
+probe now runs each original/optimized saved body on 128 deterministic synthetic
+argument sets. It checks the complete private Output even on failure, status,
+callee-saved registers and SP. All memory accesses are checked against the
+qualified input/Output/stack contract before publication. This uses the existing
+custom MAP_JIT publisher and the same small-probe admission. It supplements the
+full VM qualification and does not substitute for real project tests or timing.
