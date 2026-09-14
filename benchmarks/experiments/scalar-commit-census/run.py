@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-commit-census-01'
+NAME='scalar-commit-census-02'
 
 def read(p):return json.loads(p.read_text())
 def main():
@@ -67,6 +67,8 @@ def main():
             rows=case['functions']
             totals.append(dict(index=case['index'],bodies=len(rows),successful_calls=sum(f['successful_calls'] for f in rows),
                 fixed_step_calls=sum(f['successful_calls'] for f in rows if f['fixed_success_steps'] is not None),
+                narrow_argument_captures=sum(f['narrow_argument_captures'] for f in rows),
+                empty_argument_captures=sum(f['empty_argument_captures'] for f in rows),
                 zero_result_calls=sum(f['successful_calls'] for f in rows if f['result_bytes']==0),
                 fixed_step_zero_result_calls=sum(f['successful_calls'] for f in rows if f['result_bytes']==0 and f['fixed_success_steps'] is not None),
                 possible_step_counter_accesses=sum(f['possible_step_counter_accesses'] for f in rows),

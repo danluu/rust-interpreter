@@ -97,6 +97,9 @@ fn observe_original_scalar_commit_traffic() {
             rows.push(json!({"function":function,"name":f.name,"successful_calls":calls,"result_bytes":f.result.size,
                 "success_step_range":steps,"fixed_success_steps":fixed,"maximum_steps":plan.maximum_steps,
                 "successful_steps":total_steps,"successful_blocks":blocks,
+                "argument_widths":f.args.iter().map(|s|s.size).collect::<Vec<_>>(),
+                "narrow_argument_captures":calls*f.args.iter().filter(|s|s.size>0 && s.size<=8).count() as u64,
+                "empty_argument_captures":calls*f.args.iter().filter(|s|s.size==0).count() as u64,
                 "scalar_body_bytes":bytes.len(),"spill_bytes":emitted.stack_bytes,
                 "possible_step_counter_accesses":if fixed.is_some() {calls*2+blocks*2} else {0},
                 "possible_zero_result_accesses":if f.result.size==0 {calls*6} else {0}}));
