@@ -299,19 +299,32 @@ pub struct MemoryPlan {
 /// Only a diagnostic annotation of ordinary entry from PC zero. No memory or
 /// register is replaced, and this is not an address-nonescape certificate.
 pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> MemoryPlan {
+    memory_plan_bounded::<512,16,false>(program,id,remaining)
+}
+
+/// Diagnostic only. A zeroed-frame proof requires the ordinary Call's fresh
+/// zero bytes and ordered captured arguments; it is not an arbitrary-entry proof.
+#[cfg(test)]
+pub(crate) fn aggregate_memory_plan(program:&Program,id:usize,remaining:&mut usize,zeroed:bool)->MemoryPlan {
+    if zeroed {memory_plan_bounded::<1024,64,true>(program,id,remaining)}
+    else {memory_plan_bounded::<1024,64,false>(program,id,remaining)}
+}
+
+fn memory_plan_bounded<const FRAME:usize,const RESULT:usize,const ZEROED:bool>(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
     let f=&program.functions[id];
     let declined=|reason| MemoryPlan {eligible:false,decline:Some(Decline{pc:0,reason}),work:0,accesses:vec![]};
-    if f.code.is_empty() || f.code.len()>512 || f.frame_size>512 || f.registers>512 {
+    if f.code.is_empty() || f.code.len()>512 || f.frame_size>FRAME || f.registers>512 {
         return declined("small_shape_limit");
     }
     if f.code.iter().any(|op| matches!(op,Op::Call{..}|Op::CallIndirect{..})) {
         return declined("has_callee");
     }
-    if f.args.iter().chain([&f.result]).any(|slot| !matches!(slot.size,0|1|2|4|8|16)) {
+    if f.args.iter().any(|slot| !matches!(slot.size,0|1|2|4|8|16)) ||
+        if RESULT==16 {!matches!(f.result.size,0|1|2|4|8|16)} else {f.result.size>RESULT} {
         return declined("boundary_width");
     }
     let confined=vec![false;program.functions.len()];
-    let init=analyze_budgeted(program,id,&confined,Mode::Initialized,remaining);
+    let init=analyze_budgeted(program,id,&confined,if ZEROED {Mode::Confined} else {Mode::Initialized},remaining);
     if !init.eligible { return MemoryPlan{eligible:false,decline:init.decline,work:init.work,accesses:vec![]}; }
     let mut a=Analysis {program,confined:&confined,mode:Mode::Confined,work:0,max_work:MAX_WORK.min(*remaining),pc:0};
     let mut accesses=vec![];

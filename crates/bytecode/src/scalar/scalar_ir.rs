@@ -146,8 +146,12 @@ fn mask(bits:u8) -> u128 {if bits==128 {u128::MAX} else {(1u128<<bits)-1}}
 fn slice(value:u128,p:Slice) -> u128 {(value>>(p.byte as u32*8))&mask(p.size*8)}
 
 pub fn lower(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static str> {
+    lower_bounded::<512>(f,memory,limit)
+}
+
+fn lower_bounded<const FRAME:usize>(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static str> {
     if !memory.eligible {return Err("no_memory_plan");}
-    if f.code.is_empty() || f.code.len()>512 || f.frame_size>512 || f.registers>512 {return Err("scalar_shape_limit");}
+    if f.code.is_empty() || f.code.len()>512 || f.frame_size>FRAME || f.registers>512 {return Err("scalar_shape_limit");}
     // A new opcode must be reviewed explicitly. Floating point and byte
     // comparison are deliberately outside this first internal representation.
     if f.code.iter().any(|op|!matches!(op,Op::Imm{..}|Op::Local{..}|Op::Load{..}|Op::Store{..}|Op::Copy{..}
@@ -321,6 +325,10 @@ impl Plan {
 #[cfg(test)]
 #[path="scalar_ir_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path="aggregate.rs"]
+mod aggregate;
 
 #[path="native_leaf.rs"]
 pub mod native_leaf;
