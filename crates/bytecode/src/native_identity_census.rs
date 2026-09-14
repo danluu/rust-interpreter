@@ -4,6 +4,7 @@ use bincode::Options;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{fs, io::Write, path::Path, time::Instant};
+mod churn;
 
 fn digest<T: serde::Serialize>(value: &T) -> String {
     format!("{:x}", Sha256::digest(bincode::serialize(value).unwrap()))
