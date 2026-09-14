@@ -198,7 +198,11 @@ fn native_indirect_explicit_mode_and_prepared_identity() {
     let p=fixture(4);
     let wrong=Limits{jit_indirect_calls:true,..Limits::default()};
     assert_eq!(execute_with_engine(&p,&[pointer(1)],wrong,Engine::Jit).unwrap_err(),"native indirect calls require resumable calls");
-    assert!(execute_with_engine(&p,&[pointer(1)],options(false),Engine::Interpreter).unwrap_err().contains("JIT engine"));
+    let indirect_only=Limits{jit_scalar_calls:false,..options(false)};
+    assert_eq!(execute_with_engine(&p,&[pointer(1)],indirect_only,Engine::Interpreter).unwrap_err(),
+        "resumable calls require the JIT engine");
+    assert_eq!(execute_with_engine(&p,&[pointer(1)],options(false),Engine::Interpreter).unwrap_err(),
+        "scalar calls require resumable JIT execution");
     for enabled in [false,true] {
         let l=Limits{jit_indirect_calls:enabled,..options(false)};let mut prepared=PreparedJit::new(&p,&l).unwrap();
         let changed=Limits{jit_indirect_calls:!enabled,..l};
