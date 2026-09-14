@@ -60,6 +60,8 @@ mod flush_census;
 mod memory_parts;
 #[cfg(test)]
 mod memory_operand_tests;
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod publication_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
 // Its pointers never enter guest registers or addressable guest memory.
@@ -219,19 +221,49 @@ mod platform {
             Ok(Self { ptr, len, used: 0 })
         }
         pub fn append(&mut self, words: &[u32]) -> Result<usize, String> {
+            self.append_and_patch(words, &[])
+        }
+        // The owning thread must be outside native execution. Validate every
+        // replacement before changing protection or any committed/new byte.
+        pub(super) fn append_and_patch(&mut self, words: &[u32], patches: &[super::CodePatch]) -> Result<usize, String> {
             let bytes = words.len().checked_mul(4).ok_or("JIT code size overflow")?;
             let end = self.used.checked_add(bytes).filter(|end| *end <= self.len)
                 .ok_or("JIT arena capacity exceeded")?;
             let offset = self.used;
-            if bytes != 0 {
+            let mut previous = None;
+            for patch in patches {
+                if patch.offset % 4 != 0 || patch.offset.checked_add(4).is_none_or(|n| n > self.used)
+                    || previous.is_some_and(|last| last >= patch.offset)
+                    || patch.expected & 0xfc000000 != 0x14000000 || patch.word & 0xfc000000 != 0x14000000 {
+                    return Err("invalid or unordered JIT branch replacement".into());
+                }
+                // SAFETY: the aligned word lies in this arena's committed
+                // initialized prefix, and this thread exclusively owns it.
+                let actual = unsafe { self.ptr.cast::<u8>().add(patch.offset).cast::<u32>().read() };
+                if actual != patch.expected { return Err("stale JIT branch replacement".into()); }
+                let displacement = ((patch.word << 6) as i32 >> 6) as i128;
+                let target = patch.offset as i128 + displacement * 4;
+                if target < 0 || target >= end as i128 {
+                    return Err("JIT replacement target outside committed transaction".into());
+                }
+                previous = Some(patch.offset);
+            }
+            if bytes != 0 || !patches.is_empty() {
                 // All fallible work is complete before write protection changes.
-                // Only immutable new words are copied; committed code is untouched.
+                // No allocation, validation, guest execution or metadata
+                // publication occurs in this write window.
                 unsafe {
                     let destination = self.ptr.cast::<u8>().add(offset);
                     pthread_jit_write_protect_np(0);
                     std::ptr::copy_nonoverlapping(words.as_ptr().cast::<u8>(), destination, bytes);
+                    for patch in patches {
+                        self.ptr.cast::<u8>().add(patch.offset).cast::<u32>().write(patch.word);
+                    }
                     pthread_jit_write_protect_np(1);
-                    sys_icache_invalidate(destination.cast(), bytes);
+                    if bytes != 0 { sys_icache_invalidate(destination.cast(), bytes); }
+                    for patch in patches {
+                        sys_icache_invalidate(self.ptr.cast::<u8>().add(patch.offset).cast(), 4);
+                    }
                 }
             }
             self.used = end;
@@ -284,6 +316,7 @@ mod platform {
             Err("the custom JIT currently requires Apple Silicon macOS".into())
         }
         pub fn append(&mut self, _: &[u32]) -> Result<usize, String> { unreachable!() }
+        pub(super) fn append_and_patch(&mut self, _: &[u32], _: &[super::CodePatch]) -> Result<usize, String> { unreachable!() }
         pub unsafe fn call(
             &self,
             _: usize,
@@ -318,6 +351,13 @@ struct Assertion<'a> {
 enum FaultKind { Assertion, Trap }
 
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
+
+#[derive(Clone, Copy)]
+struct CodePatch {
+    offset: usize,
+    expected: u32,
+    word: u32,
+}
 
 struct CompiledFunction<'a> {
     // A selected fragment uses exactly one metadata slot, keyed by this PC.
