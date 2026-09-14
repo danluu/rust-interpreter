@@ -23,6 +23,8 @@ mod continuation_census;
 mod emission_census;
 #[cfg(test)]
 mod immutable_reads;
+#[cfg(test)]
+mod guarded_values;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
