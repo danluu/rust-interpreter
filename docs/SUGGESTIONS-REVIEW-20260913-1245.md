@@ -323,3 +323,13 @@ the repository-default parser and remaining Nushell guards before adoption.
 The repository-default parser guard also passes all88 commands and114 original tests. Candidate/baseline wall+0.32% and CPU+0.64% remain inside A/A2.00%/2.15%; the predeclared margins1.02321/1.02793 pass1.05. Candidate wall remains14.02% slower than native, so neither parser profile establishes a speedup. Source restoration and6,721 frozen inputs/263 retained evidence files verify. The scratch/scalar composition still awaits Nushell admission; no runtime is adopted. [Default parser guard](../results/scratch-memory-values-parser-edits-repository-01/ASSESSMENT.md).
 
 The scratch/scalar composition now passes all726 commands and allfive performance guards. The final132-command Nushell comparison is unchanged versus baseline (wall0.999955; margin1.024804) and63.63% of native wall time. The existing594 commands were retained without repeats. Both88-command full-parser guards also pass. The closure verifies9,218 frozen inputs and119 Git source bindings. Proceed to current-main integration while preserving its compiler-loader change; no timing rerun or runtime adoption yet. [Complete decision](../results/scratch-memory-values-full-01/ASSESSMENT.md).
+
+September 14, read-only native-Call follow-up: the suggestions file remains
+unchanged. The native prototype passes 622 workspace tests/profile, 407 Python
+tests (22 skips), 121 strict/cache commands and three exact original profiles
+against retained adopted controls. Token block gains 7.73 million scalar Calls,
+but the complete primary is unchanged (wall 0.999836 / CPU 0.999544) inside
+1.9585% wall A/A variation. Park this candidate and cancel its larger histories.
+Inspect its actual emitted bodies and preparation cost before further changes;
+keep the adopted runtime, strict checking and independent compiler ownership.
+[Primary evidence](../results/scalar-readonly-native-screen-token-01/ASSESSMENT.md).

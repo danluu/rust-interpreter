@@ -61,8 +61,9 @@ across transitions and bodies, with none in exhaustive. The native prototype now
 candidate passes 622 workspace tests/profile, 407 Python tests (22 skips), all
 121 strict/cache commands and three original profiles. Token block scalar Calls
 rise from 11.23 to 18.95 million with exact logical counts, memory and entropy.
-Next run the changed-source screen against the adopted VM with scalar Calls in
-both arms; no speedup is yet established. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+The complete 40-command primary fails: wall ratio 0.999836 and CPU 0.999544
+are inside A/A variation. Park this candidate and cancel larger comparisons.
+Next inspect its emitted bodies and preparation costs before changing the engine. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only
