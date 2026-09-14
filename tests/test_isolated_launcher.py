@@ -12,6 +12,15 @@ import interpreter
 
 
 class IsolatedLauncherValidation(unittest.TestCase):
+    def test_indexed_switches_are_execution_only_and_accept_either_engine(self):
+        self.rejected(['--test-body', '--list-tests', '--indexed-switches'])
+        for engine in ['interpreter', 'jit']:
+            with patch.object(sys, 'argv', ['interpreter.py', '--package', 'fixture', '--entry', 'first',
+                    '--engine', engine, '--indexed-switches']), \
+                    patch.object(interpreter, 'checked_tools', side_effect=RuntimeError('selection reached tools')), \
+                    self.assertRaisesRegex(RuntimeError, 'selection reached tools'):
+                interpreter.main()
+
     def rejected(self, arguments):
         with patch.object(sys, 'argv', ['interpreter.py', '--package', 'fixture', *arguments]), \
                 patch.object(interpreter, 'checked_tools') as tools, \

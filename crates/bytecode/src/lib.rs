@@ -20,6 +20,7 @@ mod inline;
 mod inline_tests;
 mod registers;
 mod register_init;
+mod switch_index;
 mod inline_graph;
 #[cfg(test)]
 mod whole_call_inline_tests;
@@ -447,6 +448,9 @@ pub struct Limits {
     pub jit_resumable_calls: bool,
     /// Experimental confined scalar leaves called directly by resumable code.
     pub jit_scalar_calls: bool,
+    /// Experimental bounded case indices for large interpreted switches.
+    /// Uses the same fully validated program and preserves first-case priority.
+    pub indexed_switches: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -469,6 +473,7 @@ impl Default for Limits {
             jit_persistent_registers: false,
             jit_resumable_calls: false,
             jit_scalar_calls: false,
+            indexed_switches: false,
             jit_code_dump: None,
             jit_operation_map: false,
         }
@@ -764,6 +769,9 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
 fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STUBS: bool, const RESUMABLE: bool>(
     program: &'program Program, limits: &Limits,
 ) -> Result<Option<jit::Jit<'program>>, String> {
+    if limits.indexed_switches && program.version & PARTIAL_VALIDATION != 0 {
+        return Err("indexed switches require full validation".into());
+    }
     let started = std::time::Instant::now();
     let mut jit = if USE_JIT {
         Some(if RESUMABLE {
@@ -904,6 +912,9 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
     prepare_jit::<PROFILE>(jit, entry_id, &mut profile)?;
     let mut steps = 0;
     let mut tls = tls::Tls::default();
+    // Each invocation has fresh, bounded host-only indices. No program scan or
+    // index allocation occurs until a large interpreted Switch is executed.
+    let mut switch_index = limits.indexed_switches.then(|| switch_index::Cache::new(program));
     let value = 'execution: loop {
         if steps >= limits.instructions {
             return Err("interpreter instruction limit exceeded".into());
@@ -1216,10 +1227,11 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                     cases,
                     otherwise,
                 } => {
-                    frame.pc = cases
-                        .iter()
-                        .find(|(n, _)| *n == r[*value as usize])
-                        .map_or(*otherwise, |(_, t)| *t)
+                    frame.pc = if cases.len() >= switch_index::MIN_CASES {
+                        if let Some(index) = &mut switch_index {
+                            index.target(frame.function, frame.pc - 1, r[*value as usize])
+                        } else { switch_index::linear(cases, r[*value as usize], *otherwise) }
+                    } else { switch_index::linear(cases, r[*value as usize], *otherwise) }
                 }
                 Op::Assert {
                     value,
