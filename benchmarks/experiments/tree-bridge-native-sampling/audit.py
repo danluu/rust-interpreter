@@ -5,6 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import require_space,write_json as write
+sys.path.insert(0,str(Path(__file__).parent))
 from summarize_owned_sample import parse_tree,self_samples
 from attribute_generated_sample import attribute
 spec=importlib.util.spec_from_file_location('recognizer',ROOT/'benchmarks/experiments/selected-native-sampling/address_profile.py')
