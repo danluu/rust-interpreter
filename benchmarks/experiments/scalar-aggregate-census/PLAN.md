@@ -1,17 +1,20 @@
 # Measure typed aggregate eligibility on the closed candidate set
 
-Require closed aggregate-model02 (eight controls/profile and 18 legacy controls)
+Require closed aggregate-model03 (nine controls/profile and 18 legacy controls)
 and wide-boundaries01. Revalidate the exact 132 candidate IDs, full original fre
-artifact and typed metadata. Run eight aggregate controls in release and one
+artifact and typed metadata. Run nine aggregate controls in release and one
 ignored, data-only census under the existing conservative build admission.
 
 For each candidate, compare explicit initialization with the ordinary Call's
 zeroed-frame policy. Both proofs continue to confine all memory. Retain original
 argument widths, 512 registers/operations, 1 KiB frames and 64-byte result bounds.
-Use a shared 256M memory-work allowance per policy and debit a full 1M allowance
-for each attempted aggregate lowering from a separate 256M policy budget.
+Use a shared 256M memory-work allowance per policy and debit a full 2M allowance
+for each attempted aggregate lowering from a separate 256M policy budget: 1M for
+projections and 1M for the combined graph, including failed attempts.
 
-Record complete memory/IR declines and every projected lane. Ask the adopted
+Record complete memory/IR declines, every projected lane and the combined graph.
+Require equal structural maximum/success lengths and reachable blocks. Verify
+aggregate returns are rejected by the legacy native emitter. Ask the adopted
 native scalar emitter whether each lane's expressions are expressible; its words
 remain plain data and are never allocated as executable code or called. This
 does not qualify a combined aggregate computation or wider runtime ABI. Do not
