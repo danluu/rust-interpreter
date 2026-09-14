@@ -91,8 +91,9 @@ overrides and conflicting rustc/rustdoc selection.
 
 ## Qualification sequence to prepare next
 
-1. Run the thirteen synthetic controls in `tests/test_runtime_compiler.py` through
-   the existing canonical supervisor with exact source snapshots. They exercise
+1. The thirteen synthetic controls in `tests/test_runtime_compiler.py` passed at
+   source `bd2ca683`, through the existing canonical supervisor with exact source
+   snapshots. They exercise
    final-root probing, fresh copies, ordinary sources/link omissions, mismatches,
    collisions, native completeness, support-tool rpaths, forged probe proof,
    changed installed bytes, capacity interruption and retained failed attempts.
@@ -113,6 +114,11 @@ overrides and conflicting rustc/rustdoc selection.
    necessary. Their success is an external qualified record, not a rewrite of
    this immutable installation or a relabeling of prior original-path evidence.
 
-No synthetic tests, runtime copy, compiler probe, native qualification, exporter
-rebuild, publication, benchmark or holdout workload has run for this checkpoint.
-Source AST parsing and whitespace checks passed; the thirteen synthetic controls remain unrun.
+All thirteen synthetic controls passed without skips in 0.273s; supervisor
+46637/helper46640/test46642 held canonical admission from 1789344515.779358 to
+1789344516.1693618. Exact raw outputs, eight source snapshots, frozen manifest and
+supervisor/launch records are retained in `results/runtime-compiler-controls-01`.
+Source AST parsing and whitespace checks also passed. No real runtime copy,
+compiler probe, native qualification, exporter rebuild, publication, benchmark
+or holdout workload has run. Synthetic passing controls do not qualify a real
+compiler installation or application workflow.
