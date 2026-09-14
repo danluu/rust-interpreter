@@ -1572,7 +1572,7 @@ impl Assembler<'_> {
         let outside = first < self.region_start || last >= self.region_end || self.live_in.contains(&reg);
         let later = last > self.current_pc || (before_operands && last == self.current_pc);
         let needed = self.values.map_or(outside || later, |v|
-            if before_operands { v.live.at(self.current_pc, reg) } else { v.live.after(self.current_pc, reg) });
+            if before_operands { v.live_at(self.current_pc, reg) } else { v.live_after(self.current_pc, reg) });
         if needed { self.spill(reg, lo, if high_zero { 31 } else { 6 }); }
     }
     fn spill(&mut self, reg: Reg, lo: u32, hi: u32) {
@@ -1623,7 +1623,7 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
+                return (values.live_at(end - 1, reg) || values.live_after(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))

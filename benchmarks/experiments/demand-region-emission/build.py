@@ -13,7 +13,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from interpreter import installed_tools
-NAME='demand-region-build-01'
+NAME='demand-region-build-02'
 BASELINE='df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
 def read(p):return json.loads(p.read_text())
 def main():
@@ -41,6 +41,14 @@ def main():
         native_plan=ROOT/controls['raw']/'plan.json';assert sha(native_plan)==controls['plan_sha256'];paths.append(native_plan)
         # Full workspace checks below qualify the final CLI/statistics source.
         # Prior diagnostics are bound to their original committed source.
+        artifact=ROOT/'.work/call-capacity-credit-edit-token-02/artifacts/caa66fcf85d85196264fd2fc5b024918f36a9fccc8237d79af7987182796b1d9.rbc'
+        staging_inputs=[artifact]
+        for case in ['block','exhaustive']:
+            base=ROOT/'.work'/('scratch-scalar-runtime-sample-'+case+'-01')/'0/jit-code'
+            staging_inputs += [base/'operations.json',base/'code.bin']
+        for path in staging_inputs:
+            assert sha(path)==read(binding)['source'][str(path.relative_to(ROOT))]['sha256']
+        paths += staging_inputs
         paths += [ROOT/p for p in subprocess.check_output(['git','ls-files','crates','scripts','tests','Cargo.toml','Cargo.lock','rust-toolchain.toml'],text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
@@ -49,8 +57,8 @@ def main():
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             target=str(target.relative_to(ROOT)),same_source_root=True,required_free_bytes=needed,
-            allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=4,
-            expected_workspace_tests_per_profile=636,expected_ignored_per_profile=15,
+            allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=6,
+            expected_workspace_tests_per_profile=637,expected_ignored_per_profile=15,
             baseline_tool_key=BASELINE,original_project_guest_commands=0,native_guest_unit_tests=True,
             performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_','READONLY_','TRANSACTION_'))
@@ -63,11 +71,19 @@ def main():
             ('test-release',['cargo','+nightly-2026-09-08','test','--release',*common,'--workspace']),
             ('python',[sys.executable,'-m','unittest','discover','-s','tests','-v']),
             ('build-vm',['cargo','+nightly-2026-09-08','build','--release',*common,'-p','rust-interp-bytecode','--bin','rust-interp-vm'])]
+        observer='jit::code_spans::region_staging::reconstruct_saved_regions_independently'
+        for label in ['block','exhaustive']:
+            commands.append((label,['cargo','+nightly-2026-09-08','test','--release',*common,'--lib','-p','rust-interp-bytecode',observer,'--','--ignored','--exact']))
         records=[]
         for label,command in commands:
             require_space(ROOT,8)
             if command[0]=='cargo':assert shutil.disk_usage(ROOT).free>=needed,'build reservation no longer holds'
-            start=time.time();child,out,err=capture(command,cwd=ROOT,env=env,receipt_path=work/'active.json',receipt=dict(label=label))
+            selected=dict(env)
+            if label in ['block','exhaustive']:
+                base=ROOT/'.work'/('scratch-scalar-runtime-sample-'+label+'-01')/'0/jit-code'
+                selected.update(STAGING_ARTIFACT=str(artifact),STAGING_MAP=str(base/'operations.json'),
+                    STAGING_CODE=str(base/'code.bin'),STAGING_OUTPUT=str(work/(label+'.json')))
+            start=time.time();child,out,err=capture(command,cwd=ROOT,env=selected,receipt_path=work/'active.json',receipt=dict(label=label))
             for stream,payload in [('stdout',out),('stderr',err)]:(work/(label+'.'+stream)).write_text(payload)
             records.append(dict(label=label,command=command,pid=child.pid,returncode=child.returncode,
                 seconds=time.time()-start,stdout_sha256=sha(work/(label+'.stdout')),stderr_sha256=sha(work/(label+'.stderr'))))
@@ -75,11 +91,15 @@ def main():
             if label.startswith('test-'):
                 matches=re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;',out)
                 assert matches and all(int(f)==0 for _,f,_ in matches)
-                assert (sum(int(p) for p,_,_ in matches),sum(int(i) for _,_,i in matches))==(636,15)
+                assert (sum(int(p) for p,_,_ in matches),sum(int(i) for _,_,i in matches))==(637,15)
                 for test in ['live_demand_loops_preserve_counts_and_omit_cold_regions',
                     'live_demand_dumps_match_executed_code_and_preserve_profiles',
                     'demand_maps_cover_mixed_eager_fallback_and_reject_corrupt_receipts']:
                     assert test+' ... ok' in out
+            if label in ['block','exhaustive']:
+                assert 'test result: ok. 1 passed; 0 failed; 0 ignored;' in out
+                detail=read(work/(label+'.json'))
+                assert detail['exact_eager_reconstruction'] and detail['exact_reassembled_regions']
             if label=='python':assert 'Ran 430 tests' in err and err.rstrip().endswith('OK (skipped=22)'),err[-4000:]
             assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'passed',flush=True)
         binaries=dict(integration['binaries']);binaries['rust-interp-vm']=sha(target/'release/rust-interp-vm')
@@ -97,11 +117,11 @@ def main():
             assert all(sha(installed/n)==h for n,h in binaries.items());write(installed/'ready.json',binaries)
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',source_revision=revision,tests={'test-debug':636,'test-release':636},
+        write(out/'summary.json',dict(status='passed',source_revision=revision,tests={'test-debug':637,'test-release':637},
             ignored_per_profile=15,python={'discovered':430,'passed':407,'skipped':22},commands=len(records),
             tool_key=key,binaries=binaries,composition=composition,
             matched_control=dict(tool_key=BASELINE,binaries=integration['binaries'],integration=str(integration_path.relative_to(ROOT))),
             source_manifest=str((work/'plan.json').relative_to(ROOT)),source_manifest_sha256=sha(work/'plan.json'),
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),raw=str(work.relative_to(ROOT)),
-            setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,performance_measurement=False))
+            setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,performance_measurement=False,exact_adopted_code_reconstruction=True))
 if __name__=='__main__':main()

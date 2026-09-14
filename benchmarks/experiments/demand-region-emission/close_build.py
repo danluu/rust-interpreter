@@ -46,10 +46,13 @@ def main():
     assert not (out / 'closure.json').exists()
     if terminal['returncode'] == 0:
         summary = read(out / 'summary.json')
-        assert summary['status'] == 'passed' and summary['commands'] == len(records) == 4
+        assert summary['status'] == 'passed' and summary['commands'] == len(records) == plan['expected_commands']
         assert all(r['returncode'] == 0 for r in records)
         assert summary['plan_sha256'] == sha(raw / 'plan.json')
         assert summary['records_sha256'] == sha(raw / 'records.json')
+        for label in ['block','exhaustive']:
+            path=raw/(label+'.json')
+            if path.exists():artifacts[str(path.relative_to(ROOT))]=sha(path)
         installed=ROOT/'.work/interpreter-tools'/summary['tool_key']
         assert read(installed/'ready.json')==summary['binaries']
         for n,h in summary['binaries'].items():

@@ -79,6 +79,8 @@ fn bounded_liveness_matches_independent_path_search_on_seeded_graphs() {
                 if !outputs[pc].contains(&reg) { stack.extend(&edges[pc]); }
             }
             assert_eq!(a.live.at(start, reg), expected, "start={start} reg={reg}");
+            assert_eq!(a.live_at(start, reg), expected, "compact arbitrary start={start} reg={reg}");
+            assert_eq!(a.live_after(start, reg), a.live.after(start, reg), "compact after start={start} reg={reg}");
             if let Some(index) = a.registers.iter().position(|&r| r == reg) {
                 assert_eq!(a.live_pair_at(start, index), expected, "compact start={start} reg={reg}");
             }

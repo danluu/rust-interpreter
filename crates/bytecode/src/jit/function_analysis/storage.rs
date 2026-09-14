@@ -17,7 +17,7 @@ fn inventory(plan: &FunctionAnalysis) -> BTreeMap<&'static str, usize> {
         ("call_slot_buffers", plan.slots.iter().map(|(_,v)| v.capacity() * size_of::<Option<usize>>()).sum()),
     ]);
     for (key, bytes) in plan.values.as_ref().map_or([
-        ("liveness_bits", 0), ("successor_vector_headers", 0),
+        ("liveness_bits", 0), ("liveness_word_indices", 0), ("successor_vector_headers", 0),
         ("successor_elements", 0), ("register_assignments", 0), ("persistent_live_masks", 0),
     ], values::Allocation::storage_capacities) { fields.insert(key, bytes); }
     fields

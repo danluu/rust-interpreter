@@ -1,6 +1,8 @@
 //! Bounded full-CFG register liveness and fixed per-function native assignments.
 use super::*;
 use std::collections::VecDeque;
+#[path = "values_compact.rs"]
+mod compact;
 
 const MAX_PCS: usize = 65_536;
 const MAX_REGISTERS: usize = 65_536;
@@ -25,23 +27,28 @@ impl Liveness {
 }
 
 pub(super) struct Allocation {
-    // The full graph is an oracle for offline observers only. Production
-    // emission retains at most three liveness bits per PC after assignment.
+    // Production answers every register query from the compact graph; tests
+    // retain the original graph solely as an independent representation oracle.
     #[cfg(test)]
     pub live: Liveness,
+    compact: compact::Compact,
     pub registers: Vec<Reg>,
     live_pairs: Vec<u8>,
 }
 impl Allocation {
     pub(super) fn retained_buffer_bytes(&self) -> Option<usize> {
-        self.registers.capacity().checked_mul(std::mem::size_of::<Reg>())?.checked_add(self.live_pairs.capacity())
+        let mut bytes = self.registers.capacity().checked_mul(std::mem::size_of::<Reg>())?.checked_add(self.live_pairs.capacity())?;
+        for capacity in self.compact.capacities() { bytes = bytes.checked_add(capacity)?; }
+        Some(bytes)
     }
     #[cfg(test)]
-    pub(super) fn storage_capacities(&self) -> [(&'static str, usize); 5] {
+    pub(super) fn storage_capacities(&self) -> [(&'static str, usize); 6] {
+        let [bits, indices, headers, targets] = self.compact.capacities();
         [
-            ("liveness_bits", 0),
-            ("successor_vector_headers", 0),
-            ("successor_elements", 0),
+            ("liveness_bits", bits),
+            ("liveness_word_indices", indices),
+            ("successor_vector_headers", headers),
+            ("successor_elements", targets),
             ("register_assignments", self.registers.capacity() * std::mem::size_of::<Reg>()),
             ("persistent_live_masks", self.live_pairs.capacity()),
         ]
@@ -57,6 +64,8 @@ impl Allocation {
     pub(super) fn live_pair_at(&self, pc: usize, index: usize) -> bool {
         index < self.registers.len() && self.live_pairs.get(pc).is_some_and(|mask| mask & (1 << index) != 0)
     }
+    pub(super) fn live_at(&self, pc: usize, reg: Reg) -> bool { self.compact.at(pc, reg) }
+    pub(super) fn live_after(&self, pc: usize, reg: Reg) -> bool { self.compact.after(pc, reg) }
     pub(super) fn pair(&self, reg: Reg) -> Option<u32> {
         self.registers.iter().position(|&r| r == reg).map(|i| 23 + i as u32 * 2)
     }
@@ -74,7 +83,8 @@ fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
         (0..f.code.len()).map(|pc| registers.iter().enumerate().fold(0u8, |mask, (index, &reg)|
             mask | (u8::from(live.at(pc, reg)) << index))).collect()
     };
-    Some(Allocation { #[cfg(test)] live, registers, live_pairs })
+    let compact = compact::Compact::new(&live);
+    Some(Allocation { compact, #[cfg(test)] live, registers, live_pairs })
 }
 
 pub(super) fn ranked(f: &Function, max_work: usize) -> Option<(Liveness, Vec<(u64, Reg)>)> {
