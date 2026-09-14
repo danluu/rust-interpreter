@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
-NAME = 'scalar-protocol-census-01'
+NAME = 'scalar-protocol-census-02'
 
 
 def read(p):
@@ -93,7 +93,7 @@ def main():
         report = read(out / 'attribution.json')
         assert report['status'] == 'passed' and len(report['cases']) == 2
         write(out / 'summary.json', dict(status='passed', commands=5, controls=6, cases=[{k: c[k] for k in
-            ['case','generated_samples','transition_samples','fine_samples','unassigned_fine_samples'] for c in report['cases']],
+            ['case','generated_samples','transition_samples','fine_samples','unassigned_fine_samples']} for c in report['cases']],
             setup_seconds=sum(r['seconds'] for r in records), source_revision=revision, raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work / 'plan.json'), records_sha256=sha(work / 'records.json'),
             attribution_sha256=sha(out / 'attribution.json'), census_sha256={l: sha(work / (l + '.json')) for l in ['block', 'exhaustive']},
