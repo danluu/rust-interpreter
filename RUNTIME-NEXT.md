@@ -19,14 +19,18 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    ordinary frame clearing accounts for 89 / 62. The virtual-zero census admits
    15 more leaves but covers no current transition samples; eight controls and
    192 synthetic reference comparisons pass. Park that policy. The typed current-call join attributes 84 block transition samples to
-   targets first rejected for unknown reads. Next investigate a diagnostic
-   read-only scalar value graph with confined writes and checked read callbacks.
-   Count complete-plan and current-body coverage before native implementation.
+   targets first rejected for unknown reads. The diagnostic
+   read-only scalar graph passes 48 controls and admits 395 plans, covering
+   42 transition / 53 body block samples and none in exhaustive. Prototype native
+   checked linear/heap reads with private failure and ordinary-call replay.
+   Preserve the allocator/live ABI, original budgets, every fault and all limits;
+   native coverage/correctness precede a new changed-source screen.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
    [current protocol costs](results/scalar-protocol-census-03/assessment.md),
    [virtual-zero result](results/scalar-virtual-zero-census-01/assessment.md),
-   [current callee costs](results/current-call-shapes-01/assessment.md).
+   [current callee costs](results/current-call-shapes-01/assessment.md),
+   [read-only model](results/scalar-readonly-census-01/assessment.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
