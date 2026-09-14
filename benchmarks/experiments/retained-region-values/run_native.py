@@ -39,7 +39,7 @@ def main():
         write(work / 'plan.json', dict(owner=str(ROOT), source_revision=revision, frozen=frozen,
             target=str(target.relative_to(ROOT)), same_source_root=True, required_free_bytes=needed,
             allocated_target_bytes=allocated, minimum_child_gib=8, controls=705, expected_commands=3,
-            guest_commands=0, executable_code_publications=0, production_runtime_changes=0, performance_measurement=False))
+            original_project_guest_commands=0, native_guest_unit_tests=True, prototype_runtime_source_changed=True, performance_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_', 'MEMORY_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER', 'RUST_TEST_THREADS']}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -77,7 +77,7 @@ def main():
             tests={'encoding':1,'debug':352,'release':352},setup_seconds=sum(r['seconds'] for r in records),
             source_revision=revision,raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),
             records_sha256=sha(work/'records.json'),
-            guest_commands=0, executable_code_publications=0, production_runtime_changes=0, performance_measurement=False))
+            original_project_guest_commands=0, native_guest_unit_tests=True, prototype_runtime_source_changed=True, performance_measurement=False))
 
 
 if __name__ == '__main__':
