@@ -24,7 +24,6 @@ def main():
             if digest is not None:assert actual==digest,p
             proofs[str(p.relative_to(ROOT))]=actual
             return json.loads(p.read_text())
-        bind(ROOT/'results/RETENTION.md') if False else None
         proofs['results/RETENTION.md']=sha(ROOT/'results/RETENTION.md')
         proofs['benchmarks/experiments/heap-address-bias/compression_probe.py']=sha(ROOT/'benchmarks/experiments/heap-address-bias/compression_probe.py')
         revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()

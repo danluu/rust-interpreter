@@ -194,3 +194,15 @@ and real edited-source timing are pending the unchanged workspace disk gate.
 The small isolated probes do not use Cargo or the shared target and do not count
 as end-to-end comparisons. Keep the adopted VM as control; no runtime adoption.
 [Live probe](../results/scalar-dead-registers-native-probe-01/summary.json).
+
+Follow-up through 23:12: bounded dead-register elimination passes 20 focused and
+596 workspace tests/profile, 121 strict Cargo/cache commands and six exact
+original profiles. Its primary has a 0.949959 wall ratio and 0.956743 CPU ratio,
+but the 0.060657 A/A wall envelope makes the margin 1.010617: park it without
+starting larger comparisons or changing the gate. The descriptive Cargo stage
+is 161.7 ms lower despite a runtime-only revision; do not attribute that
+variation to scalar emission. Scalar native bodies shrink 14.5% in token block,
+11.5% in exhaustive token and 9.4% in folded prefilter. Next quantify constant
+computations and duplicated arithmetic-result/overflow calculations in saved
+real scalar bodies before picking the next revision.
+[Primary assessment](../results/scalar-dead-registers-screen-token-01/ASSESSMENT.md).
