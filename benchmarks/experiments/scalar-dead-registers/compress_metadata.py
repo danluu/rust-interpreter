@@ -3,10 +3,11 @@ import hashlib,json,os,stat,subprocess,sys,shutil
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
+sys.path.insert(0,str(ROOT/'benchmarks/experiments/heap-address-bias'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from compression_probe import metadata
-NAME='closed-diagnostic-metadata-compression-01'
+NAME='closed-diagnostic-metadata-compression-02'
 SELECTION='.work/scalar-dead-registers-metadata-compression-selection.json'
 SELECTION_SHA='23598bda2746a587cb611824a1e25676c6f66b40ba46ad2a47ba3a45f614e7ae'
 
@@ -20,7 +21,8 @@ def main():
         assert sha(ROOT/SELECTION)==SELECTION_SHA
         selection=json.loads((ROOT/SELECTION).read_text());assert len(selection)==117
         revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-        proofs={SELECTION:SELECTION_SHA};sources={};completion=[]
+        helper='benchmarks/experiments/heap-address-bias/compression_probe.py'
+        proofs={SELECTION:SELECTION_SHA,helper:sha(ROOT/helper)};sources={};completion=[]
         for name,item in selection.items():
             assert Path(name).name==name
             raw=ROOT/'.work'/name;result=ROOT/item['result'];plan=raw/'plan.json'
