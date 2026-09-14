@@ -108,20 +108,32 @@ fn observe_saved_protocol() {
     let mapping: Value = serde_json::from_slice(&mapping).unwrap();
     let bytes = std::fs::read(std::env::var("PROTOCOL_CODE").unwrap()).unwrap();
     assert!(bytes.len() <= MAX_CODE_BYTES);
-    assert_eq!(number(&mapping, "schema_version"), 1);
+    let schema=number(&mapping,"schema_version");assert!([1,2].contains(&schema));
     assert_eq!(mapping["profiled"], false);
     for flag in ["persistent_registers", "resumable_calls", "complete", "reconstructed_bytes_match"] {
         assert_eq!(mapping[flag], true, "{flag}");
     }
     assert_eq!(number(&mapping, "code_bytes"), bytes.len());
     assert_eq!(mapping["code_sha256"], format!("{:x}", Sha256::digest(&bytes)));
-    let jit = Jit::new_resumable(&program, false, MAX_CODE_BYTES, true).unwrap();
+    let mut jit = Jit::new_resumable(&program, false, MAX_CODE_BYTES, true).unwrap();
+    let mut scalar_ids=BTreeSet::new();
+    if schema==2 {
+        jit.enable_scalar_calls();
+        let base=number(&mapping,"arena_base");assert!(base>0);
+        for saved in mapping["functions"].as_array().unwrap() {
+            if saved["spans"][0]["kind"]!="scalar_leaf" {continue;}
+            let id=number(saved,"function");assert!(scalar_ids.insert(id));
+            let offset=number(saved,"offset");let end=number(saved,"end");
+            assert!(offset<end && end<=bytes.len());
+            let words=jit.observe_saved_scalar_entry(id,offset,end-offset,base);
+            verify_words(&words,&bytes[offset..end]).unwrap();
+        }
+    }
     let (mut cursor, mut assertions, mut count) = (0, 0, 0);
     let mut seen = BTreeSet::new();
     let mut output = vec![];
     for function in mapping["functions"].as_array().unwrap() {
         let id = number(function, "function");
-        assert!(seen.insert(id));
         let f = &program.functions[id];
         assert_eq!(function["name"], f.name);
         let offset = number(function, "offset");
@@ -129,6 +141,13 @@ fn observe_saved_protocol() {
         assert_eq!(offset, cursor);
         assert!(offset < end && end <= bytes.len());
         assert_eq!(number(function, "assertion_base"), assertions);
+        if function["spans"][0]["kind"]=="scalar_leaf" {
+            assert_eq!(schema,2);assert!(scalar_ids.contains(&id));
+            assert_eq!(number(function,"assertion_count"),0);
+            assert_eq!(function["spans"],json!([{"offset":offset,"end":end,"region_pc":0,"pc":null,"kind":"scalar_leaf"}]));
+            cursor=end;continue;
+        }
+        assert!(seen.insert(id));
         let mut collector = Collector { rows: vec![], limit: MAX_SPANS };
         let staged = jit.emit_function_inner(f, (end-offset)/4, assertions, Some(&mut collector))
             .unwrap().expect("saved complete function must reconstruct");
@@ -167,5 +186,52 @@ fn observe_saved_protocol() {
         "code_sha256":mapping["code_sha256"],"functions":seen.len(),"transitions":count,
         "exact_full_function_reconstruction":true,"exact_transition_reconstruction":true,
         "complete_partition":true,"guest_commands":0,"executable_code_publications":0,
+        "schema_version":schema,"scalar_bodies_reconstructed":scalar_ids.len(),
         "spans":output})).unwrap();
+}
+
+#[test]
+fn protocol_scalar_paths_partition_guards_arguments_commit_and_fallback() {
+    for size in [0,1,4,8,16] {
+        for profiled in [false,true] {
+            let mut code=vec![Op::Local{dst:0,offset:16}];
+            if size!=0 {code.push(Op::Load{dst:1,address:0,size:size as u8});}
+            code.push(Op::Local{dst:0,offset:0});
+            if size!=0 {code.push(Op::Store{address:0,src:1,size:size as u8});}
+            code.push(Op::Return);
+            let callee=Function{name:"scalar protocol fixture".into(),frame_size:32,frame_align:16,
+                registers:2,args:vec![crate::Slot{offset:16,size}],result:crate::Slot{offset:0,size},code};
+            let caller=Function{name:"scalar protocol caller".into(),frame_size:64,frame_align:16,
+                registers:2,args:vec![],result:crate::Slot{offset:0,size:0},code:vec![
+                    Op::Local{dst:0,offset:32},Op::Local{dst:1,offset:0},
+                    Op::Call{function:1,args:vec![0],destination:1},Op::Return]};
+            let p=Program{version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
+                functions:vec![caller,callee],data:vec![],statics:vec![],thread_locals:vec![]};
+            crate::validate(&p).unwrap();
+            let mut work=crate::proof::MAX_GLOBAL_WORK;
+            let memory=crate::proof::memory_plan(&p,1,&mut work);
+            let plan=crate::scalar_ir::lower(&p.functions[1],&memory,250_000).unwrap();
+            let leaf=crate::scalar_ir::native_leaf::emit_call(&plan,profiled).unwrap();
+            for base in [0x10000000,0x123456789000] {
+                let mut jit=Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,true).unwrap();
+                jit.enable_scalar_calls();
+                assert_eq!(jit.observe_saved_scalar_entry(1,0,leaf.words.len()*4,base),leaf.words);
+                let f=&p.functions[0];let reads=read_registers(f);let allocation=values::analyze(f);
+                let slots=call_slots::collect(f,&p);
+                let (a,_,_)=jit.emit_resumable_transition(f,2,&reads,allocation.as_ref(),slots.get(&2).map(Vec::as_slice)).unwrap();
+                validate_partition(&a).unwrap();
+                let kinds:BTreeSet<_>=a.protocol_spans.iter().map(|s|s.kind).collect();
+                for required in ["scalar_limit_guards","scalar_private_frame","scalar_dispatch","scalar_status",
+                    "scalar_restore_parent","scalar_charge_body","scalar_padding_clear","scalar_peak_memory",
+                    "scalar_publish","scalar_successor","scalar_private_fallback","call_target","call_publish_frame"] {
+                    assert!(kinds.contains(required),"{required} size {size}");
+                }
+                for optional in ["scalar_result_guard","scalar_result_copy","argument_scalar_source","argument_scalar_capture"] {
+                    assert_eq!(kinds.contains(optional),size!=0,"{optional}");
+                }
+                assert!(a.protocol_spans.iter().filter_map(|s|s.argument).all(|i|i==0));
+                assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
+            }
+        }
+    }
 }
