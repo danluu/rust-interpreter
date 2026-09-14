@@ -31,12 +31,26 @@ fn observe_saved_aggregate_projections() {
             if memory.eligible {
                 // Charge the complete per-function lowering allowance even on
                 // an early decline; diagnostic traversal cannot evade its bound.
-                let aggregate=if lowering_remaining<1_000_000 {Err("aggregate_global_work_limit")}
-                    else {lowering_remaining-=1_000_000;Aggregate::new(f,&memory,1_000_000)};
+                let aggregate=if lowering_remaining<2_000_000 {Err("aggregate_global_work_limit")}
+                    else {lowering_remaining-=2_000_000;Aggregate::new(f,&memory,1_000_000)};
                 match aggregate {
                     Err(reason)=>{row["ir_eligible"]=json!(false);row["ir_decline"]=json!(reason);},
                     Ok(aggregate)=>{
                         row["ir_eligible"]=json!(true);row["ir_work"]=json!(aggregate.work);
+                        let combined=lower_aggregate(f,&memory,1_000_000);
+                        row["combined_ir_eligible"]=json!(combined.is_ok());
+                        row["combined_ir_decline"]=json!(combined.as_ref().err());
+                        if let Ok(combined)=&combined {
+                            for (_,lane) in &aggregate.lanes {
+                                assert_eq!(combined.maximum_steps,lane.maximum_steps);
+                                assert_eq!(combined.success_steps,lane.success_steps);
+                                assert_eq!(combined.reachable,lane.reachable);
+                            }
+                            let native=native_leaf::emit_call(combined,false);
+                            if f.result.size>16 {assert_eq!(native.err(),Some("native_aggregate_return_unimplemented"));}
+                            else {assert!(native.is_ok());}
+                        }
+                        row["combined_ir"]=json!(summary(&combined));
                         let mut lanes=vec![];
                         for (size,plan) in aggregate.lanes {
                             // Emission produces a Vec of words only. No code
@@ -56,5 +70,5 @@ fn observe_saved_aggregate_projections() {
     }
     let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("SCALAR_AGGREGATE_OUTPUT").unwrap()).unwrap();
     serde_json::to_writer(file,&json!({"status":"passed","candidates":ids.len(),"policies":policies,
-        "guest_commands":0,"executable_code_publications":0,"scope":"Typed confined-memory and per-lane IR/native-expression eligibility. Projected native words remain data. No combined computation, aggregate ABI, original guest execution, timing or adoption."})).unwrap();
+        "guest_commands":0,"executable_code_publications":0,"scope":"Typed confined memory, projected native expressions and combined scalar graph eligibility. Projected native words remain data; aggregate returns are rejected by the legacy native emitter. No aggregate ABI, original guest execution, timing or adoption."})).unwrap();
 }

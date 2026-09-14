@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-aggregate-census-01'
+NAME='scalar-aggregate-census-02'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -24,10 +24,10 @@ def main():
         for p in [*Path(__file__).parent.glob('*.py'),Path(__file__).with_name('PLAN.md')]:bind(p)
         for p in subprocess.check_output(['git','ls-files','crates','Cargo.toml','Cargo.lock','rust-toolchain.toml'],text=True).splitlines():bind(ROOT/p)
         for p in ['compare_saved_runtime.py','workflow_io.py','interpreter.py']:bind(ROOT/'scripts'/p)
-        model=ROOT/'results/scalar-aggregate-model-02';closed=bind(model/'closure.json');assert closed['status']=='closed'
+        model=ROOT/'results/scalar-aggregate-model-03';closed=bind(model/'closure.json');assert closed['status']=='closed'
         qualified=bind(model/'summary.json',closed['summary_sha256']);bind(model/'terminal.json',closed['terminal_sha256'])
         bind(ROOT/closed['source_bindings'],closed['source_bindings_sha256'])
-        assert qualified['status']=='passed' and qualified['commands']==4 and qualified['controls_per_profile']==8
+        assert qualified['status']=='passed' and qualified['commands']==4 and qualified['controls_per_profile']==9
         wide=ROOT/'results/scalar-wide-boundaries-01';closed=bind(wide/'closure.json');assert closed['status']=='closed' and closed['all_hashes_verified']
         prior=bind(wide/'summary.json',closed['summary_sha256']);bind(wide/'terminal.json',closed['terminal_sha256'])
         bind(ROOT/closed['bindings'],closed['bindings_sha256'])
@@ -53,7 +53,7 @@ def main():
         base=['cargo','+nightly-2026-09-08','test','--lib','-p','rust-interp-bytecode','--locked','--offline','--jobs','2',
               '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target),'--release']
         records=[]
-        for label,filter_,extra,count in [('controls','scalar_ir::aggregate::tests::',[],8),
+        for label,filter_,extra,count in [('controls','scalar_ir::aggregate::tests::',[],9),
                 ('census','scalar_ir::aggregate::census::observe_saved_aggregate_projections',['--','--ignored','--exact'],1)]:
             assert shutil.disk_usage(ROOT).free>=needed;require_space(ROOT,8)
             cmd=[*base,filter_,*extra];start=time.time()
@@ -69,8 +69,10 @@ def main():
             rows=policy['rows'];assert [r['function'] for r in rows]==ids
             stages={'memory':{r['function'] for r in rows if r['memory_eligible']},
                     'ir':{r['function'] for r in rows if r.get('ir_eligible')},
-                    'native':{r['function'] for r in rows if r.get('all_lanes_native')}}
+                    'native':{r['function'] for r in rows if r.get('all_lanes_native')},
+                    'combined_ir':{r['function'] for r in rows if r.get('combined_ir_eligible')}}
             assert stages['native']<=stages['ir']<=stages['memory']
+            assert stages['combined_ir']<=stages['memory']
             coverage={}
             for case in prior['cases']:
                 targets=case['policies']['grid/frame1024/registers512/result64']['sampled_targets']
@@ -79,11 +81,12 @@ def main():
                     sampled_ids=[t['function'] for t in targets if t['function'] in admitted]) for stage,admitted in stages.items()}
             policies.append(dict(zeroed_frame=policy['zeroed_frame'],ids={k:sorted(v) for k,v in stages.items()},
                 coverage=coverage,memory_declines=dict(collections.Counter(r['memory_decline']['reason'] for r in rows if not r['memory_eligible'])),
+                combined_ir_declines=dict(collections.Counter(r['combined_ir_decline'] for r in rows if r.get('combined_ir_eligible') is False)),
                 ir_declines=dict(collections.Counter(r['ir_decline'] for r in rows if r.get('ir_eligible') is False)),
                 native_lane_declines=dict(collections.Counter(l['native_decline'] for r in rows for l in r.get('lanes',[]) if not l['native_eligible'])),
                 memory_work_remaining=policy['memory_work_remaining'],lowering_allowance_remaining=policy['lowering_allowance_remaining']))
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',commands=2,controls=8,candidates=132,policies=policies,
+        write(out/'summary.json',dict(status='passed',commands=2,controls=9,candidates=132,policies=policies,
             setup_seconds=sum(r['seconds'] for r in records),raw=str(work.relative_to(ROOT)),source_revision=revision,
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),inputs_sha256=sha(work/'inputs.json'),
             census_sha256=sha(work/'census.json'),guest_commands=0,executable_code_publications=0,performance_measurement=False,scope=census['scope']))
