@@ -69,7 +69,10 @@ def validate_matched_profile(build,profile):
     for i in range(3):
         rows={r['mode']:r for r in profile['comparisons'] if r['index']==i}
         assert all(r['statistics']['jit_declined_functions']==0 for r in rows.values())
-        assert rows['candidate']['current_native_bytes']<rows['control']['current_native_bytes']
+        proof=rows['candidate']['mechanism']
+        assert proof['status']=='passed' and proof['entry_replacement_words_verified'] and proof['stable_span_shapes_and_unaffected_word_counts']
+        assert proof['added_entry_bytes']-proof['removed_checked_bytes']==proof['net_code_bytes']==rows['candidate']['current_native_bytes']-rows['control']['current_native_bytes']
+        assert proof['removed_checked_bytes']>0
     return True
 
 

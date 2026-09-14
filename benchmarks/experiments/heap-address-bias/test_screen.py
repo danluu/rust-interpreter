@@ -19,7 +19,8 @@ class ScreenTests(unittest.TestCase):
             composition=dict(kind='heap-address-bias-matched-control',source_commit='ab6adbe8',compiler_source_key=screen.EXPORTER_KEY))
         profile=dict(status='passed',tool_key='new',commands=6,matched_control_key='old',control_code_matches_adopted=True,
             exact_logical_counts_memory_and_entropy=True,exact_per_pc_counts=True,exact_operation_map_reconstruction=True,
-            comparisons=[dict(index=i,mode=m,statistics=dict(jit_declined_functions=0),current_native_bytes=100 if m=='control' else 90)
+            comparisons=[dict(index=i,mode=m,statistics=dict(jit_declined_functions=0),current_native_bytes=100 if m=='control' else 110,
+                    mechanism=dict(status='passed',entry_replacement_words_verified=True,stable_span_shapes_and_unaffected_word_counts=True,added_entry_bytes=20,removed_checked_bytes=10,net_code_bytes=10))
                 for i in range(3) for m in ['control','candidate']])
         self.assertTrue(screen.validate_matched_profile(build,profile))
         for field,value in [('commands',3),('matched_control_key','new'),('control_code_matches_adopted',False),

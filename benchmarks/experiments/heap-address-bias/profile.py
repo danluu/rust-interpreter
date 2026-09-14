@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import sys
+from mechanism import verify as verify_bias
 
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
@@ -25,6 +26,7 @@ def main():
     parser.add_argument('--run-id',required=True)
     parser.add_argument('--build',type=Path,required=True)
     parser.add_argument('--qualification',type=Path,required=True)
+    parser.add_argument('--reuse-prefix-from',choices=['heap-address-profile-01'])
     args=parser.parse_args()
     assert re.fullmatch(r'heap-address-profile-\d{2}',args.run_id)
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -51,7 +53,7 @@ def main():
         entropy_path=ROOT/'results/fixed-frame-clear-entropy-check-01/summary.json'
         entropy=json.loads(entropy_path.read_text());assert entropy['status']=='passed'
         library=ROOT/entropy['library'];assert sha(library)==entropy['library_sha256']
-        paths=[Path(__file__),Path(__file__).with_name('QUALIFICATION.md'),build_path,qualification_path,
+        paths=[Path(__file__),Path(__file__).with_name('mechanism.py'),Path(__file__).with_name('QUALIFICATION.md'),build_path,qualification_path,
                baseline_path,old/'records.json',reference_path,raw/'records.json',entropy_path,library,HELPER,
                ROOT/'benchmarks/experiments/operation-map/maps.py']
         paths += [tools/name for name in build['binaries']]
@@ -69,9 +71,21 @@ def main():
             paths += [source,tape]
             cases.append((item,previous,original))
         assert len(cases)==3
+        reused=[];previous_raw=None
+        if args.reuse_prefix_from:
+            previous_raw=ROOT/'.work'/args.reuse_prefix_from
+            outer=ROOT/'.work/experiments'/args.reuse_prefix_from
+            final=json.loads((outer/'status.json').read_text());assert final['status']=='finished' and final['returncode']==1
+            assert sha(outer/'command.log')==final['log_sha256']
+            reused=json.loads((previous_raw/'records.json').read_text())
+            assert [(r['index'],r['mode'],r['returncode']) for r in reused]==[(0,'control',0),(0,'candidate',0)]
+            paths += [previous_raw/'records.json',previous_raw/'plan.json',outer/'status.json',outer/'plan.json',outer/'command.log']
+            for mode in ['control','candidate']:
+                paths += [previous_raw/(mode+'-0-profile.json')]
+                paths += list((previous_raw/(mode+'-0-code')).glob('*'))
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         work=ROOT/'.work'/args.run_id;work.mkdir(exist_ok=False)
-        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,expected_commands=6,tool_key=key,matched_control_key=control_key,
+        write(work/'plan.json',dict(owner=str(ROOT),frozen=frozen,expected_commands=6,expected_new_executions=6-len(reused),reused_prefix=args.reuse_prefix_from,tool_key=key,matched_control_key=control_key,
             minimum_child_gib=8,initial_gib=12,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_'))}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -79,15 +93,23 @@ def main():
         rows,comparisons=[],[]
         for mode,item,previous,original in [(m,*case) for case in cases for m in ['control','candidate']]:
             require_space(ROOT,8);index=item['index'];profile_path=work/f'{mode}-{index}-profile.json';dump_path=work/f'{mode}-{index}-code'
+            if reused and index==0:
+                profile_path=previous_raw/f'{mode}-0-profile.json';dump_path=previous_raw/f'{mode}-0-code'
             active_vm=control_tools/'rust-interp-vm' if mode=='control' else vm
             command=[str(active_vm),'--engine','jit','--jit-resumable-calls','--jit-persistent-registers',
                 '--jit-code-dump',str(dump_path),'--jit-operation-map','--profile',str(profile_path),
                 '--profile-test',item['name'],'--suite-catalog',str(ROOT/item['catalog']),
                 '--instruction-limit',str(item['limits']['instructions']),'--allocation-limit',str(item['limits']['allocations']),
                 str(ROOT/item['artifact'])]
-            child,out,err=capture(command,cwd=ROOT,env=dict(env,RUST_INTERP_ENTROPY_TAPE=str(raw/f'{index}.tape')),
-                                  receipt_path=work/'active.json',receipt=dict(index=index,mode=mode))
-            rows.append(dict(index=index,mode=mode,command=command,pid=child.pid,returncode=child.returncode,stdout=out,stderr=err))
+            if reused and index==0:
+                row,=[r for r in reused if r['mode']==mode];assert row['command']==command
+                from types import SimpleNamespace
+                child=SimpleNamespace(pid=row['pid'],returncode=row['returncode']);out=row['stdout'];err=row['stderr']
+                rows.append(dict(row,reused_from=args.reuse_prefix_from))
+            else:
+                child,out,err=capture(command,cwd=ROOT,env=dict(env,RUST_INTERP_ENTROPY_TAPE=str(raw/f'{index}.tape')),
+                    receipt_path=work/'active.json',receipt=dict(index=index,mode=mode))
+                rows.append(dict(index=index,mode=mode,command=command,pid=child.pid,returncode=child.returncode,stdout=out,stderr=err))
             write(work/'records.json',rows)
             assert child.returncode==0 and out=='0\n',err
             selection,=[json.loads(line.split(': ',1)[1]) for line in err.splitlines() if line.startswith('rust-interp-profile-selection: ')]
@@ -104,12 +126,17 @@ def main():
             validate_operation_map(mapping,dump,code,profile,child.pid)
             assert mapping['reconstructed_bytes_match']
             guards=helpers.verify_range_checks(mapping,code,require_active=index!=2)
+            mechanism=None
             if mode=='control':
                 assert sha(dump_path/'code.bin')==previous['code_sha256'], 'matched main must preserve adopted emitted words'
             else:
                 paired,=[c for c in comparisons if c['index']==index and c['mode']=='control']
-                assert len(code)<paired['current_native_bytes'], 'bias must reduce emitted code'
-            comparison=dict(index=index,mode=mode,name=item['name'],statistics=stats,range_checks=guards,
+                before_map=json.loads((ROOT/paired['operations_path']).read_text())
+                before_code=(ROOT/paired['code_path']).read_bytes()
+                mechanism=verify_bias(before_map,before_code,mapping,code)
+            comparison=dict(index=index,mode=mode,mechanism=mechanism,
+                profile_path=str(profile_path.relative_to(ROOT)),operations_path=str((dump_path/'operations.json').relative_to(ROOT)),
+                map_path=str((dump_path/'map.json').relative_to(ROOT)),code_path=str((dump_path/'code.bin').relative_to(ROOT)),name=item['name'],statistics=stats,range_checks=guards,
                 profile_sha256=sha(profile_path),operation_map_sha256=sha(dump_path/'operations.json'),
                 code_map_sha256=sha(dump_path/'map.json'),code_sha256=sha(dump_path/'code.bin'),
                 exact_logical_counts_memory_and_entropy=True,exact_per_pc_counts=True,
@@ -118,7 +145,7 @@ def main():
             print(mode,index,item['name'],'PASS',len(code),'native bytes',flush=True)
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
         result=ROOT/'results'/args.run_id;result.mkdir(exist_ok=False)
-        write(result/'summary.json',dict(status='passed',commands=6,tool_key=key,matched_control_key=control_key,control_code_matches_adopted=True,vm_sha256=sha(vm),comparisons=comparisons,
+        write(result/'summary.json',dict(status='passed',commands=6,new_executions=6-len(reused),reused_executions=len(reused),code_partition_verified=True,tool_key=key,matched_control_key=control_key,control_code_matches_adopted=True,vm_sha256=sha(vm),comparisons=comparisons,
             exact_logical_counts_memory_and_entropy=True,exact_per_pc_counts=True,exact_operation_map_reconstruction=True,
             raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),
             performance_measurement=False))

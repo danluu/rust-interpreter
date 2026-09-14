@@ -32,11 +32,11 @@ def main():
         paths += controls
         hashes = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         write(work / 'inputs.json', hashes)
-        child, out, err = capture([sys.executable, '-m', 'unittest', 'test_screen', '-v'],
+        child, out, err = capture([sys.executable, '-m', 'unittest', 'test_screen', 'test_mechanism', '-v'],
             cwd=Path(__file__).parent, env=dict(os.environ, PYTHONDONTWRITEBYTECODE='1'),
             receipt_path=work / 'active.json', receipt=dict(stage='heap address bias screen protocol'))
         (work / 'stdout').write_text(out); (work / 'stderr').write_text(err)
-        assert child.returncode == 0 and 'Ran 13 tests' in err and err.rstrip().endswith('OK')
+        assert child.returncode == 0 and 'Ran 17 tests' in err and err.rstrip().endswith('OK')
         child,launcher_out,launcher_err=capture([sys.executable,'-m','unittest','discover','-s','tests','-v'],
             cwd=ROOT,env=dict(os.environ,PYTHONDONTWRITEBYTECODE='1'),
             receipt_path=work/'launcher-active.json',receipt=dict(stage='current main launcher controls'))
@@ -45,12 +45,12 @@ def main():
         (launcher_count,)=map(int,re.findall(r'Ran (\d+) tests',launcher_err));assert launcher_count>=336
         assert all(sha(ROOT / p) == h for p, h in hashes.items())
         result = ROOT / 'results' / args.run_id; result.mkdir(exist_ok=False)
-        write(result/'summary.json',dict(status='passed',tests=13,launcher_tests=launcher_count,launcher_skipped=22,
+        write(result/'summary.json',dict(status='passed',tests=13,mechanism_controls=4,launcher_tests=launcher_count,launcher_skipped=22,
             commands=2,launcher_commands_reused=0,raw=str(work.relative_to(ROOT)),inputs_sha256=sha(work/'inputs.json'),
             stdout_sha256=sha(work/'stdout'),stderr_sha256=sha(work/'stderr'),
             launcher_stdout_sha256=sha(work/'launcher.stdout'),launcher_stderr_sha256=sha(work/'launcher.stderr'),
             guest_commands=0,performance_measurement=False))
-        print('PASS: thirteen screen controls and',launcher_count,'current launcher controls',flush=True)
+        print('PASS: thirteen screen/four code-partition controls and',launcher_count,'current launcher controls',flush=True)
 
 
 
