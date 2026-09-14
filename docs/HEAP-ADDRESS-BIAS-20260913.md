@@ -1,6 +1,6 @@
-# Heap address bias: primary screen passed, full comparison pending
+# Heap address bias: full token gate failed; runtime parked
 
-The 40-command changed-source token screen passes narrowly: paired wall ratio
+The initial 40-command changed-source token screen passed narrowly: paired wall ratio
 0.971177 (2.88% improvement) against a 2.747% A/A envelope; paired CPU ratio
 0.994053. Candidate/native wall ratio is 1.62412. This admits the full comparison;
 it does not justify runtime adoption. All original assertions, intentional wrong
@@ -36,10 +36,24 @@ executions were reused after correcting offline accounting, without rerunning
 the guest prefix. The closure verifies 2,291 evidence files and 597 Git source
 bindings; the rejected tool ran zero benchmark commands.
 
-Next require 13 selected/prepared real controls, full protocol controls, and
-fresh token/folded/pgrust/private rg-aot/Nushell edit histories, stopping on the
-first failed gate. Preserve all existing A/A and CPU gates and the separate
-114-test parser compatibility requirement. Initial screen pairs are not reused.
+All 13 selected/prepared real controls and 23 full-protocol controls pass. The
+fresh 154-command full token history then fails the performance gate: paired
+wall ratio 0.989751 (1.02% improvement) versus 3.8043% A/A; CPU ratio 1.001508
+(0.15% regression). CPU plus its 1.1659% envelope remains within 1.05, but the
+separate no-regression ceiling fails. Candidate/native wall ratio is 1.624861.
+All original 12 assertions, three intentional wrong states, three five-edit
+histories, final restoration and artifact identity checks pass. The final
+source and frozen-input audit passes.
+
+Park the runtime and preserve the narrow screen result alongside the failed
+full result. Folded, pgrust, private rg-aot, Nushell and complete-parser guards
+remain unstarted. No quiet retry or repeated primary/full history follows.
+Inspect saved native code for constant-materialization costs before choosing
+a different candidate. The adopted runtime on main remains unchanged.
+
+Evidence: [full token](../results/heap-address-edit-token-01/summary.json),
+[closed campaign](../results/heap-address-full-01/summary.json),
+[final audit](../results/heap-address-full-01/final-audit.json).
 
 Closed primary compiler intermediates were retired only after the closure and
 exact ownership/open-file checks. Transparent filesystem compression preserved
