@@ -13,7 +13,7 @@ from compare_saved_runtime import acquire_lock, sha
 from workflow_io import require_space, write_json as write
 from suite_reports import validate_report
 
-RUN = 'scalar-aggregate-screen-exhaustive-01'
+RUN = 'scalar-aggregate-screen-exhaustive-02'
 
 
 def read(path):
@@ -77,6 +77,7 @@ def main():
                 path = Path(command[command.index('--suite-report') + 1])
                 retain(path, row['suite_sha256'])
                 suite = read(path)
+                assert screen.validate_workers(suite,plan['names'])
                 suites[row['cycle'], row['state'], row['mode']] = suite
                 assert row['outcomes'] == [list(x) for x in sorted(validate_report(suite, plan['names'], 'prepared', success))]
                 assert row['launch']['tool_key'] == result['tool_keys'][row['mode']]

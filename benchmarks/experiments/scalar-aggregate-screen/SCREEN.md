@@ -17,7 +17,7 @@ shim, unchanged-build sample, partial-pair splicing or repeat to cross a gate.
 
 Prerequisites:637 workspace tests/profile,429 Python tests with22 declared skips,
 121 strict/cache commands, three exact original profiles/code reconstructions,
-and15 protocol plus3 unchanged observation controls. Compare identical compiler,
+and16 protocol plus3 unchanged observation controls. Compare identical compiler,
 exporter and wrapper in the three cached arms, and require identical candidate /
 baseline bytecode, source identity and original assertion outcomes on every state.
 
@@ -34,3 +34,9 @@ isolated-primary improvement claim. Main remains adopted until every guard passe
 Hold the global lock. Require14 GiB admission (6 GiB new allowance +8 reserve),
 recheck8 GiB before every child, retain all binaries/RBCs/catalogs/reports and
 source restoration. The gate closes before starting full or held-out commands.
+
+Startup attempt01 stopped after original native/baseline success, before any
+candidate command or edited pair, because the harness expected two active
+workers for one test. Attempt02 corrects only that assertion: two requested
+prepared workers, min(2, selected tests) active. Keep two Cargo workers and all
+existing gates. Use a fresh namespace and retain the complete failed attempt.

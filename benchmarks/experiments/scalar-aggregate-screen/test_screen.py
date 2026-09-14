@@ -8,6 +8,15 @@ import screen
 
 
 class ScreenTests(unittest.TestCase):
+    def test_prepared_worker_count_clamps_only_to_the_number_of_selected_tests(self):
+        for count in [1,2,3,12]:
+            names=[str(i) for i in range(count)]
+            self.assertTrue(screen.validate_workers(dict(requested_workers=2,workers=min(2,count)),names))
+            for requested,active in [(1,1),(2,0),(2,3),(2,2 if count==1 else 1)]:
+                with self.subTest(count=count,requested=requested,active=active),self.assertRaises(AssertionError):
+                    screen.validate_workers(dict(requested_workers=requested,workers=active),names)
+        with self.assertRaises(AssertionError):screen.validate_workers(dict(requested_workers=2,workers=1),[])
+
     def test_exhaustive_primary_keeps_mutations_and_does_not_change_shared_workflow(self):
         original=copy.deepcopy(screen.WORKFLOW_VARIANTS['fre','token-phrase-allocation'])
         case=screen.primary_case()

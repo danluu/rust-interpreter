@@ -77,9 +77,9 @@ and three exact original profiles/code reconstructions. All stages are closed.
 No performance improvement or adoption follows from this qualification.
 
 The exact exhaustive test passes alone for original source and fails alone for
-the deliberately wrong edit. Fifteen protocol and three observation controls
+the deliberately wrong edit. Sixteen protocol and three observation controls
 qualify the prospective40-command changed-source primary:
-`scalar-aggregate-screen-exhaustive-01`. Use the original exhaustive test alone,
+`scalar-aggregate-screen-exhaustive-02`. Use the original exhaustive test alone,
 normal entropy, two Cargo workers and complete Cargo/build/run latency. The
 previously declared A/A wall and CPU gates remain unchanged. If it passes, freeze
 the full exhaustive history and all existing project/parser guards before running

@@ -38,12 +38,12 @@ def main():
             receipt_path=work/'active.json',receipt=dict(stage='aggregate screen protocol'))
         (work/'stdout').write_text(out);(work/'stderr').write_text(err)
         write(work/'record.json',dict(pid=child.pid,returncode=child.returncode,stdout_sha256=sha(work/'stdout'),stderr_sha256=sha(work/'stderr')))
-        assert child.returncode==0 and 'Ran 18 tests' in err and err.rstrip().endswith('OK'),err
+        assert child.returncode==0 and 'Ran 19 tests' in err and err.rstrip().endswith('OK'),err
         assert all(sha(ROOT/p)==h for p,h in hashes.items())
         result=ROOT/'results'/args.run_id;result.mkdir(exist_ok=False)
-        write(result/'summary.json',dict(status='passed',tests=15,observation_controls=3,launcher_tests=429,launcher_skipped=22,
+        write(result/'summary.json',dict(status='passed',tests=16,observation_controls=3,launcher_tests=429,launcher_skipped=22,
             commands=1,launcher_commands_reused=1,raw=str(work.relative_to(ROOT)),inputs_sha256=sha(work/'inputs.json'),
             stdout_sha256=sha(work/'stdout'),stderr_sha256=sha(work/'stderr'),record_sha256=sha(work/'record.json'),
             reused_launcher_summary=str(build_path.relative_to(ROOT)),guest_commands=0,performance_measurement=False))
-        print('PASS 15 protocol / 3 observation controls; reused exact 429 Python tests (22 skips)',flush=True)
+        print('PASS 16 protocol / 3 observation controls; reused exact 429 Python tests (22 skips)',flush=True)
 if __name__=='__main__':main()

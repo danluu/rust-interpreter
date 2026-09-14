@@ -17,7 +17,7 @@ def main():
     assert re.fullmatch(r'scalar-aggregate-screen-protocol-\d{2}',name)
     out=ROOT/'results'/name;raw=ROOT/'.work'/name;outer=ROOT/'.work/experiments'/name
     summary=json.loads((out/'summary.json').read_text());terminal=json.loads((outer/'status.json').read_text())
-    assert summary['status']=='passed' and summary['tests']==15 and summary['observation_controls']==3
+    assert summary['status']=='passed' and summary['tests']==16 and summary['observation_controls']==3
     assert terminal['status']=='finished' and terminal['returncode']==0 and terminal['owner']==str(ROOT)
     assert sha(outer/'command.log')==terminal['log_sha256']
     assert sha(raw/'inputs.json')==summary['inputs_sha256']

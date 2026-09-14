@@ -98,6 +98,12 @@ def validate_primary_selection(proof):
     return True
 
 
+def validate_workers(suite,names):
+    assert names and suite['requested_workers']==2
+    assert suite['workers']==min(2,len(names))
+    return True
+
+
 def scalar_args(mode):
     assert mode in CUSTOM
     return ['--jit-scalar-calls'] if mode in CACHED else []
@@ -215,7 +221,7 @@ def main():
         require_space(ROOT, admission)
         harness_path = args.harness.resolve(strict=True)
         harness = json.loads(harness_path.read_text())
-        assert harness['status'] == 'passed' and harness['tests'] == 15 and harness['launcher_tests']==429 and harness['launcher_skipped']==22
+        assert harness['status'] == 'passed' and harness['tests'] == 16 and harness['launcher_tests']==429 and harness['launcher_skipped']==22
         integration_path = ROOT / 'results/scratch-scalar-main-qualification-01/summary.json'
         integration = json.loads(integration_path.read_text())
         harness_inputs = ROOT / harness['raw'] / 'inputs.json'
@@ -304,7 +310,7 @@ def main():
             case=case, revision=ref['revision'], names=names, filter=pattern,
             tools={m: b['tool_key'] for m, b in builds.items()}, frozen=frozen,
             original_source_sha256=sha(changed), admission_gib=admission, minimum_child_gib=8,
-            cargo_workers=2, custom_suite_workers=2, native_test_threads='libtest default',
+            cargo_workers=2, custom_suite_workers=2, custom_active_workers=min(2,len(names)), native_test_threads='libtest default',
             custom_runner='prepared, fresh guest state per test',
             identity_lookup={m:lookup_args(m)[1] for m in CUSTOM},
             primary='original exhaustive test alone; full token suite is a later regression guard',
@@ -392,7 +398,7 @@ def main():
                 suite, suite_sha = read_report(suite_path)
                 row['outcomes'] = validate_report(suite, names, 'prepared', success)
                 validate_runtime_limits(suite, ref['instruction_limit'], ref['allocation_limit'], required=True)
-                assert suite['workers'] == suite['requested_workers'] == 2
+                assert validate_workers(suite,names)
                 launches = [json.loads(line.split(': ', 1)[1]) for line in stderr.splitlines()
                             if line.startswith('rust-interp-launch: ')]
                 assert len(launches) == 1
