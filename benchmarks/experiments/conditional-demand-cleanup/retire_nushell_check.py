@@ -8,7 +8,7 @@ from workflow_io import write_json as write
 from native_suite import test_status
 from suite_reports import validate_report
 
-NAME='closed-scratch-memory-values-nushell-check-retirement-01'
+NAME='closed-scratch-memory-values-nushell-check-retirement-02'
 RUNS=['scratch-memory-values-edit-nushell-01']
 
 def identity(path):
@@ -29,14 +29,14 @@ def check_open(root):
     return dict(path=str(root.relative_to(ROOT)),returncode=check.returncode,
                 only_open_file_is_own_invocation_lock=True,owner_pid=os.getpid())
 
-def bind(path, expected=None):
+def bind(path, expected=None, *, parse=True):
     assert path.resolve(strict=True)==path and path.is_file(),path
     digest=sha(path)
     if expected is not None: assert digest==expected,path
     key=str(path.relative_to(ROOT))
     assert key not in proofs or proofs[key]==digest,path
     proofs[key]=digest
-    return json.loads(path.read_text()) if path.suffix=='.json' else digest
+    return json.loads(path.read_text()) if parse and path.suffix=='.json' else digest
 
 def terminal(run):
     import re
@@ -105,7 +105,7 @@ with ExitStack() as stack:
     for path,digest in plan['frozen'].items():
         if path.startswith(('.work/','results/')):
             assert fingerprint(ROOT/path)==digest,path;retained_frozen[path]=digest
-            if digest['kind']=='file':bind(ROOT/path,digest['sha256'])
+            if digest['kind']=='file':bind(ROOT/path,digest['sha256'],parse=False)
         else:
             import hashlib
             payload=subprocess.check_output(['git','show',plan['source_commit']+':'+path],cwd=ROOT)
