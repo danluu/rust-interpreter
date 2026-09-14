@@ -26,3 +26,9 @@ step and zero-result Calls. Extend it to declared argument widths: a captured
 argument of at most eight bytes has an unused upper 64-bit host slot; a zero-
 byte argument has no readable lane. Count each separately using the same
 original successful Call counts. These are opportunities, not timing claims.
+
+Revision 03 checks the private-transfer candidate's immutable success counts
+against this independent path census and the original successful PC counts.
+It reconstructs the historical private ABI using its retained test entry.
+The source now contains a runtime candidate; this observer neither executes it
+nor publishes executable code. Exact new-body qualification follows separately.

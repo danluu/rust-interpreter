@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-commit-census-02'
+NAME='scalar-commit-census-03'
 
 def read(p):return json.loads(p.read_text())
 def main():
@@ -39,7 +39,7 @@ def main():
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False);write(work/'inputs.json',inputs)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,target=str(target.relative_to(ROOT)),
             same_source_root=True,required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,
-            expected_bodies=137,inputs_sha256=sha(work/'inputs.json'),guest_commands=0,production_runtime_changes=0,performance_measurement=False))
+            expected_bodies=137,inputs_sha256=sha(work/'inputs.json'),guest_commands=0,production_runtime_changes=1,observer_runtime_mutations=0,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
              and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS']}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -77,7 +77,7 @@ def main():
         write(out/'summary.json',dict(status='passed',commands=2,controls=1,reconstructed_native_bodies=137,cases=totals,
             setup_seconds=sum(r['seconds'] for r in records),raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),
             records_sha256=sha(work/'records.json'),inputs_sha256=sha(work/'inputs.json'),census_sha256=sha(work/'census.json'),
-            source_revision=revision,guest_commands=0,executable_code_publications=0,production_runtime_changes=0,
+            source_revision=revision,guest_commands=0,executable_code_publications=0,production_runtime_changes=1,observer_runtime_mutations=0,
             performance_measurement=False,scope=census['scope']))
         print(json.dumps(totals),flush=True)
 if __name__=='__main__':main()

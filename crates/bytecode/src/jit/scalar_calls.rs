@@ -17,6 +17,7 @@ pub(super) struct Entry {
     pub offset: usize,
     pub bytes: usize,
     maximum_steps: usize,
+    success_steps: Option<usize>,
     target: usize,
 }
 impl Jit<'_> {
@@ -50,7 +51,7 @@ impl Jit<'_> {
         if self.code.is_none() {self.code=Some(platform::Code::reserve(self.capacity)?);}
         let offset=self.code.as_mut().unwrap().append(&emitted.words)?;
         let target=self.code.as_ref().unwrap().published().0+offset;
-        scalar.entries[id]=Some(Entry{offset,bytes,maximum_steps:plan.maximum_steps,target});
+        scalar.entries[id]=Some(Entry{offset,bytes,maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,target});
         self.bytes+=bytes;
         Ok(())
     }
@@ -61,6 +62,7 @@ impl Jit<'_> {
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).map_err(str::to_string)?;
         if plan.maximum_steps!=entry.maximum_steps {return Err("scalar reconstruction budget mismatch".into());}
         let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).map_err(str::to_string)?;
+        if emitted.success_steps!=entry.success_steps {return Err("scalar reconstruction success-count mismatch".into());}
         if emitted.words.len()*4!=entry.bytes {return Err("scalar reconstruction extent mismatch".into());}
         Ok(emitted.words)
     }
@@ -104,16 +106,20 @@ impl Assembler<'_> {
         let stack=ARGUMENTS+args.len()*16;assert!(stack%16==0 && stack<4096);
         self.sub_imm(31,31,stack);
         for (reg,offset) in [(3,24),(30,32),(11,48)] {self.store64(reg,31,offset);}
-        self.get(11,destination,false);self.scalar_guard_address(11,f.result.size,true,&mut private);self.store64(11,31,40);
+        if f.result.size!=0 {self.get(11,destination,false);self.scalar_guard_address(11,f.result.size,true,&mut private);self.store64(11,31,40);}
         for (index,(&source,slot)) in args.iter().zip(&f.args).enumerate() {
+            if slot.size==0 {continue;} // No input lane exists for a zero-byte argument.
             let prior=self.failures.len();
             // Equality with a bounded caller-frame slot permits direct host
             // addressing. A stale hint takes the original checked path; an
             // invalid address declines the whole transaction before any commit.
             self.call_argument_address(source,slot.size,slots.and_then(|s|s[index]))?;
             private.extend(self.failures.drain(prior..).map(|(at,kind)|{assert!(kind==Failure::Memory);at}));
-            self.load_mem(9,10,11,slot.size);
-            self.store64(9,31,ARGUMENTS+index*16);self.store64(10,31,ARGUMENTS+index*16+8);
+            // The scalar emitter reads no high half for an input <= 8 bytes.
+            // Keep the exact address guard and low-byte read, including odd widths.
+            self.load_mem(9,if slot.size>8 {10} else {31},11,slot.size);
+            self.store64(9,31,ARGUMENTS+index*16);
+            if slot.size>8 {self.store64(10,31,ARGUMENTS+index*16+8);}
         }
         // Private leaf inputs and Output live at fixed caller-SP offsets;
         // x21 is the prechecked logical base. x0–x2, x4–x8 and x19–x29 stay
@@ -126,11 +132,14 @@ impl Assembler<'_> {
         // fallible action follows success; this is the transaction commit.
         for (reg,offset) in [(3,24),(30,32)] {self.load64(reg,31,offset);}
         self.charge_transition(pc,profiled);
-        self.load64(9,31,OUTPUT+16);self.three(0xcb000000,BUDGET_REGISTER,BUDGET_REGISTER,9);
+        if let Some(steps)=entry.success_steps {self.sub_imm(BUDGET_REGISTER,BUDGET_REGISTER,steps);}
+        else {self.load64(9,31,OUTPUT+16);self.three(0xcb000000,BUDGET_REGISTER,BUDGET_REGISTER,9);}
         self.three(0x8b000000,11,2,3);self.three(0x8b000000,12,2,21);
         self.zero_range()?; // retain exactly the ordinary Call's zeroed padding
-        self.load64(9,31,OUTPUT);self.load64(10,31,OUTPUT+8);self.load64(12,31,40);
-        self.store_mem(9,10,12,f.result.size);
+        if f.result.size!=0 {
+            self.load64(9,31,OUTPUT);self.load64(10,31,OUTPUT+8);self.load64(12,31,40);
+            self.store_mem(9,10,12,f.result.size);
+        }
         self.load64(10,31,48);self.load64(9,19,state::PEAK_LINEAR);self.cmp(10,9);
         self.emit(0x9a892149); // csel x9,x10,x9,hs
         self.store64(9,19,state::PEAK_LINEAR);

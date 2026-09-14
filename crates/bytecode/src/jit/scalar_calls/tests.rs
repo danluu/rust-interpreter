@@ -209,3 +209,47 @@ fn native_scalar_call_commits_every_profile_word_and_exact_budget_boundary() {
         }
     }
 }
+
+#[test]
+fn native_scalar_call_all_capture_widths_keep_aliases_high_lanes_and_empty_inputs() {
+    for width in 0..=16 {
+        let parent=function("capture widths",32,8,vec![Slot{offset:0,size:16}],Slot{offset:0,size:16},vec![
+            local(0,0),local(1,16),Op::Call{function:1,args:vec![0],destination:1},
+            Op::Call{function:1,args:vec![1],destination:0},Op::Return]);
+        let leaf=function("unaligned scalar capture",32,64,vec![Slot{offset:3,size:width}],Slot{offset:3,size:16},vec![Op::Return]);
+        let mut p=program(vec![parent,leaf]);
+        for value in [0,u128::MAX,0x123456789abcdef0_fedcba9876543210] {
+            assert_eq!(compare(&p,&[value],100,4096,8).commits,2);
+            for budget in 0..=8 {compare(&p,&[value],budget,4096,8);}
+        }
+        p.functions[0].code[0]=Op::Imm{dst:0,value:u64::MAX as u128};
+        p.functions[0].code[3]=Op::Call{function:1,args:vec![0],destination:1};
+        let stats=compare(&p,&[123],100,4096,8);
+        if width==0 {assert_eq!(stats.commits,2);}
+    }
+}
+
+#[test]
+fn native_scalar_call_zero_results_preserve_fixed_variable_and_fault_budget_paths() {
+    let parent=function("no result destination",16,8,vec![Slot{offset:0,size:8}],Slot{offset:0,size:16},vec![
+        local(0,0),Op::Imm{dst:1,value:u64::MAX as u128},Op::Call{function:1,args:vec![0],destination:1},
+        local(2,8),Op::Imm{dst:3,value:0x11223344},Op::Store{address:2,src:3,size:8},Op::Return]);
+    let cases=[
+        (Some(5),vec![local(0,0),load(1,0,8),Op::Switch{value:1,cases:vec![(0,3)],otherwise:5},
+            Op::Imm{dst:2,value:7},Op::Return,Op::Imm{dst:2,value:8},Op::Imm{dst:2,value:9},Op::Trap{message:"long fault".into()}]),
+        (None,vec![local(0,0),load(1,0,8),Op::Switch{value:1,cases:vec![(0,3)],otherwise:4},
+            Op::Return,Op::Imm{dst:2,value:7},Op::Return]),
+        (Some(4),vec![local(0,0),load(1,0,8),Op::Assert{value:1,expected:true,message:"no result assertion".into()},Op::Return]),
+    ];
+    for (expected,code) in cases {
+        let leaf=function("zero result paths",8,64,vec![Slot{offset:0,size:8}],Slot{offset:0,size:0},code);
+        let p=program(vec![parent.clone(),leaf]);
+        let mut jit=Jit::new_resumable(&p,true,16*1024*1024,true).unwrap();jit.enable_scalar_calls();
+        jit.ensure_function(0).unwrap();assert_eq!(jit.scalar_entry(1).unwrap().success_steps,expected);
+        let success_arg=if expected==Some(4) {1} else {0};
+        assert_eq!(compare(&p,&[success_arg],100,4096,8).commits,1);
+        for arg in [0,1,u64::MAX as u128] {for budget in 0..=16 {for frames in [1,2,3] {
+            for memory in [256,4096] {compare(&p,&[arg],budget,memory,frames);}
+        }}}
+    }
+}

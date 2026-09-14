@@ -47,7 +47,7 @@ struct Block {start:usize,end:usize,successors:Vec<usize>,predecessors:Vec<usize
 pub struct Plan {
     nodes:Vec<Node>, blocks:Vec<Block>, at:Vec<usize>, computations:Vec<Vec<Id>>,
     effects:Vec<Effect>, live:Vec<bool>, reachable:Vec<bool>,
-    pub maximum_steps:usize, pub work:usize,
+    pub maximum_steps:usize, pub success_steps:Option<usize>, pub work:usize,
 }
 #[derive(Debug, Serialize)]
 pub struct Summary {
@@ -185,14 +185,22 @@ pub fn lower(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static
     let mut pending:Vec<_>=blocks.iter().map(|b|b.predecessors.iter().filter(|p|reachable[**p]).count()).collect();
     for b in 0..blocks.len() {if reachable[b] && pending[b]==0 {queue.push_back(b);}}
     let mut order=vec![];let mut longest=vec![0;blocks.len()];
+    // Reuse the existing bounded topological traversal. A single successful
+    // length is valid only when every structural Return path has that length.
+    // Fault-only paths still participate in maximum_steps for entry admission.
+    let mut shortest=vec![usize::MAX;blocks.len()];shortest[0]=0;
+    let (mut return_min,mut return_max)=(usize::MAX,0);
     while let Some(b)=queue.pop_front() {
-        order.push(b);longest[b]+=blocks[b].end-blocks[b].start;
-        for &n in &blocks[b].successors {longest[n]=longest[n].max(longest[b]);pending[n]-=1;if pending[n]==0 {queue.push_back(n);}}
+        order.push(b);let length=blocks[b].end-blocks[b].start;longest[b]+=length;shortest[b]+=length;
+        if matches!(f.code[blocks[b].end-1],Op::Return) {return_min=return_min.min(shortest[b]);return_max=return_max.max(longest[b]);}
+        for &n in &blocks[b].successors {longest[n]=longest[n].max(longest[b]);shortest[n]=shortest[n].min(shortest[b]);
+            pending[n]-=1;if pending[n]==0 {queue.push_back(n);}}
     }
     if order.len()!=reachable.iter().filter(|v|**v).count() {return Err("scalar_cycle");}
     let maximum_steps=longest.into_iter().max().unwrap();
+    let success_steps=(return_min==return_max).then_some(return_max);
     let mut b=Builder {plan:Plan{nodes:vec![],blocks,at,computations:vec![vec![];f.code.len()],effects:vec![Effect::None;f.code.len()],
-        live:vec![],reachable,maximum_steps,work:0},constants:HashMap::new(),bases:HashMap::new(),roots:vec![],pc:0,limit};
+        live:vec![],reachable,maximum_steps,success_steps,work:0},constants:HashMap::new(),bases:HashMap::new(),roots:vec![],pc:0,limit};
     b.charge(f.code.len()+edges+f.registers+f.frame_size.max(1))?;
     let zero=b.constant(0)?;let mut entry=State{registers:vec![zero;f.registers],bytes:vec![Byte{value:zero,byte:0};f.frame_size.max(1)]};
     for (index,slot) in f.args.iter().enumerate() {

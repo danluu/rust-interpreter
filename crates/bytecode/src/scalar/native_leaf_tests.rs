@@ -33,7 +33,7 @@ fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
     let saved=CALL_ARGUMENTS+argument_count*16;
     let stack=(saved+5*8+15)&!15;
     let mut a=Emitter{plan,words:vec![],slots:vec![],stack_bytes:stack,registers:vec![],
-        labels:vec![],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame:false};
+        labels:vec![],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame:false,fixed_steps:None};
     a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);
     let short=a.words.len();a.emit(0x54000003);
     a.stack(false);
@@ -49,12 +49,18 @@ fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
         .chain((4..9).map(|r|(r,saved+(r as usize-4)*8))) {
         a.load(10,31,offset);a.cmp(r,10);a.csel(17,17,11,0);
     }
+    if let Some(steps)=body.success_steps {
+        // The VM consumes this immutable metadata only after success. Materialize
+        // it here solely to adapt the successful result to Native::attempt.
+        a.cmp(17,31);let failed=a.words.len();a.emit(0x54000001);
+        a.imm(9,steps as u64);a.store(9,31,CALL_OUTPUT+16);a.patch(failed,a.words.len(),true).unwrap();
+    }
     a.load(2,31,16);
     for offset in (0..88).step_by(8) {a.load(9,31,CALL_OUTPUT+offset);a.store(9,2,offset);}
     a.load(21,31,24);a.load(30,31,32);a.stack(true);a.mov(0,17);a.emit(0xd65f03c0);
     let declined=a.words.len();a.imm(0,1);a.emit(0xd65f03c0);a.patch(short,declined,true).unwrap();
     a.patch(call,a.words.len(),false).unwrap();a.words.extend(body.words);
-    Emitted{words:a.words,stack_bytes:stack+body.stack_bytes,profiled,register_values:body.register_values}
+    Emitted{words:a.words,stack_bytes:stack+body.stack_bytes,profiled,register_values:body.register_values,success_steps:None}
 }
 
 fn variants(p: &Program, plan: &Plan, profiled: bool) -> [Native; 4] {
@@ -284,6 +290,11 @@ fn native_scalar_call_frame_abi_preserves_live_pointers_and_private_failure_outp
                 0,std::ptr::null_mut(),0,std::ptr::null_mut())};
             let actual=unsafe {code.tree_abi_probe(0,[args.as_ptr() as usize,0x1000,
                 std::ptr::from_mut(&mut output) as usize,100,0x123,0x456,0x789,0xabc])};
+            if status!=0 && plan.success_steps.is_some() {
+                // An unconsumed fixed counter stays at its input sentinel even
+                // on failure; status, result, profile and preservation still match.
+                expected.steps=123;
+            }
             assert_eq!(actual[0] as u64,status);assert_eq!(output,expected);
             assert_eq!([actual[1],actual[2],actual[3],actual[4],actual[7],actual[8],actual[9],actual[10],actual[11],actual[12]],
                 [0x1357,0x2468,0x3579,0x468a,0x579b,0x68ac,0x79bd,0x8ace,0x9bdf,0xace0]);assert_eq!(actual[5],actual[6]);

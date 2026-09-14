@@ -47,7 +47,8 @@ fn scalar_commit_census_keeps_unequal_returns_traps_and_nonmonotonic_edges() {
         let p=crate::Program{version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
             functions:vec![f],data:vec![],statics:vec![],thread_locals:vec![]};
         crate::validate(&p).unwrap();let m=crate::proof::memory_plan(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone());
-        lower(&p.functions[0],&m,250_000).unwrap()
+        let plan=lower(&p.functions[0],&m,250_000).unwrap();
+        assert_eq!(plan.success_steps,successful_steps(&plan).filter(|(a,b)|a==b).map(|(a,_)|a));plan
     };
     let imm=||Op::Imm{dst:0,value:1};
     let branch=|a,b|Op::Switch{value:0,cases:vec![(0,a)],otherwise:b};
@@ -81,7 +82,7 @@ fn observe_original_scalar_commit_traffic() {
             let ranges:Vec<_>=mapping["ranges"].as_array().unwrap().iter().filter(|r|
                 r["kind"]=="scalar_leaf" && r["function"]==function).collect();
             if ranges.is_empty() {continue;}assert_eq!(ranges.len(),1);let range=ranges[0];assert_eq!(range["name"],f.name);
-            let plan=lower(f,&memory,250_000).unwrap();let emitted=emit_call(&plan,true).unwrap();
+            let plan=lower(f,&memory,250_000).unwrap();let emitted=emit_call_reference(&plan,true).unwrap();
             let bytes:Vec<_>=emitted.words.iter().flat_map(|w|w.to_le_bytes()).collect();
             assert_eq!(bytes,code[range["offset"].as_u64().unwrap() as usize..range["end"].as_u64().unwrap() as usize],"body {function}");
             let observed=&profile["functions"][function];assert_eq!(observed["name"],f.name);
@@ -89,6 +90,7 @@ fn observe_original_scalar_commit_traffic() {
             let calls:u64=f.code.iter().zip(&hits).filter(|(op,_)|matches!(op,Op::Return)).map(|(_,h)|*h).sum();
             assert_eq!(hits[0],calls);
             let steps=successful_steps(&plan);let fixed=steps.filter(|(lo,hi)|lo==hi).map(|(lo,_)|lo);
+            assert_eq!(plan.success_steps,fixed);
             let total_steps:u64=hits.iter().sum();
             if let Some(steps)=fixed {assert_eq!(total_steps,calls*steps as u64);}
             let blocks:u64=plan.blocks.iter().enumerate().filter(|(i,_)|plan.reachable[*i]).map(|(_,b)| {
@@ -109,6 +111,6 @@ fn observe_original_scalar_commit_traffic() {
     }
     let output=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("SCALAR_COMMIT_OUTPUT").unwrap()).unwrap();
     serde_json::to_writer(output,&json!({"status":"passed","cases":cases,"guest_commands":0,"executable_code_publications":0,
-        "production_runtime_changes":0,"performance_measurement":false,
+        "production_runtime_changes":1,"observer_runtime_mutations":0,"performance_measurement":false,
         "scope":"Conservative structural successful-path counts and original successful scalar Call counts. Step accesses are one initialization store, two accesses per visited block and one caller load. Zero-result accesses are two leaf stores, three caller loads and one destination save. These are overlapping opportunities, not measured hardware accesses or speedups; failed native attempts are excluded."})).unwrap();
 }
