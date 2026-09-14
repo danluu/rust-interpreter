@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 #[path = "values_compact.rs"]
 mod compact;
 
-const MAX_PCS: usize = 65_536;
+pub(super) const MAX_PCS: usize = 65_536;
 const MAX_REGISTERS: usize = 65_536;
 const MAX_WORDS: usize = 1_048_576; // 8 MiB for live-in bits, per analyzed function
 const MAX_EDGES: usize = 262_144;

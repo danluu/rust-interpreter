@@ -59,6 +59,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 if limits.jit_demand_regions { return Err("duplicate demand regions option".into()); }
                 limits.jit_demand_regions = true;
             }
+            "--jit-demand-regions-if-large" => {
+                if limits.jit_demand_regions_if_large { return Err("duplicate conditional demand regions option".into()); }
+                limits.jit_demand_regions_if_large = true;
+            }
             "--jit-operation-map" => {
                 if limits.jit_operation_map { return Err("duplicate operation map option".into()); }
                 limits.jit_operation_map = true;

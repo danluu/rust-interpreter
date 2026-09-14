@@ -68,6 +68,18 @@ class IsolatedLauncherValidation(unittest.TestCase):
     def test_cached_toolchain_lookup_requires_standard_library_mir(self):
         self.rejected(['--entry', 'first', '--toolchain-lookup', 'cached'])
 
+    def test_conditional_demand_requires_checked_resumable_jit_and_one_policy(self):
+        base = ['--entry', 'first', '--jit-demand-regions-if-large']
+        for extra in [[], ['--engine', 'jit'],
+                      ['--engine', 'jit', '--jit-resumable-calls', '--jit-native-calls'],
+                      ['--engine', 'jit', '--jit-resumable-calls', '--jit-demand-regions']]:
+            with self.subTest(extra=extra): self.rejected(base + extra)
+        with patch.object(sys, 'argv', ['interpreter.py', '--package', 'fixture', *base,
+                                      '--engine', 'jit', '--jit-resumable-calls']), \
+                patch.object(interpreter, 'checked_tools', side_effect=RuntimeError('selection reached tools')), \
+                self.assertRaisesRegex(RuntimeError, 'selection reached tools'):
+            interpreter.main()
+
     def test_existing_or_dangling_report_paths_are_preserved_before_building(self):
         base = ['--entry', 'first', '--entry', 'second', '--test-body', '--engine', 'jit', '--jit-resumable-calls',
                 '--isolated-batch', 'prepared', '--suite-report']

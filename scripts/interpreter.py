@@ -249,6 +249,7 @@ def _main(resources):
     parser.add_argument('--suite-workers',type=int,help='isolated test workers, each owning its JIT (1..64; default: 1)')
     parser.add_argument('--jit-native-call-stubs',action='store_true',help='experimental Calls linked with ordinary regions; requires --jit-native-calls')
     parser.add_argument('--jit-demand-regions',action='store_true',help='experimental reached-region compilation; requires fully checked resumable JIT')
+    parser.add_argument('--jit-demand-regions-if-large',action='store_true',help='experimental reached-region compilation for programs exceeding the function analysis PC bound; requires fully checked resumable JIT')
     parser.add_argument('--jit-scalar-calls',action='store_true',help='experimental custom scalar leaves; requires resumable JIT and full checking')
     parser.add_argument('--jit-resumable-calls',action='store_true',help='experimental native Calls over guest frames; requires JIT, excludes tree/stub calls')
     parser.add_argument('--jit-persistent-registers',action='store_true',help='experimental full-width values retained across native block edges; requires --engine=jit')
@@ -308,6 +309,8 @@ def _main(resources):
     if args.jit_native_call_stubs and not args.jit_native_calls:parser.error('--jit-native-call-stubs requires --jit-native-calls')
     if args.jit_persistent_registers and args.engine != 'jit':parser.error('--jit-persistent-registers requires --engine=jit')
     if args.jit_demand_regions and (args.engine != 'jit' or not args.jit_resumable_calls):parser.error('--jit-demand-regions requires fully checked resumable JIT execution')
+    if args.jit_demand_regions_if_large and (args.engine != 'jit' or not args.jit_resumable_calls):parser.error('--jit-demand-regions-if-large requires fully checked resumable JIT execution')
+    if args.jit_demand_regions and args.jit_demand_regions_if_large:parser.error('demand region policies are mutually exclusive')
     if args.jit_scalar_calls and (args.engine != 'jit' or not args.jit_resumable_calls):parser.error('--jit-scalar-calls requires fully checked resumable JIT execution')
     if args.jit_resumable_calls and args.engine != 'jit':parser.error('--jit-resumable-calls requires --engine=jit')
     if args.jit_resumable_calls and (args.jit_native_calls or args.jit_native_call_stubs):parser.error('--jit-resumable-calls cannot be combined with native tree/stub calls')
@@ -331,7 +334,7 @@ def _main(resources):
         if (not args.test_body or args.arguments or args.engine!='interpreter' or
                 args.instruction_limit is not None or args.allocation_limit is not None or
                 args.isolated_batch is not None or args.suite_report is not None or args.jit_native_calls or
-                args.jit_native_call_stubs or args.jit_resumable_calls or args.jit_scalar_calls or args.jit_demand_regions or args.jit_persistent_registers or
+                args.jit_native_call_stubs or args.jit_resumable_calls or args.jit_scalar_calls or args.jit_demand_regions or args.jit_demand_regions_if_large or args.jit_persistent_registers or
                 args.inline_leaves or args.trap_unsupported_calls or args.run_try_callbacks or
                 args.allocation_trace or args.retain_audit_bodies):
             parser.error('--list-tests requires --test-body without execution or lowering options')
@@ -412,7 +415,7 @@ def _main(resources):
     if args.run_try_callbacks:require_export_option(tools,key,'run-try-callbacks')
     if args.allocation_trace:require_export_option(tools,key,'allocation-trace')
     timings['tools_seconds']=time.perf_counter()-stage
-    if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_scalar_calls=args.jit_scalar_calls,jit_demand_regions=args.jit_demand_regions,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
+    if stats:timings.update(tool_key=key,engine=args.engine,jit_persistent_registers=args.jit_persistent_registers,jit_resumable_calls=args.jit_resumable_calls,jit_scalar_calls=args.jit_scalar_calls,jit_demand_regions=args.jit_demand_regions,jit_demand_regions_if_large=args.jit_demand_regions_if_large,jit_native_calls=args.jit_native_calls,jit_native_call_stubs=args.jit_native_call_stubs,inline_leaves=args.inline_leaves,trap_unsupported_calls=args.trap_unsupported_calls,run_try_callbacks=args.run_try_callbacks)
     if stats:timings['function_cache']=args.function_cache
     if stats:timings['borrowck_cache']=args.borrowck_cache
     if stats:timings['host_proc_macro_opt']=args.host_proc_macro_opt
@@ -642,6 +645,7 @@ def _main(resources):
     if args.jit_resumable_calls:vm_command.append('--jit-resumable-calls')
     if args.jit_scalar_calls:vm_command.append('--jit-scalar-calls')
     if args.jit_demand_regions:vm_command.append('--jit-demand-regions')
+    if args.jit_demand_regions_if_large:vm_command.append('--jit-demand-regions-if-large')
     if args.jit_persistent_registers:vm_command.append('--jit-persistent-registers')
     if args.jit_native_calls:vm_command.append('--jit-native-calls')
     if args.jit_native_call_stubs:vm_command.append('--jit-native-call-stubs')

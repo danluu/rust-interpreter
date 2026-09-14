@@ -85,6 +85,14 @@ impl State {
 }
 
 impl<'a> Jit<'a> {
+    /// Use a structural analysis bound, independent of names and entry choice.
+    /// Compact surrounding functions too, to leave arena space for large ones.
+    pub(crate) fn has_oversized_function(program: &Program) -> bool {
+        program.functions.iter().any(|f| f.code.len() > values::MAX_PCS)
+    }
+
+    pub(crate) fn uses_demand_regions(&self) -> bool { self.demand.is_some() }
+
     pub(super) fn prepare_demand_function(&mut self, id: usize) -> Result<bool, String> {
         if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
         let f = &self.program.functions[id];

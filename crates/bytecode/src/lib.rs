@@ -450,6 +450,10 @@ pub struct Limits {
     /// Experimental reached-region preparation; requires fully validated
     /// resumable JIT execution. Eager preparation remains the default.
     pub jit_demand_regions: bool,
+    /// Experimental program-wide demand preparation only when a function
+    /// exceeds the CFG-analysis PC bound. Mutually exclusive with unconditional
+    /// demand regions; still requires fully validated resumable JIT execution.
+    pub jit_demand_regions_if_large: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -473,6 +477,7 @@ impl Default for Limits {
             jit_resumable_calls: false,
             jit_scalar_calls: false,
             jit_demand_regions: false,
+            jit_demand_regions_if_large: false,
             jit_code_dump: None,
             jit_operation_map: false,
         }
@@ -781,7 +786,10 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
 fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STUBS: bool, const RESUMABLE: bool>(
     program: &'program Program, limits: &Limits,
 ) -> Result<Option<jit::Jit<'program>>, String> {
-    if limits.jit_demand_regions {
+    if limits.jit_demand_regions && limits.jit_demand_regions_if_large {
+        return Err("demand region policies are mutually exclusive".into());
+    }
+    if limits.jit_demand_regions || limits.jit_demand_regions_if_large {
         if !USE_JIT || !RESUMABLE || program.version & PARTIAL_VALIDATION != 0 {
             return Err("demand regions require fully validated resumable JIT execution".into());
         }
@@ -799,7 +807,9 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
         })
     } else { None };
     if let Some(jit) = &mut jit {
-        if limits.jit_demand_regions { jit.enable_demand_regions()?; }
+        if limits.jit_demand_regions || (limits.jit_demand_regions_if_large && jit::Jit::has_oversized_function(program)) {
+            jit.enable_demand_regions()?;
+        }
         if limits.jit_scalar_calls {
             if program.version & PARTIAL_VALIDATION != 0 { return Err("scalar calls require full validation".into()); }
             jit.enable_scalar_calls();
@@ -852,6 +862,9 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
     let descriptor_bytes = descriptors.as_ref().map_or(0, |state| state.charged_bytes());
     let mut jit_instructions = 0;
     let mut jit_entries = 0;
+    // Conditional policy is resolved once for this immutable owner. Eager
+    // programs do not perform demand frontier queries in the VM loop.
+    let demand_regions = jit.as_ref().is_some_and(jit::Jit::uses_demand_regions);
     #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
     let mut scalar_leaf = scalar_call_model::Context::new(program, PROFILE, USE_JIT)?;
     let mut resumable_calls = 0;
@@ -933,7 +946,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
         }
         if RESUMABLE {
             let entry = *frames.last().ok_or("missing frame")?;
-            if limits.jit_demand_regions {
+            if demand_regions {
                 let jit = jit.as_mut().unwrap();
                 if jit.ensure_region(entry.function, entry.pc)? && PROFILE {
                     profile.as_deref_mut().unwrap().functions[entry.function].jit_block_ends[entry.pc] =
@@ -958,7 +971,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                     if steps >= limits.instructions { return Err("interpreter instruction limit exceeded".into()); }
                 }
             }
-            if limits.jit_demand_regions {
+            if demand_regions {
                 let next = *frames.last().ok_or("missing frame")?;
                 if jit.wants_region(next.function, next.pc) { continue 'execution; }
             }

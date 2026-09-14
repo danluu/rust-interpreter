@@ -15,6 +15,80 @@ fn options() -> Limits {
     Limits { jit_resumable_calls: true, jit_demand_regions: true, ..Limits::default() }
 }
 
+fn conditional_options() -> Limits {
+    Limits { jit_demand_regions: false, jit_demand_regions_if_large: true, ..options() }
+}
+
+#[test]
+fn conditional_demand_uses_program_size_boundary_and_preserves_small_execution() {
+    // The unused body proves selection is program-wide and independent of
+    // names, selected entry and which functions happen to execute first.
+    for size in [values::MAX_PCS, values::MAX_PCS + 1] {
+        let mut p = loop_program();
+        p.functions.push(function("unused", vec![Op::Return; size]));
+        let demand = size > values::MAX_PCS;
+        let mut selected = crate::create_jit::<false, true, false, true>(&p, &conditional_options()).unwrap().unwrap();
+        assert_eq!(selected.uses_demand_regions(), demand);
+        selected.ensure_function(0).unwrap();
+        let reference_options = if demand { options() } else {
+            Limits { jit_demand_regions: false, ..options() }
+        };
+        let mut reference = crate::create_jit::<false, true, false, true>(&p, &reference_options).unwrap().unwrap();
+        reference.ensure_function(0).unwrap();
+        assert_eq!(selected.code.as_ref().unwrap().published().1, reference.code.as_ref().unwrap().published().1);
+        for input in [0, 7] {
+            let (a, ap) = execute_profiled(&p, &[input], conditional_options(), Engine::Jit).unwrap();
+            let (b, bp) = execute_profiled(&p, &[input], reference_options.clone(), Engine::Jit).unwrap();
+            assert_eq!((a.value, a.instructions, a.peak_memory, a.jit_bytes, a.jit_instructions, a.jit_entries),
+                (b.value, b.instructions, b.peak_memory, b.jit_bytes, b.jit_instructions, b.jit_entries));
+            assert_eq!(counts(&ap), counts(&bp));
+            assert_eq!(a.jit_demand.is_some(), demand);
+        }
+    }
+}
+
+#[test]
+fn conditional_demand_requires_full_validation_even_when_size_predicate_is_false() {
+    let p = loop_program();
+    for (engine, limits) in [(Engine::Interpreter, conditional_options()),
+        (Engine::Jit, Limits { jit_resumable_calls: false, ..conditional_options() })] {
+        assert!(execute_with_engine(&p, &[1], limits, engine).unwrap_err()
+            .contains("fully validated resumable JIT"));
+    }
+    let mut partial = p.clone(); partial.version |= crate::PARTIAL_VALIDATION;
+    assert!(execute_with_engine(&partial, &[1], conditional_options(), Engine::Jit).unwrap_err()
+        .contains("fully validated resumable JIT"));
+    assert!(execute_with_engine(&p, &[1], Limits { jit_demand_regions: true, ..conditional_options() }, Engine::Jit)
+        .unwrap_err().contains("mutually exclusive"));
+}
+
+#[test]
+fn prepared_conditional_demand_policy_is_fixed_even_for_an_eager_program() {
+    let mut p = calls_program();
+    for large in [false, true] {
+        if large { p.functions.push(function("unused", vec![Op::Return; values::MAX_PCS + 1])); }
+        let limits = conditional_options();
+        let mut prepared = crate::PreparedJit::new(&p, &limits).unwrap();
+        for input in [2, 0, 4] {
+            let actual = prepared.execute(&[input], limits.clone());
+            let reference = execute_with_engine(&p, &[input], Limits {
+                jit_demand_regions_if_large: false, ..limits.clone()
+            }, Engine::Jit);
+            match (actual, reference) {
+                (Ok(a), Ok(b)) => {
+                    assert_eq!((a.value, a.instructions, a.peak_memory), (b.value, b.instructions, b.peak_memory));
+                    assert_eq!(a.jit_demand.is_some(), large);
+                }
+                (Err(a), Err(b)) => assert!(equivalent_error(&a, &b)),
+                (a, b) => panic!("conditional {a:?}; eager {b:?}"),
+            }
+        }
+        assert!(prepared.execute(&[2], Limits { jit_demand_regions_if_large: false, ..limits.clone() })
+            .unwrap_err().contains("code-generation options changed"));
+        assert_eq!(prepared.execute_entry(1, &[9], limits).unwrap().value, 10);
+    }
+}
+
 fn counts(profile: &ExecutionProfile) -> Vec<Vec<u64>> {
     profile.functions.iter().map(|f| {
         let mut result = f.interpreted.clone();
