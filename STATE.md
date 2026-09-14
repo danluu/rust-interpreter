@@ -51,7 +51,8 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-The current manual branch is `experiment/scalar-aggregate-model-20260914`.
+The current manual branch is `experiment/scalar-indirect-composition-20260914`.
+The aggregate branch and immutable candidate remain archived.
 Main still adopts df4006e0; the aggregate runtime is experimental. Prior
 path/store-log and narrower scalar variants failed their predeclared changed-source
 performance gates and remain parked. No unchanged-build timing is an adoption
@@ -89,11 +90,21 @@ only native/baseline cold commands and is separately closed.
 [strict checks](results/scalar-aggregate-qualification-01/assessment.md),
 [profiles](results/scalar-aggregate-profile-01/assessment.md).
 
-Next: retire only verified completed ROOT compiler intermediates while retaining
-all executables and proof; then inspect retained aggregate code/profile costs
-and the shared ABI footprint before choosing a materially different runtime
-mechanism. Extra native coverage is not evidence of speed. No new build starts
-below its conservative disk admission floor.
+Closed aggregate costs show all137 old scalar bodies have unchanged instruction
+counts and only+48-byte SP access immediates. Verify has495–578 successful
+profiled words; these bounds do not imply a speedup. Both cost analyses and all
+retirements are closed. Protected compiler-intermediate retirement recovered
+about7.4GiB while preserving executable/evidence hashes.
+
+Next compose the qualified native indirect transition with the adopted df4006e0
+runtime, retaining scalar Calls and scratch memory reuse. Earlier indirect
+screens used baseline35df4077, so this composition has not been measured. Keep
+their failures and do not sum estimates. Initial focus checks cover warm
+polymorphic targets with scalar children, budget/profile identity, exact metadata
+and strict artifact/option rejection, followed by all existing qualification.
+Only then use the unchanged full-token changed-source primary and conditional
+project/parser guards. No aggregate policy or successor-flush change is included.
+[Composition plan](benchmarks/experiments/scalar-indirect-composition/PLAN.md).
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
