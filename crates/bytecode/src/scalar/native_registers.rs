@@ -2,6 +2,8 @@
 //! Phis retain stack slots. Incoming phi uses occur at predecessor exits; a
 //! value used from any other block retains its original stack storage.
 use super::*;
+#[cfg(test)]
+mod global;
 
 // x3's entry budget is dead after the admission check. The body never calls
 // another function. x15-x17 are otherwise unused by scalar emission. x18 is
