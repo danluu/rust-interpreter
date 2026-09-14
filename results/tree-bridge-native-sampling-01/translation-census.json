@@ -1,0 +1,93 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "case": "block",
+      "generated_samples": 1966,
+      "matched_fixed_address_samples": 321,
+      "exact_sequences": 14223,
+      "potential_removed_word_samples": {
+        "offset_select": 78,
+        "unused_readonly_select": 37,
+        "offset_subtract": 10
+      },
+      "ambiguous_sequence_samples": 0,
+      "potential_removed_fraction": 0.06358087487283826,
+      "by_entry_kind": {
+        "resumable_call": 350,
+        "native_tree": 417,
+        "resumable_region": 1119,
+        "resumable_return": 80
+      },
+      "by_instruction_class": {
+        "native_zero_bulk": 39,
+        "other_generated": 1539,
+        "direct_register_array_store": 133,
+        "native_zero_range": 72,
+        "direct_register_array_load": 83,
+        "native_abi_byte_copy": 14,
+        "cursor_load_store:call_count": 13,
+        "cursor_load_store:depth_bound": 11,
+        "tree_register_budget_debit": 3,
+        "cursor_load_store:peak_memory": 7,
+        "cursor_load_store:frame_length": 9,
+        "frame_descriptor_load_store": 10,
+        "cursor_load_store:entry_table": 3,
+        "cursor_load_store:remaining": 3,
+        "cursor_load_store:memory_bound": 3,
+        "cursor_load_store:register_length": 9,
+        "cursor_load_store:register_bound": 2,
+        "cursor_load_store:tree_call_count": 5,
+        "cursor_load_store:working_bound": 3,
+        "cursor_load_store:return_count": 4,
+        "cursor_load_store:tree_depth": 1
+      }
+    },
+    {
+      "case": "exhaustive",
+      "generated_samples": 1560,
+      "matched_fixed_address_samples": 198,
+      "exact_sequences": 21175,
+      "potential_removed_word_samples": {
+        "offset_select": 44,
+        "unused_readonly_select": 22
+      },
+      "ambiguous_sequence_samples": 0,
+      "potential_removed_fraction": 0.04230769230769231,
+      "by_entry_kind": {
+        "resumable_call": 313,
+        "resumable_return": 80,
+        "native_tree": 522,
+        "resumable_region": 645
+      },
+      "by_instruction_class": {
+        "native_zero_range": 60,
+        "native_abi_byte_copy": 96,
+        "other_generated": 1008,
+        "direct_register_array_store": 153,
+        "cursor_load_store:tree_fault_register_end": 8,
+        "native_zero_bulk": 51,
+        "cursor_load_store:register_bound": 8,
+        "direct_register_array_load": 111,
+        "cursor_load_store:frame_length": 12,
+        "tree_register_budget_debit": 6,
+        "cursor_load_store:register_length": 6,
+        "cursor_load_store:tree_depth": 6,
+        "cursor_load_store:depth_bound": 5,
+        "cursor_load_store:peak_memory": 2,
+        "cursor_load_store:call_count": 7,
+        "cursor_load_store:tree_call_count": 5,
+        "cursor_load_store:remaining": 3,
+        "frame_descriptor_load_store": 4,
+        "cursor_load_store:live_memory": 1,
+        "cursor_load_store:tree_instruction_count": 1,
+        "cursor_load_store:working_bound": 3,
+        "cursor_load_store:memory_bound": 2,
+        "cursor_load_store:return_count": 1,
+        "cursor_load_store:register_pointer": 1
+      }
+    }
+  ],
+  "performance_measurement": false,
+  "scope": "Exact fixed-width check sequences only. Potentially removable old offset SUB/CSEL and unused read-only CSEL self-PCs; not cycle savings. No x5/x6 reuse: those registers contain the value cache. A heap-bias ABI would need x7/x8 and every external entry/guard qualified. No runtime change or timing is authorized by this census."
+}
