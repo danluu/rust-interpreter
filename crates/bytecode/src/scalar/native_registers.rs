@@ -9,6 +9,10 @@ use super::*;
 const REGISTERS: [u32; 4] = [3, 15, 16, 17];
 
 pub(super) fn allocate(plan: &Plan) -> Result<Vec<Option<u32>>, &'static str> {
+    allocate_pool(plan, REGISTERS)
+}
+
+fn allocate_pool<const N: usize>(plan: &Plan, registers: [u32; N]) -> Result<Vec<Option<u32>>, &'static str> {
     let mut definitions = vec![None; plan.nodes.len()];
     let mut effect_positions = vec![0; plan.effects.len()];
     let mut exits = vec![0; plan.blocks.len()];
@@ -66,7 +70,7 @@ pub(super) fn allocate(plan: &Plan) -> Result<Vec<Option<u32>>, &'static str> {
     }
     let mut assigned = vec![None; plan.nodes.len()];
     for ids in ordered {
-        let mut active: [Option<Id>; 4] = [None; 4];
+        let mut active: [Option<Id>; N] = [None; N];
         for id in ids {
             if matches!(plan.nodes[id].value,Value::Write{..}) || cross_block[id] || plan.nodes[id].width > 8 { continue; }
             let (_, start) = definitions[id].unwrap();
@@ -87,9 +91,13 @@ pub(super) fn allocate(plan: &Plan) -> Result<Vec<Option<u32>>, &'static str> {
                 assigned[previous] = None;
                 slot
             };
-            assigned[id] = Some(REGISTERS[slot]);
+            assigned[id] = Some(registers[slot]);
             active[slot] = Some(id);
         }
     }
     Ok(assigned)
 }
+
+#[cfg(test)]
+#[path="native_register_pressure.rs"]
+mod pressure;
