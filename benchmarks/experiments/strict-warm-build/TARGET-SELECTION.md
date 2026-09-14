@@ -45,9 +45,12 @@ the complete Cargo graph, interpreter compatibility, warm latency or achievable
 speedup. No Oxc run was found in the checked-in benchmark/report search. The
 next decision would require a pinned ordinary-build profile and unchanged
 existing rule tests before performance-driven implementation.
-[Linter manifest](https://github.com/oxc-project/oxc/blob/main/crates/oxc_linter/Cargo.toml)
-and [macro manifest](https://github.com/oxc-project/oxc/blob/main/crates/oxc_macros/Cargo.toml)
-were inspected on 2026-09-13; these links are moving branches, not benchmark pins.
+[Linter manifest](https://github.com/oxc-project/oxc/blob/4d5c812d6b16c23fa71d106cf87f7f20ddee69b1/crates/oxc_linter/Cargo.toml)
+and [macro manifest](https://github.com/oxc-project/oxc/blob/4d5c812d6b16c23fa71d106cf87f7f20ddee69b1/crates/oxc_macros/Cargo.toml)
+were rechecked at revision `4d5c812d6b16c23fa71d106cf87f7f20ddee69b1`,
+resolved from upstream main on 2026-09-13. This is a source-inspection pin,
+not a completed benchmark. Its [toolchain file](https://github.com/oxc-project/oxc/blob/4d5c812d6b16c23fa71d106cf87f7f20ddee69b1/rust-toolchain.toml)
+selects Rust 1.98.1; any future baseline must record the actual compiler used.
 
 Recommendation: use Ruff to guide the next measured frontend improvements,
 evaluate Oxc as an additional development target, and retain Nushell as a
