@@ -21,16 +21,20 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    192 synthetic reference comparisons pass. Park that policy. The typed current-call join attributes 84 block transition samples to
    targets first rejected for unknown reads. The diagnostic
    read-only scalar graph passes 48 controls and admits 395 plans, covering
-   42 transition / 53 body block samples and none in exhaustive. Prototype native
-   checked linear/heap reads with private failure and ordinary-call replay.
-   Preserve the allocator/live ABI, original budgets, every fault and all limits;
-   native coverage/correctness precede a new changed-source screen.
+   42 transition / 53 body block samples and none in exhaustive. The native prototype passes 359 bytecode tests/profile after an uncovered
+   heap-free ABI issue was corrected. Actual emission admits 392 functions and
+   preserves all 71 existing scalar bodies byte-for-byte, covering 94 block
+   samples. Build an immutable candidate, qualify strict/cache behavior and
+   original profiles, then use a fresh changed-source screen against adopted
+   tool df4006e0 with scalar Calls enabled in both arms.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
    [current protocol costs](results/scalar-protocol-census-03/assessment.md),
    [virtual-zero result](results/scalar-virtual-zero-census-01/assessment.md),
    [current callee costs](results/current-call-shapes-01/assessment.md),
-   [read-only model](results/scalar-readonly-census-01/assessment.md).
+   [read-only model](results/scalar-readonly-census-01/assessment.md),
+   [native controls](results/scalar-readonly-native-controls-02/assessment.md),
+   [native census](results/scalar-readonly-native-census-01/assessment.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing

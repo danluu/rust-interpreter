@@ -49,3 +49,13 @@ The second revision passes the program's existing heap ABI flag explicitly to
 scalar emission. Heap-free bodies reject tagged reads without consulting those
 registers; heap-capable bodies retain the checked arena selection. A new native
 boundary and reconstruction control raises the expected total to 359/profile.
+
+
+The actual native census admits 392 functions/409 callsites and verifies all 71
+existing scalar bodies byte-for-byte. It covers 42 transition/52 body block
+samples, none in exhaustive. The next immutable build runs 622 workspace tests
+per profile (15 ignored, including the two added censuses), the full 429-test
+Python discovery (407 passes/22 declared skips), and the release VM build. Keep
+adopted tool df4006e0 as both compiler source and runtime control; retain its VM
+and compiler binaries. Both later performance arms enable scalar Calls. This
+new build installs a separately keyed candidate only after all checks pass.
