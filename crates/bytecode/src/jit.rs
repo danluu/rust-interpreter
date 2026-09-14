@@ -377,6 +377,8 @@ pub(crate) struct Jit<'a> {
     #[cfg(test)]
     observe_scratch_locals: bool,
     #[cfg(test)]
+    observe_scratch_sources: bool,
+    #[cfg(test)]
     scratch_values_enabled: bool,
     #[cfg(test)]
     observe_flush: bool,
@@ -419,6 +421,8 @@ impl<'a> Jit<'a> {
             observe_scalar_copy: true,
             #[cfg(test)]
             observe_scratch_locals: false,
+            #[cfg(test)]
+            observe_scratch_sources: false,
             #[cfg(test)]
             scratch_values_enabled: true,
             #[cfg(test)]
@@ -589,7 +593,8 @@ impl<'a> Jit<'a> {
                     #[cfg(test)]
                     observe_scalar_copy: self.observe_scalar_copy,
                     #[cfg(test)]
-                    scratch: scratch_locals::State::new(self.observe_scratch_locals),
+                    scratch: if self.observe_scratch_sources {scratch_locals::State::extended()}
+                        else {scratch_locals::State::new(self.observe_scratch_locals)},
                     #[cfg(test)]
                     scratch_values: scratch_values::State::new(self.scratch_values_enabled),
                     #[cfg(test)]
@@ -2005,6 +2010,8 @@ impl Assembler<'_> {
                     let immediate = memory_access!(self, "source", self.memory_address(11, address, size as usize, false));
                     // put() supplies the narrow result's zero high word below.
                     if !self.scratch_values.contains(local,size as usize) {
+                        #[cfg(test)]
+                        self.scratch.load_after_address(self.current_pc,local,size as usize);
                         self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
                     }
                 }

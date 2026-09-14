@@ -8,13 +8,15 @@ pub(super) struct Hit {
     pub origin_pc: usize,
     pub origin: &'static str,
     pub offset: usize,
+    pub size: usize,
 }
 
-struct Snapshot { offset: usize, pc: usize, origin: &'static str }
+struct Snapshot { offset: usize, size: usize, pc: usize, origin: &'static str }
 
 #[derive(Default)]
 pub(super) struct State {
     enabled: bool,
+    extended: bool,
     snapshots: Vec<Snapshot>,
     pub hits: Vec<Hit>,
     pub copy_hits: Vec<Hit>,
@@ -48,6 +50,8 @@ fn preserves_x9(word: u32) -> bool {
 
 impl State {
     pub fn new(enabled: bool) -> Self { Self { enabled, ..Self::default() } }
+    pub fn extended() -> Self { Self { enabled:true, extended:true, ..Self::default() } }
+    pub fn is_extended(&self) -> bool { self.extended }
     pub fn observe_word(&mut self, word: u32) {
         if self.enabled && !preserves_x9(word) { self.snapshots.clear(); }
     }
@@ -55,27 +59,36 @@ impl State {
         if !self.enabled || size == 0 { return; }
         let Some(offset) = offset else { self.snapshots.clear(); return; };
         let end = offset.checked_add(size).expect("proved frame range");
-        self.snapshots.retain(|s| s.offset >= end || offset >= s.offset + 8);
+        self.snapshots.retain(|s| s.offset >= end || offset >= s.offset + s.size);
     }
     pub fn capture(&mut self, pc: usize, local: Option<usize>, size: usize, origin: &'static str) {
-        if !self.enabled || size != 8 { return; }
+        if !self.enabled || !(size == 8 || self.extended && [1,2,4].contains(&size)) { return; }
         let Some(offset) = local else { return; };
-        self.snapshots.retain(|s| s.offset != offset);
+        self.snapshots.retain(|s| s.offset != offset || s.size != size);
         if self.snapshots.len() == 16 { self.snapshots.remove(0); }
-        self.snapshots.push(Snapshot { offset, pc, origin });
+        self.snapshots.push(Snapshot { offset, size, pc, origin });
     }
     pub fn load(&mut self, pc: usize, local: Option<usize>, size: usize, already_forwarded: bool) {
-        if !self.enabled || size != 8 || already_forwarded { return; }
+        if !self.enabled || self.extended || size != 8 || already_forwarded { return; }
         let Some(offset) = local else { return; };
-        if let Some(s) = self.snapshots.iter().find(|s| s.offset == offset) {
-            self.hits.push(Hit { pc, origin_pc: s.pc, origin: s.origin, offset });
+        if let Some(s) = self.snapshots.iter().find(|s| s.offset == offset && s.size == size) {
+            self.hits.push(Hit { pc, origin_pc: s.pc, origin: s.origin, offset, size });
+        }
+    }
+    /// Extended Load probes happen only after address formation, and only at
+    /// an actual baseline load. Narrow results need zero-extension proof.
+    pub fn load_after_address(&mut self, pc: usize, local: Option<usize>, size: usize) {
+        if !self.extended || size != 8 { return; }
+        let Some(offset)=local else {return;};
+        if let Some(s)=self.snapshots.iter().find(|s|s.offset==offset && s.size==size) {
+            self.hits.push(Hit {pc,origin_pc:s.pc,origin:s.origin,offset,size});
         }
     }
     pub fn copy_load(&mut self, pc: usize, local: Option<usize>, size: usize) {
-        if !self.enabled || size != 8 { return; }
+        if !self.enabled || !(size==8 || self.extended && [1,2,4].contains(&size)) { return; }
         let Some(offset)=local else { return; };
-        if let Some(s)=self.snapshots.iter().find(|s|s.offset==offset) {
-            self.copy_hits.push(Hit {pc,origin_pc:s.pc,origin:s.origin,offset});
+        if let Some(s)=self.snapshots.iter().find(|s|s.offset==offset && s.size==size) {
+            self.copy_hits.push(Hit {pc,origin_pc:s.pc,origin:s.origin,offset,size});
         }
     }
 }
@@ -207,4 +220,85 @@ fn scratch_consecutive_copies_reconstruct_with_two_additional_load_opportunities
     assert!(a.scratch_copy_hits.is_empty() && b.scratch_hits.is_empty());
     assert_eq!(b.scratch_copy_hits.iter().map(|h|(h.pc,h.origin_pc,h.offset)).collect::<Vec<_>>(),vec![(4,2,16),(6,4,24)]);
     assert!(plain.code.is_none() && observer.code.is_none());assert_eq!(plain.bytes+observer.bytes,0);
+}
+
+#[test]
+fn extended_scratch_low_bits_are_copy_only_and_invalidate_exact_ranges() {
+    for size in [1,2,4,8] {
+        let mut state=State::extended();
+        state.capture(1,Some(16),size,"Store");
+        state.copy_load(2,Some(16),size);
+        assert_eq!(state.copy_hits.len(),1);
+        assert_eq!(state.copy_hits[0].size,size);
+        state.load(3,Some(16),size,false); // no pre-address query in this mode
+        assert!(state.hits.is_empty());
+        state.load_after_address(4,Some(16),size);
+        assert_eq!(state.hits.len(),usize::from(size==8));
+        state.invalidate(Some(16+size),1);
+        state.copy_load(5,Some(16),size);
+        assert_eq!(state.copy_hits.len(),2);
+        state.invalidate(Some(16+size-1),1);
+        state.copy_load(6,Some(16),size);
+        assert_eq!(state.copy_hits.len(),2);
+        state.capture(7,Some(16),size,"CopySource");
+        state.invalidate(None,0);
+        state.copy_load(8,Some(16),size);
+        assert_eq!(state.copy_hits.len(),3);
+        state.invalidate(None,1);
+        state.copy_load(9,Some(16),size);
+        assert_eq!(state.copy_hits.len(),3);
+    }
+}
+
+#[test]
+fn extended_scratch_width_mismatch_clobber_and_capacity_do_not_create_hits() {
+    let mut state=State::extended();
+    state.capture(0,Some(8),4,"Store");
+    for (offset,size) in [(Some(9),4),(Some(8),1),(Some(8),8),(Some(8),16),(None,4)] {
+        state.copy_load(1,offset,size);
+    }
+    assert!(state.copy_hits.is_empty());
+    for word in [0xb9400169,0x91000429,0x54000000,0xffffffff] {
+        state.capture(2,Some(8),4,"CopySource");state.observe_word(word);
+        state.copy_load(3,Some(8),4);assert!(state.copy_hits.is_empty());
+    }
+    for i in 0..17 {state.capture(i,Some(i*4),4,"CopySource");}
+    assert_eq!(state.snapshots.len(),16);
+    state.copy_load(18,Some(0),4);assert!(state.copy_hits.is_empty());
+    state.copy_load(19,Some(64),4);assert_eq!(state.copy_hits.len(),1);
+}
+
+#[test]
+fn extended_scratch_sources_count_only_remaining_loads_without_emission_changes() {
+    for size in [1,2,4,8] {
+        for first_destination in [9,24] {
+            let p=Program {version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
+                data:vec![0;16],statics:vec![],thread_locals:vec![],functions:vec![Function {
+                    name:"copy source observer".into(),frame_size:64,frame_align:16,registers:3,
+                    args:vec![crate::Slot{offset:8,size:8}],result:crate::Slot{offset:0,size:8},
+                    code:vec![Op::Local{dst:0,offset:8},Op::Local{dst:1,offset:first_destination},
+                        Op::Copy{dst:1,src:0,size},Op::Local{dst:1,offset:40},
+                        Op::Copy{dst:1,src:0,size},Op::Load{dst:2,address:0,size:size as u8},Op::Return]}]};
+            crate::validate(&p).unwrap();
+            let plain=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+            let mut observer=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+            observer.observe_scratch_sources=true;
+            let a=plain.emit_function_inner(&p.functions[0],MAX_CODE_BYTES/4,0,None).unwrap().unwrap();
+            let b=observer.emit_function_inner(&p.functions[0],MAX_CODE_BYTES/4,0,None).unwrap().unwrap();
+            assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.assertions,b.assertions);
+            assert_eq!(a.operations,b.operations);
+            assert!(a.scratch_copy_hits.is_empty() && a.scratch_hits.is_empty());
+            // A one-byte copy to offset 9 is disjoint; wider copies overlap.
+            let disjoint=first_destination==24 || size==1;
+            assert_eq!(b.scratch_copy_hits.len(),usize::from(disjoint));
+            if disjoint {
+                let h=&b.scratch_copy_hits[0];
+                assert_eq!((h.pc,h.origin_pc,h.offset,h.size,h.origin),(4,2,8,size,"CopySource"));
+            }
+            assert_eq!(b.scratch_hits.len(),usize::from(size==8));
+            if size==8 {assert_eq!((b.scratch_hits[0].pc,b.scratch_hits[0].origin_pc),(5,4));}
+            assert!(plain.code.is_none() && observer.code.is_none());
+            assert_eq!(plain.bytes+observer.bytes,0);
+        }
+    }
 }

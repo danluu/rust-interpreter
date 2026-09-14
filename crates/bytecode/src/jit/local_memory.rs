@@ -104,6 +104,10 @@ impl Assembler<'_> {
             // value, including the original cache replacement order.
             let immediate = memory_access!(self, "destination", self.memory_address(12, dst, size, true));
             self.forward_local_value(value, size, "Copy");
+            #[cfg(test)]
+            if self.scratch.is_extended() {
+                self.scratch.capture(self.current_pc,self.local_range(src,size),size,"CopySource");
+            }
             self.store_mem_at(9, 31, 12, size, immediate);
             return;
         }
@@ -129,9 +133,17 @@ impl Assembler<'_> {
         // Even a sixteen-byte overlapping copy loads both words before its
         // first store. Narrow copies never consume or define the high scratch.
         #[cfg(test)]
-        self.scratch.copy_load(self.current_pc,self.local_range(src,size),size);
+        if !self.scratch.is_extended() || !self.scratch_values.contains(self.local_range(src,size),size) {
+            self.scratch.copy_load(self.current_pc,self.local_range(src,size),size);
+        }
         if !self.scratch_values.contains(self.local_range(src,size),size) {
             self.load_mem_at(9, high, 11, size, source);
+        }
+        #[cfg(test)]
+        if self.scratch.is_extended() {
+            // Record the pre-write source. The enclosing Copy's typed write
+            // invalidation removes it if the destination overlaps these bytes.
+            self.scratch.capture(self.current_pc,self.local_range(src,size),size,"CopySource");
         }
         self.store_mem_at(9, high, destination_base, size, destination);
     }

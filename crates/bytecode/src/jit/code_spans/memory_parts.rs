@@ -123,6 +123,9 @@ fn observe_saved_small_memory_parts() {
     observer.observe_memory_parts = true;
     let scratch_copy=std::env::var("MEMORY_SCRATCH_COPY").is_ok_and(|s|s=="1");
     observer.observe_scratch_locals=scratch_copy;
+    let scratch_sources=std::env::var("MEMORY_SCRATCH_SOURCES").is_ok_and(|s|s=="1");
+    assert!(!scratch_sources || scratch_copy);
+    observer.observe_scratch_sources=scratch_sources;
     let mut scalar_ids=BTreeSet::new();
     if schema==2 {
         plain.enable_scalar_calls();observer.enable_scalar_calls();
@@ -172,9 +175,18 @@ fn observe_saved_small_memory_parts() {
             super::super::memory_parts::selected(op).map(|(operation,size)|json!({"pc":pc,"operation":operation,"size":size}))
         }).collect();
         for hit in &b.scratch_copy_hits {
-            assert!(matches!(f.code[hit.pc],Op::Copy{size:8,..}));
-            assert!(hit.origin_pc<hit.pc && hit.offset+8<=f.frame_size);
+            assert!(matches!(f.code[hit.pc],Op::Copy{size,..} if size==hit.size));
+            assert!(hit.size==8 || scratch_sources && [1,2,4].contains(&hit.size));
+            assert!(hit.origin_pc<hit.pc && hit.offset+hit.size<=f.frame_size);
             assert!(b.memory_spans.iter().any(|s|s.pc==hit.pc && s.part=="load_data"));
+        }
+        if scratch_sources {
+            for hit in &b.scratch_hits {
+                assert_eq!(hit.size,8);
+                assert!(matches!(f.code[hit.pc],Op::Load{size:8,..}));
+                assert!(hit.origin_pc<hit.pc && hit.offset+8<=f.frame_size);
+                assert!(b.memory_spans.iter().any(|s|s.pc==hit.pc && s.part=="load_data"));
+            }
         }
         output.push(json!({"function":id,"name":f.name,"selected":selected,"memory_spans":b.memory_spans,
             "available_copy_values":b.scratch_copy_hits,"available_load_values":b.scratch_hits}));
@@ -189,6 +201,7 @@ fn observe_saved_small_memory_parts() {
         "observer_words_unchanged":true,"complete_small_memory_partition":true,
         "schema_version":schema,"scalar_bodies_reconstructed":scalar_ids.len(),
         "scratch_copy_observed":scratch_copy,
+        "scratch_sources_observed":scratch_sources,
         "guest_commands":0,"executable_code_publications":0})).unwrap();
 }
 
