@@ -299,6 +299,17 @@ pub struct MemoryPlan {
 /// Only a diagnostic annotation of ordinary entry from PC zero. No memory or
 /// register is replaced, and this is not an address-nonescape certificate.
 pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> MemoryPlan {
+    memory_plan_initialized(program,id,remaining,true)
+}
+
+/// Diagnostic only: the scalar value graph already starts with exact zero
+/// bytes. Still require full frame confinement after an initialization failure.
+#[cfg(test)]
+pub fn memory_plan_virtual_zero(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
+    memory_plan_initialized(program,id,remaining,false)
+}
+
+fn memory_plan_initialized(program: &Program, id: usize, remaining: &mut usize, require_initialized: bool) -> MemoryPlan {
     let f=&program.functions[id];
     let declined=|reason| MemoryPlan {eligible:false,decline:Some(Decline{pc:0,reason}),work:0,accesses:vec![]};
     if f.code.is_empty() || f.code.len()>512 || f.frame_size>512 || f.registers>512 {
@@ -312,7 +323,9 @@ pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> Memor
     }
     let confined=vec![false;program.functions.len()];
     let init=analyze_budgeted(program,id,&confined,Mode::Initialized,remaining);
-    if !init.eligible { return MemoryPlan{eligible:false,decline:init.decline,work:init.work,accesses:vec![]}; }
+    if !init.eligible && (require_initialized || init.decline.as_ref().is_none_or(|d|d.reason!="local_read_before_write")) {
+        return MemoryPlan{eligible:false,decline:init.decline,work:init.work,accesses:vec![]};
+    }
     let mut a=Analysis {program,confined:&confined,mode:Mode::Confined,work:0,max_work:MAX_WORK.min(*remaining),pc:0};
     let mut accesses=vec![];
     let result=(|| {
@@ -368,3 +381,7 @@ pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> Memor
         Err(decline) => MemoryPlan{eligible:false,decline:Some(decline),work:init.work+a.work,accesses:vec![]},
     }
 }
+
+#[cfg(test)]
+#[path="virtual_zero_tests.rs"]
+mod virtual_zero_tests;
