@@ -291,6 +291,7 @@ fn emit_call_reference(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
     emit_inner(plan,profiled,true,false,true,true,false,false)
 }
 fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool,heap:bool)->Result<Emitted,&'static str> {
+    if plan.nodes.iter().any(|n|matches!(n.value,Value::Write{..})) {return Err("native_external_write_unimplemented");}
     if !call_frame && plan.nodes.iter().any(|n|matches!(n.value,Value::Read{..})) {
         return Err("native_external_read_call_only");
     }

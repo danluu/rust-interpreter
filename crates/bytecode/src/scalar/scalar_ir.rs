@@ -14,6 +14,7 @@ struct Slice { value: Id, byte: u8, size: u8 }
 enum Value {
     Constant(u128), Input(usize), Base(usize),
     Read {address:Id,size:u8},
+    Write {address:Id,value:Id,size:u8},
     Pack(Vec<Slice>), Phi(Vec<(usize, Slice)>),
     Binary { a:Id, b:Id, op:Binary, bits:u8, signed:bool, overflow:bool },
     Unary { src:Id, op:Unary, bits:u8 },
@@ -27,6 +28,7 @@ impl Node {
         match &self.value {
             Value::Constant(_) | Value::Input(_) | Value::Base(_) => vec![],
             Value::Read{address,..} => vec![*address],
+            Value::Write{address,value,..} => vec![*address,*value],
             Value::Pack(parts) => parts.iter().map(|p|p.value).collect(),
             Value::Phi(parts) => parts.iter().map(|(_,p)|p.value).collect(),
             Value::Binary{a,b,..} => vec![*a,*b],
@@ -131,6 +133,13 @@ impl Builder {
         let offset=access.offset.ok_or("scalar_missing_offset")?;
         let target=state.bytes.get_mut(offset..offset.checked_add(access.size).ok_or("scalar_range")?).ok_or("scalar_range")?;
         target.copy_from_slice(bytes);Ok(())
+    }
+    fn write_value(&mut self,state:&mut State,access:Access,bytes:&[Byte],address:Id)->Result<(),&'static str> {
+        if access.offset.is_some() || access.size==0 {return self.write(state,access,bytes);}
+        if access.size>16 {return Err("scalar_external_write_width");}
+        let value=self.pack(bytes)?;
+        let id=self.node(Value::Write{address,value,size:access.size as u8},0,false)?;
+        self.roots.push(id);Ok(())
     }
     fn pack(&mut self,bytes:&[Byte]) -> Result<Id,&'static str> {
         self.charge(bytes.len())?;if bytes.len()>16 {return Err("scalar_pack_width");}
@@ -239,11 +248,12 @@ pub fn lower(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static
                 Op::Local{dst,offset}=>{state.registers[*dst as usize]=b.base(*offset)?;Effect::None},
                 Op::Load{dst,address,..}=>{let data=b.read_value(&state,read(0)?,Some(state.registers[*address as usize]))?;
                     state.registers[*dst as usize]=b.pack(&data)?;Effect::None},
-                Op::Store{src,..}=>{let a=write(0)?;let value=state.registers[*src as usize];b.write(&mut state,a,&bytes(value,a.size))?;Effect::None},
-                Op::Copy{src,..}|Op::CopyDynamic{src,..}=>{let data=b.read_value(&state,read(0)?,Some(state.registers[*src as usize]))?;
-                    b.write(&mut state,write(0)?,&data)?;Effect::None},
-                Op::FillBytes{value,..}=>{let a=write(0)?;let byte=Byte{value:state.registers[*value as usize],byte:0};
-                    b.write(&mut state,a,&vec![byte;a.size])?;Effect::None},
+                Op::Store{src,address,..}=>{let a=write(0)?;let value=state.registers[*src as usize];let address=state.registers[*address as usize];
+                    b.write_value(&mut state,a,&bytes(value,a.size),address)?;Effect::None},
+                Op::Copy{src,dst,..}|Op::CopyDynamic{src,dst,..}=>{let data=b.read_value(&state,read(0)?,Some(state.registers[*src as usize]))?;
+                    let address=state.registers[*dst as usize];b.write_value(&mut state,write(0)?,&data,address)?;Effect::None},
+                Op::FillBytes{value,address,..}=>{let a=write(0)?;let byte=Byte{value:state.registers[*value as usize],byte:0};
+                    let address=state.registers[*address as usize];b.write_value(&mut state,a,&vec![byte;a.size],address)?;Effect::None},
                 Op::Binary{dst,overflow,op,a,b:other,bits,signed}=>{
                     let (left,right)=(state.registers[*a as usize],state.registers[*other as usize]);
                     let value=b.node(Value::Binary{a:left,b:right,op:*op,bits:*bits,signed:*signed,overflow:false},bits/8,false)?;
@@ -287,6 +297,11 @@ impl Plan {
     }
     fn evaluate_reads(&self,arguments:&[u128],base:usize,budget:usize,name:&str,
         _read:&mut impl FnMut(u128,u8)->Result<u128,String>)->Result<Outcome,String> {
+        self.evaluate_effects(arguments,base,budget,name,_read,&mut |_,_,_|Err("scalar external writes unavailable".into()))
+    }
+    pub(crate) fn evaluate_effects(&self,arguments:&[u128],base:usize,budget:usize,name:&str,
+        _read:&mut impl FnMut(u128,u8)->Result<u128,String>,
+        _write:&mut impl FnMut(u128,u128,u8)->Result<(),String>)->Result<Outcome,String> {
         let mut values=vec![None;self.nodes.len()];let mut pcs=vec![];
         let get=|values:&Vec<Option<u128>>,id:Id|values[id].ok_or_else(||format!("scalar value {id} unavailable"));
         for (id,node) in self.nodes.iter().enumerate() {
@@ -312,6 +327,7 @@ impl Plan {
                     debug_assert_eq!(self.nodes[id].pc,Some(pc));
                     let value=match &self.nodes[id].value {
                         Value::Read{address,size}=>_read(get(&values,*address)?,*size)?&mask(*size*8),
+                        Value::Write{address,value,size}=>{_write(get(&values,*address)?,get(&values,*value)?&mask(*size*8),*size)?;0},
                         Value::Pack(parts)=>{let mut value=0;let mut shift=0;for p in parts {value|=slice(get(&values,p.value)?,*p)<<shift;shift+=p.size as u32*8;}value},
                         Value::Binary{a,b,op,bits,signed,overflow}=>{let (value,over)=crate::binary(*op,get(&values,*a)?,get(&values,*b)?,*bits,*signed)?;
                             if *overflow {u128::from(over)} else {value}},
@@ -345,6 +361,10 @@ mod tests;
 #[cfg(test)]
 #[path="readonly_tests.rs"]
 mod readonly_tests;
+
+#[cfg(test)]
+#[path="transaction_tests.rs"]
+mod transaction_tests;
 
 #[path="native_leaf.rs"]
 pub mod native_leaf;

@@ -27,7 +27,7 @@ fn address(plan:&Plan,mut id:Id)->(Id,u64) {
 }
 fn kind(value:&Value)->&'static str {
     match value {
-        Value::Read{..}=>"read",Value::Constant(_)=>"constant",Value::Input(_)=>"input",Value::Base(_)=>"base",
+        Value::Read{..}=>"read",Value::Write{..}=>"write",Value::Constant(_)=>"constant",Value::Input(_)=>"input",Value::Base(_)=>"base",
         Value::Pack(_)=>"pack",Value::Phi(_)=>"phi",Value::Binary{overflow:true,..}=>"overflow",
         Value::Binary{..}=>"binary",Value::Unary{..}=>"unary",Value::Cast{..}=>"cast",Value::Select{..}=>"select",
     }

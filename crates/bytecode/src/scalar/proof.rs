@@ -23,10 +23,10 @@ pub struct Proof {
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct Decline { pub pc: usize, pub reason: &'static str }
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Mode { Confined, Initialized, ReadOnly }
+pub enum Mode { Confined, Initialized, ReadOnly, Transaction }
 impl Mode {
     fn external_reads(self) -> bool {
-        if self == Self::ReadOnly { return true; }
+        if matches!(self,Self::ReadOnly|Self::Transaction) { return true; }
         false
     }
 }
@@ -79,6 +79,7 @@ impl Analysis<'_> {
         if size == 0 { return Ok(()); }
         self.charge(size)?;
         let Some(offset) = offset else {
+            if self.mode==Mode::Transaction && size<=16 {return Ok(());}
             return if self.mode != Mode::Initialized { Err(self.fail("unknown_pointer_write")) } else { Ok(()) };
         };
         let range = self.range(state, offset, size)?;
@@ -317,6 +318,11 @@ pub fn memory_plan_readonly(program:&Program,id:usize,remaining:&mut usize)->Mem
     memory_plan_mode(program,id,remaining,Mode::ReadOnly)
 }
 
+/// Model only: production scalar Call admission never selects this mode.
+pub fn memory_plan_transaction(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
+    memory_plan_mode(program,id,remaining,Mode::Transaction)
+}
+
 /// The explicit scalar Call path may retry only the unknown-read prerequisite.
 /// Charge both attempts; all further effects, bounds and limits must still pass.
 pub fn memory_plan_for_call(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
@@ -393,6 +399,9 @@ fn memory_plan_mode(program: &Program, id: usize, remaining: &mut usize, mode:Mo
                 a.transfer(&mut state,op,f)?;
                 if !row.reads.is_empty() || !row.writes.is_empty() || row.terminal_or_assertion { accesses.push(row); }
             }
+        }
+        if mode==Mode::Transaction && accesses.iter().flat_map(|a|&a.writes).filter(|a|a.offset.is_none() && a.size>0).count()>16 {
+            return Err(a.fail("transaction_store_limit"));
         }
         Ok(())
     })();
