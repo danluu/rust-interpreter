@@ -14,6 +14,14 @@ reconstruction may occur in this partial window. A short/missed execution window
 is a diagnostic limitation, not evidence of zero cost. No timing ratio, runtime
 adoption, automatic repeat or compiler-workstream change follows.
 
+Attempt 01 stopped at source binding before any guest or sample command: the
+historical launcher has legitimately changed since attribution qualification.
+Attempt 02 retains exact unchanged attribution dependencies and freezes current
+launcher/sampler sources separately. The sampler now permits an explicit exact
+decline count (default remains zero); this parser's qualified count is one for
+the oversized function, and any deviation still fails. This records legitimate
+interpreter fallback without changing VM behavior or its emitted code.
+
 Shared lock, 12 GiB initial admission, 8 GiB per child, no builds or peer process
 control. Freeze sources, tool, artifact, catalog and profile (static identity
 only). Independently close all terminal and same-process evidence.

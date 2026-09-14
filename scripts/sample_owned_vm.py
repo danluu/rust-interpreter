@@ -46,6 +46,8 @@ def main():
     parser.add_argument('--suite-catalog', type=Path)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=0)
     parser.add_argument('--minimum-free-bytes', type=int, default=0)
+    parser.add_argument('--expected-jit-declines', type=int, default=0,
+                        help='exact predeclared declined-function count from qualified fallback behavior')
     args = parser.parse_args()
     if args.jit_scalar_calls and not args.jit_resumable_calls:
         parser.error('--jit-scalar-calls requires --jit-resumable-calls')
@@ -65,6 +67,8 @@ def main():
         parser.error('invalid instruction or allocation limit')
     if args.minimum_free_bytes < 0:
         parser.error('minimum free bytes must be nonnegative')
+    if args.expected_jit_declines < 0:
+        parser.error('expected JIT declines must be nonnegative')
     if (args.select_test is None) != (args.suite_catalog is None):
         parser.error('--select-test and --suite-catalog must be supplied together')
     artifact = args.artifact.resolve()
@@ -105,6 +109,7 @@ def main():
         jit_operation_map=args.jit_operation_map,
         dump_code=args.dump_code, selection=selection,
         minimum_free_bytes=args.minimum_free_bytes,
+        expected_jit_declines=args.expected_jit_declines,
         performance_measurement=False))
     env = os.environ.copy()
     for name in list(env):
@@ -217,7 +222,7 @@ def main():
                 raise RuntimeError('executed test selection differs from the plan')
         stats = {name: int(value) for name, value in re.findall(
             r'\b([a-z_]+)=(\d+)\b', (run / 'vm.stderr').read_text())}
-        if stats['jit_declined_functions'] != 0 or stats['instructions'] <= 0:
+        if stats['jit_declined_functions'] != args.expected_jit_declines or stats['instructions'] <= 0:
             raise RuntimeError('unexpected JIT decline or empty execution')
         if args.jit_native_call_stubs and stats.get('jit_stub_calls', 0) == 0:
             raise RuntimeError('native Call stubs did not execute')

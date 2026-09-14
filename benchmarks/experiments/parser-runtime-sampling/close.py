@@ -17,7 +17,7 @@ def read(path):
 
 
 def main():
-    run = 'parser-runtime-sampling-01'
+    run = 'parser-runtime-sampling-02'
     assert re.fullmatch(r'parser-runtime-sampling-\d{2}', run)
     raw, out = ROOT / '.work' / run, ROOT / 'results' / run
     outer = ROOT / '.work/experiments' / run
