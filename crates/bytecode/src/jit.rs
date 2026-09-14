@@ -58,6 +58,8 @@ mod flush_census;
 #[cfg(test)]
 mod memory_parts;
 #[cfg(test)]
+mod emission_stages;
+#[cfg(test)]
 mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
@@ -517,6 +519,8 @@ impl<'a> Jit<'a> {
     // It reuses admission and original assertion identities without republishing.
     fn emit_function_inner(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
         mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        #[cfg(test)]
+        let _emission_timer = emission_stages::Span::new(emission_stages::Stage::Function);
         let resumable = self.resumable.is_some();
         let mut words = vec![];
         #[cfg(test)]
@@ -534,12 +538,30 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
-        let reads = read_registers(f);
-        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
-        let fills = local_fills(f);
-        let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
+        let reads = {
+            #[cfg(test)]
+            let _timer = emission_stages::Span::new(emission_stages::Stage::Reads);
+            read_registers(f)
+        };
+        let values = {
+            #[cfg(test)]
+            let _timer = emission_stages::Span::new(emission_stages::Stage::Liveness);
+            self.persistent_registers.then(|| values::analyze(f)).flatten()
+        };
+        let fills = {
+            #[cfg(test)]
+            let _timer = emission_stages::Span::new(emission_stages::Stage::Fills);
+            local_fills(f)
+        };
+        let slots = {
+            #[cfg(test)]
+            let _timer = emission_stages::Span::new(emission_stages::Stage::Slots);
+            if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() }
+        };
         #[cfg(test)]
         let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
+        #[cfg(test)]
+        let _setup_timer = emission_stages::Span::new(emission_stages::Stage::RegionsSetup);
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
             || (resumable && transfers::supported(&f.code[pc]));
         let mut entries = vec![None; f.code.len()];
@@ -566,6 +588,8 @@ impl<'a> Jit<'a> {
                 starts[pc + 1] = true;
             }
         }
+        #[cfg(test)]
+        drop(_setup_timer);
         let mut pc = 0;
         while pc < f.code.len() {
             let start = pc;
@@ -580,6 +604,8 @@ impl<'a> Jit<'a> {
                 pc += 1;
             }
             if pc - start >= if resumable { 1 } else { 3 } {
+                #[cfg(test)]
+                let _timer = emission_stages::Span::new(emission_stages::Stage::Regions);
                 let offset = words.len() * 4;
                 let mut a = Assembler {
                     #[cfg(test)]
@@ -744,6 +770,8 @@ impl<'a> Jit<'a> {
             }
             if pc == start {
                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
+                    #[cfg(test)]
+                    let _timer = emission_stages::Span::new(emission_stages::Stage::Transitions);
                     let offset = words.len() * 4;
                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
@@ -780,10 +808,14 @@ impl<'a> Jit<'a> {
                 pc += 1;
             }
         }
+        #[cfg(test)]
+        let _links_timer = emission_stages::Span::new(emission_stages::Stage::Links);
         for (at, successor, fallback) in links {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
+        #[cfg(test)]
+        drop(_links_timer);
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
