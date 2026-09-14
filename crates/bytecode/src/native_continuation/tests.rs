@@ -67,7 +67,7 @@ impl Fixture {
             base: 32,
             register_base: 0,
             return_address: 0,
-            tls_callback: true,
+            tls_callback: true, return_code_offset: 0,
         });
         frames.prepare(8).unwrap();
         Self {
@@ -123,7 +123,7 @@ impl Fixture {
                 base: 64,
                 register_base: 4,
                 return_address: 32,
-                tls_callback: false,
+                tls_callback: false, return_code_offset: 0,
             });
             pointer.add(2).write(Frame {
                 function: 2,
@@ -131,7 +131,7 @@ impl Fixture {
                 base: 112,
                 register_base: 10,
                 return_address: 64,
-                tls_callback: false,
+                tls_callback: false, return_code_offset: 0,
             });
         }
     }

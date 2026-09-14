@@ -40,6 +40,7 @@ mod trees;
 mod native_calls;
 mod native_regions;
 mod resumable;
+mod continuations;
 mod scalar_calls;
 mod call_slots;
 mod code_dump;
@@ -336,6 +337,8 @@ struct CompiledFunction<'a> {
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
     resumes: Vec<Option<usize>>,
+    // (first MOV word, caller next PC). Resolved only before publication.
+    continuations: Vec<(usize, usize)>,
     operations: usize,
     assertions: Vec<Assertion<'a>>,
     register_pairs: usize,
@@ -482,6 +485,7 @@ impl<'a> Jit<'a> {
             self.assertions.try_reserve(staged.assertions.len())
                 .map_err(|_| "JIT assertion table allocation failed")?;
             if self.code.is_none() { self.code = Some(platform::Code::reserve(self.capacity)?); }
+            staged.relocate_continuations(self.bytes).map_err(|e| format!("native continuation relocation: {e:?}"))?;
             let offset = self.code.as_mut().unwrap().append(&staged.words)?;
             if let Some(tables) = &mut self.resumable {
                 let arena = self.code.as_ref().unwrap().published().0;
@@ -546,6 +550,7 @@ impl<'a> Jit<'a> {
         let mut internal_entries = vec![None; f.code.len()];
         // The extra null entry handles a caller's one-past-code continuation.
         let mut resumes = if resumable { vec![None; f.code.len() + 1] } else { vec![] };
+        let mut continuations = vec![];
         let mut links = vec![];
         let mut starts = vec![false; f.code.len()];
         starts[0] = true;
@@ -757,6 +762,7 @@ impl<'a> Jit<'a> {
                         let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
                         links.push((words.len() + at, successor, words.len() + fallback));
                     }
+                    continuations.extend(a.continuations.iter().map(|&(at, successor)| (words.len() + at, successor)));
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
@@ -784,7 +790,7 @@ impl<'a> Jit<'a> {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
-        Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+        Ok(Some(CompiledFunction { words, entries, resumes, continuations, operations, assertions,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
@@ -1066,6 +1072,7 @@ enum Fact {
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
     scalar_fallbacks: BTreeMap<usize, usize>,
+    continuations: Vec<(usize, usize)>,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
     #[cfg(test)]
@@ -1141,6 +1148,7 @@ impl Default for Assembler<'_> {
             words: Default::default(),
             links: Default::default(),
             scalar_fallbacks: Default::default(),
+            continuations: Default::default(),
             failures: Default::default(),
             assertions: Default::default(),
             heap: Default::default(),

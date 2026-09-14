@@ -64,7 +64,7 @@ impl Tls {
             if needs_zeroes[callback.function] { registers[register_base..end].fill(0); }
             memory.store(base + function.args[0].offset, 8, callback.argument as u128)?;
             frames.push(Frame { function: callback.function, pc: 0, base, register_base,
-                return_address: 0, tls_callback: true });
+                return_address: 0, tls_callback: true, return_code_offset: 0 });
             return Ok(None);
         }
         match self.completion.take().ok_or("missing guest TLS completion")? {

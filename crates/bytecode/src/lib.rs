@@ -899,7 +899,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
         base,
         register_base: 0,
         return_address: 0,
-        tls_callback: false,
+        tls_callback: false, return_code_offset: 0,
     });
     prepare_jit::<PROFILE>(jit, entry_id, &mut profile)?;
     let mut steps = 0;
@@ -1359,7 +1359,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                         base,
                         register_base,
                         return_address,
-                        tls_callback: false,
+                        tls_callback: false, return_code_offset: 0,
                     });
                     prepare_jit::<PROFILE>(jit, callee_id, &mut profile)?;
                     break 'dispatch;

@@ -179,9 +179,10 @@ impl Jit<'_> {
             let mut collector = Collector { rows: vec![], limit: MAX_SPANS - spans };
             // The nonempty published entries are the original admission receipt.
             // A fresh fits() check would incorrectly count their table twice.
-            let staged = self.emit_function_inner(f, (end - offset) / 4, assertions, Some(&mut collector))
+            let mut staged = self.emit_function_inner(f, (end - offset) / 4, assertions, Some(&mut collector))
                 .map_err(|e| format!("operation map reconstruction: {e:?}"))?
                 .ok_or("operation map reconstruction declined")?;
+            staged.relocate_continuations(offset).map_err(|e| format!("operation map continuation relocation: {e:?}"))?;
             verify_words(&staged.words, &bytes[offset..end])?;
             for (actual, rebuilt) in self.blocks[id].iter().zip(&staged.entries) {
                 match (actual, rebuilt) {

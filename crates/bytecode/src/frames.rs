@@ -16,6 +16,10 @@ pub(crate) struct Frame {
     pub register_base: usize,
     pub return_address: usize,
     pub tls_callback: bool,
+    /// Arena-relative byte offset of the caller's compiled resume entry.
+    /// Zero requests ordinary lookup. Only the owning JIT writes a nonzero
+    /// value; descriptors never survive that JIT or cross prepared test runs.
+    pub return_code_offset: u32,
 }
 
 // Keep native host-layout offsets beside the checked VM backing.
@@ -28,6 +32,7 @@ pub(crate) mod layout {
     pub const REGISTER_BASE: usize = std::mem::offset_of!(Frame, register_base);
     pub const RETURN_ADDRESS: usize = std::mem::offset_of!(Frame, return_address);
     pub const TLS_CALLBACK: usize = std::mem::offset_of!(Frame, tls_callback);
+    pub const RETURN_CODE_OFFSET: usize = std::mem::offset_of!(Frame, return_code_offset);
     pub const SIZE: usize = std::mem::size_of::<Frame>();
     pub const ALIGN: usize = std::mem::align_of::<Frame>();
 
@@ -35,6 +40,7 @@ pub(crate) mod layout {
     const _: () = {
         assert!(FUNCTION == 0 && PC == 8 && BASE == 16);
         assert!(REGISTER_BASE == 24 && RETURN_ADDRESS == 32 && TLS_CALLBACK == 40);
+        assert!(RETURN_CODE_OFFSET == 44);
         assert!(SIZE == 48 && ALIGN == 8);
     };
 }
@@ -149,6 +155,7 @@ mod tests {
             register_base: 7 * id,
             return_address: 16 + id,
             tls_callback: callback,
+            return_code_offset: 0,
         }
     }
 

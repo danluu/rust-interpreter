@@ -797,7 +797,7 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 base: 16,
                                 register_base: 0,
                                 return_address: 0,
-                                tls_callback: false,
+                                tls_callback: false, return_code_offset: 0,
                             };
                             let canary = Frame {
                                 function: 987,
@@ -805,9 +805,10 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 base: 123,
                                 register_base: 789,
                                 return_address: 321,
-                                tls_callback: true,
+                                tls_callback: true, return_code_offset: 0,
                             };
-                            let mut frames = [root, Frame::default(), Frame::default(), canary];
+                            let spare = Frame { return_code_offset: u32::MAX, ..Frame::default() };
+                            let mut frames = [root, spare, spare, canary];
                             let mut hits: Vec<_> = p
                                 .functions
                                 .iter()
@@ -815,7 +816,7 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 .collect();
                             let profiles: Vec<_> =
                                 hits.iter_mut().map(|row| row.as_mut_ptr()).collect();
-                            let mut cursor = ResumeCursor {scalar_profiles:std::ptr::null(),
+                            let mut cursor = ResumeCursor {code_base:jit.code.as_ref().unwrap().published().0,scalar_profiles:std::ptr::null(),
                                 state: State {
                                     remaining: budget,
                                     profile_hits: profiles[0],

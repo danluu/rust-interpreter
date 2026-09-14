@@ -130,7 +130,7 @@ fn nested_siblings_preserve_padding_caller_values_and_register_initialization() 
 
 #[test]
 fn all_copy_widths_and_overlapping_return_directions_match_vm() {
-    for size in [0, 1, 3, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 257, 513] {
+    for size in [0, 1, 3, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 136, 257, 304, 383, 384, 385, 513] {
         for delta in [-7isize, 0, 1, 7] {
             let offset = 16usize;
             let destination = (offset as isize + delta) as usize;

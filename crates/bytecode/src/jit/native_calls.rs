@@ -446,15 +446,19 @@ impl Assembler<'_> {
         if size <= 16 {
             self.load_mem(9, 10, 11, size);
             self.store_mem(9, 10, 12, size);
-        } else if size <= 128 {
+        } else if size <= 384 {
             let chunks = size / 16;
             let tail = size % 16;
-            for q in 0..chunks as u32 { self.emit(0x3dc00000 | (q << 10) | (11 << 5) | q); }
+            // Snapshot the entire source before any destination store. v8-v15
+            // contain callee-preserved lanes; use only v0-v7 and v16-v31.
+            // These values do not survive this ABI transfer or a region edge.
+            let vector = |q: u32| if q < 8 { q } else { q + 8 };
+            for q in 0..chunks as u32 { self.emit(0x3dc00000 | (q << 10) | (11 << 5) | vector(q)); }
             if tail != 0 {
                 self.emit(0x91000000 | ((chunks as u32 * 16) << 10) | (11 << 5) | 11);
                 self.load_mem(9, 10, 11, tail);
             }
-            for q in 0..chunks as u32 { self.emit(0x3d800000 | (q << 10) | (12 << 5) | q); }
+            for q in 0..chunks as u32 { self.emit(0x3d800000 | (q << 10) | (12 << 5) | vector(q)); }
             if tail != 0 {
                 self.emit(0x91000000 | ((chunks as u32 * 16) << 10) | (12 << 5) | 12);
                 self.store_mem(9, 10, 12, tail);

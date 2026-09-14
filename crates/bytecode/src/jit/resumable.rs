@@ -106,12 +106,14 @@ struct ResumeCursor {
     frame_end: usize,
     working_budget: usize,
     scalar_profiles: *const *mut u64,
+    code_base: usize,
 }
 
 use continuation::layout as state;
 const FRAMES: usize = std::mem::offset_of!(ResumeCursor, frames);
 const REGISTERS: usize = std::mem::offset_of!(ResumeCursor, registers);
 const ENTRIES: usize = std::mem::offset_of!(ResumeCursor, entries);
+const CODE_BASE: usize = std::mem::offset_of!(ResumeCursor, code_base);
 const PROFILES: usize = std::mem::offset_of!(ResumeCursor, profiles);
 pub(super) const MEMORY_END: usize = std::mem::offset_of!(ResumeCursor, memory_end);
 pub(super) const REGISTER_END: usize = std::mem::offset_of!(ResumeCursor, register_end);
@@ -129,7 +131,7 @@ const _: () = {
     assert!(MEMORY_END == 96 && REGISTER_END == 104 && FRAME_END == 112);
     assert!(WORKING_BUDGET == 120);
     assert!(SCALAR_PROFILES == 128);
-    assert!(std::mem::size_of::<ResumeCursor>() == 136);
+    assert!(CODE_BASE == 136 && std::mem::size_of::<ResumeCursor>() == 144);
 };
 
 impl<'a> Jit<'a> {
@@ -249,6 +251,7 @@ impl<'a> Jit<'a> {
             frame_end: frame_end.min(limits.frames),
             working_budget,
             scalar_profiles: scalar_profiles.as_ptr(),
+            code_base: self.code.as_ref().ok_or("missing resumable code")?.published().0,
         };
         // SAFETY: all preparation precedes these fresh exclusive pointers.
         // Native guards bound every push, zero/copy and profile/table access.
@@ -680,6 +683,13 @@ impl Assembler<'_> {
         self.store64(9, 20, frame::REGISTER_BASE);
         self.store64(15, 20, frame::RETURN_ADDRESS);
         self.emit(0x39000000 | ((frame::TLS_CALLBACK as u32) << 10) | (20 << 5) | 31);
+        // Both immediates are patched from the caller's exact resume table
+        // before this function's code is published. Uncompiled successors use
+        // zero and keep the existing Return lookup/fallback. No padding reads.
+        self.continuations.push((self.words.len(), pc + 1));
+        self.emit(0x5280000a); // movz w10,#low16
+        self.emit(0x72a0000a); // movk w10,#high16,lsl #16
+        self.emit(0xb9000000 | ((frame::RETURN_CODE_OFFSET as u32 / 4) << 10) | (20 << 5) | 10);
         self.imm(10, callee.registers as u64);
         self.three(0x8b000000, 9, 9, 10);
         self.store64(9, 19, state::REGISTER_LEN);
@@ -736,6 +746,9 @@ impl Assembler<'_> {
         self.sub_imm(9, 9, 1);
         self.store64(9, 19, state::FRAME_LEN);
         self.increment_cursor(state::RETURNS);
+        // Copy helpers may clobber scratch registers. Read the cached target
+        // only after a successful result copy, from the callee being popped.
+        self.emit(0xb9400000 | ((frame::RETURN_CODE_OFFSET as u32 / 4) << 10) | (20 << 5) | 16);
         self.sub_imm(20, 20, frame::SIZE);
         self.load64(9, 20, frame::REGISTER_BASE);
         self.lsl_imm(9, 9, 4);
@@ -745,6 +758,13 @@ impl Assembler<'_> {
         protocol_mark!(self, "return_restore_frame", None);
         self.switch_profile(profiled);
         protocol_mark!(self, "profile_switch", None);
+        self.cmp(16, 31);
+        let lookup = self.words.len();
+        self.emit(0x54000000 | Cond::Eq as u32);
+        self.load64(9, 19, CODE_BASE);
+        self.three(0x8b000000, 16, 9, 16);
+        self.emit(0xd61f0200); // br x16; resume reloads the caller's pairs
+        self.patch_conditional(lookup, self.words.len())?;
         self.load64(9, 20, frame::FUNCTION);
         self.lsl_imm(9, 9, 3);
         self.load64(10, 19, ENTRIES);

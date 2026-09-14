@@ -54,14 +54,14 @@ fn direct_entry(p:&Program,jit:&Jit<'_>,values:[u128;3],budget:u64,frame_end:usi
     let mut registers=vec![0xeeu128;n+32];
     let first=n-3;
     registers[first..first+3].copy_from_slice(&values);
-    let root=Frame{function:0,pc:3,base:16,register_base:0,return_address:0,tls_callback:false};
-    let canary=Frame{function:987,pc:456,base:123,register_base:789,return_address:321,tls_callback:true};
+    let root=Frame{function:0,pc:3,base:16,register_base:0,return_address:0,tls_callback:false,return_code_offset:0};
+    let canary=Frame{function:987,pc:456,base:123,register_base:789,return_address:321,tls_callback:true,return_code_offset:0};
     let mut frames=vec![root,Frame::default(),Frame::default(),canary];
     let mut hits:Vec<_>=p.functions.iter().map(|f|vec![0u64;f.code.len()]).collect();
     let profiles:Vec<_>=hits.iter_mut().map(|r|r.as_mut_ptr()).collect();
     let mut scalar_hits:Vec<_>=p.functions.iter().map(|f|vec![0u64;f.code.len()]).collect();
     let scalar_profiles:Vec<_>=scalar_hits.iter_mut().map(|r|r.as_mut_ptr()).collect();
-    let mut cursor=ResumeCursor {scalar_profiles:scalar_profiles.as_ptr(), state:State{remaining:budget,profile_hits:profiles[0],memory_len:48,
+    let mut cursor=ResumeCursor {code_base:jit.code.as_ref().unwrap().published().0,scalar_profiles:scalar_profiles.as_ptr(), state:State{remaining:budget,profile_hits:profiles[0],memory_len:48,
         peak_linear:48,register_len:n,frame_len:1,calls:0,returns:0},
         frames:frames.as_mut_ptr(),registers:registers.as_mut_ptr(),
         entries:jit.resumable.as_ref().unwrap().pointers.as_ptr(),profiles:profiles.as_ptr(),
