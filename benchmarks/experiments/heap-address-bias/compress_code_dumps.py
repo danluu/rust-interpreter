@@ -1,4 +1,4 @@
-"""Preserve exact closed diagnostic JSON bytes using APFS file compression."""
+"""Preserve exact closed non-executable native code dumps with APFS compression."""
 import json
 import os
 from pathlib import Path
@@ -14,8 +14,13 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from compression_probe import metadata
 
-NAME='closed-diagnostic-json-compression-13'
-SCOPES=['scalar-call-guards-profile-01']
+NAME='closed-native-code-dump-compression-01'
+SCOPES=[
+ 'scalar-local-registers-profile-01','confined-scalar-native-call-profile-01','heap-address-profile-03',
+ 'guarded-local-facts-profile-01','native-indirect-profile-01','native-indirect-flush-profile-01',
+ 'native-counter-flush-profile-01','memory-operands-profile-01','paired-registers-profile-01',
+ 'guarded-indirect-profile-01','branch-spaces-flush-profile-01','successor-only-flush-profile-01',
+ 'native-boundary-memory-profile-01','indirect-target-census-03','operation-map-real-01']
 
 def digests(value):
     if isinstance(value,dict):
@@ -66,17 +71,14 @@ def main():
                 rr=json.loads(records.read_text());assert all(row['returncode']==0 for row in rr)
                 local[str(records.relative_to(ROOT))]=sha(records)
             known=set(digests(summary));selected=[]
-            candidates=list(raw.glob('*.json'))
-            for child in raw.iterdir():
-                if child.is_dir() and child.name.endswith('-code'):candidates+=list(child.glob('*.json'))+list(child.glob('code.bin'))
+            candidates=list(raw.glob('*-code/code.bin'))
             for candidate in candidates:
-                if candidate.name!='code.bin' and not any(word in candidate.name for word in ['profile','map','operations']):continue
                 info=candidate.lstat()
                 if info.st_flags&32 or info.st_size<1024**2:continue
                 assert stat.S_ISREG(info.st_mode) and not info.st_mode&0o111 and candidate.resolve(strict=True)==candidate
                 digest=sha(candidate)
                 if digest not in known:
-                    skips.append(dict(path=str(candidate.relative_to(ROOT)),reason='no committed summary hash'));continue
+                    skips.append(dict(path=str(candidate.relative_to(ROOT)),reason='no committed summary code hash'));continue
                 selected.append((str(candidate.relative_to(ROOT)),digest))
             if selected:
                 proofs.update(local)
@@ -94,7 +96,7 @@ def main():
             inventory.append(dict(path=relative,sha256=digest,before=before))
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
             script_sha256=sha(Path(__file__)),proofs=proofs,files=inventory,
-            scope='Only completed guarded scalar-call profile JSON, maps and non-executable native code.bin diagnostic copies. Every selected readable hash is bound by the committed passed six-command profile summary. Preserve bytes and metadata using staged APFS compression; no installed executable, guest RBC, source, active or private cache mutation.',selection_skips=skips))
+            scope='Only non-executable saved native code.bin diagnostic dumps, bound byte-for-byte by committed completed runtime summaries. These files are copies for offline mapping, not installed tools or guest RBC artifacts. Preserve readable bytes, metadata and mapped hashes using staged APFS compression. No live generated image, executable, source or cache mutation.',selection_skips=skips))
         before_free=shutil.disk_usage(ROOT).free;rows=[]
         for item in inventory:
             require_space(ROOT,10);source=ROOT/item['path'];before=item['before'];digest=item['sha256']
