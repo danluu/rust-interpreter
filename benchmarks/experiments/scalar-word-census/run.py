@@ -15,7 +15,7 @@ from workflow_io import capture, require_space, write_json as write
 import native_observation
 from words import analyze
 
-NAME = 'scalar-word-census-02'
+NAME = 'scalar-word-census-03'
 
 
 def main():
@@ -108,7 +108,7 @@ def main():
         assert all(sha(ROOT/p) == h for p,h in frozen.items())
         result = ROOT/'results'/NAME; result.mkdir(exist_ok=False)
         write(result/'summary.json', dict(status='passed', source_revision=revision, raw=str(work.relative_to(ROOT)),
-            plan_sha256=sha(work/'plan.json'), records_sha256=sha(work/'records.json'), controls=8,
+            plan_sha256=sha(work/'plan.json'), records_sha256=sha(work/'records.json'), controls=9,
             observations=observations, observation_sha256=[sha(work/f'observation-{i}.json') for i in range(3)],
             all_frozen_inputs_verified=True, host_builds=0, guest_commands=0, executable_code_publications=0,
             production_changes=0, performance_measurement=False,

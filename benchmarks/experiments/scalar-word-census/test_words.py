@@ -54,5 +54,14 @@ class WordsTest(unittest.TestCase):
                       [0x14000000, OK, RET], [ZERO10, RET]):
             with self.subTest(words=words), self.assertRaises(AssertionError): analyze(words)
 
+    def test_trap_fallthrough_is_infeasible_only_with_unique_flag_predecessor(self):
+        result = analyze([0xeb1f03ff, 0x54000040, 0x17fffffe, FAIL, RET])
+        self.assertEqual(result['proven_unconditional_traps'], [1])
+        self.assertIsNone(result['successful_path_bounds'])
+        # Direct entry to B.EQ bypasses the CMP, so the apparent loop is real
+        # for this recognizer and must remain rejected.
+        with self.assertRaises(AssertionError):
+            analyze([0x14000002, 0xeb1f03ff, 0x54000040, 0x17ffffff, FAIL, RET])
+
 
 if __name__ == '__main__': unittest.main()

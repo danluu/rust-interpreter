@@ -1,6 +1,6 @@
 """Bounded recognizer for the source-pinned scalar emitter, not a disassembler."""
 from collections import Counter, deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 FLAGS = 32
 VECTOR = 33
@@ -84,6 +84,17 @@ def decode(w, pc, length):
 def analyze(words):
     assert 0 < len(words) <= MAX_WORDS
     ops = [decode(w, pc, len(words)) for pc, w in enumerate(words)]
+    incoming = [[] for _ in ops]
+    for pc, op in enumerate(ops):
+        for target in set(op.successors): incoming[target].append(pc)
+    traps = []
+    for pc, op in enumerate(ops):
+        # The emitter spells unconditional Trap as CMP XZR,XZR; B.EQ failure.
+        # Its syntactic fallthrough can create an infeasible machine cycle.
+        # Prove the flag definition cannot be bypassed before pruning that edge.
+        if (pc and op.kind == 'condition' and words[pc] & 15 == 0
+                and words[pc - 1] == 0xeb1f03ff and incoming[pc] == [pc - 1]):
+            ops[pc] = replace(op, successors=op.successors[:1]); traps.append(pc)
     # Prove the complete machine CFG acyclic, including unused failure tails.
     predecessors = [[] for _ in ops]
     for pc, op in enumerate(ops):
@@ -132,4 +143,5 @@ def analyze(words):
     destinations = Counter(str((words[pc] & 31)) for pc in dead)
     return dict(words=len(words), reachable_words=len(reachable), dead_words=len(dead),
                 dead_word_offsets=sorted(dead), by_kind=dict(kinds), by_destination=dict(destinations),
+                proven_unconditional_traps=traps,
                 successful_returns=len(returns), successful_path_bounds=bounds[0])

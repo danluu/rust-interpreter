@@ -12,6 +12,12 @@ liveness and iteratively discard only pure register definitions whose results
 are dead. Preserve every memory access, stack adjustment, branch and return.
 This deliberately leaves dead spills and memory-mediated simplifications alone.
 
+An unconditional Trap is emitted as `CMP XZR,XZR; B.EQ failure`. Its impossible
+fallthrough can make the syntactic machine graph cyclic even though the original
+scalar graph is acyclic. Prune that exact edge only when the CMP is the branch's
+unique predecessor. Preserve the first census's fail-closed observation of this
+case; it did not indicate an execution bug or establish savings.
+
 Report static candidates and minimum/maximum candidate words along successful
 paths, multiplied by the already recorded successful scalar Call count. Branch
 feasibility is not inferred; bounds may be loose. Failed private attempts are
