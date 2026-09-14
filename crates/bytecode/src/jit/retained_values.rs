@@ -5,11 +5,11 @@ use super::*;
 enum Fact { Local(usize), Imm(u128) }
 #[derive(Clone,Copy)]
 struct Byte { origin:usize, byte:usize }
-#[derive(Clone,Copy,Debug)]
+#[derive(Clone,Copy,Debug,serde::Serialize)]
 pub(super) struct Capture {pub slot:usize,pub size:usize}
-#[derive(Clone,Copy,Debug)]
+#[derive(Clone,Copy,Debug,serde::Serialize)]
 pub(super) struct Reuse {pub slot:usize,pub size:usize,pub origin_pc:usize}
-#[derive(Default,Debug)]
+#[derive(Default,Debug,serde::Serialize)]
 pub(super) struct Plan {
     pub captures:BTreeMap<usize,Capture>,
     pub uses:BTreeMap<usize,Reuse>,

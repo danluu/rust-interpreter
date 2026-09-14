@@ -176,7 +176,16 @@ fn observe_saved_small_memory_parts() {
             assert!(hit.origin_pc<hit.pc && hit.offset+8<=f.frame_size);
             assert!(b.memory_spans.iter().any(|s|s.pc==hit.pc && s.part=="load_data"));
         }
-        output.push(json!({"function":id,"name":f.name,"selected":selected,"memory_spans":b.memory_spans,
+        let retained=std::env::var_os("MEMORY_RETAINED_VALUES").map(|_| {
+            let regions:BTreeSet<_>=b.memory_spans.iter().map(|s|(s.region_start,s.region_end)).collect();
+            let mut work=4_000_000;
+            regions.into_iter().map(|(start,end)| {
+                let before=work;
+                let plan=super::super::retained_values::plan(f,start,end,15,&mut work);
+                json!({"start":start,"end":end,"work":before-work,"plan":plan})
+            }).collect::<Vec<_>>()
+        });
+        output.push(json!({"function":id,"name":f.name,"selected":selected,"memory_spans":b.memory_spans,"retained":retained,
             "available_copy_values":b.scratch_copy_hits,"available_load_values":b.scratch_hits}));
         assertions+=a.assertions.len();cursor=end;
     }
