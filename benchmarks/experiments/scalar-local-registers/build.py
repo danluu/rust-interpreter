@@ -34,6 +34,7 @@ def main():
         paths += [ROOT/p for p in subprocess.check_output(['git','ls-files','scripts','tests'],text=True).splitlines()]
         paths += [ROOT/'results/guarded-local-facts-main-build-01/summary.json',ROOT/'results/heap-address-build-03/summary.json']
         paths+=dependency+[prior_path,reference_path,artifact,ROOT/'scripts/workflow_io.py',ROOT/'scripts/compare_saved_runtime.py']
+        paths += [ROOT/'results/scalar-local-registers-focused-01'/name for name in ['summary.json','terminal.json','closure.json']]
         old_profile_path=ROOT/'results/confined-scalar-native-call-profile-01/summary.json'
         old_profile=json.loads(old_profile_path.read_text());assert old_profile['status']=='passed' and old_profile['exact_operation_map_reconstruction']
         references=[];paths.append(old_profile_path)
