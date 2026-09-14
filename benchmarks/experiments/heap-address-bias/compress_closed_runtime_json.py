@@ -14,16 +14,9 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from compression_probe import metadata
 
-NAME='closed-diagnostic-json-compression-10'
-SCOPES=[
- 'native-pc-map-validation-01','lazy-native-real-probe-01','token-phrase-profile-01',
- 'resumable-copy-real-smoke-01','guarded-local-facts-census-01','parser-runtime-profile-01',
- 'environment-read-nushell-retirement-01','budget-register-smoke-01',
- 'native-register-cache-screen-01','native-call-exit-screen-01','native-wide-profile-01',
- 'native-exit-dispatch-real-screen-01','native-popcount-real-screen-01',
- 'native-medium-leaf-real-screen-01','native-medium-leaf-frame-guard-real-screen-01',
- 'native-compare-bytes-controls-profile-01','resumable-bulk-folded-transitions-01',
- 'function-register-residency-observation-01','native-protocol-census-01']
+NAME='closed-diagnostic-json-compression-11'
+SCOPES=['resumable-copy-native-02','fixed-frame-clear-combined-native-01','budget-register-native-01',
+        'aggregate-relocation-native-01','resumable-bulk-native-01','fixed-frame-clear-native-01']
 
 def no_open_file(path):
     result=subprocess.run(['lsof','-Fpn','--',str(path)],text=True,capture_output=True)
@@ -36,54 +29,33 @@ def main():
         revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
         sources={};proofs={};skips=[];completion=[]
         for name in SCOPES:
-            raw=ROOT/'.work'/name
-            terminal=ROOT/'.work/experiments'/name/'status.json'
-            if not terminal.exists():
-                terminal=raw/'active-command.json'
-            assert terminal.is_file(),name
-            status=json.loads(terminal.read_text())
-            assert status['status']=='finished' and isinstance(status['returncode'],int),(name,status)
-            allowed_cwd=ROOT/'.work/sources/fre/crates/fre-kernels' if name=='token-phrase-profile-01' else ROOT
-            assert status['cwd']==str(allowed_cwd),name
-            if terminal.parent.parent==ROOT/'.work/experiments':assert status['owner']==str(ROOT)
-            pids=[status[k] for k in ['pid','parent_pid','supervisor_pid','child_pid'] if k in status]
+            result=ROOT/'results'/name/'summary.json';summary=json.loads(result.read_text())
+            assert summary['status']=='passed' and set(summary['runs'])=={'default','inline'}
+            assert hashlib.sha256(subprocess.check_output(['git','show',revision+':'+str(result.relative_to(ROOT))])).hexdigest()==sha(result)
+            terminal=ROOT/'.work/experiments'/name/'status.json';status=json.loads(terminal.read_text())
+            assert status['status']=='finished' and status['returncode']==0 and status['owner']==status['cwd']==str(ROOT)
+            assert sha(terminal.with_name('plan.json'))==status['plan_sha256']
+            assert sha(terminal.with_name('command.log'))==status['log_sha256']
+            pids=[status[k] for k in ['supervisor_pid','child_pid']]
             inspection=subprocess.run(['ps','-p',','.join(map(str,pids)),'-o','pid,ppid,lstart,tty,command'],text=True,capture_output=True)
             assert inspection.returncode in [0,1] and not inspection.stderr
             assert not any(name in row for row in inspection.stdout.splitlines()[1:]),inspection.stdout
-            opened=subprocess.run(['lsof','-Fpn','+D',str(raw)],text=True,capture_output=True)
-            assert opened.returncode==1 and not opened.stdout and not opened.stderr,(name,opened.stdout,opened.stderr)
-            local={str(terminal.relative_to(ROOT)):sha(terminal)}
-            if 'plan_sha256' in status:
-                assert sha(terminal.with_name('plan.json'))==status['plan_sha256']
-                local[str(terminal.with_name('plan.json').relative_to(ROOT))]=status['plan_sha256']
-            if 'log_sha256' in status:
-                assert sha(terminal.with_name('command.log'))==status['log_sha256']
-                local[str(terminal.with_name('command.log').relative_to(ROOT))]=status['log_sha256']
-            for file in ['plan.json','summary.json','records.json','record.json','frozen.json','status.json','active.json','active-command.json']:
-                p=raw/file
-                if p.exists():local[str(p.relative_to(ROOT))]=sha(p)
-            committed=ROOT/'results'/name/'summary.json'
-            if committed.exists():
-                assert hashlib.sha256(subprocess.check_output(['git','show',revision+':'+str(committed.relative_to(ROOT))])).hexdigest()==sha(committed)
-                local[str(committed.relative_to(ROOT))]=sha(committed)
-            # Old runtime observers used direct captures and sometimes closed
-            # with an observer failure. Compression requires completed ownership,
-            # not a passing performance result. Record today's exact byte hashes;
-            # do not imply these newly recorded hashes were historically bound.
-            completion.append(dict(run=name,terminal=str(terminal.relative_to(ROOT)),returncode=status['returncode'],process_inspection=inspection.stdout,open_file_check=opened.returncode))
-            candidates=list(raw.glob('*.json'))
-            for child in raw.iterdir():
-                if child.is_dir() and (child.name.endswith('-code') or child.name=='code'):candidates+=list(child.glob('*.json'))
-            for candidate in candidates:
-                if not (any(word in candidate.name for word in ['profile','census','inventory','protected','map','operations','typed']) or (name=='native-protocol-census-01' and candidate.name in ['block.json','exhaustive.json'])):continue
-                info=candidate.lstat()
-                if info.st_flags&32 or info.st_size<1024**2:continue
-                assert stat.S_ISREG(info.st_mode) and not info.st_mode&0o111 and candidate.resolve(strict=True)==candidate
-                sources[str(candidate.relative_to(ROOT))]=sha(candidate)
-            proofs.update(local)
-        assert sources,'no eligible evidence'
+            for path in [result,terminal,terminal.with_name('plan.json'),terminal.with_name('command.log')]:proofs[str(path.relative_to(ROOT))]=sha(path)
+            completion.append(dict(run=name,terminal=str(terminal.relative_to(ROOT)),returncode=0,process_inspection=inspection.stdout))
+            for mode,row in summary['runs'].items():
+                raw=ROOT/row['detail']['raw'];assert raw.parent==ROOT/'.work' and raw.name.startswith('interpreter-validation-')
+                commands=raw/'commands.jsonl';digest=row['commands_sha256'];assert sha(commands)==digest
+                records=raw/'records.json';logged=[json.loads(line) for line in commands.read_text().splitlines()]
+                assert json.loads(records.read_text())==logged
+                assert len(logged)==row['classification']['commands']
+                detail=raw/'summary.json';assert json.loads(detail.read_text())==row['detail']
+                proofs[str(detail.relative_to(ROOT))]=sha(detail)
+                for path in [commands,records]:
+                    no_open_file(path);assert not path.stat().st_flags&32
+                    sources[str(path.relative_to(ROOT))]=sha(path)
+        assert len(sources)==24
         if '--inspect' in sys.argv:
-            print(json.dumps(dict(files=len(sources),allocated_bytes=sum((ROOT/p).stat().st_blocks*512 for p in sources),paths=list(sources),completion=completion)));return
+            print(json.dumps(dict(files=len(sources),allocated_bytes=sum((ROOT/p).stat().st_blocks*512 for p in sources))));return
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         inventory=[]
         for relative,digest in sorted(sources.items()):
@@ -94,7 +66,7 @@ def main():
             inventory.append(dict(path=relative,sha256=digest,before=before))
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
             script_sha256=sha(Path(__file__)),proofs=proofs,files=inventory,
-            scope='Exact unopened diagnostic JSON files from explicitly listed completed runtime experiments. Readable hashes are recorded immediately before compression; historical benchmark qualifications are neither changed nor inferred. Legacy direct captures and failed terminal observers are eligible only after exact completion and open-file checks. Preserve bytes and file metadata using verified atomic APFS compression; no executables, bytecode, source, active or private-workload caches.',selection_skips=skips,completed_scopes=completion))
+            scope='Twelve command JSONL files bound by six committed completed runtime native/interpreter differential qualifications, plus twelve JSON copies verified structurally equal. Includes existing expected negative outcomes. Preserve readable hashes, metadata and historical conclusions; no executable, source, guest artifact or cache changes.',selection_skips=skips,completed_scopes=completion))
         before_free=shutil.disk_usage(ROOT).free;rows=[]
         for item in inventory:
             require_space(ROOT,10);source=ROOT/item['path'];before=item['before'];digest=item['sha256']
