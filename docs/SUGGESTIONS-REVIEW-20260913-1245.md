@@ -159,3 +159,20 @@ bridge already uses ordinary effective capacity bounds; the concrete remaining
 difference is its missing guarded caller-frame argument-address path. Review
 that path and preserve private failure replay. This is runtime work only;
 compiler/Cargo ownership, two-worker limits and strict frontend checking remain.
+
+Follow-up through 22:15: the suggestions hash remains unchanged. Guarded caller-
+frame argument addressing and removal of a redundant private scalar-entry budget
+check pass 594 workspace controls per profile, 121 strict/cache commands and six
+exact original profiles. The 40-command primary observes 1.38% wall and 2.04% CPU
+improvement, inside 3.3145% wall A/A variation; its unchanged gate fails. Park this
+revision and cancel larger comparisons. All assertion outcomes, source restoration
+and candidate/control bytecode identities pass. Its 2,530 protected evidence
+hashes remain unchanged after retiring disposable compiler intermediates.
+[Screen and limitations](../results/scalar-call-guards-screen-token-01/ASSESSMENT.md).
+
+Continue with a bounded saved-artifact census of constant expressions and unused
+high halves in the scalar emitter. Reconstruct qualified emitted bodies first;
+static words and successful scalar PC counts do not establish hardware time or
+an end-to-end speedup. No new runtime candidate follows until that census identifies
+material work. Keep the adopted VM as the control, full checking, two Cargo workers,
+and the existing build/disk gates. Compiler/Cargo ownership remains separate.
