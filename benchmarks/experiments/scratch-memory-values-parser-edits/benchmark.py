@@ -76,7 +76,7 @@ def main():
         if args.profile=='repository':
             first=ROOT/'results/scratch-memory-values-parser-edits-incremental-01/summary.json';proof=json.loads(first.read_text())
             assert proof['status']=='passed' and proof['commands']==88 and proof['measurement']['gate_passed'];paths.append(first)
-        harness_path=ROOT/'results/scratch-memory-values-parser-edits-protocol-01/summary.json';harness=json.loads(harness_path.read_text())
+        harness_path=ROOT/'results/scratch-memory-values-parser-edits-protocol-02/summary.json';harness=json.loads(harness_path.read_text())
         assert harness['status']=='passed' and harness['tests']==16
         inputs=ROOT/harness['raw']/'inputs.json';assert sha(inputs)==harness['inputs_sha256']
         assert all(sha(ROOT/p)==h for p,h in json.loads(inputs.read_text()).items())
