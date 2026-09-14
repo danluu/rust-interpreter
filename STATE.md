@@ -77,8 +77,11 @@ and cancel larger comparisons. The closed 245-body store-cost census finds
 32.94 million redundant write guards and fully overwritten publications on
 successful block-test paths. A separate store-log simplification now passes
 381 bytecode tests per profile (17 ignored), including complete memory after
-aliases and faults. It still needs immutable build, strict/profile qualification
-and a new primary gate; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+aliases and faults. Its immutable tool 5b86b3ab passes 644 workspace tests/profile, 407 Python
+tests (22 skips), 121 strict/cache commands and three exact original profiles.
+Its 40-command primary fails: wall ratio 0.976436 and CPU 0.996167 remain
+inside 4.63% wall A/A variation. Park 5b86b3ab and cancel larger histories.
+Next measure scalar register spills from saved bodies; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only
