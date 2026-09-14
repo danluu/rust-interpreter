@@ -110,7 +110,8 @@ fn observe_original_scalar_computations() {
             for (pc,ids) in plan.computations.iter().enumerate() {
                 if ids.len()!=2 || !plan.live[ids[0]] || !plan.live[ids[1]] {continue;}
                 if let (Value::Binary{a,b,op,bits,signed,overflow:false},Value::Binary{a:c,b:d,op:other,bits:width,signed:sign,overflow:true})=(&plan.nodes[ids[0]].value,&plan.nodes[ids[1]].value) {
-                    if a==c && b==d && op==other && bits==width && signed==sign && matches!(op,Binary::Add|Binary::Sub|Binary::Mul) {
+                    if a==c && b==d && bits==width && signed==sign && matches!((op,other),
+                        (Binary::Add,Binary::Add)|(Binary::Sub,Binary::Sub)|(Binary::Mul,Binary::Mul)) {
                         duplicate_pairs.push(json!({"pc":pc,"operation":format!("{op:?}"),"bits":bits,"signed":signed,
                             "both_constant":facts[ids[0]].is_some() && facts[ids[1]].is_some(),"successful_pairs":hits[pc]}));
                     }
