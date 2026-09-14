@@ -50,7 +50,7 @@ fn conditional_demand_uses_program_size_boundary_and_preserves_small_execution()
 #[test]
 fn conditional_demand_requires_full_validation_even_when_size_predicate_is_false() {
     let p = loop_program();
-    for (engine, limits) in [(Engine::Interpreter, conditional_options()),
+    for (engine, limits) in [(Engine::Interpreter, Limits { jit_resumable_calls: false, ..conditional_options() }),
         (Engine::Jit, Limits { jit_resumable_calls: false, ..conditional_options() })] {
         assert!(execute_with_engine(&p, &[1], limits, engine).unwrap_err()
             .contains("fully validated resumable JIT"));
