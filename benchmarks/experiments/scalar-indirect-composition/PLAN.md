@@ -21,7 +21,7 @@ on/off and persistent registers on/off, three metadata controls, and two new
 composition fixtures with warm polymorphic indirect targets calling scalar
 children, every instruction tail, exact original-PC profiles, preparation-option
 changes and partial-artifact rejection. Then whole bytecode/workspace checks in
-both profiles, all Python contracts,121 strict/cache commands and original
+both profiles, all Python contracts,122 strict/cache commands and original
 profiles/reconstruction with the exact compiler/exporter/wrapper unchanged.
 Disabled-indirect emission must reconstruct the adopted code before timing.
 
