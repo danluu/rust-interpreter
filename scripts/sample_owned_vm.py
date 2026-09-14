@@ -39,6 +39,7 @@ def main():
     parser.add_argument('--jit-native-calls', action='store_true')
     parser.add_argument('--jit-native-call-stubs', action='store_true')
     parser.add_argument('--jit-resumable-calls', action='store_true')
+    parser.add_argument('--jit-scalar-calls', action='store_true')
     parser.add_argument('--dump-code', action='store_true', help='save emitted code from each sampled process after execution')
     parser.add_argument('--jit-operation-map', action='store_true', help='also reconstruct and verify per-operation spans after execution')
     parser.add_argument('--select-test', help='run one exact catalog test without instruction profiling')
@@ -46,6 +47,8 @@ def main():
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=0)
     parser.add_argument('--minimum-free-bytes', type=int, default=0)
     args = parser.parse_args()
+    if args.jit_scalar_calls and not args.jit_resumable_calls:
+        parser.error('--jit-scalar-calls requires --jit-resumable-calls')
     if args.jit_resumable_calls and (args.jit_native_calls or args.jit_native_call_stubs):
         parser.error('--jit-resumable-calls cannot be combined with native tree/stub calls')
     if args.jit_native_call_stubs and not args.jit_native_calls:
@@ -98,6 +101,7 @@ def main():
         instruction_limit=args.instruction_limit, allocation_limit=args.allocation_limit,
         jit_persistent_registers=args.jit_persistent_registers, jit_native_calls=args.jit_native_calls, jit_native_call_stubs=args.jit_native_call_stubs,
         jit_resumable_calls=args.jit_resumable_calls,
+        jit_scalar_calls=args.jit_scalar_calls,
         jit_operation_map=args.jit_operation_map,
         dump_code=args.dump_code, selection=selection,
         minimum_free_bytes=args.minimum_free_bytes,
@@ -132,6 +136,8 @@ def main():
             command.append('--jit-native-call-stubs')
         if args.jit_resumable_calls:
             command.append('--jit-resumable-calls')
+        if args.jit_scalar_calls:
+            command.append('--jit-scalar-calls')
         if args.dump_code:
             command += ['--jit-code-dump', str(run / 'jit-code')]
         if args.jit_operation_map:
