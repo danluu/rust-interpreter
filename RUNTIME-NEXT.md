@@ -48,8 +48,13 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    tool 5b86b3ab passes 644 workspace tests/profile, 407 Python tests (22 skips),
    121 strict/cache commands and three original profiles. The complete
    40-command primary fails (wall 0.976436, CPU 0.996167, wall A/A 0.046293).
-   Park 5b86b3ab and cancel larger histories. Next census scalar live-register
-   pressure/spills and the save/restore cost of a larger bounded register pool.
+   Park 5b86b3ab and cancel larger histories. The closed 245-body
+   census finds too little benefit from a larger local register pool. Its
+   corrected live-only partition identifies many one-byte memory phis, including
+   eight consecutive bytes of one value in the hot copy-precondition function.
+   Next prototype contiguous byte-phi coalescing from the adopted runtime;
+   preserve every predecessor slice, original PC and limit. The invalid
+   census02 partition and its corrected dead-use control are retained.
    Main retains df4006e0; no gain is established.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
