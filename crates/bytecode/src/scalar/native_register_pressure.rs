@@ -41,7 +41,8 @@ fn spill_details(plan:&Plan,hits:&[u64])->Vec<Json> {
     let mut operands=vec![0u64;plan.nodes.len()];
     for (id,n) in plan.nodes.iter().enumerate() {if let Some(pc)=n.pc {blocks[id]=Some(plan.at[pc]);}}
     for (block,b) in plan.blocks.iter().enumerate() {for &id in &b.phis {blocks[id]=Some(block);}}
-    for n in &plan.nodes {
+    for (id,n) in plan.nodes.iter().enumerate() {
+        if !plan.live[id] {continue;}
         if let Value::Phi(parts)=&n.value {for &(pred,part) in parts {uses[part.value].insert(pred);}continue;}
         if let Some(pc)=n.pc {for id in n.inputs() {uses[id].insert(plan.at[pc]);operands[id]+=hits[pc];}}
     }
@@ -87,6 +88,18 @@ fn hypothetical_extra_registers_reduce_same_block_spills() {
     assert!(rows[0]["successful_spill_definitions"].as_u64().unwrap()>rows[2]["successful_spill_definitions"].as_u64().unwrap());
     assert_eq!(rows[0]["hypothetical_successful_save_restore_instructions"],0);
     assert!(rows[2]["hypothetical_successful_save_restore_instructions"].as_u64().unwrap()>0);
+}
+#[test]
+fn spill_partition_ignores_dead_operand_uses() {
+    let mut plan=fixture(true);let hits=vec![3;plan.effects.len()];
+    let prior=spill_details(&plan,&hits);
+    let id=prior.iter().find(|r|r["category"]=="cross_block_computation").unwrap()["node"].as_u64().unwrap() as usize;
+    plan.nodes.push(Node{value:Value::Unary{src:id,op:Unary::Not,bits:64},width:8,pc:Some(0)});
+    plan.live.push(false);
+    assert_eq!(prior,spill_details(&plan,&hits));
+    let baseline=metrics(&plan,&hits,3).remove(0);
+    assert_eq!(prior.iter().map(|r|r["successful_ir_operand_hits"].as_u64().unwrap()).sum::<u64>(),
+        baseline["successful_spill_ir_operands"].as_u64().unwrap());
 }
 #[test]
 fn hypothetical_extra_registers_preserve_cross_block_spills() {

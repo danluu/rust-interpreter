@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-register-pressure-02'
+NAME='scalar-register-pressure-03'
 
 def read(p):return json.loads(p.read_text())
 def main():
@@ -56,7 +56,7 @@ def main():
             '--locked','--offline','--jobs','2','--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target)]
         records=[]
         for label,test,extra,count,ignored in [
-            ('controls','scalar_ir::native_leaf::registers::pressure::',[],2,1),
+            ('controls','scalar_ir::native_leaf::registers::pressure::',[],3,1),
             ('census','scalar_ir::native_leaf::registers::pressure::observe_saved_scalar_register_pressure',['--ignored','--exact'],1,0)]:
             assert shutil.disk_usage(ROOT).free>=needed;require_space(ROOT,8)
             cmd=[*base,test,'--',*extra];start=time.time()
@@ -74,6 +74,9 @@ def main():
         totals=[]
         fields=['successful_spill_definitions','successful_spill_ir_operands','hypothetical_successful_save_restore_instructions']
         for case in census['cases']:
+            for f in case['functions']:
+                for part,total in [('successful_definition_hits','successful_spill_definitions'),('successful_ir_operand_hits','successful_spill_ir_operands')]:
+                    assert sum(v[part] for v in f['spilled_values'])==f['pools'][0][total],(case['index'],f['function'],part)
             pools=[]
             for size in [4,6,8,11]:
                 selected=[next(r for r in f['pools'] if r['pool']==size) for f in case['functions']]
@@ -84,7 +87,7 @@ def main():
                     for key in ['successful_definition_hits','successful_ir_operand_hits']}
                     for kind in ['local_computation','cross_block_computation','byte_phi','other_phi']}))
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',commands=2,controls=2,reconstructed_native_bodies=expected,cases=totals,
+        write(out/'summary.json',dict(status='passed',commands=2,controls=3,reconstructed_native_bodies=expected,cases=totals,
             setup_seconds=sum(r['seconds'] for r in records),raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),
             records_sha256=sha(work/'records.json'),inputs_sha256=sha(work/'inputs.json'),census_sha256=sha(work/'census.json'),
             source_revision=revision,guest_commands=0,executable_code_publications=0,production_runtime_changes=0,
