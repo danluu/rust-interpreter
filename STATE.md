@@ -67,19 +67,33 @@ execution; this qualification did not widen production selection.
 [Combined census](results/scalar-aggregate-census-02/assessment.md),
 [native ABI qualification](results/scalar-aggregate-abi-01/assessment.md).
 
-The candidate now connects that ABI to the complete Call bridge. It prechecks
-the entire result destination, captures ordered inputs from the old active
-prefix, and commits all result bytes only after private success. Seven focused
-controls and all374 bytecode tests pass in debug/release, including complete
-memory on error exits. The final census retains all32 candidates in the combined
-native ABI in both profile modes (28,904 unprofiled bytes, maximum368-byte spill
-frame). Complete workspace/launcher/strict qualification, original profiles
-and exact emitted-byte reconstruction still precede timing. The prospectively
-selected primary is the original fre exhaustive test alone, using 40 complete
-changed-source commands. The full token suite remains a regression guard because
-its block test determines the critical path. All existing project/parser guards
-remain required before adoption.
-[Native direction and gates](benchmarks/experiments/scalar-aggregate-model/NATIVE-NEXT.md).
+The complete aggregate Call bridge passes seven focused controls and374 bytecode
+tests/profile, including complete memory on error exits. The final census retains
+all32 candidates in the combined native ABI in both profile modes (28,904
+unprofiled bytes; maximum368-byte spill frame). Immutable tool3081569232 /
+VM5fd0c1c7 retains the adopted compiler/exporter/wrapper. It passes637 workspace
+tests/profile,407 Python tests with22 declared skips,121 strict/cache commands,
+and three exact original profiles/code reconstructions. All stages are closed.
+No performance improvement or adoption follows from this qualification.
+
+The exhaustive-only changed-source primary completed all40 commands and failed
+its prospective wall gate. Wall ratio0.99908220 is inside the4.742435% A/A
+envelope; CPU ratio0.99278538 passes its conditions. Original assertions, wrong
+edits, bytecode equality and restoration pass. Candidate3081569232 is parked;
+no full comparison, held-out guard or unchanged-candidate retry was started.
+Its execution stage changed by a descriptive median+5.110ms, despite higher
+scalar Call coverage. Main remains df4006e0. The preceding startup failure ran
+only native/baseline cold commands and is separately closed.
+[Primary assessment](results/scalar-aggregate-screen-exhaustive-02/assessment.md),
+[build](results/scalar-aggregate-build-01/assessment.md),
+[strict checks](results/scalar-aggregate-qualification-01/assessment.md),
+[profiles](results/scalar-aggregate-profile-01/assessment.md).
+
+Next: retire only verified completed ROOT compiler intermediates while retaining
+all executables and proof; then inspect retained aggregate code/profile costs
+and the shared ABI footprint before choosing a materially different runtime
+mechanism. Extra native coverage is not evidence of speed. No new build starts
+below its conservative disk admission floor.
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
