@@ -124,3 +124,67 @@ fn native_readonly_shared_arena_reconstruction_and_write_rejection_are_exact() {
     let mut jit=Jit::new_resumable(&p,false,16*1024*1024,true).unwrap();jit.enable_scalar_calls();
     jit.ensure_function(0).unwrap();assert!(jit.scalar_entry(1).is_none());
 }
+
+#[test]
+#[ignore="Requires pinned public bytecode, captures and a fresh output path"]
+fn observe_saved_readonly_native_plans() {
+    use serde_json::{Value,json};
+    use sha2::{Digest,Sha256};
+    let bytes=std::fs::read(std::env::var("READONLY_ARTIFACT").unwrap()).unwrap();assert!(bytes.len()<=128*1024*1024);
+    let digest=format!("{:x}",Sha256::digest(&bytes));assert_eq!(digest,std::env::var("READONLY_ARTIFACT_SHA256").unwrap());
+    let p:Program=bincode::deserialize(&bytes).unwrap();crate::validate(&p).unwrap();assert!(p.functions.len()<=65536);
+    let jit=Jit::new_resumable(&p,false,16*1024*1024,true).unwrap();
+    let captures:Vec<Value>=serde_json::from_str(&std::env::var("READONLY_CAPTURES").unwrap()).unwrap();
+    assert_eq!(captures.len(),2);
+    let mut saved=std::collections::BTreeMap::<usize,Vec<u8>>::new();let mut capture_counts=vec![];
+    for capture in captures {
+        let mapping=std::fs::read(capture["map"].as_str().unwrap()).unwrap();assert!(mapping.len()<=256*1024*1024);
+        assert_eq!(format!("{:x}",Sha256::digest(&mapping)),capture["map_sha256"].as_str().unwrap());
+        let mapping:Value=serde_json::from_slice(&mapping).unwrap();
+        let code=std::fs::read(capture["code"].as_str().unwrap()).unwrap();assert!(code.len()<=16*1024*1024);
+        let code_hash=format!("{:x}",Sha256::digest(&code));
+        assert_eq!(code_hash,capture["code_sha256"].as_str().unwrap());assert_eq!(mapping["code_sha256"],code_hash);
+        assert_eq!(mapping["schema_version"],2);assert_eq!(mapping["complete"],true);
+        assert_eq!(mapping["reconstructed_bytes_match"],true);assert_eq!(mapping["profiled"],false);
+        let mut count=0;
+        for f in mapping["functions"].as_array().unwrap() {
+            if f["spans"][0]["kind"]!="scalar_leaf" {continue;}
+            let id=f["function"].as_u64().unwrap() as usize;assert_eq!(f["name"],p.functions[id].name);
+            let start=f["offset"].as_u64().unwrap() as usize;let end=f["end"].as_u64().unwrap() as usize;
+            assert!(start<end && end<=code.len());let body=code[start..end].to_vec();
+            if let Some(previous)=saved.insert(id,body.clone()) {assert_eq!(previous,body);}
+            count+=1;
+        }
+        capture_counts.push(json!({"case":capture["case"],"scalar_bodies":count}));
+    }
+    let mut work=crate::proof::MAX_GLOBAL_WORK;let mut rows=vec![];let mut existing_verified=0;
+    for (id,f) in p.functions.iter().enumerate() {
+        let memory=crate::proof::memory_plan_for_call(&p,id,&mut work);
+        let external_reads=memory.accesses.iter().flat_map(|a|&a.reads).filter(|r|r.size>0 && r.offset.is_none()).count();
+        let plan=crate::scalar_ir::lower(f,&memory,250_000);let summary=crate::scalar_ir::summary(&plan);let mut native=vec![];
+        if let Ok(plan)=&plan {
+            for profiled in [false,true] {
+                native.push(match crate::scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,jit.uses_heap) {
+                    Ok(code)=>{
+                        if !profiled {if let Some(previous)=saved.get(&id) {
+                            assert_eq!(external_reads,0);let actual:Vec<u8>=code.words.iter().flat_map(|w|w.to_le_bytes()).collect();
+                            assert_eq!(previous,&actual,"existing scalar function {id}");existing_verified+=1;
+                        }}
+                        json!({"profiled":profiled,"eligible":true,"bytes":code.words.len()*4,
+                            "stack_bytes":code.stack_bytes,"success_steps":code.success_steps})
+                    },
+                    Err(reason)=>json!({"profiled":profiled,"eligible":false,"decline":reason}),
+                });
+            }
+        }
+        let candidate=external_reads>0 && f.args.len()<=64 && native.len()==2 && native.iter().all(|n|n["eligible"]==true);
+        rows.push(json!({"function":id,"name":f.name,"memory_eligible":memory.eligible,"memory_decline":memory.decline,
+            "scalar":summary,"external_reads":external_reads,"candidate":candidate,"native":native,"native_implemented":true}));
+    }
+    assert_eq!(existing_verified,saved.len());assert!(jit.code.is_none() && jit.bytes==0);
+    let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("READONLY_OUTPUT").unwrap()).unwrap();
+    serde_json::to_writer(file,&json!({"status":"passed","artifact_sha256":digest,"rows":rows,"functions":p.functions.len(),
+        "memory_work_used":crate::proof::MAX_GLOBAL_WORK-work,"memory_work_remaining":work,"heap_abi":jit.uses_heap,
+        "production_policy_changed":true,"original_project_guest_commands":0,"executable_code_publications":0,
+        "existing_scalar_bodies_verified":existing_verified,"captures":capture_counts})).unwrap();
+}
