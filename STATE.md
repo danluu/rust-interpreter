@@ -5,6 +5,19 @@ The task is a general custom Rust interpreter/direct AArch64 JIT, guided by
 real changed-source build/test commands across small and large projects.
 Private repository: `danluu/rust-interpreter`. Qualified changes go to main.
 
+Latest runtime experiment: direct path-guard scalar Calls passed 681 workspace
+tests/profile, 121 strict/cache commands and three exact original profiles, but
+failed the 40-command changed-source primary (wall 0.984509, CPU 1.001640,
+wall A/A 0.025402). It stays parked. Saved machine-CFG bounds show that direct
+effects repeat work combined by the earlier store log. The next investigation
+is a bounded aggregate-result model on the adopted runtime: 64-byte results and
+1 KiB frames retain 10/82 block/exhaustive structural samples. Typed proof and
+native eligibility remain unestablished. The completed path-screen cache
+retirement recovers 1.576 GB while preserving all 2,531 protected hashes.
+[Failed primary](results/scalar-path-screen-token-01/ASSESSMENT.md),
+[machine-path costs](results/scalar-path-costs-01/assessment.md),
+[next scope](results/scalar-wide-boundaries-01/assessment.md).
+
 The scratch-value/scalar-call composition is adopted with the current compiler.
 It combines bounded scalar native calls and private value transfers with reuse
 of checked memory values still held in x9. Writes, aliases and register clobbers
