@@ -13,7 +13,7 @@ from workflow_io import capture,require_space,write_json as write
 
 
 def main():
-    name='scalar-width-aliases-focused-01'
+    name='scalar-width-aliases-focused-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45)
         target=ROOT/'.work/fixed-frame-clear-combined-build-01/target'
@@ -57,7 +57,7 @@ def main():
             return out
         common=['--locked','--offline','--jobs','2','--manifest-path',ROOT/'Cargo.toml','--target-dir',target,'-p','rust-interp-bytecode','--lib']
         for profile,extra in [('debug',[]),('release',['--release'])]:
-            out=invoke('test-'+profile,['cargo','+nightly-2226-09-08','test',*extra,*common,'native_scalar_'])
+            out=invoke('test-'+profile,['cargo','+nightly-2026-09-08','test',*extra,*common,'native_scalar_'])
             assert '22 passed; 0 failed' in out and 'native_scalar_call_matches_complete_vm_aliases_profiles_and_peak_memory' in out
             print(profile,'22 native body/transaction controls PASS',flush=True)
         result=ROOT/'results'/name;result.mkdir(exist_ok=False)
