@@ -8,7 +8,7 @@ from workflow_io import require_space,write_json as write
 from summarize_owned_sample import parse_tree,self_samples
 spec=importlib.util.spec_from_file_location('closed_call_join',ROOT/'benchmarks/experiments/native-call-cost-census/analyze.py')
 join=importlib.util.module_from_spec(spec);spec.loader.exec_module(join)
-NAME='scalar-next-boundaries-01'
+NAME='scalar-next-boundaries-02'
 def read(p):
     assert p.stat().st_size<=256*1024**2
     return json.loads(p.read_text())
@@ -43,7 +43,8 @@ def main():
             and f['result']['size']<=16 and all(a['size']<=16 for a in f['arguments'])
             and callees[i] and callees[i]<=eligible and not f['operation_histogram'].get('CallIndirect',0)}
         cycles={i for i,f in native_rows.items() if f['scalar'].get('decline')=='scalar_cycle'}
-        policies=dict(wider_results=wider,nested_calls=nested,cycles=cycles)
+        writes={i for i,f in native_rows.items() if (f['memory_decline'] or {}).get('reason')=='unknown_pointer_write'}
+        policies=dict(wider_results=wider,nested_calls=nested,cycles=cycles,transactional_writes=writes)
         prior_path=ROOT/'results/scalar-protocol-census-03/attribution.json';prior=read(prior_path)
         paths += [typed_path,native_path,prior_path]
         captures=[]

@@ -12,6 +12,10 @@ Call/Return and native-PC samples to compare three prospective bounds:
   read-only/strict scalar native plan. Reject indirect Calls.
 * The already identified 16 small scalar cycles, without claiming a bound on
   their iteration count or a viable native transaction.
+* Follow-up 02 adds 179 bounded leaves whose next memory-proof failure is an
+  external write. A possible future private write log could defer those stores
+  until success, replaying the ordinary Call on failure. This census proves
+  neither a bounded log nor correct read-after-write forwarding/alias handling.
 
 All three are optimistic structural filters, not effect/alias or native proofs.
 Count both transition and body samples without double counting native spans.
