@@ -13,6 +13,14 @@ fn plan(p:&Program,zeroed:bool)->Result<Aggregate,&'static str> {
 fn compare(p:&Program,a:&Aggregate,args:&[u128],budget:usize)->Option<Vec<u8>> {
     let f=&p.functions[0];let base=(p.data.len().max(16)+f.frame_align-1)&!(f.frame_align-1);
     let observed=a.evaluate(args,base,budget,&f.name);let mut bytes=vec![];let mut first_error=None;let mut offset=0;
+    let memory=crate::proof::aggregate_memory_plan(p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone(),true);
+    let combined=lower_aggregate(f,&memory,1_000_000).unwrap();
+    let single=combined.evaluate(args,base,budget,&f.name);
+    match (&observed,&single) {
+        (Ok((bytes,pcs)),Ok(one))=>{assert_eq!(bytes,&one.bytes);assert_eq!(pcs,&one.pcs);},
+        (Err(a),Err(b))=>assert_eq!(a,b),
+        (a,b)=>panic!("projection {a:?}, combined {b:?}"),
+    }
     for (size,_) in &a.lanes {
         let mut projected=p.clone();projected.functions[0].result=Slot{offset:f.result.offset+offset,size:*size};
         let ordinary=crate::execute_profiled(&projected,args,Limits{instructions:budget as u64,..Limits::default()},Engine::Interpreter);
@@ -124,4 +132,22 @@ fn local_pointer_results_and_malformed_return_annotations_are_checked() {
     let mut memory=crate::proof::aggregate_memory_plan(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone(),true);
     memory.accesses.last_mut().unwrap().reads[0].size=16;
     assert!(Aggregate::new(&p.functions[0],&memory,1_000_000).is_err());
+}
+
+#[test]
+fn combined_aggregate_cannot_enter_legacy_native_output_and_small_bodies_match() {
+    for size in [0,1,2,4,8,16,17,40,64] {
+        let p=program(vec![Op::Return],64,(0..4).map(|i|Slot{offset:i*16,size:16}).collect(),Slot{offset:0,size});
+        let memory=crate::proof::aggregate_memory_plan(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone(),true);
+        let combined=lower_aggregate(&p.functions[0],&memory,1_000_000).unwrap();
+        if size>16 {
+            assert_eq!(native_leaf::emit_call(&combined,false).err(),Some("native_aggregate_return_unimplemented"));
+            assert_eq!(native_leaf::emit(&combined,false).err(),Some("native_aggregate_return_unimplemented"));
+        } else {
+            let legacy=lower(&p.functions[0],&memory,1_000_000).unwrap();
+            for profiled in [false,true] {
+                assert_eq!(native_leaf::emit_call(&legacy,profiled).unwrap().words,native_leaf::emit_call(&combined,profiled).unwrap().words);
+            }
+        }
+    }
 }

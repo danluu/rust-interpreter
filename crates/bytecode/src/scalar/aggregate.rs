@@ -23,7 +23,7 @@ impl Aggregate {
                 }
             }
             let projected=MemoryPlan{eligible:true,decline:None,work:memory.work,accesses};
-            let plan=lower_bounded::<1024>(&projection,&projected,limit.saturating_sub(result.work))?;
+            let plan=lower_bounded::<1024,false>(&projection,&projected,limit.saturating_sub(result.work))?;
             result.work=result.work.checked_add(plan.work).ok_or("aggregate_work_limit")?;
             if result.work>limit {return Err("aggregate_work_limit");}
             result.lanes.push((size,plan));

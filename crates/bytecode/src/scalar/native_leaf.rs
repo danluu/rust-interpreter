@@ -245,6 +245,9 @@ fn emit_call_reference(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
     emit_inner(plan,profiled,true,false,true,true,false)
 }
 fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool)->Result<Emitted,&'static str> {
+    if plan.result_size>16 || plan.effects.iter().any(|effect|matches!(effect,Effect::ReturnLanes(_))) {
+        return Err("native_aggregate_return_unimplemented");
+    }
     let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
     let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;
@@ -280,6 +283,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
                 Effect::None=>{},
                 Effect::Assert{value,expected,..}=>{a.get(9,*value,false);a.get(10,*value,true);a.three(0xaa000000,9,9,10);a.cmp(9,31);a.fail(if *expected {0} else {1});},
                 Effect::Trap(_)=>{a.cmp(31,31);a.fail(0);},
+                Effect::ReturnLanes(_)=>return Err("native_aggregate_return_unimplemented"),
                 Effect::Return(value)=>{
                     // A zero-byte result has no destination or readable lane.
                     if !optimize_commit || plan.result_size!=0 {
@@ -301,7 +305,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
             }
         }
         let end=plan.blocks[block].end;
-        if !matches!(plan.effects[end-1],Effect::Return(_)|Effect::Trap(_)|Effect::Jump(_)|Effect::Switch{..}) {a.edge(block,plan.at[end])?;}
+        if !matches!(plan.effects[end-1],Effect::Return(_)|Effect::ReturnLanes(_)|Effect::Trap(_)|Effect::Jump(_)|Effect::Switch{..}) {a.edge(block,plan.at[end])?;}
     }
     let failed=a.words.len();a.stack(true);let declined=a.words.len();a.imm(status,1);a.emit(0xd65f03c0);
     if let Some(short)=short {a.patch(short,declined,true)?;}

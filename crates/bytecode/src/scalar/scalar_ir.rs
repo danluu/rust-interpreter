@@ -39,7 +39,7 @@ struct State { registers:Vec<Id>, bytes:Vec<Byte> }
 enum Effect {
     None, Assert {value:Id,expected:bool,message:String},
     Jump(usize), Switch {value:Id,cases:Vec<(u128,usize)>,otherwise:usize},
-    Return(Id), Trap(String),
+    Return(Id), ReturnLanes(Vec<Id>), Trap(String),
 }
 #[derive(Clone, Debug)]
 struct Block {start:usize,end:usize,successors:Vec<usize>,predecessors:Vec<usize>,phis:Vec<Id>}
@@ -146,12 +146,18 @@ fn mask(bits:u8) -> u128 {if bits==128 {u128::MAX} else {(1u128<<bits)-1}}
 fn slice(value:u128,p:Slice) -> u128 {(value>>(p.byte as u32*8))&mask(p.size*8)}
 
 pub fn lower(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static str> {
-    lower_bounded::<512>(f,memory,limit)
+    lower_bounded::<512,false>(f,memory,limit)
 }
 
-fn lower_bounded<const FRAME:usize>(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static str> {
+#[cfg(test)]
+fn lower_aggregate(f:&Function,memory:&MemoryPlan,limit:usize)->Result<Plan,&'static str> {
+    lower_bounded::<1024,true>(f,memory,limit)
+}
+
+fn lower_bounded<const FRAME:usize,const AGGREGATE:bool>(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static str> {
     if !memory.eligible {return Err("no_memory_plan");}
     if f.code.is_empty() || f.code.len()>512 || f.frame_size>FRAME || f.registers>512 {return Err("scalar_shape_limit");}
+    if AGGREGATE && f.result.size>64 {return Err("scalar_aggregate_result_limit");}
     // A new opcode must be reviewed explicitly. Floating point and byte
     // comparison are deliberately outside this first internal representation.
     if f.code.iter().any(|op|!matches!(op,Op::Imm{..}|Op::Local{..}|Op::Load{..}|Op::Store{..}|Op::Copy{..}
@@ -253,7 +259,14 @@ fn lower_bounded<const FRAME:usize>(f:&Function,memory:&MemoryPlan,limit:usize) 
                 Op::Assert{value,expected,message}=>{let value=state.registers[*value as usize];b.roots.push(value);
                     Effect::Assert{value,expected:*expected,message:message.clone()}},
                 Op::Trap{message}=>Effect::Trap(message.clone()),
-                Op::Return=>{let data=b.read(&state,read(0)?)?.to_vec();let value=b.pack(&data)?;b.roots.push(value);Effect::Return(value)},
+                Op::Return=>{
+                    let data=b.read(&state,read(0)?)?.to_vec();
+                    if data.len()!=f.result.size {return Err("scalar_return_extent");}
+                    if AGGREGATE && data.len()>16 {
+                        let mut lanes=vec![];for lane in data.chunks(16) {let value=b.pack(lane)?;b.roots.push(value);lanes.push(value);}
+                        Effect::ReturnLanes(lanes)
+                    } else {let value=b.pack(&data)?;b.roots.push(value);Effect::Return(value)}
+                },
                 _=>return Err("scalar_unsupported"),
             };
             b.plan.effects[pc]=effect;
@@ -267,7 +280,7 @@ fn lower_bounded<const FRAME:usize>(f:&Function,memory:&MemoryPlan,limit:usize) 
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Outcome {pub value:u128,pub pcs:Vec<usize>}
+pub struct Outcome {pub value:u128,pub bytes:Vec<u8>,pub pcs:Vec<usize>}
 impl Plan {
     /// Test/reference evaluator for this experiment's own scalar IR. Guest
     /// frames, caller state and the production execution path are not modified.
@@ -313,7 +326,16 @@ impl Plan {
                     Effect::None=>{},Effect::Assert{value,expected,message}=>if (get(&values,*value)?!=0)!=*expected {return Err(format!("guest assertion: {message} in {name}"));},
                     Effect::Jump(target)=>next=Some(*target),
                     Effect::Switch{value,cases,otherwise}=>{let v=get(&values,*value)?;next=Some(cases.iter().find(|(n,_)|*n==v).map_or(*otherwise,|(_,t)|*t));},
-                    Effect::Return(value)=>return Ok(Outcome{value:get(&values,*value)?,pcs}),
+                    Effect::Return(value)=>{
+                        let value=get(&values,*value)?;
+                        return Ok(Outcome{value,bytes:value.to_le_bytes()[..self.result_size].to_vec(),pcs});
+                    },
+                    Effect::ReturnLanes(lanes)=>{
+                        if lanes.len()!=self.result_size.div_ceil(16) || !(17..=64).contains(&self.result_size) {return Err("scalar aggregate return shape".into());}
+                        let mut bytes=Vec::with_capacity(self.result_size);
+                        for &lane in lanes {let value=get(&values,lane)?;let size=(self.result_size-bytes.len()).min(16);bytes.extend_from_slice(&value.to_le_bytes()[..size]);}
+                        return Ok(Outcome{value:get(&values,lanes[0])?,bytes,pcs});
+                    },
                     Effect::Trap(message)=>return Err(format!("guest trap: {message} in {name}")),
                 }
             }

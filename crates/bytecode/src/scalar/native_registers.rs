@@ -64,6 +64,9 @@ pub(super) fn allocate(plan: &Plan) -> Result<Vec<Option<u32>>, &'static str> {
             Effect::Assert { value, .. } | Effect::Switch { value, .. } | Effect::Return(value) => {
                 use_at(*value, plan.at[pc], effect_positions[pc])?;
             }
+            Effect::ReturnLanes(values) => {
+                for &value in values {use_at(value,plan.at[pc],effect_positions[pc])?;}
+            }
             _ => {}
         }
     }
