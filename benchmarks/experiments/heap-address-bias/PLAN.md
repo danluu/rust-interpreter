@@ -39,7 +39,7 @@ folded, pgrust, private rg-aot and Nushell histories under their original gates.
 No unchanged rerun or retrospective 8% noise rule. Keep all failed attempts.
 
 Serialize workload/cleanup/diagnostic commands under the benchmark lock with
-a 45-second wait and two Cargo workers. Build floor 16 GiB, diagnostics 12 GiB,
+a 45-second wait and two Cargo workers. Initial build floor 16 GiB, diagnostics 12 GiB,
 screen 14 GiB, each child 8 GiB. Retire only exact completed owned compiler
 intermediates after source, closure, process, open-file and protected-hash checks;
 preserve shared targets, installed tools, snapshots, executables and peer work.
@@ -50,3 +50,11 @@ a separate 14 GiB admission, reserving 6 GiB above the child floor; it does not
 build exporters, workspace bins or benchmark caches. The existing target uses
 2.64 GiB in total. Full tool setup retains its 16 GiB admission. Record this
 distinction before starting; no performance gate changes.
+
+After the focused debug/release build passed in 17.12 seconds, replace the
+fixed setup floor with the recorded conservative size-based admission described
+in QUALIFICATION.md: max(14 GiB, 8 GiB + twice current target allocation), checked
+before every compiler child. This reserves more than twice the whole existing
+target's contents while retaining the child floor. No new cache/history is
+admitted by this setup exception. Build an immutable unchanged ab6adbe8 control
+too, so recent main changes cannot be mistaken for a bias improvement.
