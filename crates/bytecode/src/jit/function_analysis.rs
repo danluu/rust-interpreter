@@ -4,12 +4,15 @@ use super::*;
 
 #[cfg(test)]
 mod storage;
+// The pool is qualified before the demand publisher begins using it.
+#[allow(dead_code)]
+mod retained;
 
 pub(super) struct FunctionAnalysis {
     pub reads: Vec<Option<(usize, usize)>>,
     pub values: Option<values::Allocation>,
-    pub fills: BTreeMap<usize, LocalFill>,
-    pub slots: BTreeMap<usize, Vec<Option<usize>>>,
+    pub fills: Vec<(usize, LocalFill)>,
+    pub slots: Vec<(usize, Vec<Option<usize>>)>,
     pub regions: Vec<Region>,
 }
 
@@ -18,6 +21,30 @@ pub(super) struct Region {
     // An empty native body denotes one unsupported operation or transition.
     pub end: usize,
     pub range: Option<Box<range_groups::Plan>>,
+}
+
+pub(super) fn hint<T>(items: &[(usize, T)], pc: usize) -> Option<&T> {
+    items.binary_search_by_key(&pc, |(key, _)| *key).ok().map(|i| &items[i].1)
+}
+
+impl FunctionAnalysis {
+    // Charge requested owned buffer capacity and inline payload, not allocator
+    // rounding, transient analysis or the full cfg(test) diagnostic oracle.
+    fn retained_bytes(&self) -> Option<usize> {
+        fn buffer<T>(v: &Vec<T>) -> Option<usize> { v.capacity().checked_mul(std::mem::size_of::<T>()) }
+        let mut bytes = std::mem::size_of::<Self>();
+        for size in [buffer(&self.reads), buffer(&self.fills), buffer(&self.slots), buffer(&self.regions)] {
+            bytes = bytes.checked_add(size?)?;
+        }
+        for (_, hints) in &self.slots { bytes = bytes.checked_add(buffer(hints)?)?; }
+        for region in &self.regions {
+            if let Some(plan) = &region.range {
+                bytes = bytes.checked_add(std::mem::size_of::<range_groups::Plan>())?.checked_add(buffer(&plan.sites)?)?;
+            }
+        }
+        if let Some(values) = &self.values { bytes = bytes.checked_add(values.retained_buffer_bytes()?)?; }
+        Some(bytes)
+    }
 }
 
 impl Jit<'_> {
@@ -66,6 +93,6 @@ impl Jit<'_> {
             regions.push(Region { start, end: pc, range });
             if pc == start { pc += 1; }
         }
-        FunctionAnalysis { reads, values, fills, slots, regions }
+        FunctionAnalysis { reads, values, fills: fills.into_iter().collect(), slots: slots.into_iter().collect(), regions }
     }
 }

@@ -651,7 +651,7 @@ impl<'a> Jit<'a> {
                         let code = assertion_code(assertion_base, assertions.len())?;
                         assertions.push(Assertion { message, function: &f.name, kind: FaultKind::Assertion });
                         a.assertion(*value, *expected, code);
-                    } else if let Some(fill) = fills.get(&(start + index)) {
+                    } else if let Some(fill) = function_analysis::hint(fills, start + index) {
                         memory_part!(a, "fused_fill", a.local_fill(*fill));
                     } else if resumable && transfers::supported(op) {
                         a.copy_transfer(op)?;
@@ -737,7 +737,7 @@ impl<'a> Jit<'a> {
             if pc == start {
                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
+                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, reads, values.as_ref(), function_analysis::hint(slots, pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
                         code_spans::Kind::Transition, 0, a.words.len())?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }

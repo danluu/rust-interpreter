@@ -33,6 +33,9 @@ pub(super) struct Allocation {
     live_pairs: Vec<u8>,
 }
 impl Allocation {
+    pub(super) fn retained_buffer_bytes(&self) -> Option<usize> {
+        self.registers.capacity().checked_mul(std::mem::size_of::<Reg>())?.checked_add(self.live_pairs.capacity())
+    }
     #[cfg(test)]
     pub(super) fn storage_capacities(&self) -> [(&'static str, usize); 5] {
         [
