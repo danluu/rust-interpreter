@@ -45,6 +45,7 @@ fn guarded_address_matches_original_for_arbitrary_entry_registers_and_extents() 
 struct Snapshot {
     status:usize, remaining:u64, extents:[usize;4], calls:u64, returns:u64,
     memory:Vec<u8>, heap:Vec<u8>, registers:Vec<u128>, frames:Vec<Frame>, hits:Vec<Vec<u64>>, scalar_hits:Vec<Vec<u64>>,
+    cached_continuations:Vec<(usize,usize,usize)>,
 }
 
 fn direct_entry(p:&Program,jit:&Jit<'_>,values:[u128;3],budget:u64,frame_end:usize) -> Snapshot {
@@ -75,9 +76,24 @@ fn direct_entry(p:&Program,jit:&Jit<'_>,values:[u128;3],budget:u64,frame_end:usi
     assert_eq!(&output[7..],&[0x579b,0x68ac,0x79bd,0x8ace,0x9bdf,0xace0]);
     assert_eq!(output[5],output[6]);assert_eq!(output[6]%16,0);
     assert_eq!(frames[3],canary);
+    // Hints change emitted lengths, so arena byte offsets differ between the
+    // two JITs. Validate every cached entry against this fixture's actual
+    // caller/next-PC table before comparing its logical identity. Include
+    // inactive descriptors: a completed Call may have already popped them.
+    let mut cached_continuations=vec![];
+    for i in 1..frames.len() {
+        if frames[i].return_code_offset!=0 {
+            let caller=frames[i-1];
+            let target=jit.resumable.as_ref().unwrap().published(caller.function)[caller.pc];
+            assert_ne!(target,0);
+            assert_eq!(cursor.code_base+frames[i].return_code_offset as usize,target);
+            cached_continuations.push((i,caller.function,caller.pc));
+            frames[i].return_code_offset=0;
+        }
+    }
     Snapshot { status:output[0],remaining:cursor.state.remaining,
         extents:[cursor.state.memory_len,cursor.state.peak_linear,cursor.state.register_len,cursor.state.frame_len],
-        calls:cursor.state.calls,returns:cursor.state.returns,memory,heap,registers,frames,hits,scalar_hits }
+        calls:cursor.state.calls,returns:cursor.state.returns,memory,heap,registers,frames,hits,scalar_hits,cached_continuations }
 }
 
 #[test]
