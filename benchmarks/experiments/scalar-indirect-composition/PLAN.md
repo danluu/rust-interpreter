@@ -38,3 +38,11 @@ two Cargo/test workers, max(14 GiB,8 GiB+twice allocated target) build admission
 12 GiB analyses and8 GiB child floor. Setup and compilation time are separate
 from benchmark observations. Preserve all other sessions, all failed commands,
 and the paused goal. No subagents or model/billing fallbacks.
+
+The initial debug run's option-message assertion failure is closed. The second
+passes10 integration,3 metadata and355 library tests in each profile (15 ignored).
+Before full build, a third focus adds3 full-memory controls/profile, using the
+previous independent test-only Drop observer. Compare complete active linear
+and heap bytes even on errors, warm prepared targets, before/after-write faults,
+readonly/null/overflow/padding addresses, budgets and resource tails. Observer
+changes are cfg(test) only and do not alter guest execution.
