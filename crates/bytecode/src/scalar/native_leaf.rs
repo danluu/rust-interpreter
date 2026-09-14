@@ -3,6 +3,8 @@
 use super::*;
 #[path="native_registers.rs"]
 mod registers;
+#[path="native_dead.rs"]
+mod dead;
 const MAX_WORDS:usize=65536;
 const MAX_CODE_BYTES:usize=MAX_WORDS*4;
 #[repr(C)]
@@ -205,18 +207,20 @@ impl Emitter<'_> {
 }
 
 pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_with_registers(plan,profiled,true)
+    emit_inner(plan,profiled,true,true,true)
 }
+#[cfg(test)]
 fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,use_registers,true)
+    // Preserve exact pre-elimination reference bytes for the archived census.
+    emit_inner(plan,profiled,use_registers,true,false)
 }
 /// For the private JIT Call entry only: its immutable entry metadata and
 /// preflight must prove remaining budget >= maximum_steps before entry.
 /// Standalone Native::compile continues to emit its own entry budget guard.
 pub(crate) fn emit_prechecked(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false)
+    emit_inner(plan,profiled,true,false,true)
 }
-fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool)->Result<Emitted,&'static str> {
+fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool)->Result<Emitted,&'static str> {
     let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
     let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;
@@ -264,6 +268,11 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool)->Re
     for at in std::mem::take(&mut a.failures) {a.patch(at,failed,true)?;}
     for (at,block) in std::mem::take(&mut a.jumps) {a.patch(at,a.labels[block].ok_or("native_missing_block")?,false)?;}
     if a.exhausted {return Err("native_word_limit");}
+    if eliminate_dead {
+        // Unknown future encodings or nonconforming CFGs keep their original
+        // qualified emission. All branch relocations finish before publication.
+        if let Ok(compact)=dead::eliminate(&a.words) {a.words=compact;}
+    }
     Ok(Emitted{words:a.words,stack_bytes,profiled,register_values})
 }
 
