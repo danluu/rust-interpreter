@@ -13,12 +13,12 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    for 247 / 124 samples. These diagnostic windows establish no latency gain.
    [Samples](results/scratch-scalar-runtime-sampling-01/assessment.md),
    [memory parts](results/scratch-scalar-memory-parts-01/assessment.md).
-2. Count a bounded extension to scratch reuse before implementing it: capture
-   Copy source values as well as destinations, and allow narrow Copy uses of
-   matching low bits. Query after address handling and only at loads still
-   emitted by the adopted VM. Narrow Load results need a stronger zero-extension
-   proof, so exclude them. Require exact original emission, alias invalidation,
-   conservative register-clobber handling and original static identities.
+2. The source/narrow-Copy observer passes 22 controls and exact reconstruction,
+   but covers only 22 / 1 actual load samples. Park it as a possible component;
+   no production implementation or timing follows. Next partition the current
+   409 / 440 Call/Return samples, with the scalar transaction labeled separately.
+   Extend schema-2 saved reconstruction and require unchanged full native bytes.
+   [Scratch coverage and limits](results/scratch-source-census-01/assessment.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
