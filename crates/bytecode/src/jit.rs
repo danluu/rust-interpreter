@@ -59,6 +59,8 @@ mod flush_census;
 mod memory_parts;
 #[cfg(test)]
 mod memory_operand_tests;
+#[cfg(test)]
+mod retained_values;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
 // Its pointers never enter guest registers or addressable guest memory.
