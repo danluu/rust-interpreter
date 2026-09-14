@@ -1,22 +1,22 @@
 //! Guard and commit phases for the experimental direct-effect entry.
 use super::*;
 #[derive(Clone,Copy)]
-struct Site {id:Id,size:u8,offset:usize}
-pub(super) struct Layout {pub needed:Vec<bool>,pub saved:Vec<Option<usize>>,sites:Vec<Site>}
+struct Site {id:Id,address:Id,size:u8,offset:usize}
+pub(super) struct Layout {pub needed:Vec<bool>,pub saved:Vec<Option<usize>>,sites:Vec<Site>,before_writes:Vec<u16>,identities:Vec<(Id,u64)>}
 impl Layout {
     pub fn new(plan:&Plan,slots:&[Option<usize>],bytes:&mut usize)->Result<Self,&'static str> {
         let guard=super::super::path_entry::guard_slice(plan)?;
         let mut saved=vec![None;plan.nodes.len()];let mut sites=vec![];
         for (id,node) in plan.nodes.iter().enumerate() {
             if !plan.live[id] {continue;}
-            if let Value::Write{size,..}=node.value {
+            if let Value::Write{address,size,..}=node.value {
                 if size==0 || size>16 || sites.len()>=16 {return Err("native_path_store_limit");}
-                sites.push(Site{id,size,offset:*bytes});*bytes+=8;
+                sites.push(Site{id,address,size,offset:*bytes});*bytes+=8;
             } else if guard.needed[id] && !matches!(node.value,Value::Constant(_)|Value::Input(_)|Value::Base(_)) {
                 saved[id]=Some(if let Some(offset)=slots[id] {offset} else {let offset=*bytes;*bytes+=if node.width>8 {16} else {8};offset});
             }
         }
-        Ok(Self{needed:guard.needed,saved,sites})
+        Ok(Self{needed:guard.needed,saved,sites,before_writes:guard.before_writes,identities:transaction::addresses(plan)?})
     }
 }
 impl Emitter<'_> {
@@ -46,7 +46,14 @@ impl Emitter<'_> {
         self.path_address(address,size,false,self.path_guard)?;
         if self.path_guard {
             if !self.path.as_ref().unwrap().needed[id] {return Ok(());}
-            let sites=self.path.as_ref().unwrap().sites.clone();
+            let path=self.path.as_ref().unwrap();let before=path.before_writes[id];
+            let sites:Vec<_>=path.sites.iter().enumerate().filter(|(bit,site)| {
+                if before&(1<<bit)==0 {return false;}
+                let (a,x)=path.identities[site.address];let (b,y)=path.identities[address];
+                // Exact low-word affine identities plus independent full-range
+                // guards prove this pair disjoint, including modular offsets.
+                !(a==b && y.wrapping_sub(x)>=u64::from(site.size) && x.wrapping_sub(y)>=u64::from(size))
+            }).map(|(_,site)|*site).collect();
             // Only ranges visited on this guard path have a nonzero host base.
             // Both full ranges were checked against stable disjoint arenas.
             for site in sites {

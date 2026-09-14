@@ -1,7 +1,7 @@
 //! Test-only path certificate; all speculative actions are reads and checks.
 use super::*;
 
-pub(super) struct SlicePlan {pub(super) needed:Vec<bool>,nodes:usize,memory_sites:usize}
+pub(super) struct SlicePlan {pub(super) needed:Vec<bool>,pub(super) before_writes:Vec<u16>,nodes:usize,memory_sites:usize}
 #[derive(Debug)]
 pub(crate) struct EntryCertificate {pub pcs:Vec<usize>,values:Vec<Option<u128>>}
 pub(super) fn guard_slice(plan:&Plan)->Result<SlicePlan,&'static str> {
@@ -25,7 +25,9 @@ pub(super) fn guard_slice(plan:&Plan)->Result<SlicePlan,&'static str> {
         if matches!(plan.nodes[id].value,Value::Write{..}) {return Err("path_effect_dependency");}
         pending.extend(plan.nodes[id].inputs());
     }
-    Ok(SlicePlan{needed,nodes,memory_sites})
+    let store_ids:Vec<_>=plan.nodes.iter().enumerate().filter(|(id,n)|plan.live[*id] && matches!(n.value,Value::Write{..})).map(|(id,_)|id).collect();
+    let (before_writes,_)=earlier_writes(plan,&store_ids)?;
+    Ok(SlicePlan{needed,before_writes,nodes,memory_sites})
 }
 fn overlap(a:(bool,std::ops::Range<usize>),b:&(bool,std::ops::Range<usize>))->bool {
     a.0==b.0 && a.1.start<b.1.end && b.1.start<a.1.end
@@ -158,3 +160,29 @@ impl Plan {
         }
     }
 }
+
+pub(super) fn earlier_writes(plan:&Plan,stores:&[Id])->Result<(Vec<u16>,usize),&'static str> {
+    let mut bits=vec![0u16;plan.nodes.len()];
+    for (i,&id) in stores.iter().enumerate() {bits[id]=1u16<<i;}
+    let mut incoming=vec![0u16;plan.blocks.len()];let mut outgoing=incoming.clone();
+    let mut before=vec![0u16;plan.nodes.len()];let mut work=0;
+    let mut queued=plan.reachable.clone();
+    let mut pending:VecDeque<_>=(0..plan.blocks.len()).filter(|&b|plan.reachable[b]).collect();
+    while let Some(block)=pending.pop_front() {
+        queued[block]=false;let mut mask=incoming[block];let b=&plan.blocks[block];
+        for pc in b.start..b.end {for &id in &plan.computations[pc] {
+            work+=1;if work>1_000_000 {return Err("entry_dependency_order_work");}
+            if !plan.live[id] {continue;}
+            before[id]|=mask;mask|=bits[id];
+        }}
+        if mask!=outgoing[block] {
+            outgoing[block]=mask;
+            for &to in &b.successors {
+                let merged=incoming[to]|mask;
+                if merged!=incoming[to] {incoming[to]=merged;if !queued[to] {queued[to]=true;pending.push_back(to);}}
+            }
+        }
+    }
+    Ok((before,work))
+}
+

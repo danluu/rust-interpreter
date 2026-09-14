@@ -73,7 +73,7 @@ fn address(plan:&Plan,mut id:Id)->(Id,u64) {
 }
 // SSA inputs precede these non-phi address aliases. Memoizing each identity
 // bounds preparation to O(nodes), plus at most 16 prior stores per read.
-fn addresses(plan:&Plan)->Result<Vec<(Id,u64)>,&'static str> {
+pub(super) fn addresses(plan:&Plan)->Result<Vec<(Id,u64)>,&'static str> {
     let mut ids:Vec<(Id,u64)>=Vec::with_capacity(plan.nodes.len());
     for (id,node) in plan.nodes.iter().enumerate() {
         let prior=match &node.value {

@@ -22,3 +22,11 @@ max(14 GiB,8 GiB+twice allocated target) admission and8 GiB child floor. Freeze
 sources and close success or failure. No original-project execution or timing.
 Full workspace/Python/strict checks and original workload profiles must follow
 before a candidate installation or changed-source primary. Main is unchanged.
+
+Native-01 passes all43 controls per profile, including post-store status2 injection.
+Before installation, omit only alias comparisons proved unnecessary by the complete
+CFG earlier-write sets (existing32-diamond oracle) or exact low-word affine identity
+with disjoint modular offsets (existing wrap/narrowing controls). Every actual
+memory range remains checked. Add a heap-free ABI/padding boundary control.
+Native-02 runs44 controls per profile plus14 entry/order controls in release.
+The shared write-order helper is unchanged algorithmically and remains bounded.

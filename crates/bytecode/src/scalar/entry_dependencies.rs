@@ -12,30 +12,7 @@ struct DependencyRange {address:Id,size:u8,write:bool}
 
 // A write bit reaches a read only along a CFG path that places that write
 // before the read. Later updates do not invalidate an already captured value.
-fn earlier_writes(plan:&Plan,stores:&[Id])->Result<(Vec<u16>,usize),&'static str> {
-    let mut bits=vec![0u16;plan.nodes.len()];
-    for (i,&id) in stores.iter().enumerate() {bits[id]=1u16<<i;}
-    let mut incoming=vec![0u16;plan.blocks.len()];let mut outgoing=incoming.clone();
-    let mut before=vec![0u16;plan.nodes.len()];let mut work=0;
-    let mut queued=plan.reachable.clone();
-    let mut pending:VecDeque<_>=(0..plan.blocks.len()).filter(|&b|plan.reachable[b]).collect();
-    while let Some(block)=pending.pop_front() {
-        queued[block]=false;let mut mask=incoming[block];let b=&plan.blocks[block];
-        for pc in b.start..b.end {for &id in &plan.computations[pc] {
-            work+=1;if work>1_000_000 {return Err("entry_dependency_order_work");}
-            if !plan.live[id] {continue;}
-            before[id]|=mask;mask|=bits[id];
-        }}
-        if mask!=outgoing[block] {
-            outgoing[block]=mask;
-            for &to in &b.successors {
-                let merged=incoming[to]|mask;
-                if merged!=incoming[to] {incoming[to]=merged;if !queued[to] {queued[to]=true;pending.push_back(to);}}
-            }
-        }
-    }
-    Ok((before,work))
-}
+use crate::scalar_ir::path_entry::earlier_writes;
 
 pub(super) fn classify_dependencies(plan:&Plan)->Result<DependencyPlan,&'static str> {
     if plan.nodes.len()>16384 || plan.effects.len()>512 || plan.blocks.len()>512 {return Err("entry_shape_limit");}

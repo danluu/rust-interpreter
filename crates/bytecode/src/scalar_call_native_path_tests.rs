@@ -153,3 +153,14 @@ fn native_invariant_status_cannot_replay_a_committed_increment() {
         drop(enabled);drop(snapshots);
     }
 }
+
+#[test]
+fn native_heap_free_abi_and_retained_padding_preserve_complete_memory() {
+    let mut code=prefix();code.extend([Op::Store{address:1,src:4,size:8},load(5,1,8),
+        local(6,0),Op::Store{address:6,src:5,size:8},Op::Return]);let mut p=fixture(code);
+    p.statics.clear();p.functions[0].frame_size=49;p.functions[1].frame_align=64;
+    for pointer in [0,1,31,32,40,64,72,73,74,80,81,88,120,127,128,144,crate::heap::TAG as u128] {
+        compare(&p,&[pointer,0],100,65536,8);budgets(&p,&[pointer,0]);
+    }
+    assert_eq!(compare(&p,&[64,0],100,65536,8).commits,1);
+}

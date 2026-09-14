@@ -29,7 +29,7 @@ def main():
     assert not (dest/'closure.json').exists()
     if status['returncode']==0:
         summary=json.loads((dest/'summary.json').read_text());assert summary['status']=='passed'
-        assert len(records)==summary['commands']==2 and all(r['returncode']==0 for r in records)
+        assert len(records)==summary['commands']==plan['expected_commands'] and all(r['returncode']==0 for r in records)
         assert sha(raw/'plan.json')==summary['plan_sha256'] and sha(raw/'records.json')==summary['records_sha256']
         if 'census_sha256' in summary:
             assert sha(raw/'census.json')==summary['census_sha256'] and sha(raw/'inputs.json')==summary['inputs_sha256']

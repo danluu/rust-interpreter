@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-path-native-01'
+NAME='scalar-path-native-02'
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45)
@@ -21,8 +21,8 @@ def main():
         assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip()
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,target=str(target.relative_to(ROOT)),
-            required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=2,
-            controls_per_profile=43,new_native_controls=11,guest_commands=0,new_direct_native_publications=True,production_selection_changed=False,performance_measurement=False))
+            required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=3,
+            controls_per_profile=44,new_native_controls=12,guest_commands=0,new_direct_native_publications=True,production_selection_changed=False,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
              and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS']}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -31,19 +31,20 @@ def main():
         base=['cargo','+nightly-2026-09-08','test','--lib','-p','rust-interp-bytecode','--locked','--offline','--jobs','2',
               '--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target)]
         records=[]
-        for label,extra in [('debug',[]),('release',['--release'])]:
+        for label,extra in [('debug',[]),('release',['--release']),('order',['--release'])]:
             assert shutil.disk_usage(ROOT).free>=needed;require_space(ROOT,8)
-            cmd=[*base,*extra,'scalar_call_model::'];start=time.time()
+            cmd=[*base,*extra,('scalar_ir::native_leaf::transaction::entry_guards::' if label=='order' else 'scalar_call_model::')];start=time.time()
             child,out,err=capture(cmd,cwd=ROOT,env=env,receipt_path=work/'active.json',receipt=dict(label=label))
             for stream,payload in [('stdout',out),('stderr',err)]:(work/(label+'.'+stream)).write_text(payload)
             records.append(dict(label=label,command=cmd,pid=child.pid,returncode=child.returncode,seconds=time.time()-start,
                 stdout_sha256=sha(work/(label+'.stdout')),stderr_sha256=sha(work/(label+'.stderr'))));write(work/'records.json',records)
-            assert child.returncode==0 and 'test result: ok. 43 passed; 0 failed; 0 ignored;' in out,(out+err)[-6500:]
+            expected='test result: ok. 14 passed; 0 failed; 1 ignored;' if label=='order' else 'test result: ok. 44 passed; 0 failed; 0 ignored;'
+            assert child.returncode==0 and expected in out,(out+err)[-6500:]
             assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'PASS',flush=True)
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',commands=2,controls_per_profile=43,new_native_controls=11,
+        write(out/'summary.json',dict(status='passed',commands=3,controls_per_profile=44,order_controls=14,new_native_controls=12,
             setup_seconds=sum(r['seconds'] for r in records),raw=str(work.relative_to(ROOT)),source_revision=revision,
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),guest_commands=0,
             new_direct_native_publications=True,production_selection_changed=False,performance_measurement=False,
-            scope='Test-only path certificate followed by own scalar evaluator direct effects. Eleven native path controls, ten complete-VM path-model controls and twenty-two retained scalar Call controls. Tests select the native prototype explicitly; production selection remains unchanged. No original-workload performance claim.'))
+            scope='Test-only path certificate followed by own scalar evaluator direct effects. Twelve native path controls, ten complete-VM path-model controls and twenty-two retained scalar Call controls. Tests select the native prototype explicitly; production selection remains unchanged. No original-workload performance claim.'))
 if __name__=='__main__':main()
