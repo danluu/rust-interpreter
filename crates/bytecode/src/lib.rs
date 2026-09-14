@@ -31,6 +31,16 @@ mod descriptor_io;
 mod getcwd;
 mod tls;
 mod forwarding;
+// Isolated call-transaction qualification for the custom scalar prototype.
+// These modules and the opt-in hook do not exist in production builds.
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+#[path = "../../../benchmarks/experiments/confined-scalar-plan/proof.rs"]
+mod proof;
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+#[path = "../../../benchmarks/experiments/confined-scalar-plan/scalar_ir.rs"]
+mod scalar_ir;
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod scalar_call_model;
 #[cfg(test)]
 mod memory_tests;
 #[cfg(any(test, feature = "indirect-target-observer"))]
@@ -808,6 +818,8 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
     let descriptor_bytes = descriptors.as_ref().map_or(0, |state| state.charged_bytes());
     let mut jit_instructions = 0;
     let mut jit_entries = 0;
+    #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+    let mut scalar_leaf = scalar_call_model::Context::new(program, PROFILE, USE_JIT)?;
     let mut resumable_calls = 0;
     let mut resumable_returns = 0;
     let resumable_profiles: Vec<_> = if RESUMABLE && PROFILE {
@@ -1256,6 +1268,20 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                     };
                     let callee = &program.functions[callee_id];
                     let return_address = r[*destination as usize] as usize;
+                    #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+                    if let Some(context) = &mut scalar_leaf {
+                        if let Some(executed) = context.try_call(callee_id, args, r, return_address,
+                            &mut memory, register_bytes, active_frames, &limits,
+                            limits.instructions - steps, profile.as_deref_mut())? {
+                            steps += executed;
+                            jit_instructions += executed;
+                            jit_entries += 1;
+                            resumable_calls += 1;
+                            resumable_returns += 1;
+                            if steps >= limits.instructions { return Err("interpreter instruction limit exceeded".into()); }
+                            continue 'dispatch;
+                        }
+                    }
                     let base = memory.reserve_frame(callee.frame_size, callee.frame_align)?;
                     let added = callee
                         .registers
