@@ -45,6 +45,7 @@ mod call_slots;
 mod code_dump;
 mod code_spans;
 mod values;
+mod function_analysis;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
@@ -534,38 +535,14 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
-        let reads = read_registers(f);
-        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
-        let fills = local_fills(f);
-        let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
-        #[cfg(test)]
-        let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
-        let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
-            || (resumable && transfers::supported(&f.code[pc]));
+        let plan = self.analyze_function(f);
+        let function_analysis::FunctionAnalysis { reads, values, fills, slots, starts } = &plan;
+        let native = |pc| plan.native(f, pc, resumable);
         let mut entries = vec![None; f.code.len()];
         let mut internal_entries = vec![None; f.code.len()];
         // The extra null entry handles a caller's one-past-code continuation.
         let mut resumes = if resumable { vec![None; f.code.len() + 1] } else { vec![] };
         let mut links = vec![];
-        let mut starts = vec![false; f.code.len()];
-        starts[0] = true;
-        for (pc, op) in f.code.iter().enumerate() {
-            match op {
-                Op::Jump { target } => starts[*target] = true,
-                Op::Switch {
-                    cases, otherwise, ..
-                } => {
-                    starts[*otherwise] = true;
-                    for (_, target) in cases {
-                        starts[*target] = true;
-                    }
-                }
-                _ => {}
-            }
-            if (!native(pc) || branch(op)) && pc + 1 < f.code.len() {
-                starts[pc + 1] = true;
-            }
-        }
         let mut pc = 0;
         while pc < f.code.len() {
             let start = pc;
@@ -597,7 +574,7 @@ impl<'a> Jit<'a> {
                     #[cfg(test)]
                     memory_parts: memory_parts::State::new(self.observe_memory_parts),
                     heap: self.uses_heap,
-                    reads: &reads,
+                    reads,
                     frame_size: f.frame_size,
                     region_start: start,
                     region_end: pc,
@@ -745,7 +722,7 @@ impl<'a> Jit<'a> {
             if pc == start {
                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
-                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
+                    let (a, resume, internal) = self.emit_resumable_transition(f, pc, reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
                         code_spans::Kind::Transition, 0, a.words.len())?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
@@ -764,7 +741,7 @@ impl<'a> Jit<'a> {
                         if let Some((plan, target)) = self.ready_tree(*function) {
                             let offset = words.len() * 4;
                             let (a, internal, fallback) = self.emit_call_stub(f, pc, *function, args, *destination,
-                                plan, target, self.bytes / 4 + words.len(), &reads, values.as_ref())?;
+                                plan, target, self.bytes / 4 + words.len(), reads, values.as_ref())?;
                             if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
                             internal_entries[pc] = Some(words.len() + internal);
                             // The stub already supplies a safe VM successor;
