@@ -23,3 +23,11 @@ benchmark lock and the unchanged build admission: max(14 GiB, 8 GiB plus twice
 allocated target bytes), with 8 GiB before each child. Never clean the shared
 target or any other workstream. The observer is test-only; no production runtime
 or frontend behavior changes in this experiment.
+
+The first completed census reconstructs all 137 bodies and finds no live constant
+computations or constant effects. The only paired arithmetic opportunity is one
+nonconstant multiply in the copy precondition (4,301,250 / 11,912,384 successful
+pairs in block / exhaustive token). Do not build a constant folder from that
+negative result. Extend the read-only census with conservative upper-bit bounds
+and count pack/cast nodes that could be aliases. Signed widening remains
+nontrivial when the input can have its sign bit set. No scalar plan is rewritten.

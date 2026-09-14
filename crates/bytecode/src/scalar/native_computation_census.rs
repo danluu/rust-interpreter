@@ -44,6 +44,56 @@ fn known(value: &Value, facts: &[Option<u128>]) -> Option<u128> {
     }
 }
 
+// Maximum possibly nonzero low bits, independent of the runtime arguments.
+// This models opportunities only; it does not change the plan or emitter.
+fn bit_bound(node:&Node,bounds:&[u16]) -> u16 {
+    let get=|id:Id|bounds[id];
+    let part=|p:Slice|get(p.value).saturating_sub(u16::from(p.byte)*8).min(u16::from(p.size)*8);
+    match &node.value {
+        Value::Constant(v)=>(128-v.leading_zeros()) as u16,
+        Value::Input(_)=>u16::from(node.width)*8,Value::Base(_)=>64,
+        Value::Phi(parts)=>parts.iter().map(|(_,p)|part(*p)).max().unwrap_or(0),
+        Value::Pack(parts)=>{
+            let mut bits=0;let mut shift=0;
+            for p in parts {let n=part(*p);if n!=0 {bits=bits.max(shift+n);}shift+=u16::from(p.size)*8;}
+            bits
+        },
+        Value::Binary{overflow:true,..}=>1,
+        Value::Binary{a,b,op,bits,signed,..}=>{
+            let limit=u16::from(*bits);let left=get(*a).min(limit);let right=get(*b).min(limit);
+            match op {
+                Binary::Eq|Binary::Ne|Binary::Lt|Binary::Le|Binary::Gt|Binary::Ge=>1,
+                Binary::Cmp=>8,
+                Binary::And=>left.min(right),Binary::Or|Binary::Xor=>left.max(right),
+                Binary::Add=>(left.max(right)+1).min(limit),Binary::Mul=>(left+right).min(limit),
+                Binary::Div|Binary::Rem|Binary::Shr if !signed=>left,
+                _=>limit,
+            }
+        },
+        Value::Unary{op,bits,..}=>match op {
+            Unary::CountOnes|Unary::LeadingZeros|Unary::TrailingZeros=>8,
+            _=>u16::from(*bits),
+        },
+        Value::Cast{src,from,to,signed}=>{
+            let bound=get(*src);let from=u16::from(*from);let to=u16::from(*to);
+            if !signed || bound<from {bound.min(from).min(to)} else {to}
+        },
+        Value::Select{yes,no,..}=>get(*yes).max(get(*no)),
+    }
+}
+
+#[test]
+fn scalar_computation_width_bounds_keep_signed_casts_and_overflow_bits() {
+    let node=|value|Node{value,width:16,pc:Some(0)};
+    assert_eq!(bit_bound(&node(Value::Binary{a:0,b:1,op:Binary::Eq,bits:64,signed:true,overflow:false}),&[64,64]),1);
+    assert_eq!(bit_bound(&node(Value::Binary{a:0,b:1,op:Binary::Add,bits:64,signed:false,overflow:false}),&[8,8]),9);
+    assert_eq!(bit_bound(&node(Value::Binary{a:0,b:1,op:Binary::Mul,bits:64,signed:false,overflow:false}),&[8,8]),16);
+    assert_eq!(bit_bound(&node(Value::Cast{src:0,from:8,to:64,signed:true}),&[8]),64);
+    assert_eq!(bit_bound(&node(Value::Cast{src:0,from:8,to:64,signed:true}),&[7]),7);
+    assert_eq!(bit_bound(&node(Value::Cast{src:0,from:8,to:4,signed:true}),&[8]),4);
+    assert_eq!(bit_bound(&node(Value::Pack(vec![Slice{value:0,byte:0,size:1},Slice{value:1,byte:0,size:1}])),&[1,0]),1);
+}
+
 #[test]
 fn scalar_computation_facts_preserve_faults_overflow_and_byte_joins() {
     let binary=|op,bits,signed,overflow| Value::Binary{a:0,b:1,op,bits,signed,overflow};
@@ -93,10 +143,23 @@ fn observe_original_scalar_computations() {
             assert_eq!(&bytes, &code[range["offset"].as_u64().unwrap() as usize..range["end"].as_u64().unwrap() as usize],"source-qualified native body differs: {function}");
             let observed=&profile["functions"][function];assert_eq!(observed["name"],f.name);
             let hits:Vec<u64>=serde_json::from_value(observed["jit_scalar_hits"].clone()).unwrap();assert_eq!(hits.len(),f.code.len());
-            let mut facts=vec![];let mut constants=vec![];let mut duplicate_pairs=vec![];let mut effects=vec![];
+            let mut facts=vec![];let mut bounds=vec![];let mut aliases=vec![];
+            let mut constants=vec![];let mut duplicate_pairs=vec![];let mut effects=vec![];
             for (id,node) in plan.nodes.iter().enumerate() {
                 assert!(node.inputs().iter().all(|&input|input<id));
                 let fact=known(&node.value,&facts);facts.push(fact);
+                let bound=bit_bound(node,&bounds);assert!(bound<=128);bounds.push(bound);
+                if plan.live[id] {
+                    let alias=match &node.value {
+                        Value::Pack(parts) if parts.len()==1 && parts[0].byte==0 && bounds[parts[0].value]<=u16::from(parts[0].size)*8=>Some(("pack",parts[0].value)),
+                        Value::Cast{src,from,to,signed} if bounds[*src]<=u16::from((*from).min(*to)) && (!signed || from==to || bounds[*src]<u16::from(*from))=>Some(("cast",*src)),
+                        _=>None,
+                    };
+                    if let Some((kind,source))=alias {
+                        let pc=node.pc.unwrap();aliases.push(json!({"node":id,"pc":pc,"kind":kind,"source":source,
+                            "source_bits":bounds[source],"successful_computations":hits[pc]}));
+                    }
+                }
                 if !plan.live[id] || fact.is_none() {continue;}
                 let (kind,pc)=match &node.value {
                     Value::Constant(_)|Value::Input(_)|Value::Base(_)=>continue,
@@ -128,7 +191,7 @@ fn observe_original_scalar_computations() {
                     },_=>{},
                 }
             }
-            rows.push(json!({"function":function,"name":f.name,"calls":hits[0],"constant_nodes":constants,
+            rows.push(json!({"function":function,"name":f.name,"calls":hits[0],"constant_nodes":constants,"width_aliases":aliases,
                 "duplicate_arithmetic_pairs":duplicate_pairs,"constant_effects":effects,"native_bytes_reconstructed":bytes.len()}));
         }
         let expected=mapping["ranges"].as_array().unwrap().iter().filter(|r|r["kind"]=="scalar_leaf").count();

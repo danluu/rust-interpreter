@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-computation-census-02'
+NAME='scalar-computation-census-03'
 
 def read(p):return json.loads(p.read_text())
 def main():
@@ -49,6 +49,7 @@ def main():
             '--locked','--offline','--jobs','2','--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target)]
         records=[]
         for label,test,extra in [('controls','scalar_computation_facts_preserve_faults_overflow_and_byte_joins',[]),
+            ('width-controls','scalar_computation_width_bounds_keep_signed_casts_and_overflow_bits',[]),
             ('census','observe_original_scalar_computations',['--ignored'])]:
             assert shutil.disk_usage(ROOT).free>=needed;require_space(ROOT,8)
             cmd=[*base,'scalar_ir::native_leaf::computation_census::'+test,'--','--exact',*extra];start=time.time()
@@ -64,17 +65,19 @@ def main():
         assert sum(len(c['functions']) for c in census['cases'])==137
         totals=[]
         for case in census['cases']:
-            constants={};pairs=0;dynamic_pairs=0;effects={}
+            constants={};pairs=0;dynamic_pairs=0;effects={};aliases={}
             for f in case['functions']:
                 for n in f['constant_nodes']:constants[n['kind']]=constants.get(n['kind'],0)+n['successful_computations']
+                for n in f['width_aliases']:aliases[n['kind']]=aliases.get(n['kind'],0)+n['successful_computations']
                 for n in f['duplicate_arithmetic_pairs']:
                     pairs+=n['successful_pairs']
                     if not n['both_constant']:dynamic_pairs+=n['successful_pairs']
                 for n in f['constant_effects']:effects[n['kind']]=effects.get(n['kind'],0)+n['successful_visits']
             totals.append(dict(index=case['index'],bodies=len(case['functions']),successful_constant_computations=constants,
-                successful_duplicate_arithmetic_pairs=pairs,nonconstant_duplicate_pairs=dynamic_pairs,successful_constant_effects=effects))
+                successful_duplicate_arithmetic_pairs=pairs,nonconstant_duplicate_pairs=dynamic_pairs,successful_constant_effects=effects,
+                successful_width_aliases=aliases))
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',commands=2,controls=1,reconstructed_native_bodies=137,cases=totals,
+        write(out/'summary.json',dict(status='passed',commands=3,controls=2,reconstructed_native_bodies=137,cases=totals,
             setup_seconds=sum(r['seconds'] for r in records),raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),
             records_sha256=sha(work/'records.json'),inputs_sha256=sha(work/'inputs.json'),census_sha256=sha(work/'census.json'),
             source_revision=revision,guest_commands=0,executable_code_publications=0,production_runtime_changes=0,
