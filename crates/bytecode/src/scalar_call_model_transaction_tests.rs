@@ -95,3 +95,37 @@ fn private_store_limit_declines_whole_call_and_keeps_effects() {
         assert_eq!(stats.commits,usize::from(count==16));
     }
 }
+
+#[test]
+fn private_branch_effect_order_and_nonidempotent_fault_replay_match() {
+    let tag=crate::heap::TAG as u128;let mut code=prefix();
+    code.extend([load(5,1,8),Op::Imm{dst:7,value:1},
+        Op::Binary{dst:5,overflow:8,op:crate::Binary::Add,a:5,b:7,bits:64,signed:false},
+        Op::Store{address:1,src:5,size:8},Op::Switch{value:3,cases:vec![(0,12)],otherwise:10},
+        Op::Store{address:3,src:4,size:8},Op::Jump{target:14},Op::Imm{dst:5,value:7},
+        Op::Store{address:1,src:5,size:8},load(5,1,8),local(6,0),Op::Store{address:6,src:5,size:8},Op::Return]);
+    let p=fixture(code);
+    for pointer in [0,1,tag+16,tag+19,tag+40] {
+        assert_eq!(compare(&p,&[tag+16,pointer],100,65536,8).commits,usize::from(pointer!=1));
+        for budget in 0..=26 {compare(&p,&[tag+16,pointer],budget,65536,8);}
+    }
+    // An accidentally published increment would execute a second time on
+    // replay. Full error-exit memory equality detects that double mutation.
+    let mut p=p;p.functions[1].code[9]=Op::Trap{message:"after increment".into()};
+    for budget in 0..=26 {compare(&p,&[tag+16,tag+40],budget,65536,8);}
+}
+
+#[test]
+fn failed_private_store_attempt_leaves_actual_memory_and_peak_unchanged() {
+    let tag=crate::heap::TAG as u128;let mut code=prefix();
+    code.extend([Op::Store{address:1,src:4,size:8},load(5,1,8),
+        Op::Trap{message:"discard pending store".into()}]);let p=fixture(code);
+    let enabled=Enabled::transaction();let mut context=Context::new(&p,false,false).unwrap().unwrap();
+    let mut memory=Memory{bytes:vec![0x57;80].into(),heap:crate::heap::Heap::default(),
+        limit:65536,readonly_end:16,peak:80,auxiliary_bytes:0};
+    memory.heap.bytes=vec![0x29;96];memory.store(32,8,tag+16).unwrap();memory.store(40,8,tag+40).unwrap();
+    let before=(memory.bytes.to_vec(),memory.heap.bytes.clone(),memory.peak,memory.total_len());
+    assert!(context.try_call(1,&[0,1],&[32,40],48,&mut memory,128,1,&Limits::default(),100,None).unwrap().is_none());
+    assert_eq!((memory.bytes.to_vec(),memory.heap.bytes.clone(),memory.peak,memory.total_len()),before);
+    assert_eq!(STATISTICS.with(Cell::get).declines,1);drop(enabled);
+}

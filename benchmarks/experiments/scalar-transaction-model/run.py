@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
-NAME = 'scalar-transaction-model-02'
+NAME = 'scalar-transaction-model-03'
 
 
 def read(p):
@@ -69,7 +69,7 @@ def main():
         work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(owner=str(ROOT), source_revision=revision, frozen=frozen,
             target=str(target.relative_to(ROOT)), same_source_root=True, required_free_bytes=needed,
-            allocated_target_bytes=allocated, minimum_child_gib=8, controls=734, expected_commands=4,
+            allocated_target_bytes=allocated, minimum_child_gib=8, controls=738, expected_commands=4,
             original_project_guest_commands=0, native_guest_unit_tests=True,
             transaction_native_publications=0, production_store_admission=False, performance_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_', 'READONLY_', 'TRANSACTION_'))
@@ -79,8 +79,8 @@ def main():
             CARGO_PROFILE_TEST_DEBUG='0', CARGO_TERM_COLOR='never', PYTHONDONTWRITEBYTECODE='1')
         cargo = ['cargo', '+nightly-2026-09-08', 'test', '--release', '--lib', '-p', 'rust-interp-bytecode',
                  '--locked', '--offline', '--jobs', '2', '--manifest-path', str(ROOT / 'Cargo.toml'), '--target-dir', str(target)]
-        commands=[('bytecode-debug',[x for x in cargo if x!='--release'],{},ROOT,367),
-                  ('bytecode-release',cargo,{},ROOT,367),
+        commands=[('bytecode-debug',[x for x in cargo if x!='--release'],{},ROOT,369),
+                  ('bytecode-release',cargo,{},ROOT,369),
                   ('census', [*cargo,'scalar_ir::transaction_tests::observe_saved_transaction_plans','--','--ignored','--exact'],
                     dict(TRANSACTION_ARTIFACT=str(artifact),TRANSACTION_ARTIFACT_SHA256=artifact.stem,
                          TRANSACTION_OUTPUT=str(work/'census.json')),ROOT,1),
@@ -107,7 +107,7 @@ def main():
         out = ROOT / 'results' / NAME
         report = read(out / 'attribution.json')
         assert report['status'] == 'passed' and len(report['cases']) == 2
-        write(out / 'summary.json', dict(status='passed', commands=4, controls=734, bytecode_passed_per_profile=367, ignored_per_profile=15, cases=[{k: c[k] for k in
+        write(out / 'summary.json', dict(status='passed', commands=4, controls=738, bytecode_passed_per_profile=369, ignored_per_profile=15, cases=[{k: c[k] for k in
             ['case','generated_samples','candidate_transition_samples','candidate_frame_clear_samples','candidate_body_samples','by_part']} for c in report['cases']],
             setup_seconds=sum(r['seconds'] for r in records), source_revision=revision, raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work / 'plan.json'), records_sha256=sha(work / 'records.json'),
