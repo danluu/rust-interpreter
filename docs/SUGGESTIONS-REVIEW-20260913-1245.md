@@ -319,3 +319,5 @@ control variation and candidate/native remains 1.263277; the token/folded gains
 do not generalize to the parser. Keep frontend ownership separate and complete
 the repository-default parser and remaining Nushell guards before adoption.
 [Incremental parser](../results/scratch-memory-values-parser-edits-incremental-01/ASSESSMENT.md).
+
+The repository-default parser guard also passes all88 commands and114 original tests. Candidate/baseline wall+0.32% and CPU+0.64% remain inside A/A2.00%/2.15%; the predeclared margins1.02321/1.02793 pass1.05. Candidate wall remains14.02% slower than native, so neither parser profile establishes a speedup. Source restoration and6,721 frozen inputs/263 retained evidence files verify. The scratch/scalar composition still awaits Nushell admission; no runtime is adopted. [Default parser guard](../results/scratch-memory-values-parser-edits-repository-01/ASSESSMENT.md).
