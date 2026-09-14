@@ -273,3 +273,13 @@ The combined 90/44 partial samples are not a timing prediction or adoption gate.
 Use the unchanged primary-first workflow after correctness qualification.
 [Copy census](../results/scratch-copy-census-01/ASSESSMENT.md),
 [shared scope](../results/scratch-load-copy-coverage-01/ASSESSMENT.md).
+
+The shared scratch-memory candidate now passes the unchanged 40-command primary:
+wall 0.950873, CPU 0.949951, A/A wall 0.042955, wall margin 0.993828. This narrow
+pass follows 608 workspace controls/profile, five scratch controls/profile,
+121 strict commands and six exact original profiles. Qualify the retained
+selected/prepared suites and proceed to a fresh full comparison, token first.
+Do not infer that the runtime caused the descriptive Cargo improvement or that
+this composition isolates the cache's marginal effect. All five full guards and
+complete/edited parser qualification remain required before adoption.
+[Scratch-memory primary](../results/scratch-memory-values-screen-token-01/ASSESSMENT.md).
