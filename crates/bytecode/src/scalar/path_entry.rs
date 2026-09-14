@@ -94,3 +94,7 @@ impl Plan {
         }
     }
 }
+
+#[cfg(test)]
+#[path="path_entry_census.rs"]
+mod census;
