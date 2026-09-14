@@ -25,6 +25,108 @@ fn compare(p:&Program,plan:&Plan,native:&Native,args:&[u128],budget:usize) {
     }
 }
 
+fn variants(p: &Program, plan: &Plan, profiled: bool) -> [Native; 2] {
+    [false, true].map(|use_registers| {
+        let emitted = emit_with_registers(plan, profiled, use_registers).unwrap();
+        let mut code = memory::Code::reserve(MAX_CODE_BYTES).unwrap();
+        assert_eq!(code.append(&emitted.words).unwrap(), 0);
+        Native { code, emitted, argument_widths: p.functions[0].args.iter().map(|s| s.size).collect(),
+            frame_size: p.functions[0].frame_size.max(1) }
+    })
+}
+
+#[test]
+fn native_scalar_register_pressure_reuses_values_and_spills_complete_intervals() {
+    let mut code = vec![local(62, 0), load(0, 62, 8)];
+    // Twelve simultaneously live values exceed the four available registers.
+    for index in 0..12 {
+        code.push(Op::Imm { dst: 1, value: index as u128 + 1 });
+        code.push(Op::Binary { dst: index + 2, overflow: 40 + index,
+            op: Binary::Mul, a: 0, b: 1, bits: 64, signed: false });
+    }
+    code.push(Op::Imm { dst: 30, value: 0 });
+    for index in [3, 9, 0, 8, 2, 11, 1, 7, 4, 10, 5, 6] {
+        code.push(Op::Binary { dst: 30, overflow: 40, op: Binary::Xor,
+            a: 30, b: index + 2, bits: 64, signed: false });
+        code.push(Op::Unary { dst: 30, op: Unary::SwapBytes, src: 30, bits: 64 });
+    }
+    code.extend([store(62, 30, 8), Op::Return]);
+    let mut p = program(code, 8, vec![Slot { offset: 0, size: 8 }], Slot { offset: 0, size: 8 });
+    p.functions[0].registers = 64;
+    let plan = make_plan(&p);
+    for profiled in [false, true] {
+        let [spilled, allocated] = variants(&p, &plan, profiled);
+        assert!(allocated.emitted.register_values > 4);
+        assert!(allocated.emitted.stack_bytes < spilled.emitted.stack_bytes);
+        assert!(allocated.emitted.stack_bytes > 0);
+        for input in [0, 1, 255, 1 << 31, 1 << 63, u64::MAX as u128, 0x123456789abcdef] {
+            for budget in 0..=plan.maximum_steps + 1 {
+                compare(&p, &plan, &allocated, &[input], budget);
+                assert_eq!(allocated.attempt(&[input], 16, budget).unwrap(), spilled.attempt(&[input], 16, budget).unwrap());
+            }
+        }
+    }
+}
+
+#[test]
+fn native_scalar_registers_preserve_cross_block_values_phis_and_wide_results() {
+    let binary = |dst, op, a, b| Op::Binary { dst, overflow: 29, op, a, b, bits: 64, signed: false };
+    let code = vec![
+        local(30, 0), load(0, 30, 8), local(31, 8), load(1, 31, 8),
+        binary(2, Binary::Add, 0, 1),
+        Op::Switch { value: 0, cases: vec![(0, 6)], otherwise: 11 },
+        binary(3, Binary::Mul, 2, 1), binary(4, Binary::Xor, 3, 1), store(31, 4, 8),
+        Op::Jump { target: 15 }, Op::Trap { message: "unreachable gap".into() },
+        Op::Unary { dst: 3, op: Unary::Not, src: 2, bits: 64 },
+        binary(4, Binary::Sub, 3, 0), store(31, 4, 8), Op::Jump { target: 15 },
+        Op::Select { dst: 5, condition: 0, yes: 2, no: 4 }, binary(6, Binary::Xor, 5, 4),
+        Op::Cast { dst: 6, src: 6, from: 64, to: 128, signed: true }, store(30, 6, 16), Op::Return,
+    ];
+    let mut p = program(code, 16, vec![Slot { offset: 0, size: 8 }, Slot { offset: 8, size: 8 }], Slot { offset: 0, size: 16 });
+    p.functions[0].registers = 32;
+    let plan = make_plan(&p);
+    for profiled in [false, true] {
+        let [spilled, allocated] = variants(&p, &plan, profiled);
+        assert!(allocated.emitted.register_values > 0);
+        for a in [0, 1, 1 << 63, u64::MAX as u128] {
+            for b in [0, 255, 1 << 63, u64::MAX as u128] {
+                for budget in 0..=plan.maximum_steps + 1 {
+                    compare(&p, &plan, &allocated, &[a, b], budget);
+                    assert_eq!(allocated.attempt(&[a, b], 16, budget).unwrap(), spilled.attempt(&[a, b], 16, budget).unwrap());
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn native_scalar_registers_preserve_nonmonotonic_cfg_and_private_faults() {
+    // The executed order is block 0, block 2, block 1: source PC order is not
+    // dominance order. Both results and fault tails must survive that order.
+    let code = vec![
+        Op::Jump { target: 7 },
+        Op::Binary { dst: 4, overflow: 5, op: Binary::Div, a: 2, b: 1, bits: 64, signed: true },
+        Op::Unary { dst: 4, op: Unary::CountOnes, src: 4, bits: 64 },
+        Op::Binary { dst: 4, overflow: 5, op: Binary::Xor, a: 4, b: 2, bits: 64, signed: false },
+        local(6, 0), store(6, 4, 8), Op::Return,
+        local(6, 0), load(0, 6, 8), local(7, 8), load(1, 7, 8),
+        Op::Unary { dst: 2, op: Unary::SwapBytes, src: 0, bits: 64 },
+        Op::Jump { target: 1 },
+    ];
+    let p = program(code, 16, vec![Slot { offset: 0, size: 8 }, Slot { offset: 8, size: 8 }], Slot { offset: 0, size: 8 });
+    let plan = make_plan(&p);
+    for profiled in [false, true] {
+        let [spilled, allocated] = variants(&p, &plan, profiled);
+        assert!(allocated.emitted.register_values > 0);
+        for args in [[0, 0], [1, 1], [128, u64::MAX as u128], [0xabcdef, 3], [u64::MAX as u128, 1]] {
+            for budget in 0..=plan.maximum_steps + 1 {
+                compare(&p, &plan, &allocated, &args, budget);
+                assert_eq!(allocated.attempt(&args, 16, budget).unwrap(), spilled.attempt(&args, 16, budget).unwrap());
+            }
+        }
+    }
+}
+
 #[test]
 fn native_scalar_2187_copy_cases_in_both_profile_modes() {
     let mut cases=0;

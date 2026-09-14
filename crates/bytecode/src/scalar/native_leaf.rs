@@ -1,6 +1,8 @@
 //! Direct AArch64 emission for the experimental scalar IR, with private output.
-//! No guest frame or production runtime integration is enabled here.
+//! Original guest state is committed only by the separately checked Call bridge.
 use super::*;
+#[path="native_registers.rs"]
+mod registers;
 const MAX_WORDS:usize=65536;
 const MAX_CODE_BYTES:usize=MAX_WORDS*4;
 #[repr(C)]
@@ -14,9 +16,10 @@ use publisher::memory;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Output {pub value:u128,pub steps:u64,pub visited:[u64;8]}
 const _:()={assert!(std::mem::offset_of!(Output,value)==0);assert!(std::mem::offset_of!(Output,steps)==16);assert!(std::mem::offset_of!(Output,visited)==24);};
-pub struct Emitted {pub words:Vec<u32>,pub stack_bytes:usize,pub profiled:bool}
+pub struct Emitted {pub words:Vec<u32>,pub stack_bytes:usize,pub profiled:bool,pub register_values:usize}
 struct Emitter<'a> {
     plan:&'a Plan, words:Vec<u32>, slots:Vec<Option<usize>>, stack_bytes:usize,
+    registers:Vec<Option<u32>>,
     labels:Vec<Option<usize>>, jumps:Vec<(usize,usize)>, failures:Vec<usize>,
     exhausted:bool, profiled:bool,
 }
@@ -58,10 +61,15 @@ impl Emitter<'_> {
                 self.load(rd,0,index*16+usize::from(high)*8);
                 self.mask(rd,if high {(node.width-8)*8} else {node.width.min(8)*8});}},
             Value::Base(offset)=>{if high {self.mov(rd,31);} else {self.imm(rd,offset as u64);self.three(0x8b000000,rd,1,rd);}},
-            _=>self.load(rd,31,self.slots[id].expect("live scalar storage")+usize::from(high)*8),
+            _=>if let Some(register)=self.registers[id] {self.mov(rd,register);} else {
+                self.load(rd,31,self.slots[id].expect("live scalar storage")+usize::from(high)*8)
+            },
         }
     }
-    fn put(&mut self,id:Id) {let offset=self.slots[id].unwrap();self.store(9,31,offset);if self.plan.nodes[id].width>8 {self.store(10,31,offset+8);}}
+    fn put(&mut self,id:Id) {
+        if let Some(register)=self.registers[id] {self.mov(register,9);return;}
+        let offset=self.slots[id].unwrap();self.store(9,31,offset);if self.plan.nodes[id].width>8 {self.store(10,31,offset+8);}
+    }
     fn extract(&mut self,p:Slice) {
         self.get(9,p.value,false);self.get(10,p.value,true);
         let shift=p.byte*8;
@@ -197,15 +205,20 @@ impl Emitter<'_> {
 }
 
 pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
+    emit_with_registers(plan,profiled,true)
+}
+fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emitted,&'static str> {
+    let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
+    let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;
     for (id,node) in plan.nodes.iter().enumerate() {
         if !plan.live[id] {continue;}
         if matches!(node.value,Value::Binary{bits:128,..}|Value::Unary{bits:128,..}) {return Err("native_integer_128");}
         if let Value::Input(index)=node.value {if index>=2048 {return Err("native_argument_limit");}}
-        if !matches!(node.value,Value::Constant(_)|Value::Input(_)|Value::Base(_)) {slots[id]=Some(bytes);bytes+=if node.width>8 {16} else {8};}
+        if registers[id].is_none() && !matches!(node.value,Value::Constant(_)|Value::Input(_)|Value::Base(_)) {slots[id]=Some(bytes);bytes+=if node.width>8 {16} else {8};}
     }
     let stack_bytes=(bytes+15)&!15;if stack_bytes>32752 {return Err("native_stack_limit");}
-    let mut a=Emitter{plan,words:vec![],slots,stack_bytes,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled};
+    let mut a=Emitter{plan,words:vec![],slots,stack_bytes,registers,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled};
     // This function owns only its private scratch/output. Too little budget
     // returns before touching either; all other failures discard private work.
     a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);let short=a.words.len();a.emit(0x54000003);
@@ -240,7 +253,7 @@ pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
     for at in std::mem::take(&mut a.failures) {a.patch(at,failed,true)?;}
     for (at,block) in std::mem::take(&mut a.jumps) {a.patch(at,a.labels[block].ok_or("native_missing_block")?,false)?;}
     if a.exhausted {return Err("native_word_limit");}
-    Ok(Emitted{words:a.words,stack_bytes,profiled})
+    Ok(Emitted{words:a.words,stack_bytes,profiled,register_values})
 }
 
 #[cfg(all(target_arch="aarch64",target_os="macos"))]
