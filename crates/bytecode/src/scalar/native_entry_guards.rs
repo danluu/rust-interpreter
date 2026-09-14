@@ -83,3 +83,7 @@ mod tests;
 #[cfg(test)]
 #[path="entry_guard_census.rs"]
 mod census;
+
+#[cfg(test)]
+#[path="entry_dependencies.rs"]
+mod dependencies;

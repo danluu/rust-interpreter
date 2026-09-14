@@ -32,7 +32,7 @@ fn observe_saved_entry_guard_scope() {
             assert_eq!(&code[start..end],bytes.as_slice(),"archived store-log scalar body {id}");
             let hits:Vec<u64>=serde_json::from_value(profiles[id]["jit_scalar_hits"].clone()).unwrap();assert_eq!(hits.len(),f.code.len());
             let calls:u64=f.code.iter().zip(&hits).filter(|(op,_)|matches!(op,Op::Return)).map(|(_,h)|*h).sum();
-            let classification=classify(&plan);
+            let simple=classify(&plan);let classification=dependencies::classify_dependencies(&plan);
             let mut reads=0u64;let mut writes=0u64;
             for (nid,node) in plan.nodes.iter().enumerate() {
                 if !plan.live[nid] {continue;}
@@ -43,7 +43,7 @@ fn observe_saved_entry_guard_scope() {
             }
             functions.push(json!({"function":id,"name":f.name,"successful_calls":calls,"native_bytes":bytes.len(),
                 "native_sha256":format!("{:x}",Sha256::digest(&bytes)),"eligible":classification.is_ok(),
-                "decline":classification.as_ref().err(),"entry_plan":classification.as_ref().ok(),
+                "simple_eligible":simple.is_ok(),"simple_decline":simple.as_ref().err(),"decline":classification.as_ref().err(),"entry_plan":classification.as_ref().ok(),
                 "successful_read_occurrences":reads,"successful_write_occurrences":writes}));
         }
         assert_eq!(input["expected_scalar_bodies"],functions.len());
@@ -51,5 +51,5 @@ fn observe_saved_entry_guard_scope() {
     }
     let out=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("SCALAR_ENTRY_OUTPUT").unwrap()).unwrap();
     serde_json::to_writer(out,&json!({"status":"passed","cases":cases,"guest_commands":0,"executable_code_publications":0,
-        "scope":"Exact archived store-log scalar bodies, not adopted native bodies. Static symbolic entry obligations only; no memory/fault model or emitter integration. Successful IR memory occurrences exclude failed private attempts and are not emitted instructions or time savings. No guest execution or executable publication."})).unwrap();
+        "scope":"Exact archived store-log scalar bodies, not adopted native bodies. Static dependency entry obligations including potentially earlier-write disjointness; no memory/fault model or emitter integration. Successful IR memory occurrences exclude failed private attempts and are not emitted instructions or time savings. No guest execution or executable publication."})).unwrap();
 }

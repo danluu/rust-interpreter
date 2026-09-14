@@ -1,7 +1,7 @@
 use super::*;
 use crate::{Program,Slot,VERSION};
 
-fn lower_code(code:Vec<Op>)->Plan {
+pub(super) fn lower_code(code:Vec<Op>)->Plan {
     let p=Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,data:vec![],statics:vec![0;64],thread_locals:vec![],
         functions:vec![crate::Function{name:"entry guards".into(),frame_size:16,frame_align:8,registers:12,
             args:vec![Slot{offset:0,size:8},Slot{offset:8,size:8}],result:Slot{offset:0,size:0},code}]};
@@ -9,7 +9,7 @@ fn lower_code(code:Vec<Op>)->Plan {
     let memory=crate::proof::memory_plan_transaction(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone());
     crate::scalar_ir::lower(&p.functions[0],&memory,250_000).unwrap()
 }
-fn prefix()->Vec<Op> {vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8},
+pub(super) fn prefix()->Vec<Op> {vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8},
     Op::Local{dst:2,offset:8},Op::Load{dst:3,address:2,size:8},Op::Imm{dst:4,value:19}]}
 
 #[test]
@@ -48,7 +48,7 @@ fn pre_store_faults_are_allowed_but_post_store_faults_decline() {
     }}
 }
 
-fn abstract_diamond(stores:u8,faults:u8,reverse:bool)->Plan {
+pub(super) fn abstract_diamond(stores:u8,faults:u8,reverse:bool)->Plan {
     let ids=if reverse {[0,3,2,1]} else {[0,1,2,3]};
     let mut nodes=vec![Node{value:Value::Input(0),width:8,pc:None},Node{value:Value::Constant(19),width:1,pc:None}];
     let mut computations=vec![vec![];4];let mut effects=vec![Effect::None;4];
