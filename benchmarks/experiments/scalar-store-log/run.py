@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
-NAME = 'scalar-store-log-controls-01'
+NAME = 'scalar-store-log-controls-02'
 
 
 def read(p):
@@ -59,7 +59,12 @@ def main():
         for name in ['scalar-transaction-costs-01', 'scalar-transaction-native-screen-token-01']:
             folder=ROOT/'results'/name
             closure=read(folder/'closure.json')
-            assert closure['status']=='closed' and sha(folder/'summary.json')==closure['summary_sha256']
+            if name=='scalar-transaction-costs-01':
+                assert closure['status']=='closed' and sha(folder/'summary.json')==closure['summary_sha256']
+            else:
+                assert closure['status']=='passed' and closure['parked'] and not closure['performance_gate_passed']
+                evidence=ROOT/closure['evidence_path'];assert sha(evidence)==closure['evidence_sha256']
+                paths.append(evidence)
             paths += [folder/'closure.json',folder/'summary.json',folder/'terminal.json']
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py', '.md']]
         paths += [ROOT / p for p in subprocess.check_output(['git', 'ls-files', 'crates', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml'], text=True).splitlines()]
