@@ -315,6 +315,17 @@ the existing no-content-rehash behavior. This prepares the runtime compiler
 integration; it does not qualify an actual installation or a faster build.
 [Compiler revalidation evidence](../../../results/compiler-revalidation-controls-01/README.md).
 
+The runtime installer now supports an optional, identity-bound validator before
+publication. A failed validator or changed inputs, outputs or qualification
+receipt prevents readiness; successful warm lookup uses the recorded file
+stamps without reading receipt contents. All 51 compiler/runtime/source-path
+controls passed, including six new validator controls. The real E runtime's
+separate metadata inspection passed 25 commands and produced a candidate with
+3,709 files. Both earlier metadata failures are retained. No actual runtime
+installation, source-path qualification or application speedup is established.
+[Validator controls](../../../results/runtime-prepublication-controls-01/README.md)
+and [metadata inspection history](../../../results/runtime-installation-metadata-03/README.md).
+
 A subsequent exporter Cargo build exited successfully but reported thirteen
 strip failures: the beta auxiliary tool could not find its beta LLVM library in
 the target library directory. The compositor now supports an explicit second
