@@ -139,6 +139,35 @@ def add_row(rows, destination, record):
     rows[destination] = record
 
 
+def add_archive_copies(rows, copies):
+    """Add explicit destinations for original archive members, never aliases."""
+    originals = dict(rows)
+    for copy in copies:
+        require(set(copy) == {'source_destination', 'destination'}, 'invalid archive copy fields')
+        source, destination = copy['source_destination'], copy['destination']
+        relative(source)
+        require(source in originals and originals[source]['kind'] == 'archive',
+                'archive copy requires an original archive member')
+        add_row(rows, destination, dict(originals[source]))
+
+
+def check_archive_copies(plan):
+    """Every repeated member requires an explicit original-to-copy mapping."""
+    copies = plan.get('archive_copies', [])
+    destinations = [copy['destination'] for copy in copies]
+    require(len(destinations) == len(set(destinations)), 'duplicate archive copy destination')
+    originals = {path: row for path, row in plan['files'].items() if path not in destinations}
+    add_archive_copies(originals, copies)
+    require(originals == plan['files'], 'archive copy mapping differs from planned files')
+    members = set()
+    for path, row in plan['files'].items():
+        if row['kind'] != 'archive' or path in destinations:
+            continue
+        key = (row['path'], row['member'])
+        require(key not in members, 'repeated archive member lacks explicit copy mapping')
+        members.add(key)
+
+
 def archive_rows(record, rows):
     """Hash the complete archive; select the component's entire lib subtree.
 
@@ -191,7 +220,7 @@ def check_crate_names(rows):
 
 
 def inspect_inputs(*, archives, stamp, approved_private_files, build_compiler,
-                   runtime_source_commit, runtime_driver, proofs):
+                   runtime_source_commit, runtime_driver, proofs, archive_copies=()):
     """Read/hash only explicit inputs; caller supplies separately qualified proofs.
 
     approved_private_files is a path -> {sha256,size} map covering EVERY stamp
@@ -214,6 +243,7 @@ def inspect_inputs(*, archives, stamp, approved_private_files, build_compiler,
             'approved producer map differs from complete stamp membership')
     rows = {}
     archive_records = [archive_rows(x, rows) for x in archives]
+    add_archive_copies(rows, archive_copies)
     private = []
     for entry in entries:
         original = approved_private_files[entry['source']]
@@ -241,6 +271,9 @@ def inspect_inputs(*, archives, stamp, approved_private_files, build_compiler,
         stamp_hex=data.hex(), private=private, proofs=proof_records, files=rows,
         producer_qualification='required from outer runner; no inference by compositor',
         compiler_compatibility='unqualified')
+    if archive_copies:
+        result['archive_copies'] = [dict(copy) for copy in archive_copies]
+    check_archive_copies(result)
     recheck_inputs(result)
     return result
 
@@ -287,6 +320,7 @@ def assemble(plan, *, expected_plan_sha256, destination, evidence, capacity_guar
     """
     require(digest(encoded(plan)) == sha_string(expected_plan_sha256), 'composition plan hash differs')
     require(plan['schema_version'] == 1 and plan['policy'] == POLICY, 'wrong composition policy')
+    check_archive_copies(plan)
     require(callable(capacity_guard), 'assembly requires a running capacity guard')
     destination, evidence = absolute(str(destination)), absolute(str(evidence))
     require(destination != evidence and not destination.is_relative_to(evidence)
@@ -317,25 +351,27 @@ def assemble(plan, *, expected_plan_sha256, destination, evidence, capacity_guar
         capacity_guard()
     archive_by_path = {x['file']['path']: x for x in plan['archives']}
     for archive_path in archive_by_path:
-        selected = {row['member']: (path, row) for path, row in plan['files'].items()
-                    if row['kind'] == 'archive' and row['path'] == archive_path}
+        selected = {}
+        for path, row in plan['files'].items():
+            if row['kind'] == 'archive' and row['path'] == archive_path:
+                selected.setdefault(row['member'], []).append((path, row))
         with tarfile.open(archive_path, 'r:xz') as archive:
             for member in archive:
                 if member.name not in selected:
                     continue
-                path, row = selected.pop(member.name)
-                require(member.isfile() and not member.issparse() and member.size == row['size']
-                        and member.mode == row['mode'], 'archive member changed')
-                target = destination / relative(path)
-                capacity_guard()
-                target.parent.mkdir(parents=True, exist_ok=True)
-                with archive.extractfile(member) as source, target.open('xb') as output:
-                    sha, size = stream_hash(source, output, capacity_guard)
-                    output.flush()
-                    os.fsync(output.fileno())
-                require(sha == row['sha256'] and size == row['size'], 'archive copy hash differs')
-                target.chmod(row['mode'])
-                capacity_guard()
+                for path, row in selected.pop(member.name):
+                    require(member.isfile() and not member.issparse() and member.size == row['size']
+                            and member.mode == row['mode'], 'archive member changed')
+                    target = destination / relative(path)
+                    capacity_guard()
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with archive.extractfile(member) as source, target.open('xb') as output:
+                        sha, size = stream_hash(source, output, capacity_guard)
+                        output.flush()
+                        os.fsync(output.fileno())
+                    require(sha == row['sha256'] and size == row['size'], 'archive copy hash differs')
+                    target.chmod(row['mode'])
+                    capacity_guard()
         require(not selected, 'selected archive files missing')
     for item in plan['private']:
         row, path = item['file'], destination / relative(item['destination'])
