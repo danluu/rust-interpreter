@@ -105,7 +105,7 @@ mod tests {
             }
             let before = (m.bytes.to_vec(), m.heap.bytes.clone());
             assert!(m.cpu_feature_query(name, out, len, new, new_len).is_err(), "{mode}");
-            assert_eq!((m.bytes.to_vec(), m.heap.bytes), before, "{mode}");
+            assert_eq!((m.bytes.to_vec(), m.heap.bytes.clone()), before, "{mode}");
         }
     }
 
