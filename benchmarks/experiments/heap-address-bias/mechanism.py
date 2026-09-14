@@ -16,17 +16,21 @@ def verify(old_map,old_code,new_map,new_code):
             x=list(struct.unpack('<'+'I'*((a['end']-a['offset'])//4),old_code[a['offset']:a['end']]))
             y=list(struct.unpack('<'+'I'*((b['end']-b['offset'])//4),new_code[b['offset']:b['end']]))
             kind=a['kind'];delta=4*(len(y)-len(x));counts[kind]+=1;changes[kind]+=delta
+            sites=[i for i in range(len(x)-1) if x[i:i+2]==before]
+            new_sites=[i for i in range(len(y)-3) if y[i:i+4]==after]
+            assert len(sites)<=1 and sites==new_sites
+            added=8*len(sites);entries+=len(sites)
+            if sites:
+                i,=sites;assert y[:i+4]==x[:i]+after
+                assert kind in ['entry','transition']
             if kind=='entry':
-                sites=[i for i in range(len(x)-1) if x[i:i+2]==before]
-                assert len(sites)<=1
-                if sites:
-                    i,=sites;assert y==x[:i]+after+x[i+2:];entries+=1
+                if sites:assert y==x[:i]+after+x[i+2:]
                 else:assert x==y
             elif kind in ['operation','transition','range_guard']:
-                assert delta<=0,(kind,delta)
+                assert delta-added<=0,(kind,delta,added)
             else:assert delta==0,(kind,delta)
-    assert entries and changes['entry']==8*entries
-    removed=-sum(changes[k] for k in ['operation','transition','range_guard'])
+    assert entries
+    removed=8*entries-sum(changes.values())
     assert removed>0
     assert sum(changes.values())==len(new_code)-len(old_code)==8*entries-removed
     return dict(status='passed',entry_contexts=entries,added_entry_bytes=8*entries,

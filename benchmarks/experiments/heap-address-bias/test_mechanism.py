@@ -28,6 +28,12 @@ class MechanismTests(unittest.TestCase):
         for index in [0,2]:values[index]['functions'][0]['spans'][1]['kind']='budget'
         with self.assertRaises(AssertionError):verify(*values)
 
+    def test_transition_embedded_entry_is_also_counted(self):
+        values=pair()
+        for index in [0,2]:values[index]['functions'][0]['spans'][0]['kind']='transition'
+        result=verify(*values)
+        self.assertEqual((result['added_entry_bytes'],result['removed_checked_bytes'],result['net_code_bytes']),(8,4,4))
+
     def test_shape_and_function_identity_are_bound(self):
         for field,value in [('function',1),('name','other'),('assertion_count',1)]:
             values=pair();values[2]['functions'][0][field]=value
