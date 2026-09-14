@@ -32,9 +32,11 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    Park this revision and cancel larger comparisons. Its exact 199-body census
    finds duplicate reads concentrated in one callee. A subsequent structural
    census favors external-write leaves (153 block samples) over nested Calls
-   (59), wider results (11) and cycles (5). Build a bounded private-store model
-   with ordered effects, byte-exact forwarding and ordinary failure replay
-   before considering native emission.
+   (59), wider results (11) and cycles (5). The bounded private-store model
+   passes 369 bytecode tests/profile and retains 138 block samples in 168 plans.
+   Exact memory snapshots cover success, failure, branches and non-idempotent
+   replay. Next qualify a native store backend, including checked alias handling,
+   private slots and a no-failure commit boundary. No speedup is established.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
    [current protocol costs](results/scalar-protocol-census-03/assessment.md),
@@ -49,7 +51,8 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    [failed primary](results/scalar-readonly-native-screen-token-01/ASSESSMENT.md),
    [body census](results/scalar-readonly-shapes-01/assessment.md),
    [structural bounds](results/scalar-next-boundaries-02/assessment.md),
-   [private-store model plan](benchmarks/experiments/scalar-transaction-model/PLAN.md).
+   [private-store model plan](benchmarks/experiments/scalar-transaction-model/PLAN.md),
+   [model qualification](results/scalar-transaction-model-03/assessment.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing

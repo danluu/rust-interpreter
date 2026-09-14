@@ -65,8 +65,10 @@ The complete 40-command primary fails: wall ratio 0.999836 and CPU 0.999544
 are inside A/A variation. Park this candidate and cancel larger comparisons.
 The emitted-body census closes with limited duplicate-read coverage. A subsequent
 structural census gives external-write leaves the strongest block-test coverage
-(153 samples). Next build a bounded private-store model with exact alias/fault
-semantics before any native implementation. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+(153 samples). The bounded private-store model now passes 369 bytecode tests
+per profile, including exact error-exit memory and non-idempotent replay controls.
+Its census retains 168 plans and 138 block samples. Next implement and independently
+qualify native stores; production admission remains closed and no speedup is claimed. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only
