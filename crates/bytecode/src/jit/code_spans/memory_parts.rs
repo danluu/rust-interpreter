@@ -176,7 +176,8 @@ fn observe_saved_small_memory_parts() {
             assert!(hit.origin_pc<hit.pc && hit.offset+8<=f.frame_size);
             assert!(b.memory_spans.iter().any(|s|s.pc==hit.pc && s.part=="load_data"));
         }
-        output.push(json!({"function":id,"name":f.name,"selected":selected,"memory_spans":b.memory_spans,
+        let region_values=std::env::var_os("MEMORY_REGION_VALUES").map(|_|super::region_values::observe(f,&b.memory_spans));
+        output.push(json!({"function":id,"name":f.name,"selected":selected,"memory_spans":b.memory_spans,"region_values":region_values,
             "available_copy_values":b.scratch_copy_hits,"available_load_values":b.scratch_hits}));
         assertions+=a.assertions.len();cursor=end;
     }

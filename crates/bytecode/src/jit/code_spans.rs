@@ -18,6 +18,8 @@ mod flush_census;
 #[cfg(test)]
 mod memory_parts;
 #[cfg(test)]
+mod region_values;
+#[cfg(test)]
 mod continuation_census;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
