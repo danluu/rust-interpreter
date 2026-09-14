@@ -5,7 +5,7 @@ fn branch_word(at: usize, target: usize) -> u32 {
     0x14000000 | branch_displacement(at, target, 26, CodegenLimit::Jump).unwrap()
 }
 
-fn result(code: &platform::Code, offset: usize) -> u64 {
+fn result(code: &platform::Code, offset: usize) -> usize {
     // SAFETY: this fixture contains only checked direct branches, mov x0 and
     // ret. It accesses no supplied pointers and preserves the host ABI.
     let output = unsafe { code.abi_probe(offset, [0; 8]) };
@@ -30,7 +30,7 @@ fn checked_append_and_patch_publishes_new_targets_with_stable_old_entries() {
         assert_eq!(offset, before.len());
         assert_eq!(code.published().0, base);
         assert_eq!(&code.published().1[8..offset], &before[8..]);
-        assert_eq!((result(&code, 0), result(&code, 4)), (value as u64, value as u64));
+        assert_eq!((result(&code, 0), result(&code, 4)), (value as usize, value as usize));
         target = next;
     }
 }
