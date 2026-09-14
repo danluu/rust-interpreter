@@ -109,3 +109,14 @@ improvement versus 4.1545% A/A, with CPU improving 0.10%. All assertions and
 restoration pass. Its closure verifies 1,958 inputs, 56 artifacts and 380 Git
 bindings. Full/held-out/repeated runs remain unstarted. Inspect actual native
 costs before another candidate. [Result](TREE-SHARED-CURSOR-20260913.md).
+
+Follow-up through 18:03: the suggestions file remains unchanged. Exact saved
+native samples motivated hoisting the heap-address bias, distinct from the
+parked selector/CCMP variants. Its qualified 40-command primary passes narrowly:
+wall improvement 2.88% versus 2.747% A/A, CPU improvement 0.59%. Proceed to the
+original full gates; no runtime adoption follows from the screen. Keep the
+compiler/Cargo suggestions with their existing workstream and two-worker
+resource limits. The per-region budget work and SipHash guards are already
+implemented; neither is a new opportunity. Transparent compression of closed
+diagnostic JSON reclaimed about 1 GiB with every original SHA unchanged.
+[Qualification and limitations](HEAP-ADDRESS-BIAS-20260913.md).
