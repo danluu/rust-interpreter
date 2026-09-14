@@ -7,16 +7,18 @@ and 6.51% CPU but remains 1.571× ordinary native. Folded improves 3.11% wall;
 pgrust, rg-aot and Nushell differences are within variation. The full parser
 still loses to native. [Integration and limits](results/scratch-scalar-main-qualification-01/assessment.md).
 
-1. Capture two fresh owned native-PC samples of the original token block and
-   exhaustive tests using the adopted VM, normal OS entropy, explicit scalar /
-   resumable / persistent-register options and the unchanged 16 MiB arena.
-   Reconstruct code and schema-2 operation maps from each same process, bind
-   artifact/catalog/tool identities, and retain host/unresolved/post-execution
-   samples. These partial perturbed windows guide diagnosis, not latency claims.
-2. Choose a bounded runtime mechanism from the remaining actual costs. Previous
-   pre-scratch samples are historical; they cannot establish marginal savings
-   on this new composition. Preserve strict checking, all logical budgets,
-   alias/fault behavior, peak memory and ordinary fallback before any screen.
+1. The two adopted-VM captures are closed: all 1,561 / 1,231 generated self
+   samples map to exact same-process schema-2 emission. Memory partitioning
+   reconstructs every ordinary function and scalar body; payload loads account
+   for 247 / 124 samples. These diagnostic windows establish no latency gain.
+   [Samples](results/scratch-scalar-runtime-sampling-01/assessment.md),
+   [memory parts](results/scratch-scalar-memory-parts-01/assessment.md).
+2. Count a bounded extension to scratch reuse before implementing it: capture
+   Copy source values as well as destinations, and allow narrow Copy uses of
+   matching low bits. Query after address handling and only at loads still
+   emitted by the adopted VM. Narrow Load results need a stronger zero-extension
+   proof, so exclude them. Require exact original emission, alias invalidation,
+   conservative register-clobber handling and original static identities.
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
