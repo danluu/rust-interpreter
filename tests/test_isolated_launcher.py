@@ -33,6 +33,12 @@ class IsolatedLauncherValidation(unittest.TestCase):
                 with self.subTest(arguments=arguments): self.rejected(arguments)
             self.assertFalse(Path(report).exists())
 
+    def test_scalar_calls_require_fully_checked_resumable_jit_before_tools(self):
+        base=['--entry','first','--jit-scalar-calls']
+        for extra in [[],['--engine','jit'],['--engine','jit','--jit-resumable-calls','--trap-unsupported-calls'],
+                      ['--engine','jit','--jit-resumable-calls','--jit-native-calls']]:
+            with self.subTest(extra=extra):self.rejected(base+extra)
+
     def test_worker_counts_require_a_bounded_isolated_suite(self):
         self.rejected(['--entry', 'first', '--suite-workers', '2'])
         with tempfile.TemporaryDirectory() as directory:

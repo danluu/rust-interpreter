@@ -193,3 +193,19 @@ fn native_scalar_call_shared_arena_maps_and_prepared_option_identity_are_exact()
     let bad=Limits{jit_scalar_calls:true,..Limits::default()};
     assert!(crate::execute_with_engine(&p,&[1,7],bad,Engine::Jit).unwrap_err().contains("resumable"));
 }
+
+#[test]
+fn native_scalar_call_commits_every_profile_word_and_exact_budget_boundary() {
+    for length in [64,65,127,128,129,511,512] {
+        let parent=function("repeat scalar",16,8,vec![Slot{offset:0,size:8}],Slot{offset:8,size:8},vec![
+            local(0,0),local(1,8),Op::Call{function:1,args:vec![0],destination:1},
+            Op::Call{function:1,args:vec![1],destination:1},Op::Return]);
+        let mut code=vec![Op::Imm{dst:0,value:123};length-1];code.push(Op::Return);
+        let leaf=function("multiword profile",8,8,vec![Slot{offset:0,size:8}],Slot{offset:0,size:8},code);
+        let p=program(vec![parent,leaf]);
+        assert_eq!(compare(&p,&[42],4096,65536,8).commits,2);
+        for budget in [2,3,length as u64+2,length as u64+3,length as u64+4,length as u64*2+4,length as u64*2+5,length as u64*2+6] {
+            compare(&p,&[42],budget,65536,8);
+        }
+    }
+}

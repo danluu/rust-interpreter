@@ -32,3 +32,22 @@ caller register arrays, prepared option identity, shared code admission and
 independent code-map reconstruction. Full regressions, strict/Cargo controls,
 original project profiles/assertions and changed-source timing gates remain
 required. This candidate is not adopted and has no performance conclusion.
+
+The seven initial native bridge controls passed in debug and release in
+`confined-scalar-native-call-focused-03`. Two preceding failed runs retain a
+cursor-fixture compile correction and an interpreter/JIT Memory error wording
+mismatch. Exact adopted-JIT error comparisons now supplement the interpreter
+oracle. Before full workspace qualification, add a control spanning all eight
+profile bitset words and their exact-budget tails, and refuse old register
+censuses when nonzero scalar counts would give misleading register weights.
+
+Build qualification requires 590 workspace passes and ten ignored tests per
+profile, the launcher validation and metrics suites, and a normal release VM
+build from the same source root. Installation retains the adopted strict
+exporter/wrapper and reuses the independently qualified unchanged `ab6adbe8`
+VM as matched control; no second source tree uses the shared Cargo target.
+Follow with 122 strict/cache compatibility commands: legacy partial-artifact
+fixtures retain their old mode and explicitly reject scalar mode; strict Cargo
+fixtures enable scalar Calls and include edited helpers, unreachable type and
+borrow errors, cache modes and restoration. This is a qualification gate,
+not a changed-source performance comparison.
