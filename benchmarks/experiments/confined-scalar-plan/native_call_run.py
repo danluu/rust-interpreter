@@ -13,7 +13,7 @@ from workflow_io import capture,require_space,write_json as write
 
 
 def main():
-    name='confined-scalar-native-call-focused-02'
+    name='confined-scalar-native-call-focused-03'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45)
         target=ROOT/'.work/fixed-frame-clear-combined-build-01/target'

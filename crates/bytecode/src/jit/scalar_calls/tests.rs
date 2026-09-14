@@ -24,6 +24,8 @@ fn compare(p:&Program,args:&[u128],budget:u64,memory:usize,frames:usize)->Statis
     for persistent in [false,true] {
         let mut limits=options();limits.jit_resumable_calls=true;limits.jit_scalar_calls=true;
         limits.jit_persistent_registers=persistent;
+        let mut baseline_limits=limits.clone();baseline_limits.jit_scalar_calls=false;
+        let baseline=execute_profiled(p,args,baseline_limits,Engine::Jit);
         let actual=execute_profiled(p,args,limits,Engine::Jit);
         match (&reference,actual) {
             (Ok((a,ap)),Ok((b,bp)))=>{
@@ -39,7 +41,14 @@ fn compare(p:&Program,args:&[u128],budget:u64,memory:usize,frames:usize)->Statis
                     .filter(|(_,op)|matches!(op,Op::Call{..})).map(|(hits,_)|*hits as usize).sum::<usize>()).sum();
                 statistics.declines=calls-statistics.commits;
             },
-            (Err(a),Err(b))=>assert_eq!(*a,b),
+            (Err(a),Err(b))=>{
+                // The adopted JIT already uses one Memory fault message for
+                // bounds and readonly failures. Require exact baseline-JIT
+                // error behavior; interpreter wording differs for that class.
+                assert_eq!(baseline.unwrap_err(),b);
+                assert!(*a==b || (b=="JIT guest memory access failed"
+                    && matches!(a.as_str(),"invalid guest memory access"|"write to read-only guest memory")),"interpreter {a}, JIT {b}");
+            },
             (a,b)=>panic!("reference {a:?}, native scalar transaction {b:?}"),
         }
     }
