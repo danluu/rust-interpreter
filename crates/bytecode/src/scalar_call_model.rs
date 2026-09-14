@@ -10,6 +10,7 @@ thread_local! {
     static ENABLED:Cell<bool>=const {Cell::new(false)};
     static STATISTICS:Cell<Statistics>=Cell::new(Statistics::default());
     static NATIVE_STORES:Cell<bool>=const {Cell::new(true)};
+    static PATH_GUARDS:Cell<bool>=const {Cell::new(false)};
     static STORE_MODEL:Cell<bool>=const {Cell::new(false)};
     static SNAPSHOT_ENABLED:Cell<bool>=const {Cell::new(false)};
     static SNAPSHOT:RefCell<Option<(Vec<u8>,Vec<u8>)>>=const {RefCell::new(None)};
@@ -24,12 +25,13 @@ impl Drop for NativeEnabled {fn drop(&mut self) {NATIVE_STORES.with(|s|s.set(sel
 struct Enabled;
 impl Enabled {
     fn new()->Self {ENABLED.with(|v|assert!(!v.replace(true)));STATISTICS.with(|v|v.set(Statistics::default()));Self}
+    fn path_guards()->Self {let enabled=Self::transaction();PATH_GUARDS.with(|v|assert!(!v.replace(true)));enabled}
     fn transaction()->Self {let enabled=Self::new();STORE_MODEL.with(|v|assert!(!v.replace(true)));enabled}
 }
-impl Drop for Enabled {fn drop(&mut self) {ENABLED.with(|v|v.set(false));STORE_MODEL.with(|v|v.set(false));}}
+impl Drop for Enabled {fn drop(&mut self) {ENABLED.with(|v|v.set(false));STORE_MODEL.with(|v|v.set(false));PATH_GUARDS.with(|v|v.set(false));}}
 fn record(commit:bool) {STATISTICS.with(|v|{let mut s=v.get();s.attempts+=1;if commit {s.commits+=1;} else {s.declines+=1;}v.set(s);});}
 struct Compiled {native:Option<Native>,transaction:Option<scalar_ir::Plan>,maximum_steps:usize}
-pub(crate) struct Context<'a> {program:&'a Program,profiled:bool,transactional:bool,tried:Vec<bool>,compiled:Vec<Option<Compiled>>,proof_work:usize,scalar_work:usize,mappings:usize}
+pub(crate) struct Context<'a> {program:&'a Program,profiled:bool,transactional:bool,path_guarded:bool,tried:Vec<bool>,compiled:Vec<Option<Compiled>>,proof_work:usize,scalar_work:usize,mappings:usize}
 
 // Test-only snapshot captures both success and error exits of the actual VM.
 impl Drop for Memory {
@@ -73,7 +75,7 @@ impl<'a> Context<'a> {
         if !ENABLED.with(Cell::get) {return Ok(None);}
         if use_jit {return Err("scalar transaction model requires ordinary interpreter dispatch".into());}
         if program.version & PARTIAL_VALIDATION != 0 {return Err("scalar transaction model requires full validation".into());}
-        Ok(Some(Self{program,profiled,transactional:STORE_MODEL.with(Cell::get),tried:vec![false;program.functions.len()],compiled:(0..program.functions.len()).map(|_|None).collect(),
+        Ok(Some(Self{program,profiled,transactional:STORE_MODEL.with(Cell::get),path_guarded:PATH_GUARDS.with(Cell::get),tried:vec![false;program.functions.len()],compiled:(0..program.functions.len()).map(|_|None).collect(),
             proof_work:crate::proof::MAX_GLOBAL_WORK,scalar_work:128_000_000,mappings:0}))
     }
     fn ensure(&mut self,id:usize) {
@@ -88,6 +90,7 @@ impl<'a> Context<'a> {
         self.scalar_work=self.scalar_work.saturating_sub(match &scalar {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
         if let Ok(plan)=scalar {
             if self.transactional {
+                if self.path_guarded && plan.path_guard_shape().is_err() {return;}
                 let maximum_steps=plan.maximum_steps;
                 self.compiled[id]=Some(Compiled{native:None,transaction:Some(plan),maximum_steps});return;
             }
@@ -126,13 +129,26 @@ impl<'a> Context<'a> {
         // alignment bytes. No guest reference spans preparation/native entry.
         if memory.bytes.prepare(end).is_err() {record(false);return Ok(None);}
         let (output,stores)=if let Some(plan)=&compiled.transaction {
+            let (outcome,stores)=if self.path_guarded {
+                let Ok(certificate)=plan.check_path_entry(&inputs,base,memory) else {record(false);return Ok(None);};
+                let shadow=RefCell::new(&mut *memory);let written=Cell::new(0usize);
+                let outcome=plan.evaluate_effects(&inputs,base,budget as usize,&f.name,
+                    &mut |a,n|shadow.borrow().load(a as usize,n as usize),
+                    &mut |a,v,n|{shadow.borrow_mut().store(a as usize,n as usize,v)?;written.set(written.get()+1);Ok(())});
+                match outcome {
+                    Ok(value)=>{assert_eq!(value.pcs,certificate.pcs,"certified path changed during direct execution");(value,vec![])},
+                    Err(error)=>{assert_eq!(written.get(),0,"guard failure after committed store: {error}");record(false);return Ok(None);},
+                }
+            } else {
             let shadow=RefCell::new(PrivateMemory{memory,stores:vec![]});
             let outcome=plan.evaluate_effects(&inputs,base,budget as usize,&f.name,
                 &mut |a,n|shadow.borrow().read(a,n),&mut |a,v,n|shadow.borrow_mut().write(a,v,n));
             let Ok(outcome)=outcome else {record(false);return Ok(None);};
+            (outcome,shadow.into_inner().stores)
+            };
             let mut output=scalar_ir::native_leaf::Output{value:outcome.value,steps:outcome.pcs.len() as u64,visited:[0;8]};
             for pc in outcome.pcs {assert_eq!(output.visited[pc/64]&(1u64<<(pc%64)),0);output.visited[pc/64]|=1u64<<(pc%64);}
-            (output,shadow.into_inner().stores)
+            (output,stores)
         } else {
             let Some(output)=compiled.native.as_ref().unwrap().attempt(&inputs,base,budget as usize)? else {record(false);return Ok(None);};
             (output,vec![])
@@ -174,3 +190,6 @@ mod transaction_tests;
 
 #[path="scalar_call_native_transaction_tests.rs"]
 mod native_transaction_tests;
+
+#[path="scalar_call_path_guard_tests.rs"]
+mod path_tests;
