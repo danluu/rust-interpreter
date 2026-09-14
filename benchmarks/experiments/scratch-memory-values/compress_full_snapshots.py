@@ -7,7 +7,7 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/heap-address-bias'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from compression_probe import metadata
-NAME='closed-runtime-full-artifact-compression-01'
+NAME='closed-runtime-full-artifact-compression-02'
 RUNS=['scratch-memory-values-edit-token-01']
 
 def no_open_file(path):
@@ -43,16 +43,16 @@ def main():
             assert checks.returncode in [0,1] and not checks.stderr and not any(run in line for line in checks.stdout.splitlines()[1:])
             selected=set()
             for row in rows:
-                if row['mode']=='native':continue
+                if row['mode'] in ['native','native_lines','check']:continue
                 artifact=row['artifact'];p=ROOT/artifact['path']
                 assert p.parent==raw/'artifacts' and p.suffix=='.rbc' and p.stem==artifact['sha256']
                 # This is the retained post-command snapshot. The launcher reads
                 # its separate workspace artifact; never modify that cache.
                 assert Path(row['launch']['artifact_path'])!=p
                 assert sha(p)==artifact['sha256'];selected.add(artifact['path']);sources[artifact['path']]=artifact['sha256']
-            assert len(selected)==16
+            assert len(selected)==26
             completion.append(dict(run=run,retained_snapshots=sorted(selected),process_inspection=checks.stdout))
-        assert len(sources)==16
+        assert len(sources)==26
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         inventory=[]
         for relative,digest in sorted(sources.items()):
@@ -63,7 +63,7 @@ def main():
             inventory.append(dict(path=relative,sha256=digest,before=before))
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
             script_sha256=sha(Path(__file__)),proofs=proofs,files=inventory,
-            scope='Byte-preserving APFS compression of 16 retained public RBC snapshots in the closed passing scratch-memory full token history. Preserve every linked path, readable byte, SHA, mode, owner and mtime. Do not remove or reserialize any evidence. Executed workspace artifacts, executables, installed tools, source snapshots, private caches, shared targets and peer worktrees are untouched. This is storage representation only, outside performance timers.',completed_scopes=completion))
+            scope='Byte-preserving APFS compression of 26 retained public RBC snapshots in the closed passing scratch-memory full token history. Preserve every linked path, readable byte, SHA, mode, owner and mtime. Do not remove or reserialize any evidence. Executed workspace artifacts, executables, installed tools, source snapshots, private caches, shared targets and peer worktrees are untouched. This is storage representation only, outside performance timers.',completed_scopes=completion))
         before_free=shutil.disk_usage(ROOT).free;rows=[]
         for item in inventory:
             require_space(ROOT,10);source=ROOT/item['path'];before=item['before'];digest=item['sha256']
