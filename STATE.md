@@ -84,8 +84,9 @@ inside 4.63% wall A/A variation. Park 5b86b3ab and cancel larger histories.
 The closed 245-body register census rules out a larger local register pool.
 Its corrected live-only spill partition identifies byte-wise branch joins.
 The contiguous byte-phi prototype, based on the adopted runtime, now passes
-348 bytecode tests per profile (11 ignored). Qualify its immutable build and
-original workflows before a new primary; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+348 bytecode tests per profile (11 ignored). Immutable 7d80e36f passes 611
+workspace tests/profile, 407 Python tests (22 skips), 121 strict/cache commands
+and three exact original profiles. Run its frozen 40-command primary next; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only

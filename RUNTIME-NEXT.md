@@ -54,8 +54,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    eight consecutive bytes of one value in the hot copy-precondition function.
    The contiguous byte-phi prototype now passes 348 bytecode tests/profile
    (11 ignored), starting from adopted runtime source. It preserves predecessor
-   slices, original PCs and limits. Next qualify an immutable build, strict
-   checks and original profiles before a new primary. The invalid
+   slices, original PCs and limits. Immutable 7d80e36f passes 611 workspace
+   tests/profile, 407 Python tests (22 skips), 121 strict/cache commands and three
+   original profiles. Scalar-call counts match adopted main; block/exhaustive
+   code each shrink by 424 bytes. Run the frozen 40-command primary next. The invalid
    census02 partition and its corrected dead-use control are retained.
    Main retains df4006e0; no gain is established.
    Retain earlier negative initialization/tree and wider-memory results.
