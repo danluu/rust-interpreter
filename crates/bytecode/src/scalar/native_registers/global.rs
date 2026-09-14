@@ -161,6 +161,8 @@ fn allocate_global(plan: &Plan) -> Result<Assignment, &'static str> {
 }
 
 #[cfg(test)]
+#[path="global/tests.rs"]
 mod tests;
 #[cfg(test)]
+#[path="global/census.rs"]
 mod census;

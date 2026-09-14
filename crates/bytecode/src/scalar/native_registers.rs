@@ -3,6 +3,7 @@
 //! value used from any other block retains its original stack storage.
 use super::*;
 #[cfg(test)]
+#[path="native_registers/global.rs"]
 mod global;
 
 // x3's entry budget is dead after the admission check. The body never calls
