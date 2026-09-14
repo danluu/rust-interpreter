@@ -33,7 +33,7 @@ fn compare(p:&Program,a:&Aggregate,args:&[u128],budget:usize)->Option<Vec<u8>> {
 fn every_result_width_preserves_ordered_arguments_and_zero_bytes() {
     for width in 0..=64 {
         let p=program(vec![Op::Return],80,vec![Slot{offset:0,size:16},Slot{offset:8,size:8},Slot{offset:32,size:16}],Slot{offset:0,size:width});
-        let args=[u128::MAX,0x123456789abcdef0,0xfedcba9876543210_0102030405060708];
+        let args:[u128;3]=[u128::MAX,0x123456789abcdef0,0xfedcba9876543210_0102030405060708];
         let mut expected=vec![0;80];
         for (slot,value) in p.functions[0].args.iter().zip(args) {expected[slot.offset..slot.offset+slot.size].copy_from_slice(&value.to_le_bytes()[..slot.size]);}
         let a=plan(&p,true).unwrap();assert_eq!(compare(&p,&a,&args,1).unwrap(),expected[..width]);assert!(compare(&p,&a,&args,0).is_none());
@@ -42,7 +42,7 @@ fn every_result_width_preserves_ordered_arguments_and_zero_bytes() {
 
 #[test]
 fn independent_byte_oracle_preserves_large_overlapping_copies() {
-    let args=[0x0001020304050607_08090a0b0c0d0e0f,0x1011121314151617_18191a1b1c1d1e1f,
+    let args:[u128;4]=[0x0001020304050607_08090a0b0c0d0e0f,0x1011121314151617_18191a1b1c1d1e1f,
               0x2021222324252627_28292a2b2c2d2e2f,0x3031323334353637_38393a3b3c3d3e3f];
     for size in [0,1,7,8,15,16,17,31,32,40,48,63,64] {for src in [0,1,8,16,31,32] {for dst in [0,1,8,16,31,32] {
         let p=program(vec![local(0,src),local(1,dst),Op::Copy{src:0,dst:1,size},Op::Return],96,
