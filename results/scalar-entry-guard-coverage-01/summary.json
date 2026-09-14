@@ -1,0 +1,221 @@
+{
+  "status": "passed",
+  "commands": 1,
+  "cases": [
+    {
+      "case": "block",
+      "generated_samples": 1561,
+      "policies": {
+        "entry_guards": {
+          "candidate_functions": 7,
+          "transition_samples": 11,
+          "body_samples": 32,
+          "by_part": {
+            "Call/call_target": 1,
+            "Call/call_publish_frame": 1,
+            "Call/entry_budget": 1,
+            "Call/argument_source": 1,
+            "Return/entry_budget": 2,
+            "Return/return_restore_frame": 3,
+            "Return/return_dispatch": 2
+          },
+          "sampled_targets": [
+            {
+              "function": 2038,
+              "name": "<core::hash::sip::Sip13Rounds as core::hash::sip::Sip>::c_rounds[]",
+              "frame_size": 32,
+              "operations": 247,
+              "arguments": [
+                {
+                  "offset": 0,
+                  "size": 8
+                }
+              ],
+              "result": {
+                "offset": 0,
+                "size": 0
+              },
+              "callees": [],
+              "transition_samples": 11,
+              "body_samples": 31,
+              "call_parts": {
+                "call_target": 1,
+                "call_publish_frame": 1,
+                "entry_budget": 1,
+                "argument_source": 1
+              },
+              "return_parts": {
+                "entry_budget": 2,
+                "return_restore_frame": 3,
+                "return_dispatch": 2
+              },
+              "entry_plan": {
+                "blocks": 1,
+                "ranges": [
+                  {
+                    "address": {
+                      "offset": 0,
+                      "root": {
+                        "Input": 0
+                      }
+                    },
+                    "size": 8,
+                    "write": true
+                  },
+                  {
+                    "address": {
+                      "offset": 8,
+                      "root": {
+                        "Input": 0
+                      }
+                    },
+                    "size": 8,
+                    "write": true
+                  },
+                  {
+                    "address": {
+                      "offset": 16,
+                      "root": {
+                        "Input": 0
+                      }
+                    },
+                    "size": 8,
+                    "write": true
+                  },
+                  {
+                    "address": {
+                      "offset": 24,
+                      "root": {
+                        "Input": 0
+                      }
+                    },
+                    "size": 8,
+                    "write": true
+                  }
+                ],
+                "reads": 22,
+                "writes": 14
+              }
+            },
+            {
+              "function": 520,
+              "name": "<std::slice::Iter<'a, T> as std::iter::Iterator>::next['{erased}, u8]",
+              "frame_size": 288,
+              "operations": 183,
+              "arguments": [
+                {
+                  "offset": 8,
+                  "size": 8
+                }
+              ],
+              "result": {
+                "offset": 0,
+                "size": 8
+              },
+              "callees": [],
+              "transition_samples": 0,
+              "body_samples": 1,
+              "call_parts": {},
+              "return_parts": {},
+              "entry_plan": {
+                "blocks": 13,
+                "ranges": [
+                  {
+                    "address": {
+                      "offset": 0,
+                      "root": {
+                        "Input": 0
+                      }
+                    },
+                    "size": 8,
+                    "write": true
+                  },
+                  {
+                    "address": {
+                      "offset": 8,
+                      "root": {
+                        "Input": 0
+                      }
+                    },
+                    "size": 8,
+                    "write": true
+                  }
+                ],
+                "reads": 2,
+                "writes": 2
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "exhaustive",
+      "generated_samples": 1231,
+      "policies": {
+        "entry_guards": {
+          "candidate_functions": 8,
+          "transition_samples": 0,
+          "body_samples": 1,
+          "by_part": {},
+          "sampled_targets": [
+            {
+              "function": 4380,
+              "name": "<std::slice::Iter<'a, T> as std::iter::DoubleEndedIterator>::next_back['{erased}, u8]",
+              "frame_size": 240,
+              "operations": 201,
+              "arguments": [
+                {
+                  "offset": 8,
+                  "size": 8
+                }
+              ],
+              "result": {
+                "offset": 0,
+                "size": 8
+              },
+              "callees": [],
+              "transition_samples": 0,
+              "body_samples": 1,
+              "call_parts": {},
+              "return_parts": {},
+              "entry_plan": {
+                "blocks": 16,
+                "ranges": [
+                  {
+                    "address": {
+                      "offset": 0,
+                      "root": {
+                        "Input": 0
+                      }
+                    },
+                    "size": 8,
+                    "write": false
+                  },
+                  {
+                    "address": {
+                      "offset": 8,
+                      "root": {
+                        "Input": 0
+                      }
+                    },
+                    "size": 8,
+                    "write": true
+                  }
+                ],
+                "reads": 7,
+                "writes": 2
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "raw": ".work/scalar-entry-guard-coverage-01",
+  "plan_sha256": "fa52d9fc88d613ceec2cc9f798bf10c253080b06c750538cff62f1b5b59a1d0c",
+  "guest_commands": 0,
+  "executable_code_publications": 0,
+  "performance_measurement": false,
+  "scope": "Static entry-guard candidates from closed archived store-log bodies joined by exact artifact identity to partial perturbed adopted-VM samples. Whole body and transition coverage, not removable time. No new guest execution, direct-effect model, native admission or performance proof."
+}
