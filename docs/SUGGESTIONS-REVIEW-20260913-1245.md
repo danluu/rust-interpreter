@@ -283,3 +283,11 @@ Do not infer that the runtime caused the descriptive Cargo improvement or that
 this composition isolates the cache's marginal effect. All five full guards and
 complete/edited parser qualification remain required before adoption.
 [Scratch-memory primary](../results/scratch-memory-values-screen-token-01/ASSESSMENT.md).
+
+The fresh three-cycle token history also passes: 154 commands, wall 0.936992,
+CPU 0.934942, A/A wall 0.014128, wall margin 0.951120. The complete composition
+improves changed-source latency 6.30%, while remaining 1.571393x ordinary native.
+Advance the same campaign through the held-outs, preserving all existing gates;
+no runtime adoption follows from the primary alone. Retire only completed case
+compiler caches between cases, preserving the recorded checkpoint and artifacts.
+[Full token result](../results/scratch-memory-values-edit-token-01/ASSESSMENT.md).
