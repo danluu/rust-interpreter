@@ -71,8 +71,10 @@ Its census retains 168 plans and 138 block samples. Native emission retains
 165 plans and all that sampled coverage, preserving 71 existing scalar bodies.
 The runtime candidate passes 641 workspace tests/profile, 407 Python tests
 (22 skips), 121 strict/cache commands and three exact original profiles. Block
-scalar Calls rise from 11.23 to 27.65 million. Run the fresh 40-command primary
-next; no speedup or runtime adoption is yet established. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+scalar Calls rise from 11.23 to 27.65 million, but its 40-command primary fails:
+wall ratio 1.000153 and CPU 0.976356 remain within A/A variation. Park 494c9f01
+and cancel larger comparisons. Inspect repeated store guards and private slot
+traffic before choosing another implementation; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only

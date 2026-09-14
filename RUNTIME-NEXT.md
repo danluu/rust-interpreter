@@ -39,8 +39,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    71 adopted scalar bodies. Candidate 494c9f013bb5 passes 641 workspace tests
    per profile, 407 Python tests (22 skips), 121 strict/cache commands and three
    original profiles with exact counts/memory/entropy. Block scalar Calls rise
-   from 11.23 to 27.65 million. Run its fresh 40-command primary next; no speedup
-   is established and main retains df4006e0.
+   from 11.23 to 27.65 million. Its 40-command primary fails: wall 1.000153,
+   CPU 0.976356, wall A/A 0.068269. Park this revision and cancel larger histories.
+   Inspect repeated store checks and private slot traffic before another change.
+   Main retains df4006e0; no gain is established.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
    [current protocol costs](results/scalar-protocol-census-03/assessment.md),
@@ -61,7 +63,8 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    [native census](results/scalar-transaction-native-census-01/assessment.md),
    [immutable build](results/scalar-transaction-native-build-01/assessment.md),
    [strict checks](results/scalar-transaction-native-qualification-01/ASSESSMENT.md),
-   [original profiles](results/scalar-transaction-native-profile-01/ASSESSMENT.md).
+   [original profiles](results/scalar-transaction-native-profile-01/ASSESSMENT.md),
+   [failed store primary](results/scalar-transaction-native-screen-token-01/ASSESSMENT.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
