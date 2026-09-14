@@ -13,7 +13,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from interpreter import installed_tools
-NAME='conditional-demand-build-02'
+NAME='conditional-demand-build-03'
 BASELINE='df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
 def read(p):return json.loads(p.read_text())
 def main():
@@ -51,13 +51,34 @@ def main():
         paths += staging_inputs
         paths += [ROOT/p for p in subprocess.check_output(['git','ls-files','crates','scripts','tests','Cargo.toml','Cargo.lock','rust-toolchain.toml'],text=True).splitlines()]
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
+        # Reuse the completed debug command from the disk-stopped run only
+        # while every runtime, test, build-input and launcher source still matches.
+        prefix_out=ROOT/'results/conditional-demand-build-02'
+        prefix_closed=read(prefix_out/'closure.json');assert prefix_closed['status']=='closed'
+        assert prefix_closed['all_hashes_verified']
+        assert sha(prefix_out/'summary.json')==prefix_closed['summary_sha256']
+        assert sha(prefix_out/'terminal.json')==prefix_closed['terminal_sha256']
+        prefix=read(prefix_out/'summary.json');assert prefix['status']=='failed' and prefix['command_returncodes']==[0]
+        prefix_raw=ROOT/prefix['raw'];prefix_plan=read(prefix_raw/'plan.json')
+        assert sha(prefix_raw/'plan.json')==prefix['plan_sha256'] and sha(prefix_raw/'records.json')==prefix['records_sha256']
+        for name,digest in prefix_plan['frozen'].items():
+            if name.startswith(('crates/','scripts/','tests/')) or name in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']:
+                assert sha(ROOT/name)==digest,('debug source changed',name)
+        prefix_terminal=read(prefix_out/'terminal.json')
+        assert prefix_terminal['status']=='finished' and prefix_terminal['returncode']==1 and prefix_terminal['owner']==str(ROOT)
+        old_record,=read(prefix_raw/'records.json');assert old_record['label']=='test-debug' and old_record['returncode']==0
+        for stream in ['stdout','stderr']:assert sha(prefix_raw/('test-debug.'+stream))==old_record[stream+'_sha256']
+        matches=re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;', (prefix_raw/'test-debug.stdout').read_text())
+        assert sum(int(p) for p,_,_ in matches)==640 and all(int(f)==0 for _,f,_ in matches) and sum(int(i) for _,_,i in matches)==15
+        paths += [prefix_out/n for n in ['closure.json','summary.json','terminal.json']]
+        paths += [prefix_raw/n for n in ['plan.json','records.json','test-debug.stdout','test-debug.stderr']]
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip()
         revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,
             target=str(target.relative_to(ROOT)),same_source_root=True,required_free_bytes=needed,
-            allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=6,
+            allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=6,new_commands=5,reused_debug_commands=1,
             expected_workspace_tests_per_profile=640,expected_ignored_per_profile=15,
             baseline_tool_key=BASELINE,original_project_guest_commands=0,native_guest_unit_tests=True,
             performance_measurement=False))
@@ -74,8 +95,12 @@ def main():
         observer='jit::code_spans::region_staging::reconstruct_saved_regions_independently'
         for label in ['block','exhaustive']:
             commands.append((label,['cargo','+nightly-2026-09-08','test','--release',*common,'--lib','-p','rust-interp-bytecode',observer,'--','--ignored','--exact']))
-        records=[]
-        for label,command in commands:
+        assert old_record['command']==commands[0][1]
+        for stream in ['stdout','stderr']:
+            (work/('test-debug.'+stream)).write_bytes((prefix_raw/('test-debug.'+stream)).read_bytes())
+        records=[dict(old_record,reused_from=str(prefix_raw.relative_to(ROOT)),source_revision=prefix_plan['source_revision'])]
+        write(work/'records.json',records)
+        for label,command in commands[1:]:
             require_space(ROOT,8)
             if command[0]=='cargo':assert shutil.disk_usage(ROOT).free>=needed,'build reservation no longer holds'
             selected=dict(env)
@@ -121,10 +146,10 @@ def main():
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
         write(out/'summary.json',dict(status='passed',source_revision=revision,tests={'test-debug':640,'test-release':640},
-            ignored_per_profile=15,python={'discovered':431,'passed':409,'skipped':22},commands=len(records),
+            new_commands=5,reused_debug_commands=1,ignored_per_profile=15,python={'discovered':431,'passed':409,'skipped':22},commands=len(records),
             tool_key=key,binaries=binaries,composition=composition,
             matched_control=dict(tool_key=BASELINE,binaries=integration['binaries'],integration=str(integration_path.relative_to(ROOT))),
             source_manifest=str((work/'plan.json').relative_to(ROOT)),source_manifest_sha256=sha(work/'plan.json'),
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),raw=str(work.relative_to(ROOT)),
-            setup_seconds=sum(r['seconds'] for r in records),original_project_guest_commands=0,performance_measurement=False,exact_adopted_code_reconstruction=True))
+            setup_seconds=sum(r['seconds'] for r in records),new_setup_seconds=sum(r['seconds'] for r in records if 'reused_from' not in r),original_project_guest_commands=0,performance_measurement=False,exact_adopted_code_reconstruction=True))
 if __name__=='__main__':main()
