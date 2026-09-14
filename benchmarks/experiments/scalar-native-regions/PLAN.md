@@ -31,3 +31,15 @@ If coverage warrants a model, require differential full-state, fault and every-
 budget controls before emission, strict checking and original-test profiles before
 the fixed primary screen. A failed primary parks the candidate. No unchanged-build
 or standalone-loop speedup claim and no automatic larger history.
+
+
+The second census follows byte origins through overlapping copies and bounds each
+capture lifetime to its last exact same-width reuse. Only sizes 1/2/4/8/16 and
+producers with actual payload instructions qualify. Mixed-origin assembly,
+subranges and already-forwarded consumers get no exact-origin credit. A bounded
+linear scan models 15 temporary slots (the potentially available caller-saved
+v17–v31), declining new overlapping intervals when full. It does not emit SIMD
+instructions, establish a preservation proof, or change the runtime. Retain the
+original broader 109/51 load-sample totals as a reconciliation check. Five Rust
+origin/barrier/alias/overlap/capacity controls plus four partition controls run
+in both profiles, and the two Python controls run against this module directly.

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
-NAME = 'scalar-native-regions-01'
+NAME = 'scalar-native-regions-02'
 
 
 def read(p):
@@ -33,7 +33,7 @@ def main():
         assert summary['status'] == 'passed' and sha(summary_path) == closed['summary_sha256']
         bindings_path = ROOT / closed['artifact_bindings']
         assert sha(bindings_path) == closed['artifact_bindings_sha256']
-        paths = [closed_path, summary_path, bindings_path]
+        paths = [closed_path, summary_path, bindings_path, ROOT / 'results/scalar-native-regions-01/summary.json']
         for p, h in read(bindings_path).items():
             assert sha(ROOT / p) == h
             paths.append(ROOT / p)
@@ -51,7 +51,7 @@ def main():
         work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(owner=str(ROOT), source_revision=revision, frozen=frozen,
             target=str(target.relative_to(ROOT)), same_source_root=True, required_free_bytes=needed,
-            allocated_target_bytes=allocated, minimum_child_gib=8, controls=16, expected_commands=8,
+            allocated_target_bytes=allocated, minimum_child_gib=8, controls=20, expected_commands=8,
             guest_commands=0, executable_code_publications=0, production_runtime_changes=0, performance_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_', 'MEMORY_'))
                and k not in ['RUSTFLAGS', 'CARGO_ENCODED_RUSTFLAGS', 'RUSTC', 'RUSTC_WRAPPER', 'RUSTC_WORKSPACE_WRAPPER', 'RUST_TEST_THREADS']}
@@ -61,10 +61,10 @@ def main():
         cargo = ['cargo', '+nightly-2026-09-08', 'test', '--release', '--lib', '-p', 'rust-interp-bytecode',
                  '--locked', '--offline', '--jobs', '2', '--manifest-path', str(ROOT / 'Cargo.toml'), '--target-dir', str(target)]
         test = 'jit::code_spans::memory_parts::'
-        commands = [('python-controls', [sys.executable, str(ROOT / 'benchmarks/experiments/scalar-memory-parts/test_parts.py')], {}, ROOT, 2)]
+        commands = [('python-controls', [sys.executable, str(Path(__file__).with_name('test_parts.py'))], {}, ROOT, 2)]
         for release in [False, True]:
             base = cargo if release else [x for x in cargo if x != '--release']
-            for module, count in [('region_values',3),('memory_parts',4)]:
+            for module, count in [('region_values',5),('memory_parts',4)]:
                 commands.append((module + ('-release' if release else '-debug'), [*base,
                     'jit::code_spans::' + module + '::', '--', '--skip', 'observe_saved_small_memory_parts'], {}, ROOT, count))
         for label in ['block', 'exhaustive']:
@@ -97,8 +97,8 @@ def main():
         out = ROOT / 'results' / NAME
         report = read(out / 'attribution.json')
         assert report['status'] == 'passed' and len(report['cases']) == 2
-        write(out / 'summary.json', dict(status='passed', commands=8, controls=16, cases=[{k: c[k] for k in
-            ['case','generated_samples','selected_samples','opportunity_samples','opportunity_sites','static_opportunities']} for c in report['cases']],
+        write(out / 'summary.json', dict(status='passed', commands=8, controls=20, cases=[{k: c[k] for k in
+            ['case','generated_samples','selected_samples','opportunity_samples','origin_samples','static_opportunities','origin_static']} for c in report['cases']],
             setup_seconds=sum(r['seconds'] for r in records), source_revision=revision, raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work / 'plan.json'), records_sha256=sha(work / 'records.json'),
             attribution_sha256=sha(out / 'attribution.json'), census_sha256={l: sha(work / (l + '.json')) for l in ['block', 'exhaustive']},
