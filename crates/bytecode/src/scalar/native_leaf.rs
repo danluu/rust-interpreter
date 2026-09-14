@@ -336,3 +336,7 @@ mod tests;
 #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
 #[path="native_register_census.rs"]
 mod register_census;
+
+#[cfg(all(test,target_arch="aarch64",target_os="macos"))]
+#[path="native_commit_census.rs"]
+mod commit_census;
