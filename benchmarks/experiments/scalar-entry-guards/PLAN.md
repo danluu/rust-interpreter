@@ -16,7 +16,8 @@ Require every live external Read/Write address to be a constant or captured
 8-byte input plus a constant offset modulo 2^64. Only the existing exact 64-bit
 alias forms may be followed; memory-loaded roots, phis, base/frame addresses,
 narrow casts and variable offsets decline. Record every required nonempty range
-and read/write permission; retain the existing 16-store and scalar shape limits.
+and read/write permission; cap distinct ranges at 128 and retain the existing
+16-store and scalar shape limits.
 These are symbolic address expressions, not permission to dereference them.
 
 A prospective native entry would check all these ranges against stable backing,
@@ -51,3 +52,8 @@ conservative max(14 GiB, 8 GiB + twice allocated target) build admission and an
 8 GiB child floor. Freeze the restored sources and new observer separately from
 the old qualification; retain and close every command. No new guest or executable
 publication is part of this census.
+
+Run seven controls in debug and release (including a 512-case independent
+forward-path oracle), then one ignored release census of 111/124/10 exact
+archived bodies. Use fresh run ID scalar-entry-guard-census-01. No timer gate
+or native execution is included.

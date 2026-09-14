@@ -3,6 +3,9 @@ use super::*;
 #[cfg(test)]
 #[path="native_transaction_costs.rs"]
 mod costs;
+#[cfg(test)]
+#[path="native_entry_guards.rs"]
+mod entry_guards;
 
 #[derive(Clone,Copy)]
 struct Site {id:Id,address:Id,size:u8,offset:usize}
