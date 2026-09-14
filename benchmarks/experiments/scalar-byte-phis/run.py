@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
-NAME = 'scalar-byte-phis-controls-01'
+NAME = 'scalar-byte-phis-controls-02'
 
 
 def read(p):

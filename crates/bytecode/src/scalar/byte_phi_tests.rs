@@ -4,7 +4,8 @@ use crate::{Program,Slot,VERSION,Limits,Engine};
 pub(super) fn fixture(width:usize,first:usize,second:usize,fragmented:bool)->(Program,Plan) {
     assert!(width>0 && first+width<=16 && second+width<=16);
     let mut code=vec![Op::Local{dst:4,offset:32},Op::Load{dst:5,address:4,size:8},
-        Op::Local{dst:6,offset:48},Op::Switch{value:5,cases:vec![],otherwise:0}];
+        Op::Local{dst:6,offset:48},Op::Imm{dst:1,value:0xa5a5a5a5a5a5a5a5_a5a5a5a5a5a5a5a5},
+        Op::Store{address:6,src:1,size:16},Op::Switch{value:5,cases:vec![],otherwise:0}];
     let a=code.len();code.extend([Op::Local{dst:7,offset:first},Op::Copy{src:7,dst:6,size:width},Op::Jump{target:0}]);
     let jump=code.len()-1;let b=code.len();
     if fragmented && width>1 {
@@ -12,12 +13,13 @@ pub(super) fn fixture(width:usize,first:usize,second:usize,fragmented:bool)->(Pr
             Op::Local{dst:7,offset:16+second},Op::Local{dst:0,offset:48+width-1},Op::Copy{src:7,dst:0,size:1}]);
     } else {code.extend([Op::Local{dst:7,offset:16+second},Op::Copy{src:7,dst:6,size:width}]);}
     let join=code.len();code.push(Op::Return);
-    code[3]=Op::Switch{value:5,cases:vec![(0,a)],otherwise:b};code[jump]=Op::Jump{target:join};
+    code[5]=Op::Switch{value:5,cases:vec![(0,a)],otherwise:b};code[jump]=Op::Jump{target:join};
     let p=Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,data:vec![],statics:vec![],thread_locals:vec![],
         functions:vec![Function{name:"contiguous byte phis".into(),frame_size:64,frame_align:8,registers:8,
             args:vec![Slot{offset:0,size:16},Slot{offset:16,size:16},Slot{offset:32,size:8}],
             result:Slot{offset:48,size:16},code}]};
     crate::validate(&p).unwrap();let memory=crate::proof::memory_plan(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone());
+    assert!(memory.eligible,"{:?}",memory.decline);
     let plan=lower(&p.functions[0],&memory,250_000).unwrap();(p,plan)
 }
 fn check(p:&Program,plan:&Plan) {
