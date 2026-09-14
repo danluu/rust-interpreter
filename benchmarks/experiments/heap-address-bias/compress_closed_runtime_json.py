@@ -14,17 +14,15 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from compression_probe import metadata
 
-NAME='closed-diagnostic-json-compression-12'
-SCOPES=[
- 'native-medium-leaf-frame-guard-cpu-features-01','native-wide-cpu-features-01',
- 'native-medium-leaf-cpu-features-01','native-popcount-cpu-features-01',
- 'lazy-native-cpu-features-01','native-exit-dispatch-cpu-features-01',
- 'native-medium-copy-wide-pointer-01','native-wide-wide-pointer-01',
- 'native-medium-leaf-wide-pointer-01','native-medium-leaf-frame-guard-wide-pointer-01',
- 'native-exit-dispatch-wide-pointer-01','lazy-native-wide-pointer-01','native-popcount-wide-pointer-01',
- 'native-wide-profile-01','jit-register-width-census-01','jit-register-width-weighted-01',
- 'constant-call-arguments-census-01','memory-pair-census-02','native-counter-flush-emission-01',
- 'native-indirect-flush-emission-02']
+NAME='closed-diagnostic-json-compression-13'
+SCOPES=['scalar-call-guards-profile-01']
+
+def digests(value):
+    if isinstance(value,dict):
+        for x in value.values():yield from digests(x)
+    elif isinstance(value,list):
+        for x in value:yield from digests(x)
+    elif isinstance(value,str) and len(value)==64 and all(c in '0123456789abcdef' for c in value):yield value
 
 def no_open_file(path):
     result=subprocess.run(['lsof','-Fpn','--',str(path)],text=True,capture_output=True)
@@ -35,56 +33,57 @@ def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,10)
         revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-        sources={};proofs={};skips=[];completion=[]
+        sources={};proofs={};skips=[]
         for name in SCOPES:
-            raw=ROOT/'.work'/name
+            result=ROOT/'results'/name/'summary.json';raw=ROOT/'.work'/name
+            summary=json.loads(result.read_text())
+            assert summary['status']=='passed'
+            assert hashlib.sha256(subprocess.check_output(['git','show',revision+':'+str(result.relative_to(ROOT))])).hexdigest()==sha(result)
             terminal=ROOT/'.work/experiments'/name/'status.json'
-            if not terminal.exists():
-                terminal=raw/'active-command.json'
-            assert terminal.is_file(),name
-            status=json.loads(terminal.read_text())
-            assert status['status']=='finished' and isinstance(status['returncode'],int),(name,status)
-            allowed_cwd=ROOT/'.work/sources/fre/crates/fre-kernels' if name=='token-phrase-profile-01' else ROOT
-            assert status['cwd']==str(allowed_cwd),name
-            if terminal.parent.parent==ROOT/'.work/experiments':assert status['owner']==str(ROOT)
-            pids=[status[k] for k in ['pid','parent_pid','supervisor_pid','child_pid'] if k in status]
-            inspection=subprocess.run(['ps','-p',','.join(map(str,pids)),'-o','pid,ppid,lstart,tty,command'],text=True,capture_output=True)
-            assert inspection.returncode in [0,1] and not inspection.stderr
-            assert not any(name in row for row in inspection.stdout.splitlines()[1:]),inspection.stdout
-            opened=subprocess.run(['lsof','-Fpn','+D',str(raw)],text=True,capture_output=True)
-            assert opened.returncode==1 and not opened.stdout and not opened.stderr,(name,opened.stdout,opened.stderr)
-            local={str(terminal.relative_to(ROOT)):sha(terminal)}
-            if 'plan_sha256' in status:
-                assert sha(terminal.with_name('plan.json'))==status['plan_sha256']
-                local[str(terminal.with_name('plan.json').relative_to(ROOT))]=status['plan_sha256']
-            if 'log_sha256' in status:
-                assert sha(terminal.with_name('command.log'))==status['log_sha256']
-                local[str(terminal.with_name('command.log').relative_to(ROOT))]=status['log_sha256']
-            for file in ['plan.json','summary.json','records.json','record.json','frozen.json','status.json','active.json','active-command.json']:
-                p=raw/file
-                if p.exists():local[str(p.relative_to(ROOT))]=sha(p)
-            committed=ROOT/'results'/name/'summary.json'
-            if committed.exists():
-                assert hashlib.sha256(subprocess.check_output(['git','show',revision+':'+str(committed.relative_to(ROOT))])).hexdigest()==sha(committed)
-                local[str(committed.relative_to(ROOT))]=sha(committed)
-            # Old runtime observers used direct captures and sometimes closed
-            # with an observer failure. Compression requires completed ownership,
-            # not a passing performance result. Record today's exact byte hashes;
-            # do not imply these newly recorded hashes were historically bound.
-            completion.append(dict(run=name,terminal=str(terminal.relative_to(ROOT)),returncode=status['returncode'],process_inspection=inspection.stdout,open_file_check=opened.returncode))
-            candidates=list(raw.glob('*.json'))+list(raw.glob('*.jsonl'))
+            if name=='operation-map-real-01':
+                terminal=raw/'active.json';status=json.loads(terminal.read_text())
+                assert status['cwd']==str(ROOT) and status['status']=='finished' and status['returncode']==0
+                assert summary['commands']==3 and summary['exact_adopted_code'] and summary['exact_per_pc_profiles']
+            else:
+                if not terminal.exists():
+                    skips.append(dict(run=name,reason='no supervisor receipt'));continue
+                status=json.loads(terminal.read_text())
+                if status.get('status')!='finished' or status.get('returncode')!=0:
+                    skips.append(dict(run=name,reason='supervisor not successful'));continue
+                assert status['owner']==status['cwd']==str(ROOT)
+            local={str(result.relative_to(ROOT)):sha(result),str(terminal.relative_to(ROOT)):sha(terminal)}
+            plan=raw/'plan.json'
+            if plan.exists():
+                p=json.loads(plan.read_text())
+                if p.get('owner')!=str(ROOT):
+                    skips.append(dict(run=name,reason='no exact owned plan'));continue
+                if 'plan_sha256' in summary:assert sha(plan)==summary['plan_sha256']
+                local[str(plan.relative_to(ROOT))]=sha(plan)
+            else:
+                skips.append(dict(run=name,reason='no owned plan'));continue
+            if 'records_sha256' in summary:
+                records=raw/'records.json';assert sha(records)==summary['records_sha256']
+                rr=json.loads(records.read_text());assert all(row['returncode']==0 for row in rr)
+                local[str(records.relative_to(ROOT))]=sha(records)
+            known=set(digests(summary));selected=[]
+            candidates=list(raw.glob('*.json'))
             for child in raw.iterdir():
-                if child.is_dir() and (child.name.endswith('-code') or child.name=='code'):candidates+=list(child.glob('*.json'))
+                if child.is_dir() and child.name.endswith('-code'):candidates+=list(child.glob('*.json'))+list(child.glob('code.bin'))
             for candidate in candidates:
-                if candidate.name in ['plan.json','summary.json','frozen.json','status.json','active.json','active-command.json']:continue
+                if candidate.name!='code.bin' and not any(word in candidate.name for word in ['profile','map','operations']):continue
                 info=candidate.lstat()
                 if info.st_flags&32 or info.st_size<1024**2:continue
                 assert stat.S_ISREG(info.st_mode) and not info.st_mode&0o111 and candidate.resolve(strict=True)==candidate
-                sources[str(candidate.relative_to(ROOT))]=sha(candidate)
-            proofs.update(local)
+                digest=sha(candidate)
+                if digest not in known:
+                    skips.append(dict(path=str(candidate.relative_to(ROOT)),reason='no committed summary hash'));continue
+                selected.append((str(candidate.relative_to(ROOT)),digest))
+            if selected:
+                proofs.update(local)
+                for path,digest in selected:assert path not in sources;sources[path]=digest
         assert sources,'no eligible evidence'
         if '--inspect' in sys.argv:
-            print(json.dumps(dict(files=len(sources),allocated_bytes=sum((ROOT/p).stat().st_blocks*512 for p in sources),paths=list(sources),completion=completion)));return
+            print(json.dumps(dict(files=len(sources),allocated_bytes=sum((ROOT/p).stat().st_blocks*512 for p in sources),paths=list(sources),skips=skips)));return
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         inventory=[]
         for relative,digest in sorted(sources.items()):
@@ -95,7 +94,7 @@ def main():
             inventory.append(dict(path=relative,sha256=digest,before=before))
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
             script_sha256=sha(Path(__file__)),proofs=proofs,files=inventory,
-            scope='Exact unopened diagnostic JSON files from explicitly listed completed runtime experiments. Readable hashes are recorded immediately before compression; historical benchmark qualifications are neither changed nor inferred. Legacy direct captures and failed terminal observers are eligible only after exact completion and open-file checks. Preserve bytes and file metadata using verified atomic APFS compression; no executables, bytecode, source, active or private-workload caches.',selection_skips=skips,completed_scopes=completion))
+            scope='Only completed guarded scalar-call profile JSON, maps and non-executable native code.bin diagnostic copies. Every selected readable hash is bound by the committed passed six-command profile summary. Preserve bytes and metadata using staged APFS compression; no installed executable, guest RBC, source, active or private cache mutation.',selection_skips=skips))
         before_free=shutil.disk_usage(ROOT).free;rows=[]
         for item in inventory:
             require_space(ROOT,10);source=ROOT/item['path'];before=item['before'];digest=item['sha256']
