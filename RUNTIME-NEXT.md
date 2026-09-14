@@ -8,18 +8,19 @@ pgrust, rg-aot and Nushell differences are within variation. The full parser
 still loses to native. [Integration and limits](results/scratch-scalar-main-qualification-01/assessment.md).
 
 Current manual direction: demand-driven ordinary-region compilation. The closed
-register-file census redirects away from repeated allocation/flush variants.
-Three exact adopted profiles show 40.92–43.18% of ordinary emitted bytes in
-regions with neither charged native nor interpreted work; these aggregate counts
-predict no saving. The function-analysis extraction passes 345 bytecode controls
-per profile and reconstructs both adopted unprofiled captures exactly. Runtime
-work stays on `experiment/demand-region-emission-20260914`; main's adopted VM
-is unchanged. Next qualify single-region staging and pending-edge relocation,
-then remove dense per-function temporaries from per-region work and bound retained
-analysis before any live demand engine or changed-source screen.
-[Register traffic](results/ordinary-memory-traffic-01/assessment.md),
-[region coverage](results/demand-region-census-01/assessment.md),
-[analysis extraction](results/demand-function-analysis-01/assessment.md).
+coverage census finds 40.92–43.18% of ordinary emitted bytes in regions with no
+recorded charged work, without predicting preparation savings. Cached single-
+region staging now reconstructs both adopted captures exactly. Compact retained
+liveness passes 350 bytecode controls per profile and the same reconstruction;
+counted retained payload falls from 69.5/85.4 MB to 7.5/9.5 MB in captured token
+function sets. No demand execution is enabled yet. Next bound retention at
+16 MiB with sorted hint vectors and eager fallback, then implement and qualify
+publication/link transactions before real changed-source timing. Runtime work
+stays on `experiment/demand-region-emission-20260914`; main retains its adopted VM.
+[Region coverage](results/demand-region-census-01/assessment.md),
+[cached staging](results/demand-region-cached-01/assessment.md),
+[compact liveness](results/demand-compact-liveness-01/assessment.md),
+[storage comparison](results/demand-analysis-storage-02/assessment.md).
 
 1. The two adopted-VM captures are closed: all 1,561 / 1,231 generated self
    samples map to exact same-process schema-2 emission. Memory partitioning
