@@ -39,7 +39,9 @@ def main():
         assert sha(outer/'command.log')==terminal['log_sha256']
         assert not (result/'closure.json').exists()
         (result/'terminal.json').write_bytes((outer/'status.json').read_bytes())
+        write(work/'closure-bindings.json',dict(frozen_inputs=bindings,artifacts=artifacts))
         write(result/'closure.json',dict(status='closed',summary_sha256=sha(result/'summary.json'),terminal_sha256=sha(result/'terminal.json'),
-            frozen_inputs=bindings,artifacts=artifacts,all_hashes_verified=True,guest_commands=0,performance_measurement=False))
+            frozen_input_count=len(bindings),artifact_count=len(artifacts),bindings=str((work/'closure-bindings.json').relative_to(ROOT)),
+            bindings_sha256=sha(work/'closure-bindings.json'),all_hashes_verified=True,guest_commands=0,performance_measurement=False))
         print(run,len(bindings),'frozen inputs;',len(artifacts),'artifacts verified')
 if __name__=='__main__':main()
