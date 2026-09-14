@@ -6,6 +6,22 @@ fn number(value: &Value, key: &str) -> usize {
     usize::try_from(value[key].as_u64().unwrap()).unwrap()
 }
 
+/// Apply whole-function link decisions to an isolated scalar transition.
+/// Only recorded branch placeholders may change. Destinations come from
+/// reconstructed internal entries or the transition's own fallback, never
+/// from the saved machine word that this observer is supposed to verify.
+fn relocate_transition(a: &mut Assembler<'_>, staged: &CompiledFunction<'_>, base: usize) {
+    assert!(base+a.words.len()<=staged.words.len());
+    for &(at,successor) in &a.links {
+        assert!(at<a.words.len());assert_eq!(a.words[at],0x14000000);
+        let fallback=*a.scalar_fallbacks.get(&at).expect("scalar successor fallback");
+        assert!(fallback<a.words.len());
+        let target=staged.internal_entries.get(successor).copied().flatten().unwrap_or(base+fallback);
+        assert!(target<staged.words.len());
+        a.words[at]|=branch_displacement(base+at,target,26,CodegenLimit::Jump).unwrap();
+    }
+}
+
 pub(in crate::jit) fn validate_partition(a: &Assembler<'_>) -> Result<(), &'static str> {
     let mut cursor = 0;
     for span in &a.protocol_spans {
@@ -161,8 +177,9 @@ fn observe_saved_protocol() {
         let slots = call_slots::collect(f, &program);
         for row in collector.rows.iter().filter(|row| row.kind == Kind::Transition) {
             let pc = row.pc.unwrap();
-            let (a, resume, _) = jit.emit_resumable_transition(f, pc, &reads,
+            let (mut a, resume, _) = jit.emit_resumable_transition(f, pc, &reads,
                 allocation.as_ref(), slots.get(&pc).map(Vec::as_slice)).unwrap();
+            relocate_transition(&mut a,&staged,(row.offset-offset)/4);
             verify_words(&a.words, &bytes[row.offset..row.end]).unwrap();
             assert_eq!(staged.resumes[pc], Some((row.offset-offset)/4 + resume));
             validate_partition(&a).unwrap();
@@ -233,5 +250,41 @@ fn protocol_scalar_paths_partition_guards_arguments_commit_and_fallback() {
                 assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
             }
         }
+    }
+}
+
+#[test]
+fn protocol_scalar_relocations_match_linked_and_interpreted_successors() {
+    for interpreted in [false,true] {
+        let mut caller=Function{name:"relocated scalar call".into(),frame_size:64,frame_align:16,
+            registers:2,args:vec![],result:crate::Slot{offset:0,size:0},code:vec![
+                Op::Local{dst:0,offset:32},Op::Local{dst:1,offset:0},
+                Op::Call{function:1,args:vec![0],destination:1}]};
+        if interpreted {caller.code.push(Op::Allocate{dst:0,size:0,align:0,zeroed:true});}
+        caller.code.push(Op::Return);
+        let callee=Function{name:"relocated scalar leaf".into(),frame_size:32,frame_align:16,
+            registers:2,args:vec![crate::Slot{offset:16,size:8}],result:crate::Slot{offset:0,size:8},
+            code:vec![Op::Local{dst:0,offset:16},Op::Load{dst:1,address:0,size:8},
+                Op::Local{dst:0,offset:0},Op::Store{address:0,src:1,size:8},Op::Return]};
+        let p=Program{version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
+            functions:vec![caller,callee],data:vec![],statics:vec![],thread_locals:vec![]};
+        crate::validate(&p).unwrap();
+        let mut work=crate::proof::MAX_GLOBAL_WORK;
+        let memory=crate::proof::memory_plan(&p,1,&mut work);
+        let plan=crate::scalar_ir::lower(&p.functions[1],&memory,250_000).unwrap();
+        let leaf=crate::scalar_ir::native_leaf::emit_call(&plan,false).unwrap();
+        let mut jit=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();jit.enable_scalar_calls();
+        jit.observe_saved_scalar_entry(1,0,leaf.words.len()*4,0x10000000);
+        let f=&p.functions[0];let reads=read_registers(f);let allocation=values::analyze(f);
+        let slots=call_slots::collect(f,&p);
+        let staged=jit.emit_function_inner(f,MAX_CODE_BYTES/4,0,None).unwrap().unwrap();
+        let (mut a,_,_)=jit.emit_resumable_transition(f,2,&reads,allocation.as_ref(),slots.get(&2).map(Vec::as_slice)).unwrap();
+        let base=staged.entries[2].unwrap().offset/4;
+        assert!(!a.links.is_empty());assert_eq!(staged.internal_entries[3].is_none(),interpreted);
+        assert_ne!(&a.words, &staged.words[base..base+a.words.len()]);
+        relocate_transition(&mut a,&staged,base);
+        assert_eq!(&a.words, &staged.words[base..base+a.words.len()]);
+        validate_partition(&a).unwrap();
+        assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
     }
 }

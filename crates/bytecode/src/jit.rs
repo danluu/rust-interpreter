@@ -336,6 +336,8 @@ struct CompiledFunction<'a> {
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
     resumes: Vec<Option<usize>>,
+    #[cfg(test)]
+    internal_entries: Vec<Option<usize>>,
     operations: usize,
     assertions: Vec<Assertion<'a>>,
     register_pairs: usize,
@@ -785,6 +787,7 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+            #[cfg(test)] internal_entries,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),

@@ -19,8 +19,8 @@ and each transition, validate its exact same-process bytes and operation map,
 and retain partial-window host/unresolved observations. Scalar body samples
 remain separate; only native Call/Return self PCs enter this partition.
 
-Run the two existing protocol controls plus a new scalar control in debug and
-release. The scalar control covers zero/1/4/8/16-byte arguments/results, profiled
+Run the two existing protocol controls, a scalar partition control and a
+scalar relocation control in debug and release. The scalar control covers zero/1/4/8/16-byte arguments/results, profiled
 and unprofiled emission, and two fixed arena bases without executing code. Then
 reconstruct the two closed captures and attribute all their transition samples.
 Keep every failure and require exact counts and full byte reconstruction.
@@ -30,3 +30,13 @@ settings, the shared lock, max(14 GiB, 8 GiB + twice allocated target) initial
 admission and an 8 GiB child floor. This is diagnostic work with no guest
 execution, performance measurement or change to the adopted runtime. Choose
 the next production mechanism only after the current costs are partitioned.
+
+
+Attempt 01 failed during controller parsing before any work; the syntax fix was
+parsed before attempt 02. Attempt 02 passed both three-test protocol suites and
+full-function reconstruction, then rejected isolated transition bytes because
+scalar successors are relocated by the whole-function linker. Retain that
+failure. Attempt 03 reapplies only recorded scalar branch placeholders using
+reconstructed internal-entry/fallback decisions, then verifies every byte.
+The new control covers both compiled and interpreted successors. It never
+copies a saved branch word to make a mismatching fragment pass.
