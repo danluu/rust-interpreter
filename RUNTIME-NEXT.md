@@ -14,11 +14,15 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    [Samples](results/scratch-scalar-runtime-sampling-01/assessment.md),
    [memory parts](results/scratch-scalar-memory-parts-01/assessment.md).
 2. The source/narrow-Copy observer passes 22 controls and exact reconstruction,
-   but covers only 22 / 1 actual load samples. Park it as a possible component;
-   no production implementation or timing follows. Next partition the current
-   409 / 440 Call/Return samples, with the scalar transaction labeled separately.
-   Extend schema-2 saved reconstruction and require unchanged full native bytes.
-   [Scratch coverage and limits](results/scratch-source-census-01/assessment.md).
+   but covers only 22 / 1 actual load samples. It stays parked. The scalar-aware
+   protocol observer now reconstructs all 409 / 440 Call/Return samples exactly;
+   ordinary frame clearing accounts for 89 / 62. Next census whether the existing
+   scalar graph's virtual zero initialization can cover leaf targets rejected
+   only by the memory plan's initialization prerequisite. Preserve confinement,
+   bounds, widths, effects, control-flow and work limits; count actual sample
+   coverage before any production change.
+   [Scratch coverage](results/scratch-source-census-01/assessment.md),
+   [current protocol costs](results/scalar-protocol-census-03/assessment.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
