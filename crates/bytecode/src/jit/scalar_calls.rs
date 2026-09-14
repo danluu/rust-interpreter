@@ -8,13 +8,13 @@ use crate::{proof, scalar_ir};
 
 fn memory_plan(program:&Program,id:usize,work:&mut usize)->proof::MemoryPlan {
     #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-    if crate::scalar_call_model::native_stores_enabled() {return proof::memory_plan_transaction(program,id,work);}
-    proof::memory_plan_for_call(program,id,work)
+    if !crate::scalar_call_model::native_stores_enabled() {return proof::memory_plan_for_call(program,id,work);}
+    proof::memory_plan_transaction(program,id,work)
 }
 fn emit(plan:&scalar_ir::Plan,profiled:bool,heap:bool)->Result<scalar_ir::native_leaf::Emitted,&'static str> {
     #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-    if crate::scalar_call_model::native_stores_enabled() {return scalar_ir::native_leaf::emit_call_transaction(plan,profiled,heap);}
-    scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap)
+    if !crate::scalar_call_model::native_stores_enabled() {return scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap);}
+    scalar_ir::native_leaf::emit_call_transaction(plan,profiled,heap)
 }
 
 pub(super) struct State {

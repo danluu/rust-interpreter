@@ -8,7 +8,7 @@ fn fixture(stores:usize)->Program {
             args:vec![Slot{offset:0,size:8}],result:Slot{offset:0,size:0},code}]}
 }
 #[test]
-fn transaction_store_effects_are_live_and_production_admission_stays_closed() {
+fn transaction_store_effects_are_live_and_readonly_admission_stays_closed() {
     let p=fixture(2);crate::validate(&p).unwrap();
     assert!(!crate::proof::memory_plan_for_call(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone()).eligible);
     let memory=crate::proof::memory_plan_transaction(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone());assert!(memory.eligible);

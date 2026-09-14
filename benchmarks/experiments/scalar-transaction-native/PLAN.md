@@ -32,3 +32,9 @@ all failed revisions. After native controls pass, re-census actual emission,
 then qualify immutable tools, original profiles and the 40-command primary.
 No larger histories follow a failed primary. Shared lock, two workers, protected
 ROOT target and conservative disk floors remain mandatory.
+
+Native controls03 and native census01 are now closed. The runtime experiment
+selects the same backend through the existing explicit scalar-call option. The
+old confined/read-only policy remains available only as a scoped test reference.
+Full immutable workspace/strict/profile qualification is required for this
+admission change before any latency screen. Main remains on df4006e0.

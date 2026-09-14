@@ -9,15 +9,18 @@ struct Statistics {attempts:usize,commits:usize,declines:usize}
 thread_local! {
     static ENABLED:Cell<bool>=const {Cell::new(false)};
     static STATISTICS:Cell<Statistics>=Cell::new(Statistics::default());
-    static NATIVE_STORES:Cell<bool>=const {Cell::new(false)};
+    static NATIVE_STORES:Cell<bool>=const {Cell::new(true)};
     static STORE_MODEL:Cell<bool>=const {Cell::new(false)};
     static SNAPSHOT_ENABLED:Cell<bool>=const {Cell::new(false)};
     static SNAPSHOT:RefCell<Option<(Vec<u8>,Vec<u8>)>>=const {RefCell::new(None)};
 }
 pub(crate) fn native_stores_enabled()->bool {NATIVE_STORES.with(Cell::get)}
-struct NativeEnabled;
-impl NativeEnabled {fn new()->Self {NATIVE_STORES.with(|s|assert!(!s.replace(true)));Self}}
-impl Drop for NativeEnabled {fn drop(&mut self) {NATIVE_STORES.with(|s|s.set(false));}}
+struct NativeEnabled(bool);
+impl NativeEnabled {
+    fn new()->Self {Self(NATIVE_STORES.with(|s|s.replace(true)))}
+    fn confined_reference()->Self {Self(NATIVE_STORES.with(|s|s.replace(false)))}
+}
+impl Drop for NativeEnabled {fn drop(&mut self) {NATIVE_STORES.with(|s|s.set(self.0));}}
 struct Enabled;
 impl Enabled {
     fn new()->Self {ENABLED.with(|v|assert!(!v.replace(true)));STATISTICS.with(|v|v.set(Statistics::default()));Self}

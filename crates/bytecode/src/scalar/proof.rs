@@ -318,7 +318,7 @@ pub fn memory_plan_readonly(program:&Program,id:usize,remaining:&mut usize)->Mem
     memory_plan_mode(program,id,remaining,Mode::ReadOnly)
 }
 
-/// Model only: production scalar Call admission never selects this mode.
+/// Bounded external effects for the private-store scalar Call backend.
 pub fn memory_plan_transaction(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
     memory_plan_mode(program,id,remaining,Mode::Transaction)
 }

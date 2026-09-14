@@ -289,7 +289,7 @@ pub(crate) fn emit_call(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> 
 pub(crate) fn emit_call_with_heap(plan:&Plan,profiled:bool,heap:bool)->Result<Emitted,&'static str> {
     emit_inner(plan,profiled,true,false,true,true,true,heap,false)
 }
-/// Only scoped native controls select this backend until full qualification.
+/// Bounded store backend selected by this experiment's explicit scalar Calls.
 pub(crate) fn emit_call_transaction(plan:&Plan,profiled:bool,heap:bool)->Result<Emitted,&'static str> {
     emit_inner(plan,profiled,true,false,true,true,true,heap,true)
 }

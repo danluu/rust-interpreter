@@ -112,7 +112,7 @@ fn native_readonly_conditional_reads_and_high_pointer_bits_retain_original_seman
 }
 
 #[test]
-fn native_readonly_shared_arena_reconstruction_and_write_rejection_are_exact() {
+fn native_readonly_shared_arena_reconstruction_and_bounded_write_admission_are_exact() {
     let p=read_pair(8,false);
     for profiled in [false,true] {
         let mut jit=Jit::new_resumable(&p,profiled,16*1024*1024,true).unwrap();jit.enable_scalar_calls();
@@ -122,7 +122,7 @@ fn native_readonly_shared_arena_reconstruction_and_write_rejection_are_exact() {
     }
     let mut p=p;p.functions[1].code.insert(3,Op::Store{address:1,src:2,size:8});
     let mut jit=Jit::new_resumable(&p,false,16*1024*1024,true).unwrap();jit.enable_scalar_calls();
-    jit.ensure_function(0).unwrap();assert!(jit.scalar_entry(1).is_none());
+    jit.ensure_function(0).unwrap();assert!(jit.scalar_entry(1).is_some());
 }
 
 #[test]
