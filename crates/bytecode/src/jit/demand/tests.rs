@@ -101,6 +101,12 @@ fn live_demand_loops_preserve_counts_and_omit_cold_regions() {
     assert_eq!(run.value, 7);
     assert!(run.jit_operations < eager.jit_operations);
     assert!(run.jit_bytes < eager.jit_bytes);
+    let demand = run.jit_demand.unwrap();
+    assert!(eager.jit_demand.is_none());
+    assert_eq!(demand.published_regions, 5);
+    assert_eq!((demand.declined_regions, demand.eager_fallbacks), (0, 0));
+    assert!((1..=MAX_RETAINED_BYTES).contains(&demand.plan_bytes));
+    assert!((1..=MAX_METADATA_BYTES).contains(&demand.metadata_bytes));
 }
 
 #[test]
@@ -170,6 +176,7 @@ fn demand_admission_refusals_reuse_eager_analysis_and_code_limits_keep_vm_paths(
         }
         jit.ensure_function(0).unwrap();
         assert_eq!(jit.demand.as_ref().unwrap().eager_fallbacks, 1);
+        assert_eq!(jit.demand_statistics().unwrap().eager_fallbacks, 1);
         assert!(jit.demand.as_ref().unwrap().functions[0].is_none());
         assert_eq!(jit.code.as_ref().unwrap().published().1, words);
         assert!(!jit.wants_region(0, 4));
@@ -178,6 +185,8 @@ fn demand_admission_refusals_reuse_eager_analysis_and_code_limits_keep_vm_paths(
         compare(&p, &[3], Limits { jit_code_bytes, ..options() });
         let run = execute_with_engine(&p, &[3], Limits { jit_code_bytes, ..options() }, Engine::Jit).unwrap();
         assert!(run.jit_bytes <= jit_code_bytes);
+        let stats = run.jit_demand.unwrap();
+        if jit_code_bytes == 0 { assert_eq!(stats.published_regions, 0); assert!(stats.declined_regions > 0); }
     }
 }
 

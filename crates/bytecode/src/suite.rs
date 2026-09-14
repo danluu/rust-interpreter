@@ -59,11 +59,15 @@ fn worker(program: &Program, mode: Mode, limits: &Limits, entries: &[(&str, usiz
         };
         let seconds = test_started.elapsed().as_secs_f64();
         let mut outcome = match result {
-            Ok(run) => json!({"name":name,"function":entry,"status":"passed","seconds":seconds,
+            Ok(run) => {
+                let mut row = json!({"name":name,"function":entry,"status":"passed","seconds":seconds,
                 "instructions":run.instructions,"peak_guest_memory":run.peak_memory,
                 "jit_compile_ns":run.jit_compile_nanos,"jit_bytes":run.jit_bytes,
                 "jit_compiled_functions":run.jit_compiled_functions,"jit_declined_functions":run.jit_declined_functions,
-                "jit_instructions":run.jit_instructions,"jit_entries":run.jit_entries}),
+                    "jit_instructions":run.jit_instructions,"jit_entries":run.jit_entries});
+                if let Some(demand) = run.jit_demand { row["jit_demand"] = json!(demand); }
+                row
+            }
             Err(error) => {
                 json!({"name":name,"function":entry,"status":"failed","seconds":seconds,"error":error})
             }

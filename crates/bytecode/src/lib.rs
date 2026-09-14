@@ -479,6 +479,18 @@ impl Default for Limits {
     }
 }
 
+/// Cumulative ownership/admission counters for one demand JIT owner. Counted
+/// payload includes buffer capacities and headers, not allocator rounding,
+/// transient analysis scratch, executable code or the separate resume tables.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct DemandJitStatistics {
+    pub published_regions: usize,
+    pub declined_regions: usize,
+    pub eager_fallbacks: usize,
+    pub plan_bytes: usize,
+    pub metadata_bytes: usize,
+}
+
 #[derive(Debug)]
 pub struct Execution {
     pub value: u128,
@@ -508,6 +520,7 @@ pub struct Execution {
     pub jit_liveness_declines: usize,
     pub jit_resumable_calls: u64,
     pub jit_resumable_returns: u64,
+    pub jit_demand: Option<DemandJitStatistics>,
 }
 
 struct Memory {
@@ -1443,6 +1456,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
         jit_register_functions: jit.as_ref().map_or(0, |j| j.register_functions),
         jit_register_pairs: jit.as_ref().map_or(0, |j| j.register_pairs),
         jit_liveness_declines: jit.as_ref().map_or(0, |j| j.liveness_declines),
+        jit_demand: jit.as_ref().and_then(|j| j.demand_statistics()),
         jit_resumable_calls: resumable_calls, jit_resumable_returns: resumable_returns })
 }
 

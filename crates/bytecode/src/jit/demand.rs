@@ -52,6 +52,7 @@ pub(super) struct State {
     metadata_used: usize,
     pub declined_regions: usize,
     pub eager_fallbacks: usize,
+    published_regions: usize,
 }
 
 impl State {
@@ -65,7 +66,7 @@ impl State {
         let metadata_used = std::mem::size_of::<Self>() + owned.capacity() * std::mem::size_of::<Option<Box<FunctionState>>>();
         if metadata_used > MAX_METADATA_BYTES { return Err("demand function index capacity exceeds budget".into()); }
         owned.resize_with(functions, || None);
-        Ok(Self { plans, functions: owned, metadata_used, declined_regions: 0, eager_fallbacks: 0 })
+        Ok(Self { plans, functions: owned, metadata_used, declined_regions: 0, eager_fallbacks: 0, published_regions: 0 })
     }
 
     fn wants(&self, id: usize, pc: usize) -> bool {
@@ -180,6 +181,7 @@ impl<'a> Jit<'a> {
         // All fallible work finished before code commit. The table slot and
         // fixed publication capacity were reserved, and the program is owned.
         demand.metadata_used += charge;
+        demand.published_regions += 1;
         state.frontier[pc] = 2;
         state.publications.push(Publication { pc, offset, bytes, assertion_base, assertions: assertion_count });
         *slot = arena + offset + resume * 4;
@@ -206,6 +208,13 @@ impl<'a> Jit<'a> {
 
     pub(crate) fn wants_region(&self, id: usize, pc: usize) -> bool {
         self.demand.as_ref().is_some_and(|state| state.wants(id, pc))
+    }
+
+    pub(crate) fn demand_statistics(&self) -> Option<crate::DemandJitStatistics> {
+        let state = self.demand.as_ref()?;
+        Some(crate::DemandJitStatistics { published_regions: state.published_regions,
+            declined_regions: state.declined_regions, eager_fallbacks: state.eager_fallbacks,
+            plan_bytes: state.plans.used_bytes(), metadata_bytes: state.metadata_used })
     }
 
     pub(crate) fn ensure_region(&mut self, id: usize, pc: usize) -> Result<bool, String> {

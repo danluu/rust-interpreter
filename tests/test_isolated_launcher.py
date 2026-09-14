@@ -54,6 +54,17 @@ class IsolatedLauncherValidation(unittest.TestCase):
             for count in ['0', '-1', '65', '1.5']:
                 with self.subTest(count=count): self.rejected(base + ['--suite-workers', count])
 
+    def test_demand_regions_require_checked_resumable_jit_before_tools(self):
+        base = ['--entry', 'first', '--jit-demand-regions']
+        for extra in [[], ['--engine', 'jit'],
+                      ['--engine', 'jit', '--jit-resumable-calls', '--jit-native-calls']]:
+            with self.subTest(extra=extra): self.rejected(base + extra)
+        with patch.object(sys, 'argv', ['interpreter.py', '--package', 'fixture', *base,
+                                      '--engine', 'jit', '--jit-resumable-calls']), \
+                patch.object(interpreter, 'checked_tools', side_effect=RuntimeError('selection reached tools')), \
+                self.assertRaisesRegex(RuntimeError, 'selection reached tools'):
+            interpreter.main()
+
     def test_cached_toolchain_lookup_requires_standard_library_mir(self):
         self.rejected(['--entry', 'first', '--toolchain-lookup', 'cached'])
 

@@ -1,4 +1,4 @@
-//! Bounded immutable plan ownership. Demand execution is not enabled yet.
+//! Bounded immutable plan ownership for explicit demand-region execution.
 use super::*;
 
 pub(in crate::jit) const MAX_RETAINED_BYTES: usize = 16 * 1024 * 1024;
@@ -36,6 +36,8 @@ impl Plans {
     }
 
     pub fn get(&self, id: usize) -> Option<&FunctionAnalysis> { self.owned.get(id)?.as_deref() }
+
+    pub fn used_bytes(&self) -> usize { self.used }
 
     pub fn remove(&mut self, id: usize) -> Option<Box<FunctionAnalysis>> {
         let plan = self.owned.get_mut(id)?.take()?;

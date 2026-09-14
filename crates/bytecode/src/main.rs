@@ -16,7 +16,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut suite_catalog = None;
     let mut suite_workers = None;
     let mut path = args.next().ok_or(
-        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-scalar-calls] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--guest-descriptor-io] [--guest-getcwd] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
+        "usage: rust-interp-vm [--engine interpreter|jit] [--jit-native-calls] [--jit-native-call-stubs] [--jit-persistent-registers] [--jit-resumable-calls] [--jit-scalar-calls] [--jit-demand-regions] [--jit-code-dump NEW_DIRECTORY [--jit-operation-map]] [--guest-descriptor-io] [--guest-getcwd] [--instruction-limit N] [--allocation-limit N] [--select-test EXACT_NAME --suite-catalog CATALOG] [--profile NEW_JSON_PATH [--profile-test EXACT_NAME --suite-catalog CATALOG]] [--isolated-batch fresh|prepared --suite-report NEW_JSON_PATH [--suite-workers N]] PROGRAM [unsigned integer arguments ...]",
     )?;
     loop {
         match path.as_str() {
@@ -55,6 +55,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--jit-persistent-registers" => limits.jit_persistent_registers = true,
             "--jit-resumable-calls" => limits.jit_resumable_calls = true,
             "--jit-scalar-calls" => limits.jit_scalar_calls = true,
+            "--jit-demand-regions" => {
+                if limits.jit_demand_regions { return Err("duplicate demand regions option".into()); }
+                limits.jit_demand_regions = true;
+            }
             "--jit-operation-map" => {
                 if limits.jit_operation_map { return Err("duplicate operation map option".into()); }
                 limits.jit_operation_map = true;
@@ -200,6 +204,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             result.jit_declined_functions
         );
         eprintln!("jit_resumable_calls={} jit_resumable_returns={}", result.jit_resumable_calls, result.jit_resumable_returns);
+        if let Some(demand) = result.jit_demand {
+            eprintln!("jit_demand_published_regions={} jit_demand_declined_regions={} jit_demand_eager_fallbacks={} jit_demand_plan_bytes={} jit_demand_metadata_bytes={}",
+                demand.published_regions, demand.declined_regions, demand.eager_fallbacks, demand.plan_bytes, demand.metadata_bytes);
+        }
         eprintln!("jit_tree_entries={} jit_tree_calls={} jit_tree_instructions={} jit_tree_bytes={} jit_tree_operations={} jit_tree_compiled_functions={} jit_tree_declined_functions={} jit_tree_compile_ns={}",
             result.jit_tree_entries, result.jit_tree_calls, result.jit_tree_instructions,
             result.jit_tree_bytes, result.jit_tree_operations, result.jit_tree_compiled_functions,
