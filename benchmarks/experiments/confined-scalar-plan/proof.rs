@@ -279,7 +279,7 @@ pub fn effects(program: &Program) -> Vec<Proof> {
 #[path = "proof_tests.rs"]
 mod tests;
 
-#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 pub struct Access { pub offset: Option<usize>, pub size: usize }
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct Resolved {
