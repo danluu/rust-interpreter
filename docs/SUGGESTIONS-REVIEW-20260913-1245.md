@@ -103,3 +103,9 @@ per profile, 119 strict commands and three exact original profiles pass. The
 closure verifies 1,958 inputs, 56 artifacts and 380 source bindings. Full,
 held-out and repeated runs remain unstarted. Review repeated cursor/budget
 adaptation before another materially changed candidate. [Bridge result](TREE-BRIDGE-20260913.md).
+
+The shared-cursor bridge also fails its 40-command primary wall gate: 1.70%
+improvement versus 4.1545% A/A, with CPU improving 0.10%. All assertions and
+restoration pass. Its closure verifies 1,958 inputs, 56 artifacts and 380 Git
+bindings. Full/held-out/repeated runs remain unstarted. Inspect actual native
+costs before another candidate. [Result](TREE-SHARED-CURSOR-20260913.md).

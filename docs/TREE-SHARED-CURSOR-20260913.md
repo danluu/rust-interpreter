@@ -3,7 +3,7 @@
 The custom JIT now has a second experimental bridge implementation. It passes
 556 workspace tests per profile, 119 strict/cache commands, 19 focused ABI and
 fault controls per profile, and all three exact original-workload profiles. Its
-changed-source performance screen is running; the runtime is not adopted.
+changed-source performance screen fails; the runtime is not adopted.
 
 The [prior bridge](TREE-BRIDGE-20260913.md) failed its performance gate. Saved
 profiles show that it paid two budget memory accesses and four instructions for
@@ -28,3 +28,12 @@ original tests and all source/type/borrow checks.
 The existing 40-command primary gate compares changed production source with
 the adopted baseline, duplicate control, historical anchor and ordinary native
 execution. Only a passing screen permits full primary and held-out comparisons.
+
+The [40-command screen](../results/tree-shared-cursor-screen-token-01/assessment.md)
+reports wall ratio 0.982971, inside 4.1545% A/A variation; CPU ratio is 0.998983.
+The wall margin fails. Original assertions, wrong edits, exact artifacts and
+restoration pass. The [closure](../results/tree-shared-cursor-screen-token-01/closure.json)
+verifies 1,958 frozen inputs, 56 artifacts and 380 source bindings. No full,
+held-out or repeated screen commands run. Inspect same-process native samples
+before selecting another mechanism; instruction-count reductions are insufficient
+performance evidence.
