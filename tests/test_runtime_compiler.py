@@ -127,6 +127,7 @@ class RuntimeCompilerTests(unittest.TestCase):
         with patch.object(runtime, 'transfer', side_effect=AssertionError('content read')), \
              patch.object(runtime, 'inspect_component', side_effect=AssertionError('origin inspection')):
             self.assertEqual(runtime.load_runtime_compiler(self.root, compiler.key), compiler)
+            self.assertIs(compiler.revalidate(self.root), compiler)
         compiler.require_option('fixture-option')
         with self.assertRaisesRegex(RuntimeError, 'no recorded'):
             compiler.require_option('unrecorded-option')
@@ -293,6 +294,8 @@ class RuntimeCompilerTests(unittest.TestCase):
         os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
         with self.assertRaisesRegex(RuntimeError, 'installation changed'):
             runtime.load_runtime_compiler(self.root, compiler.key)
+        with self.assertRaisesRegex(RuntimeError, 'installation changed'):
+            compiler.revalidate(self.root)
 
     def test_forged_probe_options_wrong_owner_and_live_overrides_rejected(self):
         compiler = self.install()
