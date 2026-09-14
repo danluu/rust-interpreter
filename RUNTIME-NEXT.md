@@ -44,8 +44,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    The exact 245-body store-cost census finds 32.94 million repeated containing
    write checks and fully overwritten publications on successful block paths.
    A separate store-log simplification passes 381 bytecode tests/profile (17
-   ignored), including intervening aliases and later faults. Next qualify its
-   immutable build, strict checks and original profiles before a new primary.
+   ignored), including intervening aliases and later faults. Its immutable
+   tool 5b86b3ab passes 644 workspace tests/profile, 407 Python tests (22 skips),
+   121 strict/cache commands and three original profiles. Run the frozen
+   40-command primary next; no larger histories have started.
    Main retains df4006e0; no gain is established.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
