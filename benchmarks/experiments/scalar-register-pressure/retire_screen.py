@@ -8,7 +8,7 @@ from workflow_io import write_json as write
 from native_suite import test_status
 from suite_reports import validate_report
 
-NAME='closed-store-log-screen-retirement-01'
+NAME='closed-store-log-screen-retirement-02'
 RUNS=['scalar-store-log-screen-token-01']
 
 def identity(path):
@@ -88,8 +88,10 @@ with ExitStack() as stack:
         closure=bind(ROOT/'results'/run/'closure.json');assert closure['status']=='passed' and closure['repeated_screen_commands']==0
         assert closure['performance_gate_passed']==result['gate_passed']==False
         assert closure['parked']
-        bind(ROOT/'results'/run/'source-bindings.json',closure['source_bindings_sha256'])
-        for p,h in closure['evidence'].items():bind(ROOT/p,h)
+        bind(ROOT/closure['source_bindings_path'],closure['source_bindings_sha256'])
+        evidence=bind(ROOT/closure['evidence_path'],closure['evidence_sha256'])
+        assert len(evidence)==closure['evidence_files']
+        for p,h in evidence.items():bind(ROOT/p,h)
         terminal(run)
         for name in ['plan','records','transitions','space']:bind(base/(name+'.json'),result[name+'_sha256'])
         plan=json.loads((base/'plan.json').read_text());rows=json.loads((base/'records.json').read_text())
