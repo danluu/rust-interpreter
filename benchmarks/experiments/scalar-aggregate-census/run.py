@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-aggregate-census-02'
+NAME='scalar-aggregate-census-03'
 def read(p):return json.loads(p.read_text())
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
@@ -28,6 +28,11 @@ def main():
         qualified=bind(model/'summary.json',closed['summary_sha256']);bind(model/'terminal.json',closed['terminal_sha256'])
         bind(ROOT/closed['source_bindings'],closed['source_bindings_sha256'])
         assert qualified['status']=='passed' and qualified['commands']==4 and qualified['controls_per_profile']==9
+        call=ROOT/'results/scalar-aggregate-call-03';closed=bind(call/'closure.json');assert closed['status']=='closed'
+        qualified=bind(call/'summary.json',closed['summary_sha256']);bind(call/'terminal.json',closed['terminal_sha256'])
+        bind(ROOT/closed['source_bindings'],closed['source_bindings_sha256'])
+        assert qualified['status']=='passed' and qualified['commands']==4 and qualified['call_controls_per_profile']==7
+        assert all(c['passed']==374 and c['ignored']==16 for c in qualified['library_counts'])
         wide=ROOT/'results/scalar-wide-boundaries-01';closed=bind(wide/'closure.json');assert closed['status']=='closed' and closed['all_hashes_verified']
         prior=bind(wide/'summary.json',closed['summary_sha256']);bind(wide/'terminal.json',closed['terminal_sha256'])
         bind(ROOT/closed['bindings'],closed['bindings_sha256'])
@@ -70,9 +75,10 @@ def main():
             stages={'memory':{r['function'] for r in rows if r['memory_eligible']},
                     'ir':{r['function'] for r in rows if r.get('ir_eligible')},
                     'native':{r['function'] for r in rows if r.get('all_lanes_native')},
-                    'combined_ir':{r['function'] for r in rows if r.get('combined_ir_eligible')}}
+                    'combined_ir':{r['function'] for r in rows if r.get('combined_ir_eligible')},
+                    'combined_native':{r['function'] for r in rows if r.get('combined_native_eligible')}}
             assert stages['native']<=stages['ir']<=stages['memory']
-            assert stages['combined_ir']<=stages['memory']
+            assert stages['combined_native']<=stages['combined_ir']<=stages['memory']
             coverage={}
             for case in prior['cases']:
                 targets=case['policies']['grid/frame1024/registers512/result64']['sampled_targets']
@@ -81,6 +87,7 @@ def main():
                     sampled_ids=[t['function'] for t in targets if t['function'] in admitted]) for stage,admitted in stages.items()}
             policies.append(dict(zeroed_frame=policy['zeroed_frame'],ids={k:sorted(v) for k,v in stages.items()},
                 coverage=coverage,memory_declines=dict(collections.Counter(r['memory_decline']['reason'] for r in rows if not r['memory_eligible'])),
+                combined_native_declines=dict(collections.Counter(r['combined_native_decline'] for r in rows if r.get('combined_native_eligible') is False)),
                 combined_ir_declines=dict(collections.Counter(r['combined_ir_decline'] for r in rows if r.get('combined_ir_eligible') is False)),
                 ir_declines=dict(collections.Counter(r['ir_decline'] for r in rows if r.get('ir_eligible') is False)),
                 native_lane_declines=dict(collections.Counter(l['native_decline'] for r in rows for l in r.get('lanes',[]) if not l['native_eligible'])),

@@ -5,19 +5,6 @@ The task is a general custom Rust interpreter/direct AArch64 JIT, guided by
 real changed-source build/test commands across small and large projects.
 Private repository: `danluu/rust-interpreter`. Qualified changes go to main.
 
-Latest runtime experiment: direct path-guard scalar Calls passed 681 workspace
-tests/profile, 121 strict/cache commands and three exact original profiles, but
-failed the 40-command changed-source primary (wall 0.984509, CPU 1.001640,
-wall A/A 0.025402). It stays parked. Saved machine-CFG bounds show that direct
-effects repeat work combined by the earlier store log. The next investigation
-is a bounded aggregate-result model on the adopted runtime: 64-byte results and
-1 KiB frames retain 10/82 block/exhaustive structural samples. Typed proof and
-native eligibility remain unestablished. The completed path-screen cache
-retirement recovers 1.576 GB while preserving all 2,531 protected hashes.
-[Failed primary](results/scalar-path-screen-token-01/ASSESSMENT.md),
-[machine-path costs](results/scalar-path-costs-01/assessment.md),
-[next scope](results/scalar-wide-boundaries-01/assessment.md).
-
 The scratch-value/scalar-call composition is adopted with the current compiler.
 It combines bounded scalar native calls and private value transfers with reuse
 of checked memory values still held in x9. Writes, aliases and register clobbers
@@ -64,50 +51,43 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-Fresh owned native-PC samples and exact memory/call protocol reconstruction are
-closed. The scratch source/width extension has too little sampled coverage to
-justify its own implementation or timing. Current Call/Return costs point to
-frame handling. The virtual-zero census admits 15 additional leaves but covers
-no current transition samples, so that policy stays parked. The typed current-call join is closed. The read-only scalar model passes 48 controls and covers 95 block samples
-across transitions and bodies, with none in exhaustive. The native prototype now passes 359 bytecode tests per profile, admits
-392 functions and preserves 71 existing scalar bodies byte-for-byte. The immutable
-candidate passes 622 workspace tests/profile, 407 Python tests (22 skips), all
-121 strict/cache commands and three original profiles. Token block scalar Calls
-rise from 11.23 to 18.95 million with exact logical counts, memory and entropy.
-The complete 40-command primary fails: wall ratio 0.999836 and CPU 0.999544
-are inside A/A variation. Park this candidate and cancel larger comparisons.
-The emitted-body census closes with limited duplicate-read coverage. A subsequent
-structural census gives external-write leaves the strongest block-test coverage
-(153 samples). The bounded private-store model now passes 369 bytecode tests
-per profile, including exact error-exit memory and non-idempotent replay controls.
-Its census retains 168 plans and 138 block samples. Native emission retains
-165 plans and all that sampled coverage, preserving 71 existing scalar bodies.
-The runtime candidate passes 641 workspace tests/profile, 407 Python tests
-(22 skips), 121 strict/cache commands and three exact original profiles. Block
-scalar Calls rise from 11.23 to 27.65 million, but its 40-command primary fails:
-wall ratio 1.000153 and CPU 0.976356 remain within A/A variation. Park 494c9f01
-and cancel larger comparisons. The closed 245-body store-cost census finds
-32.94 million redundant write guards and fully overwritten publications on
-successful block-test paths. A separate store-log simplification now passes
-381 bytecode tests per profile (17 ignored), including complete memory after
-aliases and faults. Its immutable tool 5b86b3ab passes 644 workspace tests/profile, 407 Python
-tests (22 skips), 121 strict/cache commands and three exact original profiles.
-Its 40-command primary fails: wall ratio 0.976436 and CPU 0.996167 remain
-inside 4.63% wall A/A variation. Park 5b86b3ab and cancel larger histories.
-The closed 245-body register census rules out a larger local register pool.
-Its corrected live-only spill partition identifies byte-wise branch joins.
-The contiguous byte-phi prototype, based on the adopted runtime, now passes
-348 bytecode tests per profile (11 ignored). Immutable 7d80e36f passes 611
-workspace tests/profile, 407 Python tests (22 skips), 121 strict/cache commands
-and three exact original profiles. Its 40-command primary fails (wall
-1.010857, CPU 0.996384, wall A/A 0.049637). Park 7d80e36f and cancel larger
-histories. Next census scalar value optimization inside ordinary native regions; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
-belongs to the other session. Preserve its worktrees and all user-owned
-processes. Keep the global benchmark lock, two Cargo workers and conservative
-initial reservations plus the 8 GiB child floor. The disk monitor is read-only
-for this task; do not start a competing repair or cleaner.
+The current manual branch is `experiment/scalar-aggregate-model-20260914`.
+Main still adopts df4006e0; the aggregate runtime is experimental. Prior
+path/store-log and narrower scalar variants failed their predeclared changed-source
+performance gates and remain parked. No unchanged-build timing is an adoption
+measure.
 
-The unchanged September 13 12:45 suggestions were re-read on resumption.
+The exact wider-boundary census identifies 132 structural candidates. Typed
+confined proof with ordinary Call zeroes admits 32, retaining 3 block and 66
+exhaustive samples. The combined graph preserves full result bytes and every
+original PC against independent projections and byte oracles. Six native ABI
+controls and 367 bytecode tests pass in debug/release, with 16 existing diagnostics
+ignored. The custom emitter now has a private 64-byte payload and one body
+execution; this qualification did not widen production selection.
+[Combined census](results/scalar-aggregate-census-02/assessment.md),
+[native ABI qualification](results/scalar-aggregate-abi-01/assessment.md).
+
+The candidate now connects that ABI to the complete Call bridge. It prechecks
+the entire result destination, captures ordered inputs from the old active
+prefix, and commits all result bytes only after private success. Seven focused
+controls and all374 bytecode tests pass in debug/release, including complete
+memory on error exits. The final census retains all32 candidates in the combined
+native ABI in both profile modes (28,904 unprofiled bytes, maximum368-byte spill
+frame). Complete workspace/launcher/strict qualification, original profiles
+and exact emitted-byte reconstruction still precede timing. The prospectively
+selected primary is the original fre exhaustive test alone, using 40 complete
+changed-source commands. The full token suite remains a regression guard because
+its block test determines the critical path. All existing project/parser guards
+remain required before adoption.
+[Native direction and gates](benchmarks/experiments/scalar-aggregate-model/NATIVE-NEXT.md).
+
+The compiler/Cargo/parser-exporter investigation belongs to the other session.
+Preserve its worktrees and all user-owned processes. Keep the global benchmark
+lock, two Cargo workers, the shared owned build target, conservative reservations
+and the 8 GiB child floor. The disk monitor is read-only for this task; do not
+start a competing repair or cleaner. The saved goal stays paused while manual
+optimization continues.
+
+The September 13 12:45 suggestions were re-read on September 14 and their SHA
+remains unchanged: 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
 [Review and dispositions](docs/SUGGESTIONS-REVIEW-20260913-1245.md).
-[Prior state and parked experiments](docs/history/STATE-20260914-before-scratch-scalar-integration.md).
-[Next-work history](docs/history/RUNTIME-NEXT-20260914-before-scratch-scalar-integration.md).
