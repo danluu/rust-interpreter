@@ -44,3 +44,6 @@ impl Aggregate {
 
 #[path="aggregate_tests.rs"]
 mod tests;
+
+#[path="aggregate_census.rs"]
+mod census;

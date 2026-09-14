@@ -1,0 +1,25 @@
+# Measure typed aggregate eligibility on the closed candidate set
+
+Require closed aggregate-model02 (eight controls/profile and 18 legacy controls)
+and wide-boundaries01. Revalidate the exact 132 candidate IDs, full original fre
+artifact and typed metadata. Run eight aggregate controls in release and one
+ignored, data-only census under the existing conservative build admission.
+
+For each candidate, compare explicit initialization with the ordinary Call's
+zeroed-frame policy. Both proofs continue to confine all memory. Retain original
+argument widths, 512 registers/operations, 1 KiB frames and 64-byte result bounds.
+Use a shared 256M memory-work allowance per policy and debit a full 1M allowance
+for each attempted aggregate lowering from a separate 256M policy budget.
+
+Record complete memory/IR declines and every projected lane. Ask the adopted
+native scalar emitter whether each lane's expressions are expressible; its words
+remain plain data and are never allocated as executable code or called. This
+does not qualify a combined aggregate computation or wider runtime ABI. Do not
+sum projected code sizes as a proposed native implementation's size or cost.
+
+Join actual admitted IDs to the existing exact structural sample targets. Report
+both transition and body scope, zero coverage, all declines and all 132 IDs.
+These partial, perturbed windows provide no timing prediction. No guest benchmark
+or source edit in an original project occurs. Freeze sources and evidence; close
+all commands before considering native work. Shared lock, two Cargo workers,
+shared ROOT target, initial max(14 GiB, 8 GiB + 2x target) and 8 GiB child floor.
