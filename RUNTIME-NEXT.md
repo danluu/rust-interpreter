@@ -7,25 +7,20 @@ and 6.51% CPU but remains 1.571× ordinary native. Folded improves 3.11% wall;
 pgrust, rg-aot and Nushell differences are within variation. The full parser
 still loses to native. [Integration and limits](results/scratch-scalar-main-qualification-01/assessment.md).
 
-Current manual direction: demand-driven ordinary-region compilation. The closed
-coverage census finds 40.92–43.18% of ordinary emitted bytes in regions with no
-recorded charged work, without predicting preparation savings. Cached single-
-region staging now reconstructs both adopted captures exactly. Compact retained
-liveness passes 350 bytecode controls per profile and the same reconstruction;
-counted retained payload falls from 69.5/85.4 MB to 7.5/9.5 MB in captured token
-function sets. Sorted hints and a 16 MiB plan pool now
-qualify, followed by checked own-thread append/patch transactions (355 bytecode
-controls per profile plus exact captures). Pending-edge transactions now pass 360 controls per profile and exact captures;
-two focused stable resume-table controls also pass in both profiles. Live demand
-preparation now passes 369 bytecode controls per profile and exact eager captures.
-Interleaved-region diagnostics now pass 373 controls per profile plus exact eager
-captures. Next expose the explicit mode and qualify workspace/strict controls
-and original profiles before changed-source timing. The first production build
-exposed incomplete arbitrary-register liveness retention masked by test-only
-graphs; its earlier compact storage estimates are superseded. The correction
-must pass full production builds and a new storage inventory before profiling.
-[Build failure and correction](results/demand-region-build-01/assessment.md). Runtime work
-stays on `experiment/demand-region-emission-20260914`; main retains its adopted VM.
+Current manual direction: demand-driven ordinary-region compilation. Immutable
+candidate e5ddb4243a90 / VM b1fd894de0fe passes 637 workspace controls per profile,
+408 Python tests (22 skips), a production VM build and exact eager captures.
+Explicit demand execution uses bounded retained plans, transactional code/edge
+publication, stable resume tables and interleaved operation maps. The initial
+three-pair-only liveness representation omitted arbitrary-register scratch
+queries; its compact storage estimates are superseded. The corrected sparse/
+dense graph preserves every query. Next remeasure retained storage, qualify
+strict/cache fixtures and original project profiles, then screen changed-source
+timing. The 40.92–43.18% uncharged-code census establishes no speedup.
+[Build gap](results/demand-region-build-01/assessment.md),
+[corrected production build](results/demand-region-build-02/assessment.md).
+Runtime work stays on `experiment/demand-region-emission-20260914`; main retains
+its adopted VM.
 [Region coverage](results/demand-region-census-01/assessment.md),
 [cached staging](results/demand-region-cached-01/assessment.md),
 [compact liveness](results/demand-compact-liveness-01/assessment.md),
