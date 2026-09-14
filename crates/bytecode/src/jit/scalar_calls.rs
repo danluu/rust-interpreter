@@ -27,6 +27,22 @@ impl Jit<'_> {
             entries:vec![None;self.program.functions.len()],proof_work:proof::MAX_GLOBAL_WORK,scalar_work:128_000_000});
     }
     pub(super) fn scalar_entry(&self,id:usize)->Option<Entry> {self.scalar.as_ref()?.entries[id]}
+    #[cfg(test)]
+    pub(super) fn observe_saved_scalar_entry(&mut self,id:usize,offset:usize,bytes:usize,base:usize)->Vec<u32> {
+        // Recreate only immutable emission metadata for an already SHA-bound
+        // saved arena. No Code allocation, append or executable publication.
+        assert!(self.code.is_none() && self.bytes==0 && self.scalar_entry(id).is_none());
+        assert!(offset%4==0 && bytes>0 && bytes%4==0 && offset.checked_add(bytes).is_some_and(|end|end<=self.capacity));
+        let mut work=proof::MAX_GLOBAL_WORK;
+        let memory=proof::memory_plan(self.program,id,&mut work);
+        let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).unwrap();
+        let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).unwrap();
+        assert_eq!(emitted.words.len()*4,bytes);
+        self.scalar.as_mut().unwrap().entries[id]=Some(Entry {offset,bytes,
+            maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,
+            target:base.checked_add(offset).unwrap()});
+        emitted.words
+    }
     pub(super) fn prepare_scalar_callees(&mut self,id:usize)->Result<(),String> {
         for pc in 0..self.program.functions[id].code.len() {
             let Op::Call{function,..}=self.program.functions[id].code[pc] else {continue;};

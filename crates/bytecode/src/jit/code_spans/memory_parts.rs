@@ -112,23 +112,44 @@ fn observe_saved_small_memory_parts() {
     let mapping: Value = serde_json::from_slice(&mapping).unwrap();
     let bytes = std::fs::read(std::env::var("MEMORY_CODE").unwrap()).unwrap();
     assert!(bytes.len() <= MAX_CODE_BYTES);
-    assert_eq!(number(&mapping,"schema_version"),1); assert_eq!(mapping["profiled"],false);
+    let schema=number(&mapping,"schema_version");assert!([1,2].contains(&schema)); assert_eq!(mapping["profiled"],false);
     for flag in ["persistent_registers","resumable_calls","complete","reconstructed_bytes_match"] {
         assert_eq!(mapping[flag],true);
     }
     assert_eq!(number(&mapping,"code_bytes"),bytes.len());
     assert_eq!(mapping["code_sha256"],format!("{:x}",Sha256::digest(&bytes)));
-    let plain = Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+    let mut plain = Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
     let mut observer = Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
     observer.observe_memory_parts = true;
+    let mut scalar_ids=BTreeSet::new();
+    if schema==2 {
+        plain.enable_scalar_calls();observer.enable_scalar_calls();
+        let base=number(&mapping,"arena_base");assert!(base>0);
+        for saved in mapping["functions"].as_array().unwrap() {
+            if saved["spans"][0]["kind"]!="scalar_leaf" {continue;}
+            let id=number(saved,"function");assert!(scalar_ids.insert(id));
+            let offset=number(saved,"offset");let end=number(saved,"end");
+            assert!(offset<end && end<=bytes.len());
+            let a=plain.observe_saved_scalar_entry(id,offset,end-offset,base);
+            let b=observer.observe_saved_scalar_entry(id,offset,end-offset,base);
+            assert_eq!(a,b);verify_words(&a,&bytes[offset..end]).unwrap();
+        }
+    }
     let (mut cursor,mut assertions) = (0,0);
     let mut seen = BTreeSet::new(); let mut output = vec![];
     for saved in mapping["functions"].as_array().unwrap() {
-        let id = number(saved,"function"); assert!(seen.insert(id)); let f = &p.functions[id];
+        let id = number(saved,"function");let f = &p.functions[id];
         assert_eq!(saved["name"],f.name);
         let offset = number(saved,"offset"); let end = number(saved,"end");
         assert_eq!(offset,cursor); assert!(offset < end && end <= bytes.len());
         assert_eq!(number(saved,"assertion_base"),assertions);
+        if saved["spans"][0]["kind"]=="scalar_leaf" {
+            assert_eq!(schema,2);assert!(scalar_ids.contains(&id));
+            assert_eq!(number(saved,"assertion_count"),0);
+            assert_eq!(saved["spans"],json!([{"offset":offset,"end":end,"region_pc":0,"pc":null,"kind":"scalar_leaf"}]));
+            cursor=end;continue;
+        }
+        assert!(seen.insert(id));
         let mut cm = Collector {rows:vec![],limit:MAX_SPANS};
         let a = plain.emit_function_inner(f,(end-offset)/4,assertions,Some(&mut cm)).unwrap().unwrap();
         let mut om = Collector {rows:vec![],limit:MAX_SPANS};
@@ -157,5 +178,40 @@ fn observe_saved_small_memory_parts() {
     serde_json::to_writer(file,&json!({"status":"passed","functions":output,"code_bytes":bytes.len(),
         "code_sha256":mapping["code_sha256"],"exact_full_function_reconstruction":true,
         "observer_words_unchanged":true,"complete_small_memory_partition":true,
+        "schema_version":schema,"scalar_bodies_reconstructed":scalar_ids.len(),
         "guest_commands":0,"executable_code_publications":0})).unwrap();
+}
+
+#[test]
+fn memory_parts_preserve_scalar_call_targets_without_publishing_code() {
+    let mut p=program(vec![Op::Local{dst:0,offset:16},Op::Local{dst:1,offset:32},
+        Op::Call{function:1,args:vec![0],destination:1},Op::Load{dst:2,address:1,size:8},Op::Return]);
+    p.functions.push(Function{name:"scalar memory observer".into(),frame_size:24,frame_align:8,
+        registers:2,args:vec![crate::Slot{offset:16,size:8}],result:crate::Slot{offset:0,size:8},
+        code:vec![Op::Local{dst:0,offset:16},Op::Load{dst:1,address:0,size:8},
+            Op::Local{dst:0,offset:0},Op::Store{address:0,src:1,size:8},Op::Return]});
+    crate::validate(&p).unwrap();
+    let mut work=crate::proof::MAX_GLOBAL_WORK;
+    let memory=crate::proof::memory_plan(&p,1,&mut work);
+    let plan=crate::scalar_ir::lower(&p.functions[1],&memory,250_000).unwrap();
+    let leaf=crate::scalar_ir::native_leaf::emit_call(&plan,false).unwrap();
+    for base in [0x10000000,0x123456789000] {
+        let mut plain=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+        let mut observer=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+        plain.enable_scalar_calls();observer.enable_scalar_calls();observer.observe_memory_parts=true;
+        for jit in [&mut plain,&mut observer] {
+            assert_eq!(jit.observe_saved_scalar_entry(1,64,leaf.words.len()*4,base),leaf.words);
+            assert_eq!(jit.reconstruct_scalar(1).unwrap(),leaf.words);
+        }
+        let f=&p.functions[0];
+        let mut cm=Collector{rows:vec![],limit:MAX_SPANS};
+        let a=plain.emit_function_inner(f,MAX_CODE_BYTES/4,0,Some(&mut cm)).unwrap().unwrap();
+        let mut om=Collector{rows:vec![],limit:MAX_SPANS};
+        let b=observer.emit_function_inner(f,MAX_CODE_BYTES/4,0,Some(&mut om)).unwrap().unwrap();
+        assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.assertions,b.assertions);
+        assert!(a.words.contains(&0xd63f0200),"private scalar branch is present");
+        cm.validate(f,&a).unwrap();om.validate(f,&b).unwrap();partition(f,&b,&cm.rows);
+        assert_eq!(serde_json::to_value(&cm.rows).unwrap(),serde_json::to_value(&om.rows).unwrap());
+        assert!(plain.code.is_none() && observer.code.is_none());assert_eq!(plain.bytes+observer.bytes,0);
+    }
 }
