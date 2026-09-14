@@ -26,3 +26,9 @@ These partial, perturbed windows provide no timing prediction. No guest benchmar
 or source edit in an original project occurs. Freeze sources and evidence; close
 all commands before considering native work. Shared lock, two Cargo workers,
 shared ROOT target, initial max(14 GiB, 8 GiB + 2x target) and 8 GiB child floor.
+
+After the complete Call qualification (374 bytecode tests/profile), census03
+also emits the explicit aggregate native ABI in profiled and unprofiled modes.
+Record both code sizes/hashes, stack extents and any decline. Include the
+intersection of both native modes in the original sample coverage join. Retain
+the legacy-entry rejection check. No executable publication or guest run occurs.

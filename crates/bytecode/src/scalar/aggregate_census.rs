@@ -49,6 +49,20 @@ fn observe_saved_aggregate_projections() {
                             let native=native_leaf::emit_call(combined,false);
                             if f.result.size>16 {assert_eq!(native.err(),Some("native_aggregate_return_unimplemented"));}
                             else {assert!(native.is_ok());}
+                            // The explicit wider ABI is now implemented. Keep
+                            // words as data: no executable publisher is used.
+                            let native=native_leaf::emit_call_aggregate(combined,false);
+                            let profiled=native_leaf::emit_call_aggregate(combined,true);
+                            row["combined_native_eligible"]=json!(native.is_ok() && profiled.is_ok());
+                            row["combined_native_decline"]=json!(native.as_ref().err().or(profiled.as_ref().err()));
+                            for (label,emitted) in [("unprofiled",native),("profiled",profiled)] {
+                                if let Ok(emitted)=emitted {
+                                    assert_eq!(emitted.success_steps,combined.success_steps);
+                                    let bytes:Vec<u8>=emitted.words.iter().flat_map(|w|w.to_le_bytes()).collect();
+                                    row[format!("combined_native_{label}")]=json!({"bytes":bytes.len(),"sha256":format!("{:x}",Sha256::digest(&bytes)),
+                                        "stack_bytes":emitted.stack_bytes,"register_values":emitted.register_values});
+                                }
+                            }
                         }
                         row["combined_ir"]=json!(summary(&combined));
                         let mut lanes=vec![];
@@ -70,5 +84,5 @@ fn observe_saved_aggregate_projections() {
     }
     let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("SCALAR_AGGREGATE_OUTPUT").unwrap()).unwrap();
     serde_json::to_writer(file,&json!({"status":"passed","candidates":ids.len(),"policies":policies,
-        "guest_commands":0,"executable_code_publications":0,"scope":"Typed confined memory, projected native expressions and combined scalar graph eligibility. Projected native words remain data; aggregate returns are rejected by the legacy native emitter. No aggregate ABI, original guest execution, timing or adoption."})).unwrap();
+        "guest_commands":0,"executable_code_publications":0,"scope":"Typed confined memory, projected native expressions, combined graph and explicit aggregate native ABI eligibility in both profile modes. All native words remain data. The legacy entry still rejects aggregate results. No original guest execution, timing or adoption."})).unwrap();
 }
