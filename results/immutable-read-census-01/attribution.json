@@ -1,0 +1,142 @@
+{
+  "status": "passed",
+  "cases": [
+    {
+      "case": "block",
+      "known_read_sites": 662,
+      "known_read_functions": 193,
+      "known_read_native_words": 15438,
+      "generated_samples": 1561,
+      "selected_samples": 0,
+      "samples_by_operation": {},
+      "sampled_sites": []
+    },
+    {
+      "case": "exhaustive",
+      "known_read_sites": 973,
+      "known_read_functions": 227,
+      "known_read_native_words": 22673,
+      "generated_samples": 1231,
+      "selected_samples": 5,
+      "samples_by_operation": {
+        "Copy": 5
+      },
+      "sampled_sites": [
+        {
+          "function": 6,
+          "pc": 2472,
+          "name": "token_phrase::tests::exhaustive_small_byte_semantics_match_pinned_regex[]",
+          "operation": "Copy",
+          "size": 8,
+          "samples": 1
+        },
+        {
+          "function": 75,
+          "pc": 122,
+          "name": "alloc::raw_vec::RawVecInner::<A>::grow_amortized[std::alloc::Global]",
+          "operation": "Copy",
+          "size": 16,
+          "samples": 1
+        },
+        {
+          "function": 398,
+          "pc": 9,
+          "name": "<regex_automata::util::pool::inner::PoolGuard<'a, T, F> as std::ops::Drop>::drop['{erased}, regex_automata::meta::Cache, std::boxed::Box<dyn [Binder { value: Trait(std::ops::Fn<()>), bound_vars: [] }, Binder { value: Projection(ExistentialProjection { def_id: DefId(2:4733 ~ core[affe]::ops::function::FnOnce::Output), args: [()], term: Term::Ty(regex_automata::meta::Cache), .. }), bound_vars: [] }, Binder { value: AutoTrait(DefId(2:44093 ~ core[affe]::panic::unwind_safe::RefUnwindSafe)), bound_vars: [] }, Binder { value: AutoTrait(DefId(2:33280 ~ core[affe]::marker::Send)), bound_vars: [] }, Binder { value: AutoTrait(DefId(2:44092 ~ core[affe]::panic::unwind_safe::UnwindSafe)), bound_vars: [] }, Binder { value: AutoTrait(DefId(2:4463 ~ core[affe]::marker::Sync)), bound_vars: [] }] + '{erased}, std::alloc::Global>]",
+          "operation": "Copy",
+          "size": 16,
+          "samples": 1
+        },
+        {
+          "function": 130,
+          "pc": 380,
+          "name": "token_phrase::enforce_upper_bounds[]",
+          "operation": "Copy",
+          "size": 16,
+          "samples": 1
+        },
+        {
+          "function": 231,
+          "pc": 128,
+          "name": "token_phrase::TokenPhrasePlan::consume_token[]",
+          "operation": "Copy",
+          "size": 16,
+          "samples": 1
+        }
+      ]
+    },
+    {
+      "case": "parser",
+      "known_read_sites": 1003,
+      "known_read_functions": 430,
+      "known_read_native_words": 23278,
+      "generated_samples": 85,
+      "selected_samples": 3,
+      "samples_by_operation": {
+        "Copy": 2,
+        "Load": 1
+      },
+      "sampled_sites": [
+        {
+          "function": 706,
+          "pc": 1380,
+          "name": "parse::Parser::<'mcx>::yyparse['{erased}]",
+          "operation": "Copy",
+          "size": 2,
+          "samples": 1
+        },
+        {
+          "function": 706,
+          "pc": 1614,
+          "name": "parse::Parser::<'mcx>::yyparse['{erased}]",
+          "operation": "Copy",
+          "size": 2,
+          "samples": 1
+        },
+        {
+          "function": 6709,
+          "pc": 38,
+          "name": "types_nodes::Node::<'mcx>::as_variant['{erased}, types_nodes::parsenodes::AlterRoleStmt<'{erased}>]",
+          "operation": "Load",
+          "size": 2,
+          "samples": 1
+        }
+      ]
+    }
+  ],
+  "evidence": {
+    "results/scratch-scalar-runtime-sample-block-01/summary.json": "27bf1ff7e679b8bb3e85263f9e1322a6a409c7f6f3ceede03f629c8b39dbb0f3",
+    ".work/scratch-memory-values-profile-01/candidate-0-profile.json": "057deb7e521bab171beb720eaa715f8d5c9c6326993962698ebc9dc298bc4c00",
+    ".work/scratch-scalar-runtime-sample-block-01/0/record.json": "2450fe7a602f89fc79582f6e9e3deb3ba03af7380c9c3839a9861813064ec9b4",
+    ".work/scratch-scalar-runtime-sample-block-01/0/sample.txt": "1ea91e9a8cfcd479f0ef16dfd5aa4a141d96542eaca75af4963b4a1e2858ef73",
+    ".work/scratch-scalar-runtime-sample-block-01/0/jit-code/map.json": "25eadc683cf7b24420ccf1b634402f5feea2a07098b88cd3ef969aa4fe650528",
+    ".work/scratch-scalar-runtime-sample-block-01/0/jit-code/operations.json": "27952fd05a9bfda8b045cc63fb7d01cf6226fbea593959c7d228c536a53a50e0",
+    ".work/scratch-scalar-runtime-sample-block-01/0/jit-code/code.bin": "01ea9f6c04bd1b097495be4180b7f9ac69e513b6a127fea0cf0c2b5f45a6c56e",
+    "benchmarks/experiments/scalar-runtime-sampling/attribute.py": "0d48dfde231f27d928c723cafe0fc228a09ae77f3abdfd525c0aee6b421f5d04",
+    "benchmarks/experiments/operation-map/attribute.py": "910ac0255dbe49e22dde2de6f0d56a773de7f9e7ebd91cc07d185802ac46f3f4",
+    "benchmarks/experiments/operation-map/maps.py": "38397dd1b7de2bb673071d4a7022b439cad26910c629fba05cdc32a9bd4591fc",
+    "benchmarks/experiments/scalar-private-transfers/native_observation.py": "243f03b96cc07f0fe7bf342d9325baeb1a96915261d8a9fc116e4f9bb1e88629",
+    ".work/immutable-read-census-01/block.json": "1ef108689bb54161c8b44837930159740a73ce1ca65547dc5e10b4221888715d",
+    "results/scratch-scalar-runtime-sample-block-01/operation-attribution.json": "0fb6782fa73ff1de786c90d53461e643fe36a673f87eafc5054e6f76287ef469",
+    "results/scratch-scalar-runtime-sample-exhaustive-01/summary.json": "2b9d29cf44b7a4c2223fa01b18b42e57c1efac65b7a66d2c9687f1ba7c07acfc",
+    ".work/scratch-memory-values-profile-01/candidate-1-profile.json": "cdcde10e0fb2a12da89578a3443788c757ddd448b02765cfb0e8264278498efb",
+    ".work/scratch-scalar-runtime-sample-exhaustive-01/0/record.json": "197b36bcbd6d1958bdd8434ac279cc659ad173e65113a3e41e20c37b0c79194b",
+    ".work/scratch-scalar-runtime-sample-exhaustive-01/0/sample.txt": "e0c763818a4a793edfc78d77e72b1836d5a8089e66490bb01b9d5ed9c4951fad",
+    ".work/scratch-scalar-runtime-sample-exhaustive-01/0/jit-code/map.json": "6cb57fb2ac5058d772c81574dd5fc5bffd52cd3685175bbdade75b64648799da",
+    ".work/scratch-scalar-runtime-sample-exhaustive-01/0/jit-code/operations.json": "da4dbae705c8075f7d4db75e377e929506b94685b4d8a87b14e4bfbb10018c1a",
+    ".work/scratch-scalar-runtime-sample-exhaustive-01/0/jit-code/code.bin": "acb89da410281b8cc585e008453e808991f0db92daf331528ae63d0e0c84e8cc",
+    ".work/immutable-read-census-01/exhaustive.json": "b3dbd132d4b48a635f034610dd3271bc9bf23f3209e7c7aed6830f7d68da7487",
+    "results/scratch-scalar-runtime-sample-exhaustive-01/operation-attribution.json": "f6bf876be3c7b78ad9fc34fd43296ab0894370b1843667160ee106ad438f4589",
+    "results/parser-runtime-sample-01/summary.json": "52658f56bb3709b8025a6ce547985847727a15ef42d2bebaac07b8670d8f98c5",
+    ".work/conditional-demand-parser-profile-01/control-profile.json": "fbef82b0604aa8c86bd1af98d266cb2da42f98f3162de0130a579d651f46ae32",
+    ".work/parser-runtime-sample-01/0/record.json": "9a5522c68b58479e7d00f4c60a86aa6db07fe623910cf8106b2df53e29b48ff4",
+    ".work/parser-runtime-sample-01/0/sample.txt": "e2c33d92b379f5f05e470c91d8450fef1809e713f753041366f1e02123028e08",
+    ".work/parser-runtime-sample-01/0/jit-code/map.json": "6fac733ecb481e85b398d6490df998c954fc4f8516f48c4683c029ae51bd2daa",
+    ".work/parser-runtime-sample-01/0/jit-code/operations.json": "e8f0d69c6aeaaf7be6c555cf1e634b96c35557461a5a582cef0c9e52f5d5df04",
+    ".work/parser-runtime-sample-01/0/jit-code/code.bin": "b72e8c8ee471d16ace30f506bbc8d16adc6ab4790b0ba2d38b89896805cdf4b7",
+    ".work/immutable-read-census-01/parser.json": "497f1818b947ddacc534d26f39759efd995ba37ed9e25509a5a39082478e0ca1",
+    "results/parser-runtime-sample-01/operation-attribution.json": "09c2980351253ff8aecb2dc758bdfffa4276160b6f698d9ee60f19d028657de2"
+  },
+  "guest_commands": 0,
+  "performance_measurement": false,
+  "scope": "Exact original operation ownership. Partial perturbed normal-entropy self-PC samples; no speedup inference or dynamic instruction estimate."
+}
