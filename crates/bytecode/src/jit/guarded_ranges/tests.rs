@@ -64,7 +64,7 @@ fn emitted_preflight_matches_independent_complete_range_oracle() {
     for heap in [false,true] {for slot in [false,true] {for write in [false,true] {
         for disjoint in [false,true] {for low in [-4096i64,-8,0,8,4096] {for span in [1usize,8,16,31,32,128,4096] {
             let mut a=Assembler {heap,resumable:true,frame_size:32,reads:&reads,..Assembler::default()};
-            if heap {a.mov(7,5);a.mov(8,6);}
+            if heap {a.initialize_heap_context();}
             let declines=a.prepare_guarded_range(Some(Plan {root:if slot {Root::FrameSlot(3)} else {Root::Register(0)},
                 low,high:low+span as i64,writes:write,frame_disjoint:disjoint,sites:vec![]})).unwrap();
             a.mov(0,11);a.emit(0xd65f03c0);
@@ -112,7 +112,7 @@ fn cached_base_survives_every_fixed_copy_width_and_popcount() {
         let plan=range_groups::runtime_plan(&f,0,f.code.len(),&mut 4_000_000).unwrap();
         let reads=read_registers(&f);
         let mut a=Assembler {heap,resumable:true,observe_scalar_copy:true,observe_static_local_facts:true,observe_guarded_local_retention:true,frame_size:512,reads:&reads,region_end:f.code.len(),..Assembler::default()};
-        if heap {a.mov(7,5);a.mov(8,6);}
+        if heap {a.initialize_heap_context();}
         let declines=a.prepare_guarded_range(Some(plan)).unwrap();
         for (pc,op) in f.code.iter().enumerate() {a.current_pc=pc;a.lower(op);}
         a.guarded_base(0);a.emit(0xd65f03c0);

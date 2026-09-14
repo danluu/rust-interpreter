@@ -179,6 +179,16 @@ impl Assembler<'_> {
             }
         }
     }
+    pub(super) fn initialize_heap_context(&mut self) {
+        // Only external entries receive the actual host pointer/length in
+        // x5/x6. Internal native edges inherit x7/x8; x5/x6 become value cache.
+        // Machine-word bias arithmetic is wrapping, never a Rust pointer
+        // operation. A live allocation is at most isize::MAX bytes, so its
+        // virtual exclusive end TAG + length cannot overflow a 64-bit word.
+        self.imm(14, crate::heap::TAG as u64);
+        self.three(0xcb000000, 7, 5, 14);
+        self.three(0x8b000000, 8, 6, 14);
+    }
     pub(super) fn external_entry(&mut self) -> usize {
         if self.resumable { self.resumable_save_host(false); }
         else {
@@ -186,7 +196,7 @@ impl Assembler<'_> {
             self.save_value_pairs(false, 16);
         }
         self.mov(19, 7);
-        if self.heap { self.mov(7, 5); self.mov(8, 6); }
+        if self.heap { self.initialize_heap_context(); }
         if self.resumable {
             self.resumable_current_frame();
             self.resumable_load_budget();

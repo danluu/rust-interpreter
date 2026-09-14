@@ -57,6 +57,8 @@ mod flush_census;
 mod memory_parts;
 #[cfg(test)]
 mod memory_operand_tests;
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod heap_address_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
 // Its pointers never enter guest registers or addressable guest memory.
@@ -1657,6 +1659,21 @@ impl Assembler<'_> {
         }
         true
     }
+    fn select_heap_address_space(&mut self, address: u32, write: bool) {
+        // Preserve the complete unsigned classification, including values with
+        // bit 63 set. Keep raw guest addresses through all checks. x7 is a host
+        // bias and x8 the heap's virtual exclusive end, prepared on entry.
+        self.imm(14, crate::heap::TAG as u64);
+        self.cmp(address, 14);
+        for (dst, linear, heap) in [(17, 2, 7), (15, 3, 8)] {
+            self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (linear << 5) | dst);
+        }
+        if write {
+            // All selects consume the original comparison flags. Keep TAG in
+            // x14 for null rejection; use x13 for the selected writable start.
+            self.emit(0x9a800000 | (14 << 16) | (3 << 12) | (4 << 5) | 13);
+        }
+    }
     fn checked_address(&mut self, address: u32, size: usize, write: bool) {
         if size == 0 {
             // Nothing dereferences this address for a zero-byte operation.
@@ -1664,28 +1681,22 @@ impl Assembler<'_> {
             return;
         }
         if self.heap {
-            memory_part!(self, "address_space_selection", {
-                self.imm(14, crate::heap::TAG as u64);
-                self.cmp(address, 14);
-                self.three(0xcb000000, 13, address, 14); // heap-relative offset
-                // All four CSELs use the original unsigned address < heap tag.
-                for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8), (14, 4, 31)] {
-                    self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (stack << 5) | dst);
-                }
-            });
+            memory_part!(self, "address_space_selection", self.select_heap_address_space(address, write));
             memory_part!(self, "bounds_check", {
-                self.cmp(address, 31);
+                // bics xzr,address,TAG: reject exactly raw 0 and TAG. This
+                // does not classify an arena or clear a bit in the address.
+                self.three(0xea200000, 31, address, 14);
                 self.fail(0);
                 self.cmp(address, 15);
                 self.fail(8);
                 self.three(0xcb000000, 15, 15, address);
-                self.imm(13, size as u64);
-                self.cmp(15, 13);
+                self.imm(14, size as u64);
+                self.cmp(15, 14);
                 self.fail(3);
             });
             if write {
                 memory_part!(self, "readonly_check", {
-                    self.cmp(address, 14);
+                    self.cmp(address, 13);
                     self.fail(3);
                 });
             }
@@ -1724,17 +1735,8 @@ impl Assembler<'_> {
     // Both paths preserve x10/x11/x12 and the value cache except for `address`.
     fn dynamic_address(&mut self, address: u32, count: u32, write: bool) {
         if self.heap {
-            self.imm(14, crate::heap::TAG as u64);
-            self.cmp(address, 14);
-            self.three(0xcb000000, 13, address, 14);
-            for (dst, stack, heap) in [(address, address, 13), (17, 2, 7), (15, 3, 8)] {
-                self.emit(0x9a800000 | (heap << 16) | (3 << 12) | (stack << 5) | dst);
-            }
-            if write {
-                // Reuse the original tag comparison before changing flags.
-                self.emit(0x9a800000 | (31 << 16) | (3 << 12) | (4 << 5) | 14);
-            }
-            self.cmp(address, 31);
+            self.select_heap_address_space(address, write);
+            self.three(0xea200000, 31, address, 14);
             self.fail(0);
             self.cmp(address, 15);
             self.fail(8);
@@ -1742,7 +1744,7 @@ impl Assembler<'_> {
             self.cmp(15, count);
             self.fail(3);
             if write {
-                self.cmp(address, 14);
+                self.cmp(address, 13);
                 self.fail(3);
             }
             self.three(0x8b000000, address, 17, address);

@@ -43,3 +43,10 @@ a 45-second wait and two Cargo workers. Build floor 16 GiB, diagnostics 12 GiB,
 screen 14 GiB, each child 8 GiB. Retire only exact completed owned compiler
 intermediates after source, closure, process, open-file and protected-hash checks;
 preserve shared targets, installed tools, snapshots, executables and peer work.
+
+The first focused command builds only the bytecode library test executable in
+the already-populated shared target, in debug/release. Give this smaller step
+a separate 14 GiB admission, reserving 6 GiB above the child floor; it does not
+build exporters, workspace bins or benchmark caches. The existing target uses
+2.64 GiB in total. Full tool setup retains its 16 GiB admission. Record this
+distinction before starting; no performance gate changes.

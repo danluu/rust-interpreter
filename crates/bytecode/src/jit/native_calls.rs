@@ -160,7 +160,7 @@ impl<'a> Jit<'a> {
         let mut wrapper = Assembler::default();
         wrapper.emit(0xa9bf7bf3); // stp x19,lr,[sp,#-16]!
         wrapper.mov(19, 7);
-        if self.uses_heap { wrapper.mov(7, 5); wrapper.mov(8, 6); }
+        if self.uses_heap { wrapper.initialize_heap_context(); }
         wrapper.emit(0xf940126f); // ldr x15,[x19,#32]: root return destination
         let wrapper_call = wrapper.words.len();
         wrapper.emit(0x94000000); // bl internal entry

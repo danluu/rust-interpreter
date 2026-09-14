@@ -2,7 +2,7 @@ use super::*;
 
 fn address_leaf(guarded: bool, reg: Reg, size: usize, hint: Option<usize>) -> Vec<u32> {
     let mut a=Assembler { heap:true,frame_size:64,..Assembler::default() };
-    a.mov(7,5);a.mov(8,6);
+    a.initialize_heap_context();
     if guarded { a.call_argument_address(reg,size,hint).unwrap(); }
     else { a.address(11,reg,size,false); }
     a.mov(0,11);a.emit(0xd65f03c0);
