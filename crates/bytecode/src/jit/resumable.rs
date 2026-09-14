@@ -105,6 +105,7 @@ struct ResumeCursor {
     // Effective backing/logical depth bound, fixed before native execution.
     frame_end: usize,
     working_budget: usize,
+    scalar_profiles: *const *mut u64,
 }
 
 use continuation::layout as state;
@@ -112,10 +113,11 @@ const FRAMES: usize = std::mem::offset_of!(ResumeCursor, frames);
 const REGISTERS: usize = std::mem::offset_of!(ResumeCursor, registers);
 const ENTRIES: usize = std::mem::offset_of!(ResumeCursor, entries);
 const PROFILES: usize = std::mem::offset_of!(ResumeCursor, profiles);
-const MEMORY_END: usize = std::mem::offset_of!(ResumeCursor, memory_end);
-const REGISTER_END: usize = std::mem::offset_of!(ResumeCursor, register_end);
-const FRAME_END: usize = std::mem::offset_of!(ResumeCursor, frame_end);
-const WORKING_BUDGET: usize = std::mem::offset_of!(ResumeCursor, working_budget);
+pub(super) const MEMORY_END: usize = std::mem::offset_of!(ResumeCursor, memory_end);
+pub(super) const REGISTER_END: usize = std::mem::offset_of!(ResumeCursor, register_end);
+pub(super) const FRAME_END: usize = std::mem::offset_of!(ResumeCursor, frame_end);
+pub(super) const SCALAR_PROFILES: usize = std::mem::offset_of!(ResumeCursor, scalar_profiles);
+pub(super) const WORKING_BUDGET: usize = std::mem::offset_of!(ResumeCursor, working_budget);
 const _: () = {
     assert!(std::mem::offset_of!(ResumeCursor, state) == 0);
 };
@@ -126,7 +128,8 @@ const _: () = {
     assert!(FRAMES == 64 && REGISTERS == 72 && ENTRIES == 80 && PROFILES == 88);
     assert!(MEMORY_END == 96 && REGISTER_END == 104 && FRAME_END == 112);
     assert!(WORKING_BUDGET == 120);
-    assert!(std::mem::size_of::<ResumeCursor>() == 128);
+    assert!(SCALAR_PROFILES == 128);
+    assert!(std::mem::size_of::<ResumeCursor>() == 136);
 };
 
 impl<'a> Jit<'a> {
@@ -165,6 +168,7 @@ impl<'a> Jit<'a> {
         frames: &mut Frames,
         register_bytes: &mut usize,
         profiles: &[*mut u64],
+        scalar_profiles: &[*mut u64],
     ) -> Result<Run, String> {
         let entry = *frames.last().ok_or("missing resumable entry frame")?;
         if !self.blocks[entry.function]
@@ -231,6 +235,9 @@ impl<'a> Jit<'a> {
             },
             hits,
         )?;
+        if self.profiled && self.scalar.is_some() && scalar_profiles.len() != self.program.functions.len() {
+            return Err("invalid scalar native profile table".into());
+        }
         let mut cursor = ResumeCursor {
             state: boundary.state(),
             frames: frames.prepared_mut_ptr(),
@@ -241,6 +248,7 @@ impl<'a> Jit<'a> {
             register_end,
             frame_end: frame_end.min(limits.frames),
             working_budget,
+            scalar_profiles: scalar_profiles.as_ptr(),
         };
         // SAFETY: all preparation precedes these fresh exclusive pointers.
         // Native guards bound every push, zero/copy and profile/table access.
@@ -313,6 +321,9 @@ impl<'a> Jit<'a> {
                 destination,
             } => {
                 let callee = &self.program.functions[*function];
+                if let Some(entry) = self.scalar_entry(*function) {
+                    a.scalar_call(pc, *function, callee, args, slots, *destination, entry, self.profiled)?;
+                }
                 a.resumable_call(
                     f,
                     pc,
@@ -348,6 +359,11 @@ impl<'a> Jit<'a> {
             }
         }
         protocol_mark!(a, "fault_tail", None);
+        for &(at, successor) in &a.links.clone() {
+            let fallback = a.words.len();
+            a.return_pc(successor);
+            a.scalar_fallbacks.insert(at, fallback);
+        }
         let target = a.words.len();
         a.return_pc(pc);
         for at in declines {
@@ -369,19 +385,19 @@ pub(super) enum Cond {
 }
 
 impl Assembler<'_> {
-    fn load64(&mut self, rd: u32, base: u32, offset: usize) {
+    pub(super) fn load64(&mut self, rd: u32, base: u32, offset: usize) {
         assert!(offset % 8 == 0 && offset / 8 < 4096);
         self.emit(0xf9400000 | ((offset as u32 / 8) << 10) | (base << 5) | rd);
     }
-    fn store64(&mut self, src: u32, base: u32, offset: usize) {
+    pub(super) fn store64(&mut self, src: u32, base: u32, offset: usize) {
         assert!(offset % 8 == 0 && offset / 8 < 4096);
         self.emit(0xf9000000 | ((offset as u32 / 8) << 10) | (base << 5) | src);
     }
-    fn lsl_imm(&mut self, dst: u32, src: u32, shift: u32) {
+    pub(super) fn lsl_imm(&mut self, dst: u32, src: u32, shift: u32) {
         assert!(shift > 0 && shift < 64);
         self.emit(0xd3400000 | ((64 - shift) << 16) | ((63 - shift) << 10) | (src << 5) | dst);
     }
-    fn add_imm(&mut self, dst: u32, src: u32, immediate: usize) {
+    pub(super) fn add_imm(&mut self, dst: u32, src: u32, immediate: usize) {
         assert!(immediate < 4096);
         self.emit(0x91000000 | ((immediate as u32) << 10) | (src << 5) | dst);
     }
@@ -389,16 +405,16 @@ impl Assembler<'_> {
         assert!(immediate < 4096);
         self.emit(0xd1000000 | ((immediate as u32) << 10) | (src << 5) | dst);
     }
-    fn decline(&mut self, condition: Cond, declines: &mut Vec<usize>) {
+    pub(super) fn decline(&mut self, condition: Cond, declines: &mut Vec<usize>) {
         declines.push(self.words.len());
         self.emit(0x54000000 | condition as u32);
     }
-    fn increment_cursor(&mut self, field: usize) {
+    pub(super) fn increment_cursor(&mut self, field: usize) {
         self.load64(9, 19, field);
         self.add_imm(9, 9, 1);
         self.store64(9, 19, field);
     }
-    fn charge_transition(&mut self, pc: usize, profiled: bool) {
+    pub(super) fn charge_transition(&mut self, pc: usize, profiled: bool) {
         self.sub_imm(BUDGET_REGISTER, BUDGET_REGISTER, 1);
         protocol_mark!(self, "charge_budget", None);
         if profiled {
@@ -503,7 +519,7 @@ impl Assembler<'_> {
     /// Hints never replace runtime register state. Equality with a proved
     /// current-frame range permits direct host addressing; mismatch follows
     /// the original check after the same charge, clearing and earlier copies.
-    fn call_argument_address(&mut self, source: Reg, size: usize, hint: Option<usize>) -> Result<(), EmitError> {
+    pub(super) fn call_argument_address(&mut self, source: Reg, size: usize, hint: Option<usize>) -> Result<(), EmitError> {
         let Some(offset) = hint.filter(|&offset| size != 0 && offset.checked_add(size)
             .is_some_and(|end| end <= self.frame_size)) else {
             self.address(11, source, size, false);

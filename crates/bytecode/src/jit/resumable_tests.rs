@@ -815,7 +815,7 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 .collect();
                             let profiles: Vec<_> =
                                 hits.iter_mut().map(|row| row.as_mut_ptr()).collect();
-                            let mut cursor = ResumeCursor {
+                            let mut cursor = ResumeCursor {scalar_profiles:std::ptr::null(),
                                 state: State {
                                     remaining: budget,
                                     profile_hits: profiles[0],

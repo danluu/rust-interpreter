@@ -22,6 +22,7 @@ impl Assembler<'_> {
     }
 
     pub(super) fn invalidate_local_memory(&mut self, offset: Option<usize>, size: usize) {
+        self.scratch_values.invalidate(offset,size);
         #[cfg(test)]
         self.scratch.invalidate(offset, size);
         if size == 0 { return; }
@@ -127,7 +128,11 @@ impl Assembler<'_> {
         };
         // Even a sixteen-byte overlapping copy loads both words before its
         // first store. Narrow copies never consume or define the high scratch.
-        self.load_mem_at(9, high, 11, size, source);
+        #[cfg(test)]
+        self.scratch.copy_load(self.current_pc,self.local_range(src,size),size);
+        if !self.scratch_values.contains(self.local_range(src,size),size) {
+            self.load_mem_at(9, high, 11, size, source);
+        }
         self.store_mem_at(9, high, destination_base, size, destination);
     }
     pub(super) fn review_local_memory_effect(&mut self, op: &Op) {
@@ -146,6 +151,7 @@ impl Assembler<'_> {
             | Op::CReallocate {..} | Op::CAlignedAllocate {..} | Op::RegisterTlsDestructor {..}
             | Op::ResetThreadLocals => {
                 self.local_values.clear();
+                self.scratch_values.invalidate(None,1);
                 #[cfg(test)]
                 self.scratch.invalidate(None, 1);
             },

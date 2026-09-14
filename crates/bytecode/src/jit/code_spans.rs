@@ -24,7 +24,7 @@ mod continuation_census;
 #[serde(rename_all = "snake_case")]
 pub(super) enum Kind {
     Entry, RangeGuard, Budget, Profile, Operation, Flush, RegionExit, FaultTail,
-    AssertionTail, BudgetFallback, SuccessorFallback, Transition,
+    AssertionTail, BudgetFallback, SuccessorFallback, Transition, ScalarLeaf,
 }
 
 #[derive(Debug, Serialize)]
@@ -153,18 +153,29 @@ impl Jit<'_> {
         let (arena_base, bytes) = self.code.as_ref().map_or((0, &[][..]), |code| code.published());
         if bytes.len() != self.bytes { return Err("operation map code length mismatch".into()); }
         let mut order: Vec<_> = self.blocks.iter().enumerate().filter_map(|(id, entries)|
-            entries.iter().flatten().map(|entry| entry.offset).min().map(|offset| (offset, id))).collect();
+            entries.iter().flatten().map(|entry| entry.offset).min().map(|offset| (offset, id, false))).collect();
+        if let Some(scalar) = &self.scalar {
+            order.extend(scalar.entries.iter().enumerate().filter_map(|(id,e)| e.map(|e|(e.offset,id,true))));
+        }
         order.sort_unstable();
-        if order.first().is_some_and(|(offset, _)| *offset != 0) || order.is_empty() != bytes.is_empty() {
+        if order.first().is_some_and(|(offset, _, _)| *offset != 0) || order.is_empty() != bytes.is_empty() {
             return Err("operation map missing published prefix".into());
         }
         let (mut functions, mut assertions, mut spans) = (vec![], 0, 0);
-        for (index, &(offset, id)) in order.iter().enumerate() {
-            let end = order.get(index + 1).map_or(bytes.len(), |(offset, _)| *offset);
+        for (index, &(offset, id, scalar)) in order.iter().enumerate() {
+            let end = order.get(index + 1).map_or(bytes.len(), |(offset, _, _)| *offset);
             if offset >= end || end > bytes.len() || offset % 4 != 0 || end % 4 != 0 {
                 return Err("operation map invalid function extent".into());
             }
             let f = &self.program.functions[id];
+            if scalar {
+                let entry=self.scalar_entry(id).ok_or("operation map missing scalar entry")?;
+                if end-offset!=entry.bytes || spans==MAX_SPANS {return Err("operation map scalar extent or span bound".into());}
+                let words=self.reconstruct_scalar(id)?;verify_words(&words,&bytes[offset..end])?;
+                functions.push(FunctionMap {function:id,name:&f.name,offset,end,assertion_base:assertions,assertion_count:0,
+                    spans:vec![Span{offset,end,region_pc:0,pc:None,kind:Kind::ScalarLeaf}]});
+                spans+=1;continue;
+            }
             let mut collector = Collector { rows: vec![], limit: MAX_SPANS - spans };
             // The nonempty published entries are the original admission receipt.
             // A fresh fits() check would incorrectly count their table twice.
@@ -201,11 +212,11 @@ impl Jit<'_> {
             assertions = assertion_end;
         }
         if assertions != self.assertions.len() { return Err("operation map incomplete assertion coverage".into()); }
-        Ok(Map { schema_version: 1, pid: std::process::id(), arena_base, code_bytes: bytes.len(),
+        Ok(Map { schema_version: if self.scalar.is_some() {2} else {1}, pid: std::process::id(), arena_base, code_bytes: bytes.len(),
             code_sha256: format!("{:x}", Sha256::digest(bytes)), profiled: self.profiled,
             persistent_registers: self.persistent_registers, resumable_calls: self.resumable.is_some(),
             complete: true, reconstructed_bytes_match: true, spans, functions,
-            note: "Reconstructed after execution and checked against this process's published bytes, entries and assertions. Spans cover emitted bytes, including unexecuted tails; zero-word operations are explicit. Transition spans include complete native Call/Return machinery. Static size is not sampled time or retired instructions. Diagnostic I/O is not benchmark evidence." })
+            note: "Reconstructed after execution and checked against this process's published bytes, entries and assertions. Spans cover emitted bytes, including unexecuted tails; zero-word operations are explicit. Transition spans include complete native Call/Return machinery. Scalar-leaf spans cover independently reconstructed whole bodies; they do not assign body words to individual original PCs. Static size is not sampled time or retired instructions. Diagnostic I/O is not benchmark evidence." })
     }
 }
 

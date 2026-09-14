@@ -21,11 +21,12 @@ def require(condition, message):
 
 def runtime_options(plan, commands):
     options = {k: plan.get(k, False) for k in
-        ['jit_native_calls', 'jit_native_call_stubs', 'jit_persistent_registers', 'jit_resumable_calls']}
+        ['jit_native_calls', 'jit_native_call_stubs', 'jit_persistent_registers', 'jit_resumable_calls', 'jit_scalar_calls']}
     require(all(type(v) is bool for v in options.values()), 'invalid runtime option type')
     require(not options['jit_native_call_stubs'] or options['jit_native_calls'], 'native stubs require native calls')
     require(not options['jit_resumable_calls'] or
             not (options['jit_native_calls'] or options['jit_native_call_stubs']), 'incompatible runtime options')
+    require(not options['jit_scalar_calls'] or options['jit_resumable_calls'], 'scalar calls require resumable calls')
     for command in commands:
         for option, enabled in options.items():
             require(('--' + option.replace('_', '-') in command) == enabled,

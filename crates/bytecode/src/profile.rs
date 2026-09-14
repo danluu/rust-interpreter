@@ -22,6 +22,8 @@ pub struct FunctionProfile {
     /// Complete native trees have different block boundaries from VM regions.
     pub jit_tree_blocks: Vec<u64>,
     pub jit_tree_block_ends: Vec<usize>,
+    /// Committed scalar leaves: exact hits at each original PC, no intervals.
+    pub jit_scalar_hits: Vec<u64>,
 }
 
 impl ExecutionProfile {
@@ -37,6 +39,7 @@ impl ExecutionProfile {
                 jit_block_ends: vec![0; f.code.len()],
                 jit_tree_blocks: vec![0; f.code.len()],
                 jit_tree_block_ends: vec![0; f.code.len()],
+                jit_scalar_hits: vec![0; f.code.len()],
             }).collect(),
         }
     }

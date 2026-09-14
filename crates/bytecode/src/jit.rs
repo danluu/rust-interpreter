@@ -40,12 +40,14 @@ mod trees;
 mod native_calls;
 mod native_regions;
 mod resumable;
+mod scalar_calls;
 mod call_slots;
 mod code_dump;
 mod code_spans;
 mod values;
 mod transfers;
 mod guarded_ranges;
+mod scratch_values;
 
 #[cfg(test)]
 mod limit_tests;
@@ -324,6 +326,8 @@ struct CompiledFunction<'a> {
     #[cfg(test)]
     scratch_hits: Vec<scratch_locals::Hit>,
     #[cfg(test)]
+    scratch_copy_hits: Vec<scratch_locals::Hit>,
+    #[cfg(test)]
     flush_spans: Vec<flush_census::Span>,
     #[cfg(test)]
     memory_spans: Vec<memory_parts::Span>,
@@ -361,6 +365,7 @@ pub(crate) struct Jit<'a> {
     pub call_stubs: usize,
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
+    scalar: Option<scalar_calls::State>,
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
@@ -371,6 +376,8 @@ pub(crate) struct Jit<'a> {
     observe_scalar_copy: bool,
     #[cfg(test)]
     observe_scratch_locals: bool,
+    #[cfg(test)]
+    scratch_values_enabled: bool,
     #[cfg(test)]
     observe_flush: bool,
     #[cfg(test)]
@@ -401,7 +408,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -412,6 +419,8 @@ impl<'a> Jit<'a> {
             observe_scalar_copy: true,
             #[cfg(test)]
             observe_scratch_locals: false,
+            #[cfg(test)]
+            scratch_values_enabled: true,
             #[cfg(test)]
             observe_flush: false,
             #[cfg(test)]
@@ -442,6 +451,7 @@ impl<'a> Jit<'a> {
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
+        if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
         let remaining = (self.capacity - self.bytes) / 4;
         let staged = self.emit_function(&self.program.functions[id], remaining);
         self.finish_preparation(id, staged)
@@ -516,6 +526,8 @@ impl<'a> Jit<'a> {
         #[cfg(test)]
         let mut scratch_hits = vec![];
         #[cfg(test)]
+        let mut scratch_copy_hits = vec![];
+        #[cfg(test)]
         let mut flush_spans = vec![];
         #[cfg(test)]
         let mut memory_spans = vec![];
@@ -578,6 +590,8 @@ impl<'a> Jit<'a> {
                     observe_scalar_copy: self.observe_scalar_copy,
                     #[cfg(test)]
                     scratch: scratch_locals::State::new(self.observe_scratch_locals),
+                    #[cfg(test)]
+                    scratch_values: scratch_values::State::new(self.scratch_values_enabled),
                     #[cfg(test)]
                     observe_flush: self.observe_flush,
                     #[cfg(test)]
@@ -711,6 +725,7 @@ impl<'a> Jit<'a> {
                     local_forwarding.extend(a.local_forwarding);
                     local_fact_events.extend(a.local_fact_events);
                     scratch_hits.extend(a.scratch.hits);
+                    scratch_copy_hits.extend(a.scratch.copy_hits);
                     for mut span in a.flush_spans {
                         span.offset += words.len() * 4;
                         span.end += words.len() * 4;
@@ -738,6 +753,10 @@ impl<'a> Jit<'a> {
                     internal_entries[pc] = Some(words.len() + internal);
                     entries[pc] = Some(Block { offset, end: pc + 1 });
                     operations += 1;
+                    for &(at, successor) in &a.links {
+                        let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
+                        links.push((words.len() + at, successor, words.len() + fallback));
+                    }
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
@@ -772,6 +791,7 @@ impl<'a> Jit<'a> {
             #[cfg(test)] local_forwarding,
             #[cfg(test)] local_fact_events,
             #[cfg(test)] scratch_hits,
+            #[cfg(test)] scratch_copy_hits,
             #[cfg(test)] flush_spans,
             #[cfg(test)] retained_local_writes }))
     }
@@ -1045,6 +1065,7 @@ enum Fact {
 
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
+    scalar_fallbacks: BTreeMap<usize, usize>,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
     #[cfg(test)]
@@ -1056,6 +1077,7 @@ struct Assembler<'a> {
     tree_caller_is_region: bool,
     resumable: bool,
     local_values: Vec<local_memory::Value>,
+    scratch_values: scratch_values::State,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
@@ -1106,6 +1128,7 @@ impl Default for Assembler<'_> {
             tree_caller_is_region: Default::default(),
             resumable: Default::default(),
             local_values: Default::default(),
+            scratch_values: Default::default(),
             local_forwarding: Default::default(),
             local_fact_events: Default::default(),
             retained_local_writes: Default::default(),
@@ -1117,6 +1140,7 @@ impl Default for Assembler<'_> {
             memory_parts: Default::default(),
             words: Default::default(),
             links: Default::default(),
+            scalar_fallbacks: Default::default(),
             failures: Default::default(),
             assertions: Default::default(),
             heap: Default::default(),
@@ -1217,6 +1241,7 @@ impl Assembler<'_> {
         }
     }
     fn emit(&mut self, word: u32) {
+        self.scratch_values.word(word);
         #[cfg(test)]
         self.scratch.observe_word(word);
         #[cfg(test)]
@@ -1979,10 +2004,13 @@ impl Assembler<'_> {
                 } else {
                     let immediate = memory_access!(self, "source", self.memory_address(11, address, size as usize, false));
                     // put() supplies the narrow result's zero high word below.
-                    self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
+                    if !self.scratch_values.contains(local,size as usize) {
+                        self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
+                    }
                 }
                 memory_part!(self, "register_publication", self.put(dst, 9, if size <= 8 { 31 } else { 10 }));
                 self.remember_local_memory(local, size as usize, dst);
+                self.scratch_values.capture(local,size as usize);
                 #[cfg(test)]
                 self.scratch.capture(self.current_pc, local, size as usize, "Load");
             }
@@ -1997,6 +2025,7 @@ impl Assembler<'_> {
                 let retain = self.preserve_guarded_local_write(local, address, size as usize);
                 if !retain { self.invalidate_local_memory(local, size as usize); }
                 self.remember_local_memory(local, size as usize, src);
+                self.scratch_values.capture(local,size as usize);
                 #[cfg(test)]
                 self.scratch.capture(self.current_pc, local, size as usize, "Store");
             }
@@ -2020,6 +2049,7 @@ impl Assembler<'_> {
                     if let Some((source, _)) = forwarded {
                         self.remember_local_memory(destination_local, size, source);
                     }
+                    self.scratch_values.capture(destination_local,size);
                     #[cfg(test)]
                     self.scratch.capture(self.current_pc, destination_local, size, "Copy");
                     return;
@@ -2069,6 +2099,7 @@ impl Assembler<'_> {
                 if let Some((source, _)) = forwarded {
                     self.remember_local_memory(destination_local, size, source);
                 }
+                self.scratch_values.capture(destination_local,size);
             }
             Op::Binary {
                 dst,

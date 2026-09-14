@@ -19,6 +19,8 @@ pub(super) struct FunctionProfile {
     jit_block_ends: Vec<usize>,
     jit_tree_blocks: Vec<u64>,
     jit_tree_block_ends: Vec<usize>,
+    #[serde(default)]
+    jit_scalar_hits: Option<Vec<u64>>,
 }
 
 pub(super) fn parse(program: &Program, bytes: &[u8]) -> Result<Profile, String> {
@@ -46,6 +48,10 @@ impl FunctionProfile {
         { return Err("profile counter shape mismatch".into()); }
         if self.jit_tree_blocks.iter().any(|&v| v != 0) || self.jit_tree_block_ends.iter().any(|&v| v != 0) {
             return Err("width census requires a profile without native trees".into());
+        }
+        if let Some(hits)=&self.jit_scalar_hits {
+            if hits.len()!=n {return Err("scalar profile counter shape mismatch".into());}
+            if hits.iter().any(|&v|v!=0) {return Err("width census requires a profile without scalar leaves".into());}
         }
         // Difference events make reconstruction linear even with overlapping
         // compiled intervals. Checked accumulation rejects overflowing counts.
@@ -82,7 +88,7 @@ mod tests {
         let p = FunctionProfile { name:f.name.clone(),frame_size:0,registers:1,
             operations:f.code.iter().map(|op|format!("{op:?}")).collect(),interpreted:vec![1,0,0],
             jit_blocks:vec![10,2,4],jit_block_ends:vec![2,3,3],
-            jit_tree_blocks:vec![0;3],jit_tree_block_ends:vec![0;3] };
+            jit_tree_blocks:vec![0;3],jit_tree_block_ends:vec![0;3],jit_scalar_hits:None };
         (f,p)
     }
     #[test]
@@ -108,4 +114,12 @@ mod tests {
         let (f,mut p)=inputs();p.jit_blocks[0]=u64::MAX;assert!(p.native_counts(&f).is_err());
         let (f,mut p)=inputs();p.jit_blocks[1]=u64::MAX;assert!(p.native_counts(&f).is_err());
     }
+    #[test]
+    fn profile_accepts_legacy_or_inactive_scalar_counts_and_rejects_scalar_weighting() {
+        let (f,mut p)=inputs();assert_eq!(p.native_counts(&f).unwrap(),[10,12,6]);
+        p.jit_scalar_hits=Some(vec![0;3]);assert_eq!(p.native_counts(&f).unwrap(),[10,12,6]);
+        p.jit_scalar_hits=Some(vec![0;2]);assert!(p.native_counts(&f).unwrap_err().contains("shape"));
+        p.jit_scalar_hits=Some(vec![1,0,0]);assert!(p.native_counts(&f).unwrap_err().contains("without scalar leaves"));
+    }
+
 }
