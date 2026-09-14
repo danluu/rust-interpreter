@@ -5,6 +5,8 @@ use super::*;
 mod registers;
 #[path="native_dead.rs"]
 mod dead;
+#[path="native_transaction.rs"]
+mod transaction;
 // Fixed offsets from the caller's SP at private native Call entry. Leaf
 // spills grow below that SP; inputs and Output remain in caller-owned scratch.
 pub(crate) const CALL_OUTPUT:usize=64;
@@ -25,7 +27,7 @@ const _:()={assert!(std::mem::offset_of!(Output,value)==0);assert!(std::mem::off
 pub struct Emitted {pub words:Vec<u32>,pub stack_bytes:usize,pub profiled:bool,pub register_values:usize,pub success_steps:Option<usize>}
 struct Emitter<'a> {
     plan:&'a Plan, words:Vec<u32>, slots:Vec<Option<usize>>, stack_bytes:usize,
-    registers:Vec<Option<u32>>,
+    registers:Vec<Option<u32>>, transaction:Option<transaction::Layout>,
     labels:Vec<Option<usize>>, jumps:Vec<(usize,usize)>, failures:Vec<usize>,
     exhausted:bool, profiled:bool, call_frame:bool, heap:bool, fixed_steps:Option<usize>,
 }
@@ -213,7 +215,8 @@ impl Emitter<'_> {
     }
     fn node(&mut self,id:Id)->Result<(),&'static str> {
         match &self.plan.nodes[id].value {
-            Value::Read{address,size}=>self.read_external(*address,*size)?,
+            Value::Read{address,size}=>self.transaction_read(id,*address,*size)?,
+            Value::Write{address,value,size}=>return self.transaction_write(id,*address,*value,*size),
             Value::Pack(parts)=>self.pack(parts),
             Value::Binary{a,b,op,bits,signed,overflow}=>self.binary(*a,*b,*op,*bits,*signed,*overflow),
             Value::Unary{src,op,bits}=>{
@@ -264,18 +267,18 @@ impl Emitter<'_> {
 }
 
 pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,true,true,false,false,false)
+    emit_inner(plan,profiled,true,true,true,false,false,false,false)
 }
 #[cfg(test)]
 fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emitted,&'static str> {
     // Preserve exact pre-elimination reference bytes for the archived census.
-    emit_inner(plan,profiled,use_registers,true,false,false,false,false)
+    emit_inner(plan,profiled,use_registers,true,false,false,false,false,false)
 }
 /// Historical pointer-argument entry retained as an independent test reference.
 #[cfg(test)]
 #[allow(dead_code)]
 pub(crate) fn emit_prechecked(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,false,false,false)
+    emit_inner(plan,profiled,true,false,true,false,false,false,false)
 }
 /// Private Call entry: captured inputs/Output use fixed caller-SP offsets,
 /// logical base is x21, status is x9, and x0–x2 remain live. Its caller must
@@ -284,14 +287,18 @@ pub(crate) fn emit_call(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> 
     emit_call_with_heap(plan,profiled,false)
 }
 pub(crate) fn emit_call_with_heap(plan:&Plan,profiled:bool,heap:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,true,heap)
+    emit_inner(plan,profiled,true,false,true,true,true,heap,false)
+}
+/// Only scoped native controls select this backend until full qualification.
+pub(crate) fn emit_call_transaction(plan:&Plan,profiled:bool,heap:bool)->Result<Emitted,&'static str> {
+    emit_inner(plan,profiled,true,false,true,true,true,heap,true)
 }
 #[cfg(test)]
 fn emit_call_reference(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,false,false)
+    emit_inner(plan,profiled,true,false,true,true,false,false,false)
 }
-fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool,heap:bool)->Result<Emitted,&'static str> {
-    if plan.nodes.iter().any(|n|matches!(n.value,Value::Write{..})) {return Err("native_external_write_unimplemented");}
+fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool,heap:bool,stores:bool)->Result<Emitted,&'static str> {
+    if !stores && plan.nodes.iter().any(|n|matches!(n.value,Value::Write{..})) {return Err("native_external_write_unimplemented");}
     if !call_frame && plan.nodes.iter().any(|n|matches!(n.value,Value::Read{..})) {
         return Err("native_external_read_call_only");
     }
@@ -302,8 +309,9 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
         if !plan.live[id] {continue;}
         if matches!(node.value,Value::Binary{bits:128,..}|Value::Unary{bits:128,..}) {return Err("native_integer_128");}
         if let Value::Input(index)=node.value {if index>=if call_frame {64} else {2048} {return Err("native_argument_limit");}}
-        if registers[id].is_none() && !matches!(node.value,Value::Constant(_)|Value::Input(_)|Value::Base(_)) {slots[id]=Some(bytes);bytes+=if node.width>8 {16} else {8};}
+        if registers[id].is_none() && !matches!(node.value,Value::Constant(_)|Value::Input(_)|Value::Base(_)|Value::Write{..}) {slots[id]=Some(bytes);bytes+=if node.width>8 {16} else {8};}
     }
+    let transaction=if stores {transaction::Layout::new(plan,&mut bytes)?} else {None};
     let stack_bytes=(bytes+15)&!15;if stack_bytes>32752 {return Err("native_stack_limit");}
     if call_frame {
         // Scaled LDR/STR offsets must fit even after allocating private spills.
@@ -315,13 +323,14 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
     }
     let status=if call_frame {9} else {0};
     let success_steps=if optimize_commit {plan.success_steps} else {None};
-    let mut a=Emitter{plan,words:vec![],slots,stack_bytes,registers,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame,heap,fixed_steps:success_steps};
+    let mut a=Emitter{plan,words:vec![],slots,stack_bytes,registers,transaction,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame,heap,fixed_steps:success_steps};
     // This function owns only its private scratch/output. The standalone
     // guard returns before touching either; other failures discard private work.
     let short=if check_budget {
         a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);let at=a.words.len();a.emit(0x54000003);Some(at)
     } else {None};
     a.stack(false);if success_steps.is_none() {a.output_store(31,16);}if profiled {for i in 0..8 {a.output_store(31,24+i*8);}}
+    a.transaction_initialize();
     for block in 0..plan.blocks.len() {
         if !plan.reachable[block] {continue;}a.labels[block]=Some(a.words.len());a.charge_block(block);
         for pc in plan.blocks[block].start..plan.blocks[block].end {
@@ -335,6 +344,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
                     if !optimize_commit || plan.result_size!=0 {
                         a.get(9,*value,false);a.get(10,*value,true);a.output_store(9,0);a.output_store(10,8);
                     }
+                    a.transaction_commit()?;
                     a.stack(true);a.mov(status,31);a.emit(0xd65f03c0);
                 },
                 Effect::Jump(pc)=>a.edge(block,plan.at[*pc])?,

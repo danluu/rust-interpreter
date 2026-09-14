@@ -1,8 +1,8 @@
 use super::*;
 use crate::{Function,Slot,Op,Engine,VERSION,execute_profiled};
-fn local(dst:Reg,offset:usize)->Op {Op::Local{dst,offset}}
-fn load(dst:Reg,address:Reg,size:u8)->Op {Op::Load{dst,address,size}}
-fn fixture(code:Vec<Op>)->Program {
+pub(super) fn local(dst:Reg,offset:usize)->Op {Op::Local{dst,offset}}
+pub(super) fn load(dst:Reg,address:Reg,size:u8)->Op {Op::Load{dst,address,size}}
+pub(super) fn fixture(code:Vec<Op>)->Program {
     let parent=Function{name:"transaction parent".into(),frame_size:48,frame_align:8,registers:8,
         args:vec![Slot{offset:0,size:8},Slot{offset:8,size:8}],result:Slot{offset:16,size:16},
         code:vec![local(0,0),local(1,8),local(2,16),Op::Call{function:1,args:vec![0,1],destination:2},Op::Return]};
@@ -11,7 +11,7 @@ fn fixture(code:Vec<Op>)->Program {
     Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,functions:vec![parent,leaf],
         data:vec![0x57;32],statics:(0..96).map(|i|(i*37+19) as u8).collect(),thread_locals:vec![]}
 }
-fn prefix()->Vec<Op> {vec![local(0,16),load(1,0,8),local(2,24),load(3,2,8),Op::Imm{dst:4,value:0xfedcba98765432100123456789abcdef}]}
+pub(super) fn prefix()->Vec<Op> {vec![local(0,16),load(1,0,8),local(2,24),load(3,2,8),Op::Imm{dst:4,value:0xfedcba98765432100123456789abcdef}]}
 fn counts(profile:&ExecutionProfile)->Vec<Vec<u64>> {
     profile.functions.iter().map(|f|{
         let mut counts=f.interpreted.clone();
@@ -19,8 +19,8 @@ fn counts(profile:&ExecutionProfile)->Vec<Vec<u64>> {
         counts
     }).collect()
 }
-struct SnapshotGuard;
-impl SnapshotGuard {fn new()->Self {SNAPSHOT_ENABLED.with(|s|assert!(!s.replace(true)));SNAPSHOT.with(|s|*s.borrow_mut()=None);Self}}
+pub(super) struct SnapshotGuard;
+impl SnapshotGuard {pub(super) fn new()->Self {SNAPSHOT_ENABLED.with(|s|assert!(!s.replace(true)));SNAPSHOT.with(|s|*s.borrow_mut()=None);Self}}
 impl Drop for SnapshotGuard {fn drop(&mut self) {SNAPSHOT_ENABLED.with(|s|s.set(false));}}
 fn compare(p:&Program,args:&[u128],budget:u64,memory:usize,frames:usize)->Statistics {
     let options=||Limits{instructions:budget,memory,frames,..Limits::default()};

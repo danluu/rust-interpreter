@@ -68,7 +68,7 @@ pub(super) fn allocate(plan: &Plan) -> Result<Vec<Option<u32>>, &'static str> {
     for ids in ordered {
         let mut active: [Option<Id>; 4] = [None; 4];
         for id in ids {
-            if cross_block[id] || plan.nodes[id].width > 8 { continue; }
+            if matches!(plan.nodes[id].value,Value::Write{..}) || cross_block[id] || plan.nodes[id].width > 8 { continue; }
             let (_, start) = definitions[id].unwrap();
             ends[id] = ends[id].max(start);
             for slot in &mut active {
