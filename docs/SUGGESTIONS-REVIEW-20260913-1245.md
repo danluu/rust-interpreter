@@ -127,3 +127,12 @@ Correctness, original assertions and restoration pass. Park it and cancel the
 four unstarted project cases; the passing 40-command screen does not override
 the full result. Review saved immediate-materialization sequences next, with
 no guest rerun or performance claim from static code size.
+
+The immediate-materialization census is also deferred: removable low-zero seeds
+cover only 8/1,966 and 0/1,560 generated sample PCs. Large static word savings
+are mostly cold. Before a larger call-frame change, join the already-qualified
+confined-memory proof to saved call costs. The old V6 scalar ABI is implemented
+and parked: its real screen saved about 170 ms execution while adding about
+144 ms Cargo work. Do not repeat it unchanged. Any new runtime-only scalar
+lowering must establish a separate safety contract and measure its preparation
+cost inside complete edited-source commands.
