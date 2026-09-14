@@ -24,8 +24,9 @@ where oversized functions were declined by whole-function emission. Use fresh
 adopted record/replay profiles and a demand replay to establish changed native
 coverage, not another performance guard for the parked broad policy. Then choose
 whether a policy limited to large functions has enough evidence to prototype.
-First retire only the closed failed screen's nonexecutable compiler caches,
-keeping all raw evidence, artifacts, executables and the shared build target.
+The closed failed screen's compiler intermediates are retired (3,147 files,
+1.91 GB logical; all 2,531 protected hashes unchanged). Raw evidence, artifacts,
+executables and the shared build target are preserved.
 [Primary result](results/demand-region-screen-token-01/assessment.md),
 [build gap](results/demand-region-build-01/assessment.md),
 [corrected build](results/demand-region-build-02/assessment.md),
