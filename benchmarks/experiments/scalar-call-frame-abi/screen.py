@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Primary-first changed-source screen for the native scalar Calls with dead-register elimination against matched main."""
+"""Primary-first changed-source screen for the native scalar Calls with private frame ABI against matched main."""
 import argparse
 import hashlib
 import json
@@ -225,7 +225,7 @@ def main():
             assert build['status'] == 'passed'
             assert all(sha(tools[m] / name) == digest for name, digest in build['binaries'].items())
             if m=='anchor':assert build['tests']['test-debug']==build['tests']['test-release']==dict(passed=365,ignored=1)
-            elif m=='candidate':assert build['tests']['test-debug']==build['tests']['test-release']==596
+            elif m=='candidate':assert build['tests']['test-debug']==build['tests']['test-release']==597
             else:assert build['composition']['kind']=='heap-address-bias-matched-control'
             require_export_option(tools[m], build['tool_key'], 'filtered-tests')
             if m in CACHED:
@@ -277,7 +277,7 @@ def main():
             cargo_workers=2, custom_suite_workers=2, native_test_threads='libtest default',
             custom_runner='prepared, fresh guest state per test',
             identity_lookup={m:lookup_args(m)[1] for m in CUSTOM},
-            composition='native scalar Calls with dead-register elimination, guarded caller arguments and prechecked leaf entries against matched main; baseline/duplicate/candidate share cached lookup and automatic function cache',
+            composition='native scalar Calls with private frame ABI, guarded caller arguments and prechecked leaf entries against matched main; baseline/duplicate/candidate share cached lookup and automatic function cache',
             cycles=1, edited_pairs=5, aa_pairs=5, expected_commands=40,
             schedule=[dict(cycle=s['cycle'], state=s['state'], phase=s['phase'],
                 source_sha256=hashlib.sha256(s['source']).hexdigest(), modes=s['modes']) for s in states],

@@ -133,6 +133,7 @@ fn native_scalar_registers_preserve_cross_block_values_phis_and_wide_results() {
                     compare(&p, &plan, &optimized, &[a, b], budget);
                     assert_eq!(allocated.attempt(&[a, b], 16, budget).unwrap(), spilled.attempt(&[a, b], 16, budget).unwrap());
                     assert_eq!(optimized.attempt(&[a, b], 16, budget).unwrap(), spilled.attempt(&[a, b], 16, budget).unwrap());
+                assert_eq!(call.attempt(&[a, b], 16, budget).unwrap(), spilled.attempt(&[a, b], 16, budget).unwrap());
                 }
             }
         }
@@ -283,7 +284,7 @@ fn native_scalar_call_frame_abi_preserves_live_pointers_and_private_failure_outp
                 0,std::ptr::null_mut(),0,std::ptr::null_mut())};
             let actual=unsafe {code.tree_abi_probe(0,[args.as_ptr() as usize,0x1000,
                 std::ptr::from_mut(&mut output) as usize,100,0x123,0x456,0x789,0xabc])};
-            assert_eq!(actual[0],status);assert_eq!(output,expected);
+            assert_eq!(actual[0] as u64,status);assert_eq!(output,expected);
             assert_eq!([actual[1],actual[2],actual[3],actual[4],actual[7],actual[8],actual[9],actual[10],actual[11],actual[12]],
                 [0x1357,0x2468,0x3579,0x468a,0x579b,0x68ac,0x79bd,0x8ace,0x9bdf,0xace0]);assert_eq!(actual[5],actual[6]);
         }}

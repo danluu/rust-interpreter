@@ -25,7 +25,7 @@ def main():
         build_path=args.build.resolve(strict=True);qualification_path=args.qualification.resolve(strict=True)
         build=read(build_path);qualified=read(qualification_path)
         assert build['status']==qualified['status']=='passed'
-        assert build['tests']=={'test-debug':596,'test-release':596} and qualified['commands']==121
+        assert build['tests']=={'test-debug':597,'test-release':597} and qualified['commands']==121
         assert qualified['scalar_enabled_strict_cargo'] and qualified['scalar_partial_artifact_rejections']==1 and qualified['actual_demand_artifact']
         assert qualified['tool_key']==build['tool_key'] and qualified['source_restored'] and qualified['automatic_cache_qualified']
         vm_dir,key=installed_tools(build['tool_key']);matched=build['matched_control'];control_dir,_=installed_tools(matched['tool_key'])

@@ -49,7 +49,7 @@ def main():
         build_path = args.build.resolve(strict=True)
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
-        assert build['tests']['test-debug'] == build['tests']['test-release'] == 596
+        assert build['tests']['test-debug'] == build['tests']['test-release'] == 597
         assert build['composition']['kind'] == 'scalar-call-frame-abi-composition'
         compiler_proof = json.loads((ROOT / 'results/guarded-local-facts-main-build-01/summary.json').read_text())
         assert compiler_proof['status'] == 'passed'
