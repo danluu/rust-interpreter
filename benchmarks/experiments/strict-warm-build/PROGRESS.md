@@ -300,6 +300,23 @@ failures remain preserved. This qualifies that composition and stock executable;
 the exporter build and application latency checks remain pending.
 [Stock compiler compatibility evidence](../../../results/embedded-frontend-stock-smoke-01/README.md).
 
+The separate runtime-compiler installer now verifies every copied destination
+before any compiler probe or ready record. All fourteen synthetic controls
+passed, including corruption introduced after copying and before the first
+output stamp. This installs under its own policy and namespace; real compiler
+installation, source qualification and launcher integration remain pending.
+[Runtime installation controls](../../../results/runtime-compiler-controls-02/README.md).
+
+A subsequent exporter Cargo build exited successfully but reported thirteen
+strip failures: the beta auxiliary tool could not find its beta LLVM library in
+the target library directory. The compositor now supports an explicit second
+copy of an admitted archive member, with independent output verification. All
+ten synthetic controls passed. A fresh real sysroot, actual debug stripping,
+exporter rebuild and loaded-driver controls are still required; neither this
+change nor the runtime installer establishes a latency improvement.
+[Auxiliary dependency proposal](../../../experiments/embedded-frontend-bootstrap/B2-PLAN.md)
+and [compositor controls](../../../results/beta-auxiliary-compositor-controls-01/README.md).
+
 The [external trait-name index](../../../experiments/external-trait-index/README.md)
 is a reviewed, uncompiled compiler prototype. It preserves ordinary external
 table construction, retains the exact name/namespace projection, and keeps local
