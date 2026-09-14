@@ -6,7 +6,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from interpreter import installed_tools
-NAME='indexed-switches-build-01'
+NAME='indexed-switches-build-02'
 BASELINE='df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
 def read(p):return json.loads(p.read_text())
 def main():

@@ -44,7 +44,8 @@ fn function(cases: Vec<(u128, usize)>) -> Function {
             Op::Imm { dst: 0, value: 33 }, Op::Store { address: 1, src: 0, size: 16 }, Op::Return] }
 }
 fn program(functions: Vec<Function>) -> Program {
-    Program { version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0, functions, data: vec![] }
+    Program { version: VERSION, target: "aarch64-apple-darwin".into(), entry: 0, functions,
+        data: vec![], statics: vec![], thread_locals: vec![] }
 }
 
 #[test]
