@@ -59,8 +59,12 @@ floor before/after stream blocks of at most 1 MiB and around every probe. There
 is no new subprocess, supervisor, lock, capacity or approval framework here.
 
 All source bytes are checked before destination creation. Files are copied into
-fresh inodes with exclusive creation; components and copied files are rechecked
-before and after probes. The identity is determined before copying, so the
+fresh inodes with exclusive creation. Every destination is then read back through
+an ordinary, no-follow descriptor with exact size/hash, nlink=1 and before/after
+identity checks, under the per-MiB capacity guard. Only after full readback and
+unchanged output stamps may probes begin; input-stream hashes alone do not prove
+the destinations. Components and copied files are rechecked before and after
+probes. The identity is determined before copying, so the
 content-addressed final sysroot path is used for every probe and is never renamed
 afterwards. Unknown membership, collisions, changed links/inputs, probe errors,
 loader disagreement or capacity failure preserve the partial attempt and external
@@ -91,12 +95,16 @@ overrides and conflicting rustc/rustdoc selection.
 
 ## Qualification sequence to prepare next
 
-1. The thirteen synthetic controls in `tests/test_runtime_compiler.py` passed at
+1. The original thirteen synthetic controls in `tests/test_runtime_compiler.py` passed at
    source `bd2ca683`, through the existing canonical supervisor with exact source
    snapshots. They exercise
    final-root probing, fresh copies, ordinary sources/link omissions, mismatches,
    collisions, native completeness, support-tool rpaths, forged probe proof,
    changed installed bytes, capacity interruption and retained failed attempts.
+   The successor adds a fourteenth control that corrupts the copied driver before
+   the first output stamp capture and requires rejection before any probe/ready
+   record. The destination-readback change and fourteen-control successor remain
+   unrun pending their fresh frozen control record.
 2. Freeze a real admitted runtime specification from completed runtime receipts,
    complete current native/source inventories and raw loader declarations. Include
    required support-tool bytes and their actual closure explicitly. Bind the
@@ -114,11 +122,13 @@ overrides and conflicting rustc/rustdoc selection.
    necessary. Their success is an external qualified record, not a rewrite of
    this immutable installation or a relabeling of prior original-path evidence.
 
-All thirteen synthetic controls passed without skips in 0.273s; supervisor
+The original thirteen synthetic controls passed without skips in 0.273s; supervisor
 46637/helper46640/test46642 held canonical admission from 1789344515.779358 to
 1789344516.1693618. Exact raw outputs, eight source snapshots, frozen manifest and
 supervisor/launch records are retained in `results/runtime-compiler-controls-01`.
-Source AST parsing and whitespace checks also passed. No real runtime copy,
+The historical source/evidence remain unchanged; that result does not qualify
+the new destination-readback repair. Source AST parsing and whitespace checks
+also passed. No real runtime copy,
 compiler probe, native qualification, exporter rebuild, publication, benchmark
 or holdout workload has run. Synthetic passing controls do not qualify a real
 compiler installation or application workflow.

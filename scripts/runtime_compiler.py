@@ -414,6 +414,19 @@ def install_runtime_compiler(root, specification, *, run, guard, environment):
         copied = tree_stamps(sysroot)
         require({p for p, s in copied.items() if stat.S_ISREG(s[2])} == set(identity['files']),
                 'runtime output inventory differs')
+        # Hash the DESTINATIONS too. The hashes accumulated while copying prove
+        # the input stream; a destination changed before this first snapshot must
+        # never acquire a trusted stamp under those input hashes.
+        for component in spec['components']:
+            for name, row in component['files'].items():
+                output_name = component['destination'] + '/' + name if component['destination'] else name
+                output = sysroot / output_name
+                before = stamp(output.lstat())
+                require(stat.S_ISREG(before[2]) and output.resolve(strict=True) == output
+                        and before[6] == 1 and before[:6] == copied[output_name]
+                        and stat.S_IMODE(before[2]) == row['mode'], 'runtime output identity differs')
+                transfer(output, row, before, guard)
+        require(tree_stamps(sysroot) == copied, 'runtime files changed during output readback')
         def probe(argv):
             guard()
             row = run(argv, env.copy())

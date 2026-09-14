@@ -254,6 +254,24 @@ class RuntimeCompilerTests(unittest.TestCase):
             self.install(run=changed)
         self.assertFalse((self.install_path() / 'ready.json').exists())
 
+    def test_destination_corrupted_before_first_stamp_is_rejected_before_probes(self):
+        original_stamps = runtime.tree_stamps
+        changed = []
+        def corrupt_before_first_snapshot(directory):
+            if not changed:
+                destination = directory / DRIVER
+                data = destination.read_bytes()
+                destination.write_bytes(bytes([data[0] ^ 1]) + data[1:])
+                changed.append(destination)
+            return original_stamps(directory)
+        with patch.object(runtime, 'tree_stamps', side_effect=corrupt_before_first_snapshot):
+            with self.assertRaisesRegex(RuntimeError, 'file digest differs'):
+                self.install()
+        self.assertEqual(changed, [self.install_path() / 'sysroot' / DRIVER])
+        self.assertFalse(self.calls)
+        self.assertTrue((self.install_path() / 'failure.json').is_file())
+        self.assertFalse((self.install_path() / 'ready.json').exists())
+
     def test_capacity_failure_during_copy_retains_bytes_and_starts_no_probe(self):
         def guard():
             path = self.install_path() / 'sysroot/bin/rustc'
