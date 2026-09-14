@@ -7,25 +7,32 @@ and 6.51% CPU but remains 1.571× ordinary native. Folded improves 3.11% wall;
 pgrust, rg-aot and Nushell differences are within variation. The full parser
 still loses to native. [Integration and limits](results/scratch-scalar-main-qualification-01/assessment.md).
 
-Current manual direction: demand-driven ordinary-region compilation. Immutable
-candidate e5ddb4243a90 / VM b1fd894de0fe passes 637 workspace controls per profile,
-408 Python tests (22 skips), a production VM build and exact eager captures.
-Explicit demand execution uses bounded retained plans, transactional code/edge
-publication, stable resume tables and interleaved operation maps. The initial
-three-pair-only liveness representation omitted arbitrary-register scratch
-queries; its compact storage estimates are superseded. The corrected sparse/
-dense graph preserves every query. Corrected captured-function payload is
-11.82/14.80 MB for token block/exhaustive and 2.15 MB for folded. All 122 strict/
-cache fixture outcomes and all three original profiles now pass. Code shrinks
-to 6.80/8.58/1.13 MB with exact logical counts, memory and entropy; diagnostic
-preparation times are roughly unchanged. Sixteen prospective screen controls
-and four observer controls pass. Next run the complete forty-command changed-source
-timing. The 40.92–43.18% uncharged-code census establishes no speedup.
-[Build gap](results/demand-region-build-01/assessment.md),
-[corrected production build](results/demand-region-build-02/assessment.md).
-[complete storage inventory](results/demand-analysis-storage-04/assessment.md).
+Broad demand-region candidate e5ddb4243a90 / VM b1fd894de0fe is parked. Its full
+40-command token primary preserves all twelve tests and exact checked artifacts,
+but wall ratio 0.994056 does not clear A/A 0.045334 (margin 1.039390); CPU ratio
+is 0.989312. Larger comparison/held-out commands remain unstarted. Smaller code
+and exact profiles did not establish a development-loop speedup.
+
+The candidate passes 637 workspace controls/profile, 408 Python tests (22 skips),
+122 strict/cache outcomes and three original profiles with exact logical counts,
+guest peak memory and entropy. Production retained liveness is complete; earlier
+three-pair-only storage estimates are superseded. Corrected captured plan payload
+is 11.82/14.80 MB for token block/exhaustive and 2.15 MB for folded.
+
+Next manual direction: inspect region execution on the current full parser,
+where oversized functions were declined by whole-function emission. Use fresh
+adopted record/replay profiles and a demand replay to establish changed native
+coverage, not another performance guard for the parked broad policy. Then choose
+whether a policy limited to large functions has enough evidence to prototype.
+First retire only the closed failed screen's nonexecutable compiler caches,
+keeping all raw evidence, artifacts, executables and the shared build target.
+[Primary result](results/demand-region-screen-token-01/assessment.md),
+[build gap](results/demand-region-build-01/assessment.md),
+[corrected build](results/demand-region-build-02/assessment.md),
+[complete storage](results/demand-analysis-storage-04/assessment.md),
+[original profiles](results/demand-region-profile-01/assessment.md).
 Runtime work stays on `experiment/demand-region-emission-20260914`; main retains
-its adopted VM.
+adopted df4006e0 / VM 6ac4dd9e. The saved goal remains paused; manual work continues.
 [Region coverage](results/demand-region-census-01/assessment.md),
 [cached staging](results/demand-region-cached-01/assessment.md),
 [compact liveness](results/demand-compact-liveness-01/assessment.md),
