@@ -25,7 +25,7 @@ transitions, stdout/stderr, suites, bytecode/catalog/selection snapshots, native
 executables, resource observations and supervisor terminal records. Restore
 source on all ordinary controller exits. Do not disrupt other work.
 
-Before timing, run 13 protocol controls and three operation-map controls.
+Before timing, run 14 protocol controls and three operation-map controls.
 Reuse the complete 429-test Python build qualification (407 passed, 22 skipped)
 only through exact scripts/tests/source/log bindings; do not report reused
 tests as newly executed. Require three new candidate diagnostic profiles to match three closed adopted

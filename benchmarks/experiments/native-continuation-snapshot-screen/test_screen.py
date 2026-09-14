@@ -8,6 +8,15 @@ import screen
 
 
 class ScreenTests(unittest.TestCase):
+    def test_experiment_name_accepts_fresh_runs_and_rejects_resume_or_path_suffixes(self):
+        self.assertTrue(screen.validate_run_id('token','native-continuation-snapshot-screen-token-02'))
+        for name in ['native-continuation-snapshot-screen-token-continuation-02',
+                     'native-continuation-snapshot-screen-folded-02',
+                     '../native-continuation-snapshot-screen-token-02',
+                     'native-continuation-snapshot-screen-token-02-extra',
+                     'native-continuation-snapshot-screen-token-2']:
+            with self.subTest(name=name),self.assertRaises(AssertionError):screen.validate_run_id('token',name)
+
     def artifact(self, library, executable, test=True, kind='lib'):
         return json.dumps(dict(reason='compiler-artifact', profile=dict(test=test), executable=str(executable),
                                target=dict(kind=[kind], src_path=str(library))))
