@@ -6,7 +6,10 @@ mod costs;
 
 #[derive(Clone,Copy)]
 struct Site {id:Id,address:Id,size:u8,offset:usize}
-pub(super) struct Layout {sites:Vec<Site>,scratch:usize,identities:Vec<(Id,u64)>}
+pub(super) struct Layout {
+    sites:Vec<Site>,scratch:usize,identities:Vec<(Id,u64)>,
+    prior_hosts:Vec<Option<(usize,u8)>>,publish:Vec<bool>,logical:Vec<bool>,
+}
 impl Layout {
     pub fn new(plan:&Plan,bytes:&mut usize)->Result<Option<Self>,&'static str> {
         let mut sites=vec![];*bytes=(*bytes+15)&!15;
@@ -18,7 +21,30 @@ impl Layout {
             }
         }
         if sites.is_empty() {return Ok(None);}
-        let scratch=*bytes;*bytes+=16;Ok(Some(Self{sites,scratch,identities:addresses(plan)?}))
+        let identities=addresses(plan)?;let mut prior_hosts=vec![];let mut publish=vec![];let mut logical=vec![];
+        for (index,site) in sites.iter().enumerate() {
+            let pc=plan.nodes[site.id].pc.ok_or("native_store_pc")?;let block=plan.at[pc];
+            let prior=sites[..index].iter().rev().find_map(|s| {
+                let p=plan.nodes[s.id].pc?;
+                if p<pc && plan.at[p]==block {
+                    if let Relation::Contains(byte)=relation(&identities,*s,site.address,site.size) {return Some((s.offset,byte));}
+                }
+                None
+            });
+            // Successful execution reaches all later effects in this block.
+            // Their complete overwrite removes only the earlier publication;
+            // its private value remains available to every intervening read.
+            let overwritten=sites[index+1..].iter().any(|s| {
+                let p=plan.nodes[s.id].pc.unwrap();p>pc && plan.at[p]==block
+                    && matches!(relation(&identities,*s,site.address,site.size),Relation::Contains(_))
+            });
+            let address_used=plan.nodes.iter().enumerate().any(|(id,n)| {
+                if id<=site.id || !plan.live[id] {return false;}
+                if let Value::Read{address,size}=n.value {matches!(relation(&identities,*site,address,size),Relation::Unknown)} else {false}
+            });
+            prior_hosts.push(prior);publish.push(!overwritten);logical.push(address_used);
+        }
+        let scratch=*bytes;*bytes+=16;Ok(Some(Self{sites,scratch,identities,prior_hosts,publish,logical}))
     }
 }
 
@@ -81,25 +107,42 @@ impl Emitter<'_> {
     }
     pub(super) fn transaction_write(&mut self,id:Id,address:Id,value:Id,size:u8)->Result<(),&'static str> {
         if !self.call_frame {return Err("native_store_call_only");}
-        let site=*self.transaction.as_ref().ok_or("native_store_disabled")?.sites.iter().find(|s|s.id==id).ok_or("native_store_slot")?;
-        // x4 is the retained read-only prefix; x7/x8 exist only in the heap ABI.
-        self.get(9,address,false);self.imm(10,crate::heap::TAG as u64);self.cmp(9,10);
-        if self.heap {
-            self.three(0xcb000000,11,9,10);self.csel(9,9,11,3);self.csel(12,2,7,3);
-            self.load(13,31,self.stack_bytes+24);self.csel(13,13,8,3);self.csel(14,4,31,3);
-        } else {self.fail(2);self.mov(12,2);self.load(13,31,self.stack_bytes+24);self.mov(14,4);}
-        self.cmp(9,31);self.fail(0);self.cmp(9,13);self.fail(8);
-        self.three(0xcb000000,13,13,9);self.imm(10,u64::from(size));self.cmp(13,10);self.fail(3);
-        self.cmp(9,14);self.fail(3);self.three(0x8b000000,11,12,9);
-        self.store(11,31,site.offset);self.get(12,address,false);self.store(12,31,site.offset+8);
-        self.get(9,value,false);self.get(10,value,true);self.store(9,31,site.offset+16);self.store(10,31,site.offset+24);
+        let t=self.transaction.as_ref().ok_or("native_store_disabled")?;
+        let index=t.sites.iter().position(|s|s.id==id).ok_or("native_store_slot")?;
+        let site=t.sites[index];let prior=t.prior_hosts[index];let logical=t.logical[index];
+        if let Some((offset,byte))=prior {
+            // A preceding containing WRITE in this block checked every byte,
+            // including write protection. Stable backing cannot change here.
+            self.load(11,31,offset);
+            if byte!=0 {self.imm(12,u64::from(byte));self.three(0x8b000000,11,11,12);}
+        } else {
+            // x4 is the retained read-only prefix; x7/x8 exist only in the heap ABI.
+            self.get(9,address,false);self.imm(10,crate::heap::TAG as u64);self.cmp(9,10);
+            if self.heap {
+                self.three(0xcb000000,11,9,10);self.csel(9,9,11,3);self.csel(12,2,7,3);
+                self.load(13,31,self.stack_bytes+24);self.csel(13,13,8,3);self.csel(14,4,31,3);
+            } else {self.fail(2);self.mov(12,2);self.load(13,31,self.stack_bytes+24);self.mov(14,4);}
+            self.cmp(9,31);self.fail(0);self.cmp(9,13);self.fail(8);
+            self.three(0xcb000000,13,13,9);self.imm(10,u64::from(size));self.cmp(13,10);self.fail(3);
+            self.cmp(9,14);self.fail(3);self.three(0x8b000000,11,12,9);
+        }
+        self.store(11,31,site.offset);
+        if logical {self.get(12,address,false);self.store(12,31,site.offset+8);}
+        self.get(9,value,false);self.store(9,31,site.offset+16);
+        if size>8 {self.get(10,value,true);self.store(10,31,site.offset+24);}
         Ok(())
     }
     fn transaction_value(&mut self,site:Site,byte:u8,size:u8) {
-        self.load(9,31,site.offset+16);self.load(10,31,site.offset+24);
-        let shift=byte*8;
-        if shift>=64 {self.lsr(9,10,shift-64);self.mov(10,31);} else if shift!=0 {
-            self.emit(0x93c00000|(9<<16)|((shift as u32)<<10)|(10<<5)|9);self.lsr(10,10,shift);
+        if byte>=8 {
+            self.load(9,31,site.offset+24);if byte>8 {self.lsr(9,9,(byte-8)*8);}self.mov(10,31);
+        } else {
+            self.load(9,31,site.offset+16);
+            if byte+size>8 {self.load(10,31,site.offset+24);} else {self.mov(10,31);}
+            let shift=byte*8;
+            if shift!=0 {
+                if byte+size>8 {self.emit(0x93c00000|(9<<16)|((shift as u32)<<10)|(10<<5)|9);self.lsr(10,10,shift);}
+                else {self.lsr(9,9,shift);}
+            }
         }
         if size<=8 {self.mask(9,size*8);self.mov(10,31);} else {self.mask(10,(size-8)*8);}
     }
@@ -148,13 +191,14 @@ impl Emitter<'_> {
         self.load(9,31,scratch);self.load(10,31,scratch+8);Ok(())
     }
     pub(super) fn transaction_commit(&mut self)->Result<(),&'static str> {
-        let Some(t)=&self.transaction else {return Ok(());};let sites=t.sites.clone();
+        let Some(t)=&self.transaction else {return Ok(());};
+        let sites:Vec<_>=t.sites.iter().zip(&t.publish).filter(|(_,publish)|**publish).map(|(s,_)|*s).collect();
         // No guard, guest failure or branch to the private-failure tail may
         // follow the first publication. The Call bridge likewise cannot fail
         // after this entry returns success and commits its result afterward.
         for site in sites {
             self.load(11,31,site.offset);self.cmp(11,31);let inactive=self.words.len();self.emit(0x54000000);
-            self.load(9,31,site.offset+16);self.load(10,31,site.offset+24);
+            self.load(9,31,site.offset+16);if site.size>8 {self.load(10,31,site.offset+24);}
             match site.size {
                 1|2|4|8=>{let opcode=match site.size {1=>0x39000000,2=>0x79000000,4=>0xb9000000,_=>0xf9000000};self.emit(opcode|(11<<5)|9);},
                 16=>{self.store(9,11,0);self.store(10,11,8);},

@@ -129,6 +129,41 @@ fn native_private_preserves_live_values_and_result_alias_commit_order() {
     assert_eq!(compare(&p,&[tag+16,0],200,65536,8),1);
 }
 #[test]
+fn native_private_overwrites_preserve_intervening_aliases() {
+    let tag=crate::heap::TAG as u128;let mut code=prefix();
+    code.extend([Op::Store{address:1,src:4,size:16},Op::Imm{dst:4,value:u128::MAX},
+        Op::Store{address:3,src:4,size:8},Op::Imm{dst:4,value:0x123456789abcdef0fedcba9876543210},
+        Op::Store{address:1,src:4,size:16},load(5,1,16),local(6,0),
+        Op::Store{address:6,src:5,size:16},Op::Return]);
+    let p=fixture(code);
+    // Omitting the first publication must preserve every byte of the middle
+    // write outside the final overwrite, including partial unknown aliases.
+    for offset in [8,12,16,20,24,28,32,36] {
+        let args=[tag+16,tag+offset];
+        assert_eq!(compare(&p,&args,100,65536,8),1);
+        for budget in 0..=p.functions[1].code.len() as u64+7 {compare(&p,&args,budget,65536,8);}
+    }
+}
+#[test]
+fn native_private_contained_write_guards_and_later_faults_match() {
+    let tag=crate::heap::TAG as u128;
+    for size in [1,8,16] {for offset in [0,1,7,8,9,16,24,u64::MAX] {
+        let mut code=prefix();code.extend([Op::Store{address:1,src:4,size:16},
+            Op::Imm{dst:7,value:offset as u128},
+            Op::Binary{dst:9,overflow:8,op:crate::Binary::Add,a:1,b:7,bits:64,signed:false},
+            Op::Imm{dst:4,value:u128::MAX},Op::Store{address:9,src:4,size},
+            load(5,9,size),local(6,0),Op::Store{address:6,src:5,size},Op::Return]);
+        let p=fixture(code);
+        // 64 and heap+80 are the last complete 16-byte ranges; 32-1 is
+        // read-only. A later fault must replay the first write exactly once.
+        for base in [32,64,tag+16,tag+80] {
+            let commits=compare(&p,&[base,0],100,65536,8);
+            if offset<=16-size as u64 {assert_eq!(commits,1);}
+            for budget in 0..=p.functions[1].code.len() as u64+7 {compare(&p,&[base,0],budget,65536,8);}
+        }
+    }}
+}
+#[test]
 fn native_private_store_limits_shared_arena_reconstruction_and_confined_reference() {
     let tag=crate::heap::TAG as u128;
     for stores in [1,16,17] {
