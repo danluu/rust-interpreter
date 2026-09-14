@@ -54,6 +54,17 @@ def graph(words):
     for pc, targets in enumerate(edges):
         for n in targets:
             parents[n].append(pc)
+    # Prune only the impossible fallthrough of the emitter's unconditional
+    # Trap. The exact CMP must be the branch's only predecessor; no incoming
+    # edge may bypass its known flag definition. All other cycles still decline.
+    for pc, word in enumerate(words):
+        if (pc > 0 and word & 0xFF00001F == 0x54000000
+                and words[pc-1] == 0xEB1F03FF and parents[pc] == [pc-1]):
+            edges[pc] = edges[pc][:1]
+    parents = [[] for _ in words]
+    for pc, targets in enumerate(edges):
+        for n in targets:
+            parents[n].append(pc)
     pending = list(map(len, parents))
     queue = deque(i for i, n in enumerate(pending) if n == 0)
     order = []

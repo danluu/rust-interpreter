@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
 
-NAME = 'scalar-aggregate-costs-01'
+NAME = 'scalar-aggregate-costs-02'
 RUNS = dict(control='scalar-aggregate-profile-01', candidate='scalar-aggregate-profile-01')
 
 
@@ -68,7 +68,7 @@ def main():
         record = dict(command=command, pid=child.pid, returncode=child.returncode, seconds=time.time()-start,
                       stdout_sha256=sha(work/'controls.stdout'), stderr_sha256=sha(work/'controls.stderr'))
         write(work/'records.json', [record])
-        assert child.returncode == 0 and 'Ran 12 tests' in stderr and stderr.rstrip().endswith('OK'), stderr
+        assert child.returncode == 0 and 'Ran 14 tests' in stderr and stderr.rstrip().endswith('OK'), stderr
         cases = []
         for index in range(3):
             require_space(ROOT, 8)
@@ -134,7 +134,7 @@ def main():
                 added=added,added_successful_calls=sum(r['successful_calls'] for r in added)))
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
         out = ROOT/'results'/NAME;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed', source_revision=revision, commands=1, controls=12,
+        write(out/'summary.json',dict(status='passed', source_revision=revision, commands=1, controls=14,
             enumerated_oracle_graphs=512, cases=aggregates, raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),details_sha256=sha(work/'details.json'),
             guest_commands=0, executable_code_publications=0, rust_builds=0, performance_measurement=False,

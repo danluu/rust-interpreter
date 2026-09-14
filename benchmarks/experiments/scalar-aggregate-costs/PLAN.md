@@ -13,6 +13,13 @@ semantic equivalence or a cache/cycle model. Retain full counts and body hashes.
 For new bodies use the prior tested successful-path CFG word bounds, reporting
 all declines. Bounds exclude failing private attempts and call bridges, may
 include infeasible paths, and do not predict speedups. No new guest execution,
-code publication or Rust build. Twelve Python controls (including the previous
+code publication or Rust build. Fourteen Python controls (including the previous
 512 enumerated DAG oracle) run once under the shared lock, 12 GiB admission and
 8 GiB floor. Close source and all retained evidence before picking a mechanism.
+
+The first closed inspection retains verify's cyclic-CFG decline. The second
+recognizes only `CMP XZR,XZR; B.EQ` with a unique predecessor, pruning its
+impossible fallthrough as the emitter's qualified dead-register pass does.
+Tests require bypassed flags, different CMP inputs and non-EQ conditions to
+retain their cyclic decline. No other branch feasibility is inferred. This is
+an improved offline analysis of saved bytes, not an unchanged timing retry.

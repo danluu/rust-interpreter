@@ -50,6 +50,20 @@ class ModelTests(unittest.TestCase):
                 self.assertEqual(category(load | (base << 5) | 9), prefix + '_load')
                 self.assertEqual(category(store | (base << 5) | 9), prefix + '_store')
 
+    def test_unique_constant_flags_prune_impossible_cycle(self):
+        words=[cond(0,5),0xeb1f03ff,cond(2,7),branch(3,1),MOV,ZERO_STATUS,RET,FAIL,RET]
+        self.assertEqual(costs(words)['bounds']['words'],dict(min=3,max=3))
+        self.assertEqual(graph(words)[0][2],[7])
+
+    def test_bypass_or_different_flags_cannot_prune(self):
+        base=[cond(0,5),0xeb1f03ff,cond(2,7),branch(3,1),MOV,ZERO_STATUS,RET,FAIL,RET]
+        bypass=base.copy();bypass[0]=cond(0,2)
+        different=base.copy();different[1]=0xeb09013f
+        not_equal=base.copy();not_equal[2] |= 1
+        for words in [bypass,different,not_equal]:
+            with self.subTest(words=words),self.assertRaisesRegex(ValueError,'cyclic'):
+                costs(words)
+
     def test_path_enumeration_oracle(self):
         rng = random.Random(23017)
         # Compare DP bounds with enumeration of every path in 512 distinct DAGs.

@@ -8,12 +8,12 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import require_space,write_json as write
-NAME='scalar-aggregate-costs-01'
+NAME='scalar-aggregate-costs-02'
 def read(p):return json.loads(p.read_text())
 with (ROOT/'.work/benchmark.lock').open('a') as lock:
     acquire_lock(lock,45);require_space(ROOT,8)
     out=ROOT/'results'/NAME;result=read(out/'summary.json');work=ROOT/result['raw']
-    assert result['status']=='passed' and result['commands']==1 and result['controls']==12
+    assert result['status']=='passed' and result['commands']==1 and result['controls']==14
     bindings={}
     def bind(path,digest=None):
         actual=sha(path)
