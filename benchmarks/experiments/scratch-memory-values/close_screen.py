@@ -53,7 +53,7 @@ def main():
                 spec = revision + ':' + path
                 assert hashlib.sha256(subprocess.check_output(['git', 'show', spec], cwd=ROOT)).hexdigest() == digest
                 bindings[path] = dict(sha256=digest, git_source=spec)
-        build = read(ROOT / 'results/scratch-memory-values-build-01/summary.json')
+        build = read(ROOT / 'results/scratch-memory-values-build-02/summary.json')
         profile = read(ROOT / 'results/scratch-memory-values-profile-01/summary.json')
         assert screen.validate_matched_profile(build, profile)
         assert result['tool_keys']['candidate'] == build['tool_key']
