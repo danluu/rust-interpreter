@@ -15,15 +15,18 @@ liveness passes 350 bytecode controls per profile and the same reconstruction;
 counted retained payload falls from 69.5/85.4 MB to 7.5/9.5 MB in captured token
 function sets. No demand execution is enabled yet. Sorted hints and a 16 MiB plan pool now
 qualify, followed by checked own-thread append/patch transactions (355 bytecode
-controls per profile plus exact captures). Next connect bounded pending edges,
-stable entry tables and VM region preparation before real changed-source timing. Runtime work
+controls per profile plus exact captures). Pending-edge transactions now pass 360 controls per profile and exact captures;
+two focused stable resume-table controls also pass in both profiles. Next connect
+these components to VM region preparation before real changed-source timing. Runtime work
 stays on `experiment/demand-region-emission-20260914`; main retains its adopted VM.
 [Region coverage](results/demand-region-census-01/assessment.md),
 [cached staging](results/demand-region-cached-01/assessment.md),
 [compact liveness](results/demand-compact-liveness-01/assessment.md),
 [storage comparison](results/demand-analysis-storage-02/assessment.md),
 [bounded ownership](results/demand-retained-plans-01/assessment.md),
-[code publication](results/demand-code-publication-02/assessment.md).
+[code publication](results/demand-code-publication-02/assessment.md),
+[pending links](results/demand-pending-links-01/assessment.md),
+[stable tables](results/demand-resume-tables-01/assessment.md).
 
 1. The two adopted-VM captures are closed: all 1,561 / 1,231 generated self
    samples map to exact same-process schema-2 emission. Memory partitioning
