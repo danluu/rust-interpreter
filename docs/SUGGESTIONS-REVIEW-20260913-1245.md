@@ -146,3 +146,16 @@ exporter cost. Next qualify direct AArch64 emission and the unchanged-on-failure
 Call boundary, then use the original primary/full edit workflows. Node counts
 are not a native-time model. No new compiler ownership or worker setting follows.
 [Scalar evidence](../results/confined-scalar-ir-coverage-01/assessment.md).
+
+Follow-up through21:24: the suggestions hash remains unchanged. A custom scalar
+leaf body and native Call transaction pass590 workspace controls/profile,121
+strict/cache commands and six exact original profiles, but their40-command
+primary fails (wall1.003720, CPU0.996103, A/A wall3.0585%). Four native registers
+for block-local scalar values then pass593 controls/profile and the same real
+qualification. Their primary observes4.00% wall /1.53% CPU improvement inside
+7.6260% wall control variation and fails its existing gate. Keep both results,
+cancel larger comparisons, and do not retime unchanged candidates. The scalar
+bridge already uses ordinary effective capacity bounds; the concrete remaining
+difference is its missing guarded caller-frame argument-address path. Review
+that path and preserve private failure replay. This is runtime work only;
+compiler/Cargo ownership, two-worker limits and strict frontend checking remain.
