@@ -6,7 +6,7 @@ sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import write_json as write,require_space
 from reclaim_workflow_objects import files,identity,no_open_files
-NAME='closed-runtime-host-intermediates-retirement-03'
+NAME='closed-runtime-host-intermediates-retirement-04'
 TARGETS={'native-memory-words-annotated-01': [['.work/native-memory-words-01/active-command.json', '.work/native-memory-words-01/active-command.json']], 'scalar-frame-cost-01': [['.work/scalar-frame-cost-01/active-command.json', '.work/scalar-frame-cost-01/active-command.json']], 'packed-native-cache-reproduction-01': [['.work/packed-native-cache-reproduction-01/active-command.json', '.work/packed-native-cache-reproduction-01/active-command.json']], 'scalar-packed-cache-01': [['.work/scalar-packed-cache-build-01/active-command.json', '.work/scalar-packed-cache-build-01/active-command.json']], 'allocation-budget-c-boundaries-01': [['.work/allocation-budget-c-boundaries-01/active-command.json', '.work/allocation-budget-c-boundaries-01/active-command.json']], 'scalar-promotion-entry-01': [['.work/scalar-promotion-entry-build-01/active-command.json', '.work/scalar-promotion-entry-build-01/active-command.json']], 'scalar-frame-01': [['.work/scalar-frame-probe-01/active-command.json', '.work/scalar-frame-probe-01/active-command.json']], 'native-call-oracle-baseline-01': [['.work/native-call-fresh-baseline-01/active-command.json', '.work/native-call-fresh-baseline-01/active-command.json']], 'native-call-error-baseline-02': [['.work/native-call-error-baseline-02/active-command.json', '.work/native-call-error-baseline-02/active-command.json']], 'cast-width-observation-01': [['.work/cast-width-observation-01/active-command.json', '.work/cast-width-observation-01/active-command.json']], 'virtual-register-compaction-artifacts-01': [['.work/virtual-register-compaction-artifacts-01/active-command.json', '.work/virtual-register-compaction-artifacts-01/active-command.json']], 'local-memory-forwarding-reproduction-01': [['.work/local-memory-forwarding-reproduction-01/active-command.json', '.work/local-memory-forwarding-reproduction-01/active-command.json']], 'call-boundary-observation-01': [['.work/call-boundary-observation-01/active-command.json', '.work/call-boundary-observation-01/active-command.json']], 'allocation-budget-c-boundaries-02': [['.work/allocation-budget-c-boundaries-02/active-command.json', '.work/allocation-budget-c-boundaries-02/active-command.json']], 'scalar-frame-integration-01': [['.work/scalar-frame-dense-integration-01/active-command.json', '.work/scalar-frame-dense-integration-01/active-command.json']], 'scalar-packed-cache-reproduction-01': [['.work/scalar-packed-cache-reproduction-01/active-command.json', '.work/scalar-packed-cache-reproduction-01/active-command.json']], 'scalar-promotion-weighted-01': [['.work/scalar-promotion-weighted-01/active-command.json', '.work/scalar-promotion-weighted-01/active-command.json']], 'scalar-promotion-register-zero-01': [['.work/scalar-promotion-register-zero-01/active-command.json', '.work/scalar-promotion-register-zero-01/active-command.json']], 'native-register-tool-pair-01': [['.work/native-register-tool-pair-01/active-command.json', '.work/native-register-tool-pair-01/active-command.json']]}
 
 def main():
@@ -47,8 +47,10 @@ def main():
                     if actual!=target:continue
                     assert type(row.get('returncode'))==int
                     assert any(Path(part).name=='cargo' for part in cmd[:2]),cmd
-                    assert '--manifest-path' in cmd
-                    manifest=Path(cmd[cmd.index('--manifest-path')+1])
+                    # Older direct Cargo captures selected Cargo.toml in their
+                    # recorded cwd. Require that exact file; do not guess by
+                    # searching parent directories or changing any source.
+                    manifest=Path(cmd[cmd.index('--manifest-path')+1]) if '--manifest-path' in cmd else cwd/'Cargo.toml'
                     if not manifest.is_absolute():manifest=cwd/manifest
                     assert manifest.is_relative_to(ROOT) and manifest.is_file(),manifest
                     assert not manifest.is_relative_to(ROOT/'.work/publication-main')
