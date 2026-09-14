@@ -10,18 +10,17 @@ contracts (16 declared skips). No timing is repeated; preserve the16 MiB default
 all retained admissions and the paused goal state.
 [Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
 
-1. The bounded-tree bridge passed correctness but failed its changed-source
-   primary: wall ratio 0.995499 versus 9.9249% A/A; CPU ratio 1.021747. Keep
-   full and held-out runs unstarted and do not retime the same source. Examine
-   repeated cursor/budget adaptation in its many small trees before selecting
-   another runtime change. The adopted runtime remains unchanged.
+1. Both bounded-tree bridge candidates are parked. The first 40-command primary
+   gives wall ratio 0.995499 versus 9.9249% A/A. The shared-cursor version gives
+   wall ratio 0.982971 versus 4.1545% A/A and CPU ratio 0.998983. All correctness
+   controls pass, but neither establishes a useful complete-command gain.
+   Do not retime either unchanged or start full/held-out campaigns. Inspect
+   native samples of the shared-cursor implementation before another mechanism.
 
-The bridge passes 556 workspace controls per profile, 119 strict/cache commands,
-386 launcher tests (16 skips) and three exact original-workload profiles. Its
-40-command screen retains original assertions, wrong edits, identical bytecode
-and restoration. The closure verifies 1,958 inputs, 56 artifacts and 380 source
-bindings. Duplicate trees stay under a quarter of the 16 MiB arena. The runtime
-prototype stays on its experiment branch. [Result](docs/TREE-BRIDGE-20260913.md).
+The shared-cursor bridge retains 556 workspace checks per profile, 119 strict
+commands, 19 focused ABI/fault checks per profile and three exact original
+profiles. Its closure verifies 1,958 inputs, 56 artifacts and 380 source bindings.
+The adopted runtime remains unchanged. [Result](docs/TREE-SHARED-CURSOR-20260913.md).
 
 Five existing tree-proof controls pass per profile. The diagnostic includes
 interpreter fixtures, but no benchmark execution or native-code publication.

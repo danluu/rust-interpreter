@@ -105,3 +105,10 @@ and 380 Git source bindings. Keep full/held-out runs unstarted. Review its
 repeated cursor/budget adaptation before another materially changed candidate;
 no retrospective noise threshold or unchanged retry follows. Reclaim only
 verified completed owned compiler caches before admitting the next build.
+
+Follow-up through 17:03: the shared-cursor bridge removes repeated budget
+memory traffic, passes all correctness/profile controls, and fails its new
+40-command wall gate (1.70% improvement versus 4.1545% A/A; CPU improves 0.10%).
+Retain both bridge failures, leave larger histories unstarted, and inspect
+actual native costs before another candidate. The unchanged suggestions do
+not justify retiming either source or relaxing the noise margin.
