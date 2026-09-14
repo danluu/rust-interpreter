@@ -51,8 +51,11 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-Next collect owned native-PC samples on this exact VM, then choose a mechanism
-from its actual emitted costs. The compiler/Cargo/parser-exporter investigation
+Fresh owned native-PC samples and exact memory/call protocol reconstruction are
+closed. The scratch source/width extension has too little sampled coverage to
+justify its own implementation or timing. Current Call/Return costs point to
+frame handling; next census whether existing scalar virtual zeros can represent
+more confined leaves. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only
