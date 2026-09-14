@@ -49,7 +49,7 @@ def main():
         build_path = args.build.resolve(strict=True)
         build = json.loads(build_path.read_text())
         assert build['status'] == 'passed'
-        assert build['tests']['test-debug'] == build['tests']['test-release'] == 607
+        assert build['tests']['test-debug'] == build['tests']['test-release'] == 608
         assert build['composition']['kind'] == 'scratch-memory-values-composition'
         compiler_proof = json.loads((ROOT / 'results/guarded-local-facts-main-build-01/summary.json').read_text())
         assert compiler_proof['status'] == 'passed'

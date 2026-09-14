@@ -19,11 +19,11 @@ the saved bits. Capture only after real value materialization and its associated
 guest-memory operation. A skipped load can retain further exact aliases, subject
 to the same write invalidation. The cache resets at native region boundaries.
 
-First run four focused controls in debug/release: fixed capacity and alias rules,
+First run five focused controls in debug/release: fixed capacity and alias rules,
 reviewed instruction classes, exact three-word reduction in a Copy/Load chain,
 and interpreter/native comparisons covering overlapping writes, clobbers,
 unknown pointers, faults, budgets, profiles, memory peaks, persistent registers,
-resumable mode and disabled native capacity. Then complete workspace/strict
+resumable mode and disabled native capacity; partial-overlap Copy reuse must invalidate the original source. Then complete workspace/strict
 checking, exact original profiles and the unchanged primary-first benchmark.
 No full comparisons unless the original primary passes.
 

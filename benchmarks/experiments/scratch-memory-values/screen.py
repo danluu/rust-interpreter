@@ -225,7 +225,7 @@ def main():
             assert build['status'] == 'passed'
             assert all(sha(tools[m] / name) == digest for name, digest in build['binaries'].items())
             if m=='anchor':assert build['tests']['test-debug']==build['tests']['test-release']==dict(passed=365,ignored=1)
-            elif m=='candidate':assert build['tests']['test-debug']==build['tests']['test-release']==607
+            elif m=='candidate':assert build['tests']['test-debug']==build['tests']['test-release']==608
             else:assert build['composition']['kind']=='heap-address-bias-matched-control'
             require_export_option(tools[m], build['tool_key'], 'filtered-tests')
             if m in CACHED:

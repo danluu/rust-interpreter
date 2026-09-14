@@ -13,7 +13,7 @@ from workflow_io import capture,require_space,write_json as write
 
 
 def main():
-    name='scratch-memory-values-focused-02'
+    name='scratch-memory-values-focused-03'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45)
         target=ROOT/'.work/fixed-frame-clear-combined-build-01/target'
@@ -37,7 +37,7 @@ def main():
         work=ROOT/'.work'/name;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,target=str(target.relative_to(ROOT)),
             same_source_root=True,shared_target_allocated_bytes=allocated,required_free_bytes=needed,
-            tests_per_profile=4,synthetic_native_call_controls=0,original_project_guest_commands=0,guest_commands=0,runtime_changes=1,minimum_child_gib=8))
+            tests_per_profile=5,synthetic_native_call_controls=0,original_project_guest_commands=0,guest_commands=0,runtime_changes=1,minimum_child_gib=8))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
              and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS']}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -58,10 +58,10 @@ def main():
         common=['--locked','--offline','--jobs','2','--manifest-path',ROOT/'Cargo.toml','--target-dir',target,'-p','rust-interp-bytecode','--lib']
         for profile,extra in [('debug',[]),('release',['--release'])]:
             out=invoke('test-'+profile,['cargo','+nightly-2026-09-08','test',*extra,*common,'scratch_memory_'])
-            assert '4 passed; 0 failed' in out and 'scratch_memory_removes_chained_copy_and_load_words_with_exact_profiles' in out
-            print(profile,'4 scratch memory controls PASS',flush=True)
+            assert '5 passed; 0 failed' in out and 'scratch_memory_removes_chained_copy_and_load_words_with_exact_profiles' in out
+            print(profile,'5 scratch memory controls PASS',flush=True)
         result=ROOT/'results'/name;result.mkdir(exist_ok=False)
-        write(result/'summary.json',dict(status='passed',tests={'debug':4,'release':4},commands=2,
+        write(result/'summary.json',dict(status='passed',tests={'debug':5,'release':5},commands=2,
             setup_seconds=sum(r['finished_at']-r['started_at'] for r in records),
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),raw=str(work.relative_to(ROOT)),
             original_project_guest_commands=0,production_runtime_changes=1,performance_measurement=False))

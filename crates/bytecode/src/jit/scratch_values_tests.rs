@@ -118,3 +118,22 @@ fn scratch_memory_retains_partial_aliases_clobbers_faults_and_branch_boundaries(
         check(&program(code),&[if fault {u64::MAX as u128} else {64+96}],24);
     }}
 }
+
+#[test]
+fn scratch_memory_overlapping_reused_copy_invalidates_its_original_source() {
+    for delta in [-8isize,-7,-1,0,1,3,7,8] {
+        let mut code=chain();code.pop(); // No virtual value owns the copied bytes.
+        code.extend([Op::Local{dst:4,offset:(96isize+delta) as usize},
+            Op::Copy{dst:4,src:1,size:8},Op::Load{dst:2,address:1,size:8}]);
+        finish(&mut code);let p=program(code);
+        let mut old=Jit::new_resumable(&p,false,super::super::MAX_CODE_BYTES,true).unwrap();
+        old.scratch_values_enabled=false;
+        let new=Jit::new_resumable(&p,false,super::super::MAX_CODE_BYTES,true).unwrap();
+        let emit=|jit:&Jit<'_>|jit.emit_function_inner(&p.functions[0],super::super::MAX_CODE_BYTES/4,0,None).unwrap().unwrap().words;
+        // Partial overlap must reload the changed source. Exact/disjoint writes
+        // leave another valid copy of the same bits available in x9.
+        let reusable=delta==0 || delta.unsigned_abs()>=8;
+        assert_eq!(emit(&old).len()-emit(&new).len(),3+usize::from(reusable));
+        check(&p,&[0x8877665544332211],20);
+    }
+}

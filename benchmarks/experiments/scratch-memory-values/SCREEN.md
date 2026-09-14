@@ -8,7 +8,7 @@ Two Cargo workers, two prepared custom workers, native repository test settings,
 ordinary OS entropy and strict checking throughout. No unchanged source loop
 enters an edited-pair ratio. Every selected original assertion remains enabled.
 
-The candidate's eleven native bridge controls and 607 workspace tests/profile,
+The candidate's eleven native bridge controls and 608 workspace tests/profile,
 121 strict/cache compatibility commands and six original profile commands must
 pass first. Profiles must match every original PC's total count, peak, entropy
 and test output. Scalar counts have their own per-PC vector; independent code

@@ -14,7 +14,7 @@ from workflow_io import capture,require_space,write_json as write
 
 
 def main():
-    name='scratch-memory-values-build-01'
+    name='scratch-memory-values-build-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45)
         target=ROOT/'.work/fixed-frame-clear-combined-build-01/target'
@@ -34,7 +34,7 @@ def main():
         paths += [ROOT/p for p in subprocess.check_output(['git','ls-files','scripts','tests'],text=True).splitlines()]
         paths += [ROOT/'results/guarded-local-facts-main-build-01/summary.json',ROOT/'results/heap-address-build-03/summary.json']
         paths+=dependency+[prior_path,reference_path,artifact,ROOT/'scripts/workflow_io.py',ROOT/'scripts/compare_saved_runtime.py']
-        paths += [ROOT/'results/scratch-memory-values-focused-02'/name for name in ['summary.json','terminal.json','closure.json']]
+        paths += [ROOT/'results/scratch-memory-values-focused-03'/name for name in ['summary.json','terminal.json','closure.json']]
         paths += [ROOT/'results/scratch-load-copy-coverage-01'/name for name in ['summary.json','terminal.json','closure.json']]
         facts=json.loads((ROOT/'results/scratch-load-copy-coverage-01/summary.json').read_text())
         assert facts['status']=='passed' and facts['all_frozen_inputs_verified'] and facts['guest_commands']==0 and len(facts['cases'])==2
@@ -44,7 +44,7 @@ def main():
         work=ROOT/'.work'/name;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,target=str(target.relative_to(ROOT)),
             same_source_root=True,shared_target_allocated_bytes=allocated,required_free_bytes=needed,
-            tests_per_profile=607,oracle_cases_per_profile=6400,scalar_copy_cases_per_profile=2187,synthetic_call_transaction_controls=6,synthetic_native_call_controls=11,original_project_guest_commands=0,guest_commands=0,runtime_changes=1,minimum_child_gib=8))
+            tests_per_profile=608,oracle_cases_per_profile=6400,scalar_copy_cases_per_profile=2187,synthetic_call_transaction_controls=6,synthetic_native_call_controls=11,original_project_guest_commands=0,guest_commands=0,runtime_changes=1,minimum_child_gib=8))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
              and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS']}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -62,8 +62,8 @@ def main():
             assert child.returncode==0,(out+err)[-5000:]
             assert all(sha(ROOT/p)==h for p,h in frozen.items())
             return out
-        focused_path=ROOT/'results/scratch-memory-values-focused-02/summary.json'
-        focused=json.loads(focused_path.read_text());assert focused['status']=='passed' and focused['tests']=={'debug':4,'release':4}
+        focused_path=ROOT/'results/scratch-memory-values-focused-03/summary.json'
+        focused=json.loads(focused_path.read_text());assert focused['status']=='passed' and focused['tests']=={'debug':5,'release':5}
         terminal=json.loads(focused_path.with_name('terminal.json').read_text());assert terminal['status']=='finished' and terminal['returncode']==0
         common=['--locked','--offline','--jobs','2','--manifest-path',ROOT/'Cargo.toml','--target-dir',target,'--workspace']
         totals={}
@@ -72,8 +72,9 @@ def main():
             matches=re.findall(r'test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;',out)
             assert matches and all(int(failed)==0 for _,failed,_ in matches)
             passed=sum(int(passed) for passed,_,_ in matches);ignored=sum(int(ignored) for _,_,ignored in matches)
-            assert (passed,ignored)==(607,13),(passed,ignored)
-            for required_test in ['scratch_memory_removes_chained_copy_and_load_words_with_exact_profiles',
+            assert (passed,ignored)==(608,13),(passed,ignored)
+            for required_test in ['scratch_memory_overlapping_reused_copy_invalidates_its_original_source',
+                         'scratch_memory_removes_chained_copy_and_load_words_with_exact_profiles',
                          'scratch_memory_retains_partial_aliases_clobbers_faults_and_branch_boundaries',
                          'scalar_call_transaction_matches_complete_vm_aliases_profiles_and_peak_memory',
                          'scalar_call_transaction_declines_leave_all_guest_visible_memory_unchanged',
