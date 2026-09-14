@@ -53,7 +53,7 @@ or isolated scratch-cache speedup is claimed.
 
 The current manual branch is `experiment/scalar-aggregate-model-20260914`.
 Main still adopts df4006e0; the aggregate runtime is experimental. Prior
-path/store-log and narrower scalar variants failed their unchanged-source-pair
+path/store-log and narrower scalar variants failed their predeclared changed-source
 performance gates and remain parked. No unchanged-build timing is an adoption
 measure.
 

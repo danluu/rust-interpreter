@@ -59,7 +59,7 @@ fn native_byte_comparison_matches_ordering_across_lengths_alignments_arenas_and_
                         let original=(m.bytes.to_vec(),m.heap.bytes.clone());
                         assert_eq!(probe(&jit,&mut m,[left as u128,right as u128,length as u128],dst,profiled).unwrap(),expected,
                             "len={length},align={align},position={position:?},dst={dst}");
-                        assert_eq!((m.bytes.to_vec(),m.heap.bytes),original);
+                        assert_eq!((m.bytes.to_vec(),m.heap.bytes.clone()),original);
                     }}
                 }
             }
@@ -80,7 +80,7 @@ fn native_byte_comparison_checks_full_ranges_and_accepts_empty_dangling_ranges()
                 let original=(m.bytes.to_vec(),m.heap.bytes.clone());
                 let result=probe(&jit,&mut m,[left as u128,right as u128,length as u128],3,profiled);
                 if let Ok(value)=expected {assert_eq!(result.unwrap(),value);} else {assert_eq!(result.unwrap_err(),"JIT guest memory access failed");}
-                assert_eq!((m.bytes.to_vec(),m.heap.bytes),original);
+                assert_eq!((m.bytes.to_vec(),m.heap.bytes.clone()),original);
             }}
         }
         for left in [0,1,usize::MAX,crate::heap::TAG] {for right in [0,17,usize::MAX,crate::heap::TAG] {
