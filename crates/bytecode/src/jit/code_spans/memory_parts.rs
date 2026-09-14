@@ -121,6 +121,8 @@ fn observe_saved_small_memory_parts() {
     let mut plain = Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
     let mut observer = Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
     observer.observe_memory_parts = true;
+    let scratch_copy=std::env::var("MEMORY_SCRATCH_COPY").is_ok_and(|s|s=="1");
+    observer.observe_scratch_locals=scratch_copy;
     let mut scalar_ids=BTreeSet::new();
     if schema==2 {
         plain.enable_scalar_calls();observer.enable_scalar_calls();
@@ -157,7 +159,8 @@ fn observe_saved_small_memory_parts() {
         verify_words(&a.words,&bytes[offset..end]).unwrap(); assert_eq!(a.words,b.words);
         assert_eq!(a.operations,b.operations); assert_eq!(a.resumes,b.resumes); assert_eq!(a.assertions,b.assertions);
         assert_eq!(a.local_fact_events,b.local_fact_events); assert_eq!(a.retained_local_writes,b.retained_local_writes);
-        assert!(a.memory_spans.is_empty()); assert!(a.scratch_hits.is_empty() && b.scratch_hits.is_empty());
+        assert!(a.memory_spans.is_empty());assert!(a.scratch_hits.is_empty() && a.scratch_copy_hits.is_empty());
+        if !scratch_copy {assert!(b.scratch_hits.is_empty() && b.scratch_copy_hits.is_empty());}
         cm.validate(f,&a).unwrap(); om.validate(f,&b).unwrap();
         assert_eq!(serde_json::to_value(&cm.rows).unwrap(),serde_json::to_value(&om.rows).unwrap());
         partition(f,&b,&cm.rows);
@@ -168,7 +171,13 @@ fn observe_saved_small_memory_parts() {
         let selected:Vec<_>=f.code.iter().enumerate().filter_map(|(pc,op)| {
             super::super::memory_parts::selected(op).map(|(operation,size)|json!({"pc":pc,"operation":operation,"size":size}))
         }).collect();
-        output.push(json!({"function":id,"name":f.name,"selected":selected,"memory_spans":b.memory_spans}));
+        for hit in &b.scratch_copy_hits {
+            assert!(matches!(f.code[hit.pc],Op::Copy{size:8,..}));
+            assert!(hit.origin_pc<hit.pc && hit.offset+8<=f.frame_size);
+            assert!(b.memory_spans.iter().any(|s|s.pc==hit.pc && s.part=="load_data"));
+        }
+        output.push(json!({"function":id,"name":f.name,"selected":selected,"memory_spans":b.memory_spans,
+            "available_copy_values":b.scratch_copy_hits,"available_load_values":b.scratch_hits}));
         assertions+=a.assertions.len();cursor=end;
     }
     assert_eq!(cursor,bytes.len()); assert!(plain.code.is_none() && observer.code.is_none());
@@ -179,6 +188,7 @@ fn observe_saved_small_memory_parts() {
         "code_sha256":mapping["code_sha256"],"exact_full_function_reconstruction":true,
         "observer_words_unchanged":true,"complete_small_memory_partition":true,
         "schema_version":schema,"scalar_bodies_reconstructed":scalar_ids.len(),
+        "scratch_copy_observed":scratch_copy,
         "guest_commands":0,"executable_code_publications":0})).unwrap();
 }
 

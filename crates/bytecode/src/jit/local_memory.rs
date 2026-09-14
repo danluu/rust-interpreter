@@ -127,6 +127,8 @@ impl Assembler<'_> {
         };
         // Even a sixteen-byte overlapping copy loads both words before its
         // first store. Narrow copies never consume or define the high scratch.
+        #[cfg(test)]
+        self.scratch.copy_load(self.current_pc,self.local_range(src,size),size);
         self.load_mem_at(9, high, 11, size, source);
         self.store_mem_at(9, high, destination_base, size, destination);
     }

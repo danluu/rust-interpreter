@@ -325,6 +325,8 @@ struct CompiledFunction<'a> {
     #[cfg(test)]
     scratch_hits: Vec<scratch_locals::Hit>,
     #[cfg(test)]
+    scratch_copy_hits: Vec<scratch_locals::Hit>,
+    #[cfg(test)]
     flush_spans: Vec<flush_census::Span>,
     #[cfg(test)]
     memory_spans: Vec<memory_parts::Span>,
@@ -518,6 +520,8 @@ impl<'a> Jit<'a> {
         let (mut local_fact_events, mut retained_local_writes) = (vec![], vec![]);
         #[cfg(test)]
         let mut scratch_hits = vec![];
+        #[cfg(test)]
+        let mut scratch_copy_hits = vec![];
         #[cfg(test)]
         let mut flush_spans = vec![];
         #[cfg(test)]
@@ -714,6 +718,7 @@ impl<'a> Jit<'a> {
                     local_forwarding.extend(a.local_forwarding);
                     local_fact_events.extend(a.local_fact_events);
                     scratch_hits.extend(a.scratch.hits);
+                    scratch_copy_hits.extend(a.scratch.copy_hits);
                     for mut span in a.flush_spans {
                         span.offset += words.len() * 4;
                         span.end += words.len() * 4;
@@ -779,6 +784,7 @@ impl<'a> Jit<'a> {
             #[cfg(test)] local_forwarding,
             #[cfg(test)] local_fact_events,
             #[cfg(test)] scratch_hits,
+            #[cfg(test)] scratch_copy_hits,
             #[cfg(test)] flush_spans,
             #[cfg(test)] retained_local_writes }))
     }
