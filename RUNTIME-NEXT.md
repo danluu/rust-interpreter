@@ -57,7 +57,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    slices, original PCs and limits. Immutable 7d80e36f passes 611 workspace
    tests/profile, 407 Python tests (22 skips), 121 strict/cache commands and three
    original profiles. Scalar-call counts match adopted main; block/exhaustive
-   code each shrink by 424 bytes. Run the frozen 40-command primary next. The invalid
+   code each shrink by 424 bytes. Its 40-command primary fails: wall 1.010857,
+   CPU 0.996384, wall A/A 0.049637. Park 7d80e36f and cancel larger histories.
+   Shift to a typed coverage census for scalar value optimization within
+   ordinary native regions, distinct from the previous cache/fact variations. The invalid
    census02 partition and its corrected dead-use control are retained.
    Main retains df4006e0; no gain is established.
    Retain earlier negative initialization/tree and wider-memory results.
