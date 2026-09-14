@@ -81,7 +81,9 @@ aliases and faults. Its immutable tool 5b86b3ab passes 644 workspace tests/profi
 tests (22 skips), 121 strict/cache commands and three exact original profiles.
 Its 40-command primary fails: wall ratio 0.976436 and CPU 0.996167 remain
 inside 4.63% wall A/A variation. Park 5b86b3ab and cancel larger histories.
-Next measure scalar register spills from saved bodies; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+The closed 245-body register census rules out a larger local register pool.
+Its corrected live-only spill partition identifies byte-wise branch joins.
+Next coalesce proven contiguous byte phis from the adopted runtime; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only
