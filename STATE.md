@@ -67,8 +67,14 @@ The emitted-body census closes with limited duplicate-read coverage. A subsequen
 structural census gives external-write leaves the strongest block-test coverage
 (153 samples). The bounded private-store model now passes 369 bytecode tests
 per profile, including exact error-exit memory and non-idempotent replay controls.
-Its census retains 168 plans and 138 block samples. Next implement and independently
-qualify native stores; production admission remains closed and no speedup is claimed. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+Its census retains 168 plans and 138 block samples. Native emission retains
+165 plans and all that sampled coverage, preserving 71 existing scalar bodies.
+The runtime candidate passes 641 workspace tests/profile, 407 Python tests
+(22 skips), 121 strict/cache commands and three exact original profiles. Block
+scalar Calls rise from 11.23 to 27.65 million, but its 40-command primary fails:
+wall ratio 1.000153 and CPU 0.976356 remain within A/A variation. Park 494c9f01
+and cancel larger comparisons. Inspect repeated store guards and private slot
+traffic before choosing another implementation; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only
