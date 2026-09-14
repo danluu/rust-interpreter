@@ -23,7 +23,13 @@ pub struct Proof {
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct Decline { pub pc: usize, pub reason: &'static str }
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Mode { Confined, Initialized }
+pub enum Mode { Confined, Initialized, ReadOnly, Transaction }
+impl Mode {
+    fn external_reads(self) -> bool {
+        if matches!(self,Self::ReadOnly|Self::Transaction) { return true; }
+        false
+    }
+}
 #[derive(Clone, PartialEq, Eq)]
 struct State { bytes: Vec<bool>, facts: Vec<Option<Fact>> }
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -61,16 +67,20 @@ impl Analysis<'_> {
     fn read(&mut self, state: &State, offset: Option<usize>, size: usize) -> Result<(), Decline> {
         if size == 0 { return Ok(()); }
         self.charge(size)?;
-        let Some(offset) = offset else { return self.unknown(state, "unknown_pointer_read"); };
+        let Some(offset) = offset else {
+            if self.mode.external_reads() && size<=16 { return Ok(()); }
+            return self.unknown(state, "unknown_pointer_read");
+        };
         let range = self.range(state, offset, size)?;
-        if self.mode == Mode::Confined || state.bytes[range].iter().all(|b| *b) { Ok(()) }
+        if self.mode != Mode::Initialized || state.bytes[range].iter().all(|b| *b) { Ok(()) }
         else { Err(self.fail("local_read_before_write")) }
     }
     fn write(&mut self, state: &mut State, offset: Option<usize>, size: usize) -> Result<(), Decline> {
         if size == 0 { return Ok(()); }
         self.charge(size)?;
         let Some(offset) = offset else {
-            return if self.mode == Mode::Confined { Err(self.fail("unknown_pointer_write")) } else { Ok(()) };
+            if self.mode==Mode::Transaction && size<=16 {return Ok(());}
+            return if self.mode != Mode::Initialized { Err(self.fail("unknown_pointer_write")) } else { Ok(()) };
         };
         let range = self.range(state, offset, size)?;
         if self.mode == Mode::Initialized { state.bytes[range].fill(true); }
@@ -299,6 +309,32 @@ pub struct MemoryPlan {
 /// Only a diagnostic annotation of ordinary entry from PC zero. No memory or
 /// register is replaced, and this is not an address-nonescape certificate.
 pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> MemoryPlan {
+    memory_plan_mode(program,id,remaining,Mode::Confined)
+}
+
+/// Unknown reads remain explicit and require checked runtime accesses disjoint
+/// from the entire fresh callee range. Writes stay confined to virtual bytes.
+pub fn memory_plan_readonly(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
+    memory_plan_mode(program,id,remaining,Mode::ReadOnly)
+}
+
+/// Bounded external effects for the private-store scalar Call backend.
+pub fn memory_plan_transaction(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
+    memory_plan_mode(program,id,remaining,Mode::Transaction)
+}
+
+/// The explicit scalar Call path may retry only the unknown-read prerequisite.
+/// Charge both attempts; all further effects, bounds and limits must still pass.
+pub fn memory_plan_for_call(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
+    let strict=memory_plan(program,id,remaining);
+    if strict.decline.as_ref().is_some_and(|d|d.reason=="unknown_pointer_read") {
+        let mut readonly=memory_plan_readonly(program,id,remaining);
+        readonly.work+=strict.work;
+        readonly
+    } else {strict}
+}
+
+fn memory_plan_mode(program: &Program, id: usize, remaining: &mut usize, mode:Mode) -> MemoryPlan {
     let f=&program.functions[id];
     let declined=|reason| MemoryPlan {eligible:false,decline:Some(Decline{pc:0,reason}),work:0,accesses:vec![]};
     if f.code.is_empty() || f.code.len()>512 || f.frame_size>512 || f.registers>512 {
@@ -311,9 +347,10 @@ pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> Memor
         return declined("boundary_width");
     }
     let confined=vec![false;program.functions.len()];
-    let init=analyze_budgeted(program,id,&confined,Mode::Initialized,remaining);
+    let init=if mode.external_reads() { Proof{eligible:true,decline:None,work:0} }
+        else {analyze_budgeted(program,id,&confined,Mode::Initialized,remaining)};
     if !init.eligible { return MemoryPlan{eligible:false,decline:init.decline,work:init.work,accesses:vec![]}; }
-    let mut a=Analysis {program,confined:&confined,mode:Mode::Confined,work:0,max_work:MAX_WORK.min(*remaining),pc:0};
+    let mut a=Analysis {program,confined:&confined,mode,work:0,max_work:MAX_WORK.min(*remaining),pc:0};
     let mut accesses=vec![];
     let result=(|| {
         let (blocks,states)=a.solve(f)?;
@@ -327,6 +364,9 @@ pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> Memor
                 let op=&f.code[pc];
                 let range=|offset:Option<usize>,size:usize| -> Result<Access,Decline> {
                     if size==0 { return Ok(Access{offset:None,size:0}); }
+                    if offset.is_none() && mode.external_reads() && size<=16 {
+                        return Ok(Access{offset:None,size});
+                    }
                     let offset=offset.ok_or(Decline{pc,reason:"unresolved_access"})?;
                     if offset.checked_add(size).is_none_or(|end|end>f.frame_size.max(1)) {
                         return Err(Decline{pc,reason:"outside_frame"});
@@ -359,6 +399,9 @@ pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> Memor
                 a.transfer(&mut state,op,f)?;
                 if !row.reads.is_empty() || !row.writes.is_empty() || row.terminal_or_assertion { accesses.push(row); }
             }
+        }
+        if mode==Mode::Transaction && accesses.iter().flat_map(|a|&a.writes).filter(|a|a.offset.is_none() && a.size>0).count()>16 {
+            return Err(a.fail("transaction_store_limit"));
         }
         Ok(())
     })();

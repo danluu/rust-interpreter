@@ -2,9 +2,6 @@
 //! Phis retain stack slots. Incoming phi uses occur at predecessor exits; a
 //! value used from any other block retains its original stack storage.
 use super::*;
-#[cfg(test)]
-#[path="native_registers/global.rs"]
-mod global;
 
 // x3's entry budget is dead after the admission check. The body never calls
 // another function. x15-x17 are otherwise unused by scalar emission. x18 is
@@ -71,7 +68,7 @@ pub(super) fn allocate(plan: &Plan) -> Result<Vec<Option<u32>>, &'static str> {
     for ids in ordered {
         let mut active: [Option<Id>; 4] = [None; 4];
         for id in ids {
-            if cross_block[id] || plan.nodes[id].width > 8 { continue; }
+            if matches!(plan.nodes[id].value,Value::Write{..}) || cross_block[id] || plan.nodes[id].width > 8 { continue; }
             let (_, start) = definitions[id].unwrap();
             ends[id] = ends[id].max(start);
             for slot in &mut active {

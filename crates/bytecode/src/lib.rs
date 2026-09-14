@@ -20,8 +20,6 @@ mod inline;
 mod inline_tests;
 mod registers;
 mod register_init;
-#[cfg(test)]
-mod native_identity_census;
 mod inline_graph;
 #[cfg(test)]
 mod whole_call_inline_tests;

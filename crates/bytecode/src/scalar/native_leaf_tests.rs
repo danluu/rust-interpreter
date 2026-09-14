@@ -32,8 +32,8 @@ fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
     let body=emit_call(plan,profiled).unwrap();
     let saved=CALL_ARGUMENTS+argument_count*16;
     let stack=(saved+5*8+15)&!15;
-    let mut a=Emitter{plan,words:vec![],slots:vec![],stack_bytes:stack,registers:vec![],
-        labels:vec![],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame:false,fixed_steps:None};
+    let mut a=Emitter{plan,words:vec![],slots:vec![],stack_bytes:stack,registers:vec![],transaction:None,
+        labels:vec![],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame:false,heap:false,fixed_steps:None};
     a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);
     let short=a.words.len();a.emit(0x54000003);
     a.stack(false);
