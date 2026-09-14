@@ -243,3 +243,14 @@ or a substitute for the edited-source gate. Review remaining execution/general
 Call costs before further private-body changes. No runtime adoption or new
 compiler ownership follows.
 [Transfer assessment](../results/scalar-private-transfers-screen-token-01/ASSESSMENT.md).
+
+Follow-up on September 14 after fresh runtime sampling: the suggestions hash
+remains unchanged. Two new unprofiled original-token executions pass, with nine
+map/attribution controls and complete same-process generated-PC attribution.
+Copy spans account for 487/1,814 generated self samples in block and 290/1,480
+in exhaustive token; private scalar bodies account for 57 and 123. These partial
+normal-entropy windows are diagnostic only. Follow the suggestions' remaining-
+cost priority by reconstructing Copy subparts before another implementation.
+Keep old failed general-address candidates parked, preserve compiler ownership,
+and do not infer an end-to-end gain from sample shares.
+[Fresh samples](../results/scalar-runtime-sampling-01/ASSESSMENT.md).
