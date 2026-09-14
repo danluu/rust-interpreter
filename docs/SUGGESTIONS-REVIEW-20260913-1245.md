@@ -219,3 +219,14 @@ captured arguments/private Output through its fixed host-stack layout. Retain
 strict checking, original artifacts, guards, faults and transaction accounting.
 [Width primary](../results/scalar-width-aliases-screen-token-01/ASSESSMENT.md),
 [static loads](../results/scalar-width-aliases-screen-token-01/load-observations.json).
+
+Follow-up after the private Call ABI primary: the suggestions file is unchanged.
+Keeping x0–x2 live passes 597 workspace tests/profile, 21 focused controls, 121
+strict commands and six exact original profiles. The 40-command primary fails:
+wall 0.994813, CPU 0.968224, A/A wall 0.016892, wall margin 1.011705. Park it
+without a larger comparison. Descriptive execution is 68.4 ms lower while Cargo
+is 103.4 ms higher; these nested stages neither add nor establish a cause.
+Next census zero-byte results and invariant successful-path step counts before
+changing private Call commit traffic. Keep runtime/compiler ownership separate,
+strict checking, two workers and the existing resource and timing gates.
+[Private ABI assessment](../results/scalar-call-frame-abi-screen-token-01/ASSESSMENT.md).
