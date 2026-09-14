@@ -120,3 +120,10 @@ resource limits. The per-region budget work and SipHash guards are already
 implemented; neither is a new opportunity. Transparent compression of closed
 diagnostic JSON reclaimed about 1 GiB with every original SHA unchanged.
 [Qualification and limitations](HEAP-ADDRESS-BIAS-20260913.md).
+
+Follow-up through 18:14: the heap-address bias fails its full token gate after
+154 commands: 1.02% wall improvement versus 3.8043% A/A, and 0.15% CPU regression.
+Correctness, original assertions and restoration pass. Park it and cancel the
+four unstarted project cases; the passing 40-command screen does not override
+the full result. Review saved immediate-materialization sequences next, with
+no guest rerun or performance claim from static code size.
