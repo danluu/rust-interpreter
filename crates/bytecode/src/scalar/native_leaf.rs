@@ -171,6 +171,8 @@ impl Emitter<'_> {
     }
     fn node(&mut self,id:Id)->Result<(),&'static str> {
         match &self.plan.nodes[id].value {
+            #[cfg(test)]
+            Value::Read{..}=>return Err("native_external_read_unimplemented"),
             Value::Pack(parts)=>self.pack(parts),
             Value::Binary{a,b,op,bits,signed,overflow}=>self.binary(*a,*b,*op,*bits,*signed,*overflow),
             Value::Unary{src,op,bits}=>{
