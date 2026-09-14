@@ -1,10 +1,10 @@
 //! Test-only path certificate; all speculative actions are reads and checks.
 use super::*;
 
-struct SlicePlan {needed:Vec<bool>,nodes:usize,memory_sites:usize}
+pub(super) struct SlicePlan {pub(super) needed:Vec<bool>,nodes:usize,memory_sites:usize}
 #[derive(Debug)]
 pub(crate) struct EntryCertificate {pub pcs:Vec<usize>,values:Vec<Option<u128>>}
-fn guard_slice(plan:&Plan)->Result<SlicePlan,&'static str> {
+pub(super) fn guard_slice(plan:&Plan)->Result<SlicePlan,&'static str> {
     if plan.nodes.len()>16384 || plan.effects.len()>512 || plan.blocks.len()>512 {return Err("path_shape_limit");}
     let mut pending=vec![];let mut memory_sites=0;let mut stores=0;
     for (id,node) in plan.nodes.iter().enumerate() {

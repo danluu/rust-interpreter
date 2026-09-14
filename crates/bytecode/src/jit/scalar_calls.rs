@@ -14,6 +14,11 @@ fn memory_plan(program:&Program,id:usize,work:&mut usize)->proof::MemoryPlan {
 fn emit(plan:&scalar_ir::Plan,profiled:bool,heap:bool)->Result<scalar_ir::native_leaf::Emitted,&'static str> {
     #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
     if !crate::scalar_call_model::native_stores_enabled() {return scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap);}
+    #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
+    if crate::scalar_call_model::native_path_enabled() {
+        return if plan.path_guard_shape().is_ok() {scalar_ir::native_leaf::emit_call_path(plan,profiled,heap)}
+            else {scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap)};
+    }
     scalar_ir::native_leaf::emit_call_transaction(plan,profiled,heap)
 }
 
@@ -30,6 +35,7 @@ pub(super) struct Entry {
     maximum_steps: usize,
     success_steps: Option<usize>,
     target: usize,
+    guarded_effects:bool,
 }
 impl Jit<'_> {
     #[cfg(test)]
@@ -55,7 +61,7 @@ impl Jit<'_> {
         assert_eq!(emitted.words.len()*4,bytes);
         self.scalar.as_mut().unwrap().entries[id]=Some(Entry {offset,bytes,
             maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,
-            target:base.checked_add(offset).unwrap()});
+            target:base.checked_add(offset).unwrap(),guarded_effects:emitted.guarded_effects});
         emitted.words
     }
     pub(super) fn prepare_scalar_callees(&mut self,id:usize)->Result<(),String> {
@@ -82,7 +88,7 @@ impl Jit<'_> {
         if self.code.is_none() {self.code=Some(platform::Code::reserve(self.capacity)?);}
         let offset=self.code.as_mut().unwrap().append(&emitted.words)?;
         let target=self.code.as_ref().unwrap().published().0+offset;
-        scalar.entries[id]=Some(Entry{offset,bytes,maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,target});
+        scalar.entries[id]=Some(Entry{offset,bytes,maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,target,guarded_effects:emitted.guarded_effects});
         self.bytes+=bytes;
         Ok(())
     }
@@ -157,6 +163,9 @@ impl Assembler<'_> {
         // live. Only the allocator's x3 and the link register need restoring.
         self.imm(16,entry.target as u64);
         self.emit(0xd63f0200); // blr x16: one nonrecursive native leaf
+        let invariant=if entry.guarded_effects {
+            self.imm(10,2);self.cmp(9,10);let at=self.words.len();self.emit(0x54000002);Some(at)
+        } else {None};
         self.cmp(9,31);self.decline(Cond::Ne,&mut private);
 
         // Restore the parent's live ABI while retaining private output. No
@@ -180,6 +189,10 @@ impl Assembler<'_> {
         self.add_imm(31,31,stack);
         self.successor(pc+1);
 
+        if let Some(at)=invariant {
+            self.patch_conditional(at,self.words.len())?;
+            self.scalar_restore(stack);self.imm(0,Failure::Certificate as u64);self.return_to_vm();
+        }
         let restore=self.words.len();
         for at in private {self.patch_conditional(at,restore)?;}
         self.scalar_restore(stack);

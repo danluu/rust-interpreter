@@ -9,12 +9,19 @@ struct Statistics {attempts:usize,commits:usize,declines:usize}
 thread_local! {
     static ENABLED:Cell<bool>=const {Cell::new(false)};
     static STATISTICS:Cell<Statistics>=Cell::new(Statistics::default());
+    static NATIVE_PATH:Cell<bool>=const {Cell::new(false)};
+    static NATIVE_PATH_INVARIANT:Cell<bool>=const {Cell::new(false)};
     static NATIVE_STORES:Cell<bool>=const {Cell::new(true)};
     static PATH_GUARDS:Cell<bool>=const {Cell::new(false)};
     static STORE_MODEL:Cell<bool>=const {Cell::new(false)};
     static SNAPSHOT_ENABLED:Cell<bool>=const {Cell::new(false)};
     static SNAPSHOT:RefCell<Option<(Vec<u8>,Vec<u8>)>>=const {RefCell::new(None)};
 }
+pub(crate) fn native_path_enabled()->bool {NATIVE_PATH.with(Cell::get)}
+pub(crate) fn native_path_invariant_enabled()->bool {NATIVE_PATH_INVARIANT.with(Cell::get)}
+struct NativePathEnabled;
+impl NativePathEnabled {fn new()->Self {NATIVE_PATH.with(|v|assert!(!v.replace(true)));Self}}
+impl Drop for NativePathEnabled {fn drop(&mut self) {NATIVE_PATH.with(|v|v.set(false));NATIVE_PATH_INVARIANT.with(|v|v.set(false));}}
 pub(crate) fn native_stores_enabled()->bool {NATIVE_STORES.with(Cell::get)}
 struct NativeEnabled(bool);
 impl NativeEnabled {
@@ -193,3 +200,6 @@ mod native_transaction_tests;
 
 #[path="scalar_call_path_guard_tests.rs"]
 mod path_tests;
+
+#[path="scalar_call_native_path_tests.rs"]
+mod native_path_tests;

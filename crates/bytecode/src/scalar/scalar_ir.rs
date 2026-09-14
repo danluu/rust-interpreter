@@ -369,6 +369,5 @@ mod transaction_tests;
 #[path="native_leaf.rs"]
 pub mod native_leaf;
 
-#[cfg(test)]
 #[path="path_entry.rs"]
 mod path_entry;
