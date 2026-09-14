@@ -7,7 +7,7 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/heap-address-bias'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from compression_probe import metadata
-NAME='closed-legacy-runtime-artifact-compression-01'
+NAME='closed-legacy-runtime-artifact-compression-02'
 def no_open_file(path):
     r=subprocess.run(['lsof','-Fpn','--',str(path)],text=True,capture_output=True)
     assert r.returncode==1 and not r.stdout and not r.stderr,(path,r.stdout,r.stderr)
@@ -44,10 +44,11 @@ def main():
                 for artifact in row['artifacts']:
                     p=ROOT/artifact['path'];assert p.is_relative_to(raw/'artifacts') and p.suffix=='.rbc'
                     assert str(p) not in executed and sha(p)==artifact['sha256']
-                    if not metadata(p)['flags'] & 32:
+                    info=metadata(p)
+                    if not info['flags'] & 32 and info['links']==1:
                         sources[artifact['path']]=artifact['sha256'];selected.add(artifact['path'])
             completion.append(dict(run=run,retained_snapshots=sorted(selected)))
-        assert len(sources)==448
+        assert len(sources)==340
         checks=subprocess.run(['ps','-p',','.join(map(str,sorted(pids))),'-o','pid,ppid,lstart,tty,command'],text=True,capture_output=True)
         assert checks.returncode in [0,1] and not checks.stderr
         assert not any(h['run'] in line for h in histories for line in checks.stdout.splitlines()[1:])
@@ -62,7 +63,7 @@ def main():
             inventory.append(dict(path=relative,sha256=digest,before=before))
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
             script_sha256=sha(Path(__file__)),proofs=proofs,files=inventory,
-            scope='Byte-preserving APFS compression of 448 retained public RBC snapshots from 25 explicitly bound completed historical runtime comparisons. Preserve every linked path, readable byte, SHA, mode, owner and mtime. Do not remove or reserialize any evidence. Executed workspace artifacts, executables, installed tools, source snapshots, private caches, shared targets and peer worktrees are untouched. This is storage representation only, outside performance timers.',completed_scopes=completion))
+            scope='Byte-preserving APFS compression of 340 retained singly linked public RBC snapshots from 25 explicitly bound completed historical runtime comparisons. The 108 multiply linked uncompressed snapshots are excluded. Preserve every linked path, readable byte, SHA, mode, owner and mtime. Do not remove or reserialize any evidence. Executed workspace artifacts, executables, installed tools, source snapshots, private caches, shared targets and peer worktrees are untouched. This is storage representation only, outside performance timers.',completed_scopes=completion))
         before_free=shutil.disk_usage(ROOT).free;rows=[]
         for item in inventory:
             require_space(ROOT,10);source=ROOT/item['path'];before=item['before'];digest=item['sha256']
