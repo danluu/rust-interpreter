@@ -179,6 +179,12 @@ def assessment(rows, case='token'):
         paired_native_wall_ratio=med('native_wall_ratio'))
 
 
+def validate_run_id(case, run_id):
+    assert case in CASES
+    assert re.fullmatch('native-continuation-snapshot-screen-' + re.escape(case) + r'-\d{2}', run_id), 'fresh screen required'
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--case', choices=CASES, required=True)
@@ -188,8 +194,7 @@ def main():
     parser.add_argument('--profile', type=Path, required=True)
     parser.add_argument('--harness', type=Path, required=True)
     args = parser.parse_args()
-    assert re.fullmatch('native-continuation-snapshot-screen-' + args.case + r'-(?:continuation-)?\d{2}', args.run_id)
-    assert '-continuation-' not in args.run_id, 'fresh screen required'
+    validate_run_id(args.case, args.run_id)
     project, variant, pattern, reference = CASES[args.case]
     case = WORKFLOWS[project] if variant is None else WORKFLOW_VARIANTS[project, variant]
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
@@ -198,7 +203,7 @@ def main():
         require_space(ROOT, admission)
         harness_path = args.harness.resolve(strict=True)
         harness = json.loads(harness_path.read_text())
-        assert harness['status'] == 'passed' and harness['tests'] == 13 and harness['launcher_tests']==429 and harness['launcher_skipped']==22
+        assert harness['status'] == 'passed' and harness['tests'] == 14 and harness['launcher_tests']==429 and harness['launcher_skipped']==22
         integration_path = ROOT / 'results/scratch-scalar-main-qualification-01/summary.json'
         integration = json.loads(integration_path.read_text())
         harness_inputs = ROOT / harness['raw'] / 'inputs.json'
