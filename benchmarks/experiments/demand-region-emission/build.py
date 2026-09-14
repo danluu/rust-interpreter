@@ -118,7 +118,7 @@ def main():
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
         write(out/'summary.json',dict(status='passed',source_revision=revision,tests={'test-debug':637,'test-release':637},
-            ignored_per_profile=15,python={'discovered':430,'passed':407,'skipped':22},commands=len(records),
+            ignored_per_profile=15,python={'discovered':430,'passed':408,'skipped':22},commands=len(records),
             tool_key=key,binaries=binaries,composition=composition,
             matched_control=dict(tool_key=BASELINE,binaries=integration['binaries'],integration=str(integration_path.relative_to(ROOT))),
             source_manifest=str((work/'plan.json').relative_to(ROOT)),source_manifest_sha256=sha(work/'plan.json'),
