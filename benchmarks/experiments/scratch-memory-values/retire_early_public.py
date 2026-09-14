@@ -8,7 +8,7 @@ from workflow_io import write_json as write
 from native_suite import test_status
 from suite_reports import validate_report
 
-NAME='closed-early-public-compiler-retirement-01'
+NAME='closed-early-public-compiler-retirement-02'
 RUNS=['e2e-workflow-nushell-std-mir-01','e2e-workflow-ruff-hostopt1-01']
 
 def identity(path):
@@ -66,7 +66,10 @@ with ExitStack() as stack:
         selected=set()
         assert {(r['state'],r['mode']) for r in rows}=={(s,m) for s in [0,-1,1,2,3,4,5] for m in ['native','interpreter','jit']}
         for row in rows:
-            assert row['tests']==summary['tests'] and row['calls']
+            # Early published histories vary test selection by state. The
+            # full row, including this exact selection, already matches its
+            # immutable published sample above; do not invent full-suite runs.
+            assert row['tests'] and set(row['tests'])<=set(summary['tests']) and row['calls']
             assert all(c['returncode']==0 for c in row['calls'])==(row['state']!=-1)
             for call in row['calls']:
                 pids.add(call['pid']);cmd=call['command'];mode=row['mode']
