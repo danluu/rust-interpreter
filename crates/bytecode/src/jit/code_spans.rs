@@ -59,7 +59,7 @@ impl Collector {
     fn validate(&self, f: &Function, staged: &CompiledFunction<'_>) -> Result<(), String> {
         let bytes = staged.words.len() * 4;
         let entries: Vec<_> = staged.entries.iter().enumerate()
-            .filter_map(|(pc, entry)| entry.map(|entry| (pc, entry))).collect();
+            .filter_map(|(pc, entry)| entry.map(|entry| (staged.selected.unwrap_or(pc), entry))).collect();
         let mut regions = BTreeMap::new();
         for (i, &(pc, entry)) in entries.iter().enumerate() {
             let end = entries.get(i + 1).map_or(bytes, |(_, e)| e.offset);

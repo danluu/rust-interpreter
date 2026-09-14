@@ -1,5 +1,5 @@
 //! Immutable whole-function inputs to ordinary native emission.
-//! This refactor retains eager emission and does not cache or publish plans.
+//! Region bounds and guarded ranges are computed once in source order.
 use super::*;
 
 pub(super) struct FunctionAnalysis {
@@ -7,14 +7,14 @@ pub(super) struct FunctionAnalysis {
     pub values: Option<values::Allocation>,
     pub fills: BTreeMap<usize, LocalFill>,
     pub slots: BTreeMap<usize, Vec<Option<usize>>>,
-    pub starts: Vec<bool>,
+    pub regions: Vec<Region>,
 }
 
-impl FunctionAnalysis {
-    pub fn native(&self, f: &Function, pc: usize, resumable: bool) -> bool {
-        supported(&f.code[pc]) || self.fills.contains_key(&pc)
-            || (resumable && transfers::supported(&f.code[pc]))
-    }
+pub(super) struct Region {
+    pub start: usize,
+    // An empty native body denotes one unsupported operation or transition.
+    pub end: usize,
+    pub range: Option<Box<range_groups::Plan>>,
 }
 
 impl Jit<'_> {
@@ -47,6 +47,22 @@ impl Jit<'_> {
                 starts[pc + 1] = true;
             }
         }
-        FunctionAnalysis { reads, values, fills, slots, starts }
+        let mut regions = vec![];
+        let mut pc = 0;
+        let mut range_work = 4_000_000;
+        while pc < f.code.len() {
+            let start = pc;
+            // Keep the same leader and branch-range limits as eager emission.
+            while pc < f.code.len() && pc - start < 1024
+                && (pc == start || !starts[pc]) && native(pc) {
+                pc += 1;
+            }
+            let range = if resumable && pc > start {
+                range_groups::runtime_plan(f, start, pc, &mut range_work).map(Box::new)
+            } else { None };
+            regions.push(Region { start, end: pc, range });
+            if pc == start { pc += 1; }
+        }
+        FunctionAnalysis { reads, values, fills, slots, regions }
     }
 }

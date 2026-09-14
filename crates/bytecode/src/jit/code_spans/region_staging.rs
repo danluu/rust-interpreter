@@ -20,14 +20,18 @@ fn verify_fragments<'a>(jit: &Jit<'a>, f: &'a Function, full: &CompiledFunction<
             assertion_base + assertions, Some(&mut mapping), &analysis, Some(pc))
             .unwrap().expect("published region must stage independently");
         assert_eq!(fragment.words.len(), word_end - word_base);
+        assert_eq!(fragment.selected, Some(pc));
+        assert_eq!(fragment.entries.len(), 1);
+        assert_eq!(fragment.resumes.len(), 1);
+        assert_eq!(fragment.internal_entries.len(), 1);
         assert_eq!(fragment.entries.iter().flatten().count(), 1);
-        assert_eq!(fragment.entries[pc].unwrap().offset, 0);
-        assert_eq!(fragment.entries[pc].unwrap().end, entry.end);
+        assert_eq!(fragment.entries[0].unwrap().offset, 0);
+        assert_eq!(fragment.entries[0].unwrap().end, entry.end);
         assert_eq!(fragment.operations, entry.end - pc);
         assert_eq!(fragment.register_pairs, full.register_pairs);
         assert_eq!(fragment.liveness_declined, full.liveness_declined);
-        assert_eq!(fragment.resumes[pc].map(|v| v + word_base), full.resumes[pc]);
-        assert_eq!(fragment.internal_entries[pc].map(|v| v + word_base), full.internal_entries[pc]);
+        assert_eq!(fragment.resumes[0].map(|v| v + word_base), full.resumes[pc]);
+        assert_eq!(fragment.internal_entries[0].map(|v| v + word_base), full.internal_entries[pc]);
         let next = assertions + fragment.assertions.len();
         assert_eq!(fragment.assertions, full.assertions[assertions..next]);
         assertions = next;
@@ -42,7 +46,7 @@ fn verify_fragments<'a>(jit: &Jit<'a>, f: &'a Function, full: &CompiledFunction<
         // Before resolving any external edge, every fragment target is either
         // its own internal entry or the original local VM fallback tail.
         for &(at, successor, fallback) in &fragment.region_links {
-            let local = fragment.internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
+            let local = (successor == pc).then(|| fragment.internal_entries[0]).flatten().unwrap_or(fallback);
             assert!(local < fragment.words.len());
             assert_eq!(fragment.words[at], 0x14000000 |
                 branch_displacement(at, local, 26, CodegenLimit::Jump).unwrap());
@@ -111,7 +115,7 @@ fn size_split_and_unsupported_successors_keep_exact_fragment_boundaries() {
 fn invalid_selection_and_fragment_capacity_never_publish_partial_state() {
     let p = input(vec![Op::Local { dst: 0, offset: 0 }, Op::Load { dst: 1, address: 0, size: 8 },
         Op::ResetThreadLocals, Op::Return]);
-    let jit = Jit::new_resumable(&p, false, MAX_CODE_BYTES, true).unwrap();
+    let mut jit = Jit::new_resumable(&p, false, MAX_CODE_BYTES, true).unwrap();
     let f = &p.functions[0];
     let plan = jit.analyze_function(f);
     for pc in [1, f.code.len(), usize::MAX] {
@@ -120,8 +124,35 @@ fn invalid_selection_and_fragment_capacity_never_publish_partial_state() {
     }
     assert!(jit.emit_analyzed_function(f, MAX_CODE_BYTES / 4, 0, None, &plan, Some(2)).unwrap().is_none());
     assert!(jit.emit_analyzed_function(f, 0, 0, None, &plan, Some(0)).unwrap().is_none());
+    let fragment = jit.emit_analyzed_function(f, MAX_CODE_BYTES / 4, 0, None, &plan, Some(0));
+    assert!(jit.finish_preparation(0, fragment).unwrap_err().contains("region publication transaction"));
     assert!(jit.code.is_none() && jit.assertions.is_empty() && jit.blocks.iter().all(Vec::is_empty));
+    assert!(!jit.prepared[0]);
     assert_eq!((jit.bytes, jit.operations, jit.compiled_functions), (0, 0, 0));
+}
+
+#[test]
+fn cached_guards_and_fragments_are_independent_of_emission_order() {
+    let mut code = vec![Op::Load { dst: 7, address: 0, size: 8 }; 8];
+    code.extend([Op::Assert { value: 7, expected: true, message: "first".into() }, Op::Jump { target: 10 }]);
+    code.extend(vec![Op::Load { dst: 6, address: 1, size: 8 }; 8]);
+    code.extend([Op::Assert { value: 6, expected: false, message: "second".into() },
+        Op::Jump { target: 0 }, Op::Return]);
+    let p = input(code);
+    check(&p);
+    let jit = Jit::new_resumable(&p, true, MAX_CODE_BYTES, true).unwrap();
+    let f = &p.functions[0];
+    let plan = jit.analyze_function(f);
+    assert_eq!(plan.regions.iter().filter(|r| r.range.is_some()).count(), 2);
+    let mut previous = BTreeMap::new();
+    for pc in [10, 0, 20, 0, 10, 20] {
+        let fragment = jit.emit_analyzed_function(f, MAX_CODE_BYTES / 4, usize::from(pc >= 10),
+            None, &plan, Some(pc)).unwrap().unwrap();
+        assert_eq!(fragment.selected, Some(pc));
+        assert_eq!((fragment.entries.len(), fragment.resumes.len(), fragment.internal_entries.len()), (1, 1, 1));
+        if let Some(words) = previous.insert(pc, fragment.words.clone()) { assert_eq!(words, fragment.words); }
+    }
+    assert!(jit.code.is_none() && jit.assertions.is_empty());
 }
 
 fn number(v: &Value, key: &str) -> usize { usize::try_from(v[key].as_u64().unwrap()).unwrap() }

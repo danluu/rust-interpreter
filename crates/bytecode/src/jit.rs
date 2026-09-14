@@ -320,6 +320,9 @@ enum FaultKind { Assertion, Trap }
 pub(crate) const MAX_CODE_BYTES: usize = 16 * 1024 * 1024;
 
 struct CompiledFunction<'a> {
+    // A selected fragment uses exactly one metadata slot, keyed by this PC.
+    // Such fragments cannot pass through the whole-function publisher.
+    selected: Option<usize>,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
@@ -474,6 +477,9 @@ impl<'a> Jit<'a> {
             }
             Err(EmitError::InvalidRelocation(message)) => return Err(message.into()),
         };
+        if staged.selected.is_some() {
+            return Err("selected region requires a region publication transaction".into());
+        }
         // Allocate the immutable target table before publishing code. A cold
         // or declined function keeps a null table and is entered by the VM.
         let mut resumes = Vec::new();
@@ -526,9 +532,9 @@ impl<'a> Jit<'a> {
         self.emit_analyzed_function(f, word_budget, assertion_base, spans, &plan, None)
     }
 
-    // The optional selection is an offline staging path at this stage. It
-    // deliberately retains dense metadata and scans earlier region analyses;
-    // no demand publication or executable patching uses it.
+    // Selection stages one cached region with constant-sized entry metadata.
+    // This path still publishes no executable code; demand execution needs a
+    // separate transaction for stable tables and pending successor branches.
     fn emit_analyzed_function(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
         mut spans: Option<&mut code_spans::Collector>, plan: &function_analysis::FunctionAnalysis,
         selected: Option<usize>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
@@ -548,39 +554,24 @@ impl<'a> Jit<'a> {
         let mut memory_spans = vec![];
         let mut assertions = vec![];
         let mut operations = 0;
-        let mut range_work = 4_000_000;
-        let function_analysis::FunctionAnalysis { reads, values, fills, slots, starts } = plan;
-        let native = |pc| plan.native(f, pc, resumable);
-        let mut entries = vec![None; f.code.len()];
-        let mut internal_entries = vec![None; f.code.len()];
-        // The extra null entry handles a caller's one-past-code continuation.
-        let mut resumes = if resumable { vec![None; f.code.len() + 1] } else { vec![] };
+        let function_analysis::FunctionAnalysis { reads, values, fills, slots, regions } = plan;
+        let regions = if let Some(pc) = selected {
+            let index = regions.binary_search_by_key(&pc, |region| region.start)
+                .map_err(|_| EmitError::InvalidRelocation("selected PC is not a planned region start"))?;
+            &regions[index..index + 1]
+        } else { regions.as_slice() };
+        let metadata_len = if selected.is_some() { 1 } else { f.code.len() };
+        let mut entries = vec![None; metadata_len];
+        let mut internal_entries = vec![None; metadata_len];
+        // Whole-function tables retain the null one-past-code continuation.
+        let mut resumes = if resumable {
+            vec![None; metadata_len + usize::from(selected.is_none())]
+        } else { vec![] };
         let mut links = vec![];
-        let mut pc = 0;
-        let mut selection_seen = selected.is_none();
-        while pc < f.code.len() {
-            let start = pc;
-            while pc < f.code.len()
-                // Bound straight-line regions. Large constant/table
-                // initializers otherwise put the shared memory-failure
-                // return beyond AArch64's conditional branch range.
-                && pc - start < 1024
-                && (pc == start || !starts[pc])
-                && native(pc)
-            {
-                pc += 1;
-            }
-            if selected.is_some_and(|wanted| wanted != start) {
-                // Keep the full-function range-analysis work order. This is
-                // intentionally an offline equivalence model, not a runtime
-                // policy that reanalyzes prefixes on every demanded region.
-                if resumable && pc > start {
-                    let _ = range_groups::runtime_plan(f, start, pc, &mut range_work);
-                }
-                if pc == start { pc += 1; }
-                continue;
-            }
-            selection_seen = true;
+        for region in regions {
+            let start = region.start;
+            let pc = region.end;
+            let slot = if selected.is_some() { 0 } else { start };
             if pc - start >= if resumable { 1 } else { 3 } {
                 let offset = words.len() * 4;
                 let mut a = Assembler {
@@ -619,13 +610,12 @@ impl<'a> Jit<'a> {
                 // enter after this prologue and keep the same live storage.
                 let resume = a.external_entry();
                 span!(Entry, None);
-                if resumable { resumes[start] = Some(words.len() + resume); }
-                internal_entries[start] = Some(words.len() + a.words.len());
+                if resumable { resumes[slot] = Some(words.len() + resume); }
+                internal_entries[slot] = Some(words.len() + a.words.len());
                 // Every internal/resume entry runs this preflight. Declines
                 // consume no guest work and use the existing resumable tail.
                 let range_declines = if resumable {
-                    let plan = range_groups::runtime_plan(f, start, pc, &mut range_work);
-                    a.prepare_guarded_range(plan)?
+                    a.prepare_guarded_range(region.range.as_deref())?
                 } else { vec![] };
                 span!(RangeGuard, None);
                 // Every native cycle consumes virtual instructions. When
@@ -741,7 +731,7 @@ impl<'a> Jit<'a> {
                     retained_local_writes.extend(a.retained_local_writes);
                 }
                 words.extend(a.words);
-                entries[start] = Some(Block { offset, end: pc });
+                entries[slot] = Some(Block { offset, end: pc });
                 operations += pc - start;
             }
             if pc == start {
@@ -751,9 +741,9 @@ impl<'a> Jit<'a> {
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
                         code_spans::Kind::Transition, 0, a.words.len())?;
                     if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
-                    resumes[pc] = Some(words.len() + resume);
-                    internal_entries[pc] = Some(words.len() + internal);
-                    entries[pc] = Some(Block { offset, end: pc + 1 });
+                    resumes[slot] = Some(words.len() + resume);
+                    internal_entries[slot] = Some(words.len() + internal);
+                    entries[slot] = Some(Block { offset, end: pc + 1 });
                     operations += 1;
                     for &(at, successor) in &a.links {
                         let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
@@ -768,31 +758,31 @@ impl<'a> Jit<'a> {
                             let (a, internal, fallback) = self.emit_call_stub(f, pc, *function, args, *destination,
                                 plan, target, self.bytes / 4 + words.len(), reads, values.as_ref())?;
                             if a.words.len() > word_budget.saturating_sub(words.len()) { return Ok(None); }
-                            internal_entries[pc] = Some(words.len() + internal);
+                            internal_entries[slot] = Some(words.len() + internal);
                             // The stub already supplies a safe VM successor;
                             // successful edges are linked exactly like regions.
                             links.extend(a.links.iter().map(|&(at, successor)|
                                 (words.len() + at, successor, words.len() + fallback)));
-                            entries[pc] = Some(Block { offset, end: pc + 1 });
+                            entries[slot] = Some(Block { offset, end: pc + 1 });
                             operations += 1;
                             words.extend(a.words);
                         }
                     }
                 }
-                pc += 1;
             }
-        }
-        if !selection_seen {
-            return Err(EmitError::InvalidRelocation("selected PC is not a planned region start"));
         }
         if selected.is_some() && words.is_empty() { return Ok(None); }
         #[cfg(test)]
         let region_links = links.clone();
         for (at, successor, fallback) in links {
-            let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
+            let slot = match selected {
+                Some(pc) => (successor == pc).then_some(0),
+                None => Some(successor),
+            };
+            let target = slot.and_then(|i| internal_entries.get(i)).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
-        Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+        Ok(Some(CompiledFunction { selected, words, entries, resumes, operations, assertions,
             #[cfg(test)] region_links,
             #[cfg(test)] internal_entries,
             #[cfg(test)] memory_spans,
@@ -1082,7 +1072,7 @@ struct Assembler<'a> {
     observe_static_local_facts: bool,
     #[cfg(test)]
     observe_scalar_copy: bool,
-    guarded_range: Option<range_groups::Plan>,
+    guarded_range: Option<&'a range_groups::Plan>,
     values: Option<&'a values::Allocation>,
     tree_caller_is_region: bool,
     resumable: bool,

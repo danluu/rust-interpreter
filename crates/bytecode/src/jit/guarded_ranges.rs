@@ -2,8 +2,8 @@
 use super::*;
 use range_groups::{Plan, Root};
 
-impl Assembler<'_> {
-    pub(super) fn prepare_guarded_range(&mut self, plan: Option<Plan>) -> Result<Vec<usize>, EmitError> {
+impl<'a> Assembler<'a> {
+    pub(super) fn prepare_guarded_range(&mut self, plan: Option<&'a Plan>) -> Result<Vec<usize>, EmitError> {
         let Some(plan)=plan else { return Ok(vec![]); };
         debug_assert!(self.resumable && self.failures.is_empty());
         match plan.root {
