@@ -64,6 +64,19 @@ resolved from upstream main on 2026-09-13. This is a source-inspection pin,
 not a completed benchmark. Its [toolchain file](https://github.com/oxc-project/oxc/blob/4d5c812d6b16c23fa71d106cf87f7f20ddee69b1/rust-toolchain.toml)
 selects Rust 1.98.1; any future baseline must record the actual compiler used.
 
+A further pinned source review followed 23 reachable workspace manifests and
+231 dependency declarations, including optional and target-specific local
+edges. It found no build-dependency declarations or local path back to the
+linter. This remains a declared-source graph, not Cargo's resolved unit graph
+or an exhaustive audit of registry build scripts and macro file access.
+The same crate declares 870 leaf rule modules. Its existing plugin-name tests
+offer a concrete configuration-edit workload without entering the lint service.
+Ordinary rule tests instead initialize Rayon's global pool and use synchronized
+state, channels and snapshots; their interpreter route needs further support
+and qualification. Neither workflow has been measured here, and configuration
+tests do not substitute for rule-body coverage.
+[Complete pinned graph, test paths and runtime limitations](../../../results/oxc-target-source-review-01/README.md).
+
 Recommendation: use Ruff to guide the next measured frontend improvements,
 evaluate Oxc as an additional development target, and retain Nushell as a
 regression/stress case. Neither alternative is a demonstrated sub-0.5-second
