@@ -3,7 +3,7 @@ use super::*;
 
 #[derive(Clone,Copy)]
 struct Site {id:Id,address:Id,size:u8,offset:usize}
-pub(super) struct Layout {sites:Vec<Site>,scratch:usize}
+pub(super) struct Layout {sites:Vec<Site>,scratch:usize,identities:Vec<(Id,u64)>}
 impl Layout {
     pub fn new(plan:&Plan,bytes:&mut usize)->Result<Option<Self>,&'static str> {
         let mut sites=vec![];*bytes=(*bytes+15)&!15;
@@ -15,12 +15,13 @@ impl Layout {
             }
         }
         if sites.is_empty() {return Ok(None);}
-        let scratch=*bytes;*bytes+=16;Ok(Some(Self{sites,scratch}))
+        let scratch=*bytes;*bytes+=16;Ok(Some(Self{sites,scratch,identities:addresses(plan)?}))
     }
 }
 
 // Equality modulo 2^64 only; independently checked complete ranges establish
 // dereferenceability. Never infer equality through a narrow cast or a phi.
+#[cfg(test)]
 fn address(plan:&Plan,mut id:Id)->(Id,u64) {
     let mut offset=0u64;
     for _ in 0..plan.nodes.len() {
@@ -38,10 +39,29 @@ fn address(plan:&Plan,mut id:Id)->(Id,u64) {
     }
     (id,offset)
 }
+// SSA inputs precede these non-phi address aliases. Memoizing each identity
+// bounds preparation to O(nodes), plus at most 16 prior stores per read.
+fn addresses(plan:&Plan)->Result<Vec<(Id,u64)>,&'static str> {
+    let mut ids:Vec<(Id,u64)>=Vec::with_capacity(plan.nodes.len());
+    for (id,node) in plan.nodes.iter().enumerate() {
+        let prior=match &node.value {
+            Value::Cast{src,from:64,to:64,..}=>Some((*src,0)),
+            Value::Pack(parts) if parts.len()==1 && parts[0].byte==0 && parts[0].size>=8=>Some((parts[0].value,0)),
+            Value::Binary{a,b,op:Binary::Add,bits:64,overflow:false,..}=>match (&plan.nodes[*a].value,&plan.nodes[*b].value) {
+                (_,Value::Constant(n))=>Some((*a,*n as u64)),(Value::Constant(n),_)=>Some((*b,*n as u64)),_=>None,
+            },_=>None,
+        };
+        let identity=if let Some((src,offset))=prior {
+            let (root,base)=*ids.get(src).ok_or("native_address_order")?;(root,base.wrapping_add(offset))
+        } else {(id,0)};
+        ids.push(identity);
+    }
+    Ok(ids)
+}
 #[derive(Clone,Copy)]
 enum Relation {Disjoint,Contains(u8),Partial,Unknown}
-fn relation(plan:&Plan,site:Site,read:Id,size:u8)->Relation {
-    let (a,x)=address(plan,site.address);let (b,y)=address(plan,read);
+fn relation(identities:&[(Id,u64)],site:Site,read:Id,size:u8)->Relation {
+    let (a,x)=identities[site.address];let (b,y)=identities[read];
     if a!=b {return Relation::Unknown;}
     let delta=y.wrapping_sub(x);let reverse=x.wrapping_sub(y);
     if delta>=u64::from(site.size) && reverse>=u64::from(size) {return Relation::Disjoint;}
@@ -82,7 +102,7 @@ impl Emitter<'_> {
     }
     pub(super) fn transaction_read(&mut self,id:Id,source:Id,size:u8)->Result<(),&'static str> {
         let Some(t)=&self.transaction else {return self.read_external(source,size);};
-        let sites:Vec<_>=t.sites.iter().copied().filter(|s|s.id<id && !matches!(relation(self.plan,*s,source,size),Relation::Disjoint)).collect();let scratch=t.scratch;
+        let sites:Vec<_>=t.sites.iter().copied().filter(|s|s.id<id && !matches!(relation(&t.identities,*s,source,size),Relation::Disjoint)).collect();let scratch=t.scratch;
         if sites.is_empty() {return self.read_external(source,size);}
         let pc=self.plan.nodes[id].pc.ok_or("native_read_pc")?;
         // A preceding store in this same basic block must have executed. Its
@@ -90,7 +110,7 @@ impl Emitter<'_> {
         let covering=sites.iter().enumerate().rev().find_map(|(i,s)| {
             let p=self.plan.nodes[s.id].pc?;
             if p<pc && self.plan.at[p]==self.plan.at[pc] {
-                if let Relation::Contains(byte)=relation(self.plan,*s,source,size) {return Some((i,byte));}
+                if let Relation::Contains(byte)=relation(&t.identities,*s,source,size) {return Some((i,byte));}
             }
             None
         });
@@ -99,7 +119,7 @@ impl Emitter<'_> {
         if start==sites.len() {return Ok(());}
         self.store(9,31,scratch);self.store(10,31,scratch+8);
         for site in sites.into_iter().skip(start) {
-            let relation=relation(self.plan,site,source,size);
+            let relation=relation(&self.transaction.as_ref().unwrap().identities,site,source,size);
             if matches!(relation,Relation::Disjoint) {continue;}
             self.load(11,31,site.offset);self.cmp(11,31);let inactive=self.words.len();self.emit(0x54000000);
             let mut done=None;
@@ -152,12 +172,14 @@ fn native_private_low_address_relations_preserve_wrap_and_narrowing() {
     let p=Plan{nodes:values.into_iter().map(|value|Node{value,width:8,pc:None}).collect(),
         blocks:vec![],at:vec![],computations:vec![],effects:vec![],live:vec![],reachable:vec![],
         maximum_steps:0,success_steps:None,result_size:0,work:0};
+    let identities=addresses(&p).unwrap();
+    for (id,identity) in identities.iter().enumerate() {assert_eq!(*identity,address(&p,id));}
     let site=Site{id:0,address:0,size:16,offset:0};
-    assert!(matches!(relation(&p,site,4,8),Relation::Contains(1)));
-    assert!(matches!(relation(&p,site,6,8),Relation::Contains(1)));
-    assert!(matches!(relation(&p,site,5,8),Relation::Unknown));
-    assert!(matches!(relation(&p,site,2,1),Relation::Disjoint));
-    assert!(matches!(relation(&p,site,2,2),Relation::Partial));
+    assert!(matches!(relation(&identities,site,4,8),Relation::Contains(1)));
+    assert!(matches!(relation(&identities,site,6,8),Relation::Contains(1)));
+    assert!(matches!(relation(&identities,site,5,8),Relation::Unknown));
+    assert!(matches!(relation(&identities,site,2,1),Relation::Disjoint));
+    assert!(matches!(relation(&identities,site,2,2),Relation::Partial));
     for base in [0u64,1,2,u64::MAX-1,u64::MAX] {
         assert_eq!(base.wrapping_add(u64::MAX).wrapping_add(2),base.wrapping_add(address(&p,6).1));
     }

@@ -71,3 +71,16 @@ fn observe_saved_scalar_dead_register_words() {
     assert!(count > 50 && count < 200);
     println!("{count} exact saved bodies match the independent compacted-word reference");
 }
+
+#[test]
+fn narrow_commit_stores_keep_addresses_values_and_order() {
+    for opcode in [0x39000000,0x79000000,0xb9000000] {
+        let address=0xd280020b; // mov x11,#16
+        let value=0xd28004ac; // mov x12,#37
+        let store=opcode|(11<<5)|12;
+        let dead=0xd28000ed; // mov x13,#7, unused
+        let ret=0xd65f03c0;
+        let code=[address,value,store,dead,ret];
+        assert_eq!(eliminate_call(&code).unwrap(),vec![address,value,store,ret]);
+    }
+}
