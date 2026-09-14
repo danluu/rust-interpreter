@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-register-pressure-01'
+NAME='scalar-register-pressure-02'
 
 def read(p):return json.loads(p.read_text())
 def main():
@@ -79,7 +79,10 @@ def main():
                 selected=[next(r for r in f['pools'] if r['pool']==size) for f in case['functions']]
                 pools.append(dict(pool=size,**{key:sum(r[key] for r in selected) for key in fields}))
             totals.append(dict(index=case['index'],reconstructed_bodies=case['reconstructed_bodies'],
-                successful_scalar_calls=sum(f['successful_calls'] for f in case['functions']),pools=pools))
+                successful_scalar_calls=sum(f['successful_calls'] for f in case['functions']),pools=pools,
+                spill_categories={kind:{key:sum(v[key] for f in case['functions'] for v in f['spilled_values'] if v['category']==kind)
+                    for key in ['successful_definition_hits','successful_ir_operand_hits']}
+                    for kind in ['local_computation','cross_block_computation','byte_phi','other_phi']}))
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
         write(out/'summary.json',dict(status='passed',commands=2,controls=2,reconstructed_native_bodies=expected,cases=totals,
             setup_seconds=sum(r['seconds'] for r in records),raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),

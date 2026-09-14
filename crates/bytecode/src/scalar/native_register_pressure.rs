@@ -34,6 +34,36 @@ fn metrics(plan:&Plan,hits:&[u64],calls:u64)->Vec<Json> {
             "hypothetical_successful_save_restore_instructions":2*saved.len() as u64*calls})
     }).collect()
 }
+fn spill_details(plan:&Plan,hits:&[u64])->Vec<Json> {
+    let assigned=allocate(plan).unwrap();
+    let mut blocks=vec![None;plan.nodes.len()];
+    let mut uses=vec![std::collections::BTreeSet::new();plan.nodes.len()];
+    let mut operands=vec![0u64;plan.nodes.len()];
+    for (id,n) in plan.nodes.iter().enumerate() {if let Some(pc)=n.pc {blocks[id]=Some(plan.at[pc]);}}
+    for (block,b) in plan.blocks.iter().enumerate() {for &id in &b.phis {blocks[id]=Some(block);}}
+    for n in &plan.nodes {
+        if let Value::Phi(parts)=&n.value {for &(pred,part) in parts {uses[part.value].insert(pred);}continue;}
+        if let Some(pc)=n.pc {for id in n.inputs() {uses[id].insert(plan.at[pc]);operands[id]+=hits[pc];}}
+    }
+    for (pc,e) in plan.effects.iter().enumerate() {
+        let id=match e {Effect::Assert{value,..}|Effect::Switch{value,..}|Effect::Return(value)=>Some(*value),_=>None};
+        if let Some(id)=id {uses[id].insert(plan.at[pc]);operands[id]+=hits[pc];}
+    }
+    plan.nodes.iter().enumerate().filter(|(id,_)|spilled(plan,&assigned,*id)).map(|(id,n)| {
+        let category=match &n.value {
+            Value::Phi(_) if n.width==1=>"byte_phi",
+            Value::Phi(_)=>"other_phi",
+            _ if uses[id].iter().any(|b|Some(*b)!=blocks[id])=>"cross_block_computation",
+            _=>"local_computation",
+        };
+        let parts=if let Value::Phi(parts)=&n.value {
+            parts.iter().map(|(p,s)|json!({"predecessor":p,"source":s.value,"byte":s.byte,"size":s.size})).collect::<Vec<_>>()
+        } else {vec![]};
+        json!({"node":id,"category":category,"value":format!("{:?}",n.value),"width":n.width,"pc":n.pc,
+            "definition_block":blocks[id],"use_blocks":uses[id],"successful_definition_hits":n.pc.map_or(0,|pc|hits[pc]),
+            "successful_ir_operand_hits":operands[id],"phi_parts":parts})
+    }).collect()
+}
 fn fixture(split:bool)->Plan {
     let mut code=vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8},
         Op::Local{dst:2,offset:8},Op::Load{dst:3,address:2,size:8}];
@@ -61,9 +91,11 @@ fn hypothetical_extra_registers_reduce_same_block_spills() {
 #[test]
 fn hypothetical_extra_registers_preserve_cross_block_spills() {
     let plan=fixture(true);
+    let details=spill_details(&plan,&vec![1;plan.effects.len()]);
     for (_,assigned) in pools(&plan) {for pc in [5,7,9,11,13,15] {
         let id=*plan.computations[pc].iter().find(|id|matches!(plan.nodes[**id].value,Value::Binary{overflow:false,..})).unwrap();
         assert!(plan.live[id] && assigned[id].is_none());
+        assert_eq!(details.iter().find(|r|r["node"]==id).unwrap()["category"],"cross_block_computation");
     }}
 }
 fn checked(path:&str,digest:&str,limit:usize)->Vec<u8> {
@@ -97,7 +129,7 @@ fn observe_saved_scalar_register_pressure() {
                 "reachable_blocks":plan.reachable.iter().filter(|b|**b).count(),"successful_calls":calls,
                 "native_sp_ldr64":emitted.words.iter().filter(|w|**w&0xffc003e0==0xf94003e0).count(),
                 "native_sp_str64":emitted.words.iter().filter(|w|**w&0xffc003e0==0xf90003e0).count(),
-                "pools":metrics(&plan,&hits,calls)}));
+                "pools":metrics(&plan,&hits,calls),"spilled_values":spill_details(&plan,&hits)}));
         }
         assert_eq!(input["expected_scalar_bodies"],reconstructed);
         cases.push(json!({"index":input["index"],"reconstructed_bodies":reconstructed,"functions":functions}));
