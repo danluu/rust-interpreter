@@ -1,0 +1,1 @@
+Two read-only disk inventories completed. Exact commands, output and allocated-size tables remain under the raw path in the summary. These sizes identify candidates for inspection; they establish neither ownership nor cleanup eligibility. No files were removed.
