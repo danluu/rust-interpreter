@@ -1,15 +1,18 @@
-//! Staged complete-value reuse model; no production integration or code emission.
+//! Bounded complete-value origins. Every original frame write remains immediate.
 use super::*;
 
 #[derive(Clone,Copy)]
 enum Fact { Local(usize), Imm(u128) }
 #[derive(Clone,Copy)]
 struct Byte { origin:usize, byte:usize }
-#[derive(Clone,Copy,Debug,serde::Serialize)]
+#[derive(Clone,Copy,Debug)]
+#[cfg_attr(test,derive(serde::Serialize))]
 pub(super) struct Capture {pub slot:usize,pub size:usize}
-#[derive(Clone,Copy,Debug,serde::Serialize)]
+#[derive(Clone,Copy,Debug)]
+#[cfg_attr(test,derive(serde::Serialize))]
 pub(super) struct Reuse {pub slot:usize,pub size:usize,pub origin_pc:usize}
-#[derive(Default,Debug,serde::Serialize)]
+#[derive(Default,Debug)]
+#[cfg_attr(test,derive(serde::Serialize))]
 pub(super) struct Plan {
     pub captures:BTreeMap<usize,Capture>,
     pub uses:BTreeMap<usize,Reuse>,
@@ -106,5 +109,40 @@ pub(super) fn plan(f:&Function,start:usize,end:usize,capacity:usize,work:&mut us
     Some(result)
 }
 
+#[derive(Default)]
+pub(super) struct State { plan:Option<Plan>, active:[Option<usize>;15] }
+impl State {
+    pub fn new(plan:Option<Plan>)->Self {Self{plan:plan.filter(|p|!p.captures.is_empty()),active:[None;15]}}
+    pub fn word(&mut self,word:u32) {
+        if self.plan.is_none(){return;}
+        let kill=|active:&mut [Option<usize>;15],reg:u32| {
+            if reg>=17 {active[(reg-17)as usize]=None;}
+        };
+        if word&0x3b000000==0x39000000 && word&0x04000000!=0 {
+            if word&(1<<22)!=0 {kill(&mut self.active,word&31);}
+            return;
+        }
+        if matches!(word&0xfffffc00,0x1e260000|0x9e660000|0x4e183c00) {return;}
+        if matches!(word&0xfffffc00,0x1e270000|0x9e670000|0x4e181c00) {
+            kill(&mut self.active,word&31);return;
+        }
+        // Every other SIMD/FP instruction, unaudited SIMD memory class, or
+        // host call conservatively destroys availability. Future emitters
+        // cannot silently start borrowing retained temporaries.
+        if word&0x0e000000==0x0e000000
+            || (word&0x0a000000==0x08000000 && word&0x04000000!=0)
+            || word&0xfc000000==0x94000000 || word&0xfffffc1f==0xd63f0000 {
+            self.active.fill(None);
+        }
+    }
+    fn register(&self,pc:usize,size:usize)->Option<u32> {
+        let r=self.plan.as_ref()?.uses.get(&pc)?;
+        (r.size==size && self.active[r.slot]==Some(r.origin_pc)).then_some(17+r.slot as u32)
+    }
+}
+
+#[path="retained_values_native.rs"]
+mod native;
+#[cfg(test)]
 #[path="retained_values_tests.rs"]
 mod tests;

@@ -51,6 +51,11 @@ impl State {
 /// Stores preserve the register; typed operation effects invalidate memory facts.
 pub(super) fn preserves_x9(word: u32) -> bool {
     let rd=word&31;
+    // These exact transfers write SIMD registers, leaving every GPR intact.
+    if matches!(word&0xfffffc00,0x1e270000|0x9e670000|0x4e181c00) {return true;}
+    // Unsigned-offset SIMD loads/stores have no base writeback and no GPR
+    // destination. Typed memory effects still invalidate aliased byte ranges.
+    if word&0x3b000000==0x39000000 && word&0x04000000!=0 {return true;}
     if word==0xd503201f {return true;}
     if word&0x1f000000==0x11000000 || matches!(word&0x1f000000,0x0a000000|0x0b000000) {
         return rd!=9;

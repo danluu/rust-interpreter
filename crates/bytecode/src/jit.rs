@@ -59,7 +59,6 @@ mod flush_census;
 mod memory_parts;
 #[cfg(test)]
 mod memory_operand_tests;
-#[cfg(test)]
 mod retained_values;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
@@ -371,6 +370,8 @@ pub(crate) struct Jit<'a> {
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
+    disable_retained_values: bool,
+    #[cfg(test)]
     observe_guarded_local_retention: bool,
     #[cfg(test)]
     observe_static_local_facts: bool,
@@ -413,6 +414,8 @@ impl<'a> Jit<'a> {
             assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
+            #[cfg(test)]
+            disable_retained_values: false,
             #[cfg(test)]
             observe_guarded_local_retention: true,
             #[cfg(test)]
@@ -536,6 +539,10 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
+        let mut retained_work = 4_000_000;
+        let retain = resumable && self.persistent_registers && self.scalar.is_some();
+        #[cfg(test)]
+        let retain = retain && !self.disable_retained_values;
         let reads = read_registers(f);
         let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
         let fills = local_fills(f);
@@ -584,6 +591,9 @@ impl<'a> Jit<'a> {
             if pc - start >= if resumable { 1 } else { 3 } {
                 let offset = words.len() * 4;
                 let mut a = Assembler {
+                    retained: retained_values::State::new(if retain {
+                        retained_values::plan(f,start,pc,15,&mut retained_work)
+                    } else { None }),
                     #[cfg(test)]
                     observe_guarded_local_retention: self.observe_guarded_local_retention,
                     #[cfg(test)]
@@ -1080,6 +1090,7 @@ struct Assembler<'a> {
     resumable: bool,
     local_values: Vec<local_memory::Value>,
     scratch_values: scratch_values::State,
+    retained: retained_values::State,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
@@ -1131,6 +1142,7 @@ impl Default for Assembler<'_> {
             resumable: Default::default(),
             local_values: Default::default(),
             scratch_values: Default::default(),
+            retained: Default::default(),
             local_forwarding: Default::default(),
             local_fact_events: Default::default(),
             retained_local_writes: Default::default(),
@@ -1243,6 +1255,7 @@ impl Assembler<'_> {
         }
     }
     fn emit(&mut self, word: u32) {
+        self.retained.word(word);
         self.scratch_values.word(word);
         #[cfg(test)]
         self.scratch.observe_word(word);
@@ -1981,7 +1994,10 @@ impl Assembler<'_> {
                     let forwarded = self.local_value(local, size as usize).is_some();
                     self.scratch.load(self.current_pc, local, size as usize, forwarded);
                 }
-                if let Some((_, value)) = self.local_value(local, size as usize) {
+                if self.retained_load(address,size as usize) {
+                    // The complete same-width value was captured in this
+                    // region; guest register publication remains below.
+                } else if let Some((_, value)) = self.local_value(local, size as usize) {
                     #[cfg(test)]
                     let preserve_static = self.observe_static_local_facts;
                     #[cfg(not(test))]
@@ -2010,6 +2026,7 @@ impl Assembler<'_> {
                         self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
                     }
                 }
+                self.capture_retained(size as usize);
                 memory_part!(self, "register_publication", self.put(dst, 9, if size <= 8 { 31 } else { 10 }));
                 self.remember_local_memory(local, size as usize, dst);
                 self.scratch_values.capture(local,size as usize);
@@ -2024,6 +2041,7 @@ impl Assembler<'_> {
                     if size > 8 { self.get(10, src, true); }
                 });
                 self.store_mem_at(9, 10, 11, size as usize, immediate);
+                self.capture_retained(size as usize);
                 let retain = self.preserve_guarded_local_write(local, address, size as usize);
                 if !retain { self.invalidate_local_memory(local, size as usize); }
                 self.remember_local_memory(local, size as usize, src);
@@ -2035,6 +2053,7 @@ impl Assembler<'_> {
                 self.compare_bytes(dst, left, right, size);
             }
             Op::Copy { dst, src, size } => {
+                if self.retained_copy(dst,src,size) { return; }
                 if (17..=32).contains(&size) { self.evict_cached(true); }
                 let source_local = self.local_range(src, size);
                 let destination_local = self.local_range(dst, size);
@@ -2045,6 +2064,7 @@ impl Assembler<'_> {
                 let scalar_copy = true;
                 if scalar_copy && [1, 2, 4, 8, 16].contains(&size) {
                     self.scalar_copy(dst, src, size, forwarded.map(|(_, value)| value));
+                    self.capture_retained(size);
                     if !self.preserve_guarded_local_write(destination_local, dst, size) {
                         self.invalidate_local_memory(destination_local, size);
                     }
