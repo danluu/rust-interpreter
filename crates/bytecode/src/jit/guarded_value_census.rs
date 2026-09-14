@@ -107,9 +107,13 @@ fn register_writes_capacity_and_region_boundaries_invalidate_old_values() {
 #[test]
 fn only_active_disjoint_plans_record_hits_without_emitter_side_effects() {
     let mut a=Assembler{frame_size:64,..Assembler::default()};
-    a.guarded_range=Some(range_groups::Plan{root:range_groups::Root::Register(0),low:0,high:8,writes:false,frame_disjoint:true,
-        sites:(0..3).map(|pc|range_groups::Site{pc,register:0,offset:0,size:8,write:false}).collect()});
     let op=Op::Load{dst:1,address:0,size:8};
+    let f=Function{name:"observer plan control".into(),frame_size:64,frame_align:8,registers:2,
+        args:vec![],result:crate::Slot{offset:0,size:0},code:vec![op.clone();8]};
+    let mut plan=range_groups::runtime_plan(&f,0,8,&mut 4_000_000).unwrap();
+    // Exercise the observer's disjointness gate; this unit control publishes or
+    // executes no plan. Runtime reconstruction uses only the actual plan flag.
+    plan.frame_disjoint=true;a.guarded_range=Some(plan);
     let (_,hits)=capture(|| {
         let mut state=State::new();state.observe(&a,&op);
         a.facts.insert(1,Fact::Imm(99));a.current_pc=1;state.observe(&a,&op);
