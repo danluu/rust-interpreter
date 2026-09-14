@@ -263,3 +263,13 @@ Next census scratch-value availability at Copy loads, which the earlier Load-
 only observer did not query. Preserve original source/destination checks and
 full alias/clobber invalidation; no runtime change follows without coverage.
 [Memory parts](../results/scalar-memory-parts-01/ASSESSMENT.md).
+
+The Copy-specific scratch census passes 12 controls and reconstructs both fresh
+captures without changing words. It finds 45/29 samples at candidate Copy load
+instructions, versus 45/15 for the same captures' pre-address Load observations.
+This justifies one bounded shared x9 cache experiment, with queries after address
+handling and unchanged alias, clobber, fault, budget and profile contracts.
+The combined 90/44 partial samples are not a timing prediction or adoption gate.
+Use the unchanged primary-first workflow after correctness qualification.
+[Copy census](../results/scratch-copy-census-01/ASSESSMENT.md),
+[shared scope](../results/scratch-load-copy-coverage-01/ASSESSMENT.md).
