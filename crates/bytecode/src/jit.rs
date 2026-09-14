@@ -334,6 +334,10 @@ struct CompiledFunction<'a> {
     memory_spans: Vec<memory_parts::Span>,
     #[cfg(test)]
     retained_local_writes: Vec<(usize, Reg, usize, usize)>,
+    #[cfg(test)]
+    region_links: Vec<(usize, usize, usize)>,
+    #[cfg(test)]
+    internal_entries: Vec<Option<usize>>,
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
     resumes: Vec<Option<usize>>,
@@ -517,7 +521,17 @@ impl<'a> Jit<'a> {
     // Diagnostic re-emission is allowed only for an already published function.
     // It reuses admission and original assertion identities without republishing.
     fn emit_function_inner(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
-        mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        let plan = self.analyze_function(f);
+        self.emit_analyzed_function(f, word_budget, assertion_base, spans, &plan, None)
+    }
+
+    // The optional selection is an offline staging path at this stage. It
+    // deliberately retains dense metadata and scans earlier region analyses;
+    // no demand publication or executable patching uses it.
+    fn emit_analyzed_function(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
+        mut spans: Option<&mut code_spans::Collector>, plan: &function_analysis::FunctionAnalysis,
+        selected: Option<usize>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
         let resumable = self.resumable.is_some();
         let mut words = vec![];
         #[cfg(test)]
@@ -535,8 +549,7 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
-        let plan = self.analyze_function(f);
-        let function_analysis::FunctionAnalysis { reads, values, fills, slots, starts } = &plan;
+        let function_analysis::FunctionAnalysis { reads, values, fills, slots, starts } = plan;
         let native = |pc| plan.native(f, pc, resumable);
         let mut entries = vec![None; f.code.len()];
         let mut internal_entries = vec![None; f.code.len()];
@@ -544,6 +557,7 @@ impl<'a> Jit<'a> {
         let mut resumes = if resumable { vec![None; f.code.len() + 1] } else { vec![] };
         let mut links = vec![];
         let mut pc = 0;
+        let mut selection_seen = selected.is_none();
         while pc < f.code.len() {
             let start = pc;
             while pc < f.code.len()
@@ -556,6 +570,17 @@ impl<'a> Jit<'a> {
             {
                 pc += 1;
             }
+            if selected.is_some_and(|wanted| wanted != start) {
+                // Keep the full-function range-analysis work order. This is
+                // intentionally an offline equivalence model, not a runtime
+                // policy that reanalyzes prefixes on every demanded region.
+                if resumable && pc > start {
+                    let _ = range_groups::runtime_plan(f, start, pc, &mut range_work);
+                }
+                if pc == start { pc += 1; }
+                continue;
+            }
+            selection_seen = true;
             if pc - start >= if resumable { 1 } else { 3 } {
                 let offset = words.len() * 4;
                 let mut a = Assembler {
@@ -757,11 +782,19 @@ impl<'a> Jit<'a> {
                 pc += 1;
             }
         }
+        if !selection_seen {
+            return Err(EmitError::InvalidRelocation("selected PC is not a planned region start"));
+        }
+        if selected.is_some() && words.is_empty() { return Ok(None); }
+        #[cfg(test)]
+        let region_links = links.clone();
         for (at, successor, fallback) in links {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+            #[cfg(test)] region_links,
+            #[cfg(test)] internal_entries,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),
