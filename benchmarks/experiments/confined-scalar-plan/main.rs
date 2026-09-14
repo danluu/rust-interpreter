@@ -2,6 +2,7 @@
 pub use rust_interp_bytecode::*;
 use serde_json::json;
 #[path="../../../crates/bytecode/src/registers.rs"] mod registers;
+#[path="../../../crates/bytecode/src/register_init.rs"] mod register_init;
 mod proof;
 
 fn main() {
