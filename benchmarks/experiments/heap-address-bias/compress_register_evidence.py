@@ -14,7 +14,7 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from compression_probe import metadata
 
-NAME='closed-diagnostic-json-compression-07'
+NAME='closed-diagnostic-json-compression-08'
 # Exact completed experiments from this runtime workstream. No recursive cache,
 # executable, bytecode, source, private-workload or peer-workspace selection.
 PROFILE_SCOPES=[]
@@ -68,15 +68,14 @@ def main():
                     selected=[(summary['raw']+'/'+str(index)+'-code/operations.json',row['operation_map_sha256'])]
                 for relative,digest in selected:
                     assert relative not in sources;sources[relative]=digest
-        for name in ['current-runtime-boundaries-02','guarded-local-facts-census-01',
-                     'guarded-local-facts-static-census-01','guarded-local-facts-composed-census-01']:
+        for name in ['current-runtime-boundaries-02','guarded-local-facts-static-census-01','guarded-local-facts-composed-census-01']:
             result=ROOT/'results'/name;summary_path=result/'summary.json';summary=json.loads(summary_path.read_text())
             assert summary['status']=='passed' and summary['raw']=='.work/'+name
             raw=ROOT/summary['raw'];plan_path=raw/'plan.json';records_path=raw/'records.json'
             assert sha(plan_path)==summary['plan_sha256'] and sha(records_path)==summary['records_sha256']
             assert json.loads(plan_path.read_text())['owner']==str(ROOT)
             records=json.loads(records_path.read_text());assert len(records)==summary['commands'] and all(r['returncode']==0 for r in records)
-            terminal_path=result/'terminal.json';terminal=json.loads(terminal_path.read_text())
+            terminal_path=ROOT/'.work/experiments'/name/'status.json';terminal=json.loads(terminal_path.read_text())
             assert terminal['owner']==str(ROOT) and terminal['status']=='finished' and terminal['returncode']==0
             assert hashlib.sha256(subprocess.check_output(['git','show',revision+':'+str(summary_path.relative_to(ROOT))])).hexdigest()==sha(summary_path)
             for item in [summary_path,plan_path,records_path,terminal_path]:proofs[str(item.relative_to(ROOT))]=sha(item)
@@ -86,7 +85,7 @@ def main():
             else:
                 assert summary['frozen_inputs_verified'] and len(summary['cases'])==3
                 for row in summary['cases']:sources[summary['raw']+'/'+str(row['index'])+'-census.json']=row['census_sha256']
-        assert len(sources)==24
+        assert len(sources)==21
         inventory=[]
         for relative,digest in sorted(sources.items()):
             source=ROOT/relative;before=metadata(source)
@@ -96,7 +95,7 @@ def main():
             inventory.append(dict(path=relative,sha256=digest,before=before))
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
             script_sha256=sha(Path(__file__)),proofs=proofs,files=inventory,
-            scope='Only 24 exact closed runtime profile, operation-map and census JSON files. Every logical hash is bound by a committed passed summary, an owned raw plan and three or six completed command records. The scalar run also has a closed full artifact/hash audit. Preserve readable bytes, length, mode, ownership and mtime; verify staged copies before atomic replacement. No executable, RBC, source, active cache or peer file. Global lock and exact open-file checks.'))
+            scope='Only 21 exact closed runtime profile, operation-map and census JSON files. Every logical hash is bound by a committed passed summary, an owned raw plan and three or six completed command records. The scalar run also has a closed full artifact/hash audit. Preserve readable bytes, length, mode, ownership and mtime; verify staged copies before atomic replacement. No executable, RBC, source, active cache or peer file. Global lock and exact open-file checks.'))
         before_free=shutil.disk_usage(ROOT).free;rows=[]
         for item in inventory:
             require_space(ROOT,10);source=ROOT/item['path'];before=item['before'];digest=item['sha256']
