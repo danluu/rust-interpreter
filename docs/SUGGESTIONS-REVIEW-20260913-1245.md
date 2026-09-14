@@ -206,3 +206,16 @@ variation to scalar emission. Scalar native bodies shrink 14.5% in token block,
 computations and duplicated arithmetic-result/overflow calculations in saved
 real scalar bodies before picking the next revision.
 [Primary assessment](../results/scalar-dead-registers-screen-token-01/ASSESSMENT.md).
+
+Follow-up through 23:43: the width-alias candidate passes 600 workspace tests in
+each profile, 22 native/Call controls, 121 strict commands and six exact profiles,
+but its primary fails (wall 1.028289, CPU 0.987340; A/A wall 0.040899). Park it.
+The preceding no-constant census prevented an unnecessary constant folder;
+117 million modeled pack/cast aliases still did not establish an end-to-end win.
+The load comparison is mixed (+2 input loads, -1 stack load/store in the hottest
+whole body), so it does not establish the timing cause. Next examine the private
+native Call ABI: keep the VM's three live pointer registers intact and address
+captured arguments/private Output through its fixed host-stack layout. Retain
+strict checking, original artifacts, guards, faults and transaction accounting.
+[Width primary](../results/scalar-width-aliases-screen-token-01/ASSESSMENT.md),
+[static loads](../results/scalar-width-aliases-screen-token-01/load-observations.json).
