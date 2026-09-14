@@ -17,7 +17,8 @@ from compression_probe import metadata
 NAME='closed-diagnostic-json-compression-02'
 # Exact completed experiments from this runtime workstream. No recursive cache,
 # executable, bytecode, source, private-workload or peer-workspace selection.
-SCOPES=[('native-indirect-screen-token-01',['native-indirect-profile-01'])]
+SCOPES=[('native-indirect-screen-token-01',['native-indirect-profile-01']),
+        ('heap-address-screen-token-01',['guarded-local-facts-profile-01'])]
 
 def no_open_file(path):
     result=subprocess.run(['lsof','-Fpn','--',str(path)],text=True,capture_output=True)
