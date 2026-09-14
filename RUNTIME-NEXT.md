@@ -19,11 +19,20 @@ guest peak memory and entropy. Production retained liveness is complete; earlier
 three-pair-only storage estimates are superseded. Corrected captured plan payload
 is 11.82/14.80 MB for token block/exhaustive and 2.15 MB for folded.
 
-Next manual direction: inspect region execution on the current full parser,
-where oversized functions were declined by whole-function emission. Use fresh
-adopted record/replay profiles and a demand replay to establish changed native
-coverage, not another performance guard for the parked broad policy. Then choose
-whether a policy limited to large functions has enough evidence to prototype.
+The current full-parser diagnostic is closed: three fresh-owner profiles preserve
+exact original counts, memory and entropy. Demand moves 96.12% of `reduce_cold`
+work into native regions and reduces total interpreted work by 79.13%. The arena
+is only 48 bytes below its unchanged 16 MiB limit; compact surrounding functions
+matter. This establishes coverage, not latency improvement.
+[Parser coverage](results/demand-large-function-profile-01/assessment.md).
+
+Next manual direction: prototype a generic program-level policy enabling demand
+only if any function exceeds the existing 65,536-PC CFG-analysis bound. Retain
+eager preparation for other programs and branch on the effective JIT mode in the
+VM loop. Full validation and immutable prepared-owner options remain mandatory.
+Qualify fresh controls, exact eager captures, strict/cache outcomes and original
+profiles before a fresh parser-primary changed-source comparison and regression
+guards. Do not rerun the parked broad token campaign.
 The closed failed screen's compiler intermediates are retired (3,147 files,
 1.91 GB logical; all 2,531 protected hashes unchanged). Raw evidence, artifacts,
 executables and the shared build target are preserved.
