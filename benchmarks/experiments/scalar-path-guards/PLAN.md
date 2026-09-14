@@ -54,3 +54,14 @@ new path-model controls and all 22 existing Call/private-store/native-reference
 controls. Two commands, no saved-workload execution or timing. Existing native
 reference tests may publish their already implemented code; the new direct-effect
 path uses only this project's scalar evaluator and produces no machine code.
+
+The first model passes all 31 controls per profile. Its closed exact census and
+adopted join cover 138/1,561 block samples, but the sparse-set guard slice includes
+75/80 live nodes. Recomputing those nodes in the commit phase is undesirable.
+For model-02 retain every evaluated guard SSA value in the per-attempt certificate
+and skip just those computations/selected phis during commit. Do not cache across
+Calls or allow guest mutations between certification and commit. Uncached reads
+and all stores remain in original order; every original PC still counts.
+Add a full-u128 pointer-value control that asserts the address-producing read is
+performed once and an overlapping post-store payload read still executes. Run
+all 32 Call-model controls in both profiles, including the prior 22 references.

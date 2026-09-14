@@ -132,7 +132,7 @@ impl<'a> Context<'a> {
             let (outcome,stores)=if self.path_guarded {
                 let Ok(certificate)=plan.check_path_entry(&inputs,base,memory) else {record(false);return Ok(None);};
                 let shadow=RefCell::new(&mut *memory);let written=Cell::new(0usize);
-                let outcome=plan.evaluate_effects(&inputs,base,budget as usize,&f.name,
+                let outcome=plan.evaluate_path_effects(&certificate,&inputs,base,budget as usize,&f.name,
                     &mut |a,n|shadow.borrow().load(a as usize,n as usize),
                     &mut |a,v,n|{shadow.borrow_mut().store(a as usize,n as usize,v)?;written.set(written.get()+1);Ok(())});
                 match outcome {

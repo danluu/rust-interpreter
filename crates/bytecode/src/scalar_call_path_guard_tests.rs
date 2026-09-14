@@ -112,3 +112,22 @@ fn bounded_store_admission_keeps_the_original_fallback() {
     for count in [16,17] {let mut code=prefix();code.extend((0..count).map(|_|Op::Store{address:1,src:4,size:8}));code.push(Op::Return);
         let p=fixture(code);let args=[tag+16,tag+40];assert_eq!(compare(&p,&args,100,65536,8).commits,usize::from(count==16));budgets(&p,&args);}
 }
+
+#[test]
+fn certified_wide_values_are_reused_while_payload_reads_keep_effect_order() {
+    let tag=crate::heap::TAG as u128;let pointer=(1u128<<100)|(tag+64);
+    let mut code=prefix();code.extend([load(5,1,16),Op::Store{address:5,src:4,size:8},load(7,5,8),
+        local(6,0),Op::Store{address:6,src:5,size:16},Op::Return]);
+    let mut p=fixture(code);p.statics[16..32].copy_from_slice(&pointer.to_le_bytes());
+    let args=[tag+16,0];assert_eq!(compare(&p,&args,100,65536,8).commits,1);budgets(&p,&args);
+    let memory=Memory{bytes:vec![0;80].into(),heap:crate::heap::Heap::with_statics(&p.statics,128),
+        limit:65536,readonly_end:32,peak:176,auxiliary_bytes:0};
+    let proof=crate::proof::memory_plan_transaction(&p,1,&mut crate::proof::MAX_GLOBAL_WORK.clone());
+    let plan=scalar_ir::lower(&p.functions[1],&proof,250_000).unwrap();let certificate=plan.check_path_entry(&args,80,&memory).unwrap();
+    let shadow=RefCell::new(memory);let reads=RefCell::new(vec![]);
+    let outcome=plan.evaluate_path_effects(&certificate,&args,80,100,&p.functions[1].name,
+        &mut |a,n|{reads.borrow_mut().push(a as usize);shadow.borrow().load(a as usize,n as usize)},
+        &mut |a,v,n|shadow.borrow_mut().store(a as usize,n as usize,v)).unwrap();
+    assert_eq!(outcome.pcs,certificate.pcs);assert_eq!(outcome.value,pointer);
+    assert_eq!(*reads.borrow(),[(tag+64) as usize],"only the post-store payload read may execute again");
+}

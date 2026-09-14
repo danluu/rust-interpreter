@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-path-guard-model-01'
+NAME='scalar-path-guard-model-02'
 def main():
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45)
@@ -22,7 +22,7 @@ def main():
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,target=str(target.relative_to(ROOT)),
             required_free_bytes=needed,allocated_target_bytes=allocated,minimum_child_gib=8,expected_commands=2,
-            controls_per_profile=31,new_path_controls=9,guest_commands=0,new_direct_native_publications=0,production_runtime_changes=0,performance_measurement=False))
+            controls_per_profile=32,new_path_controls=10,guest_commands=0,new_direct_native_publications=0,production_runtime_changes=0,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
              and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS']}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -38,12 +38,12 @@ def main():
             for stream,payload in [('stdout',out),('stderr',err)]:(work/(label+'.'+stream)).write_text(payload)
             records.append(dict(label=label,command=cmd,pid=child.pid,returncode=child.returncode,seconds=time.time()-start,
                 stdout_sha256=sha(work/(label+'.stdout')),stderr_sha256=sha(work/(label+'.stderr'))));write(work/'records.json',records)
-            assert child.returncode==0 and 'test result: ok. 31 passed; 0 failed; 0 ignored;' in out,(out+err)[-6500:]
+            assert child.returncode==0 and 'test result: ok. 32 passed; 0 failed; 0 ignored;' in out,(out+err)[-6500:]
             assert all(sha(ROOT/p)==h for p,h in frozen.items());print(label,'PASS',flush=True)
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',commands=2,controls_per_profile=31,new_path_controls=9,
+        write(out/'summary.json',dict(status='passed',commands=2,controls_per_profile=32,new_path_controls=10,
             setup_seconds=sum(r['seconds'] for r in records),raw=str(work.relative_to(ROOT)),source_revision=revision,
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),guest_commands=0,
             new_direct_native_publications=0,production_runtime_changes=0,performance_measurement=False,
-            scope='Test-only path certificate followed by own scalar evaluator direct effects. Nine new complete-VM controls and twenty-two retained scalar Call controls, including existing native references. No original-workload or direct-native performance claim.'))
+            scope='Test-only path certificate followed by own scalar evaluator direct effects. Ten new complete-VM controls and twenty-two retained scalar Call controls, including existing native references. No original-workload or direct-native performance claim.'))
 if __name__=='__main__':main()
