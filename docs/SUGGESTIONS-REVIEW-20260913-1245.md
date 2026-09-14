@@ -136,3 +136,13 @@ and parked: its real screen saved about 170 ms execution while adding about
 144 ms Cargo work. Do not repeat it unchanged. Any new runtime-only scalar
 lowering must establish a separate safety contract and measure its preparation
 cost inside complete edited-source commands.
+
+Follow-up through 18:47: reread the same suggestions hash after restoration.
+The typed confined-leaf study now has a qualified runtime-only scalar reference
+IR. All 483 resolved functions are acyclic within its bounds; the hot selection
+retains 11.23M / 16.30M native calls. The five new reference controls pass alongside
+the 13 access controls in debug/release. Preserve V5 and avoid the parked V6
+exporter cost. Next qualify direct AArch64 emission and the unchanged-on-failure
+Call boundary, then use the original primary/full edit workflows. Node counts
+are not a native-time model. No new compiler ownership or worker setting follows.
+[Scalar evidence](../results/confined-scalar-ir-coverage-01/assessment.md).
