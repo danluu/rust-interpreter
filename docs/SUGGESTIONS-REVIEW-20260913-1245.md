@@ -291,3 +291,10 @@ Advance the same campaign through the held-outs, preserving all existing gates;
 no runtime adoption follows from the primary alone. Retire only completed case
 compiler caches between cases, preserving the recorded checkpoint and artifacts.
 [Full token result](../results/scratch-memory-values-edit-token-01/ASSESSMENT.md).
+
+The full folded held-out also passes all 154 commands: wall 0.968919, CPU
+0.975493, wall A/A 0.014842, wall margin 0.983761. Candidate/native is 0.918104.
+Both completed cases are closed in the same campaign; advance to pgrust before
+private rg-aot and the resource-intensive Nushell guard. Full and edited parser
+qualification remain necessary for adoption.
+[Folded result](../results/scratch-memory-values-edit-folded-01/ASSESSMENT.md).
