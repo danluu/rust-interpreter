@@ -57,9 +57,12 @@ justify its own implementation or timing. Current Call/Return costs point to
 frame handling. The virtual-zero census admits 15 additional leaves but covers
 no current transition samples, so that policy stays parked. The typed current-call join is closed. The read-only scalar model passes 48 controls and covers 95 block samples
 across transitions and bodies, with none in exhaustive. The native prototype now passes 359 bytecode tests per profile, admits
-392 functions and preserves 71 existing scalar bodies byte-for-byte. Next build
-and qualify an immutable candidate before the changed-source screen; no speedup
-is yet established. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+392 functions and preserves 71 existing scalar bodies byte-for-byte. The immutable
+candidate passes 622 workspace tests/profile, 407 Python tests (22 skips), all
+121 strict/cache commands and three original profiles. Token block scalar Calls
+rise from 11.23 to 18.95 million with exact logical counts, memory and entropy.
+Next run the changed-source screen against the adopted VM with scalar Calls in
+both arms; no speedup is yet established. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only

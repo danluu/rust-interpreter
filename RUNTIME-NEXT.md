@@ -24,9 +24,12 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    42 transition / 53 body block samples and none in exhaustive. The native prototype passes 359 bytecode tests/profile after an uncovered
    heap-free ABI issue was corrected. Actual emission admits 392 functions and
    preserves all 71 existing scalar bodies byte-for-byte, covering 94 block
-   samples. Build an immutable candidate, qualify strict/cache behavior and
-   original profiles, then use a fresh changed-source screen against adopted
-   tool df4006e0 with scalar Calls enabled in both arms.
+   samples. Immutable candidate cb47107b9d64 now passes 622 workspace tests/profile,
+   407 Python tests (22 skips), 121 strict/cache commands and three original
+   profiles against three exactly bound adopted controls. Token block scalar
+   Calls rise by 7.73 million with exact logical counts, memory and entropy.
+   Use a fresh changed-source screen against adopted tool df4006e0 with scalar
+   Calls enabled in both arms.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
    [current protocol costs](results/scalar-protocol-census-03/assessment.md),
@@ -34,7 +37,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    [current callee costs](results/current-call-shapes-01/assessment.md),
    [read-only model](results/scalar-readonly-census-01/assessment.md),
    [native controls](results/scalar-readonly-native-controls-02/assessment.md),
-   [native census](results/scalar-readonly-native-census-01/assessment.md).
+   [native census](results/scalar-readonly-native-census-01/assessment.md),
+   [build](results/scalar-readonly-native-build-01/ASSESSMENT.md),
+   [strict qualification](results/scalar-readonly-native-qualification-01/ASSESSMENT.md),
+   [original profiles](results/scalar-readonly-native-profile-01/ASSESSMENT.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
