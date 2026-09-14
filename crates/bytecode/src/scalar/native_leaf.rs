@@ -282,7 +282,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
                 Effect::Trap(_)=>{a.cmp(31,31);a.fail(0);},
                 Effect::Return(value)=>{
                     // A zero-byte result has no destination or readable lane.
-                    if !optimize_commit || plan.nodes[*value].width!=0 {
+                    if !optimize_commit || plan.result_size!=0 {
                         a.get(9,*value,false);a.get(10,*value,true);a.output_store(9,0);a.output_store(10,8);
                     }
                     a.stack(true);a.mov(status,31);a.emit(0xd65f03c0);

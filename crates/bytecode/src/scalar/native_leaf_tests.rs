@@ -300,7 +300,20 @@ fn native_scalar_call_frame_abi_preserves_live_pointers_and_private_failure_outp
                 [0x1357,0x2468,0x3579,0x468a,0x579b,0x68ac,0x79bd,0x8ace,0x9bdf,0xace0]);assert_eq!(actual[5],actual[6]);
         }}
     }
-    let p=program(vec![Op::Return],0,vec![],Slot{offset:0,size:0});let mut large=make_plan(&p);
+    let p=program(vec![Op::Return],0,vec![],Slot{offset:0,size:0});let empty=make_plan(&p);
+    // Empty return and a nonempty integer zero share a width-one SSA constant.
+    // Only the declared result size permits omitting the private result stores.
+    let Effect::Return(id)=empty.effects[0] else {panic!()};assert_eq!(empty.nodes[id].width,1);
+    for profiled in [false,true] {
+        let mut code=memory::Code::reserve(MAX_CODE_BYTES).unwrap();
+        code.append(&call_wrapper(&empty,profiled,0).words).unwrap();
+        let mut output=Output{value:u128::MAX,steps:123,visited:[456;8]};
+        let status=unsafe {code.call(0,std::ptr::NonNull::<u128>::dangling().as_ptr(),16,
+            std::ptr::from_mut(&mut output).cast(),100,0,std::ptr::null_mut(),0,std::ptr::null_mut())};
+        assert_eq!(status,0);assert_eq!(output.value,u128::MAX);assert_eq!(output.steps,1);
+        assert_eq!(output.visited,if profiled {[1,0,0,0,0,0,0,0]} else {[456;8]});
+    }
+    let mut large=make_plan(&p);
     for _ in 0..2040 {large.nodes.push(Node{value:Value::Pack(vec![]),width:16,pc:None});large.live.push(true);}
     assert!(emit(&large,false).is_ok());
     assert!(matches!(emit_call(&large,false),Err("native_call_stack_limit")));

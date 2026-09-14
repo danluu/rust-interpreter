@@ -47,7 +47,7 @@ struct Block {start:usize,end:usize,successors:Vec<usize>,predecessors:Vec<usize
 pub struct Plan {
     nodes:Vec<Node>, blocks:Vec<Block>, at:Vec<usize>, computations:Vec<Vec<Id>>,
     effects:Vec<Effect>, live:Vec<bool>, reachable:Vec<bool>,
-    pub maximum_steps:usize, pub success_steps:Option<usize>, pub work:usize,
+    pub maximum_steps:usize, pub success_steps:Option<usize>, pub result_size:usize, pub work:usize,
 }
 #[derive(Debug, Serialize)]
 pub struct Summary {
@@ -200,7 +200,7 @@ pub fn lower(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static
     let maximum_steps=longest.into_iter().max().unwrap();
     let success_steps=(return_min==return_max).then_some(return_max);
     let mut b=Builder {plan:Plan{nodes:vec![],blocks,at,computations:vec![vec![];f.code.len()],effects:vec![Effect::None;f.code.len()],
-        live:vec![],reachable,maximum_steps,success_steps,work:0},constants:HashMap::new(),bases:HashMap::new(),roots:vec![],pc:0,limit};
+        live:vec![],reachable,maximum_steps,success_steps,result_size:f.result.size,work:0},constants:HashMap::new(),bases:HashMap::new(),roots:vec![],pc:0,limit};
     b.charge(f.code.len()+edges+f.registers+f.frame_size.max(1))?;
     let zero=b.constant(0)?;let mut entry=State{registers:vec![zero;f.registers],bytes:vec![Byte{value:zero,byte:0};f.frame_size.max(1)]};
     for (index,slot) in f.args.iter().enumerate() {
