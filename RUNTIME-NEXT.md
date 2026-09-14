@@ -28,8 +28,9 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    407 Python tests (22 skips), 121 strict/cache commands and three original
    profiles against three exactly bound adopted controls. Token block scalar
    Calls rise by 7.73 million with exact logical counts, memory and entropy.
-   Use a fresh changed-source screen against adopted tool df4006e0 with scalar
-   Calls enabled in both arms.
+   Its complete primary fails (wall 0.999836, CPU 0.999544, wall A/A 0.019585).
+   Park this revision and cancel larger comparisons; inspect actual emitted
+   read-only bodies and preparation costs before choosing the next candidate.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
    [current protocol costs](results/scalar-protocol-census-03/assessment.md),
@@ -38,9 +39,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    [read-only model](results/scalar-readonly-census-01/assessment.md),
    [native controls](results/scalar-readonly-native-controls-02/assessment.md),
    [native census](results/scalar-readonly-native-census-01/assessment.md),
-   [build](results/scalar-readonly-native-build-01/ASSESSMENT.md),
+   [build](results/scalar-readonly-native-build-01/assessment.md),
    [strict qualification](results/scalar-readonly-native-qualification-01/ASSESSMENT.md),
-   [original profiles](results/scalar-readonly-native-profile-01/ASSESSMENT.md).
+   [original profiles](results/scalar-readonly-native-profile-01/ASSESSMENT.md),
+   [failed primary](results/scalar-readonly-native-screen-token-01/ASSESSMENT.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
