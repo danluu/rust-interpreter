@@ -13,7 +13,7 @@ from workflow_io import capture,require_space,write_json as write
 
 
 def main():
-    name='scalar-call-guards-focused-01'
+    name='scalar-call-guards-focused-02'
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45)
         target=ROOT/'.work/fixed-frame-clear-combined-build-01/target'
@@ -31,12 +31,28 @@ def main():
         dependency=[*list((ROOT/'crates/bytecode').rglob('*.rs')),ROOT/'crates/bytecode/Cargo.toml']
         paths=[p for p in directory.iterdir() if p.suffix in ['.rs','.py','.md','.toml','.lock']]
         paths+=dependency+[ROOT/'Cargo.toml',ROOT/'Cargo.lock',prior_path,reference_path,artifact,ROOT/'scripts/workflow_io.py',ROOT/'scripts/compare_saved_runtime.py']
+        previous=ROOT/'.work/scalar-call-guards-focused-01'
+        previous_plan=json.loads((previous/'plan.json').read_text())
+        previous_records=json.loads((previous/'records.json').read_text())
+        assert len(previous_records)==1 and previous_records[0]['label']=='test-debug' and previous_records[0]['returncode']==0
+        for stream in ['stdout','stderr']:assert sha(previous/('test-debug.'+stream))==previous_records[0][stream+'_sha256']
+        assert '18 passed; 0 failed' in (previous/'test-debug.stdout').read_text()
+        for p in dependency+[ROOT/'Cargo.toml',ROOT/'Cargo.lock']:
+            assert sha(p)==previous_plan['frozen'][str(p.relative_to(ROOT))]
+        previous_terminal=ROOT/'results/scalar-call-guards-focused-01/terminal.json'
+        terminal=json.loads(previous_terminal.read_text())
+        assert terminal['status']=='finished' and terminal['returncode']==1 and terminal['owner']==str(ROOT)
+        # The first run passed debug and stopped at the release admission check.
+        # Reuse only that exact debug result; run the missing release profile.
+        paths += [previous/'plan.json',previous/'records.json',previous/'test-debug.stdout',previous/'test-debug.stderr',previous_terminal,
+                  previous_terminal.with_name('summary.json'),previous_terminal.with_name('closure.json')]
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
         assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip()
         work=ROOT/'.work'/name;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=revision,frozen=frozen,target=str(target.relative_to(ROOT)),
             same_source_root=True,shared_target_allocated_bytes=allocated,required_free_bytes=needed,
+            retained_debug_run='scalar-call-guards-focused-01',retained_debug_records_sha256=sha(previous/'records.json'),
             tests_per_profile=18,synthetic_native_call_controls=9,original_project_guest_commands=0,guest_commands=0,runtime_changes=1,minimum_child_gib=8))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_','CARGO_'))
              and k not in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER','RUST_TEST_THREADS']}
@@ -56,13 +72,16 @@ def main():
             assert all(sha(ROOT/p)==h for p,h in frozen.items())
             return out
         common=['--locked','--offline','--jobs','2','--manifest-path',ROOT/'Cargo.toml','--target-dir',target,'-p','rust-interp-bytecode','--lib']
-        for profile,extra in [('debug',[]),('release',['--release'])]:
+        for profile,extra in [('release',['--release'])]:
             out=invoke('test-'+profile,['cargo','+nightly-2026-09-08','test',*extra,*common,'native_scalar_'])
             assert '18 passed; 0 failed' in out and 'native_scalar_call_matches_complete_vm_aliases_profiles_and_peak_memory' in out
             print(profile,'18 native body/transaction controls PASS',flush=True)
         result=ROOT/'results'/name;result.mkdir(exist_ok=False)
-        write(result/'summary.json',dict(status='passed',tests={'debug':18,'release':18},commands=2,
-            setup_seconds=sum(r['finished_at']-r['started_at'] for r in records),
+        new_seconds=sum(r['finished_at']-r['started_at'] for r in records)
+        old_seconds=previous_records[0]['finished_at']-previous_records[0]['started_at']
+        write(result/'summary.json',dict(status='passed',tests={'debug':18,'release':18},commands=1,retained_debug_commands=1,
+            retained_debug_run='scalar-call-guards-focused-01',retained_debug_records_sha256=sha(previous/'records.json'),
+            setup_seconds=new_seconds+old_seconds,new_setup_seconds=new_seconds,retained_setup_seconds=old_seconds,
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),raw=str(work.relative_to(ROOT)),
             original_project_guest_commands=0,production_runtime_changes=1,performance_measurement=False))
 
