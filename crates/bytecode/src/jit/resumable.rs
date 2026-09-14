@@ -90,8 +90,39 @@ impl Entries {
         self.owned[id] = entries;
         self.pointers[id] = self.owned[id].as_ptr();
     }
+    // Demand preparation allocates this table once, before any entry can run.
+    // Its missing slots are ordinary null-entry VM fallbacks.
+    #[allow(dead_code)]
+    pub(super) fn reserve_empty(&mut self, id: usize, code_len: usize) -> Result<bool, String> {
+        if id >= self.owned.len() || code_len == 0 { return Err("invalid demand resume table".into()); }
+        if !self.pointers[id].is_null() || !self.owned[id].is_empty() {
+            return Err("demand resume table already published".into());
+        }
+        if !self.fits(code_len) { return Ok(false); }
+        let mut entries = vec![];
+        if entries.try_reserve_exact(code_len + 1).is_err() { return Ok(false); }
+        entries.resize(code_len + 1, 0);
+        self.publish(id, entries);
+        Ok(true)
+    }
+    // Acquire before code commit. The caller writes a checked published native
+    // continuation afterwards, outside execution, without further fallible work.
+    #[allow(dead_code)]
+    pub(super) fn vacant_entry(&mut self, id: usize, pc: usize) -> Result<&mut usize, String> {
+        let table = self.owned.get_mut(id).ok_or("invalid demand resume function")?;
+        // Keep the one-past-code continuation permanently null.
+        if pc.checked_add(1).is_none_or(|next| next >= table.len()) {
+            return Err("invalid demand resume PC".into());
+        }
+        let entry = &mut table[pc];
+        if *entry != 0 { return Err("demand resume entry already published".into()); }
+        Ok(entry)
+    }
     pub(super) fn published(&self, id: usize) -> &[usize] { &self.owned[id] }
 }
+
+#[cfg(test)]
+mod table_tests;
 
 #[repr(C)]
 struct ResumeCursor {
