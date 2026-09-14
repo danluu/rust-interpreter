@@ -67,12 +67,12 @@ def main():
             assert matches and all(int(failed)==0 for _,failed,_ in matches)
             passed=sum(int(passed) for passed,_,_ in matches);ignored=sum(int(ignored) for _,_,ignored in matches)
             assert (passed,ignored)==(581,10),(passed,ignored)
-            for name in ['scalar_call_transaction_matches_complete_vm_aliases_profiles_and_peak_memory',
+            for required_test in ['scalar_call_transaction_matches_complete_vm_aliases_profiles_and_peak_memory',
                          'scalar_call_transaction_declines_leave_all_guest_visible_memory_unchanged',
                          'native_scalar_2187_copy_cases_in_both_profile_modes',
                          'native_scalar_assertions_address_bits_and_host_registers_are_preserved',
                          'path_byte_oracle_checks_both_sides_of_cfg_joins']:
-                assert name+' ... ok' in out,name
+                assert required_test+' ... ok' in out,required_test
             totals[profile]=passed;print(profile,passed,'workspace controls PASS;',ignored,'ignored',flush=True)
         result=ROOT/'results'/name;result.mkdir(exist_ok=False)
         write(result/'summary.json',dict(status='passed',tests=totals,ignored_per_profile=10,commands=2,
