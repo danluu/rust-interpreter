@@ -18,12 +18,15 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    protocol observer now reconstructs all 409 / 440 Call/Return samples exactly;
    ordinary frame clearing accounts for 89 / 62. The virtual-zero census admits
    15 more leaves but covers no current transition samples; eight controls and
-   192 synthetic reference comparisons pass. Park that policy. Next join current
-   ordinary call targets to frame shapes and scalar declines, retaining the
-   earlier negative initialization/tree results before selecting a mechanism.
+   192 synthetic reference comparisons pass. Park that policy. The typed current-call join attributes 84 block transition samples to
+   targets first rejected for unknown reads. Next investigate a diagnostic
+   read-only scalar value graph with confined writes and checked read callbacks.
+   Count complete-plan and current-body coverage before native implementation.
+   Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
    [current protocol costs](results/scalar-protocol-census-03/assessment.md),
-   [virtual-zero result](results/scalar-virtual-zero-census-01/assessment.md).
+   [virtual-zero result](results/scalar-virtual-zero-census-01/assessment.md),
+   [current callee costs](results/current-call-shapes-01/assessment.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
