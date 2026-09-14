@@ -41,12 +41,20 @@ are preserved; the third binds/reuses the exact passed debug command.
 [eager profiles](results/conditional-demand-profile-01/assessment.md),
 [parser profiles](results/conditional-demand-parser-profile-01/assessment.md).
 
-Next: admit the preregistered 40-command full-parser primary after safe closed-cache
-retirement. Nineteen protocol controls pass. It keeps all 114 tests, five genuine
-edits, wrong/restored states and five arms (adopted, duplicate, candidate, native,
-fixed historical parser anchor). Only a primary pass permits larger histories and
-regression guards. The old broad token campaign remains parked.
-[Protocol](results/conditional-demand-parser-protocol-01/assessment.md).
+Conditional candidate 4cdd305b692c is now parked after its complete 40-command
+parser primary. All 114 tests, wrong edits, artifact equality and restoration
+pass. Wall ratio 0.990058 fails against A/A 0.024913 (sum 1.014971); CPU ratio
+0.982804 passes. Candidate/native wall is 1.297122. Both envelopes are below 8%,
+so the verdict is failed, not unmeasurable. Larger histories and held-out guards
+remain unstarted. The old broad token campaign remains parked.
+[Primary](results/conditional-demand-parser-screen-incremental-01/assessment.md),
+[protocol](results/conditional-demand-parser-protocol-01/assessment.md).
+
+Next: audit retained complete-suite JIT/preparation counters, per-worker code
+pressure and launch stages to choose a new mechanism. Fresh-owner coverage alone
+does not represent the two prepared workers' entire 114-test history. No repeated
+timing or relaxed gate follows. The completed Nushell Cargo-check cache retired
+1.64 GB of compiler intermediates with all 9,574 protected hashes unchanged.
 The closed failed screen's compiler intermediates are retired (3,147 files,
 1.91 GB logical; all 2,531 protected hashes unchanged). Raw evidence, artifacts,
 executables and the shared build target are preserved.
