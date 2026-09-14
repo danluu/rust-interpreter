@@ -60,6 +60,8 @@ mod memory_parts;
 #[cfg(test)]
 mod emission_stages;
 #[cfg(test)]
+mod immutable_reads;
+#[cfg(test)]
 mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
@@ -679,6 +681,8 @@ impl<'a> Jit<'a> {
                 let body_end = pc-usize::from(terminal.is_some());
                 for (index, op) in f.code[start..body_end].iter().enumerate() {
                     a.current_pc = start + index;
+                    #[cfg(test)]
+                    immutable_reads::observe(op, &a.facts, &self.program.data, start + index);
                     #[cfg(test)]
                     a.memory_parts.begin(op, start + index, start, pc, a.heap);
                     if let Op::Assert { value, expected, message } = op {
