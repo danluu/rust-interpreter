@@ -16,13 +16,14 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
 2. The source/narrow-Copy observer passes 22 controls and exact reconstruction,
    but covers only 22 / 1 actual load samples. It stays parked. The scalar-aware
    protocol observer now reconstructs all 409 / 440 Call/Return samples exactly;
-   ordinary frame clearing accounts for 89 / 62. Next census whether the existing
-   scalar graph's virtual zero initialization can cover leaf targets rejected
-   only by the memory plan's initialization prerequisite. Preserve confinement,
-   bounds, widths, effects, control-flow and work limits; count actual sample
-   coverage before any production change.
+   ordinary frame clearing accounts for 89 / 62. The virtual-zero census admits
+   15 more leaves but covers no current transition samples; eight controls and
+   192 synthetic reference comparisons pass. Park that policy. Next join current
+   ordinary call targets to frame shapes and scalar declines, retaining the
+   earlier negative initialization/tree results before selecting a mechanism.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
-   [current protocol costs](results/scalar-protocol-census-03/assessment.md).
+   [current protocol costs](results/scalar-protocol-census-03/assessment.md),
+   [virtual-zero result](results/scalar-virtual-zero-census-01/assessment.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing

@@ -54,8 +54,10 @@ or isolated scratch-cache speedup is claimed.
 Fresh owned native-PC samples and exact memory/call protocol reconstruction are
 closed. The scratch source/width extension has too little sampled coverage to
 justify its own implementation or timing. Current Call/Return costs point to
-frame handling; next census whether existing scalar virtual zeros can represent
-more confined leaves. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+frame handling. The virtual-zero census admits 15 additional leaves but covers
+no current transition samples, so that policy stays parked. Next join current
+ordinary call targets to frame shapes and scalar declines before selecting a
+new mechanism. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only
