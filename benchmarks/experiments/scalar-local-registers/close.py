@@ -38,6 +38,13 @@ def main():
             assert {r['label'] for r in records if r['returncode']!=0}==expected
             assert summary['commands']==len(records)
         assert sha(raw/'plan.json')==summary['plan_sha256'] and sha(raw/'records.json')==summary['records_sha256']
+        if 'census_sha256' in summary:
+            assert sha(raw/'storage.json')==summary['census_sha256']
+            assert sha(raw/'references.json')==summary['references_sha256']
+            census=json.loads((raw/'storage.json').read_text())
+            assert census['status']=='passed' and len(census['functions'])==478
+            assert census['old_bodies_reconstructed']==71
+            assert census['guest_commands']==census['executable_code_publications']==0
     else:
         assert not (dest/'summary.json').exists()
         write(dest/'summary.json',dict(status='failed',source_revision=revision,commands=len(records),
