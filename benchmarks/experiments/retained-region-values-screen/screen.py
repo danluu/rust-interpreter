@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Primary-first changed-source screen for bounded private-store scalar Calls against adopted main."""
+"""Primary-first changed-source screen for retained region values against adopted main."""
 import argparse
 import hashlib
 import json
@@ -281,7 +281,7 @@ def main():
             cargo_workers=2, custom_suite_workers=2, native_test_threads='libtest default',
             custom_runner='prepared, fresh guest state per test',
             identity_lookup={m:lookup_args(m)[1] for m in CUSTOM},
-            composition='bounded private-store scalar Calls against adopted scratch/scalar VM; scalar Calls enabled in all cached arms; baseline/duplicate/candidate share cached lookup and automatic function cache',
+            composition='retained ordinary-region values against adopted scratch/scalar VM; scalar Calls enabled in all cached arms; baseline/duplicate/candidate share cached lookup and automatic function cache',
             cycles=1, edited_pairs=5, aa_pairs=5, expected_commands=40,
             schedule=[dict(cycle=s['cycle'], state=s['state'], phase=s['phase'],
                 source_sha256=hashlib.sha256(s['source']).hexdigest(), modes=s['modes']) for s in states],
