@@ -254,3 +254,12 @@ cost priority by reconstructing Copy subparts before another implementation.
 Keep old failed general-address candidates parked, preserve compiler ownership,
 and do not infer an end-to-end gain from sample shares.
 [Fresh samples](../results/scalar-runtime-sampling-01/ASSESSMENT.md).
+
+The fresh small-memory partition now reconstructs all 1,050/1,245 ordinary
+functions and 60/69 scalar bodies exactly, with six focused controls and no guest
+execution. Small Copy data loads contribute 171/98 samples; address selection
+159/65. This does not justify repeating the failed selector/address rewrites.
+Next census scratch-value availability at Copy loads, which the earlier Load-
+only observer did not query. Preserve original source/destination checks and
+full alias/clobber invalidation; no runtime change follows without coverage.
+[Memory parts](../results/scalar-memory-parts-01/ASSESSMENT.md).
