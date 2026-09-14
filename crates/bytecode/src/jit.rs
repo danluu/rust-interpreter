@@ -46,6 +46,9 @@ mod code_dump;
 mod code_spans;
 mod values;
 mod function_analysis;
+// Qualified separately before the demand VM loop uses region publication.
+#[allow(dead_code)]
+mod demand_links;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
