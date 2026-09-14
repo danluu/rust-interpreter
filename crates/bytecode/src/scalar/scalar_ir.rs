@@ -99,10 +99,26 @@ impl Builder {
             let width=states.iter().map(|(_,s)|self.plan.nodes[s.registers[reg]].width).max().unwrap();
             *value=self.phi(states.iter().map(|(b,s)|(*b,Slice{value:s.registers[reg],byte:0,size:16})).collect(),width,block)?;
         }
-        for (offset,byte) in result.bytes.iter_mut().enumerate() {
-            if states.iter().all(|(_,s)|s.bytes[offset]==*byte) {continue;}
-            let id=self.phi(states.iter().map(|(b,s)|{let v=s.bytes[offset];(*b,Slice{value:v.value,byte:v.byte,size:1})}).collect(),1,block)?;
-            *byte=Byte{value:id,byte:0};
+        let mut offset=0;
+        while offset<result.bytes.len() {
+            if states.iter().all(|(_,s)|s.bytes[offset]==result.bytes[offset]) {offset+=1;continue;}
+            // Merge a contiguous slice only when every predecessor supplies
+            // consecutive bytes of one value. Each source may start at a
+            // different byte; no slice crosses the 16-byte value boundary.
+            let mut size=1usize;
+            while size<16 && offset+size<result.bytes.len() {
+                self.charge(states.len())?;
+                if !states.iter().all(|(_,s)| {
+                    let first=s.bytes[offset];let next=s.bytes[offset+size];
+                    let byte=usize::from(first.byte)+size;
+                    byte<16 && next.value==first.value && usize::from(next.byte)==byte
+                }) {break;}
+                size+=1;
+            }
+            let id=self.phi(states.iter().map(|(b,s)|{let v=s.bytes[offset];
+                (*b,Slice{value:v.value,byte:v.byte,size:size as u8})}).collect(),size as u8,block)?;
+            for byte in 0..size {result.bytes[offset+byte]=Byte{value:id,byte:byte as u8};}
+            offset+=size;
         }
         Ok(result)
     }
@@ -321,6 +337,10 @@ impl Plan {
 #[cfg(test)]
 #[path="scalar_ir_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path="byte_phi_tests.rs"]
+mod byte_phi_tests;
 
 #[path="native_leaf.rs"]
 pub mod native_leaf;

@@ -320,3 +320,17 @@ fn native_scalar_call_frame_abi_preserves_live_pointers_and_private_failure_outp
     let mut invalid=make_plan(&p);invalid.nodes.push(Node{value:Value::Input(64),width:8,pc:None});invalid.live.push(true);
     assert!(matches!(emit_call(&invalid,false),Err("native_argument_limit")));
 }
+
+#[test]
+fn native_contiguous_byte_phis_preserve_slices_and_private_call_abi() {
+    for width in [1,2,3,4,7,8,9,15,16] {for fragmented in [false,true] {
+        let (p,plan)=super::super::byte_phi_tests::fixture(width,16-width,0,fragmented);
+        for profiled in [false,true] {
+            let native=variants(&p,&plan,profiled);
+            for choose in [0,1] {for a in [0,u128::MAX,0x0123456789abcdef_fedcba9876543210] {
+                let args=[a,!a,choose];
+                for budget in 0..=plan.maximum_steps+1 {for n in &native {compare(&p,&plan,n,&args,budget);}}
+            }}
+        }
+    }}
+}
