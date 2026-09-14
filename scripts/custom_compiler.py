@@ -147,6 +147,10 @@ class Compiler:
     def host(self):
         return self.identity['host']
 
+    def revalidate(self, root):
+        require(load_compiler(root, self.key) == self, 'custom compiler changed')
+        return self
+
     def require_option(self, option):
         proof = self.identity.get('unstable_options')
         require(isinstance(proof, dict) and isinstance(proof.get('output'), str)

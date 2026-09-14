@@ -448,7 +448,7 @@ def prepare(root, compiler, namespace, run_id, lock_path, wait_seconds):
                 shutil.copytree(work / 'library', work / 'sysroot' / SOURCE, symlinks=False)
                 require(tree_files(work / 'sysroot') == expected, 'published std files differ')
                 prepared = probe('prepared', work / 'sysroot')
-                require(load_compiler(root, compiler.key) == compiler, 'compiler changed during std preparation')
+                compiler.revalidate(root)
                 require(configuration(root, os.environ) == configs and cargo_state(cargo) == guard,
                         'Cargo inputs changed during std preparation')
                 require(tree_files(source) == identity['source_files'] and

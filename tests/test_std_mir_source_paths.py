@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import custom_compiler as custom
+import runtime_compiler as runtime
 import std_mir
 import std_mir_source_paths as v2
 from verified_std_diagnostics import source_span_text
@@ -55,7 +56,8 @@ class StdSourcePathsTests(unittest.TestCase):
         self.stack.enter_context(patch.object(v2, 'configuration', return_value={}))
         self.stack.enter_context(patch.object(v2, 'cargo_identity', return_value=(self.cargo, self.guard)))
         self.stack.enter_context(patch.object(v2, 'cargo_state', return_value=self.guard))
-        self.stack.enter_context(patch.object(v2, 'load_compiler', return_value=self.compiler))
+        self.compiler_loader = self.stack.enter_context(
+            patch.object(custom, 'load_compiler', return_value=self.compiler))
         self.stack.enter_context(patch.object(v2, 'require_space'))
         self.stack.enter_context(patch.object(v2, 'acquire_lock'))
         self.commands = []
@@ -235,6 +237,7 @@ class StdSourcePathsTests(unittest.TestCase):
 
     def test_preparation_publishes_complete_readonly_sources_and_retains_actual_receipts(self):
         sysroot, _, key, ready = self.prepare()
+        self.compiler_loader.assert_called_once_with(self.root, self.compiler.key)
         self.assertEqual(len(self.commands), 3)
         self.assertFalse(ready['full_presentation_qualified'])
         self.assertEqual(v2.tree_files(sysroot), ready['sysroot_files'])
@@ -246,6 +249,43 @@ class StdSourcePathsTests(unittest.TestCase):
         with patch.object(v2, 'cargo_state', return_value={'changed': True}), \
              self.assertRaisesRegex(RuntimeError, 'Cargo changed'):
             v2.load(self.root, key, self.compiler, 'stable-cgu:off')
+
+    def test_final_runtime_revalidation_uses_runtime_policy(self):
+        self.compiler = runtime.RuntimeCompiler(self.compiler.key, self.compiler.sysroot, self.compiler.identity)
+        with patch.object(runtime, 'load_runtime_compiler', return_value=self.compiler) as load, \
+             patch.object(custom, 'load_compiler', side_effect=AssertionError('wrong compiler policy')), \
+             patch.object(v2, 'load_compiler', side_effect=AssertionError('direct legacy load')):
+            _, _, _, ready = self.prepare()
+        load.assert_called_once_with(self.root, self.compiler.key)
+        self.assertEqual(len(self.commands), 3)
+        self.assertFalse(ready['full_presentation_qualified'])
+
+    def test_changed_runtime_at_final_revalidation_keeps_failure_without_readiness(self):
+        self.compiler = runtime.RuntimeCompiler(self.compiler.key, self.compiler.sysroot, self.compiler.identity)
+        changed = runtime.RuntimeCompiler(self.compiler.key, self.compiler.sysroot / 'changed', self.compiler.identity)
+        with patch.object(runtime, 'load_runtime_compiler', return_value=changed) as load, \
+             self.assertRaisesRegex(RuntimeError, 'runtime compiler changed'):
+            self.prepare()
+        load.assert_called_once_with(self.root, self.compiler.key)
+        result = json.loads((self.root / '.work/attempt-one/result.json').read_text())
+        self.assertEqual(result['status'], 'failed')
+        self.assertEqual(result['commands'], 3)
+        self.assertEqual(len(result['retained_children']), 3)
+        self.assertFalse((Path(result['work']) / 'ready.json').exists())
+
+    def test_runtime_requires_exact_source_capability_before_children(self):
+        for index, capability in enumerate([None, v2.source_capability('c' * 40)]):
+            identity = copy.deepcopy(self.compiler.identity)
+            if capability is None:
+                del identity['provenance']['std_source_paths']
+            else:
+                identity['provenance']['std_source_paths'] = capability
+            self.compiler = runtime.RuntimeCompiler(self.compiler.key, self.compiler.sysroot, identity)
+            with patch.object(runtime, 'load_runtime_compiler') as load, \
+                 self.assertRaisesRegex(RuntimeError, 'qualified bootstrap source-path policy'):
+                self.prepare('unqualified-runtime-' + str(index))
+            load.assert_not_called()
+        self.assertEqual(self.commands, [])
 
     def test_changed_source_same_size_mtime_and_restored_permissions_is_rejected(self):
         sysroot, _, key, _ = self.prepare()

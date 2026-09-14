@@ -61,9 +61,15 @@ class CustomCompilerTests(unittest.TestCase):
         with patch.object(custom.subprocess, 'check_output') as probe, \
              patch.object(custom, 'file_digest') as hash_file:
             self.assertEqual(custom.load_compiler(self.root, self.compiler.key), self.compiler)
+            self.assertIs(self.compiler.revalidate(self.root), self.compiler)
         probe.assert_not_called()
         hash_file.assert_not_called()
         self.assertEqual(self.compiler.rustc, self.compiler.sysroot / 'bin/rustc')
+
+    def test_revalidation_rejects_changed_selected_identity(self):
+        selected = replace(self.compiler, sysroot=self.compiler.sysroot / 'different')
+        with self.assertRaisesRegex(RuntimeError, 'custom compiler changed'):
+            selected.revalidate(self.root)
 
     def test_recorded_help_proves_only_actual_options_and_legacy_keys_still_load(self):
         self.compiler.require_option('stable-cgu-partitioning')
@@ -110,6 +116,8 @@ class CustomCompilerTests(unittest.TestCase):
         self.assertEqual(path.stat().st_mtime_ns, original.st_mtime_ns)
         with self.assertRaisesRegex(RuntimeError, 'installation changed'):
             custom.load_compiler(self.root, self.compiler.key)
+        with self.assertRaisesRegex(RuntimeError, 'installation changed'):
+            self.compiler.revalidate(self.root)
 
     def test_extra_files_writable_installations_and_symlinks_are_rejected(self):
         self.compiler.sysroot.chmod(0o755)
