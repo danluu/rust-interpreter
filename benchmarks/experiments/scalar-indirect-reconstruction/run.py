@@ -1,5 +1,6 @@
 """Reconstruct memory subparts of two closed captures without executing guests."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -12,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
-NAME = 'scalar-indirect-reconstruction-01'
+NAME = 'scalar-indirect-reconstruction-02'
 
 
 def read(p):
@@ -34,8 +35,14 @@ def main():
         bindings_path = ROOT / closed['artifact_bindings']
         assert sha(bindings_path) == closed['artifact_bindings_sha256']
         paths = [closed_path, summary_path, bindings_path]
+        historical={}
         for p, h in read(bindings_path).items():
-            assert sha(ROOT / p) == h
+            if p.startswith(('.work/','results/')):
+                assert sha(ROOT / p) == h
+            else:
+                data=subprocess.check_output(['git','show',closed['source_revision']+':'+p])
+                assert hashlib.sha256(data).hexdigest()==h
+                historical[p]=dict(revision=closed['source_revision'],sha256=h)
             paths.append(ROOT / p)
         build_path = ROOT / 'results/scalar-indirect-build-01/summary.json'
         build = read(build_path)
@@ -62,7 +69,7 @@ def main():
         revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
         work = ROOT / '.work' / NAME
         work.mkdir(exist_ok=False)
-        write(work / 'plan.json', dict(owner=str(ROOT), source_revision=revision, frozen=frozen,
+        write(work / 'plan.json', dict(owner=str(ROOT), source_revision=revision, frozen=frozen, historical_source_bindings=historical,
             target=str(target.relative_to(ROOT)), same_source_root=True, required_free_bytes=needed,
             allocated_target_bytes=allocated, minimum_child_gib=8, expected_commands=2,
             guest_commands=0, executable_code_publications=0, production_runtime_changes=0, performance_measurement=False))
