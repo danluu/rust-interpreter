@@ -25,18 +25,34 @@ impl Liveness {
 }
 
 pub(super) struct Allocation {
+    // The full graph is an oracle for offline observers only. Production
+    // emission retains at most three liveness bits per PC after assignment.
+    #[cfg(test)]
     pub live: Liveness,
     pub registers: Vec<Reg>,
+    live_pairs: Vec<u8>,
 }
 impl Allocation {
     #[cfg(test)]
-    pub(super) fn storage_capacities(&self) -> [(&'static str, usize); 4] {
+    pub(super) fn storage_capacities(&self) -> [(&'static str, usize); 5] {
         [
-            ("liveness_bits", self.live.bits.capacity() * std::mem::size_of::<u64>()),
-            ("successor_vector_headers", self.live.successors.capacity() * std::mem::size_of::<Vec<usize>>()),
-            ("successor_elements", self.live.successors.iter().map(|v| v.capacity() * std::mem::size_of::<usize>()).sum()),
+            ("liveness_bits", 0),
+            ("successor_vector_headers", 0),
+            ("successor_elements", 0),
             ("register_assignments", self.registers.capacity() * std::mem::size_of::<Reg>()),
+            ("persistent_live_masks", self.live_pairs.capacity()),
         ]
+    }
+    #[cfg(test)]
+    pub(super) fn diagnostic_storage_bytes(&self) -> usize {
+        [
+            self.live.bits.capacity() * std::mem::size_of::<u64>(),
+            self.live.successors.capacity() * std::mem::size_of::<Vec<usize>>(),
+            self.live.successors.iter().map(|v| v.capacity() * std::mem::size_of::<usize>()).sum(),
+        ].into_iter().sum()
+    }
+    pub(super) fn live_pair_at(&self, pc: usize, index: usize) -> bool {
+        index < self.registers.len() && self.live_pairs.get(pc).is_some_and(|mask| mask & (1 << index) != 0)
     }
     pub(super) fn pair(&self, reg: Reg) -> Option<u32> {
         self.registers.iter().position(|&r| r == reg).map(|i| 23 + i as u32 * 2)
@@ -48,8 +64,14 @@ pub(super) fn analyze(f: &Function) -> Option<Allocation> {
 }
 fn analyze_with_work(f: &Function, max_work: usize) -> Option<Allocation> {
     let (live, ranked) = ranked(f, max_work)?;
-    let registers = ranked.into_iter().take(3).map(|(_, r)| r).collect();
-    Some(Allocation { live, registers })
+    let registers: Vec<_> = ranked.into_iter().take(3).map(|(_, r)| r).collect();
+    // Preserve the full-CFG fixed assignment, then project only its selected
+    // live-in bits. This costs at most 3 * MAX_PCS lookups after analysis.
+    let live_pairs = if registers.is_empty() { vec![] } else {
+        (0..f.code.len()).map(|pc| registers.iter().enumerate().fold(0u8, |mask, (index, &reg)|
+            mask | (u8::from(live.at(pc, reg)) << index))).collect()
+    };
+    Some(Allocation { #[cfg(test)] live, registers, live_pairs })
 }
 
 pub(super) fn ranked(f: &Function, max_work: usize) -> Option<(Liveness, Vec<(u64, Reg)>)> {
@@ -218,7 +240,7 @@ impl Assembler<'_> {
         // Fault exits only restore the host ABI: they cannot resume guest code.
         let Some(values) = self.values else { return; };
         for (index, &reg) in values.registers.iter().enumerate() {
-            if values.live.at(pc, reg) {
+            if values.live_pair_at(pc, index) {
                 let lo = 23 + index as u32 * 2;
                 self.raw_spill(reg, lo, lo + 1);
             }

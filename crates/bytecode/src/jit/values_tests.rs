@@ -79,7 +79,13 @@ fn bounded_liveness_matches_independent_path_search_on_seeded_graphs() {
                 if !outputs[pc].contains(&reg) { stack.extend(&edges[pc]); }
             }
             assert_eq!(a.live.at(start, reg), expected, "start={start} reg={reg}");
+            if let Some(index) = a.registers.iter().position(|&r| r == reg) {
+                assert_eq!(a.live_pair_at(start, index), expected, "compact start={start} reg={reg}");
+            }
         } }
+        assert!(a.live_pairs.len() <= n);
+        for index in 0..=3 { assert!(!a.live_pair_at(n, index)); }
+        assert!(!a.live_pair_at(0, a.registers.len()));
     }
 }
 
@@ -91,6 +97,7 @@ fn analysis_limits_decline_without_a_partial_assignment() {
     assert!(analyze(&function(vec![Op::Return; MAX_PCS + 1], 0)).is_none());
     assert!(analyze(&function(vec![Op::Return; 1025], MAX_REGISTERS)).is_none());
     assert!(analyze(&function(vec![Op::Return], 0)).unwrap().registers.is_empty());
+    assert!(analyze(&function(vec![Op::Return], 0)).unwrap().live_pairs.is_empty());
     let a = analyze(&function(vec![Op::Assert { value: 2050, expected: false, message: "far".into() }, Op::Return], 2051)).unwrap();
     assert!(a.live.at(0, 2050));
     assert!(!a.live.at(1, 2050));

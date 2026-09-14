@@ -16,7 +16,7 @@ fn inventory(plan: &FunctionAnalysis) -> BTreeMap<&'static str, usize> {
     ]);
     for (key, bytes) in plan.values.as_ref().map_or([
         ("liveness_bits", 0), ("successor_vector_headers", 0),
-        ("successor_elements", 0), ("register_assignments", 0),
+        ("successor_elements", 0), ("register_assignments", 0), ("persistent_live_masks", 0),
     ], values::Allocation::storage_capacities) { fields.insert(key, bytes); }
     fields
 }
@@ -55,6 +55,7 @@ fn observe_saved_analysis_storage() {
             "regions":plan.regions.len(), "guarded_regions":plan.regions.iter().filter(|r|r.range.is_some()).count(),
             "liveness_admitted":plan.values.is_some(), "fields":fields,
             "vector_box_and_inline_bytes":vector_and_box_bytes,
+            "excluded_test_only_liveness_buffer_bytes":plan.values.as_ref().map_or(0,values::Allocation::diagnostic_storage_bytes),
             "fill_map_entries":plan.fills.len(), "call_slot_map_entries":plan.slots.len(),
             "map_entry_tuple_bytes":plan.fills.len()*size_of::<(usize,LocalFill)>()
                 + plan.slots.len()*size_of::<(usize,Vec<Option<usize>>)>()}));
@@ -65,5 +66,5 @@ fn observe_saved_analysis_storage() {
         .open(std::env::var("STORAGE_OUTPUT").unwrap()).unwrap();
     serde_json::to_writer(file, &json!({"status":"passed", "artifact_sha256":format!("{:x}",Sha256::digest(&artifact)),
         "functions":rows, "guest_commands":0, "executable_code_publications":0,
-        "scope":"Owned Vec capacity bytes, boxed Plan payload and inline FunctionAnalysis. Map entry tuples reported separately; BTree node occupancy/links and allocator overhead excluded. Not RSS or a hard allocation bound. All validated functions, not encounter order or simultaneous runtime retention."})).unwrap();
+        "scope":"Retained Vec capacity bytes, boxed Plan payload and inline FunctionAnalysis in this test layout. Full liveness buffers exist only under cfg(test) for diagnostic oracles and are reported separately, excluded from retained payload. Inline count includes the test-only liveness header. Map entry tuples reported separately; BTree node occupancy/links and allocator overhead excluded. Not RSS or a hard allocation bound. All validated functions, not encounter order or simultaneous runtime retention."})).unwrap();
 }
