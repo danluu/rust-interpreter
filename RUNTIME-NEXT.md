@@ -20,7 +20,11 @@ two focused stable resume-table controls also pass in both profiles. Live demand
 preparation now passes 369 bytecode controls per profile and exact eager captures.
 Interleaved-region diagnostics now pass 373 controls per profile plus exact eager
 captures. Next expose the explicit mode and qualify workspace/strict controls
-and original profiles before changed-source timing. Runtime work
+and original profiles before changed-source timing. The first production build
+exposed incomplete arbitrary-register liveness retention masked by test-only
+graphs; its earlier compact storage estimates are superseded. The correction
+must pass full production builds and a new storage inventory before profiling.
+[Build failure and correction](results/demand-region-build-01/assessment.md). Runtime work
 stays on `experiment/demand-region-emission-20260914`; main retains its adopted VM.
 [Region coverage](results/demand-region-census-01/assessment.md),
 [cached staging](results/demand-region-cached-01/assessment.md),
