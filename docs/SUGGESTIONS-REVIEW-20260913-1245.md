@@ -304,3 +304,10 @@ CPU 0.994779, wall A/A 0.014998. Treat the small change as unchanged within
 control variation. Candidate/native is 0.846553. The three-case checkpoint
 admits private rg-aot; full parser coverage remains a separate obligation.
 [Pgrust hash result](../results/scratch-memory-values-edit-pgrust-01/ASSESSMENT.md).
+
+The private rg-aot guard passes 132 commands: wall 1.004840, CPU 1.008911,
+wall margin 1.032169 and CPU margin 1.015559. This is regression qualification,
+not an incremental speedup. Candidate/native is 0.409691. The four-case
+checkpoint contains 594 passed commands; Nushell remains last under its existing
+disk gate, with complete and edited-parser qualification still required.
+[Private aggregate](../results/scratch-memory-values-edit-rg-aot-01/ASSESSMENT.md).
