@@ -103,8 +103,8 @@ overrides and conflicting rustc/rustdoc selection.
    changed installed bytes, capacity interruption and retained failed attempts.
    The successor adds a fourteenth control that corrupts the copied driver before
    the first output stamp capture and requires rejection before any probe/ready
-   record. The destination-readback change and fourteen-control successor remain
-   unrun pending their fresh frozen control record.
+   record. The destination-readback change passed all fourteen controls at source
+   `2c92ae36`; the fresh evidence is `results/runtime-compiler-controls-02`.
 2. Freeze a real admitted runtime specification from completed runtime receipts,
    complete current native/source inventories and raw loader declarations. Include
    required support-tool bytes and their actual closure explicitly. Bind the
@@ -126,8 +126,11 @@ The original thirteen synthetic controls passed without skips in 0.273s; supervi
 46637/helper46640/test46642 held canonical admission from 1789344515.779358 to
 1789344516.1693618. Exact raw outputs, eight source snapshots, frozen manifest and
 supervisor/launch records are retained in `results/runtime-compiler-controls-01`.
-The historical source/evidence remain unchanged; that result does not qualify
-the new destination-readback repair. Source AST parsing and whitespace checks
+The historical source/evidence remain unchanged. The readback repair at
+`2c92ae36` subsequently passed fourteen controls without skips in 0.325s, under
+supervisor41323/helper41328/test41330 with canonical admission
+1789345082.696852–1789345083.0905862. Its separate raw/source/launch evidence is
+`results/runtime-compiler-controls-02`. Source AST parsing and whitespace checks
 also passed. No real runtime copy,
 compiler probe, native qualification, exporter rebuild, publication, benchmark
 or holdout workload has run. Synthetic passing controls do not qualify a real
