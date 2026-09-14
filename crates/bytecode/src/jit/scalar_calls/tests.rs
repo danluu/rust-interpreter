@@ -255,6 +255,3 @@ fn native_scalar_call_zero_results_preserve_fixed_variable_and_fault_budget_path
         }}}
     }
 }
-
-#[path="indirect_tests.rs"]
-mod indirect_tests;

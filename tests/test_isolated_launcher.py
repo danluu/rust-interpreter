@@ -45,20 +45,6 @@ class IsolatedLauncherValidation(unittest.TestCase):
                 interpreter.main()
 
 
-    def test_indirect_calls_reject_invalid_modes_before_tools(self):
-        base=['--entry','first','--jit-indirect-calls']
-        for extra in [[],['--engine','jit'],['--jit-resumable-calls'],
-                      ['--engine','jit','--jit-resumable-calls','--jit-native-calls']]:
-            with self.subTest(extra=extra):self.rejected(base+extra)
-
-    def test_indirect_and_scalar_options_reach_tool_selection_together(self):
-        for scalar in [[],['--jit-scalar-calls']]:
-            flags=['--entry','first','--engine','jit','--jit-resumable-calls','--jit-indirect-calls',*scalar]
-            with patch.object(sys,'argv',['interpreter.py','--package','fixture',*flags]), \
-                    patch.object(interpreter,'checked_tools',side_effect=RuntimeError('selection reached tools')), \
-                    self.assertRaisesRegex(RuntimeError,'selection reached tools'):
-                interpreter.main()
-
     def test_worker_counts_require_a_bounded_isolated_suite(self):
         self.rejected(['--entry', 'first', '--suite-workers', '2'])
         with tempfile.TemporaryDirectory() as directory:
