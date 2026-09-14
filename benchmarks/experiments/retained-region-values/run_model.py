@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
-NAME = 'retained-region-values-model-01'
+NAME = 'retained-region-values-model-02'
 
 
 def read(p):

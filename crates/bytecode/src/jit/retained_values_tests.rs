@@ -100,10 +100,10 @@ fn writes_and_partial_overlaps_invalidate_exact_origins_without_deferring_memory
                 else{Op::Copy{dst:1,src:7,size:partial.into()}};
             let f=fixture(vec![Op::Local{dst:0,offset:0},Op::Local{dst:1,offset:4},
                 Op::Store{address:0,src:2,size:width},Op::Load{dst:3,address:0,size:width},
-                Op::Load{dst:4,address:0,size:width},effect,
+                Op::Load{dst:4,address:0,size:width},Op::Load{dst:5,address:0,size:width},effect,
                 Op::Copy{dst:1,src:0,size:width.into()},Op::Load{dst:3,address:1,size:width},
                 Op::Load{dst:4,address:1,size:width},Op::Return]);
-            assert!(compare(&f)>0);
+            assert!(compare(&f)>0,"width={width} partial={partial} store={store}");
         }
     }}
 }
