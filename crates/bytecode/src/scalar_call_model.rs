@@ -23,6 +23,12 @@ impl Drop for Memory {
 }
 pub(crate) fn with_memory_snapshot<T>(run:impl FnOnce()->T)->(T,Option<(Vec<u8>,Vec<u8>)>) {
     struct Enabled;
+    impl Drop for Enabled {fn drop(&mut self) {SNAPSHOT_ENABLED.with(|s|s.set(false));SNAPSHOT.with(|s|s.borrow_mut().take());}}
+    assert!(!SNAPSHOT_ENABLED.with(|s|s.replace(true)));let _enabled=Enabled;
+    SNAPSHOT.with(|s|s.borrow_mut().take());
+    let result=run();let bytes=SNAPSHOT.with(|s|s.borrow_mut().take());(result,bytes)
+}
+struct Enabled;
 impl Enabled {
     fn new()->Self {ENABLED.with(|v|assert!(!v.replace(true)));STATISTICS.with(|v|v.set(Statistics::default()));Self}
 }
