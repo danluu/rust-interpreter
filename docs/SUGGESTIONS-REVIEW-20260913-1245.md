@@ -230,3 +230,16 @@ Next census zero-byte results and invariant successful-path step counts before
 changing private Call commit traffic. Keep runtime/compiler ownership separate,
 strict checking, two workers and the existing resource and timing gates.
 [Private ABI assessment](../results/scalar-call-frame-abi-screen-token-01/ASSESSMENT.md).
+
+Follow-up on September 14 after the private-transfer primary: independent saved-
+body censuses identify fixed success counts, zero-byte results and 38.23 million
+narrow argument captures in token block. The implementation passes 600 workspace
+controls/profile, 23 focused controls, 121 strict commands and six exact profiles.
+Its complete 40-command primary still fails: wall 0.986218, CPU 0.978075, A/A wall
+0.036221, wall margin 1.022439. Park it and cancel larger comparisons. Descriptive
+execution is 72.9 ms lower; the single profiled JIT compile counters differ by
+only 1.6 ms in block and 4.4 ms in exhaustive token. Neither measurement is causal
+or a substitute for the edited-source gate. Review remaining execution/general
+Call costs before further private-body changes. No runtime adoption or new
+compiler ownership follows.
+[Transfer assessment](../results/scalar-private-transfers-screen-token-01/ASSESSMENT.md).
