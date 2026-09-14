@@ -9,7 +9,10 @@ Build a matched unchanged main ab6adbe8 VM from Git-bound source and the candida
 with identical toolchain/profile flags and two workers. Retain original strict
 exporter/wrapper. Run every workspace test in debug/release, requiring equal
 counts, the established minimum and all new named controls; record actual totals.
-Retain the existing 11 explicitly ignored diagnostic tests. Original workloads,
+Retain main's 10 explicitly ignored diagnostic tests. The first setup's stale
+11-test expectation came from a parked branch with an extra spill observer;
+its debug workspace command passed. Retain that rejection and bind/reuse the
+completed command and matched control in the corrected continuation. Original workloads,
 source edits/rejections, profiles and protocol controls qualify before timing.
 
 Setup admission is max(14 GiB, 8 GiB + twice the entire shared target's current
