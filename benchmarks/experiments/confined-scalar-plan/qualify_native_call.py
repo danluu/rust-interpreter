@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import re
 import sys
+import hashlib
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
@@ -55,7 +57,14 @@ def main():
             assert build['binaries'][name] == compiler_proof['binaries'][name]
         source_manifest = ROOT / build['source_manifest']
         assert sha(source_manifest) == build['source_manifest_sha256']
-        assert all(sha(ROOT/p)==h for p,h in json.loads(source_manifest.read_text())['frozen'].items())
+        build_bindings={}
+        for p,h in json.loads(source_manifest.read_text())['frozen'].items():
+            if sha(ROOT/p)==h:build_bindings[p]=dict(kind='current',sha256=h)
+            else:
+                assert not (p.startswith('crates/') or p in ['Cargo.toml','Cargo.lock','rust-toolchain.toml']),p
+                revision=build['composition']['source_commit']
+                data=subprocess.check_output(['git','show',revision+':'+p]);assert hashlib.sha256(data).hexdigest()==h,p
+                build_bindings[p]=dict(kind='git',revision=revision,sha256=h)
         tools, key = installed_tools(build['tool_key'])
         assert all(sha(tools/name)==h for name,h in build['binaries'].items())
         require_export_option(tools, key, 'function-cache-reuse')
@@ -71,7 +80,7 @@ def main():
         frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
-        write(work / 'plan.json', dict(owner=str(ROOT), frozen=frozen, tool_key=key,
+        write(work / 'plan.json', dict(owner=str(ROOT), source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(), frozen=frozen, tool_key=key,
             fixtures=fixtures, minimum_free_gib=8, performance_measurement=False,
             changes='original fixtures plus scalar helper edit, unreachable type/borrow errors and restoration',
             entropy='ordinary OS; fixture assertions avoid comparing random hash keys'))
@@ -84,6 +93,7 @@ def main():
         env.update(RI_ENV_TEXT='hello=λ', RI_ENV_EMPTY='', RI_ENV_RAW=os.fsdecode(bytes([0x80, 61, 0xfe])))
         env[os.fsdecode(b'RI_ENV_\xff')] = 'raw-name'
         env.pop('RI_ENV_MISSING', None)
+        write(work/'build-source-bindings.json',build_bindings)
         rows, fixture_results, cache_rows = [], [], []
 
         def invoke(label, command, selected=env, success=True):
@@ -130,19 +140,26 @@ def main():
                     cached.append(row)
                     cache_rows.append(dict(fixture=name, phase=mode, **row))
                 for engine in (['interpreter', 'jit', 'ordinary-jit'] if name == 'environment' else ['interpreter', 'jit']):
-                    flags = ['--jit-resumable-calls', '--jit-persistent-registers'] if engine == 'jit' else []
+                    flags = ['--jit-resumable-calls', '--jit-persistent-registers', '--jit-scalar-calls'] if engine == 'jit' else []
                     selected_engine = 'jit' if engine == 'ordinary-jit' else engine
                     for seed in seeds:
                         stdout, _ = invoke(name + '-' + mode + '-' + engine + '-' + seed,
                             [tools / 'rust-interp-vm', '--engine', selected_engine, *flags, artifact, seed])
                         assert stdout == expected[seed], (name, mode, engine, seed)
-            _, rejected = invoke(name + '-scalar-partial-rejection',
-                [tools / 'rust-interp-vm', '--engine', 'jit', '--jit-resumable-calls', '--jit-scalar-calls', artifact, '7'], success=False)
-            assert 'scalar calls require full validation' in rejected
             assert len(set(digests)) == 1 and cached[0]['namespace'] == cached[1]['namespace']
             fixture_results.append(dict(fixture=name, artifact_sha256=digests[0], native_matches=True,
                 cold_skipped=cached[0]['skipped_functions'], warm_skipped=cached[1]['skipped_functions']))
             print(name, 'native/interpreter/JIT and reused bytecode match', flush=True)
+
+        partial_source=work/'demand.rs';partial_source.write_text('pub fn rust_interp_entry(x:u64)->u64 { x.wrapping_add(7) }\n')
+        partial=work/'demand.rbc'
+        selected=dict(env,RUST_INTERP_ENTRY='rust_interp_entry',RUST_INTERP_DEMAND_BODIES='1',RUST_INTERP_OUTPUT=str(partial))
+        invoke('actual-demand-export',[tools/'rust-interp-mir-export',partial_source,'--crate-name','demand_fixture',
+            '--crate-type','lib','--edition=2024','--emit=metadata','--sysroot',sysroot,'-o',work/'demand.rmeta'],selected)
+        assert int.from_bytes(partial.read_bytes()[:4],'little')==(5|(1<<16))
+        out,rejected=invoke('scalar-actual-demand-rejection',[tools/'rust-interp-vm','--engine','jit',
+            '--jit-resumable-calls','--jit-scalar-calls',partial,'7'],success=False)
+        assert out=='' and 'scalar calls require full validation' in rejected
 
         bad = work / 'invalid-strlen.rbc'
         selected = dict(env, RUST_INTERP_ENTRY='invalid_strlen', RUST_INTERP_OUTPUT=str(bad),
@@ -151,7 +168,7 @@ def main():
             '--crate-name', 'invalid_strlen', '--edition=2024', '--emit=metadata', '--sysroot', sysroot,
             '-o', work / 'invalid-strlen.rmeta'], selected)
         for engine in ['interpreter', 'jit']:
-            flags = ['--jit-resumable-calls', '--jit-persistent-registers'] if engine == 'jit' else []
+            flags = ['--jit-resumable-calls', '--jit-persistent-registers', '--jit-scalar-calls'] if engine == 'jit' else []
             for pointer in ['0', str(2**64 - 1)]:
                 stdout, stderr = invoke('invalid-strlen-' + engine + '-' + pointer,
                     [tools / 'rust-interp-vm', '--engine', engine, *flags, bad, pointer], success=False)
@@ -268,16 +285,16 @@ def main():
                 assert stdout == cargo_results[0]['native_stdout']
         assert source.read_bytes() == original
         assert all(sha(ROOT / p) == h for p, h in frozen.items())
-        assert len(rows) == 122, len(rows)
+        assert len(rows) == 121, len(rows)
         write(work / 'cache-reports.json', cache_rows)
         out = ROOT / 'results' / args.run_id
         out.mkdir(exist_ok=False)
         write(out / 'summary.json', dict(status='passed', tool_key=key, commands=len(rows),
-            fixtures=fixture_results, cargo_states=cargo_results, strict_rejections=['type', 'borrow'],scalar_partial_artifact_rejections=3,scalar_enabled_strict_cargo=True,
+            fixtures=fixture_results, cargo_states=cargo_results, strict_rejections=['type', 'borrow'],scalar_partial_artifact_rejections=1,actual_demand_artifact=True,scalar_enabled_strict_cargo=True,
             source_restored=True, automatic_cache_qualified=args.automatic_cache,
             performance_measurement=False, raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work / 'plan.json'), records_sha256=sha(work / 'records.json'),
-            cache_reports_sha256=sha(work / 'cache-reports.json')))
+            cache_reports_sha256=sha(work / 'cache-reports.json'),build_source_bindings_sha256=sha(work/'build-source-bindings.json')))
         print('PASS composed cache, native/reference agreement and strict Cargo edits', flush=True)
 
 

@@ -46,8 +46,19 @@ profile, the launcher validation and metrics suites, and a normal release VM
 build from the same source root. Installation retains the adopted strict
 exporter/wrapper and reuses the independently qualified unchanged `ab6adbe8`
 VM as matched control; no second source tree uses the shared Cargo target.
-Follow with 122 strict/cache compatibility commands: legacy partial-artifact
-fixtures retain their old mode and explicitly reject scalar mode; strict Cargo
+Follow with 121 strict/cache compatibility commands: the legacy fully checked
+fixtures also enable scalar mode; an actual demand-exported artifact explicitly
+rejects scalar mode. Strict Cargo
 fixtures enable scalar Calls and include edited helpers, unreachable type and
 borrow errors, cache modes and restoration. This is a qualification gate,
 not a changed-source performance comparison.
+
+
+The first strict qualification stopped on a fixture expectation: unsupported
+call traps do not imply partial frontend checking. The corrected launcher
+permits that independent option, and the corrected harness obtains a real
+partial artifact using `RUST_INTERP_DEMAND_BODIES=1`. This changes no Rust runtime
+source or binary. Build inputs that are now updated harness/launcher sources
+are bound to the build's recorded Git revision; compiled crate/Cargo/toolchain
+inputs must still match their current hashes. Current qualification freezes
+the corrected launcher, fixtures, harness and installed binaries separately.

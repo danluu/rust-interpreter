@@ -306,7 +306,7 @@ def _main(resources):
             parser.error('--test-target must be a nonempty Cargo target name')
     if args.jit_native_call_stubs and not args.jit_native_calls:parser.error('--jit-native-call-stubs requires --jit-native-calls')
     if args.jit_persistent_registers and args.engine != 'jit':parser.error('--jit-persistent-registers requires --engine=jit')
-    if args.jit_scalar_calls and (args.engine != 'jit' or not args.jit_resumable_calls or args.trap_unsupported_calls):parser.error('--jit-scalar-calls requires fully checked resumable JIT execution')
+    if args.jit_scalar_calls and (args.engine != 'jit' or not args.jit_resumable_calls):parser.error('--jit-scalar-calls requires fully checked resumable JIT execution')
     if args.jit_resumable_calls and args.engine != 'jit':parser.error('--jit-resumable-calls requires --engine=jit')
     if args.jit_resumable_calls and (args.jit_native_calls or args.jit_native_call_stubs):parser.error('--jit-resumable-calls cannot be combined with native tree/stub calls')
     if args.jit_native_calls and args.engine != 'jit':parser.error('--jit-native-calls requires --engine=jit')

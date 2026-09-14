@@ -35,9 +35,15 @@ class IsolatedLauncherValidation(unittest.TestCase):
 
     def test_scalar_calls_require_fully_checked_resumable_jit_before_tools(self):
         base=['--entry','first','--jit-scalar-calls']
-        for extra in [[],['--engine','jit'],['--engine','jit','--jit-resumable-calls','--trap-unsupported-calls'],
+        for extra in [[],['--engine','jit'],
                       ['--engine','jit','--jit-resumable-calls','--jit-native-calls']]:
             with self.subTest(extra=extra):self.rejected(base+extra)
+        for flags in [[],['--trap-unsupported-calls','--run-try-callbacks']]:
+            with patch.object(sys,'argv',['interpreter.py','--package','fixture',*base,'--engine','jit','--jit-resumable-calls',*flags]), \
+                    patch.object(interpreter,'checked_tools',side_effect=RuntimeError('selection reached tools')), \
+                    self.assertRaisesRegex(RuntimeError,'selection reached tools'):
+                interpreter.main()
+
 
     def test_worker_counts_require_a_bounded_isolated_suite(self):
         self.rejected(['--entry', 'first', '--suite-workers', '2'])
