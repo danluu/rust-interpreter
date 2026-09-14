@@ -2,6 +2,9 @@
 //! Region bounds and guarded ranges are computed once in source order.
 use super::*;
 
+#[cfg(test)]
+mod storage;
+
 pub(super) struct FunctionAnalysis {
     pub reads: Vec<Option<(usize, usize)>>,
     pub values: Option<values::Allocation>,

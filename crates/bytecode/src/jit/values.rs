@@ -29,6 +29,15 @@ pub(super) struct Allocation {
     pub registers: Vec<Reg>,
 }
 impl Allocation {
+    #[cfg(test)]
+    pub(super) fn storage_capacities(&self) -> [(&'static str, usize); 4] {
+        [
+            ("liveness_bits", self.live.bits.capacity() * std::mem::size_of::<u64>()),
+            ("successor_vector_headers", self.live.successors.capacity() * std::mem::size_of::<Vec<usize>>()),
+            ("successor_elements", self.live.successors.iter().map(|v| v.capacity() * std::mem::size_of::<usize>()).sum()),
+            ("register_assignments", self.registers.capacity() * std::mem::size_of::<Reg>()),
+        ]
+    }
     pub(super) fn pair(&self, reg: Reg) -> Option<u32> {
         self.registers.iter().position(|&r| r == reg).map(|i| 23 + i as u32 * 2)
     }
