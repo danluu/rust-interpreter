@@ -11,15 +11,22 @@ fn memory_plan(program:&Program,id:usize,work:&mut usize)->proof::MemoryPlan {
     if !crate::scalar_call_model::native_stores_enabled() {return proof::memory_plan_for_call(program,id,work);}
     proof::memory_plan_transaction(program,id,work)
 }
+// A conservative debit bounds the new per-function graph/slice/alias analysis
+// within the existing shared scalar preparation budget, including failed emits.
+const PATH_PREPARATION_WORK:usize=1_200_000;
+fn path_selected(plan:&scalar_ir::Plan)->bool {
+    #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
+    if !crate::scalar_call_model::native_stores_enabled() || !crate::scalar_call_model::native_path_enabled() {return false;}
+    plan.has_external_writes()
+}
 fn emit(plan:&scalar_ir::Plan,profiled:bool,heap:bool)->Result<scalar_ir::native_leaf::Emitted,&'static str> {
     #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
     if !crate::scalar_call_model::native_stores_enabled() {return scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap);}
+    if path_selected(plan) {return scalar_ir::native_leaf::emit_call_path(plan,profiled,heap);}
+    // The archived transactional emitter remains an explicit test reference.
     #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-    if crate::scalar_call_model::native_path_enabled() {
-        return if plan.path_guard_shape().is_ok() {scalar_ir::native_leaf::emit_call_path(plan,profiled,heap)}
-            else {scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap)};
-    }
-    scalar_ir::native_leaf::emit_call_transaction(plan,profiled,heap)
+    if !crate::scalar_call_model::native_path_enabled() {return scalar_ir::native_leaf::emit_call_transaction(plan,profiled,heap);}
+    scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap)
 }
 
 pub(super) struct State {
@@ -82,6 +89,10 @@ impl Jit<'_> {
         let plan=scalar_ir::lower(f,&memory,limit);
         scalar.scalar_work=scalar.scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
         let Ok(plan)=plan else {return Ok(());};
+        if path_selected(&plan) {
+            let Some(remaining)=scalar.scalar_work.checked_sub(PATH_PREPARATION_WORK) else {return Ok(());};
+            scalar.scalar_work=remaining;
+        }
         let Ok(emitted)=emit(&plan,self.profiled,self.uses_heap) else {return Ok(());};
         let bytes=emitted.words.len()*4;
         if bytes>self.capacity-self.bytes {return Ok(());}

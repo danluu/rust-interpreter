@@ -19,8 +19,8 @@ thread_local! {
 }
 pub(crate) fn native_path_enabled()->bool {NATIVE_PATH.with(Cell::get)}
 pub(crate) fn native_path_invariant_enabled()->bool {NATIVE_PATH_INVARIANT.with(Cell::get)}
-struct NativePathEnabled;
-impl NativePathEnabled {fn new()->Self {NATIVE_PATH.with(|v|assert!(!v.replace(true)));Self}}
+pub(crate) struct NativePathEnabled;
+impl NativePathEnabled {pub(crate) fn new()->Self {NATIVE_PATH.with(|v|assert!(!v.replace(true)));Self}}
 impl Drop for NativePathEnabled {fn drop(&mut self) {NATIVE_PATH.with(|v|v.set(false));NATIVE_PATH_INVARIANT.with(|v|v.set(false));}}
 pub(crate) fn native_stores_enabled()->bool {NATIVE_STORES.with(Cell::get)}
 struct NativeEnabled(bool);

@@ -33,6 +33,9 @@ fn overlap(a:(bool,std::ops::Range<usize>),b:&(bool,std::ops::Range<usize>))->bo
     a.0==b.0 && a.1.start<b.1.end && b.1.start<a.1.end
 }
 impl Plan {
+    pub(crate) fn has_external_writes(&self)->bool {
+        self.nodes.iter().enumerate().any(|(id,n)|self.live[id] && matches!(n.value,Value::Write{..}))
+    }
     pub(crate) fn path_guard_shape(&self)->Result<(usize,usize),&'static str> {
         guard_slice(self).map(|s|(s.nodes,s.memory_sites))
     }
