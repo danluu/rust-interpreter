@@ -93,6 +93,7 @@ class ComposeTests(unittest.TestCase):
             with patch.object(compose, 'TREE', tree), patch.object(compose, 'STAMP', stamp), \
                     patch.object(compose, 'BETA', pins):
                 plan = compose.inspect_inputs(**args)
+                self.assertNotIn('archive_copies', plan)
                 calls = []
                 result = compose.assemble(plan, expected_plan_sha256=compose.digest(compose.encoded(plan)),
                     destination=root / 'B', evidence=root / 'evidence', capacity_guard=lambda: calls.append(True))
@@ -108,6 +109,54 @@ class ComposeTests(unittest.TestCase):
                     self.assertNotEqual(original.stat().st_ino, copy.stat().st_ino)
                     self.assertEqual(copy.stat().st_nlink, 1)
                 self.assertGreater(len(calls), 2 * len(plan['files']))
+
+    def test_explicit_archive_member_copies_have_independent_inodes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            tree, stamp, pins, args = self.fixture(root)
+            source = 'lib/libbeta-loader.dylib'
+            destination = f'lib/rustlib/{compose.HOST}/lib/libbeta-loader.dylib'
+            copies = [dict(source_destination=source, destination=destination)]
+            with patch.object(compose, 'TREE', tree), patch.object(compose, 'STAMP', stamp), \
+                    patch.object(compose, 'BETA', pins):
+                plan = compose.inspect_inputs(**args, archive_copies=copies)
+                self.assertEqual(plan['archive_copies'], copies)
+                self.assertEqual(plan['files'][source], plan['files'][destination])
+                result = compose.assemble(plan, expected_plan_sha256=compose.digest(compose.encoded(plan)),
+                    destination=root / 'B2', evidence=root / 'evidence', capacity_guard=lambda: None)
+                first, second = root / 'B2' / source, root / 'B2' / destination
+                self.assertEqual(first.read_bytes(), b'rustc')
+                self.assertEqual(second.read_bytes(), first.read_bytes())
+                self.assertNotEqual(first.stat().st_ino, second.stat().st_ino)
+                self.assertEqual((first.stat().st_nlink, second.stat().st_nlink), (1, 1))
+                self.assertEqual(result['files'], len(plan['files']))
+                self.assertFalse(result['compatibility_probes_run'])
+                manifest = json.loads((root / 'evidence/private-sysroot.json').read_text())
+                self.assertEqual(manifest['files'][source], manifest['files'][destination])
+
+    def test_archive_copies_reject_collisions_chains_and_unrecorded_duplicates(self):
+        original = {'lib/loader': dict(kind='archive', path='/archive', member='component/lib/loader',
+                    sha256='1' * 64, size=1, mode=0o644), 'lib/private': dict(kind='private')}
+        invalid = [
+            [dict(source_destination='lib/loader', destination=path)]
+            for path in ['lib/loader', 'lib/loader/child', 'lib', '../escape', '/absolute']]
+        invalid += [[dict(source_destination=path, destination='lib/copy')]
+                    for path in ['lib/missing', 'lib/private']]
+        invalid += [[dict(source_destination='lib/loader', destination='lib/copy'),
+                     dict(source_destination='lib/copy', destination='lib/another')],
+                    [dict(source_destination='lib/loader', destination='lib/copy')] * 2]
+        for copies in invalid:
+            with self.subTest(copies=copies), self.assertRaises(ValueError):
+                compose.add_archive_copies(dict(original), copies)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp).resolve()
+            plan = dict(schema_version=1, policy=compose.POLICY,
+                        files={**original, 'lib/unrecorded': dict(original['lib/loader'])})
+            with self.assertRaisesRegex(ValueError, 'explicit copy mapping'):
+                compose.assemble(plan, expected_plan_sha256=compose.digest(compose.encoded(plan)),
+                    destination=root / 'B2', evidence=root / 'evidence', capacity_guard=lambda: None)
+            self.assertFalse((root / 'B2').exists())
+            self.assertFalse((root / 'evidence').exists())
 
     def test_membership_mismatch_and_postfreeze_mutation_precede_output(self):
         with tempfile.TemporaryDirectory() as tmp:
