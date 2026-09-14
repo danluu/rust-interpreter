@@ -8,7 +8,7 @@ from workflow_io import write_json as write
 from native_suite import test_status
 from suite_reports import validate_report
 
-NAME='closed-legacy-runtime-compiler-retirement-01'
+NAME='closed-legacy-runtime-compiler-retirement-02'
 RUNS=[
     'paired-repeated-token-01','aggregate-relocation-e2e-01-token-phrase',
     'resumable-copy-e2e-01-token-phrase','native-controls-corpus-01-token-phrase',
@@ -107,12 +107,14 @@ with ExitStack() as stack:
         # Any separately recorded native check floor uses the same completed run namespace.
         if (raw/'check-records.json').exists():
             checks=bind(raw/'check-records.json')
+            assert len(checks)==cycles*7
             for row in checks:
-                for call in row['calls']:
-                    cmd=call['command'];assert call['returncode']==0
-                    pids.add(call['pid']);target=Path(cmd[cmd.index('--target-dir')+1]);assert target==raw/'check'
-                    assert cmd[cmd.index('--manifest-path')+1]==str(source/'Cargo.toml')
-                    if target.exists():roots.add(target);selected.add(str(target.relative_to(ROOT)))
+                # Historical check-floor records are flat and do not retain
+                # per-command PIDs; their final child is in active-command.json.
+                cmd=row['command'];assert row['returncode']==0 and 'check' in cmd
+                target=Path(cmd[cmd.index('--target-dir')+1]);assert target==raw/'check'
+                assert cmd[cmd.index('--manifest-path')+1]==str(source/'Cargo.toml')
+                if target.exists():roots.add(target);selected.add(str(target.relative_to(ROOT)))
         completed.append(dict(run=run,commands=len(rows),roots=sorted(selected),summary_sha256=sha(out/'summary.json'),records_sha256=sha(raw/'records.json')))
         print('verified completed history',len(completed),len(RUNS),run,flush=True)
     roots=sorted(roots);assert roots and all(p.resolve(strict=True)==p for p in roots)
