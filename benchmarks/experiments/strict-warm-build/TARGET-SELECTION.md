@@ -28,6 +28,18 @@ investigating rather than a demonstrated removable budget.
 [Edited workflow](../../../results/paired-local-memory-forwarding-corpus-ruff-01/summary.md)
 and [frontend profile](../../../results/frontend-profile-ruff-01/summary.md).
 
+Existing runs with optimized host build tools also remain well above the target:
+with build-tool optimization level 1 applied to every mode, the five-edit median
+was 5.071 seconds natively, 2.592 seconds interpreted and 2.574 seconds through
+the JIT. Separate diagnostic runs reported expansion medians of 0.756414 seconds
+at host optimization level 1 and 0.732164 seconds at level 3. These histories
+support investigating remaining frontend cost; differences between separate
+diagnostic runs are not a paired causal speedup estimate. Optimizing the host
+tools alone has not produced a sub-0.5-second workflow.
+[Host-optimized workflow](../../../results/e2e-workflow-ruff-hostopt1-01/summary.md),
+[level-1 profile](../../../results/frontend-profile-ruff-hostopt1-01/summary.md),
+and [level-3 profile](../../../results/frontend-profile-ruff-hostopt3-01/summary.md).
+
 Read-only inspection of the saved Cargo stderr strengthens that choice. All
 three edited profile states and all five edited interpreter workflow states
 report only `Checking ruff_linter`; the five native edits report only
