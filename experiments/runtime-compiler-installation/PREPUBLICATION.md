@@ -1,12 +1,16 @@
 # Explicit validation before runtime publication
 
-This source-only successor adds an optional pre-publication validator to the
+This successor adds an optional pre-publication validator to the
 existing runtime installer. The original RUNTIME source and its fourteen-control
-evidence remain unchanged. The planned synthetic qualification runs all three
+evidence remain unchanged. The synthetic qualification passed all three
 complete modules: thirteen custom-compiler controls, twenty runtime controls
 (including six new validator controls), and eighteen std-source controls. These
-fifty-one controls have not run against this source checkpoint. There is no real
-installation or native compiler execution in this checkpoint.
+fifty-one controls passed in one unfiltered process with no skips against source
+`a05f4e4f05858cd343261706f5eb579edb54c872`. The [retained evidence](../../results/runtime-prepublication-controls-01/README.md)
+includes the original source checkpoint and pre-execution plan, raw results,
+process associations and every source snapshot; all 170 archive members were
+independently read back. There is no real installation or native compiler
+execution in this checkpoint.
 
 A specification may declare:
 
