@@ -311,3 +311,11 @@ not an incremental speedup. Candidate/native is 0.409691. The four-case
 checkpoint contains 594 passed commands; Nushell remains last under its existing
 disk gate, with complete and edited-parser qualification still required.
 [Private aggregate](../results/scratch-memory-values-edit-rg-aot-01/ASSESSMENT.md).
+
+Complete parser compatibility passes all 114 tests. Its fresh four-arm matched
+incremental history also passes the regression guard: 88 commands, wall 1.005451,
+CPU 1.005560, wall margin 1.028352, CPU margin 1.028630. The change is within
+control variation and candidate/native remains 1.263277; the token/folded gains
+do not generalize to the parser. Keep frontend ownership separate and complete
+the repository-default parser and remaining Nushell guards before adoption.
+[Incremental parser](../results/scratch-memory-values-parser-edits-incremental-01/ASSESSMENT.md).
