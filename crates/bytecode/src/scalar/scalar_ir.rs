@@ -149,8 +149,7 @@ pub fn lower(f:&Function,memory:&MemoryPlan,limit:usize) -> Result<Plan,&'static
     lower_bounded::<512,false>(f,memory,limit)
 }
 
-#[cfg(test)]
-fn lower_aggregate(f:&Function,memory:&MemoryPlan,limit:usize)->Result<Plan,&'static str> {
+pub(crate) fn lower_aggregate(f:&Function,memory:&MemoryPlan,limit:usize)->Result<Plan,&'static str> {
     lower_bounded::<1024,true>(f,memory,limit)
 }
 

@@ -302,11 +302,18 @@ pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> Memor
     memory_plan_bounded::<512,16,false>(program,id,remaining)
 }
 
+/// Confined aggregate Call entry only: fresh zero bytes plus ordered captured
+/// arguments. The caller must precheck the full result destination and preserve
+/// ordinary Call resource, logical-address, padding and failure semantics.
+pub(crate) fn aggregate_call_memory_plan(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
+    memory_plan_bounded::<1024,64,true>(program,id,remaining)
+}
+
 /// Diagnostic only. A zeroed-frame proof requires the ordinary Call's fresh
 /// zero bytes and ordered captured arguments; it is not an arbitrary-entry proof.
 #[cfg(test)]
 pub(crate) fn aggregate_memory_plan(program:&Program,id:usize,remaining:&mut usize,zeroed:bool)->MemoryPlan {
-    if zeroed {memory_plan_bounded::<1024,64,true>(program,id,remaining)}
+    if zeroed {aggregate_call_memory_plan(program,id,remaining)}
     else {memory_plan_bounded::<1024,64,false>(program,id,remaining)}
 }
 

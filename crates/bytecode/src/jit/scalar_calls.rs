@@ -6,6 +6,31 @@ use super::resumable::{self, Cond, BUDGET_REGISTER};
 use crate::native_continuation::layout as state;
 use crate::{proof, scalar_ir};
 
+fn is_aggregate(f:&Function)->bool {f.frame_size>512 || f.result.size>16}
+fn call_plan(program:&Program,id:usize,proof_work:&mut usize,scalar_work:&mut usize)->Result<scalar_ir::Plan,&'static str> {
+    let f=&program.functions[id];
+    if is_aggregate(f) {
+        // New wider entries alone may rely on fresh-frame zeroes. Do not
+        // silently broaden legacy small-result initialization or width policy.
+        let memory=proof::aggregate_call_memory_plan(program,id,proof_work);
+        if !memory.eligible {return Err("no_memory_plan");}
+        let limit=(*scalar_work).min(1_000_000);
+        // Debit the whole admitted allowance, including an early IR decline.
+        *scalar_work=scalar_work.saturating_sub(limit);
+        scalar_ir::lower_aggregate(f,&memory,limit)
+    } else {
+        let memory=proof::memory_plan(program,id,proof_work);
+        let limit=(*scalar_work).min(250_000);
+        let plan=scalar_ir::lower(f,&memory,limit);
+        *scalar_work=scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
+        plan
+    }
+}
+fn emit_call(f:&Function,plan:&scalar_ir::Plan,profiled:bool)->Result<scalar_ir::native_leaf::Emitted,&'static str> {
+    if is_aggregate(f) {scalar_ir::native_leaf::emit_call_aggregate(plan,profiled)}
+    else {scalar_ir::native_leaf::emit_call(plan,profiled)}
+}
+
 pub(super) struct State {
     tried: Vec<bool>,
     pub entries: Vec<Option<Entry>>,
@@ -34,9 +59,8 @@ impl Jit<'_> {
         assert!(self.code.is_none() && self.bytes==0 && self.scalar_entry(id).is_none());
         assert!(offset%4==0 && bytes>0 && bytes%4==0 && offset.checked_add(bytes).is_some_and(|end|end<=self.capacity));
         let mut work=proof::MAX_GLOBAL_WORK;
-        let memory=proof::memory_plan(self.program,id,&mut work);
-        let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).unwrap();
-        let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).unwrap();
+        let plan=call_plan(self.program,id,&mut work,&mut 1_000_000).unwrap();
+        let emitted=emit_call(&self.program.functions[id],&plan,self.profiled).unwrap();
         assert_eq!(emitted.words.len()*4,bytes);
         self.scalar.as_mut().unwrap().entries[id]=Some(Entry {offset,bytes,
             maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,
@@ -56,12 +80,9 @@ impl Jit<'_> {
         let f=&self.program.functions[id];
         // Bound host Call scratch independently of scalar SSA spill storage.
         if f.args.len()>64 || self.bytes>=self.capacity {return Ok(());}
-        let memory=proof::memory_plan(self.program,id,&mut scalar.proof_work);
-        let limit=scalar.scalar_work.min(250_000);
-        let plan=scalar_ir::lower(f,&memory,limit);
-        scalar.scalar_work=scalar.scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
+        let plan=call_plan(self.program,id,&mut scalar.proof_work,&mut scalar.scalar_work);
         let Ok(plan)=plan else {return Ok(());};
-        let Ok(emitted)=scalar_ir::native_leaf::emit_call(&plan,self.profiled) else {return Ok(());};
+        let Ok(emitted)=emit_call(f,&plan,self.profiled) else {return Ok(());};
         let bytes=emitted.words.len()*4;
         if bytes>self.capacity-self.bytes {return Ok(());}
         if self.code.is_none() {self.code=Some(platform::Code::reserve(self.capacity)?);}
@@ -74,10 +95,9 @@ impl Jit<'_> {
     pub(super) fn reconstruct_scalar(&self,id:usize)->Result<Vec<u32>,String> {
         let entry=self.scalar_entry(id).ok_or("missing scalar entry")?;
         let mut work=proof::MAX_GLOBAL_WORK;
-        let memory=proof::memory_plan(self.program,id,&mut work);
-        let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).map_err(str::to_string)?;
+        let plan=call_plan(self.program,id,&mut work,&mut 1_000_000).map_err(str::to_string)?;
         if plan.maximum_steps!=entry.maximum_steps {return Err("scalar reconstruction budget mismatch".into());}
-        let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).map_err(str::to_string)?;
+        let emitted=emit_call(&self.program.functions[id],&plan,self.profiled).map_err(str::to_string)?;
         if emitted.success_steps!=entry.success_steps {return Err("scalar reconstruction success-count mismatch".into());}
         if emitted.words.len()*4!=entry.bytes {return Err("scalar reconstruction extent mismatch".into());}
         Ok(emitted.words)
@@ -153,9 +173,10 @@ impl Assembler<'_> {
         else {self.load64(9,31,OUTPUT+OUTPUT_STEPS);self.three(0xcb000000,BUDGET_REGISTER,BUDGET_REGISTER,9);}
         self.three(0x8b000000,11,2,3);self.three(0x8b000000,12,2,21);
         self.zero_range()?; // retain exactly the ordinary Call's zeroed padding
-        if f.result.size!=0 {
-            self.load64(9,31,OUTPUT);self.load64(10,31,OUTPUT+8);self.load64(12,31,40);
-            self.store_mem(9,10,12,f.result.size);
+        for offset in (0..f.result.size).step_by(16) {
+            self.load64(9,31,OUTPUT+offset);self.load64(10,31,OUTPUT+offset+8);self.load64(12,31,40);
+            if offset!=0 {self.add_imm(12,12,offset);}
+            self.store_mem(9,10,12,(f.result.size-offset).min(16));
         }
         self.load64(10,31,48);self.load64(9,19,state::PEAK_LINEAR);self.cmp(10,9);
         self.emit(0x9a892149); // csel x9,x10,x9,hs

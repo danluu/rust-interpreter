@@ -257,7 +257,6 @@ fn emit_call_reference(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
 }
 /// Kept separate from the legacy entry so its wider result contract is explicit.
 /// The Call bridge must precheck the entire destination and commit every lane.
-#[cfg(test)]
 pub(crate) fn emit_call_aggregate(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
     emit_inner(plan,profiled,true,false,true,true,true,true)
 }
