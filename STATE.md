@@ -67,16 +67,28 @@ execution; this qualification did not widen production selection.
 [Combined census](results/scalar-aggregate-census-02/assessment.md),
 [native ABI qualification](results/scalar-aggregate-abi-01/assessment.md).
 
-The next candidate connects that ABI to the complete Call bridge. It prechecks
-the entire result destination, captures ordered inputs from the old active
-prefix, and commits all result bytes only after private success. Focused full
-memory/error tests, complete workspace/launcher/strict qualification, original
-profiles and exact emitted-byte reconstruction precede timing. The prospectively
-selected primary is the original fre exhaustive test alone, using 40 complete
-changed-source commands. The full token suite remains a regression guard because
-its block test determines the critical path. All existing project/parser guards
-remain required before adoption.
-[Native direction and gates](benchmarks/experiments/scalar-aggregate-model/NATIVE-NEXT.md).
+The complete aggregate Call bridge passes seven focused controls and374 bytecode
+tests/profile, including complete memory on error exits. The final census retains
+all32 candidates in the combined native ABI in both profile modes (28,904
+unprofiled bytes; maximum368-byte spill frame). Immutable tool3081569232 /
+VM5fd0c1c7 retains the adopted compiler/exporter/wrapper. It passes637 workspace
+tests/profile,407 Python tests with22 declared skips,121 strict/cache commands,
+and three exact original profiles/code reconstructions. All stages are closed.
+No performance improvement or adoption follows from this qualification.
+
+The exact exhaustive test passes alone for original source and fails alone for
+the deliberately wrong edit. Fifteen protocol and three observation controls
+qualify the prospective40-command changed-source primary:
+`scalar-aggregate-screen-exhaustive-01`. Use the original exhaustive test alone,
+normal entropy, two Cargo workers and complete Cargo/build/run latency. The
+previously declared A/A wall and CPU gates remain unchanged. If it passes, freeze
+the full exhaustive history and all existing project/parser guards before running
+them; the full token suite is a regression guard because block is its critical
+path. Main remains df4006e0 until every required gate passes.
+[Build](results/scalar-aggregate-build-01/assessment.md),
+[strict checks](results/scalar-aggregate-qualification-01/assessment.md),
+[profiles](results/scalar-aggregate-profile-01/assessment.md),
+[prospective screen](benchmarks/experiments/scalar-aggregate-screen/SCREEN.md).
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
