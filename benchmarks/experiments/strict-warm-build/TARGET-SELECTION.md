@@ -20,7 +20,7 @@ and [earlier phase profile](../../../results/strict-warm-profile-01/assessment.m
 
 Ruff is the strongest immediately evidenced alternative in the reviewed
 development corpus: a historical five-edit workflow took a median 5.603 seconds
-natively and 2.893 seconds through the candidate interpreter. This runs six
+natively and 2.893 seconds through the candidate JIT. This runs six
 existing registry tests, with matched per-state selections; it is not the whole
 linter suite or a current-tool result. A separate three-edit diagnostic showed
 1.007839 seconds median macro-expansion time, identifying frontend work worth

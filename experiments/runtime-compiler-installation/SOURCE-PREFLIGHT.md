@@ -1,10 +1,16 @@
 # Existing-runtime source preflight
 
-This checkpoint prepares two ordinary compiler invocations and the corresponding
-final-installation hook. It has not run compiler commands, installed a runtime,
-or changed the accepted metadata03 candidate. Four focused source-expectation
-controls are prepared and unrun. The existing runtime policy's 51-control result
-is a predecessor result, not qualification of this experimental module.
+The initial source checkpoint prepared two ordinary compiler invocations and
+the corresponding final-installation hook. Subsequent execution passed all four
+focused source-expectation controls and the twelve-child existing-runtime
+preflight, including both compiler probes and complete before/after guards.
+The independently checked receipt is
+`8bd341a23550e0d77c0bf7f6472811bb1586cad1af9a214a7be1d5684a7af4dc`;
+[retained execution evidence](../../results/runtime-source-qualification-01/README.md)
+records the exact scope. No runtime has been installed and the accepted
+metadata03 candidate is unchanged. Final-installation callback qualification
+remains outstanding; the predecessor policy's 51-control result does not
+substitute for that execution.
 
 `source-preflight-plan-01.json` binds accepted metadata03, its exact complete
 runtime/source/support component snapshots, the qualified source-guard inputs,
