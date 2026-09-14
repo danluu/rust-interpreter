@@ -5,6 +5,8 @@ use super::*;
 mod registers;
 #[path="native_dead.rs"]
 mod dead;
+#[path="native_width.rs"]
+mod width;
 const MAX_WORDS:usize=65536;
 const MAX_CODE_BYTES:usize=MAX_WORDS*4;
 #[repr(C)]
@@ -207,20 +209,24 @@ impl Emitter<'_> {
 }
 
 pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,true,true)
+    emit_inner(plan,profiled,true,true,true,true)
 }
 #[cfg(test)]
 fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emitted,&'static str> {
     // Preserve exact pre-elimination reference bytes for the archived census.
-    emit_inner(plan,profiled,use_registers,true,false)
+    emit_inner(plan,profiled,use_registers,true,false,false)
 }
 /// For the private JIT Call entry only: its immutable entry metadata and
 /// preflight must prove remaining budget >= maximum_steps before entry.
 /// Standalone Native::compile continues to emit its own entry budget guard.
 pub(crate) fn emit_prechecked(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true)
+    emit_inner(plan,profiled,true,false,true,true)
 }
-fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool)->Result<Emitted,&'static str> {
+fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,eliminate_aliases:bool)->Result<Emitted,&'static str> {
+    // The input plan remains the original scalar oracle. Bounds failures keep
+    // its preceding qualified emission; preparation cost stays inside JIT setup.
+    let simplified=if eliminate_aliases {width::simplify(plan).ok().flatten()} else {None};
+    let plan=simplified.as_ref().unwrap_or(plan);
     let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
     let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;

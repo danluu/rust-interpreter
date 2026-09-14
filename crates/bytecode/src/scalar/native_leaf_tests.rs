@@ -25,9 +25,10 @@ fn compare(p:&Program,plan:&Plan,native:&Native,args:&[u128],budget:usize) {
     }
 }
 
-fn variants(p: &Program, plan: &Plan, profiled: bool) -> [Native; 3] {
-    [0, 1, 2].map(|variant| {
-        let emitted = if variant == 2 { emit(plan, profiled) }
+fn variants(p: &Program, plan: &Plan, profiled: bool) -> [Native; 4] {
+    [0, 1, 2, 3].map(|variant| {
+        let emitted = if variant == 3 { emit(plan, profiled) }
+            else if variant == 2 { emit_inner(plan, profiled, true, true, true, false) }
             else { emit_with_registers(plan, profiled, variant == 1) }.unwrap();
         let mut code = memory::Code::reserve(MAX_CODE_BYTES).unwrap();
         assert_eq!(code.append(&emitted.words).unwrap(), 0);
@@ -56,7 +57,7 @@ fn native_scalar_register_pressure_reuses_values_and_spills_complete_intervals()
     p.functions[0].registers = 64;
     let plan = make_plan(&p);
     for profiled in [false, true] {
-        let [spilled, allocated, optimized] = variants(&p, &plan, profiled);
+        let [spilled, allocated, dead, optimized] = variants(&p, &plan, profiled);
         assert!(allocated.emitted.register_values > 4);
         assert!(allocated.emitted.stack_bytes < spilled.emitted.stack_bytes);
         assert!(allocated.emitted.stack_bytes > 0);
@@ -67,6 +68,7 @@ fn native_scalar_register_pressure_reuses_values_and_spills_complete_intervals()
                 compare(&p, &plan, &optimized, &[input], budget);
                 assert_eq!(allocated.attempt(&[input], 16, budget).unwrap(), spilled.attempt(&[input], 16, budget).unwrap());
                 assert_eq!(optimized.attempt(&[input], 16, budget).unwrap(), spilled.attempt(&[input], 16, budget).unwrap());
+                assert_eq!(optimized.attempt(&[input], 16, budget).unwrap(), dead.attempt(&[input], 16, budget).unwrap());
             }
         }
     }
@@ -90,7 +92,7 @@ fn native_scalar_registers_preserve_cross_block_values_phis_and_wide_results() {
     p.functions[0].registers = 32;
     let plan = make_plan(&p);
     for profiled in [false, true] {
-        let [spilled, allocated, optimized] = variants(&p, &plan, profiled);
+        let [spilled, allocated, dead, optimized] = variants(&p, &plan, profiled);
         assert!(allocated.emitted.register_values > 0);
         for a in [0, 1, 1 << 63, u64::MAX as u128] {
             for b in [0, 255, 1 << 63, u64::MAX as u128] {
@@ -99,6 +101,7 @@ fn native_scalar_registers_preserve_cross_block_values_phis_and_wide_results() {
                     compare(&p, &plan, &optimized, &[a, b], budget);
                     assert_eq!(allocated.attempt(&[a, b], 16, budget).unwrap(), spilled.attempt(&[a, b], 16, budget).unwrap());
                     assert_eq!(optimized.attempt(&[a, b], 16, budget).unwrap(), spilled.attempt(&[a, b], 16, budget).unwrap());
+                    assert_eq!(optimized.attempt(&[a, b], 16, budget).unwrap(), dead.attempt(&[a, b], 16, budget).unwrap());
                 }
             }
         }
@@ -122,7 +125,7 @@ fn native_scalar_registers_preserve_nonmonotonic_cfg_and_private_faults() {
     let p = program(code, 16, vec![Slot { offset: 0, size: 8 }, Slot { offset: 8, size: 8 }], Slot { offset: 0, size: 8 });
     let plan = make_plan(&p);
     for profiled in [false, true] {
-        let [spilled, allocated, optimized] = variants(&p, &plan, profiled);
+        let [spilled, allocated, dead, optimized] = variants(&p, &plan, profiled);
         assert!(allocated.emitted.register_values > 0);
         for args in [[0, 0], [1, 1], [128, u64::MAX as u128], [0xabcdef, 3], [u64::MAX as u128, 1]] {
             for budget in 0..=plan.maximum_steps + 1 {
@@ -130,6 +133,7 @@ fn native_scalar_registers_preserve_nonmonotonic_cfg_and_private_faults() {
                 compare(&p, &plan, &optimized, &args, budget);
                 assert_eq!(allocated.attempt(&args, 16, budget).unwrap(), spilled.attempt(&args, 16, budget).unwrap());
                 assert_eq!(optimized.attempt(&args, 16, budget).unwrap(), spilled.attempt(&args, 16, budget).unwrap());
+                assert_eq!(optimized.attempt(&args, 16, budget).unwrap(), dead.attempt(&args, 16, budget).unwrap());
             }
         }
     }
