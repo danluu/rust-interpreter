@@ -28,7 +28,7 @@ def load():
         return summary
     candidate=closed('indexed-switches-build-02')
     strict=closed('indexed-switches-qualification-01')
-    small=closed('indexed-switches-profile-01')
+    small=closed('indexed-switches-profile-02')
     parser=closed('indexed-switches-parser-profile-01')
     assert candidate['tests']['test-debug']==candidate['tests']['test-release']>=612
     assert candidate['python']['passed']>=408 and candidate['python']['skipped']==22
@@ -39,7 +39,7 @@ def load():
     assert small['commands']==3 and small['exact_per_pc_counts'] and small['exact_operation_map_reconstruction']
     assert small['operation_map_schema']==2
     assert parser['commands']==1 and parser['exact_per_pc_counts_memory_entropy'] and parser['exact_operation_map_reconstruction']
-    assert parser['indexed_switches'] is True and parser['exact_native_bytes']
+    assert parser['indexed_switches'] is True and parser['exact_native_bytes_after_bound_relocation']
     assert all(s['tool_key']==candidate['tool_key'] for s in [strict,small,parser])
     manifest=ROOT/candidate['source_manifest'];assert sha(manifest)==candidate['source_manifest_sha256'];paths.append(manifest)
     for name,digest in read(manifest)['frozen'].items():

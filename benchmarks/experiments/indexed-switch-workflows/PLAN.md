@@ -14,3 +14,12 @@ fixture or unchanged-Cargo durations as a performance result.
 
 Shared lock, two Cargo workers, 12 GiB admission and 8 GiB per-child floor.
 Bind sources, original evidence, immutable tool and all terminal receipts.
+
+Raw byte equality in profile attempt 01 exposed per-process scalar entry
+addresses. Retain that failed attempt and its completed block guest. Attempt 02
+validates identical code after only bound imm-x16/blr-x16 scalar-Call relocations:
+both complete maps validate, ranges/spans match, the original Call selects the
+same scalar body offset, and every other word is identical. Four new observer
+controls reject wrong targets and unrelated/ambiguous mutations. Reuse the exact
+first capture, bound source/tool/tape/selection and terminal; execute only the
+two remaining guests. Seven observer controls run. No candidate runtime change.

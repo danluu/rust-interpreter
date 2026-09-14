@@ -8,6 +8,7 @@ from workflow_io import capture,require_space,write_json as write
 from interpreter import installed_tools
 sys.path.insert(0,str(ROOT/'benchmarks/experiments/indexed-switch-workflows'))
 from native_observation import validate,exact_logical_counts
+from relocation import compare as compare_code
 NAME='indexed-switches-parser-profile-01'
 def read(p):return json.loads(p.read_text())
 def main():
@@ -22,7 +23,7 @@ def main():
             folder=ROOT/'results'/name;c=bind(folder/'closure.json');assert c['status']=='closed'
             s=bind(folder/'summary.json',c['summary_sha256']);assert s['status']=='passed'
             return s
-        build=closed('indexed-switches-build-02');strict=closed('indexed-switches-qualification-01');small=closed('indexed-switches-profile-01')
+        build=closed('indexed-switches-build-02');strict=closed('indexed-switches-qualification-01');small=closed('indexed-switches-profile-02')
         assert build['composition']['kind']=='indexed-switches' and build['tests']['test-debug']==build['tests']['test-release']>=612
         assert strict['commands']==122 and strict['source_restored'] and strict['indexed_partial_artifact_rejections']==1
         assert small['exact_per_pc_counts'] and small['exact_operation_map_reconstruction']
@@ -44,7 +45,8 @@ def main():
         for p in Path(__file__).parent.iterdir():
             if p.suffix in ['.py','.md']:bind(p)
         for p in ['scripts/workflow_io.py','scripts/compare_saved_runtime.py','scripts/interpreter.py',
-            'benchmarks/experiments/indexed-switch-workflows/native_observation.py']:bind(ROOT/p)
+            'benchmarks/experiments/indexed-switch-workflows/native_observation.py',
+            'benchmarks/experiments/indexed-switch-workflows/relocation.py']:bind(ROOT/p)
         assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip()
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
@@ -65,13 +67,15 @@ def main():
         for n in ['instructions','peak_guest_memory','entropy_calls','entropy_bytes','jit_bytes','jit_instructions','jit_declined_functions']:
             assert stats[n]==reference['statistics'][n],n
         profile=read(current);counts=exact_logical_counts(profile,previous);assert counts==reference['logical_counts']
-        code=(dump/'code.bin').read_bytes();assert code==code_path.read_bytes()
+        code=(dump/'code.bin').read_bytes()
+        native_equality=compare_code(code_path.read_bytes(),read(code_path.with_name('map.json')),
+            read(code_path.with_name('operations.json')),previous,code,read(dump/'map.json'),read(dump/'operations.json'),profile)
         validate(read(dump/'operations.json'),read(dump/'map.json'),code,profile,child.pid)
         assert all(sha(ROOT/p)==h for p,h in frozen.items())
         evidence={str(p.relative_to(ROOT)):sha(p) for p in [current,*dump.iterdir()] if p.is_file()}
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
         write(out/'summary.json',dict(status='passed',commands=1,tool_key=key,matched_control_key=reference['tool_key'],
-            test=prior['test'],indexed_switches=True,exact_per_pc_counts_memory_entropy=True,exact_native_bytes=True,
+            test=prior['test'],indexed_switches=True,exact_per_pc_counts_memory_entropy=True,exact_native_bytes_after_bound_relocation=True,native_equality=native_equality,
             exact_operation_map_reconstruction=True,comparisons=[dict(mode='candidate',statistics=stats,logical_counts=counts,evidence=evidence)],
             entropy_tape_path=str(tape.relative_to(ROOT)),entropy_tape_sha256=sha(tape),raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),performance_measurement=False))

@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import shutil
+from types import SimpleNamespace
 import sys
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
@@ -12,6 +14,7 @@ from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from interpreter import installed_tools
 from native_observation import validate,exact_logical_counts
+from relocation import compare as compare_code
 BASELINE='df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62'
 def read(p):return json.loads(p.read_text())
 def main():
@@ -58,6 +61,20 @@ def main():
         paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py','.md']]
         paths += [ROOT/'tests/test_isolated_launcher.py']+[ROOT/'scripts'/n for n in ['workflow_io.py','interpreter.py','compare_saved_runtime.py']]
         paths += [tools/n for n in build['binaries']]+[control/n for n in matched['binaries']]
+        failed=ROOT/'results/indexed-switches-profile-01'
+        failed_closed=read(failed/'closure.json');failed_summary=read(failed/'summary.json')
+        assert failed_closed['status']=='closed' and failed_summary['status']=='failed'
+        assert sha(failed/'summary.json')==failed_closed['summary_sha256']
+        failed_raw=ROOT/failed_summary['raw'];failed_plan=read(failed_raw/'plan.json')
+        assert sha(failed_raw/'plan.json')==failed_summary['plan_sha256']
+        assert failed_plan['tool_key']==key and failed_plan['matched_control_key']==BASELINE
+        assert sha(failed_raw/'records.json')==failed_summary['records_sha256']
+        reuse_record,=read(failed_raw/'records.json');assert reuse_record['index']==0 and reuse_record['returncode']==0
+        assert reuse_record['command'][0]==str(tools/'rust-interp-vm') and '--indexed-switches' in reuse_record['command']
+        binding=ROOT/failed_closed['bindings'];assert sha(binding)==failed_closed['bindings_sha256']
+        for path,digest in read(binding)['artifacts'].items():assert sha(ROOT/path)==digest;paths.append(ROOT/path)
+        paths += [failed/'summary.json',failed/'closure.json',failed/'terminal.json',failed_raw/'plan.json',binding]
+        paths += [ROOT/'crates/bytecode/src/jit.rs',ROOT/'crates/bytecode/src/jit/scalar_calls.rs']
         cases=[]
         for item in reference['profiles']:
             index=item['index'];prior,=[r for r in baseline['comparisons'] if r['index']==index and r['mode']=='candidate']
@@ -74,7 +91,7 @@ def main():
         assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip()
         work=ROOT/'.work'/args.run_id;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
-            frozen=frozen,expected_guest_commands=3,reused_control_profiles=3,python_controls=3,launcher_controls_from_candidate_build=True,
+            frozen=frozen,expected_guest_commands=2,reused_candidate_commands=1,reused_control_profiles=3,python_controls=7,launcher_controls_from_candidate_build=True,
             tool_key=key,matched_control_key=BASELINE,minimum_child_gib=8,performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_'))}
         assert not any(k.startswith('DYLD_') for k in env)
@@ -82,10 +99,10 @@ def main():
         check_env=dict(env)
         for name in ['DYLD_INSERT_LIBRARIES','RUST_INTERP_ENTROPY_MODE','RUST_INTERP_VM_STATS']:check_env.pop(name,None)
         check_env['PYTHONDONTWRITEBYTECODE']='1'
-        child,out,err=capture([sys.executable,'-m','unittest','test_native_observation','-v'],cwd=Path(__file__).parent,
+        child,out,err=capture([sys.executable,'-m','unittest','test_native_observation','test_relocation','-v'],cwd=Path(__file__).parent,
             env=check_env,receipt_path=work/'active.json',receipt=dict(mode='schema-2-observer-controls'))
         write(work/'controls.json',dict(returncode=child.returncode,pid=child.pid,stdout=out,stderr=err))
-        assert child.returncode==0 and 'Ran 3 tests' in err and err.rstrip().endswith('OK'),err
+        assert child.returncode==0 and 'Ran 7 tests' in err and err.rstrip().endswith('OK'),err
         records=[];comparisons=[]
         for item,prior in cases:
             require_space(ROOT,8);index=item['index'];previous=read(ROOT/prior['profile_path'])
@@ -94,9 +111,18 @@ def main():
                 '--jit-code-dump',dump_path,'--jit-operation-map','--profile',profile_path,'--profile-test',item['name'],
                 '--suite-catalog',ROOT/item['catalog'],'--instruction-limit',item['limits']['instructions'],
                 '--allocation-limit',item['limits']['allocations'],ROOT/item['artifact']]))
-            child,out,err=capture(command,cwd=ROOT,env=dict(env,RUST_INTERP_ENTROPY_TAPE=str(raw/f'{index}.tape')),
-                receipt_path=work/'active.json',receipt=dict(index=index,mode='candidate'))
-            records.append(dict(index=index,mode='candidate',command=command,pid=child.pid,returncode=child.returncode,stdout=out,stderr=err))
+            if index==0:
+                assert str(ROOT/item['artifact'])==reuse_record['command'][-1]
+                assert reuse_record['command'][reuse_record['command'].index('--profile-test')+1]==item['name']
+                assert failed_plan['frozen'][str((raw/'0.tape').relative_to(ROOT))]==sha(raw/'0.tape')
+                shutil.copy2(failed_raw/'candidate-0-profile.json',profile_path)
+                shutil.copytree(failed_raw/'candidate-0-code',dump_path)
+                child=SimpleNamespace(pid=reuse_record['pid'],returncode=0)
+                out,err=reuse_record['stdout'],reuse_record['stderr'];command=reuse_record['command']
+            else:
+                child,out,err=capture(command,cwd=ROOT,env=dict(env,RUST_INTERP_ENTROPY_TAPE=str(raw/f'{index}.tape')),
+                    receipt_path=work/'active.json',receipt=dict(index=index,mode='candidate'))
+            records.append(dict(index=index,mode='candidate',reused_from=str(failed_raw.relative_to(ROOT)) if index==0 else None,command=command,pid=child.pid,returncode=child.returncode,stdout=out,stderr=err))
             write(work/'records.json',records);assert child.returncode==0 and out=='0\n',err
             selection,=[json.loads(line.split(': ',1)[1]) for line in err.splitlines() if line.startswith('rust-interp-profile-selection: ')]
             for n in ['name','artifact_sha256','catalog_sha256']:assert selection[n]==item[n]
@@ -109,14 +135,15 @@ def main():
             for n in ['native','interpreted','scalar','total']:assert totals[n]==prior['logical_counts'][n],(index,n)
             assert stats['jit_bytes']==prior['statistics']['jit_bytes']
             assert totals['total']==stats['instructions'] and totals['native']==stats['jit_instructions']
-            assert sha(dump_path/'code.bin')==prior['code_sha256'], 'native bytes changed'
             code=(dump_path/'code.bin').read_bytes();mapping=read(dump_path/'operations.json');dump=read(dump_path/'map.json')
             observed=validate(mapping,dump,code,profile,child.pid)
+            native_equality=compare_code((ROOT/prior['code_path']).read_bytes(),read((ROOT/prior['code_path']).with_name('map.json')),
+                read(ROOT/prior['operations_path']),previous,code,dump,mapping,profile)
             scalar_calls=sum(sum(h for op,h in zip(f['operations'],f.get('jit_scalar_hits',[])) if op=='Return') for f in profile['functions'])
             scalar_functions=sum(any(f.get('jit_scalar_hits',[])) for f in profile['functions'])
             bodies=[f for f in mapping['functions'] if len(f['spans'])==1 and f['spans'][0]['kind']=='scalar_leaf']
             comparisons.append(dict(prior,mode='control',reused=True,tool_key=BASELINE))
-            comparisons.append(dict(index=index,mode='candidate',reused=False,name=item['name'],statistics=stats,logical_counts=totals,
+            comparisons.append(dict(index=index,mode='candidate',reused=index==0,native_equality=native_equality,name=item['name'],statistics=stats,logical_counts=totals,
                 scalar_calls=scalar_calls,scalar_functions_executed=scalar_functions,scalar_bodies=len(bodies),
                 scalar_code_bytes=sum(f['end']-f['offset'] for f in bodies),current_native_bytes=len(code),
                 profile_path=str(profile_path.relative_to(ROOT)),profile_sha256=sha(profile_path),
@@ -126,8 +153,8 @@ def main():
             assert all(sha(ROOT/p)==h for p,h in frozen.items())
             print(index,'original assertions/counts/peak/entropy/map PASS;',scalar_calls,'scalar Calls',flush=True)
         out=ROOT/'results'/args.run_id;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',tool_key=key,matched_control_key=BASELINE,commands=3,reused_control_profiles=3,
-            python_controls=3,launcher_controls_from_candidate_build=True,comparisons=comparisons,control_vm_matches_adopted=True,
-            exact_logical_counts_memory_and_entropy=True,exact_per_pc_counts=True,exact_operation_map_reconstruction=True,indexed_switches=True,operation_map_schema=2,controls_sha256=sha(work/'controls.json'),
+        write(out/'summary.json',dict(status='passed',tool_key=key,matched_control_key=BASELINE,commands=3,new_guest_commands=2,reused_candidate_commands=1,reused_control_profiles=3,
+            python_controls=7,launcher_controls_from_candidate_build=True,comparisons=comparisons,control_vm_matches_adopted=True,
+            exact_logical_counts_memory_and_entropy=True,exact_per_pc_counts=True,exact_operation_map_reconstruction=True,exact_native_bytes_after_bound_relocation=True,indexed_switches=True,operation_map_schema=2,controls_sha256=sha(work/'controls.json'),
             raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),performance_measurement=False))
 if __name__=='__main__':main()
