@@ -20,9 +20,15 @@ fn main() {
         scalar_remaining=scalar_remaining.saturating_sub(match &scalar {
             Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit,
         });
+        let native=scalar.as_ref().ok().map(|p| [false,true].map(|profiled| {
+            match scalar_ir::native_leaf::emit(p,profiled) {
+                Ok(code)=>json!({"profiled":profiled,"eligible":true,"code_bytes":code.words.len()*4,"stack_bytes":code.stack_bytes}),
+                Err(reason)=>json!({"profiled":profiled,"eligible":false,"decline":reason}),
+            }
+        }));
         json!({"function":id,"name":f.name,"frame_size":f.frame_size,"frame_align":f.frame_align,
             "registers":f.registers,"bytecode_operations":f.code.len(),"arguments":f.args,"result":f.result,"plan":plan,
-            "scalar":scalar_ir::summary(&scalar)})
+            "scalar":scalar_ir::summary(&scalar),"native":native})
     }).collect();
     let file=std::fs::OpenOptions::new().write(true).create_new(true).open(&args[2]).unwrap();
     serde_json::to_writer(file,&json!({"status":"passed","functions":rows,"global_work_remaining":remaining,
