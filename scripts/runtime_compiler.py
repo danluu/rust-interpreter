@@ -82,10 +82,22 @@ def require_runtime(records, host):
     # Any supplied auxiliary executables are inventoried and loader-checked.
 
 
+def qualification_policy(spec):
+    if 'prepublication_qualification' not in spec:
+        return None
+    declaration = spec['prepublication_qualification']
+    require(isinstance(declaration, dict) and set(declaration) == {'policy'}
+            and isinstance(declaration['policy'], str)
+            and re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', declaration['policy']) is not None,
+            'invalid pre-publication qualification declaration')
+    return declaration['policy']
+
+
 def identity_for(spec):
     """Validate a closed admitted specification without accessing its input paths."""
     require(spec.get('schema_version') == 1 and spec.get('loader_policy') == LOADER_POLICY,
             'unknown runtime specification or loader policy')
+    qualification_policy(spec)
     provenance = spec['provenance']
     require(re.fullmatch('[0-9a-f]{40}', provenance.get('source_commit', '')) is not None,
             'missing actual runtime source commit')
@@ -334,6 +346,37 @@ class RuntimeCompiler(Compiler):
         return self
 
 
+def qualification_record(path, expected_sha, binding, guard):
+    """Read one small proof through a stable ordinary descriptor; no child runs."""
+    path = absolute(str(path))
+    require(valid_key(expected_sha) and path.resolve(strict=True) == path,
+            'invalid qualification receipt reference')
+    before = stamp(path.lstat())
+    require(stat.S_ISREG(before[2]) and before[6] == 1 and before[3] <= 32 * BLOCK,
+            'qualification receipt must be a bounded ordinary fresh file')
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    try:
+        require(stamp(os.fstat(fd)) == before, 'qualification receipt changed before opening')
+        parts, size, digest_bytes = [], 0, hashlib.sha256()
+        with os.fdopen(fd, 'rb', closefd=False) as stream:
+            while block := stream.read(BLOCK):
+                guard()
+                size += len(block)
+                require(size <= 32 * BLOCK, 'qualification receipt exceeded size bound')
+                parts.append(block)
+                digest_bytes.update(block)
+        require(size == before[3] and digest_bytes.hexdigest() == expected_sha
+                and stamp(os.fstat(fd)) == before, 'qualification receipt bytes/identity differ')
+    finally:
+        os.close(fd)
+    guard()
+    require(stamp(path.lstat()) == before, 'qualification receipt changed after reading')
+    record = json.loads(b''.join(parts))
+    require(isinstance(record, dict) and all(record.get(k) == v for k, v in binding.items()),
+            'qualification receipt does not bind passed current runtime')
+    return before
+
+
 def load_runtime_compiler(root, key):
     require(valid_key(key), 'invalid runtime key')
     root = Path(root)
@@ -364,10 +407,30 @@ def load_runtime_compiler(root, key):
     require(probes['compiler'] == identity['compiler'] and probes['sysroot'] == str(sysroot) + '\n'
             and probes['loader'] == identity['admission']['loader']
             and probes['options'] == identity['unstable_options'], 'runtime probe proof differs')
+    declared = qualification_policy(identity['admission'])
+    proof = ready.get('prepublication_qualification')
+    if declared is None:
+        require(proof is None, 'undeclared runtime qualification')
+    else:
+        require(isinstance(proof, dict) and set(proof) == {'policy', 'receipt', 'sha256', 'stamp'}
+                and proof['policy'] == declared and proof['receipt'] == 'qualification.json',
+                'missing or invalid pre-publication qualification')
+        path = directory / proof['receipt']
+        saved = proof['stamp']
+        require(valid_key(proof['sha256']) and isinstance(saved, list) and len(saved) == 7
+                and all(type(v) is int for v in saved) and path.resolve(strict=True) == path,
+                'invalid retained qualification identity')
+        current_proof = stamp(path.lstat())
+        require(stat.S_ISREG(current_proof[2]) and current_proof[6] == 1
+                and not current_proof[2] & 0o222 and current_proof == saved,
+                'installed qualification receipt changed or is writable')
+        # Its bytes and runtime binding were verified before publication. Warm
+        # lookup follows the same immutable stamp contract as installed payloads.
     return RuntimeCompiler(key, sysroot, identity)
 
 
-def install_runtime_compiler(root, specification, *, run, guard, environment):
+def install_runtime_compiler(root, specification, *, run, guard, environment,
+                             validate_before_publication=None):
     """Install admitted bytes at their FINAL root, then probe and make immutable.
 
     Caller holds the canonical lock and records every run(argv, env) ->
@@ -380,6 +443,10 @@ def install_runtime_compiler(root, specification, *, run, guard, environment):
     require(root.resolve(strict=True) == root and root.is_dir(), 'runtime owner must be ordinary')
     spec = json.loads(json.dumps(specification))  # Caller mutation cannot change the admitted plan.
     identity = identity_for(spec)
+    declared = qualification_policy(spec)
+    require((declared is None and validate_before_publication is None)
+            or (declared is not None and callable(validate_before_publication)),
+            'declared pre-publication qualification requires its explicit validator')
     key = digest(identity)
     directory = root / '.work' / NAMESPACE / key
     require(not directory.exists() and not directory.is_symlink(), 'runtime installation already exists')
@@ -443,12 +510,41 @@ def install_runtime_compiler(root, specification, *, run, guard, environment):
         require(probes['compiler'] == spec['compiler'] and probes['sysroot'] == str(sysroot) + '\n',
                 'final-root compiler version or sysroot differs')
         require(probes['options'] == spec['unstable_options'], 'final-root option probe differs')
+        qualification = None
+        if declared is not None:
+            guard()
+            reference = validate_before_publication(compiler, env.copy())
+            guard()
+            require(digest(identity) == key and identity == identity_for(spec)
+                    and compiler == RuntimeCompiler(key, sysroot, identity),
+                    'runtime identity changed during validation')
+            require(isinstance(reference, dict) and set(reference) == {'path', 'sha256'},
+                    'validator must return its retained qualification receipt')
+            source = absolute(reference['path'])
+            require(source.is_relative_to(root) and not source.is_relative_to(directory),
+                    'qualification source receipt must remain in owned external evidence')
+            binding = dict(schema_version=1, status='passed', policy=declared, key=key,
+                owner=str(root), sysroot=str(sysroot), source_commit=identity['provenance']['source_commit'])
+            before = qualification_record(source, reference['sha256'], binding, guard)
+            row = dict(sha256=reference['sha256'], size=before[3], mode=0o444)
+            retained = directory / 'qualification.json'
+            transfer(source, row, before, guard, retained)
+            qualified_stamp = qualification_record(retained, reference['sha256'], binding, guard)
+            require(stamp(source.lstat()) == before, 'qualification source receipt changed during retention')
+            qualification = dict(policy=declared, receipt='qualification.json',
+                                 sha256=reference['sha256'], stamp=qualified_stamp)
         check_inputs()
-        require(tree_stamps(sysroot) == copied, 'runtime files changed during probes')
+        require(tree_stamps(sysroot) == copied, 'runtime files changed during probes or validation')
+        require(digest(identity) == key and identity == identity_for(spec), 'runtime identity changed before readiness')
+        if qualification is not None:
+            require(stamp((directory / 'qualification.json').lstat()) == qualified_stamp,
+                    'retained qualification changed before readiness')
         for name, value in copied.items():
             (sysroot / name).chmod(stat.S_IMODE(value[2]) & ~0o222)
         ready = dict(status='installed', application_qualified=False, owner=str(root), key=key,
                      sysroot=str(sysroot), identity=identity, stamps=tree_stamps(sysroot), probes=probes)
+        if qualification is not None:
+            ready['prepublication_qualification'] = qualification
         write_json(directory / 'ready.json', ready)
         for name in ('admission.json', 'ready.json'):
             (directory / name).chmod(0o444)

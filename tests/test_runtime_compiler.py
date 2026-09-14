@@ -108,10 +108,128 @@ class RuntimeCompilerTests(unittest.TestCase):
     def install_path(self):
         return self.root / '.work' / runtime.NAMESPACE / runtime.digest(runtime.identity_for(self.spec))
 
-    def install(self, run=None, guard=None):
+    def install(self, run=None, guard=None, validator=None):
         with patch.object(runtime.sys, 'platform', 'darwin'):
             return runtime.install_runtime_compiler(self.root, self.spec,
-                run=run or self.run_probe, guard=guard or (lambda: None), environment={'PATH': '/bin'})
+                run=run or self.run_probe, guard=guard or (lambda: None), environment={'PATH': '/bin'},
+                validate_before_publication=validator)
+
+    def qualification(self, compiler, **changes):
+        record = dict(schema_version=1, status='passed',
+            policy=compiler.identity['admission']['prepublication_qualification']['policy'],
+            key=compiler.key, owner=str(self.root), sysroot=str(compiler.sysroot),
+            source_commit=compiler.identity['provenance']['source_commit'])
+        record.update(changes)
+        path = self.root / ('qualification-' + compiler.key + '.json')
+        path.write_text(json.dumps(record, sort_keys=True) + '\n')
+        return dict(path=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+
+    def test_declared_validator_binds_retained_receipt_without_warm_content_reads(self):
+        self.spec['prepublication_qualification'] = dict(policy='fixture-source-v1')
+        calls = []
+        def validate(compiler, environment):
+            self.assertFalse((compiler.sysroot.parent / 'ready.json').exists())
+            self.assertEqual(self.calls[-1][0][1:], ['-Zhelp'])
+            self.assertEqual(environment['RUSTC'], str(compiler.rustc))
+            calls.append(self.qualification(compiler))
+            return calls[-1]
+        compiler = self.install(validator=validate)
+        self.assertEqual(len(calls), 1)
+        retained = compiler.sysroot.parent / 'qualification.json'
+        self.assertEqual(retained.read_bytes(), Path(calls[0]['path']).read_bytes())
+        ready = json.loads((compiler.sysroot.parent / 'ready.json').read_text())
+        self.assertEqual(ready['prepublication_qualification']['sha256'], calls[0]['sha256'])
+        self.assertEqual(ready['prepublication_qualification']['stamp'], runtime.stamp(retained.lstat()))
+        self.assertFalse(ready['application_qualified'])
+        self.assertNotIn('std_source_paths', compiler.identity['provenance'])
+        Path(calls[0]['path']).unlink()  # Lookup uses the retained proof, not external evidence.
+        original_open = Path.open
+        def guarded_open(path, *args, **kwargs):
+            if path == retained:
+                raise AssertionError('warm qualification content read')
+            return original_open(path, *args, **kwargs)
+        with patch.object(Path, 'open', guarded_open), \
+             patch.object(runtime, 'qualification_record', side_effect=AssertionError('proof reread')):
+            self.assertEqual(runtime.load_runtime_compiler(self.root, compiler.key), compiler)
+
+    def test_validator_declaration_is_keyed_and_required_before_input_work(self):
+        original = runtime.digest(runtime.identity_for(self.spec))
+        self.spec['prepublication_qualification'] = dict(policy='fixture-source-v1')
+        self.assertNotEqual(runtime.digest(runtime.identity_for(self.spec)), original)
+        with patch.object(runtime, 'inspect_component', side_effect=AssertionError('input read')):
+            with self.assertRaisesRegex(RuntimeError, 'explicit validator'):
+                self.install()
+            del self.spec['prepublication_qualification']
+            with self.assertRaisesRegex(RuntimeError, 'explicit validator'):
+                self.install(validator=lambda *_: None)
+        self.assertFalse(self.calls)
+        self.assertFalse((self.root / '.work').exists())
+
+    def test_validator_failure_and_wrong_runtime_receipt_prevent_ready(self):
+        for kind in ('raises', 'key', 'source', 'status'):
+            self.spec['prepublication_qualification'] = dict(policy='fixture-' + kind)
+            def validate(compiler, environment):
+                if kind == 'raises':
+                    raise RuntimeError('actual qualification failed')
+                changes = {'key': {'key': '0' * 64}, 'source': {'source_commit': 'f' * 40},
+                           'status': {'status': 'failed'}}[kind]
+                return self.qualification(compiler, **changes)
+            with self.subTest(kind=kind), self.assertRaises(RuntimeError):
+                self.install(validator=validate)
+            self.assertFalse((self.install_path() / 'ready.json').exists())
+            self.assertTrue((self.install_path() / 'failure.json').is_file())
+
+    def test_validator_output_input_and_nested_identity_mutations_prevent_ready(self):
+        source = self.root / 'native/bin/rustc'
+        original = source.read_bytes()
+        for kind in ('output', 'input', 'identity'):
+            self.spec['prepublication_qualification'] = dict(policy='fixture-' + kind)
+            def validate(compiler, environment):
+                reference = self.qualification(compiler)
+                if kind == 'identity':
+                    compiler.identity['provenance']['source_commit'] = 'f' * 40
+                elif kind == 'input':
+                    source.write_bytes(b'changed input')
+                else:
+                    (compiler.sysroot / DRIVER).write_bytes(b'changed installed output')
+                return reference
+            try:
+                with self.subTest(kind=kind), self.assertRaises(RuntimeError):
+                    self.install(validator=validate)
+                self.assertFalse((self.install_path() / 'ready.json').exists())
+                self.assertTrue((self.install_path() / 'failure.json').is_file())
+            finally:
+                source.write_bytes(original)
+
+    def test_qualification_copy_corruption_is_rejected_before_ready(self):
+        self.spec['prepublication_qualification'] = dict(policy='fixture-copy-readback')
+        original_transfer = runtime.transfer
+        def altered(path, row, expected_stamp, guard, destination=None):
+            original_transfer(path, row, expected_stamp, guard, destination)
+            if destination is not None and destination.name == 'qualification.json':
+                destination.chmod(0o644)
+                destination.write_bytes(b'corrupted receipt after transfer')
+                destination.chmod(0o444)
+        with patch.object(runtime, 'transfer', altered), self.assertRaisesRegex(RuntimeError, 'receipt bytes'):
+            self.install(validator=lambda compiler, _: self.qualification(compiler))
+        self.assertFalse((self.install_path() / 'ready.json').exists())
+        self.assertTrue((self.install_path() / 'failure.json').is_file())
+
+    def test_qualification_same_size_restored_mtime_mutation_invalidates_lookup(self):
+        self.spec['prepublication_qualification'] = dict(policy='fixture-receipt-mutation')
+        compiler = self.install(validator=lambda compiler, _: self.qualification(compiler))
+        retained = compiler.sysroot.parent / 'qualification.json'
+        original = retained.stat()
+        payload = retained.read_bytes()
+        changed = payload.replace(b'"passed"', b'"failed"')
+        self.assertNotEqual(payload, changed)
+        self.assertEqual(len(payload), len(changed))
+        retained.chmod(0o644); retained.write_bytes(changed); retained.chmod(0o444)
+        os.utime(retained, ns=(original.st_atime_ns, original.st_mtime_ns))
+        self.assertEqual(retained.stat().st_size, original.st_size)
+        self.assertEqual(retained.stat().st_mtime_ns, original.st_mtime_ns)
+        with self.assertRaisesRegex(RuntimeError, 'qualification receipt changed'):
+            runtime.load_runtime_compiler(self.root, compiler.key)
 
     def test_final_root_sources_no_private_metadata_and_no_lookup_workload(self):
         compiler = self.install()
