@@ -43,3 +43,13 @@ direct branch linkage, shared-arena admission, precise production profile
 publication, strict/Cargo fixtures, original real workload assertion checks,
 and the frozen primary/full edited-source performance gates. The test-only
 bridge provides no performance conclusion.
+
+Qualified by `confined-scalar-call-focused-01` (six focused tests in each
+profile) and `confined-scalar-call-workspace-01` (581 passed, ten ignored in
+each profile). Both terminal records and all frozen inputs/output logs were
+verified against their recorded source revisions. Workspace setup took
+103.22 seconds; this is tool regression time, not guest execution timing.
+The workspace runner accidentally shadowed its run-name variable with the
+last required test name. Its unchanged summary was moved to the intended
+result directory, and the reporting variable was corrected after closure.
+The original tested runner remains bound to revision `0fa2f598`.
