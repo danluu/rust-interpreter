@@ -13,7 +13,7 @@ Full-function emission still constructs and drops one analysis per compilation.
 This is preparatory structure only: no plan cache, partial compilation, executable
 patching, runtime option or measured optimization is enabled.
 
-Setup takes 120.4 seconds across the four commands. Source and retained artifacts
+Setup takes 119.3 seconds across the four commands. Source and retained artifacts
 are bound in the closure. Keep the runtime experimental while developing region
 staging; the adopted immutable VM remains the benchmark control. Next expose a
 single-region staging path and qualify its unresolved edges before any live

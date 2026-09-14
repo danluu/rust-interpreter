@@ -7,6 +7,20 @@ and 6.51% CPU but remains 1.571× ordinary native. Folded improves 3.11% wall;
 pgrust, rg-aot and Nushell differences are within variation. The full parser
 still loses to native. [Integration and limits](results/scratch-scalar-main-qualification-01/assessment.md).
 
+Current manual direction: demand-driven ordinary-region compilation. The closed
+register-file census redirects away from repeated allocation/flush variants.
+Three exact adopted profiles show 40.92–43.18% of ordinary emitted bytes in
+regions with neither charged native nor interpreted work; these aggregate counts
+predict no saving. The function-analysis extraction passes 345 bytecode controls
+per profile and reconstructs both adopted unprofiled captures exactly. Runtime
+work stays on `experiment/demand-region-emission-20260914`; main's adopted VM
+is unchanged. Next qualify single-region staging and pending-edge relocation,
+then remove dense per-function temporaries from per-region work and bound retained
+analysis before any live demand engine or changed-source screen.
+[Register traffic](results/ordinary-memory-traffic-01/assessment.md),
+[region coverage](results/demand-region-census-01/assessment.md),
+[analysis extraction](results/demand-function-analysis-01/assessment.md).
+
 1. The two adopted-VM captures are closed: all 1,561 / 1,231 generated self
    samples map to exact same-process schema-2 emission. Memory partitioning
    reconstructs every ordinary function and scalar body; payload loads account
