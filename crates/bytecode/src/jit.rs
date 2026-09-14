@@ -46,7 +46,7 @@ mod code_dump;
 mod code_spans;
 mod values;
 mod function_analysis;
-// Qualified separately before the demand VM loop uses region publication.
+// Checked transactions used by explicit demand-region preparation.
 #[allow(dead_code)]
 mod demand_links;
 mod demand;
@@ -577,8 +577,7 @@ impl<'a> Jit<'a> {
     }
 
     // Selection stages one cached region with constant-sized entry metadata.
-    // This path still publishes no executable code; demand execution needs a
-    // separate transaction for stable tables and pending successor branches.
+    // Stage privately; the caller owns the checked publication transaction.
     fn emit_analyzed_function(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
         mut spans: Option<&mut code_spans::Collector>, plan: &function_analysis::FunctionAnalysis,
         selected: Option<usize>) -> Result<Option<CompiledFunction<'a>>, EmitError> {

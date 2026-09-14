@@ -21,6 +21,7 @@ mod memory_parts;
 mod continuation_census;
 #[cfg(test)]
 mod region_staging;
+mod demand_map;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -105,6 +106,8 @@ impl Collector {
 struct FunctionMap<'a> {
     function: usize,
     name: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    region_pc: Option<usize>,
     offset: usize,
     end: usize,
     assertion_base: usize,
@@ -122,6 +125,8 @@ pub(super) struct Map<'a> {
     profiled: bool,
     persistent_registers: bool,
     resumable_calls: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    demand_regions: Option<bool>,
     complete: bool,
     reconstructed_bytes_match: bool,
     spans: usize,
@@ -154,18 +159,25 @@ impl Jit<'_> {
         }
         let (arena_base, bytes) = self.code.as_ref().map_or((0, &[][..]), |code| code.published());
         if bytes.len() != self.bytes { return Err("operation map code length mismatch".into()); }
-        let mut order: Vec<_> = self.blocks.iter().enumerate().filter_map(|(id, entries)|
-            entries.iter().flatten().map(|entry| entry.offset).min().map(|offset| (offset, id, false))).collect();
-        if let Some(scalar) = &self.scalar {
-            order.extend(scalar.entries.iter().enumerate().filter_map(|(id,e)| e.map(|e|(e.offset,id,true))));
+        let mut order = vec![];
+        for (id, entries) in self.blocks.iter().enumerate() {
+            if let Some(publications) = self.demand.as_ref().and_then(|d| d.publications(id)) {
+                self.validate_demand_mapping(id, publications)?;
+                order.extend(publications.iter().map(|p| (p.offset, id, false, Some(p))));
+            } else if let Some(offset) = entries.iter().flatten().map(|e| e.offset).min() {
+                order.push((offset, id, false, None));
+            }
         }
-        order.sort_unstable();
-        if order.first().is_some_and(|(offset, _, _)| *offset != 0) || order.is_empty() != bytes.is_empty() {
+        if let Some(scalar) = &self.scalar {
+            order.extend(scalar.entries.iter().enumerate().filter_map(|(id,e)| e.map(|e|(e.offset,id,true,None))));
+        }
+        order.sort_unstable_by_key(|row| row.0);
+        if order.first().is_some_and(|row| row.0 != 0) || order.is_empty() != bytes.is_empty() {
             return Err("operation map missing published prefix".into());
         }
         let (mut functions, mut assertions, mut spans) = (vec![], 0, 0);
-        for (index, &(offset, id, scalar)) in order.iter().enumerate() {
-            let end = order.get(index + 1).map_or(bytes.len(), |(offset, _, _)| *offset);
+        for (index, &(offset, id, scalar, publication)) in order.iter().enumerate() {
+            let end = order.get(index + 1).map_or(bytes.len(), |row| row.0);
             if offset >= end || end > bytes.len() || offset % 4 != 0 || end % 4 != 0 {
                 return Err("operation map invalid function extent".into());
             }
@@ -174,29 +186,36 @@ impl Jit<'_> {
                 let entry=self.scalar_entry(id).ok_or("operation map missing scalar entry")?;
                 if end-offset!=entry.bytes || spans==MAX_SPANS {return Err("operation map scalar extent or span bound".into());}
                 let words=self.reconstruct_scalar(id)?;verify_words(&words,&bytes[offset..end])?;
-                functions.push(FunctionMap {function:id,name:&f.name,offset,end,assertion_base:assertions,assertion_count:0,
+                functions.push(FunctionMap {function:id,name:&f.name,region_pc:None,offset,end,assertion_base:assertions,assertion_count:0,
                     spans:vec![Span{offset,end,region_pc:0,pc:None,kind:Kind::ScalarLeaf}]});
                 spans+=1;continue;
             }
             let mut collector = Collector { rows: vec![], limit: MAX_SPANS - spans };
             // The nonempty published entries are the original admission receipt.
             // A fresh fits() check would incorrectly count their table twice.
-            let staged = self.emit_function_inner(f, (end - offset) / 4, assertions, Some(&mut collector))
-                .map_err(|e| format!("operation map reconstruction: {e:?}"))?
-                .ok_or("operation map reconstruction declined")?;
+            let staged = if let Some(publication) = publication {
+                self.reconstruct_demand_mapping(id, publication, end, assertions, &mut collector)?
+            } else {
+                self.emit_function_inner(f, (end - offset) / 4, assertions, Some(&mut collector))
+                    .map_err(|e| format!("operation map reconstruction: {e:?}"))?
+                    .ok_or("operation map reconstruction declined")?
+            };
             verify_words(&staged.words, &bytes[offset..end])?;
-            for (actual, rebuilt) in self.blocks[id].iter().zip(&staged.entries) {
+            let actual_entries = if let Some(p) = publication { &self.blocks[id][p.pc..p.pc + 1] }
+                else { &self.blocks[id] };
+            for (actual, rebuilt) in actual_entries.iter().zip(&staged.entries) {
                 match (actual, rebuilt) {
                     (None, None) => {},
                     (Some(a), Some(b)) if a.offset == offset + b.offset && a.end == b.end => {},
                     _ => return Err("operation map reconstructed entry mismatch".into()),
                 }
             }
-            if self.blocks[id].len() != staged.entries.len() {
+            if actual_entries.len() != staged.entries.len() {
                 return Err("operation map reconstructed entry count mismatch".into());
             }
             if let Some(tables) = &self.resumable {
                 let published = tables.published(id);
+                let published = if let Some(p) = publication { &published[p.pc..p.pc + 1] } else { published };
                 if published.len() != staged.resumes.len() || published.iter().zip(&staged.resumes)
                     .any(|(actual, rebuilt)| *actual != rebuilt.map_or(0, |word| arena_base + offset + word * 4)) {
                     return Err("operation map reconstructed resume mismatch".into());
@@ -210,13 +229,15 @@ impl Jit<'_> {
             spans += collector.rows.len();
             for row in &mut collector.rows { row.offset += offset; row.end += offset; }
             functions.push(FunctionMap { function: id, name: &f.name, offset, end,
+                region_pc: publication.map(|p| p.pc),
                 assertion_base: assertions, assertion_count: staged.assertions.len(), spans: collector.rows });
             assertions = assertion_end;
         }
         if assertions != self.assertions.len() { return Err("operation map incomplete assertion coverage".into()); }
-        Ok(Map { schema_version: if self.scalar.is_some() {2} else {1}, pid: std::process::id(), arena_base, code_bytes: bytes.len(),
+        Ok(Map { schema_version: if self.demand.is_some() {3} else if self.scalar.is_some() {2} else {1}, pid: std::process::id(), arena_base, code_bytes: bytes.len(),
             code_sha256: format!("{:x}", Sha256::digest(bytes)), profiled: self.profiled,
             persistent_registers: self.persistent_registers, resumable_calls: self.resumable.is_some(),
+            demand_regions: self.demand.as_ref().map(|_| true),
             complete: true, reconstructed_bytes_match: true, spans, functions,
             note: "Reconstructed after execution and checked against this process's published bytes, entries and assertions. Spans cover emitted bytes, including unexecuted tails; zero-word operations are explicit. Transition spans include complete native Call/Return machinery. Scalar-leaf spans cover independently reconstructed whole bodies; they do not assign body words to individual original PCs. Static size is not sampled time or retired instructions. Diagnostic I/O is not benchmark evidence." })
     }

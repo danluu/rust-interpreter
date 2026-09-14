@@ -144,3 +144,47 @@ fn collectors_and_output_are_bounded_and_default_emission_keeps_no_records() {
     assert!(bounded.write_all(b"d").is_err());
     assert_eq!(bounded.writer, b"abc");
 }
+
+#[test]
+fn demand_reconstruction_tracks_interleaved_forward_backward_and_unready_targets() {
+    let p = fixture(); crate::validate(&p).unwrap();
+    for profiled in [false, true] { for persistent in [false, true] {
+        let mut jit = Jit::new_resumable(&p, profiled, MAX_CODE_BYTES, persistent).unwrap();
+        jit.enable_demand_regions().unwrap();
+        for id in [2, 0, 1] { jit.ensure_function(id).unwrap(); }
+        let order = [(0, 6), (2, 6), (1, 8), (0, 9), (2, 8), (1, 6)];
+        for (id, pc) in order {
+            assert!(jit.ensure_region(id, pc).unwrap());
+            let before = (jit.bytes, jit.operations, jit.compile_nanos, jit.assertions.len());
+            let bytes = jit.code.as_ref().unwrap().published().1.to_vec();
+            let map = jit.operation_map().unwrap();
+            assert_eq!((map.schema_version, map.demand_regions), (3, Some(true)));
+            assert_eq!((map.functions.last().unwrap().function, map.functions.last().unwrap().region_pc), (id, Some(pc)));
+            assert_eq!((jit.bytes, jit.operations, jit.compile_nanos, jit.assertions.len()), before);
+            assert_eq!(jit.code.as_ref().unwrap().published().1, bytes);
+            let mut cursor = 0;
+            for row in map.functions.iter().flat_map(|f| &f.spans) { assert_eq!(row.offset, cursor); cursor = row.end; }
+            assert_eq!(cursor, bytes.len());
+        }
+        assert_eq!(jit.operation_map().unwrap().functions.iter().map(|f| f.function).collect::<Vec<_>>(),
+            [2, 0, 1, 0, 2, 1, 0, 2, 1]);
+        jit.assertions[0].kind = FaultKind::Trap;
+        assert!(jit.operation_map().unwrap_err().contains("assertion mismatch"));
+    } }
+}
+
+#[test]
+fn demand_maps_include_empty_and_code_budget_declined_owners() {
+    let p = fixture();
+    for capacity in [0, 4, 512, 1024] {
+        let mut jit = Jit::new_resumable(&p, false, capacity, true).unwrap();
+        jit.enable_demand_regions().unwrap();
+        jit.operation_map().unwrap();
+        for id in [1, 0, 2] {
+            jit.ensure_function(id).unwrap();
+            for pc in [6, 8, 9] { jit.ensure_region(id, pc).unwrap(); }
+            let map = jit.operation_map().unwrap();
+            assert_eq!(map.code_bytes, jit.bytes); assert!(map.code_bytes <= capacity);
+        }
+    }
+}

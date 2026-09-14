@@ -26,6 +26,8 @@ struct Dump<'a> {
     native_call_stubs: bool,
     persistent_registers: bool,
     resumable_calls: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    demand_regions: Option<bool>,
     ranges: Vec<Range<'a>>,
     note: &'static str,
 }
@@ -79,10 +81,11 @@ impl Jit<'_> {
             range.end = end;
             end = range.offset;
         }
-        let dump = Dump { schema_version: 1, pid: std::process::id(),
+        let dump = Dump { schema_version: if self.demand.is_some() {2} else {1}, pid: std::process::id(),
             architecture: "aarch64", byte_order: "little", arena_base, code_bytes: bytes.len(),
             profiled: self.profiled, native_call_stubs: self.native_call_stubs,
             persistent_registers: self.persistent_registers, resumable_calls: self.resumable.is_some(), ranges,
+            demand_regions: self.demand.as_ref().map(|_| true),
             note: "Published code from this process after successful execution. Entry ranges include wrappers, failure tails and fallbacks. Native-tree ranges cover whole functions, not individual bytecode operations. Diagnostic I/O is not benchmark evidence." };
         let operations = operations.then(|| self.operation_map()).transpose()?;
         let write = || -> Result<(), Box<dyn std::error::Error>> {

@@ -192,8 +192,77 @@ fn demand_mode_requires_explicit_checked_resumable_configuration() {
     let mut partial = p.clone(); partial.version |= crate::PARTIAL_VALIDATION;
     assert!(execute_with_engine(&partial, &[1], options(), Engine::Jit).unwrap_err()
         .contains("fully validated resumable JIT"));
-    let limits = Limits { jit_code_dump: Some(std::path::PathBuf::from("unused-demand-diagnostic")), ..options() };
-    assert!(execute_with_engine(&p, &[1], limits, Engine::Jit).unwrap_err().contains("diagnostics are not yet implemented"));
+}
+
+#[test]
+fn demand_maps_cover_mixed_eager_fallback_and_reject_corrupt_receipts() {
+    let mut p = loop_program();
+    p.functions.push(p.functions[0].clone());
+    let mut jit = Jit::new_resumable(&p, true, MAX_CODE_BYTES, true).unwrap();
+    jit.enable_demand_regions().unwrap();
+    jit.ensure_function(0).unwrap();
+    for pc in [10, 4, 5, 12] { jit.ensure_region(0, pc).unwrap(); }
+    jit.demand.as_mut().unwrap().metadata_used = MAX_METADATA_BYTES;
+    jit.ensure_function(1).unwrap();
+    assert_eq!(jit.demand.as_ref().unwrap().eager_fallbacks, 1);
+    let map = serde_json::to_value(jit.operation_map().unwrap()).unwrap();
+    let rows = map["functions"].as_array().unwrap();
+    assert!(rows.iter().filter(|r| r["function"] == 0).all(|r| r["region_pc"].is_number()));
+    assert_eq!(rows.iter().filter(|r| r["function"] == 1).count(), 1);
+    assert!(rows.last().unwrap().get("region_pc").is_none());
+    for corruption in 0..6 {
+        let state = jit.demand.as_mut().unwrap().functions[0].as_mut().unwrap();
+        let duplicate_pc = state.publications[1].pc;
+        let publication = &mut state.publications[0];
+        let old = (publication.pc, publication.offset, publication.bytes, publication.assertion_base, publication.assertions);
+        match corruption {
+            0 => publication.pc = usize::MAX,
+            1 => publication.offset += 4,
+            2 => publication.bytes += 4,
+            3 => publication.assertion_base += 1,
+            4 => publication.assertions += 1,
+            5 => publication.pc = duplicate_pc,
+            _ => unreachable!(),
+        }
+        assert!(jit.operation_map().is_err(), "corrupt receipt {corruption}");
+        let publication = &mut jit.demand.as_mut().unwrap().functions[0].as_mut().unwrap().publications[0];
+        (publication.pc, publication.offset, publication.bytes, publication.assertion_base, publication.assertions) = old;
+        jit.operation_map().unwrap();
+    }
+    // The cold trap has a reserved zero resume slot but no code publication.
+    *jit.resumable.as_mut().unwrap().vacant_entry(0, 8).unwrap() = 4;
+    assert!(jit.operation_map().is_err());
+}
+
+#[test]
+fn live_demand_dumps_match_executed_code_and_preserve_profiles() {
+    static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let root = std::env::temp_dir().join(format!("rust-interp-demand-map-{}-{}", std::process::id(),
+        NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)));
+    std::fs::create_dir(&root).unwrap();
+    for (case, p) in [loop_program(), calls_program()].into_iter().enumerate() {
+        for persistent in [false, true] { for scalar in [false, true] {
+            let limits = Limits { jit_persistent_registers: persistent, jit_scalar_calls: scalar, ..options() };
+            let (expected, expected_profile) = execute_profiled(&p, &[7], limits.clone(), Engine::Jit).unwrap();
+            let path = root.join(format!("{case}-{persistent}-{scalar}"));
+            let (actual, profile) = execute_profiled(&p, &[7], Limits { jit_code_dump: Some(path.clone()),
+                jit_operation_map: true, ..limits }, Engine::Jit).unwrap();
+            assert_eq!((actual.value, actual.instructions, actual.peak_memory, actual.jit_bytes),
+                (expected.value, expected.instructions, expected.peak_memory, expected.jit_bytes));
+            assert_eq!(counts(&profile), counts(&expected_profile));
+            let load = |name| serde_json::from_slice::<serde_json::Value>(&std::fs::read(path.join(name)).unwrap()).unwrap();
+            let operations = load("operations.json"); let ranges = load("map.json");
+            assert_eq!(operations["schema_version"], 3); assert_eq!(ranges["schema_version"], 2);
+            assert_eq!(operations["demand_regions"], true); assert_eq!(ranges["demand_regions"], true);
+            assert_eq!(operations["code_bytes"], actual.jit_bytes);
+            assert_eq!(operations["arena_base"], ranges["arena_base"]);
+            assert_eq!(operations["reconstructed_bytes_match"], true);
+            use sha2::Digest;
+            assert_eq!(operations["code_sha256"], format!("{:x}", sha2::Sha256::digest(std::fs::read(path.join("code.bin")).unwrap())));
+            assert!(operations["functions"].as_array().unwrap().iter().any(|r| r["region_pc"].is_number()));
+        } }
+    }
+    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

@@ -79,6 +79,8 @@ impl State {
     pub fn internal(&self, id: usize, pc: usize) -> Option<usize> {
         self.functions.get(id)?.as_deref()?.links.internal(pc)
     }
+
+    pub fn plan(&self, id: usize) -> Option<&FunctionAnalysis> { self.plans.get(id) }
 }
 
 impl<'a> Jit<'a> {

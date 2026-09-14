@@ -772,9 +772,6 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
         if !USE_JIT || !RESUMABLE || program.version & PARTIAL_VALIDATION != 0 {
             return Err("demand regions require fully validated resumable JIT execution".into());
         }
-        if limits.jit_code_dump.is_some() {
-            return Err("demand-region code diagnostics are not yet implemented".into());
-        }
     }
     let started = std::time::Instant::now();
     let mut jit = if USE_JIT {
