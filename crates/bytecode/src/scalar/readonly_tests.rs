@@ -106,7 +106,8 @@ fn readonly_limits_and_native_refusal_remain_explicit() {
     let p=fixture(vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8},Op::Load{dst:2,address:1,size:8},Op::Return],
         8,vec![Slot{offset:0,size:8}],Slot{offset:0,size:8});
     let plan=plan(&p).unwrap();
-    assert_eq!(native_leaf::emit_call(&plan,false).err(),Some("native_external_read_unimplemented"));
+    assert_eq!(native_leaf::emit(&plan,false).err(),Some("native_external_read_call_only"));
+    assert!(native_leaf::emit_call(&plan,false).is_ok());
     assert!(!crate::proof::memory_plan_readonly(&p,0,&mut 0).eligible);
     let mut changed=p.clone();changed.functions[0].code[2]=Op::Copy{src:1,dst:0,size:17};
     changed.functions[0].frame_size=24;assert!(self::plan(&changed).is_err());

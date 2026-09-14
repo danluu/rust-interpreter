@@ -86,6 +86,42 @@ impl Emitter<'_> {
         if let Some(register)=self.registers[id] {self.mov(register,9);return;}
         let offset=self.slots[id].unwrap();self.store(9,31,offset);if self.plan.nodes[id].width>8 {self.store(10,31,offset+8);}
     }
+    /// Private Call only. x2/x7/x8 retain the stable linear/heap backing and
+    /// heap length. The caller saved its PRE-Call linear length at SP+24.
+    /// Limiting linear reads to that prefix excludes all fresh payload/padding,
+    /// whose logical bytes may differ from our private virtual frame. Any failed
+    /// check returns private failure; the bridge replays the ordinary Call.
+    /// Use only x9-x14: x3 and x15-x17 may contain allocated live scalar values.
+    fn read_external(&mut self,address:Id,size:u8)->Result<(),&'static str> {
+        if !self.call_frame {return Err("native_external_read_call_only");}
+        if size==0 || size>16 {return Err("native_external_read_width");}
+        self.get(9,address,false); // exactly the VM's low-usize address bits
+        self.imm(10,crate::heap::TAG as u64);self.cmp(9,10);
+        self.three(0xcb000000,11,9,10);
+        self.csel(9,9,11,3);self.csel(12,2,7,3);
+        self.load(13,31,self.stack_bytes+24);self.csel(13,13,8,3);
+        self.cmp(9,31);self.fail(0);
+        self.cmp(9,13);self.fail(8);
+        self.three(0xcb000000,13,13,9);self.imm(14,size as u64);
+        self.cmp(13,14);self.fail(3);
+        self.three(0x8b000000,11,12,9);
+        match size {
+            1|2|4|8=>{
+                let opcode=match size {1=>0x39400000,2=>0x79400000,4=>0xb9400000,_=>0xf9400000};
+                self.emit(opcode|(11<<5)|9);self.mov(10,31);
+            },
+            16=>{self.load(9,11,0);self.load(10,11,8);},
+            _=>{
+                self.mov(9,31);self.mov(10,31);
+                for byte in 0..size {
+                    self.emit(0x39400000|((byte as u32)<<10)|(11<<5)|12);
+                    self.lsl(12,12,(byte%8)*8);
+                    let output=if byte<8 {9} else {10};self.three(0xaa000000,output,output,12);
+                }
+            },
+        }
+        Ok(())
+    }
     fn extract(&mut self,p:Slice) {
         self.get(9,p.value,false);self.get(10,p.value,true);
         let shift=p.byte*8;
@@ -171,8 +207,7 @@ impl Emitter<'_> {
     }
     fn node(&mut self,id:Id)->Result<(),&'static str> {
         match &self.plan.nodes[id].value {
-            #[cfg(test)]
-            Value::Read{..}=>return Err("native_external_read_unimplemented"),
+            Value::Read{address,size}=>self.read_external(*address,*size)?,
             Value::Pack(parts)=>self.pack(parts),
             Value::Binary{a,b,op,bits,signed,overflow}=>self.binary(*a,*b,*op,*bits,*signed,*overflow),
             Value::Unary{src,op,bits}=>{
@@ -247,6 +282,9 @@ fn emit_call_reference(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
     emit_inner(plan,profiled,true,false,true,true,false)
 }
 fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool)->Result<Emitted,&'static str> {
+    if !call_frame && plan.nodes.iter().any(|n|matches!(n.value,Value::Read{..})) {
+        return Err("native_external_read_call_only");
+    }
     let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
     let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;

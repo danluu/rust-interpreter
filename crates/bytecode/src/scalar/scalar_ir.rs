@@ -13,7 +13,6 @@ struct Slice { value: Id, byte: u8, size: u8 }
 #[derive(Clone, Debug)]
 enum Value {
     Constant(u128), Input(usize), Base(usize),
-    #[cfg(test)]
     Read {address:Id,size:u8},
     Pack(Vec<Slice>), Phi(Vec<(usize, Slice)>),
     Binary { a:Id, b:Id, op:Binary, bits:u8, signed:bool, overflow:bool },
@@ -27,7 +26,6 @@ impl Node {
     fn inputs(&self) -> Vec<Id> {
         match &self.value {
             Value::Constant(_) | Value::Input(_) | Value::Base(_) => vec![],
-            #[cfg(test)]
             Value::Read{address,..} => vec![*address],
             Value::Pack(parts) => parts.iter().map(|p|p.value).collect(),
             Value::Phi(parts) => parts.iter().map(|(_,p)|p.value).collect(),
@@ -117,7 +115,6 @@ impl Builder {
         state.bytes.get(offset..offset.checked_add(access.size).ok_or("scalar_range")?).ok_or("scalar_range")
     }
     fn read_value(&mut self,state:&State,access:Access,_address:Option<Id>)->Result<Vec<Byte>,&'static str> {
-        #[cfg(test)]
         if access.offset.is_none() && access.size!=0 {
             if access.size>16 {return Err("scalar_external_width");}
             let address=_address.ok_or("scalar_external_address")?;
@@ -314,7 +311,6 @@ impl Plan {
                     if !self.live[id] {continue;}
                     debug_assert_eq!(self.nodes[id].pc,Some(pc));
                     let value=match &self.nodes[id].value {
-                        #[cfg(test)]
                         Value::Read{address,size}=>_read(get(&values,*address)?,*size)?&mask(*size*8),
                         Value::Pack(parts)=>{let mut value=0;let mut shift=0;for p in parts {value|=slice(get(&values,p.value)?,*p)<<shift;shift+=p.size as u32*8;}value},
                         Value::Binary{a,b,op,bits,signed,overflow}=>{let (value,over)=crate::binary(*op,get(&values,*a)?,get(&values,*b)?,*bits,*signed)?;

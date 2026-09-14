@@ -44,6 +44,11 @@ fn decode(w: u32, pc: usize, len: usize, return_reads: u64) -> Result<Word, &'st
         return ordinary(reg(rn, true) | if load { 0 } else { reg(rd, false) },
                         if load { reg(rd, false) } else { 0 }, false);
     }
+    // Checked external scalar reads use unsigned-offset byte/halfword/word
+    // loads. Keep the access even when its value is dead; it remains a read.
+    if matches!(w & 0xffc00000, 0x39400000 | 0x79400000 | 0xb9400000) {
+        return ordinary(reg(rn,true),reg(rd,false),false);
+    }
     if matches!(w & 0xff800000, 0x91000000 | 0xd1000000) {
         return ordinary(reg(rn, true), reg(rd, true), rd != 31);
     }

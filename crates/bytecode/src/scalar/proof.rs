@@ -23,10 +23,9 @@ pub struct Proof {
 #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
 pub struct Decline { pub pc: usize, pub reason: &'static str }
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Mode { Confined, Initialized, #[cfg(test)] ReadOnly }
+pub enum Mode { Confined, Initialized, ReadOnly }
 impl Mode {
     fn external_reads(self) -> bool {
-        #[cfg(test)]
         if self == Self::ReadOnly { return true; }
         false
     }
@@ -312,11 +311,21 @@ pub fn memory_plan(program: &Program, id: usize, remaining: &mut usize) -> Memor
     memory_plan_mode(program,id,remaining,Mode::Confined)
 }
 
-/// Diagnostic only. Unknown reads remain explicit and require checked runtime
-/// callbacks disjoint from the entire fresh callee range. Writes stay confined.
-#[cfg(test)]
+/// Unknown reads remain explicit and require checked runtime accesses disjoint
+/// from the entire fresh callee range. Writes stay confined to virtual bytes.
 pub fn memory_plan_readonly(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
     memory_plan_mode(program,id,remaining,Mode::ReadOnly)
+}
+
+/// The explicit scalar Call path may retry only the unknown-read prerequisite.
+/// Charge both attempts; all further effects, bounds and limits must still pass.
+pub fn memory_plan_for_call(program:&Program,id:usize,remaining:&mut usize)->MemoryPlan {
+    let strict=memory_plan(program,id,remaining);
+    if strict.decline.as_ref().is_some_and(|d|d.reason=="unknown_pointer_read") {
+        let mut readonly=memory_plan_readonly(program,id,remaining);
+        readonly.work+=strict.work;
+        readonly
+    } else {strict}
 }
 
 fn memory_plan_mode(program: &Program, id: usize, remaining: &mut usize, mode:Mode) -> MemoryPlan {

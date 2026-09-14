@@ -34,7 +34,7 @@ impl Jit<'_> {
         assert!(self.code.is_none() && self.bytes==0 && self.scalar_entry(id).is_none());
         assert!(offset%4==0 && bytes>0 && bytes%4==0 && offset.checked_add(bytes).is_some_and(|end|end<=self.capacity));
         let mut work=proof::MAX_GLOBAL_WORK;
-        let memory=proof::memory_plan(self.program,id,&mut work);
+        let memory=proof::memory_plan_for_call(self.program,id,&mut work);
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).unwrap();
         let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).unwrap();
         assert_eq!(emitted.words.len()*4,bytes);
@@ -56,7 +56,7 @@ impl Jit<'_> {
         let f=&self.program.functions[id];
         // Bound host Call scratch independently of scalar SSA spill storage.
         if f.args.len()>64 || self.bytes>=self.capacity {return Ok(());}
-        let memory=proof::memory_plan(self.program,id,&mut scalar.proof_work);
+        let memory=proof::memory_plan_for_call(self.program,id,&mut scalar.proof_work);
         let limit=scalar.scalar_work.min(250_000);
         let plan=scalar_ir::lower(f,&memory,limit);
         scalar.scalar_work=scalar.scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
@@ -74,7 +74,7 @@ impl Jit<'_> {
     pub(super) fn reconstruct_scalar(&self,id:usize)->Result<Vec<u32>,String> {
         let entry=self.scalar_entry(id).ok_or("missing scalar entry")?;
         let mut work=proof::MAX_GLOBAL_WORK;
-        let memory=proof::memory_plan(self.program,id,&mut work);
+        let memory=proof::memory_plan_for_call(self.program,id,&mut work);
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).map_err(str::to_string)?;
         if plan.maximum_steps!=entry.maximum_steps {return Err("scalar reconstruction budget mismatch".into());}
         let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).map_err(str::to_string)?;
