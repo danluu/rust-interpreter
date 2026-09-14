@@ -15,8 +15,9 @@ publication, stable resume tables and interleaved operation maps. The initial
 three-pair-only liveness representation omitted arbitrary-register scratch
 queries; its compact storage estimates are superseded. The corrected sparse/
 dense graph preserves every query. Corrected captured-function payload is
-11.82/14.80 MB for token block/exhaustive and 2.15 MB for folded. Next qualify
-strict/cache fixtures and original project profiles, then screen changed-source
+11.82/14.80 MB for token block/exhaustive and 2.15 MB for folded. All 122 strict/
+cache fixture outcomes now pass. Next qualify original project profiles and
+their schema-3 observer controls, then screen changed-source
 timing. The 40.92–43.18% uncharged-code census establishes no speedup.
 [Build gap](results/demand-region-build-01/assessment.md),
 [corrected production build](results/demand-region-build-02/assessment.md).
