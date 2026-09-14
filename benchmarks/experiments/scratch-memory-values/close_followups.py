@@ -12,7 +12,7 @@ from workflow_io import write_json as write
 
 def main():
     name=sys.argv[1];revision=sys.argv[2]
-    assert re.fullmatch(r'(?:closed-diagnostic-json-compression-20|closed-runtime-screen-artifact-compression-0[67]|closed-runtime-full-artifact-compression-0[23]|scratch-memory-values-full-protocol-01|scratch-memory-values-parser-edits-protocol-02)',name)
+    assert re.fullmatch(r'(?:closed-legacy-runtime-artifact-compression-02|closed-diagnostic-json-compression-20|closed-runtime-screen-artifact-compression-0[67]|closed-runtime-full-artifact-compression-0[23]|scratch-memory-values-full-protocol-01|scratch-memory-values-parser-edits-protocol-02)',name)
     raw=ROOT/'.work'/name;out=ROOT/'results'/name;outer=ROOT/'.work/experiments'/name
     summary=json.loads((out/'summary.json').read_text());terminal=json.loads((outer/'status.json').read_text())
     assert summary['status']=='passed' and terminal['status']=='finished' and terminal['returncode']==0
