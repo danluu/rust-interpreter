@@ -1,5 +1,22 @@
 use super::*;
 
+#[test]
+fn native_readonly_heap_free_context_never_uses_uninitialized_heap_registers() {
+    let tag=crate::heap::TAG as u128;
+    let mut p=read_pair(8,false);p.statics.clear();
+    let jit=Jit::new_resumable(&p,false,16*1024*1024,true).unwrap();assert!(!jit.uses_heap);
+    for pointer in [0,1,32,152,159,160,176,tag-1,tag,tag+1,tag+16,u64::MAX as u128] {
+        let result=compare(&p,&[pointer],100,65536,8);
+        if pointer==32 {assert_eq!(result.commits,1);}
+    }
+    for profiled in [false,true] {
+        let mut jit=Jit::new_resumable(&p,profiled,16*1024*1024,true).unwrap();jit.enable_scalar_calls();
+        jit.ensure_function(0).unwrap();assert!(jit.scalar_entry(1).is_some());
+        let map=serde_json::to_value(jit.operation_map().unwrap()).unwrap();
+        assert_eq!(map["reconstructed_bytes_match"],true);
+    }
+}
+
 fn read_pair(size:u8,copy:bool)->Program {
     let parent=function("readonly parent",64,8,vec![Slot{offset:0,size:8}],Slot{offset:16,size:16},vec![
         local(0,0),local(1,16),Op::Call{function:1,args:vec![0],destination:1},Op::Return]);

@@ -25,7 +25,7 @@ must reject Read nodes because it lacks the private Call memory context.
 Preserve scalar profile counts, original result publication and shared arena
 limits/reconstruction. No installed tool or main runtime changes at this stage.
 
-Run the bytecode library in both host profiles: 358 passes and 12 explicit
+Run the bytecode library in both host profiles: 359 passes and 12 explicit
 ignored diagnostics per profile. New controls cover linear/heap boundaries,
 all widths and budgets, dead-read fault order, padding/fresh-frame replay,
 resource tails, result/source aliases, chained mutable input, high pointer bits,
@@ -41,3 +41,11 @@ and parser controls plus the full performance gates. No latency gain is claimed.
 Hold the global lock; use the ROOT-only shared target and two Cargo workers.
 Require max(14 GiB, 8 GiB plus twice allocated target) initially and the 8 GiB
 child floor. Preserve peer work, installed tools, cleaner and paused goal.
+
+
+The first 358-test/profile run passed, but source review found that heap-free
+prologues do not initialize x7/x8. Preserve that run as incomplete qualification.
+The second revision passes the program's existing heap ABI flag explicitly to
+scalar emission. Heap-free bodies reject tagged reads without consulting those
+registers; heap-capable bodies retain the checked arena selection. A new native
+boundary and reconstruction control raises the expected total to 359/profile.

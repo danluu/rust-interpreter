@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from compare_saved_runtime import acquire_lock, sha
 from workflow_io import capture, require_space, write_json as write
-NAME = 'scalar-readonly-native-controls-01'
+NAME = 'scalar-readonly-native-controls-02'
 
 
 def read(p):
@@ -69,7 +69,7 @@ def main():
         work.mkdir(exist_ok=False)
         write(work / 'plan.json', dict(owner=str(ROOT), source_revision=revision, frozen=frozen,
             target=str(target.relative_to(ROOT)), same_source_root=True, required_free_bytes=needed,
-            allocated_target_bytes=allocated, minimum_child_gib=8, controls=716, expected_commands=2,
+            allocated_target_bytes=allocated, minimum_child_gib=8, controls=718, expected_commands=2,
             original_project_guest_commands=0, native_guest_unit_tests=True,
             executable_code_publications="unit controls only", production_runtime_changes=1, performance_measurement=False))
         env = {k: v for k, v in os.environ.items() if not k.startswith(('RUST_INTERP_', 'RUSTDEV_', 'CARGO_', 'READONLY_'))
@@ -79,8 +79,8 @@ def main():
             CARGO_PROFILE_TEST_DEBUG='0', CARGO_TERM_COLOR='never', PYTHONDONTWRITEBYTECODE='1')
         cargo = ['cargo', '+nightly-2026-09-08', 'test', '--release', '--lib', '-p', 'rust-interp-bytecode',
                  '--locked', '--offline', '--jobs', '2', '--manifest-path', str(ROOT / 'Cargo.toml'), '--target-dir', str(target)]
-        commands=[('bytecode-debug',[x for x in cargo if x!='--release'],{},ROOT,358),
-                  ('bytecode-release',cargo,{},ROOT,358)]
+        commands=[('bytecode-debug',[x for x in cargo if x!='--release'],{},ROOT,359),
+                  ('bytecode-release',cargo,{},ROOT,359)]
         records = []
         for label, command, extra, cwd, tests in commands:
             require_space(ROOT, 8)
@@ -104,7 +104,7 @@ def main():
             print(label, 'passed', flush=True)
         out = ROOT / 'results' / NAME
         out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',commands=2,controls=716,bytecode_passed_per_profile=358,
+        write(out/'summary.json',dict(status='passed',commands=2,controls=718,bytecode_passed_per_profile=359,
             ignored_per_profile=12,source_revision=revision,raw=str(work.relative_to(ROOT)),
             plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),
             original_project_guest_commands=0,native_guest_unit_tests=True,performance_measurement=False,
