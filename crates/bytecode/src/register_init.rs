@@ -4,6 +4,9 @@
 use crate::{Function, Op};
 use std::collections::VecDeque;
 
+#[cfg(test)]
+mod census;
+
 #[derive(Clone, Copy)]
 struct Bounds { registers: usize, operations: usize, blocks: usize, cells: usize, edges: usize, work: usize }
 const BOUNDS: Bounds = Bounds { registers: 65_536, operations: 500_000, blocks: 8192,
