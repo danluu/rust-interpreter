@@ -76,19 +76,24 @@ tests/profile,407 Python tests with22 declared skips,121 strict/cache commands,
 and three exact original profiles/code reconstructions. All stages are closed.
 No performance improvement or adoption follows from this qualification.
 
-The exact exhaustive test passes alone for original source and fails alone for
-the deliberately wrong edit. Sixteen protocol and three observation controls
-qualify the prospective40-command changed-source primary:
-`scalar-aggregate-screen-exhaustive-02`. Use the original exhaustive test alone,
-normal entropy, two Cargo workers and complete Cargo/build/run latency. The
-previously declared A/A wall and CPU gates remain unchanged. If it passes, freeze
-the full exhaustive history and all existing project/parser guards before running
-them; the full token suite is a regression guard because block is its critical
-path. Main remains df4006e0 until every required gate passes.
-[Build](results/scalar-aggregate-build-01/assessment.md),
+The exhaustive-only changed-source primary completed all40 commands and failed
+its prospective wall gate. Wall ratio0.99908220 is inside the4.742435% A/A
+envelope; CPU ratio0.99278538 passes its conditions. Original assertions, wrong
+edits, bytecode equality and restoration pass. Candidate3081569232 is parked;
+no full comparison, held-out guard or unchanged-candidate retry was started.
+Its execution stage changed by a descriptive median+5.110ms, despite higher
+scalar Call coverage. Main remains df4006e0. The preceding startup failure ran
+only native/baseline cold commands and is separately closed.
+[Primary assessment](results/scalar-aggregate-screen-exhaustive-02/assessment.md),
+[build](results/scalar-aggregate-build-01/assessment.md),
 [strict checks](results/scalar-aggregate-qualification-01/assessment.md),
-[profiles](results/scalar-aggregate-profile-01/assessment.md),
-[prospective screen](benchmarks/experiments/scalar-aggregate-screen/SCREEN.md).
+[profiles](results/scalar-aggregate-profile-01/assessment.md).
+
+Next: retire only verified completed ROOT compiler intermediates while retaining
+all executables and proof; then inspect retained aggregate code/profile costs
+and the shared ABI footprint before choosing a materially different runtime
+mechanism. Extra native coverage is not evidence of speed. No new build starts
+below its conservative disk admission floor.
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
