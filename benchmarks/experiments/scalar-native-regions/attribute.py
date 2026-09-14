@@ -76,17 +76,26 @@ def main(run):
                 assert (owner['function'], owner['pc'], owner['kind']) == (fid, s['pc'], 'operation')
                 assert s['offset'] < s['end'] <= owner['end']
                 static[s['part']] += (s['end'] - s['offset']) // 4
+        origins={};origin_static=Counter()
         opportunities={}
         static_opportunities=Counter()
         for f in report['functions']:
             for region in f['region_values']:
                 assert profile['functions'][f['function']]['jit_block_ends'][region['start']]==region['end']
+                origin_static['captures']+=len(region['captures'])
+                origin_static['reused_origins']+=len(region['intervals'])
+                origin_static['assigned_origins']+=len(region['assigned'])
+                for reuse in region['exact_reuse']:
+                    origin_static['exact_reuse_sites']+=1
+                    if reuse['slot'] is not None:
+                        origin_static['assigned_reuse_sites']+=1
+                        origins[f['function'],reuse['pc']]=reuse
                 for a in region['accesses']:
                     key=(f['function'],a['pc']); assert key not in opportunities
                     opportunities[key]=a
                     for field in ['read_bytes','available_read_bytes','written_bytes','superseded_write_bytes']:
                         static_opportunities[field]+=a[field]
-        opportunity_samples=Counter();opportunity_sites=Counter()
+        opportunity_samples=Counter();opportunity_sites=Counter();origin_samples=Counter();origin_sites=Counter()
         generated = selected_samples = 0
         for root in parse_tree((folder / 'sample.txt').read_text()):
             for n, frame, _ in self_samples(root):
@@ -110,6 +119,9 @@ def main(run):
                 operation, size = selected[key]
                 details[f'{operation}/{size}:{access}:{part}'] += n
                 sites[c['function'], c['pc'], operation, size, part, access] += n
+                if key in origins and part=='load_data':
+                    origin_samples[f'{operation}/{size}']+=n
+                    origin_sites[c['function'],c['pc'],operation,size]+=n
                 a=opportunities.get(key)
                 if a:
                     category=None
@@ -129,19 +141,29 @@ def main(run):
         output.append(dict(case=label, ordinary_functions=len(report['functions']), scalar_bodies=report['scalar_bodies_reconstructed'],
             memory_part_spans=len(rows), static_words_by_part=dict(static), samples_by_part=dict(sampled),
             samples_by_detail=dict(details), copy_samples_by_part=dict(copy_parts), generated_samples=generated,
-            selected_samples=selected_samples, static_opportunities=dict(static_opportunities),
+            selected_samples=selected_samples, origin_samples=dict(origin_samples),origin_static=dict(origin_static),
+            origin_sites=[dict(function=fid,name=profile['functions'][fid]['name'],pc=pc,operation=op,size=size,samples=n)
+                for (fid,pc,op,size),n in origin_sites.most_common(30)], static_opportunities=dict(static_opportunities),
             opportunity_samples=dict(opportunity_samples), opportunity_sites=[dict(function=fid,name=profile['functions'][fid]['name'],pc=pc,
                 operation=op,size=size,category=cat,samples=n) for (fid,pc,op,size,cat),n in opportunity_sites.most_common(30)], top_sites=[dict(function=fid, name=profile['functions'][fid]['name'],
                 pc=pc, operation=op, size=size, part=part, access=access, samples=n) for (fid, pc, op, size, part, access), n in sites.most_common(30)]))
         for p in [report_path, map_path, old_path, profile_path, folder / 'sample.txt', folder / 'jit-code/code.bin']:
             evidence[str(p.relative_to(ROOT))] = sha(p)
+    prior_path=ROOT/'results/scalar-native-regions-01/summary.json'
+    prior=read(prior_path)
+    assert prior['status']=='passed'
+    for case, old in zip(output,prior['cases'],strict=True):
+        for key in ['case','generated_samples','selected_samples','opportunity_samples','static_opportunities']:
+            assert case[key]==old[key],(key,case[key],old[key])
+        assert sum(case['origin_samples'].values())<=case['opportunity_samples']['fully_available_read_payload']
+    evidence[str(prior_path.relative_to(ROOT))]=sha(prior_path)
     out = ROOT / 'results' / run
     out.mkdir(exist_ok=True)
     write(out / 'attribution.json', dict(status='passed', cases=output, evidence=evidence,
         guest_commands=0, performance_measurement=False, profile_used_for_static_identity_only=True,
         limitation='Test-only bounded local frame value census, cut at unknown memory and possible faults. Availability assumes keeping captured values; register pressure, materialization and compilation costs are not modeled. Counts overlap and are not savings. Exact small-memory emitted subparts; partial perturbed normal-entropy self-PC samples. No dynamic profile counts, retired instructions, timing ratios or speedup inference.'))
     for case in output:
-        print(json.dumps({k: case[k] for k in ['case', 'generated_samples', 'selected_samples', 'opportunity_samples', 'static_opportunities']}))
+        print(json.dumps({k: case[k] for k in ['case', 'generated_samples', 'selected_samples', 'opportunity_samples', 'origin_samples', 'origin_static']}))
 
 
 if __name__ == '__main__':

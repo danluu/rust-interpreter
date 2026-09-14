@@ -19,14 +19,23 @@ struct Access {
     available_read_bytes: usize,
     written_bytes: usize,
     superseded_write_bytes: usize,
+    origin: Option<usize>,
+    origin_byte: usize,
 }
 
-fn analyze(f: &Function, start: usize, end: usize) -> (Vec<Access>, usize) {
+#[derive(Clone, Copy)]
+struct Cell { writer: Option<usize>, origin: usize, byte: usize }
+
+#[derive(Debug, serde::Serialize)]
+struct Capture { pc: usize, size: usize }
+
+fn analyze_origins(f: &Function, start: usize, end: usize) -> (Vec<Access>, usize, Vec<Capture>) {
     assert!(start < end && end <= f.code.len() && end-start <= 1024);
     let mut facts = BTreeMap::new();
     // Presence means captured within this segment. A writer is retained so a
     // later overwrite can count bytes that need not reach the final frame.
-    let mut bytes: BTreeMap<usize, Option<usize>> = BTreeMap::new();
+    let mut bytes: BTreeMap<usize, Cell> = BTreeMap::new();
+    let mut captures=vec![];
     let mut rows: Vec<Access> = vec![];
     let mut barriers = 0;
     for pc in start..end {
@@ -79,31 +88,78 @@ fn analyze(f: &Function, start: usize, end: usize) -> (Vec<Access>, usize) {
         // Read before write, including overlapping copies.
         if let Some((offset,size))=reads {
             row.read_bytes=size;
-            for byte in offset..offset+size {
-                if bytes.contains_key(&byte) {row.available_read_bytes+=1;}
-                else {bytes.insert(byte,None);}
+            row.available_read_bytes=(offset..offset+size).filter(|b|bytes.contains_key(b)).count();
+            if size>0 {
+                let first=bytes.get(&offset).copied();
+                if let Some(first)=first.filter(|first|(0..size).all(|i|
+                    bytes.get(&(offset+i)).is_some_and(|b|b.origin==first.origin && b.byte==first.byte+i))) {
+                    row.origin=Some(first.origin);row.origin_byte=first.byte;
+                } else {
+                    let origin=captures.len();captures.push(Capture{pc,size});row.origin=Some(origin);
+                    for i in 0..size {
+                        let writer=bytes.get(&(offset+i)).and_then(|b|b.writer);
+                        bytes.insert(offset+i,Cell{writer,origin,byte:i});
+                    }
+                }
             }
         }
         if let Some((offset,size))=writes {
             row.written_bytes=size;
-            for byte in offset..offset+size {
-                if let Some(Some(writer))=bytes.insert(byte,Some(rows.len())) {
-                    rows[writer].superseded_write_bytes+=1;
+            if size>0 {
+                let (origin,first)=if reads.is_some() {(row.origin.unwrap(),row.origin_byte)} else {
+                    let origin=captures.len();captures.push(Capture{pc,size});(origin,0)
+                };
+                for i in 0..size {
+                    if let Some(previous)=bytes.insert(offset+i,Cell{writer:Some(rows.len()),origin,byte:first+i}) {
+                        if let Some(writer)=previous.writer {rows[writer].superseded_write_bytes+=1;}
+                    }
                 }
             }
         }
         rows.push(row);
         assert!(bytes.len()<=16*1024 && rows.len()<=1024);
     }
-    (rows,barriers)
+    (rows,barriers,captures)
+}
+
+fn analyze(f: &Function,start:usize,end:usize)->(Vec<Access>,usize) {
+    let (a,b,_)=analyze_origins(f,start,end);(a,b)
+}
+
+fn assign(intervals:&[(usize,usize,usize)],capacity:usize)->BTreeMap<usize,usize> {
+    assert!(capacity<=15);
+    let mut active:Vec<(usize,usize)>=vec![];let mut result=BTreeMap::new();
+    let mut previous=0;
+    for &(id,start,end) in intervals {
+        assert!(start>=previous && start<end);previous=start;
+        active.retain(|&(last,_)|last>=start);
+        if let Some(slot)=(0..capacity).find(|slot|!active.iter().any(|&(_,s)|s==*slot)) {
+            assert!(result.insert(id,slot).is_none());active.push((end,slot));
+        }
+    }
+    result
 }
 
 pub(super) fn observe(f: &Function, spans: &[super::super::memory_parts::Span]) -> Value {
     let regions: BTreeSet<_>=spans.iter().map(|s|(s.region_start,s.region_end)).collect();
+    let payload:BTreeSet<_>=spans.iter().filter(|s|s.part=="load_data"||s.part=="store_data").map(|s|s.pc).collect();
+    let loads:BTreeSet<_>=spans.iter().filter(|s|s.part=="load_data").map(|s|s.pc).collect();
     let mut output=vec![];
     for (start,end) in regions {
-        let (rows,barriers)=analyze(f,start,end);
-        output.push(json!({"start":start,"end":end,"barriers":barriers,"accesses":rows}));
+        let (rows,barriers,captures)=analyze_origins(f,start,end);
+        let eligible:Vec<_>=rows.iter().filter(|r|r.read_bytes>0 && r.available_read_bytes==r.read_bytes && loads.contains(&r.pc))
+            .filter(|r|r.origin.is_some_and(|id| {
+                let c=&captures[id];c.pc<r.pc && c.size==r.read_bytes && r.origin_byte==0
+                    && [1,2,4,8,16].contains(&c.size) && payload.contains(&c.pc)
+            })).collect();
+        let mut last=BTreeMap::new();
+        for r in &eligible {last.insert(r.origin.unwrap(),r.pc);}
+        let intervals:Vec<_>=captures.iter().enumerate().filter_map(|(id,c)|
+            last.get(&id).map(|&last|(id,c.pc,last))).collect();
+        let assigned=assign(&intervals,15);
+        let reuse:Vec<_>=eligible.iter().map(|r|json!({"pc":r.pc,"origin":r.origin,"slot":assigned.get(&r.origin.unwrap())})).collect();
+        output.push(json!({"start":start,"end":end,"barriers":barriers,"accesses":rows,
+            "captures":captures,"intervals":intervals,"assigned":assigned,"exact_reuse":reuse}));
     }
     json!(output)
 }
@@ -149,4 +205,25 @@ fn aliased_outputs_offsets_and_frame_extents_are_conservative() {
     let f=fixture(vec![Op::Local {dst:0,offset:0},Op::Store {address:0,src:2,size:8},
         Op::Load {dst:0,address:0,size:8},Op::Load {dst:3,address:0,size:8}]);
     let (r,b)=analyze(&f,0,4);assert_eq!(r[1].available_read_bytes,8);assert_eq!(b,1);
+}
+
+#[test]
+fn origins_follow_copy_chains_and_snapshot_overlapping_sources() {
+    let f=fixture(vec![Op::Local{dst:0,offset:0},Op::Local{dst:1,offset:8},Op::Local{dst:2,offset:4},
+        Op::Load{dst:3,address:0,size:8},Op::Copy{dst:1,src:0,size:8},
+        Op::Copy{dst:2,src:1,size:8},Op::Load{dst:4,address:2,size:8},
+        Op::Load{dst:4,address:0,size:8}]);
+    let (r,_,c)=analyze_origins(&f,0,f.code.len());
+    assert_eq!(c.len(),2);assert_eq!(c[0].pc,3);assert_eq!(c[1].pc,7);
+    assert_eq!(r.iter().map(|a|a.origin).collect::<Vec<_>>(),[Some(0),Some(0),Some(0),Some(0),Some(1)]);
+    assert!(r.iter().all(|a|a.origin_byte==0));
+}
+
+#[test]
+fn interval_slots_do_not_overlap_and_capacity_declines_are_bounded() {
+    let intervals=[(0,1,9),(1,2,4),(2,3,6),(3,4,7),(4,5,6),(5,10,11)];
+    let a=assign(&intervals,2);
+    assert_eq!(a,BTreeMap::from([(0,0),(1,1),(4,1),(5,0)]));
+    assert!(assign(&intervals,0).is_empty());
+    assert_eq!(assign(&intervals,15).len(),intervals.len());
 }
