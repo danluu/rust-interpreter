@@ -176,3 +176,21 @@ static words and successful scalar PC counts do not establish hardware time or
 an end-to-end speedup. No new runtime candidate follows until that census identifies
 material work. Keep the adopted VM as the control, full checking, two Cargo workers,
 and the existing build/disk gates. Compiler/Cargo ownership remains separate.
+
+Follow-up through 22:39: the suggestions file is unchanged. The saved scalar-body
+census identifies 733–822 million dead pure-register word executions on successful
+Calls in the original token block test. Most occur in copy_nonoverlapping's
+precondition and define an unused high half. Nine observer controls and all saved
+bodies pass after explicitly proving unconditional Trap branches; earlier failed
+census attempts remain archived. This is a bounded static/path estimate, not a
+hardware or timing result. [Census](../results/scalar-word-census-03/ASSESSMENT.md).
+
+A custom bounded dead-register pass now matches independently compacted words for
+all 137 saved bodies in debug/release. A std-only live probe adds 35,072 synthetic
+native body attempts per profile, comparing complete private outputs even on
+failure and preserved host registers/SP. Original memory operations, branches,
+budget/profile updates and Call transactions are retained. Full VM qualification
+and real edited-source timing are pending the unchanged workspace disk gate.
+The small isolated probes do not use Cargo or the shared target and do not count
+as end-to-end comparisons. Keep the adopted VM as control; no runtime adoption.
+[Live probe](../results/scalar-dead-registers-native-probe-01/summary.json).
