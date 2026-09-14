@@ -313,3 +313,6 @@ impl Plan {
 #[cfg(test)]
 #[path="scalar_ir_tests.rs"]
 mod tests;
+
+#[path="native_leaf.rs"]
+pub mod native_leaf;
