@@ -8,7 +8,7 @@ mod dead;
 // Fixed offsets from the caller's SP at private native Call entry. Leaf
 // spills grow below that SP; inputs and Output remain in caller-owned scratch.
 pub(crate) const CALL_OUTPUT:usize=64;
-pub(crate) const CALL_ARGUMENTS:usize=CALL_OUTPUT+std::mem::size_of::<Output>();
+pub(crate) const CALL_ARGUMENTS:usize=160;
 const MAX_WORDS:usize=65536;
 const MAX_CODE_BYTES:usize=MAX_WORDS*4;
 #[repr(C)]
@@ -20,19 +20,8 @@ use publisher::memory;
 
 #[repr(C)]
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Output {pub value:u128,pub tail:[u128;3],pub steps:u64,pub visited:[u64;8]}
-pub(crate) const OUTPUT_STEPS:usize=std::mem::offset_of!(Output,steps);
-pub(crate) const OUTPUT_VISITED:usize=std::mem::offset_of!(Output,visited);
-#[cfg(test)]
-const OUTPUT_FIELDS:usize=OUTPUT_VISITED+8*8;
-const _:()={assert!(std::mem::offset_of!(Output,value)==0);assert!(std::mem::offset_of!(Output,tail)==16);
-    assert!(OUTPUT_STEPS==64);assert!(OUTPUT_VISITED==72);assert!(std::mem::size_of::<Output>()==144);assert!(CALL_ARGUMENTS%16==0);};
-#[cfg(test)]
-impl Output {
-    fn bytes(&self)->Vec<u8> {
-        std::iter::once(&self.value).chain(&self.tail).flat_map(|v|v.to_le_bytes()).collect()
-    }
-}
+pub struct Output {pub value:u128,pub steps:u64,pub visited:[u64;8]}
+const _:()={assert!(std::mem::offset_of!(Output,value)==0);assert!(std::mem::offset_of!(Output,steps)==16);assert!(std::mem::offset_of!(Output,visited)==24);};
 pub struct Emitted {pub words:Vec<u32>,pub stack_bytes:usize,pub profiled:bool,pub register_values:usize,pub success_steps:Option<usize>}
 struct Emitter<'a> {
     plan:&'a Plan, words:Vec<u32>, slots:Vec<Option<usize>>, stack_bytes:usize,
@@ -220,63 +209,42 @@ impl Emitter<'_> {
     }
     fn charge_block(&mut self,block:usize) {
         let b=&self.plan.blocks[block];let (start,end)=(b.start,b.end);
-        if self.fixed_steps.is_none() {self.output_load(9,OUTPUT_STEPS);self.emit(0x91000000|(((end-start) as u32)<<10)|(9<<5)|9);self.output_store(9,OUTPUT_STEPS);}
+        if self.fixed_steps.is_none() {self.output_load(9,16);self.emit(0x91000000|(((end-start) as u32)<<10)|(9<<5)|9);self.output_store(9,16);}
         if self.profiled {
             for word in start/64..=(end-1)/64 {
                 let left=start.max(word*64)-word*64;let right=end.min((word+1)*64)-word*64;
                 let bits=if right-left==64 {u64::MAX} else {((1u64<<(right-left))-1)<<left};
-                self.output_load(9,OUTPUT_VISITED+word*8);self.imm(10,bits);self.three(0xaa000000,9,9,10);self.output_store(9,OUTPUT_VISITED+word*8);
+                self.output_load(9,24+word*8);self.imm(10,bits);self.three(0xaa000000,9,9,10);self.output_store(9,24+word*8);
             }
         }
     }
 }
 
 pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,true,true,false,false,false)
+    emit_inner(plan,profiled,true,true,true,false,false)
 }
 #[cfg(test)]
 fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emitted,&'static str> {
     // Preserve exact pre-elimination reference bytes for the archived census.
-    emit_inner(plan,profiled,use_registers,true,false,false,false,false)
+    emit_inner(plan,profiled,use_registers,true,false,false,false)
 }
 /// Historical pointer-argument entry retained as an independent test reference.
 #[cfg(test)]
 #[allow(dead_code)]
 pub(crate) fn emit_prechecked(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,false,false,false)
+    emit_inner(plan,profiled,true,false,true,false,false)
 }
 /// Private Call entry: captured inputs/Output use fixed caller-SP offsets,
 /// logical base is x21, status is x9, and x0–x2 remain live. Its caller must
 /// preflight maximum_steps + Call. Standalone emission retains its budget guard.
 pub(crate) fn emit_call(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,true,false)
+    emit_inner(plan,profiled,true,false,true,true,true)
 }
 #[cfg(test)]
 fn emit_call_reference(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,false,false)
+    emit_inner(plan,profiled,true,false,true,true,false)
 }
-/// Kept separate from the legacy entry so its wider result contract is explicit.
-/// The Call bridge must precheck the entire destination and commit every lane.
-pub(crate) fn emit_call_aggregate(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,true,true)
-}
-#[cfg(test)]
-fn emit_aggregate(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,true,true,false,false,true)
-}
-#[allow(clippy::too_many_arguments)]
-fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool,aggregate:bool)->Result<Emitted,&'static str> {
-    if !aggregate && (plan.result_size>16 || plan.effects.iter().any(|effect|matches!(effect,Effect::ReturnLanes(_)))) {
-        return Err("native_aggregate_return_unimplemented");
-    }
-    if plan.result_size>64 {return Err("native_aggregate_result_limit");}
-    for effect in &plan.effects {
-        match effect {
-            Effect::ReturnLanes(lanes) if plan.result_size<=16 || lanes.len()!=plan.result_size.div_ceil(16)=>return Err("native_aggregate_return_shape"),
-            Effect::Return(_) if plan.result_size>16=>return Err("native_aggregate_return_shape"),
-            _=>{},
-        }
-    }
+fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool)->Result<Emitted,&'static str> {
     let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
     let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;
@@ -303,7 +271,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
     let short=if check_budget {
         a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);let at=a.words.len();a.emit(0x54000003);Some(at)
     } else {None};
-    a.stack(false);if success_steps.is_none() {a.output_store(31,OUTPUT_STEPS);}if profiled {for i in 0..8 {a.output_store(31,OUTPUT_VISITED+i*8);}}
+    a.stack(false);if success_steps.is_none() {a.output_store(31,16);}if profiled {for i in 0..8 {a.output_store(31,24+i*8);}}
     for block in 0..plan.blocks.len() {
         if !plan.reachable[block] {continue;}a.labels[block]=Some(a.words.len());a.charge_block(block);
         for pc in plan.blocks[block].start..plan.blocks[block].end {
@@ -312,12 +280,6 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
                 Effect::None=>{},
                 Effect::Assert{value,expected,..}=>{a.get(9,*value,false);a.get(10,*value,true);a.three(0xaa000000,9,9,10);a.cmp(9,31);a.fail(if *expected {0} else {1});},
                 Effect::Trap(_)=>{a.cmp(31,31);a.fail(0);},
-                Effect::ReturnLanes(lanes)=>{
-                    for (i,&value) in lanes.iter().enumerate() {
-                        a.get(9,value,false);a.get(10,value,true);a.output_store(9,i*16);a.output_store(10,i*16+8);
-                    }
-                    a.stack(true);a.mov(status,31);a.emit(0xd65f03c0);
-                },
                 Effect::Return(value)=>{
                     // A zero-byte result has no destination or readable lane.
                     if !optimize_commit || plan.result_size!=0 {
@@ -339,7 +301,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
             }
         }
         let end=plan.blocks[block].end;
-        if !matches!(plan.effects[end-1],Effect::Return(_)|Effect::ReturnLanes(_)|Effect::Trap(_)|Effect::Jump(_)|Effect::Switch{..}) {a.edge(block,plan.at[end])?;}
+        if !matches!(plan.effects[end-1],Effect::Return(_)|Effect::Trap(_)|Effect::Jump(_)|Effect::Switch{..}) {a.edge(block,plan.at[end])?;}
     }
     let failed=a.words.len();a.stack(true);let declined=a.words.len();a.imm(status,1);a.emit(0xd65f03c0);
     if let Some(short)=short {a.patch(short,declined,true)?;}
@@ -367,7 +329,7 @@ impl Native {
     pub fn attempt(&self,args:&[u128],base:usize,budget:usize)->Result<Option<Output>,String> {
         if args.len()!=self.argument_widths.len() || base.checked_add(self.frame_size).is_none() {return Err("invalid native scalar inputs".into());}
         if args.iter().zip(&self.argument_widths).any(|(v,size)|*size<16 && *v>>(*size*8)!=0) {return Err("native scalar input width".into());}
-        let mut output=Output{value:u128::MAX,tail:[u128::MAX;3],steps:u64::MAX,visited:[u64::MAX;8]};
+        let mut output=Output{value:u128::MAX,steps:u64::MAX,visited:[u64::MAX;8]};
         // The generated code reads the exact argument slice and writes only
         // this private Output plus bounded stack slots. It preserves all
         // callee-saved registers, never calls host code, and never dereferences
@@ -381,10 +343,6 @@ impl Native {
 #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
 #[path="native_leaf_tests.rs"]
 mod tests;
-
-#[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-#[path="native_aggregate_tests.rs"]
-mod aggregate_tests;
 
 #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
 #[path="native_register_census.rs"]

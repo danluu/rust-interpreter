@@ -1,9 +1,6 @@
 use super::*;
 use crate::{Function,Slot,Op,Engine,VERSION,execute_profiled,Limits,ExecutionProfile};
 
-#[path="aggregate_tests.rs"]
-mod aggregate_tests;
-
 fn local(dst:Reg,offset:usize)->Op {Op::Local{dst,offset}}
 fn load(dst:Reg,address:Reg,size:u8)->Op {Op::Load{dst,address,size}}
 fn function(name:&str,frame_size:usize,frame_align:usize,args:Vec<Slot>,result:Slot,code:Vec<Op>)->Function {
