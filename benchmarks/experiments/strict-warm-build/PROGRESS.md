@@ -307,6 +307,14 @@ output stamp. This installs under its own policy and namespace; real compiler
 installation, source qualification and launcher integration remain pending.
 [Runtime installation controls](../../../results/runtime-compiler-controls-02/README.md).
 
+Standard-library preparation now delegates its final compiler revalidation to
+the selected installation policy. All 45 focused compiler/runtime/source-path
+controls passed, including changed-installation rejection and refusal of runtime
+compilers without the exact source-path capability. Successful lookup retains
+the existing no-content-rehash behavior. This prepares the runtime compiler
+integration; it does not qualify an actual installation or a faster build.
+[Compiler revalidation evidence](../../../results/compiler-revalidation-controls-01/README.md).
+
 A subsequent exporter Cargo build exited successfully but reported thirteen
 strip failures: the beta auxiliary tool could not find its beta LLVM library in
 the target library directory. The compositor now supports an explicit second
