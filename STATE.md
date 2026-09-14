@@ -73,8 +73,12 @@ The runtime candidate passes 641 workspace tests/profile, 407 Python tests
 (22 skips), 121 strict/cache commands and three exact original profiles. Block
 scalar Calls rise from 11.23 to 27.65 million, but its 40-command primary fails:
 wall ratio 1.000153 and CPU 0.976356 remain within A/A variation. Park 494c9f01
-and cancel larger comparisons. Inspect repeated store guards and private slot
-traffic before choosing another implementation; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
+and cancel larger comparisons. The closed 245-body store-cost census finds
+32.94 million redundant write guards and fully overwritten publications on
+successful block-test paths. A separate store-log simplification now passes
+381 bytecode tests per profile (17 ignored), including complete memory after
+aliases and faults. It still needs immutable build, strict/profile qualification
+and a new primary gate; main retains df4006e0. [Next work and evidence](RUNTIME-NEXT.md). The compiler/Cargo/parser-exporter investigation
 belongs to the other session. Preserve its worktrees and all user-owned
 processes. Keep the global benchmark lock, two Cargo workers and conservative
 initial reservations plus the 8 GiB child floor. The disk monitor is read-only
