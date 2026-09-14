@@ -270,13 +270,14 @@ def main():
         work = ROOT / '.work' / args.run_id
         work.mkdir(exist_ok=False)
         (work / 'artifacts').mkdir()
-        plan = dict(owner=str(ROOT), case=case, revision=ref['revision'], names=names, filter=pattern,
+        plan = dict(owner=str(ROOT), source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+            case=case, revision=ref['revision'], names=names, filter=pattern,
             tools={m: b['tool_key'] for m, b in builds.items()}, frozen=frozen,
             original_source_sha256=sha(changed), admission_gib=admission, minimum_child_gib=8,
             cargo_workers=2, custom_suite_workers=2, native_test_threads='libtest default',
             custom_runner='prepared, fresh guest state per test',
             identity_lookup={m:lookup_args(m)[1] for m in CUSTOM},
-            composition='native scalar Calls with local registers against matched main; adopted baseline/duplicate/candidate share cached lookup and automatic function cache',
+            composition='native scalar Calls with local registers, guarded caller arguments and prechecked leaf entries against matched main; baseline/duplicate/candidate share cached lookup and automatic function cache',
             cycles=1, edited_pairs=5, aa_pairs=5, expected_commands=40,
             schedule=[dict(cycle=s['cycle'], state=s['state'], phase=s['phase'],
                 source_sha256=hashlib.sha256(s['source']).hexdigest(), modes=s['modes']) for s in states],
