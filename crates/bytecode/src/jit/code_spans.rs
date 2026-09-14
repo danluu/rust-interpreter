@@ -21,6 +21,8 @@ mod memory_parts;
 mod continuation_census;
 #[cfg(test)]
 mod emission_census;
+#[cfg(test)]
+mod immutable_reads;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
