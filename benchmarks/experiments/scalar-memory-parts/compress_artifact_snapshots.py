@@ -1,4 +1,4 @@
-"""Losslessly preserve retained public bytecode snapshots from four closed screens."""
+"""Losslessly preserve retained public bytecode snapshots from two closed screens."""
 from pathlib import Path
 import hashlib,json,os,stat,subprocess,sys,shutil
 ROOT=Path(__file__).resolve().parents[3]
@@ -7,9 +7,8 @@ sys.path.insert(0,str(ROOT/'benchmarks/experiments/heap-address-bias'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
 from compression_probe import metadata
-NAME='closed-runtime-screen-artifact-compression-04'
-RUNS=['scalar-private-transfers-screen-token-01','checked-addresses-screen-token-01',
-      'immediate-shifts-screen-token-01','native-indirect-screen-token-01']
+NAME='closed-runtime-screen-artifact-compression-05'
+RUNS=['scalar-private-transfers-screen-token-01','native-indirect-screen-token-01']
 
 def no_open_file(path):
     r=subprocess.run(['lsof','-Fpn','--',str(path)],text=True,capture_output=True)
@@ -53,7 +52,7 @@ def main():
                 assert sha(p)==artifact['sha256'];selected.add(artifact['path']);sources[artifact['path']]=artifact['sha256']
             assert len(selected)==16
             completion.append(dict(run=run,retained_snapshots=sorted(selected),process_inspection=checks.stdout))
-        assert len(sources)==64
+        assert len(sources)==32
         work=ROOT/'.work'/NAME;work.mkdir(exist_ok=False)
         inventory=[]
         for relative,digest in sorted(sources.items()):
@@ -64,7 +63,7 @@ def main():
             inventory.append(dict(path=relative,sha256=digest,before=before))
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
             script_sha256=sha(Path(__file__)),proofs=proofs,files=inventory,
-            scope='Byte-preserving APFS compression of 64 retained public RBC snapshots in four closed failed runtime screens. Preserve every linked path, readable byte, SHA, mode, owner and mtime. Do not remove or reserialize any evidence. Executed workspace artifacts, executables, installed tools, source snapshots, private caches, shared targets and peer worktrees are untouched. This is storage representation only, outside performance timers.',completed_scopes=completion))
+            scope='Byte-preserving APFS compression of 32 retained public RBC snapshots in two closed failed runtime screens. Preserve every linked path, readable byte, SHA, mode, owner and mtime. Do not remove or reserialize any evidence. Executed workspace artifacts, executables, installed tools, source snapshots, private caches, shared targets and peer worktrees are untouched. This is storage representation only, outside performance timers.',completed_scopes=completion))
         before_free=shutil.disk_usage(ROOT).free;rows=[]
         for item in inventory:
             require_space(ROOT,10);source=ROOT/item['path'];before=item['before'];digest=item['sha256']
