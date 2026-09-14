@@ -47,6 +47,7 @@ mod code_spans;
 mod values;
 mod transfers;
 mod guarded_ranges;
+mod scratch_values;
 
 #[cfg(test)]
 mod limit_tests;
@@ -376,6 +377,8 @@ pub(crate) struct Jit<'a> {
     #[cfg(test)]
     observe_scratch_locals: bool,
     #[cfg(test)]
+    scratch_values_enabled: bool,
+    #[cfg(test)]
     observe_flush: bool,
     #[cfg(test)]
     observe_memory_parts: bool,
@@ -416,6 +419,8 @@ impl<'a> Jit<'a> {
             observe_scalar_copy: true,
             #[cfg(test)]
             observe_scratch_locals: false,
+            #[cfg(test)]
+            scratch_values_enabled: true,
             #[cfg(test)]
             observe_flush: false,
             #[cfg(test)]
@@ -585,6 +590,8 @@ impl<'a> Jit<'a> {
                     observe_scalar_copy: self.observe_scalar_copy,
                     #[cfg(test)]
                     scratch: scratch_locals::State::new(self.observe_scratch_locals),
+                    #[cfg(test)]
+                    scratch_values: scratch_values::State::new(self.scratch_values_enabled),
                     #[cfg(test)]
                     observe_flush: self.observe_flush,
                     #[cfg(test)]
@@ -1070,6 +1077,7 @@ struct Assembler<'a> {
     tree_caller_is_region: bool,
     resumable: bool,
     local_values: Vec<local_memory::Value>,
+    scratch_values: scratch_values::State,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
@@ -1120,6 +1128,7 @@ impl Default for Assembler<'_> {
             tree_caller_is_region: Default::default(),
             resumable: Default::default(),
             local_values: Default::default(),
+            scratch_values: Default::default(),
             local_forwarding: Default::default(),
             local_fact_events: Default::default(),
             retained_local_writes: Default::default(),
@@ -1232,6 +1241,7 @@ impl Assembler<'_> {
         }
     }
     fn emit(&mut self, word: u32) {
+        self.scratch_values.word(word);
         #[cfg(test)]
         self.scratch.observe_word(word);
         #[cfg(test)]
@@ -1994,10 +2004,13 @@ impl Assembler<'_> {
                 } else {
                     let immediate = memory_access!(self, "source", self.memory_address(11, address, size as usize, false));
                     // put() supplies the narrow result's zero high word below.
-                    self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
+                    if !self.scratch_values.contains(local,size as usize) {
+                        self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
+                    }
                 }
                 memory_part!(self, "register_publication", self.put(dst, 9, if size <= 8 { 31 } else { 10 }));
                 self.remember_local_memory(local, size as usize, dst);
+                self.scratch_values.capture(local,size as usize);
                 #[cfg(test)]
                 self.scratch.capture(self.current_pc, local, size as usize, "Load");
             }
@@ -2012,6 +2025,7 @@ impl Assembler<'_> {
                 let retain = self.preserve_guarded_local_write(local, address, size as usize);
                 if !retain { self.invalidate_local_memory(local, size as usize); }
                 self.remember_local_memory(local, size as usize, src);
+                self.scratch_values.capture(local,size as usize);
                 #[cfg(test)]
                 self.scratch.capture(self.current_pc, local, size as usize, "Store");
             }
@@ -2035,6 +2049,7 @@ impl Assembler<'_> {
                     if let Some((source, _)) = forwarded {
                         self.remember_local_memory(destination_local, size, source);
                     }
+                    self.scratch_values.capture(destination_local,size);
                     #[cfg(test)]
                     self.scratch.capture(self.current_pc, destination_local, size, "Copy");
                     return;
@@ -2084,6 +2099,7 @@ impl Assembler<'_> {
                 if let Some((source, _)) = forwarded {
                     self.remember_local_memory(destination_local, size, source);
                 }
+                self.scratch_values.capture(destination_local,size);
             }
             Op::Binary {
                 dst,
