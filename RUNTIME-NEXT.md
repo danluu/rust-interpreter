@@ -26,13 +26,27 @@ is only 48 bytes below its unchanged 16 MiB limit; compact surrounding functions
 matter. This establishes coverage, not latency improvement.
 [Parser coverage](results/demand-large-function-profile-01/assessment.md).
 
-Next manual direction: prototype a generic program-level policy enabling demand
-only if any function exceeds the existing 65,536-PC CFG-analysis bound. Retain
-eager preparation for other programs and branch on the effective JIT mode in the
-VM loop. Full validation and immutable prepared-owner options remain mandatory.
-Qualify fresh controls, exact eager captures, strict/cache outcomes and original
-profiles before a fresh parser-primary changed-source comparison and regression
-guards. Do not rerun the parked broad token campaign.
+Conditional candidate 4cdd305b692c / VM 54fb895b2c77 now implements the generic
+program-size policy: enable demand only if any function exceeds the existing
+65,536-PC CFG-analysis bound. Other programs retain eager preparation and the
+VM loop uses the effective owner mode. Full validation and fixed prepared-owner
+options remain mandatory. Both 640-test workspace profiles, 409 Python tests
+(22 skips), exact eager captures and 122 strict/cache commands pass. Three
+small-program profiles retain exact eager counts/code sizes; three current-parser
+profiles reproduce the demand coverage benefit with exact counts/memory/entropy.
+The first build's diagnostic assertion failure and the second build's disk stop
+are preserved; the third binds/reuses the exact passed debug command.
+[Build](results/conditional-demand-build-03/assessment.md),
+[strict/cache](results/conditional-demand-qualification-01/assessment.md),
+[eager profiles](results/conditional-demand-profile-01/assessment.md),
+[parser profiles](results/conditional-demand-parser-profile-01/assessment.md).
+
+Next: admit the preregistered 40-command full-parser primary after safe closed-cache
+retirement. Nineteen protocol controls pass. It keeps all 114 tests, five genuine
+edits, wrong/restored states and five arms (adopted, duplicate, candidate, native,
+fixed historical parser anchor). Only a primary pass permits larger histories and
+regression guards. The old broad token campaign remains parked.
+[Protocol](results/conditional-demand-parser-protocol-01/assessment.md).
 The closed failed screen's compiler intermediates are retired (3,147 files,
 1.91 GB logical; all 2,531 protected hashes unchanged). Raw evidence, artifacts,
 executables and the shared build target are preserved.
