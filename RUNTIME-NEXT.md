@@ -29,8 +29,12 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    profiles against three exactly bound adopted controls. Token block scalar
    Calls rise by 7.73 million with exact logical counts, memory and entropy.
    Its complete primary fails (wall 0.999836, CPU 0.999544, wall A/A 0.019585).
-   Park this revision and cancel larger comparisons; inspect actual emitted
-   read-only bodies and preparation costs before choosing the next candidate.
+   Park this revision and cancel larger comparisons. Its exact 199-body census
+   finds duplicate reads concentrated in one callee. A subsequent structural
+   census favors external-write leaves (153 block samples) over nested Calls
+   (59), wider results (11) and cycles (5). Build a bounded private-store model
+   with ordered effects, byte-exact forwarding and ordinary failure replay
+   before considering native emission.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
    [current protocol costs](results/scalar-protocol-census-03/assessment.md),
@@ -42,7 +46,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    [build](results/scalar-readonly-native-build-01/assessment.md),
    [strict qualification](results/scalar-readonly-native-qualification-01/ASSESSMENT.md),
    [original profiles](results/scalar-readonly-native-profile-01/ASSESSMENT.md),
-   [failed primary](results/scalar-readonly-native-screen-token-01/ASSESSMENT.md).
+   [failed primary](results/scalar-readonly-native-screen-token-01/ASSESSMENT.md),
+   [body census](results/scalar-readonly-shapes-01/assessment.md),
+   [structural bounds](results/scalar-next-boundaries-02/assessment.md),
+   [private-store model plan](benchmarks/experiments/scalar-transaction-model/PLAN.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
