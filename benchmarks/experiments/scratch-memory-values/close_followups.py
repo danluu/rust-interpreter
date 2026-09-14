@@ -12,7 +12,7 @@ from workflow_io import write_json as write
 
 def main():
     name=sys.argv[1];revision=sys.argv[2]
-    assert re.fullmatch(r'(?:closed-diagnostic-json-compression-20|closed-runtime-screen-artifact-compression-0[67]|closed-runtime-full-artifact-compression-0[23]|scratch-memory-values-full-protocol-01)',name)
+    assert re.fullmatch(r'(?:closed-diagnostic-json-compression-20|closed-runtime-screen-artifact-compression-0[67]|closed-runtime-full-artifact-compression-0[23]|scratch-memory-values-full-protocol-01|scratch-memory-values-parser-edits-protocol-02)',name)
     raw=ROOT/'.work'/name;out=ROOT/'results'/name;outer=ROOT/'.work/experiments'/name
     summary=json.loads((out/'summary.json').read_text());terminal=json.loads((outer/'status.json').read_text())
     assert summary['status']=='passed' and terminal['status']=='finished' and terminal['returncode']==0
@@ -28,6 +28,20 @@ def main():
         assert all(sha(ROOT/p)==h for p,h in proofs.items())
         rows=json.loads((raw/'records.json').read_text());assert len(rows)==summary['files']
         assert all(r['returncode']==0 and r['status']=='compressed' and r['source_sha256']==proofs[r['path']] for r in rows)
+    elif 'parser-edits-protocol' in name:
+        assert summary['tests']==16 and summary['commands']==2 and summary['guest_commands']==0
+        assert sha(raw/'inputs.json')==summary['inputs_sha256'] and sha(raw/'records.json')==summary['records_sha256']
+        for p,h in json.loads((raw/'inputs.json').read_text()).items():
+            assert sha(ROOT/p)==h
+            data=subprocess.check_output(['git','show',revision+':'+p],cwd=ROOT)
+            assert hashlib.sha256(data).hexdigest()==h
+            proofs[p]=h
+        records=json.loads((raw/'records.json').read_text());assert [(r['label'],r['tests']) for r in records]==[('matched',6),('original',10)]
+        for row in records:
+            assert row['returncode']==0
+            for stream in ['stdout','stderr']:
+                p=raw/(row['label']+'.'+stream);assert sha(p)==row[stream+'_sha256'];proofs[str(p.relative_to(ROOT))]=sha(p)
+            error=(raw/(row['label']+'.stderr')).read_text();assert ('Ran '+str(row['tests'])+' tests') in error and error.rstrip().endswith('OK')
     else:
         assert summary['tests']==23 and summary['guest_commands']==0
         assert sha(raw/'inputs.json')==summary['inputs_sha256']
