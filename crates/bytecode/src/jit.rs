@@ -49,6 +49,7 @@ mod function_analysis;
 // Qualified separately before the demand VM loop uses region publication.
 #[allow(dead_code)]
 mod demand_links;
+mod demand;
 mod transfers;
 mod guarded_ranges;
 mod scratch_values;
@@ -380,9 +381,7 @@ struct CompiledFunction<'a> {
     memory_spans: Vec<memory_parts::Span>,
     #[cfg(test)]
     retained_local_writes: Vec<(usize, Reg, usize, usize)>,
-    #[cfg(test)]
     region_links: Vec<(usize, usize, usize)>,
-    #[cfg(test)]
     internal_entries: Vec<Option<usize>>,
     words: Vec<u32>,
     entries: Vec<Option<Block>>,
@@ -417,6 +416,7 @@ pub(crate) struct Jit<'a> {
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
     scalar: Option<scalar_calls::State>,
+    demand: Option<demand::State>,
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
@@ -459,7 +459,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None, demand: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -501,6 +501,7 @@ impl<'a> Jit<'a> {
         result
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
+        if self.demand.is_some() { return self.prepare_demand_function(id); }
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
         if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
         let remaining = (self.capacity - self.bytes) / 4;
@@ -815,9 +816,7 @@ impl<'a> Jit<'a> {
             }
         }
         if selected.is_some() && words.is_empty() { return Ok(None); }
-        #[cfg(test)]
-        let region_links = links.clone();
-        for (at, successor, fallback) in links {
+        for &(at, successor, fallback) in &links {
             let slot = match selected {
                 Some(pc) => (successor == pc).then_some(0),
                 None => Some(successor),
@@ -826,8 +825,7 @@ impl<'a> Jit<'a> {
             patch_jump(&mut words, at, target)?;
         }
         Ok(Some(CompiledFunction { selected, words, entries, resumes, operations, assertions,
-            #[cfg(test)] region_links,
-            #[cfg(test)] internal_entries,
+            region_links: links, internal_entries,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
             liveness_declined: self.persistent_registers && values.is_none(),

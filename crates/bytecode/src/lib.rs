@@ -447,6 +447,9 @@ pub struct Limits {
     pub jit_resumable_calls: bool,
     /// Experimental confined scalar leaves called directly by resumable code.
     pub jit_scalar_calls: bool,
+    /// Experimental reached-region preparation; requires fully validated
+    /// resumable JIT execution. Eager preparation remains the default.
+    pub jit_demand_regions: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -469,6 +472,7 @@ impl Default for Limits {
             jit_persistent_registers: false,
             jit_resumable_calls: false,
             jit_scalar_calls: false,
+            jit_demand_regions: false,
             jit_code_dump: None,
             jit_operation_map: false,
         }
@@ -764,6 +768,14 @@ fn execute_impl<const PROFILE: bool, const USE_JIT: bool, const NATIVE_CALLS: bo
 fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STUBS: bool, const RESUMABLE: bool>(
     program: &'program Program, limits: &Limits,
 ) -> Result<Option<jit::Jit<'program>>, String> {
+    if limits.jit_demand_regions {
+        if !USE_JIT || !RESUMABLE || program.version & PARTIAL_VALIDATION != 0 {
+            return Err("demand regions require fully validated resumable JIT execution".into());
+        }
+        if limits.jit_code_dump.is_some() {
+            return Err("demand-region code diagnostics are not yet implemented".into());
+        }
+    }
     let started = std::time::Instant::now();
     let mut jit = if USE_JIT {
         Some(if RESUMABLE {
@@ -777,6 +789,7 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
         })
     } else { None };
     if let Some(jit) = &mut jit {
+        if limits.jit_demand_regions { jit.enable_demand_regions()?; }
         if limits.jit_scalar_calls {
             if program.version & PARTIAL_VALIDATION != 0 { return Err("scalar calls require full validation".into()); }
             jit.enable_scalar_calls();
@@ -910,6 +923,13 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
         }
         if RESUMABLE {
             let entry = *frames.last().ok_or("missing frame")?;
+            if limits.jit_demand_regions {
+                let jit = jit.as_mut().unwrap();
+                if jit.ensure_region(entry.function, entry.pc)? && PROFILE {
+                    profile.as_deref_mut().unwrap().functions[entry.function].jit_block_ends[entry.pc] =
+                        jit.blocks[entry.function][entry.pc].map_or(0, |block| block.end);
+                }
+            }
             let jit = jit.as_ref().unwrap();
             if let Some(block) = jit.blocks[entry.function].get(entry.pc).copied().flatten() {
                 if (block.end - entry.pc) as u64 <= limits.instructions - steps {
@@ -927,6 +947,10 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                     resumable_returns += run.returns;
                     if steps >= limits.instructions { return Err("interpreter instruction limit exceeded".into()); }
                 }
+            }
+            if limits.jit_demand_regions {
+                let next = *frames.last().ok_or("missing frame")?;
+                if jit.wants_region(next.function, next.pc) { continue 'execution; }
             }
         }
         let active_frames = frames.len();

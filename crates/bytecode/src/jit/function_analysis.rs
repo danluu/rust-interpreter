@@ -6,7 +6,7 @@ use super::*;
 mod storage;
 // The pool is qualified before the demand publisher begins using it.
 #[allow(dead_code)]
-mod retained;
+pub(super) mod retained;
 
 pub(super) struct FunctionAnalysis {
     pub reads: Vec<Option<(usize, usize)>>,

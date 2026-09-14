@@ -16,6 +16,7 @@ pub struct PreparedJit<'program> {
     code_bytes: usize,
     persistent_registers: bool,
     scalar_calls: bool,
+    demand_regions: bool,
     preparation_nanos: u128,
 }
 
@@ -32,6 +33,7 @@ impl<'program> PreparedJit<'program> {
         Ok(Self { program, jit, metadata, code_bytes: limits.jit_code_bytes,
             persistent_registers: limits.jit_persistent_registers,
             scalar_calls: limits.jit_scalar_calls,
+            demand_regions: limits.jit_demand_regions,
             preparation_nanos: started.elapsed().as_nanos() })
     }
 
@@ -61,7 +63,7 @@ impl<'program> PreparedJit<'program> {
     pub fn execute_entry(&mut self, entry: usize, arguments: &[u128], limits: Limits) -> Result<Execution, String> {
         Self::check_mode(&limits)?;
         if limits.jit_code_bytes != self.code_bytes || limits.jit_persistent_registers != self.persistent_registers
-            || limits.jit_scalar_calls != self.scalar_calls {
+            || limits.jit_scalar_calls != self.scalar_calls || limits.jit_demand_regions != self.demand_regions {
             return Err("prepared JIT code-generation options changed".into());
         }
         let before = self.jit.as_ref().unwrap().compile_nanos;
