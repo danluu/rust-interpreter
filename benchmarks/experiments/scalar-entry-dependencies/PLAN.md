@@ -40,3 +40,11 @@ Use scalar-entry-dependency-census-01, ROOT's existing shared target, shared loc
 two Cargo workers/test threads, max(14 GiB,8 GiB+twice allocated target) admission
 and 8 GiB child floor. Freeze and close all commands including failures. No guests
 or executable code are published. The restored store-log prototype stays parked.
+
+Follow-up qualification: census-01 passed all thirteen controls and reconstructed
+all 245 bodies, admitting 17/20/1 functions. Emitter review found that a live
+Division/Rem overflow projection also performs a potentially failing division.
+Current lowering roots the result projection as well, but the static predicate
+should express the full obligation directly. Remove its overflow:false filter
+and add a 32-case overflow-only projection control. Run fresh census-02 with
+fourteen controls per profile. This is a correctness update, not a timing retry.

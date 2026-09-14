@@ -5,7 +5,7 @@ ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='scalar-entry-dependency-census-01'
+NAME='scalar-entry-dependency-census-02'
 
 def read(p):return json.loads(p.read_text())
 def main():
@@ -64,8 +64,8 @@ def main():
             '--locked','--offline','--jobs','2','--manifest-path',str(ROOT/'Cargo.toml'),'--target-dir',str(target)]
         records=[]
         for label,test,extra,count,ignored,release in [
-            ('debug','scalar_ir::native_leaf::transaction::entry_guards::',[],13,1,False),
-            ('release','scalar_ir::native_leaf::transaction::entry_guards::',[],13,1,True),
+            ('debug','scalar_ir::native_leaf::transaction::entry_guards::',[],14,1,False),
+            ('release','scalar_ir::native_leaf::transaction::entry_guards::',[],14,1,True),
             ('census','scalar_ir::native_leaf::transaction::entry_guards::census::observe_saved_entry_guard_scope',['--ignored','--exact'],1,0,True)]:
             assert shutil.disk_usage(ROOT).free>=needed;require_space(ROOT,8)
             cmd=[*base,*(['--release'] if release else []),test,'--',*extra];start=time.time()
@@ -90,7 +90,7 @@ def main():
                 eligible_successful_write_occurrences=sum(f['successful_write_occurrences'] for f in eligible),
                 rejection_counts=dict(collections.Counter(f['decline'] for f in rows if not f['eligible']))))
         out=ROOT/'results'/NAME;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',commands=3,controls_per_profile=13,reconstructed_native_bodies=expected,cases=totals,
+        write(out/'summary.json',dict(status='passed',commands=3,controls_per_profile=14,reconstructed_native_bodies=expected,cases=totals,
             setup_seconds=sum(r['seconds'] for r in records),raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),
             records_sha256=sha(work/'records.json'),inputs_sha256=sha(work/'inputs.json'),census_sha256=sha(work/'census.json'),
             source_revision=revision,guest_commands=0,executable_code_publications=0,production_runtime_changes=0,

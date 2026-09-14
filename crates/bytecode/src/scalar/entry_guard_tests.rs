@@ -109,3 +109,14 @@ fn zero_width_and_excessive_store_and_range_counts_decline() {
     }
     assert_eq!(classify(&plan).err(),Some("entry_range_limit"));
 }
+
+#[test]
+fn overflow_projection_of_division_still_has_a_fault_obligation() {
+    for op in [Binary::Div,Binary::Rem] {for signed in [false,true] {for bits in [8,16,32,64] {
+        let mut p=abstract_diamond(1,0,false);let write=p.computations[0][0];let id=p.nodes.len();
+        p.nodes.push(Node{value:Value::Binary{a:1,b:0,op,bits,signed,overflow:true},width:1,pc:Some(0)});
+        p.live.push(true);p.computations[0]=vec![write,id];
+        assert_eq!(no_failure_after_write(&p).err(),Some("entry_division_after_write"));
+        p.computations[0]=vec![id,write];assert!(no_failure_after_write(&p).is_ok());
+    }}}
+}

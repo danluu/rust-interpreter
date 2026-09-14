@@ -27,7 +27,7 @@ fn entry_address(plan:&Plan,identities:&[(Id,u64)],id:Id)->Result<Address,&'stat
 }
 
 fn failing_node(node:&Node)->bool {
-    matches!(node.value,Value::Binary{op:Binary::Div|Binary::Rem,overflow:false,..})
+    matches!(node.value,Value::Binary{op:Binary::Div|Binary::Rem,..})
 }
 
 fn no_failure_after_write(plan:&Plan)->Result<(),&'static str> {
