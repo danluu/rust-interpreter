@@ -132,7 +132,7 @@ def main():
             frozen_input_references=len(plan['frozen']), source_bindings=len(bindings),
             retained_artifacts_verified=len(artifacts), source_bindings_path=str((work/'source-bindings.json').relative_to(ROOT)),source_bindings_sha256=sha(work / 'source-bindings.json'),
             evidence_path=str((work/'closure-evidence.json').relative_to(ROOT)),evidence_sha256=sha(work/'closure-evidence.json'),evidence_files=len(evidence), auditor_sha256=sha(Path(__file__))))
-        print('Closed scalar primary:', len(evidence), 'evidence files;', len(artifacts), 'artifacts')
+        print('Closed continuation/snapshot primary:', len(evidence), 'evidence files;', len(artifacts), 'artifacts')
         print(json.dumps({k: {n: v for n, v in row.items() if n != 'pairs'} for k, row in stages.items()}))
 
 
