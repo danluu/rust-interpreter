@@ -30,6 +30,9 @@ fn compare(p:&Program,plan:&Plan,native:&Native,args:&[u128],budget:usize) {
 // checks every additional preserved register, and copies back even on failure.
 fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
     let body=emit_call(plan,profiled).unwrap();
+    call_wrapper_body(plan,profiled,argument_count,body)
+}
+pub(super) fn call_wrapper_body(plan:&Plan,profiled:bool,argument_count:usize,body:Emitted)->Emitted {
     let saved=CALL_ARGUMENTS+argument_count*16;
     let stack=(saved+5*8+15)&!15;
     let mut a=Emitter{plan,words:vec![],slots:vec![],stack_bytes:stack,registers:vec![],
@@ -41,7 +44,7 @@ fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
     for r in 4..9 {a.store(r,31,saved+(r as usize-4)*8);}
     for i in 0..argument_count*2 {a.load(9,0,i*8);a.store(9,31,CALL_ARGUMENTS+i*8);}
     // Output's final eight bytes are padding; copy only its initialized fields.
-    for offset in (0..88).step_by(8) {a.load(9,2,offset);a.store(9,31,CALL_OUTPUT+offset);}
+    for offset in (0..OUTPUT_FIELDS).step_by(8) {a.load(9,2,offset);a.store(9,31,CALL_OUTPUT+offset);}
     a.mov(21,1);
     let call=a.words.len();a.emit(0x94000000);
     a.mov(17,9);a.imm(11,2);
@@ -53,10 +56,10 @@ fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
         // The VM consumes this immutable metadata only after success. Materialize
         // it here solely to adapt the successful result to Native::attempt.
         a.cmp(17,31);let failed=a.words.len();a.emit(0x54000001);
-        a.imm(9,steps as u64);a.store(9,31,CALL_OUTPUT+16);a.patch(failed,a.words.len(),true).unwrap();
+        a.imm(9,steps as u64);a.store(9,31,CALL_OUTPUT+OUTPUT_STEPS);a.patch(failed,a.words.len(),true).unwrap();
     }
     a.load(2,31,16);
-    for offset in (0..88).step_by(8) {a.load(9,31,CALL_OUTPUT+offset);a.store(9,2,offset);}
+    for offset in (0..OUTPUT_FIELDS).step_by(8) {a.load(9,31,CALL_OUTPUT+offset);a.store(9,2,offset);}
     a.load(21,31,24);a.load(30,31,32);a.stack(true);a.mov(0,17);a.emit(0xd65f03c0);
     let declined=a.words.len();a.imm(0,1);a.emit(0xd65f03c0);a.patch(short,declined,true).unwrap();
     a.patch(call,a.words.len(),false).unwrap();a.words.extend(body.words);
@@ -234,7 +237,7 @@ fn native_scalar_budget_admission_leaves_output_untouched_and_counts_cross_words
     let p=program(code,0,vec![],Slot{offset:0,size:0});let plan=make_plan(&p);
     for profiled in [false,true] {let native=Native::compile(&plan,&p.functions[0],profiled).unwrap();
         for budget in [0,1,64,130,131,132] {compare(&p,&plan,&native,&[],budget);}
-        let mut output=Output{value:0x123456789abcdef,steps:123,visited:[456;8]};let before=output.clone();
+        let mut output=Output{value:0x123456789abcdef,tail:[u128::MAX;3],steps:123,visited:[456;8]};let before=output.clone();
         let status=unsafe {native.code.call(0,std::ptr::NonNull::<u128>::dangling().as_ptr(),16,std::ptr::from_mut(&mut output).cast(),130,
             0,std::ptr::null_mut(),0,std::ptr::null_mut())};assert_eq!(status,1);assert_eq!(output,before);
     }
@@ -247,7 +250,7 @@ fn native_scalar_assertions_address_bits_and_host_registers_are_preserved() {
     for profiled in [false,true] {let native=Native::compile(&plan,&p.functions[0],profiled).unwrap();
         for (arg,budget) in [(0,6),(1,6),(1,0)] {
             compare(&p,&plan,&native,&[arg],budget);
-            let input=[arg];let mut output=Output{value:0,steps:0,visited:[0;8]};
+            let input=[arg];let mut output=Output{value:0,tail:[0;3],steps:0,visited:[0;8]};
             let actual=unsafe {native.code.tree_abi_probe(0,[input.as_ptr() as usize,16,std::ptr::from_mut(&mut output) as usize,budget,0,0,0,0])};
             assert_eq!(actual[0],usize::from(arg==0 || budget==0));
             assert_eq!([actual[1],actual[2],actual[3],actual[4],actual[7],actual[8],actual[9],actual[10],actual[11],actual[12]],
@@ -285,7 +288,7 @@ fn native_scalar_call_frame_abi_preserves_live_pointers_and_private_failure_outp
         reference.append(&emit_prechecked(&plan,profiled).unwrap().words).unwrap();
         for first in [0,1,u64::MAX as u128] {for last in [0,1,1<<63,u64::MAX as u128] {
             let mut args=[0u128;64];args[0]=first;args[63]=last;
-            let mut output=Output{value:u128::MAX,steps:123,visited:[456;8]};let mut expected=output.clone();
+            let mut output=Output{value:u128::MAX,tail:[u128::MAX;3],steps:123,visited:[456;8]};let mut expected=output.clone();
             let status=unsafe {reference.call(0,args.as_mut_ptr(),0x1000,std::ptr::from_mut(&mut expected).cast(),100,
                 0,std::ptr::null_mut(),0,std::ptr::null_mut())};
             let actual=unsafe {code.tree_abi_probe(0,[args.as_ptr() as usize,0x1000,
@@ -307,7 +310,7 @@ fn native_scalar_call_frame_abi_preserves_live_pointers_and_private_failure_outp
     for profiled in [false,true] {
         let mut code=memory::Code::reserve(MAX_CODE_BYTES).unwrap();
         code.append(&call_wrapper(&empty,profiled,0).words).unwrap();
-        let mut output=Output{value:u128::MAX,steps:123,visited:[456;8]};
+        let mut output=Output{value:u128::MAX,tail:[u128::MAX;3],steps:123,visited:[456;8]};
         let status=unsafe {code.call(0,std::ptr::NonNull::<u128>::dangling().as_ptr(),16,
             std::ptr::from_mut(&mut output).cast(),100,0,std::ptr::null_mut(),0,std::ptr::null_mut())};
         assert_eq!(status,0);assert_eq!(output.value,u128::MAX);assert_eq!(output.steps,1);

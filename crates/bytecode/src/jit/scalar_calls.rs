@@ -86,7 +86,8 @@ impl Jit<'_> {
 
 const OUTPUT:usize=scalar_ir::native_leaf::CALL_OUTPUT;
 const ARGUMENTS:usize=scalar_ir::native_leaf::CALL_ARGUMENTS;
-const _:()={assert!(std::mem::size_of::<scalar_ir::native_leaf::Output>()==96);};
+const OUTPUT_STEPS:usize=scalar_ir::native_leaf::OUTPUT_STEPS;
+const OUTPUT_VISITED:usize=scalar_ir::native_leaf::OUTPUT_VISITED;
 impl Assembler<'_> {
     fn scalar_guard_address(&mut self,address:u32,size:usize,write:bool,declines:&mut Vec<usize>) {
         let prior=self.failures.len();
@@ -149,7 +150,7 @@ impl Assembler<'_> {
         for (reg,offset) in [(3,24),(30,32)] {self.load64(reg,31,offset);}
         self.charge_transition(pc,profiled);
         if let Some(steps)=entry.success_steps {self.sub_imm(BUDGET_REGISTER,BUDGET_REGISTER,steps);}
-        else {self.load64(9,31,OUTPUT+16);self.three(0xcb000000,BUDGET_REGISTER,BUDGET_REGISTER,9);}
+        else {self.load64(9,31,OUTPUT+OUTPUT_STEPS);self.three(0xcb000000,BUDGET_REGISTER,BUDGET_REGISTER,9);}
         self.three(0x8b000000,11,2,3);self.three(0x8b000000,12,2,21);
         self.zero_range()?; // retain exactly the ordinary Call's zeroed padding
         if f.result.size!=0 {
@@ -175,7 +176,7 @@ impl Assembler<'_> {
     fn scalar_profile(&mut self,id:usize,code_len:usize)->Result<(),EmitError> {
         self.load64(12,19,resumable::SCALAR_PROFILES);
         self.imm(9,id as u64*8);self.three(0x8b000000,12,12,9);self.load64(12,12,0);
-        self.add_imm(16,31,OUTPUT+24);self.add_imm(17,16,code_len.div_ceil(64)*8);self.mov(11,31);
+        self.add_imm(16,31,OUTPUT+OUTPUT_VISITED);self.add_imm(17,16,code_len.div_ceil(64)*8);self.mov(11,31);
         let words=self.words.len();self.load64(9,16,0);self.cmp(9,31);
         let empty=self.words.len();self.emit(0x54000000);
         let bits=self.words.len();
