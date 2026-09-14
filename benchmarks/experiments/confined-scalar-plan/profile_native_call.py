@@ -42,7 +42,7 @@ def main():
         assert entropy['status']=='passed';library=ROOT/entropy['library'];assert sha(library)==entropy['library_sha256']
         paths=[build_path,qualification_path,baseline_path,old/'records.json',reference_path,raw/'records.json',entropy_path,library]
         paths += [Path(__file__),Path(__file__).with_name('native_observation.py'),Path(__file__).with_name('test_native_observation.py'),
-                  Path(__file__).with_name('NATIVE-CALL.md'),ROOT/'benchmarks/experiments/operation-map/maps.py']
+                  Path(__file__).with_name('NATIVE-CALL.md'),ROOT/'tests/test_isolated_launcher.py',ROOT/'benchmarks/experiments/operation-map/maps.py']
         paths += [ROOT/'scripts'/n for n in ['workflow_io.py','interpreter.py','compare_saved_runtime.py']]
         paths += [vm_dir/n for n in build['binaries']]+[control_dir/n for n in matched['binaries']]
         cases=[]
@@ -59,10 +59,15 @@ def main():
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         work=ROOT/'.work'/args.run_id;work.mkdir(exist_ok=False)
         write(work/'plan.json',dict(owner=str(ROOT),source_revision=__import__('subprocess').check_output(['git','rev-parse','HEAD'],text=True).strip(),
-            frozen=frozen,expected_guest_commands=6,python_controls=3,tool_key=key,matched_control_key=matched['tool_key'],minimum_child_gib=8,
+            frozen=frozen,expected_guest_commands=6,python_controls=3,launcher_controls=7,tool_key=key,matched_control_key=matched['tool_key'],minimum_child_gib=8,
             performance_measurement=False))
         env={k:v for k,v in os.environ.items() if not k.startswith(('RUST_INTERP_','RUSTDEV_'))}
         assert not any(k.startswith('DYLD_') for k in env)
+        child,out,err=capture([sys.executable,'-m','unittest','discover','-s','tests','-p','test_isolated_launcher.py','-v'],cwd=ROOT,
+            env=dict(env,PYTHONDONTWRITEBYTECODE='1'),receipt_path=work/'active.json',receipt=dict(stage='corrected launcher controls'))
+        (work/'launcher.stdout').write_text(out);(work/'launcher.stderr').write_text(err)
+        write(work/'launcher.json',dict(pid=child.pid,returncode=child.returncode,stdout_sha256=sha(work/'launcher.stdout'),stderr_sha256=sha(work/'launcher.stderr')))
+        assert child.returncode==0 and 'Ran 7 tests' in err and err.rstrip().endswith('OK'),out+err
         child,out,err=capture([sys.executable,'-m','unittest','test_native_observation','-v'],cwd=Path(__file__).parent,
             env=dict(env,PYTHONDONTWRITEBYTECODE='1'),receipt_path=work/'active.json',receipt=dict(stage='observation controls'))
         (work/'controls.stdout').write_text(out);(work/'controls.stderr').write_text(err)
@@ -111,8 +116,8 @@ def main():
                 print(index,mode,'original assertions/counts/peak/entropy/map PASS;',scalar_calls,'scalar Calls;',totals['scalar'],'scalar instructions',flush=True)
                 assert all(sha(ROOT/p)==h for p,h in frozen.items())
         out=ROOT/'results'/args.run_id;out.mkdir(exist_ok=False)
-        write(out/'summary.json',dict(status='passed',tool_key=key,matched_control_key=matched['tool_key'],commands=6,python_controls=3,
+        write(out/'summary.json',dict(status='passed',tool_key=key,matched_control_key=matched['tool_key'],commands=6,python_controls=3,launcher_controls=7,
             comparisons=comparisons,control_code_matches_adopted=True,exact_logical_counts_memory_and_entropy=True,exact_per_pc_counts=True,
             exact_operation_map_reconstruction=True,raw=str(work.relative_to(ROOT)),plan_sha256=sha(work/'plan.json'),records_sha256=sha(work/'records.json'),
-            controls_sha256=sha(work/'controls.json'),performance_measurement=False))
+            controls_sha256=sha(work/'controls.json'),launcher_sha256=sha(work/'launcher.json'),performance_measurement=False))
 if __name__=='__main__':main()

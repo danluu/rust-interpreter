@@ -44,6 +44,7 @@ def main():
     assert re.fullmatch(r'confined-scalar-native-call-qualification-\d{2}', args.run_id)
     with (ROOT / '.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock, 45)
+        assert not subprocess.check_output(['git','diff','--name-only','HEAD']).strip(),'commit frozen qualification sources first'
         require_space(ROOT, 12)
         build_path = args.build.resolve(strict=True)
         build = json.loads(build_path.read_text())
