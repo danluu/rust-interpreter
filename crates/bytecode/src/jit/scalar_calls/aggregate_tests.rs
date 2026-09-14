@@ -78,9 +78,12 @@ fn aggregate_heap_linear_readonly_and_overflow_boundaries_match() {
         compare_complete(&p,&[source,tag+32],limits());
     }
     for destination in [0,1,63,64,65,80,81,96,127,128,tag-1,tag,tag+65,tag+66,tag+128,u64::MAX as u128] {
-        compare_complete(&p,&[tag,destination],limits());
+        compare_complete(&p,&[tag+1,destination],limits());
     }
-    assert_eq!(compare_complete(&p,&[tag,tag+65],limits()),1);
+    // Offset zero is null in either arena, including the tagged heap arena.
+    assert!(crate::execute(&p,&[tag+1,tag+65],limits()).is_ok());
+    assert_eq!(compare_complete(&p,&[tag+1,tag+65],limits()),1);
+    assert_eq!(compare_complete(&p,&[tag,tag+65],limits()),0);
 }
 
 #[test]
