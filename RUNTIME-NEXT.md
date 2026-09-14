@@ -41,7 +41,11 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    original profiles with exact counts/memory/entropy. Block scalar Calls rise
    from 11.23 to 27.65 million. Its 40-command primary fails: wall 1.000153,
    CPU 0.976356, wall A/A 0.068269. Park this revision and cancel larger histories.
-   Inspect repeated store checks and private slot traffic before another change.
+   The exact 245-body store-cost census finds 32.94 million repeated containing
+   write checks and fully overwritten publications on successful block paths.
+   A separate store-log simplification passes 381 bytecode tests/profile (17
+   ignored), including intervening aliases and later faults. Next qualify its
+   immutable build, strict checks and original profiles before a new primary.
    Main retains df4006e0; no gain is established.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
@@ -64,7 +68,9 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    [immutable build](results/scalar-transaction-native-build-01/assessment.md),
    [strict checks](results/scalar-transaction-native-qualification-01/ASSESSMENT.md),
    [original profiles](results/scalar-transaction-native-profile-01/ASSESSMENT.md),
-   [failed store primary](results/scalar-transaction-native-screen-token-01/ASSESSMENT.md).
+   [failed store primary](results/scalar-transaction-native-screen-token-01/ASSESSMENT.md),
+   [store costs](results/scalar-transaction-costs-01/assessment.md),
+   [store-log controls](results/scalar-store-log-controls-02/assessment.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
