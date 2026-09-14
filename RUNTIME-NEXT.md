@@ -52,8 +52,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    census finds too little benefit from a larger local register pool. Its
    corrected live-only partition identifies many one-byte memory phis, including
    eight consecutive bytes of one value in the hot copy-precondition function.
-   Next prototype contiguous byte-phi coalescing from the adopted runtime;
-   preserve every predecessor slice, original PC and limit. The invalid
+   The contiguous byte-phi prototype now passes 348 bytecode tests/profile
+   (11 ignored), starting from adopted runtime source. It preserves predecessor
+   slices, original PCs and limits. Next qualify an immutable build, strict
+   checks and original profiles before a new primary. The invalid
    census02 partition and its corrected dead-use control are retained.
    Main retains df4006e0; no gain is established.
    Retain earlier negative initialization/tree and wider-memory results.
