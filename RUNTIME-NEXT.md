@@ -46,8 +46,10 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    A separate store-log simplification passes 381 bytecode tests/profile (17
    ignored), including intervening aliases and later faults. Its immutable
    tool 5b86b3ab passes 644 workspace tests/profile, 407 Python tests (22 skips),
-   121 strict/cache commands and three original profiles. Run the frozen
-   40-command primary next; no larger histories have started.
+   121 strict/cache commands and three original profiles. The complete
+   40-command primary fails (wall 0.976436, CPU 0.996167, wall A/A 0.046293).
+   Park 5b86b3ab and cancel larger histories. Next census scalar live-register
+   pressure/spills and the save/restore cost of a larger bounded register pool.
    Main retains df4006e0; no gain is established.
    Retain earlier negative initialization/tree and wider-memory results.
    [Scratch coverage](results/scratch-source-census-01/assessment.md),
@@ -72,7 +74,8 @@ still loses to native. [Integration and limits](results/scratch-scalar-main-qual
    [original profiles](results/scalar-transaction-native-profile-01/ASSESSMENT.md),
    [failed store primary](results/scalar-transaction-native-screen-token-01/ASSESSMENT.md),
    [store costs](results/scalar-transaction-costs-01/assessment.md),
-   [store-log controls](results/scalar-store-log-controls-02/assessment.md).
+   [store-log controls](results/scalar-store-log-controls-02/assessment.md),
+   [store-log primary](results/scalar-store-log-screen-token-01/ASSESSMENT.md).
 3. Use the existing primary-first changed-source screen and all predeclared
    correctness/adoption guards. Preserve failures and noisy outcomes; do not
    retime unchanged parked candidates or reinterpret old gates. Reuse existing
