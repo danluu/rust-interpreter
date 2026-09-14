@@ -15,7 +15,7 @@ from workflow_io import capture, require_space, write_json as write
 import native_observation
 from words import analyze
 
-NAME = 'scalar-word-census-01'
+NAME = 'scalar-word-census-02'
 
 
 def main():
@@ -61,7 +61,8 @@ def main():
         env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1')
         command = [sys.executable, '-m', 'unittest', 'discover', '-s', str(directory), '-p', 'test_words.py', '-v']
         require_space(ROOT, 8); started = time.time()
-        child, out, err = capture(command, cwd=ROOT, env=env, receipt_path=work/'active.json')
+        child, out, err = capture(command, cwd=ROOT, env=env, receipt_path=work/'active.json',
+                                  receipt=dict(label='census-controls'))
         (work/'controls.stdout').write_text(out); (work/'controls.stderr').write_text(err)
         records.append(dict(command=command, pid=child.pid, returncode=child.returncode,
                             started_at=started, finished_at=time.time(),
