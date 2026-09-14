@@ -2,87 +2,29 @@
 //! The caller's original Call PC/profile/budget charge has already happened.
 use crate::{Memory,Program,Reg,Limits,ExecutionProfile,PARTIAL_VALIDATION};
 use crate::scalar_ir::{self,native_leaf::Native};
-use std::cell::{Cell,RefCell};
+use std::cell::Cell;
 
 #[derive(Clone,Copy,Debug,Default)]
 struct Statistics {attempts:usize,commits:usize,declines:usize}
 thread_local! {
     static ENABLED:Cell<bool>=const {Cell::new(false)};
     static STATISTICS:Cell<Statistics>=Cell::new(Statistics::default());
-    static NATIVE_PATH:Cell<bool>=const {Cell::new(false)};
-    static NATIVE_PATH_INVARIANT:Cell<bool>=const {Cell::new(false)};
-    static NATIVE_STORES:Cell<bool>=const {Cell::new(true)};
-    static PATH_GUARDS:Cell<bool>=const {Cell::new(false)};
-    static STORE_MODEL:Cell<bool>=const {Cell::new(false)};
-    static SNAPSHOT_ENABLED:Cell<bool>=const {Cell::new(false)};
-    static SNAPSHOT:RefCell<Option<(Vec<u8>,Vec<u8>)>>=const {RefCell::new(None)};
 }
-pub(crate) fn native_path_enabled()->bool {NATIVE_PATH.with(Cell::get)}
-pub(crate) fn native_path_invariant_enabled()->bool {NATIVE_PATH_INVARIANT.with(Cell::get)}
-pub(crate) struct NativePathEnabled;
-impl NativePathEnabled {pub(crate) fn new()->Self {NATIVE_PATH.with(|v|assert!(!v.replace(true)));Self}}
-impl Drop for NativePathEnabled {fn drop(&mut self) {NATIVE_PATH.with(|v|v.set(false));NATIVE_PATH_INVARIANT.with(|v|v.set(false));}}
-pub(crate) fn native_stores_enabled()->bool {NATIVE_STORES.with(Cell::get)}
-struct NativeEnabled(bool);
-impl NativeEnabled {
-    fn new()->Self {Self(NATIVE_STORES.with(|s|s.replace(true)))}
-    fn confined_reference()->Self {Self(NATIVE_STORES.with(|s|s.replace(false)))}
-}
-impl Drop for NativeEnabled {fn drop(&mut self) {NATIVE_STORES.with(|s|s.set(self.0));}}
 struct Enabled;
 impl Enabled {
     fn new()->Self {ENABLED.with(|v|assert!(!v.replace(true)));STATISTICS.with(|v|v.set(Statistics::default()));Self}
-    fn path_guards()->Self {let enabled=Self::transaction();PATH_GUARDS.with(|v|assert!(!v.replace(true)));enabled}
-    fn transaction()->Self {let enabled=Self::new();STORE_MODEL.with(|v|assert!(!v.replace(true)));enabled}
 }
-impl Drop for Enabled {fn drop(&mut self) {ENABLED.with(|v|v.set(false));STORE_MODEL.with(|v|v.set(false));PATH_GUARDS.with(|v|v.set(false));}}
+impl Drop for Enabled {fn drop(&mut self) {ENABLED.with(|v|v.set(false));}}
 fn record(commit:bool) {STATISTICS.with(|v|{let mut s=v.get();s.attempts+=1;if commit {s.commits+=1;} else {s.declines+=1;}v.set(s);});}
-struct Compiled {native:Option<Native>,transaction:Option<scalar_ir::Plan>,maximum_steps:usize}
-pub(crate) struct Context<'a> {program:&'a Program,profiled:bool,transactional:bool,path_guarded:bool,tried:Vec<bool>,compiled:Vec<Option<Compiled>>,proof_work:usize,scalar_work:usize,mappings:usize}
-
-// Test-only snapshot captures both success and error exits of the actual VM.
-impl Drop for Memory {
-    fn drop(&mut self) {
-        if SNAPSHOT_ENABLED.with(Cell::get) {SNAPSHOT.with(|slot|*slot.borrow_mut()=Some((self.bytes.to_vec(),self.heap.bytes.to_vec())));}
-    }
-}
-#[derive(Clone)]
-struct Store {address:usize,size:usize,value:u128}
-struct PrivateMemory<'a> {memory:&'a Memory,stores:Vec<Store>}
-impl PrivateMemory<'_> {
-    fn read(&self,address:u128,size:u8)->Result<u128,String> {
-        let address=address as usize;let size=size as usize;
-        if size>16 {return Err("private read width".into());}
-        let source=self.memory.read(address,size)?;let mut bytes=[0u8;16];bytes[..size].copy_from_slice(source);
-        // Every write and this complete read range were checked independently.
-        // Overlay in original order; later bytes replace earlier writes.
-        for store in &self.stores {
-            let start=address.max(store.address);
-            let end=address.checked_add(size).ok_or("private address overflow")?
-                .min(store.address.checked_add(store.size).ok_or("private store overflow")?);
-            if start<end {bytes[start-address..end-address].copy_from_slice(&store.value.to_le_bytes()[start-store.address..end-store.address]);}
-        }
-        Ok(u128::from_le_bytes(bytes))
-    }
-    fn write(&mut self,address:u128,value:u128,size:u8)->Result<(),String> {
-        let address=address as usize;let size=size as usize;
-        if size>16 {return Err("private store width".into());}
-        let (heap,_)=self.memory.range(address,size)?;
-        if !heap && size!=0 && address<self.memory.readonly_end {return Err("write to read-only guest memory".into());}
-        if size!=0 {
-            if self.stores.len()>=16 {return Err("private store limit".into());}
-            self.stores.push(Store{address,size,value});
-        }
-        Ok(())
-    }
-}
+struct Compiled {native:Native,maximum_steps:usize}
+pub(crate) struct Context<'a> {program:&'a Program,profiled:bool,tried:Vec<bool>,compiled:Vec<Option<Compiled>>,proof_work:usize,scalar_work:usize,mappings:usize}
 
 impl<'a> Context<'a> {
     pub fn new(program:&'a Program,profiled:bool,use_jit:bool)->Result<Option<Self>,String> {
         if !ENABLED.with(Cell::get) {return Ok(None);}
         if use_jit {return Err("scalar transaction model requires ordinary interpreter dispatch".into());}
         if program.version & PARTIAL_VALIDATION != 0 {return Err("scalar transaction model requires full validation".into());}
-        Ok(Some(Self{program,profiled,transactional:STORE_MODEL.with(Cell::get),path_guarded:PATH_GUARDS.with(Cell::get),tried:vec![false;program.functions.len()],compiled:(0..program.functions.len()).map(|_|None).collect(),
+        Ok(Some(Self{program,profiled,tried:vec![false;program.functions.len()],compiled:(0..program.functions.len()).map(|_|None).collect(),
             proof_work:crate::proof::MAX_GLOBAL_WORK,scalar_work:128_000_000,mappings:0}))
     }
     fn ensure(&mut self,id:usize) {
@@ -90,20 +32,14 @@ impl<'a> Context<'a> {
         // The prototype reserves 256 KiB per publisher; cap all reservations
         // at 16 MiB. The production bridge will use its shared code arena.
         if self.mappings>=64 {return;}
-        let memory=if self.transactional {crate::proof::memory_plan_transaction(self.program,id,&mut self.proof_work)}
-            else {crate::proof::memory_plan(self.program,id,&mut self.proof_work)};
+        let memory=crate::proof::memory_plan(self.program,id,&mut self.proof_work);
         let limit=self.scalar_work.min(250_000);
         let scalar=scalar_ir::lower(&self.program.functions[id],&memory,limit);
         self.scalar_work=self.scalar_work.saturating_sub(match &scalar {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
         if let Ok(plan)=scalar {
-            if self.transactional {
-                if self.path_guarded && plan.path_guard_shape().is_err() {return;}
-                let maximum_steps=plan.maximum_steps;
-                self.compiled[id]=Some(Compiled{native:None,transaction:Some(plan),maximum_steps});return;
-            }
             if let Ok(native)=Native::compile(&plan,&self.program.functions[id],self.profiled) {
                 self.mappings+=1;
-                self.compiled[id]=Some(Compiled{native:Some(native),transaction:None,maximum_steps:plan.maximum_steps});
+                self.compiled[id]=Some(Compiled{native,maximum_steps:plan.maximum_steps});
             }
         }
     }
@@ -135,31 +71,7 @@ impl<'a> Context<'a> {
         // The additional backing is bounded by one <=512-byte leaf plus <=4095
         // alignment bytes. No guest reference spans preparation/native entry.
         if memory.bytes.prepare(end).is_err() {record(false);return Ok(None);}
-        let (output,stores)=if let Some(plan)=&compiled.transaction {
-            let (outcome,stores)=if self.path_guarded {
-                let Ok(certificate)=plan.check_path_entry(&inputs,base,memory) else {record(false);return Ok(None);};
-                let shadow=RefCell::new(&mut *memory);let written=Cell::new(0usize);
-                let outcome=plan.evaluate_path_effects(&certificate,&inputs,base,budget as usize,&f.name,
-                    &mut |a,n|shadow.borrow().load(a as usize,n as usize),
-                    &mut |a,v,n|{shadow.borrow_mut().store(a as usize,n as usize,v)?;written.set(written.get()+1);Ok(())});
-                match outcome {
-                    Ok(value)=>{assert_eq!(value.pcs,certificate.pcs,"certified path changed during direct execution");(value,vec![])},
-                    Err(error)=>{assert_eq!(written.get(),0,"guard failure after committed store: {error}");record(false);return Ok(None);},
-                }
-            } else {
-            let shadow=RefCell::new(PrivateMemory{memory,stores:vec![]});
-            let outcome=plan.evaluate_effects(&inputs,base,budget as usize,&f.name,
-                &mut |a,n|shadow.borrow().read(a,n),&mut |a,v,n|shadow.borrow_mut().write(a,v,n));
-            let Ok(outcome)=outcome else {record(false);return Ok(None);};
-            (outcome,shadow.into_inner().stores)
-            };
-            let mut output=scalar_ir::native_leaf::Output{value:outcome.value,steps:outcome.pcs.len() as u64,visited:[0;8]};
-            for pc in outcome.pcs {assert_eq!(output.visited[pc/64]&(1u64<<(pc%64)),0);output.visited[pc/64]|=1u64<<(pc%64);}
-            (output,stores)
-        } else {
-            let Some(output)=compiled.native.as_ref().unwrap().attempt(&inputs,base,budget as usize)? else {record(false);return Ok(None);};
-            (output,vec![])
-        };
+        let Some(output)=compiled.native.attempt(&inputs,base,budget as usize)? else {record(false);return Ok(None);};
         if output.steps==0 || output.steps>compiled.maximum_steps as u64 || output.steps>budget {
             return Err("invalid scalar transaction instruction count".into());
         }
@@ -174,7 +86,6 @@ impl<'a> Context<'a> {
         // Callee frame/register backing is dead after Return; future frame
         // reservations reinitialize it before exposing it to guest addresses.
         memory.bytes.resize(base,0);
-        for store in stores {memory.store(store.address,store.size,store.value)?;}
         memory.store(destination,f.result.size,output.value)?;
         memory.peak=memory.peak.max(total);
         if self.profiled {
@@ -191,15 +102,3 @@ impl<'a> Context<'a> {
 
 #[path="scalar_call_model_tests.rs"]
 mod tests;
-
-#[path="scalar_call_model_transaction_tests.rs"]
-mod transaction_tests;
-
-#[path="scalar_call_native_transaction_tests.rs"]
-mod native_transaction_tests;
-
-#[path="scalar_call_path_guard_tests.rs"]
-mod path_tests;
-
-#[path="scalar_call_native_path_tests.rs"]
-mod native_path_tests;

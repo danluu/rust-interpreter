@@ -6,29 +6,6 @@ use super::resumable::{self, Cond, BUDGET_REGISTER};
 use crate::native_continuation::layout as state;
 use crate::{proof, scalar_ir};
 
-fn memory_plan(program:&Program,id:usize,work:&mut usize)->proof::MemoryPlan {
-    #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-    if !crate::scalar_call_model::native_stores_enabled() {return proof::memory_plan_for_call(program,id,work);}
-    proof::memory_plan_transaction(program,id,work)
-}
-// A conservative debit bounds the new per-function graph/slice/alias analysis
-// within the existing shared scalar preparation budget, including failed emits.
-const PATH_PREPARATION_WORK:usize=1_200_000;
-fn path_selected(plan:&scalar_ir::Plan)->bool {
-    #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-    if !crate::scalar_call_model::native_stores_enabled() || !crate::scalar_call_model::native_path_enabled() {return false;}
-    plan.has_external_writes()
-}
-fn emit(plan:&scalar_ir::Plan,profiled:bool,heap:bool)->Result<scalar_ir::native_leaf::Emitted,&'static str> {
-    #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-    if !crate::scalar_call_model::native_stores_enabled() {return scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap);}
-    if path_selected(plan) {return scalar_ir::native_leaf::emit_call_path(plan,profiled,heap);}
-    // The archived transactional emitter remains an explicit test reference.
-    #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-    if !crate::scalar_call_model::native_path_enabled() {return scalar_ir::native_leaf::emit_call_transaction(plan,profiled,heap);}
-    scalar_ir::native_leaf::emit_call_with_heap(plan,profiled,heap)
-}
-
 pub(super) struct State {
     tried: Vec<bool>,
     pub entries: Vec<Option<Entry>>,
@@ -42,13 +19,8 @@ pub(super) struct Entry {
     maximum_steps: usize,
     success_steps: Option<usize>,
     target: usize,
-    guarded_effects:bool,
 }
 impl Jit<'_> {
-    #[cfg(test)]
-    pub(crate) fn scalar_transaction_test_map(&self)->serde_json::Value {
-        serde_json::to_value(self.operation_map().unwrap()).unwrap()
-    }
     pub(crate) fn enable_scalar_calls(&mut self) {
         assert!(self.resumable.is_some() && self.scalar.is_none());
         self.scalar = Some(State {tried:vec![false;self.program.functions.len()],
@@ -62,13 +34,13 @@ impl Jit<'_> {
         assert!(self.code.is_none() && self.bytes==0 && self.scalar_entry(id).is_none());
         assert!(offset%4==0 && bytes>0 && bytes%4==0 && offset.checked_add(bytes).is_some_and(|end|end<=self.capacity));
         let mut work=proof::MAX_GLOBAL_WORK;
-        let memory=memory_plan(self.program,id,&mut work);
+        let memory=proof::memory_plan(self.program,id,&mut work);
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).unwrap();
-        let emitted=emit(&plan,self.profiled,self.uses_heap).unwrap();
+        let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).unwrap();
         assert_eq!(emitted.words.len()*4,bytes);
         self.scalar.as_mut().unwrap().entries[id]=Some(Entry {offset,bytes,
             maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,
-            target:base.checked_add(offset).unwrap(),guarded_effects:emitted.guarded_effects});
+            target:base.checked_add(offset).unwrap()});
         emitted.words
     }
     pub(super) fn prepare_scalar_callees(&mut self,id:usize)->Result<(),String> {
@@ -84,32 +56,28 @@ impl Jit<'_> {
         let f=&self.program.functions[id];
         // Bound host Call scratch independently of scalar SSA spill storage.
         if f.args.len()>64 || self.bytes>=self.capacity {return Ok(());}
-        let memory=memory_plan(self.program,id,&mut scalar.proof_work);
+        let memory=proof::memory_plan(self.program,id,&mut scalar.proof_work);
         let limit=scalar.scalar_work.min(250_000);
         let plan=scalar_ir::lower(f,&memory,limit);
         scalar.scalar_work=scalar.scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
         let Ok(plan)=plan else {return Ok(());};
-        if path_selected(&plan) {
-            let Some(remaining)=scalar.scalar_work.checked_sub(PATH_PREPARATION_WORK) else {return Ok(());};
-            scalar.scalar_work=remaining;
-        }
-        let Ok(emitted)=emit(&plan,self.profiled,self.uses_heap) else {return Ok(());};
+        let Ok(emitted)=scalar_ir::native_leaf::emit_call(&plan,self.profiled) else {return Ok(());};
         let bytes=emitted.words.len()*4;
         if bytes>self.capacity-self.bytes {return Ok(());}
         if self.code.is_none() {self.code=Some(platform::Code::reserve(self.capacity)?);}
         let offset=self.code.as_mut().unwrap().append(&emitted.words)?;
         let target=self.code.as_ref().unwrap().published().0+offset;
-        scalar.entries[id]=Some(Entry{offset,bytes,maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,target,guarded_effects:emitted.guarded_effects});
+        scalar.entries[id]=Some(Entry{offset,bytes,maximum_steps:plan.maximum_steps,success_steps:emitted.success_steps,target});
         self.bytes+=bytes;
         Ok(())
     }
     pub(super) fn reconstruct_scalar(&self,id:usize)->Result<Vec<u32>,String> {
         let entry=self.scalar_entry(id).ok_or("missing scalar entry")?;
         let mut work=proof::MAX_GLOBAL_WORK;
-        let memory=memory_plan(self.program,id,&mut work);
+        let memory=proof::memory_plan(self.program,id,&mut work);
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).map_err(str::to_string)?;
         if plan.maximum_steps!=entry.maximum_steps {return Err("scalar reconstruction budget mismatch".into());}
-        let emitted=emit(&plan,self.profiled,self.uses_heap).map_err(str::to_string)?;
+        let emitted=scalar_ir::native_leaf::emit_call(&plan,self.profiled).map_err(str::to_string)?;
         if emitted.success_steps!=entry.success_steps {return Err("scalar reconstruction success-count mismatch".into());}
         if emitted.words.len()*4!=entry.bytes {return Err("scalar reconstruction extent mismatch".into());}
         Ok(emitted.words)
@@ -174,9 +142,6 @@ impl Assembler<'_> {
         // live. Only the allocator's x3 and the link register need restoring.
         self.imm(16,entry.target as u64);
         self.emit(0xd63f0200); // blr x16: one nonrecursive native leaf
-        let invariant=if entry.guarded_effects {
-            self.imm(10,2);self.cmp(9,10);let at=self.words.len();self.emit(0x54000002);Some(at)
-        } else {None};
         self.cmp(9,31);self.decline(Cond::Ne,&mut private);
 
         // Restore the parent's live ABI while retaining private output. No
@@ -200,10 +165,6 @@ impl Assembler<'_> {
         self.add_imm(31,31,stack);
         self.successor(pc+1);
 
-        if let Some(at)=invariant {
-            self.patch_conditional(at,self.words.len())?;
-            self.scalar_restore(stack);self.imm(0,Failure::Certificate as u64);self.return_to_vm();
-        }
         let restore=self.words.len();
         for at in private {self.patch_conditional(at,restore)?;}
         self.scalar_restore(stack);

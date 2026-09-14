@@ -863,8 +863,6 @@ impl<'a> Jit<'a> {
                 "integer division by zero"
             } else if result == Failure::DivisionOverflow as u64 {
                 "signed division overflow"
-            } else if result == Failure::Certificate as u64 {
-                "JIT scalar path certificate invariant failed"
             } else {
                 let assertion = self.assertions.get((ASSERTION_FAILURE_BASE - result) as usize)
                     .ok_or("JIT returned an invalid assertion identity")?;
@@ -1045,17 +1043,16 @@ fn supported(op: &Op) -> bool {
 }
 
 // Generated regions return small continuation indices on success. Faults use
-// the high half: four fixed failures followed by per-assertion identities.
+// the high half: three fixed failures followed by per-assertion identities.
 // Guest values never choose either kind of return code.
 const FAILURE_MIN: u64 = 1 << 63;
-const ASSERTION_FAILURE_BASE: u64 = u64::MAX - 4;
+const ASSERTION_FAILURE_BASE: u64 = u64::MAX - 3;
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(u64)]
 enum Failure {
     Memory = u64::MAX,
     DivisionZero = u64::MAX - 1,
     DivisionOverflow = u64::MAX - 2,
-    Certificate = u64::MAX - 3,
 }
 
 #[derive(Clone, Copy)]

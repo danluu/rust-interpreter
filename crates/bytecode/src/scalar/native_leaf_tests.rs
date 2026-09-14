@@ -32,8 +32,8 @@ fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
     let body=emit_call(plan,profiled).unwrap();
     let saved=CALL_ARGUMENTS+argument_count*16;
     let stack=(saved+5*8+15)&!15;
-    let mut a=Emitter{plan,words:vec![],slots:vec![],stack_bytes:stack,registers:vec![],transaction:None,path:None,path_guard:false,
-        labels:vec![],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame:false,heap:false,fixed_steps:None};
+    let mut a=Emitter{plan,words:vec![],slots:vec![],stack_bytes:stack,registers:vec![],
+        labels:vec![],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame:false,fixed_steps:None};
     a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);
     let short=a.words.len();a.emit(0x54000003);
     a.stack(false);
@@ -60,7 +60,7 @@ fn call_wrapper(plan:&Plan,profiled:bool,argument_count:usize)->Emitted {
     a.load(21,31,24);a.load(30,31,32);a.stack(true);a.mov(0,17);a.emit(0xd65f03c0);
     let declined=a.words.len();a.imm(0,1);a.emit(0xd65f03c0);a.patch(short,declined,true).unwrap();
     a.patch(call,a.words.len(),false).unwrap();a.words.extend(body.words);
-    Emitted{words:a.words,stack_bytes:stack+body.stack_bytes,profiled,register_values:body.register_values,success_steps:None,guarded_effects:false}
+    Emitted{words:a.words,stack_bytes:stack+body.stack_bytes,profiled,register_values:body.register_values,success_steps:None}
 }
 
 fn variants(p: &Program, plan: &Plan, profiled: bool) -> [Native; 4] {

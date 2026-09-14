@@ -1,9 +1,6 @@
 use super::*;
 use crate::{Function,Slot,Op,Engine,VERSION,execute_profiled,Limits,ExecutionProfile};
 
-#[path="readonly_tests.rs"]
-mod readonly;
-
 fn local(dst:Reg,offset:usize)->Op {Op::Local{dst,offset}}
 fn load(dst:Reg,address:Reg,size:u8)->Op {Op::Load{dst,address,size}}
 fn function(name:&str,frame_size:usize,frame_align:usize,args:Vec<Slot>,result:Slot,code:Vec<Op>)->Function {
@@ -257,20 +254,4 @@ fn native_scalar_call_zero_results_preserve_fixed_variable_and_fault_budget_path
             for memory in [256,4096] {compare(&p,&[arg],budget,memory,frames);}
         }}}
     }
-}
-
-#[test]
-fn native_path_analysis_respects_the_shared_preparation_budget() {
-    let p=program(vec![function("parent",16,8,vec![],Slot{offset:0,size:0},vec![Op::Return]),
-        function("guarded writer",8,8,vec![Slot{offset:0,size:8}],Slot{offset:0,size:0},
-            vec![local(0,0),load(1,0,8),Op::Imm{dst:2,value:19},Op::Store{address:1,src:2,size:8},Op::Return])]);
-    crate::validate(&p).unwrap();let enabled=crate::scalar_call_model::NativePathEnabled::new();
-    for budget in [PATH_PREPARATION_WORK-1,PATH_PREPARATION_WORK+250_000] {
-        let mut jit=Jit::new_resumable(&p,false,16*1024*1024,true).unwrap();jit.enable_scalar_calls();
-        jit.scalar.as_mut().unwrap().scalar_work=budget;jit.prepare_scalar(1).unwrap();
-        assert_eq!(jit.scalar_entry(1).is_some(),budget>PATH_PREPARATION_WORK);
-        if let Some(entry)=jit.scalar_entry(1) {assert!(entry.guarded_effects);assert!(jit.scalar.as_ref().unwrap().scalar_work<=250_000);}
-        else {assert_eq!(jit.bytes,0);}
-    }
-    drop(enabled);
 }

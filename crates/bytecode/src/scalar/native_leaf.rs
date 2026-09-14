@@ -5,10 +5,6 @@ use super::*;
 mod registers;
 #[path="native_dead.rs"]
 mod dead;
-#[path="native_transaction.rs"]
-mod transaction;
-#[path="native_path.rs"]
-mod path;
 // Fixed offsets from the caller's SP at private native Call entry. Leaf
 // spills grow below that SP; inputs and Output remain in caller-owned scratch.
 pub(crate) const CALL_OUTPUT:usize=64;
@@ -26,12 +22,12 @@ use publisher::memory;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Output {pub value:u128,pub steps:u64,pub visited:[u64;8]}
 const _:()={assert!(std::mem::offset_of!(Output,value)==0);assert!(std::mem::offset_of!(Output,steps)==16);assert!(std::mem::offset_of!(Output,visited)==24);};
-pub struct Emitted {pub words:Vec<u32>,pub stack_bytes:usize,pub profiled:bool,pub register_values:usize,pub success_steps:Option<usize>,pub guarded_effects:bool}
+pub struct Emitted {pub words:Vec<u32>,pub stack_bytes:usize,pub profiled:bool,pub register_values:usize,pub success_steps:Option<usize>}
 struct Emitter<'a> {
     plan:&'a Plan, words:Vec<u32>, slots:Vec<Option<usize>>, stack_bytes:usize,
-    registers:Vec<Option<u32>>, transaction:Option<transaction::Layout>,path:Option<path::Layout>,path_guard:bool,
+    registers:Vec<Option<u32>>,
     labels:Vec<Option<usize>>, jumps:Vec<(usize,usize)>, failures:Vec<usize>,
-    exhausted:bool, profiled:bool, call_frame:bool, heap:bool, fixed_steps:Option<usize>,
+    exhausted:bool, profiled:bool, call_frame:bool, fixed_steps:Option<usize>,
 }
 impl Emitter<'_> {
     fn emit(&mut self,word:u32) {if self.words.len()<MAX_WORDS {self.words.push(word);} else {self.exhausted=true;}}
@@ -74,9 +70,6 @@ impl Emitter<'_> {
     fn get(&mut self,rd:u32,id:Id,high:bool) {
         let node=&self.plan.nodes[id];
         if high && node.width<=8 {self.mov(rd,31);return;}
-        if !self.path_guard {if let Some(offset)=self.path.as_ref().and_then(|p|p.saved[id]) {
-            self.load(rd,31,offset+usize::from(high)*8);return;
-        }}
         match node.value {
             Value::Constant(v)=>self.imm(rd,(if high {v>>64} else {v}) as u64),
             Value::Input(index)=>{if node.width==0 {self.mov(rd,31);} else {
@@ -90,55 +83,8 @@ impl Emitter<'_> {
         }
     }
     fn put(&mut self,id:Id) {
-        if self.path_guard && self.registers[id].is_some() {
-            if let Some(offset)=self.path.as_ref().and_then(|p|p.saved[id]) {
-                self.store(9,31,offset);if self.plan.nodes[id].width>8 {self.store(10,31,offset+8);}
-            }
-        }
         if let Some(register)=self.registers[id] {self.mov(register,9);return;}
         let offset=self.slots[id].unwrap();self.store(9,31,offset);if self.plan.nodes[id].width>8 {self.store(10,31,offset+8);}
-    }
-    /// Private Call only. x2/x7/x8 retain the stable linear/heap backing and
-    /// heap length. The caller saved its PRE-Call linear length at SP+24.
-    /// Limiting linear reads to that prefix excludes all fresh payload/padding,
-    /// whose logical bytes may differ from our private virtual frame. Any failed
-    /// check returns private failure; the bridge replays the ordinary Call.
-    /// Use only x9-x14: x3 and x15-x17 may contain allocated live scalar values.
-    fn read_external(&mut self,address:Id,size:u8)->Result<(),&'static str> {
-        if !self.call_frame {return Err("native_external_read_call_only");}
-        if size==0 || size>16 {return Err("native_external_read_width");}
-        self.get(9,address,false); // exactly the VM's low-usize address bits
-        self.imm(10,crate::heap::TAG as u64);self.cmp(9,10);
-        if self.heap {
-            self.three(0xcb000000,11,9,10);
-            self.csel(9,9,11,3);self.csel(12,2,7,3);
-            self.load(13,31,self.stack_bytes+24);self.csel(13,13,8,3);
-        } else {
-            // Heap-free external prologues leave x7/x8 outside the guest ABI.
-            // Reject tagged reads before consulting either register.
-            self.fail(2);self.mov(12,2);self.load(13,31,self.stack_bytes+24);
-        }
-        self.cmp(9,31);self.fail(0);
-        self.cmp(9,13);self.fail(8);
-        self.three(0xcb000000,13,13,9);self.imm(14,size as u64);
-        self.cmp(13,14);self.fail(3);
-        self.three(0x8b000000,11,12,9);
-        match size {
-            1|2|4|8=>{
-                let opcode=match size {1=>0x39400000,2=>0x79400000,4=>0xb9400000,_=>0xf9400000};
-                self.emit(opcode|(11<<5)|9);self.mov(10,31);
-            },
-            16=>{self.load(9,11,0);self.load(10,11,8);},
-            _=>{
-                self.mov(9,31);self.mov(10,31);
-                for byte in 0..size {
-                    self.emit(0x39400000|((byte as u32)<<10)|(11<<5)|12);
-                    self.lsl(12,12,(byte%8)*8);
-                    let output=if byte<8 {9} else {10};self.three(0xaa000000,output,output,12);
-                }
-            },
-        }
-        Ok(())
     }
     fn extract(&mut self,p:Slice) {
         self.get(9,p.value,false);self.get(10,p.value,true);
@@ -224,13 +170,7 @@ impl Emitter<'_> {
         if overflow {self.mov(9,if arithmetic {13} else {31});}self.mov(10,31);
     }
     fn node(&mut self,id:Id)->Result<(),&'static str> {
-        if self.path.is_some() {match self.plan.nodes[id].value {
-            Value::Read{address,size}=>return self.path_read(id,address,size),
-            Value::Write{address,value,size}=>return self.path_write(id,address,value,size),_=>{},
-        }}
         match &self.plan.nodes[id].value {
-            Value::Read{address,size}=>self.transaction_read(id,*address,*size)?,
-            Value::Write{address,value,size}=>return self.transaction_write(id,*address,*value,*size),
             Value::Pack(parts)=>self.pack(parts),
             Value::Binary{a,b,op,bits,signed,overflow}=>self.binary(*a,*b,*op,*bits,*signed,*overflow),
             Value::Unary{src,op,bits}=>{
@@ -260,7 +200,7 @@ impl Emitter<'_> {
     }
     fn edge(&mut self,from:usize,to:usize)->Result<(),&'static str> {
         for &id in &self.plan.blocks[to].phis {
-            if !self.plan.live[id] || !self.path_node_needed(id) {continue;}
+            if !self.plan.live[id] {continue;}
             let Value::Phi(parts)=&self.plan.nodes[id].value else {return Err("native_phi_shape");};
             let (_,part)=parts.iter().find(|(p,_)|*p==from).ok_or("native_phi_predecessor")?;
             self.extract(*part);self.put(id);
@@ -281,44 +221,30 @@ impl Emitter<'_> {
 }
 
 pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,true,true,false,false,false,false,false)
+    emit_inner(plan,profiled,true,true,true,false,false)
 }
 #[cfg(test)]
 fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emitted,&'static str> {
     // Preserve exact pre-elimination reference bytes for the archived census.
-    emit_inner(plan,profiled,use_registers,true,false,false,false,false,false,false)
+    emit_inner(plan,profiled,use_registers,true,false,false,false)
 }
 /// Historical pointer-argument entry retained as an independent test reference.
 #[cfg(test)]
 #[allow(dead_code)]
 pub(crate) fn emit_prechecked(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,false,false,false,false,false)
+    emit_inner(plan,profiled,true,false,true,false,false)
 }
 /// Private Call entry: captured inputs/Output use fixed caller-SP offsets,
 /// logical base is x21, status is x9, and x0–x2 remain live. Its caller must
 /// preflight maximum_steps + Call. Standalone emission retains its budget guard.
 pub(crate) fn emit_call(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_call_with_heap(plan,profiled,false)
-}
-pub(crate) fn emit_call_with_heap(plan:&Plan,profiled:bool,heap:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,true,heap,false,false)
-}
-/// Bounded store backend selected by this experiment's explicit scalar Calls.
-pub(crate) fn emit_call_transaction(plan:&Plan,profiled:bool,heap:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,true,heap,true,false)
+    emit_inner(plan,profiled,true,false,true,true,true)
 }
 #[cfg(test)]
 fn emit_call_reference(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,false,false,false,false)
+    emit_inner(plan,profiled,true,false,true,true,false)
 }
-pub(crate) fn emit_call_path(plan:&Plan,profiled:bool,heap:bool)->Result<Emitted,&'static str> {
-    emit_inner(plan,profiled,true,false,true,true,true,heap,false,true)
-}
-fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool,heap:bool,stores:bool,path_mode:bool)->Result<Emitted,&'static str> {
-    if !stores && !path_mode && plan.nodes.iter().any(|n|matches!(n.value,Value::Write{..})) {return Err("native_external_write_unimplemented");}
-    if !call_frame && plan.nodes.iter().any(|n|matches!(n.value,Value::Read{..})) {
-        return Err("native_external_read_call_only");
-    }
+fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,eliminate_dead:bool,call_frame:bool,optimize_commit:bool)->Result<Emitted,&'static str> {
     let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
     let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;
@@ -326,10 +252,8 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
         if !plan.live[id] {continue;}
         if matches!(node.value,Value::Binary{bits:128,..}|Value::Unary{bits:128,..}) {return Err("native_integer_128");}
         if let Value::Input(index)=node.value {if index>=if call_frame {64} else {2048} {return Err("native_argument_limit");}}
-        if registers[id].is_none() && !matches!(node.value,Value::Constant(_)|Value::Input(_)|Value::Base(_)|Value::Write{..}) {slots[id]=Some(bytes);bytes+=if node.width>8 {16} else {8};}
+        if registers[id].is_none() && !matches!(node.value,Value::Constant(_)|Value::Input(_)|Value::Base(_)) {slots[id]=Some(bytes);bytes+=if node.width>8 {16} else {8};}
     }
-    let transaction=if stores {transaction::Layout::new(plan,&mut bytes)?} else {None};
-    let path=if path_mode {Some(path::Layout::new(plan,&slots,&mut bytes)?)} else {None};
     let stack_bytes=(bytes+15)&!15;if stack_bytes>32752 {return Err("native_stack_limit");}
     if call_frame {
         // Scaled LDR/STR offsets must fit even after allocating private spills.
@@ -341,46 +265,27 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
     }
     let status=if call_frame {9} else {0};
     let success_steps=if optimize_commit {plan.success_steps} else {None};
-    let mut a=Emitter{plan,words:vec![],slots,stack_bytes,registers,transaction,path,path_guard:path_mode,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame,heap,fixed_steps:success_steps};
+    let mut a=Emitter{plan,words:vec![],slots,stack_bytes,registers,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled,call_frame,fixed_steps:success_steps};
     // This function owns only its private scratch/output. The standalone
     // guard returns before touching either; other failures discard private work.
     let short=if check_budget {
         a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);let at=a.words.len();a.emit(0x54000003);Some(at)
     } else {None};
     a.stack(false);if success_steps.is_none() {a.output_store(31,16);}if profiled {for i in 0..8 {a.output_store(31,24+i*8);}}
-    a.transaction_initialize();a.path_initialize();let mut guard_returns=vec![];
-    for phase in 0..if path_mode {2} else {1} {
-    if phase==1 {
-        for at in std::mem::take(&mut guard_returns) {a.patch(at,a.words.len(),false)?;}
-        a.labels.fill(None);a.path_guard=false;
-    }
-    let failure_count=a.failures.len();
     for block in 0..plan.blocks.len() {
-        if !plan.reachable[block] {continue;}a.labels[block]=Some(a.words.len());if !path_mode || a.path_guard {a.charge_block(block);}
+        if !plan.reachable[block] {continue;}a.labels[block]=Some(a.words.len());a.charge_block(block);
         for pc in plan.blocks[block].start..plan.blocks[block].end {
-            for &id in &plan.computations[pc] {
-                let memory=matches!(plan.nodes[id].value,Value::Read{..}|Value::Write{..});
-                if plan.live[id] && (a.path_node_needed(id) || (a.path_guard && memory)) {a.node(id)?;}
-            }
+            for &id in &plan.computations[pc] {if plan.live[id] {a.node(id)?;}}
             match &plan.effects[pc] {
                 Effect::None=>{},
-                Effect::Assert{..} if path_mode && !a.path_guard=>{},
                 Effect::Assert{value,expected,..}=>{a.get(9,*value,false);a.get(10,*value,true);a.three(0xaa000000,9,9,10);a.cmp(9,31);a.fail(if *expected {0} else {1});},
-                Effect::Trap(_) if path_mode && !a.path_guard=>{a.stack(true);a.imm(status,2);a.emit(0xd65f03c0);},
                 Effect::Trap(_)=>{a.cmp(31,31);a.fail(0);},
-                Effect::Return(_) if a.path_guard=>{guard_returns.push(a.words.len());a.emit(0x14000000);},
                 Effect::Return(value)=>{
                     // A zero-byte result has no destination or readable lane.
                     if !optimize_commit || plan.result_size!=0 {
                         a.get(9,*value,false);a.get(10,*value,true);a.output_store(9,0);a.output_store(10,8);
                     }
-                    a.transaction_commit()?;
-                    a.stack(true);
-                    #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-                    let invariant=path_mode && crate::scalar_call_model::native_path_invariant_enabled();
-                    #[cfg(not(all(test,target_arch="aarch64",target_os="macos")))]
-                    let invariant=false;
-                    if invariant {a.imm(status,2);} else {a.mov(status,31);}a.emit(0xd65f03c0);
+                    a.stack(true);a.mov(status,31);a.emit(0xd65f03c0);
                 },
                 Effect::Jump(pc)=>a.edge(block,plan.at[*pc])?,
                 Effect::Switch{value,cases,otherwise}=>{
@@ -398,12 +303,10 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
         let end=plan.blocks[block].end;
         if !matches!(plan.effects[end-1],Effect::Return(_)|Effect::Trap(_)|Effect::Jump(_)|Effect::Switch{..}) {a.edge(block,plan.at[end])?;}
     }
-    if path_mode && !a.path_guard && a.failures.len()!=failure_count {return Err("native_commit_has_failure");}
-    for (at,block) in std::mem::take(&mut a.jumps) {a.patch(at,a.labels[block].ok_or("native_missing_block")?,false)?;}
-    }
     let failed=a.words.len();a.stack(true);let declined=a.words.len();a.imm(status,1);a.emit(0xd65f03c0);
     if let Some(short)=short {a.patch(short,declined,true)?;}
     for at in std::mem::take(&mut a.failures) {a.patch(at,failed,true)?;}
+    for (at,block) in std::mem::take(&mut a.jumps) {a.patch(at,a.labels[block].ok_or("native_missing_block")?,false)?;}
     if a.exhausted {return Err("native_word_limit");}
     if eliminate_dead {
         // Unknown future encodings or nonconforming CFGs keep their original
@@ -411,7 +314,7 @@ fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool,elim
         let compact=if call_frame {dead::eliminate_call(&a.words)} else {dead::eliminate(&a.words)};
         if let Ok(compact)=compact {a.words=compact;}
     }
-    Ok(Emitted{words:a.words,stack_bytes,profiled,register_values,success_steps,guarded_effects:path_mode})
+    Ok(Emitted{words:a.words,stack_bytes,profiled,register_values,success_steps})
 }
 
 #[cfg(all(target_arch="aarch64",target_os="macos"))]
@@ -448,7 +351,3 @@ mod register_census;
 #[cfg(all(test,target_arch="aarch64",target_os="macos"))]
 #[path="native_commit_census.rs"]
 mod commit_census;
-
-#[cfg(all(test,target_arch="aarch64",target_os="macos"))]
-#[path="native_readonly_shapes.rs"]
-mod readonly_shapes;
