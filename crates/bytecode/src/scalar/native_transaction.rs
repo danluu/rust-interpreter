@@ -1,5 +1,8 @@
 //! Bounded private store slots. Only the scoped experiment entry selects this.
 use super::*;
+#[cfg(test)]
+#[path="native_transaction_costs.rs"]
+mod costs;
 
 #[derive(Clone,Copy)]
 struct Site {id:Id,address:Id,size:u8,offset:usize}
