@@ -44,7 +44,7 @@ impl Jit<'_> {
         let plan=scalar_ir::lower(f,&memory,limit);
         scalar.scalar_work=scalar.scalar_work.saturating_sub(match &plan {Ok(p)=>p.work,Err("no_memory_plan")=>0,Err(_)=>limit});
         let Ok(plan)=plan else {return Ok(());};
-        let Ok(emitted)=scalar_ir::native_leaf::emit(&plan,self.profiled) else {return Ok(());};
+        let Ok(emitted)=scalar_ir::native_leaf::emit_prechecked(&plan,self.profiled) else {return Ok(());};
         let bytes=emitted.words.len()*4;
         if bytes>self.capacity-self.bytes {return Ok(());}
         if self.code.is_none() {self.code=Some(platform::Code::reserve(self.capacity)?);}
@@ -60,7 +60,7 @@ impl Jit<'_> {
         let memory=proof::memory_plan(self.program,id,&mut work);
         let plan=scalar_ir::lower(&self.program.functions[id],&memory,250_000).map_err(str::to_string)?;
         if plan.maximum_steps!=entry.maximum_steps {return Err("scalar reconstruction budget mismatch".into());}
-        let emitted=scalar_ir::native_leaf::emit(&plan,self.profiled).map_err(str::to_string)?;
+        let emitted=scalar_ir::native_leaf::emit_prechecked(&plan,self.profiled).map_err(str::to_string)?;
         if emitted.words.len()*4!=entry.bytes {return Err("scalar reconstruction extent mismatch".into());}
         Ok(emitted.words)
     }
@@ -82,7 +82,7 @@ impl Assembler<'_> {
         self.add_imm(31,31,stack);
     }
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn scalar_call(&mut self,pc:usize,id:usize,f:&Function,args:&[Reg],destination:Reg,
+    pub(super) fn scalar_call(&mut self,pc:usize,id:usize,f:&Function,args:&[Reg],slots:Option<&[Option<usize>]>,destination:Reg,
         entry:Entry,profiled:bool)->Result<(),EmitError> {
         let mut before=vec![];let mut private=vec![];
         self.imm(9,entry.maximum_steps as u64+1);
@@ -106,12 +106,19 @@ impl Assembler<'_> {
         for (reg,offset) in [(0,0),(1,8),(2,16),(3,24),(30,32),(11,48)] {self.store64(reg,31,offset);}
         self.get(11,destination,false);self.scalar_guard_address(11,f.result.size,true,&mut private);self.store64(11,31,40);
         for (index,(&source,slot)) in args.iter().zip(&f.args).enumerate() {
-            self.get(11,source,false);self.scalar_guard_address(11,slot.size,false,&mut private);
+            let prior=self.failures.len();
+            // Equality with a bounded caller-frame slot permits direct host
+            // addressing. A stale hint takes the original checked path; an
+            // invalid address declines the whole transaction before any commit.
+            self.call_argument_address(source,slot.size,slots.and_then(|s|s[index]))?;
+            private.extend(self.failures.drain(prior..).map(|(at,kind)|{assert!(kind==Failure::Memory);at}));
             self.load_mem(9,10,11,slot.size);
             self.store64(9,31,ARGUMENTS+index*16);self.store64(10,31,ARGUMENTS+index*16+8);
         }
         // Native scalar ABI: args, original logical base, private Output,
-        // remaining budget. x4-x8 and x19-x29 are preserved by the leaf.
+        // remaining budget. The guard above proves maximum_steps + Call, so
+        // this private entry omits the redundant body check. x4-x8 and x19-x29
+        // are preserved by the leaf.
         self.add_imm(0,31,ARGUMENTS);self.mov(1,21);self.add_imm(2,31,OUTPUT);
         self.sub_imm(3,BUDGET_REGISTER,1);self.imm(16,entry.target as u64);
         self.emit(0xd63f0200); // blr x16: one nonrecursive native leaf

@@ -322,7 +322,7 @@ impl<'a> Jit<'a> {
             } => {
                 let callee = &self.program.functions[*function];
                 if let Some(entry) = self.scalar_entry(*function) {
-                    a.scalar_call(pc, *function, callee, args, *destination, entry, self.profiled)?;
+                    a.scalar_call(pc, *function, callee, args, slots, *destination, entry, self.profiled)?;
                 }
                 a.resumable_call(
                     f,
@@ -519,7 +519,7 @@ impl Assembler<'_> {
     /// Hints never replace runtime register state. Equality with a proved
     /// current-frame range permits direct host addressing; mismatch follows
     /// the original check after the same charge, clearing and earlier copies.
-    fn call_argument_address(&mut self, source: Reg, size: usize, hint: Option<usize>) -> Result<(), EmitError> {
+    pub(super) fn call_argument_address(&mut self, source: Reg, size: usize, hint: Option<usize>) -> Result<(), EmitError> {
         let Some(offset) = hint.filter(|&offset| size != 0 && offset.checked_add(size)
             .is_some_and(|end| end <= self.frame_size)) else {
             self.address(11, source, size, false);

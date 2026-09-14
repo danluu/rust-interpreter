@@ -208,6 +208,15 @@ pub fn emit(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
     emit_with_registers(plan,profiled,true)
 }
 fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emitted,&'static str> {
+    emit_inner(plan,profiled,use_registers,true)
+}
+/// For the private JIT Call entry only: its immutable entry metadata and
+/// preflight must prove remaining budget >= maximum_steps before entry.
+/// Standalone Native::compile continues to emit its own entry budget guard.
+pub(crate) fn emit_prechecked(plan:&Plan,profiled:bool)->Result<Emitted,&'static str> {
+    emit_inner(plan,profiled,true,false)
+}
+fn emit_inner(plan:&Plan,profiled:bool,use_registers:bool,check_budget:bool)->Result<Emitted,&'static str> {
     let registers=if use_registers {registers::allocate(plan)?} else {vec![None;plan.nodes.len()]};
     let register_values=registers.iter().filter(|r|r.is_some()).count();
     let mut slots=vec![None;plan.nodes.len()];let mut bytes=0;
@@ -219,9 +228,11 @@ fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emit
     }
     let stack_bytes=(bytes+15)&!15;if stack_bytes>32752 {return Err("native_stack_limit");}
     let mut a=Emitter{plan,words:vec![],slots,stack_bytes,registers,labels:vec![None;plan.blocks.len()],jumps:vec![],failures:vec![],exhausted:false,profiled};
-    // This function owns only its private scratch/output. Too little budget
-    // returns before touching either; all other failures discard private work.
-    a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);let short=a.words.len();a.emit(0x54000003);
+    // This function owns only its private scratch/output. The standalone
+    // guard returns before touching either; other failures discard private work.
+    let short=if check_budget {
+        a.imm(9,plan.maximum_steps as u64);a.cmp(3,9);let at=a.words.len();a.emit(0x54000003);Some(at)
+    } else {None};
     a.stack(false);a.store(31,2,16);if profiled {for i in 0..8 {a.store(31,2,24+i*8);}}
     for block in 0..plan.blocks.len() {
         if !plan.reachable[block] {continue;}a.labels[block]=Some(a.words.len());a.charge_block(block);
@@ -249,7 +260,7 @@ fn emit_with_registers(plan:&Plan,profiled:bool,use_registers:bool)->Result<Emit
         if !matches!(plan.effects[end-1],Effect::Return(_)|Effect::Trap(_)|Effect::Jump(_)|Effect::Switch{..}) {a.edge(block,plan.at[end])?;}
     }
     let failed=a.words.len();a.stack(true);let declined=a.words.len();a.imm(0,1);a.emit(0xd65f03c0);
-    a.patch(short,declined,true)?;
+    if let Some(short)=short {a.patch(short,declined,true)?;}
     for at in std::mem::take(&mut a.failures) {a.patch(at,failed,true)?;}
     for (at,block) in std::mem::take(&mut a.jumps) {a.patch(at,a.labels[block].ok_or("native_missing_block")?,false)?;}
     if a.exhausted {return Err("native_word_limit");}
