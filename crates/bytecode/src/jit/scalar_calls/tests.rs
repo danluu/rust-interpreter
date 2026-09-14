@@ -216,11 +216,13 @@ fn native_scalar_call_all_capture_widths_keep_aliases_high_lanes_and_empty_input
         let parent=function("capture widths",32,8,vec![Slot{offset:0,size:16}],Slot{offset:0,size:16},vec![
             local(0,0),local(1,16),Op::Call{function:1,args:vec![0],destination:1},
             Op::Call{function:1,args:vec![1],destination:0},Op::Return]);
-        let leaf=function("unaligned scalar capture",32,64,vec![Slot{offset:3,size:width}],Slot{offset:3,size:16},vec![Op::Return]);
+        let leaf=function("unaligned scalar capture",32,64,vec![Slot{offset:3,size:width}],Slot{offset:0,size:16},
+            vec![local(0,3),load(1,0,width as u8),local(2,0),Op::Store{address:2,src:1,size:16},Op::Return]);
+        let expected=if matches!(width,0|1|2|4|8|16) {2} else {0};
         let mut p=program(vec![parent,leaf]);
         for value in [0,u128::MAX,0x123456789abcdef0_fedcba9876543210] {
-            assert_eq!(compare(&p,&[value],100,4096,8).commits,2);
-            for budget in 0..=8 {compare(&p,&[value],budget,4096,8);}
+            assert_eq!(compare(&p,&[value],100,4096,8).commits,expected,"width {width}");
+            for budget in 0..=16 {compare(&p,&[value],budget,4096,8);}
         }
         p.functions[0].code[0]=Op::Imm{dst:0,value:u64::MAX as u128};
         p.functions[0].code[3]=Op::Call{function:1,args:vec![0],destination:1};

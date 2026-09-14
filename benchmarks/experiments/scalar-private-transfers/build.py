@@ -34,7 +34,7 @@ def main():
         paths += [ROOT/p for p in subprocess.check_output(['git','ls-files','scripts','tests'],text=True).splitlines()]
         paths += [ROOT/'results/guarded-local-facts-main-build-01/summary.json',ROOT/'results/heap-address-build-03/summary.json']
         paths+=dependency+[prior_path,reference_path,artifact,ROOT/'scripts/workflow_io.py',ROOT/'scripts/compare_saved_runtime.py']
-        paths += [ROOT/'results/scalar-private-transfers-focused-01'/name for name in ['summary.json','terminal.json','closure.json']]
+        paths += [ROOT/'results/scalar-private-transfers-focused-02'/name for name in ['summary.json','terminal.json','closure.json']]
         paths += [ROOT/'results/scalar-commit-census-03'/name for name in ['summary.json','terminal.json','closure.json']]
         facts=json.loads((ROOT/'results/scalar-commit-census-03/summary.json').read_text())
         assert facts['status']=='passed' and facts['reconstructed_native_bodies']==137 and facts['commands']==2
@@ -62,7 +62,7 @@ def main():
             assert child.returncode==0,(out+err)[-5000:]
             assert all(sha(ROOT/p)==h for p,h in frozen.items())
             return out
-        focused_path=ROOT/'results/scalar-private-transfers-focused-01/summary.json'
+        focused_path=ROOT/'results/scalar-private-transfers-focused-02/summary.json'
         focused=json.loads(focused_path.read_text());assert focused['status']=='passed' and focused['tests']=={'debug':23,'release':23}
         terminal=json.loads(focused_path.with_name('terminal.json').read_text());assert terminal['status']=='finished' and terminal['returncode']==0
         common=['--locked','--offline','--jobs','2','--manifest-path',ROOT/'Cargo.toml','--target-dir',target,'--workspace']

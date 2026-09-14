@@ -33,3 +33,9 @@ full project and parser comparisons. Do not relax gates or retime unchanged code
 Use the shared lock, two Cargo workers, same-source shared target and conservative
 14 GiB (or 8 GiB plus twice target allocation) admission. Preserve full checking,
 bytecode format, CLI/defaults, peer ownership and all benchmark evidence.
+
+The capture matrix explicitly initializes the complete return value after
+reading each argument. Native eligibility remains limited to the existing
+0/1/2/4/8/16-byte boundary widths; odd widths are checked for exact fallback.
+The initial fixture's unwritten return tail correctly declined and its failed
+native-commit assertion is retained as focused-01, not a guest mismatch.
