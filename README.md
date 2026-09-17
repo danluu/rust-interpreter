@@ -1,3 +1,7 @@
+# "Works for me"
+
+This is an extremely vibe coded rust interpreter that is "works for me" quality software. I don't think there's a good reason anyone would want to use this, but it works for me, at least kinda sorta. Text below this is the usual AI generated nonsense.
+
 # A custom Rust development engine
 
 This project checks Rust with rustc, lowers selected MIR to its own bytecode,
