@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+from vmmap_ranges import anonymous_executable_ranges
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -82,9 +83,7 @@ def summarize(folder):
     sample = (folder / 'sample.txt').read_text()
     pid = re.search(r'^Analysis of sampling rust-interp-vm \(pid (\d+)\)', sample, re.M)
     require(pid and int(pid[1]) == record['identity']['pid'], 'sampled PID mismatch')
-    ranges = [(int(a, 16), int(b, 16)) for a, b in re.findall(
-        r'^VM_ALLOCATE\s+([0-9a-f]+)-([0-9a-f]+).*?rwx/rwx',
-        (folder / 'vmmap.stdout').read_text(), re.M)]
+    ranges = anonymous_executable_ranges((folder / 'vmmap.stdout').read_text(), record['identity']['pid'])
     require(ranges, 'no generated-code mapping')
     roots = parse_tree(sample)
     total = sum(node['inclusive'] for node in roots)
@@ -154,7 +153,8 @@ def main():
         self_symbols=dict(frames.most_common()), samples=samples,
         performance_measurement=False, options=options,
         limitations='Partial, perturbed execution windows with original guest RNG. Self counts partition captured thread samples; grouped host PCs remain unresolved. Verified live arena addresses identify generated code, not individual guest operations. Shares do not predict speedup.',
-        evidence={str(p.relative_to(ROOT)): sha(p) for p in [work / 'plan.json', work / 'summary.json', Path(__file__)]})
+        evidence={str(p.relative_to(ROOT)): sha(p) for p in [work / 'plan.json', work / 'summary.json', Path(__file__),
+            Path(__file__).with_name('vmmap_ranges.py')]})
     out = ROOT / 'results' / args.run_id
     out.mkdir(exist_ok=False)
     (out / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
