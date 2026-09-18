@@ -620,7 +620,7 @@ pub fn export(tcx: TyCtxt<'_>, requested: &[String], demand: bool, test_body: bo
     }
     timings.checkpoint("call_reports");
     let started = std::time::Instant::now();
-    let cfg = rust_interp_bytecode::optimize_control_flow(&mut program)?;
+    let cfg = rust_interp_bytecode::optimize_control_flow_summary(&mut program)?;
     eprintln!("rust-interp-cfg: before={} after={} seconds={:.6}",
         cfg.old_operations, cfg.new_operations, started.elapsed().as_secs_f64());
     timings.checkpoint("control_flow_optimization");
