@@ -16,9 +16,14 @@ latency ratios. Normal entropy, two Cargo/prepared workers, native libtest defau
 concurrency, strict checking and original assertions remain unchanged.
 
 The outer controller again timed out waiting for the shared lock after the
-successful case. A separate audit-only recovery must close checkpoint3 from its
-462 retained commands without repeating measurements. The prior recovered
+successful case. A separate audit-only recovery closed checkpoint3 from its
+462 retained commands without repeating measurements. Its25 retained evidence
+files and122 Git source bindings verify. The prior recovered
 checkpoint2 remains immutable. Private rg-aot, Nushell and both full-parser guards
 remain pending, and main still uses the adopted scratch/scalar runtime.
+
+Both the [original timeout](../runtime-composition-full-pgrust-audit-02/original-terminal.json)
+and [successful audit recovery](../runtime-composition-full-pgrust-audit-02/summary.json)
+are retained.
 
 [Summary](summary.json), [closure](closure.json), [terminal](terminal.json).

@@ -162,6 +162,16 @@ Public token compiler-cache retirement is prepared but unexecuted; current free
 space is about40GiB. No peer process was altered or cache removed.
 [Folded assessment](results/runtime-composition-edit-folded-02/ASSESSMENT.md).
 
+Pgrust also passes154 commands/four original tests, with no established gain:
+wall1.00313849 and CPU1.00271664 lie inside their A/A envelopes. Candidate/native
+wall is1.04813587 on this host. Its post-case audit also met a45-second shared-lock
+timeout. Audit-only recovery runtime-composition-full-pgrust-audit-02 closed all
+462 commands without repeats. Checkpoint3 is closed. Private rg-aot now runs under
+runtime-composition-full-rg-aot-02, supervisor94442, started September18 15:18.
+Free space remains about39GiB; token cache retirement is still unexecuted.
+[Pgrust assessment](results/runtime-composition-edit-pgrust-02/ASSESSMENT.md),
+[prospective integration](docs/RUNTIME-COMPOSITION-INTEGRATION-20260918.md).
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
