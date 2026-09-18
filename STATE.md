@@ -172,6 +172,19 @@ Free space remains about39GiB; token cache retirement is still unexecuted.
 [Pgrust assessment](results/runtime-composition-edit-pgrust-02/ASSESSMENT.md),
 [prospective integration](docs/RUNTIME-COMPOSITION-INTEGRATION-20260918.md).
 
+Private rg-aot passed132 commands and its regression guard: wall1.00143096,
+CPU1.00207350, both inside A/A variation. Candidate/native wall is0.56640976.
+The supervisor finished normally; checkpoint4 is closed with594 completed commands.
+The read-only cache preflight found33,924 eligible files, about11.86GiB logical,
+in three exact completed Nushell namespaces. The actual frozen
+Nushell reservation is47.03GiB, not the resumed handoff's26GiB; current free space
+is about36GiB. Nushell is unstarted. Cleanup under supervisor92302 started
+September18 15:24, run closed-scratch-scalar-nushell-custom-retirement-01. It scopes
+only those three closed namespaces and preserves executables, installed tools,
+bytecode, suites, sources and recorded evidence. Read the terminal receipt before
+assuming any cleanup completed. Current campaign/token caches remain intact.
+[Private aggregate assessment](results/runtime-composition-edit-rg-aot-02/ASSESSMENT.md).
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
