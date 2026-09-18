@@ -18,5 +18,10 @@ separately closed token history. No earlier measurements are repeated or spliced
 into these pairs. Pgrust hash, private rg-aot, Nushell and both full-parser guards
 remain necessary before adoption. Main retains the adopted scratch/scalar VM.
 
+The case controller finished normally, but the outer campaign timed out on the
+shared lock before its final audit. Retain that failed outer receipt. A separate
+audit-only recovery must verify the two completed histories and create checkpoint2;
+it executes no guest commands and supplies the eventual closure's terminal receipt.
+
 [Summary](summary.json), [closed checkpoint](closure.json),
 [terminal receipt](terminal.json).
