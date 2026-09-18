@@ -1,5 +1,11 @@
 # Prospective runtime integration
 
+**Not admitted:** the incremental parser history failed its declared CPU guard
+(1.0502179853 including control variation versus the1.05 limit). The composition
+is parked; repository timing and runtime integration remain unstarted. Preserve
+this prospective plan as a record, not authorization to merge the failed runtime.
+Next investigate the adopted runtime using fresh native-PC samples.
+
 This is an integration plan, not an adoption decision. The candidate is tool
 45a1529e / VMfd21a46f. It combines native indirect transitions, checked readonly
 scalar leaves and successor-only spilling on the adopted scratch/scalar runtime.

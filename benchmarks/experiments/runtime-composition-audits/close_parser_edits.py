@@ -12,8 +12,8 @@ from probe import fingerprint,native_inventory
 from states import source_states,native_outcomes
 from suite_reports import read_report,validate_report
 
-def main():
-    profile=sys.argv[1];assert profile in ['incremental','repository']
+def main(profile):
+    assert profile in ['incremental','repository']
     name='runtime-composition-parser-edits-'+profile+'-01';raw=ROOT/'.work'/name;out=ROOT/'results'/name;outer=ROOT/'.work/experiments'/name
     s=json.loads((out/'summary.json').read_text());t=json.loads((outer/'status.json').read_text());plan=json.loads((raw/'plan.json').read_text());rows=json.loads((raw/'records.json').read_text())
     assert s['status']=='passed' and s['commands']==len(rows)==88 and s['original_tests']==114
@@ -56,4 +56,4 @@ def main():
     print('Closed',profile,len(bindings),'frozen inputs;',len(evidence),'evidence files')
 if __name__=='__main__':
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
-        acquire_lock(lock,45);main()
+        acquire_lock(lock,45);main(sys.argv[1])

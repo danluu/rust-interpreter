@@ -12,4 +12,6 @@ no guest. A separate supervisor ran the unchanged controller successfully. Both
 terminal histories are retained. The first evidence-closure attempt also encountered a lock wait timeout before
 audit. Batched closure subsequently verified all 6,801 input bindings, including
 the three original admission records; the completed tests were not repeated.
-The two 88-command changed-source parser histories remain unstarted and required.
+The incremental 88-command history subsequently failed its CPU guard; the
+repository-profile successor is cancelled and remains unstarted. Compatibility
+success alone does not admit the runtime.

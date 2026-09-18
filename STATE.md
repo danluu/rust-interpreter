@@ -109,16 +109,36 @@ Batched audit runtime-composition-pending-evidence-01 (supervisor57715/child5771
 source60d6a01e) closed compatibility and current Nushell cache retirement;
 it ran no new guest or deletion. Both checks passed normally.
 
-The16 parser protocol controls pass and are closed with120 source inputs
-(source7e10588f; supervisor60793). The first88-command parser history is launched:
-runtime-composition-parser-edits-incremental-01, supervisor87894/child87897,
-September18 at16:13:49. Its benchmark sources are unchanged and committed in
-93ab825c. Check actual status/records; do not infer completion. Repository-profile
-history remains unstarted and requires the completed passing incremental guard.
-Fresh free space is28.64GiB at16:14. Require24GiB initially and8GiB before every
-command, with two Cargo/prepared workers and normal entropy.
-Preserve all scripts and frozen runtime-composition-full/parser inputs through
-histories and final closure;840eee0c binds the unchanged full controller sources.
+The16 parser protocol controls pass and are closed with120 source inputs.
+The incremental parser history (supervisor87894/child87897, September18 at16:13)
+finished all88 commands normally. All114 tests, wrong edits, source restoration
+and paired artifact identities match. Its wall ratio0.9964519186 plus A/A
+0.0483500737 passes at1.0448019922. CPU1.0054002208 plus A/A0.0448177645
+fails narrowly at1.0502179853 against the unchanged1.05 limit. Wall/native is
+1.3473088064. Neither observed incremental difference establishes a speedup.
+
+Park this composition. The repository-profile history is cancelled and remains
+unstarted. Do not rerun unchanged measurements or relax the gate. Main's runtime
+stays adopted df4006e0 / VM6ac4dd9e. Current-main runtime integration is cancelled.
+The parser-history close attempt timed out before audit without mutation.
+Prepared close_rejected_campaign.py batches that closure and the final campaign
+under one45-second shared-lock acquisition; it executes no guest or deletion.
+Wait for the peer-held lock, then close using the actual normal Nushell terminal
+and840eee0c source binding. Keep frozen scripts/controllers unchanged until
+closure succeeds. The final receipt must say candidate_qualified:false and
+unstarted_parser_profiles:[repository], preserving five passing project gates.
+
+After final closure, publish the scoped experimental outcome to main without
+its rejected runtime delta or overwriting peer changes. Then collect two fresh
+owned native-PC windows on the adopted df4006e0 VM, using the current-host
+control profiles from runtime-composition-profile-02 for static identities.
+The old sampling controller requires current root Rust sources equal to its
+older build and old profile bindings, so prepare a new controller with archived
+Git source bindings and the fresh profiles. Existing sampler/attribution options
+are sufficient for the adopted scalar runtime; indirect forwarding stays deferred
+because the indirect composition was not adopted. Use native samples to choose
+a materially different next optimization. No new timings are authorized merely
+to obtain a quieter result for this candidate.
 
 Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
 finished normally, but their outer post-case audits timed out on the shared lock.
@@ -139,18 +159,14 @@ ac3618f3 binds the deletion controller; never repeat this retirement. All native
 parser, private, shared-target and peer caches remain untouched. Neither cleanup
 nor project closure admits adoption. Final-audit recovery remains unused.
 
-Both separate88-command parser histories, incremental first and repository
-second, remain required after the passing compatibility/protocol. Stop the
-unstarted successor on any failed guard. The three terminal-parser-decision
-controls already pass and are closed. The final closure handles a failed parser
-guard without relabeling the project result and binds its own helper sources.
-Final close_campaign.py and current-main integration still require the parser
-results. Last inspected main237510c3 includes2ba26966 (bounded leaf scans, shared
-call-graph facts and exporter summary CFG), plus091f9ea9 (runtime collision
-ancestor scans). Preserve those Rust/launcher changes and qualify the merged
-binaries, full contracts, strict/cache paths and a newly declared matched
-changed-source comparison; frozen timings do not qualify that new combination.
-[Integration plan](docs/RUNTIME-COMPOSITION-INTEGRATION-20260918.md).
+The three terminal-parser-decision controls pass. Final closure handles the failed
+parser guard without relabeling the five-project result. Last inspected main
+237510c3 includes2ba26966 (bounded leaf scans, shared call-graph facts and exporter
+summary CFG) and091f9ea9 (runtime collision ancestor scans). Preserve these peer
+changes. The publication worktree remains clean at4b6ec8bf; fetch main before
+publishing only the outcome documentation. The prospective integration plan is
+retained but explicitly not admitted after the parser failure.
+[Integration record](docs/RUNTIME-COMPOSITION-INTEGRATION-20260918.md).
 
 Disk cleanup is complete and closed for the current Nushell group above and
 three earlier exact public cache groups:
@@ -172,9 +188,9 @@ code generation is66–114ms; immutable reads and guarded-value forwarding have
 little sampled coverage; smaller range guards cover14/0/0 samples; confined scalar
 call chains cover no selected Call/Return samples; four external capture slots
 cover15/0/0 samples before their own costs. Do not repeat these unchanged probes.
-After qualified adoption, fresh owned native-PC sampling should choose the next
-runtime target. The sampler needs explicit indirect-option forwarding and the
-current observation validator before it can profile the new configuration.
+Fresh owned native-PC sampling of the adopted scalar runtime should choose the
+next target. The indirect sampler review is retained for a future qualified
+indirect configuration; it does not justify adopting this failed composition.
 
 [Primary](results/runtime-composition-screen-token-01/ASSESSMENT.md),
 [token](results/runtime-composition-edit-token-02/ASSESSMENT.md),

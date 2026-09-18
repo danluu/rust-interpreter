@@ -9,9 +9,8 @@ from workflow_io import write_json as write
 from full import audit_cases,CASES,next_case
 from parser_decision import parser_decision
 
-with (ROOT/'.work/benchmark.lock').open('a') as lock:
-    acquire_lock(lock,45)
-    name='runtime-composition-full-02';supervisor,revision=sys.argv[1:3]
+def main(supervisor,revision):
+    name='runtime-composition-full-02'
     assert supervisor.startswith('runtime-composition-full-') and Path(supervisor).name==supervisor
     raw=ROOT/'.work'/name;out=ROOT/'results'/name
     outer=ROOT/'.work/experiments'/supervisor
@@ -101,3 +100,7 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
         full_closure=str((out/'closure.json').relative_to(ROOT)),full_closure_sha256=sha(out/'closure.json'),
         summary_sha256=sha(nu/'summary.json'),terminal_sha256=sha(nu/'terminal.json'),all_retained_artifacts_and_sources_verified=True))
     print('Closed',summary['commands'],'project-history commands; gates',passed,'parser guards',len(parser),';',audit['unique_frozen_inputs'],'unique frozen inputs')
+
+if __name__=='__main__':
+    with (ROOT/'.work/benchmark.lock').open('a') as lock:
+        acquire_lock(lock,45);main(*sys.argv[1:3])

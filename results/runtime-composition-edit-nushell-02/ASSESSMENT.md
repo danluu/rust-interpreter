@@ -16,3 +16,7 @@ and 9,290 unique frozen inputs. Its separate project closure marks parser guards
 pending and runtime adoption false. The parser compatibility and two edited
 parser histories remain mandatory. All current executable/artifact evidence is
 retained; no original command or timing pair was repeated for this closure.
+
+Subsequently the incremental parser history failed its CPU guard. The
+composition is parked and the repository-profile history remains unstarted.
+This passing Nushell guard does not override that terminal decision.

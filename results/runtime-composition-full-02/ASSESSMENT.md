@@ -1,4 +1,8 @@
-# Five project histories pass; parser qualification remains pending
+# Five project guards pass; the parser guard rejects the composition
+
+The composition is parked after its incremental parser history narrowly failed
+the declared CPU guard. Main keeps the adopted runtime; repository-profile
+parser timing is cancelled and remains unstarted.
 
 The native-indirect/readonly/successor composition passes all five predeclared
 project guards across 726 complete changed-source commands. Each case supplies
@@ -22,11 +26,15 @@ and pgrust hashfn remain slower than ordinary native in this campaign.
 
 All original assertions, selected test inventories, wrong-edit outcomes,
 paired artifacts and source restoration match. The terminal audit verifies
-9,290 unique frozen inputs. Project closure binds 122 source inputs and keeps
-parser qualification pending: this result does not admit runtime adoption.
-The full 114-test parser compatibility and both 88-command edited-parser guards
-remain required, followed by qualification against current main's newer Rust
-and launcher changes. These are selected-function/test-body workflows, not
+9,290 unique frozen inputs. Project closure binds 122 source inputs and explicitly leaves
+runtime adoption false. All 114 original parser compatibility tests and 16
+protocol controls subsequently pass. The incremental 88-command parser history
+preserves correctness and restoration, but its CPU ratio plus A/A variation is
+1.0502179853, above the unchanged 1.05 limit; wall passes at 1.0448019922.
+Its raw ratios are 0.9964519186 wall and 1.0054002208 CPU, with wall/native
+1.3473088064. This does not establish an incremental speedup. The repository
+history and current-main runtime integration are cancelled. Final evidence
+closure is pending; no original performance pair will be repeated. These are selected-function/test-body workflows, not
 complete applications or general libtest, unwinding, thread or OS/FFI support.
 
 Preserve the original failed setup and folded/pgrust post-case lock timeouts.
