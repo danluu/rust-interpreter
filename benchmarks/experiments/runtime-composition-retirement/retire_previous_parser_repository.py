@@ -168,7 +168,7 @@ with ExitStack() as stack:
     write(work/'plan.json',dict(owner=str(ROOT),script_sha256=sha(Path(__file__)),completed_runs=RUNS,
         roots=sizes,process_checks=process_checks,open_checks=open_checks,files=len(rows),
         logical_bytes=sum(r['size'] for r in rows),free_before=before,started_at=started,
-        scope='Four exact completed public compiler caches from the closed scratch-memory-values incremental parser history. Successful supervisors, source pins/restoration, original assertions and snapshots are verified. Only nonexecutable compiler intermediates are eligible. Preserve every executable, bytecode/catalog snapshot and raw proof under shared/invocation locks and fresh process/open-file checks. No private cache, shared target, installed tool, unstarted later-case cache or peer cache.'))
+        scope='Four exact completed public compiler caches from the closed scratch-memory-values repository-profile parser history. Successful supervisors, source pins/restoration, original assertions and snapshots are verified. Only nonexecutable compiler intermediates are eligible. Preserve every executable, bytecode/catalog snapshot and raw proof under shared/invocation locks and fresh process/open-file checks. No private cache, shared target, installed tool, unstarted later-case cache or peer cache.'))
     assert all(sha(ROOT/p)==h for p,h in proofs.items())
     for root in roots:
         check_open(root)

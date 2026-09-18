@@ -185,6 +185,13 @@ bytecode, suites, sources and recorded evidence. Read the terminal receipt befor
 assuming any cleanup completed. Current campaign/token caches remain intact.
 [Private aggregate assessment](results/runtime-composition-edit-rg-aot-02/ASSESSMENT.md).
 
+Both completed-cache retirements passed and are closed. Old Nushell custom
+namespaces removed33,924 nonexecutable intermediates with20,002 protected hashes
+unchanged. Current full-token caches removed13,304 with3,389 protected hashes
+unchanged. Free space is about45.8GiB, still below Nushell's47.03GiB admission.
+The closed old repository-parser history is the next scoped cache candidate;
+its retirement controller is prepared but not started. Nushell remains unstarted.
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
