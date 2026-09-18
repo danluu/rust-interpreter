@@ -121,14 +121,14 @@ Park this composition. The repository-profile history is cancelled and remains
 unstarted. Do not rerun unchanged measurements or relax the gate. Main's runtime
 stays adopted df4006e0 / VM6ac4dd9e. Current-main runtime integration is cancelled.
 The parser-history close attempt timed out before audit without mutation.
-Prepared close_rejected_campaign.py batches that closure and the final campaign
-under one45-second shared-lock acquisition; it executes no guest or deletion.
-Wait for the peer-held lock, then close using the actual normal Nushell terminal
-and840eee0c source binding. Keep frozen scripts/controllers unchanged until
-closure succeeds. The final receipt must say candidate_qualified:false and
+Batched terminal audit runtime-composition-terminal-evidence-01 then finished
+normally (supervisor49666/child49669; sourcee566b9de):6,804 parser inputs and282
+evidence files, plus all726 project commands and9,290 project inputs. Final
+closure explicitly records candidate_qualified:false, parser_gates_passed:false,
 unstarted_parser_profiles:[repository], preserving five passing project gates.
+No final-audit recovery, repeated guest command or new deletion was used.
 
-After final closure, publish the scoped experimental outcome to main without
+Publish the scoped experimental outcome to main without
 its rejected runtime delta or overwriting peer changes. Then collect two fresh
 owned native-PC windows on the adopted df4006e0 VM, using the current-host
 control profiles from runtime-composition-profile-02 for static identities.

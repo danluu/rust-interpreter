@@ -33,8 +33,9 @@ preserves correctness and restoration, but its CPU ratio plus A/A variation is
 1.0502179853, above the unchanged 1.05 limit; wall passes at 1.0448019922.
 Its raw ratios are 0.9964519186 wall and 1.0054002208 CPU, with wall/native
 1.3473088064. This does not establish an incremental speedup. The repository
-history and current-main runtime integration are cancelled. Final evidence
-closure is pending; no original performance pair will be repeated. These are selected-function/test-body workflows, not
+history and current-main runtime integration are cancelled. Final evidence closure verifies the complete result and explicitly records
+`candidate_qualified: false`, `parser_gates_passed: false` and the unstarted
+repository profile. It repeats no original command or performance pair. These are selected-function/test-body workflows, not
 complete applications or general libtest, unwinding, thread or OS/FFI support.
 
 Preserve the original failed setup and folded/pgrust post-case lock timeouts.
