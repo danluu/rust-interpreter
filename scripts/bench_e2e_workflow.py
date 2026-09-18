@@ -25,6 +25,7 @@ from workflow_projects import WORKFLOW_ONLY_PROJECTS, project_revision
 from workflow_jobs import UniqueJobCount, resolve_build_jobs
 from compare_saved_runtime import acquire_lock, lock_wait_seconds
 from suite_reports import guest_test_failure, read_report, validate_report
+import workflow_compiler
 
 
 def build_metrics(launch):
@@ -97,6 +98,7 @@ def run_workflow(cleanup):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id',default='e2e-workflow-'+str(time.time_ns()))
     parser.add_argument('--lock-wait-seconds',type=lock_wait_seconds,default=0,help='bounded wait for the shared benchmark lock; default fails immediately')
+    parser.add_argument('--workload-lock',type=Path,help='explicit shared workload lock; defaults to this workspace benchmark.lock')
     parser.add_argument('--project',choices=[*WORKFLOWS,*WORKFLOW_ONLY_PROJECTS,'rg-aot'],default='fre')
     parser.add_argument('--workflow',default='default',help='additional named workload within a project')
     parser.add_argument('--case-file',type=Path,help='bounded public workflow JSON inside this workspace; mutually exclusive with a named workflow')
@@ -117,6 +119,10 @@ def run_workflow(cleanup):
     parser.add_argument('--cargo-timings',action='store_true',help='collect Cargo unit timing reports in every mode; report generation remains timed')
     parser.add_argument('--vary-selection',action='store_true',help='change the selected tests to match each production edit')
     parser.add_argument('--std-mir',action='store_true',help='use the reusable metadata-only standard library for custom engines')
+    parser.add_argument('--runtime-compiler-key',help='select one installed runtime compiler for both paired custom modes')
+    parser.add_argument('--std-mir-key',help='select prepared shared source-containing std MIR for the explicit runtime compiler')
+    parser.add_argument('--guest-rustflag',action='append',default=[],help='append one custom compiler argument; repeat using --guest-rustflag=VALUE')
+    parser.add_argument('--baseline-guest-rustflag',action='append',default=None,help='replace the baseline appended arguments; requires a paired comparison')
     parser.add_argument('--build-tool-opt-level',type=int,choices=range(4),help='optimize host build tools equally for all engines')
     parser.add_argument('--instruction-limit',type=int,default=1000000000,help='explicit per-command guest instruction budget')
     parser.add_argument('--allocation-limit',type=int,help='explicit live guest allocation budget (default: VM default of 100000)')
@@ -141,6 +147,21 @@ def run_workflow(cleanup):
     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
     args=parser.parse_args()
+    try:
+        compiler_arguments=workflow_compiler.arguments(args.runtime_compiler_key,args.std_mir_key)
+        workflow_compiler.rustflags(args.guest_rustflag)
+        if args.baseline_guest_rustflag is not None:workflow_compiler.rustflags(args.baseline_guest_rustflag)
+    except RuntimeError as error:parser.error(str(error))
+    if args.runtime_compiler_key is not None:
+        if args.baseline_tool_key is None or args.candidate_tool_key is None or not args.batch:
+            parser.error('--runtime-compiler-key requires a batched comparison with explicit baseline and candidate tools')
+        if args.std_mir != (args.std_mir_key is not None):
+            parser.error('--runtime-compiler-key with --std-mir requires an explicit prepared shared --std-mir-key')
+        if args.build_tool_opt_level is not None:
+            parser.error('--runtime-compiler-key currently requires repository host build profiles')
+    if args.baseline_guest_rustflag is not None and args.baseline_tool_key is None:
+        parser.error('--baseline-guest-rustflag requires --baseline-tool-key')
+    encoded_guest_flags=bool(args.guest_rustflag or args.baseline_guest_rustflag is not None)
     native_selection=args.native_toolchain or TOOLCHAIN
     try:
         scheduled_modes=initial_modes(['native','baseline','candidate'] if args.baseline_tool_key is not None else ['native','interpreter','jit'],args.initial_mode_order)
@@ -189,6 +210,8 @@ def run_workflow(cleanup):
         inline_thresholds={name:value*args.guest_mir_inline_scale for name,value in [('inline-mir-threshold',50),('inline-mir-hint-threshold',100),('inline-mir-forwarder-threshold',30)]}
         guest_flags += [f'-Z{name}={value}' for name,value in inline_thresholds.items()]
     baseline_guest_flags=list(guest_flags) if args.baseline_guest_mir_opt_level is None else [f'-Zmir-opt-level={args.baseline_guest_mir_opt_level}']
+    baseline_guest_flags+=args.guest_rustflag if args.baseline_guest_rustflag is None else args.baseline_guest_rustflag
+    guest_flags+=args.guest_rustflag
     if not 1<=args.instruction_limit<2**64:parser.error('instruction limit must fit a positive u64')
     if args.allocation_limit is not None and not 0<=args.allocation_limit<=1000000:
         parser.error('allocation limit must be in 0..1000000')
@@ -220,7 +243,8 @@ def run_workflow(cleanup):
     private=case.get('private',False)
     tests=case['tests'];edits=case['edits'];package=case['package']
     if args.compare_isolated_batches and len(tests)<2:parser.error('isolated batch comparison requires at least two tests')
-    lock=cleanup.enter_context((ROOT/'.work/benchmark.lock').open('a'))
+    workload_lock=ROOT/'.work/benchmark.lock' if args.workload_lock is None else args.workload_lock.resolve(strict=True)
+    lock=cleanup.enter_context(workload_lock.open('a'))
     if args.lock_wait_seconds:
         acquire_lock(lock,args.lock_wait_seconds)
     else:
@@ -273,6 +297,16 @@ def run_workflow(cleanup):
         config['jit_native_call_stubs']=args.candidate_jit_native_call_stubs and mode=='candidate'
         config['jit_native_calls']=args.candidate_jit_native_calls and mode=='candidate'
         config['guest_flags']=baseline_guest_flags if mode=='baseline' else guest_flags
+    runtime=None
+    runtime_proof=None
+    if args.runtime_compiler_key is not None:
+        from runtime_compiler import load_runtime_compiler
+        from runtime_tools import validate_tool_runtime
+        runtime=load_runtime_compiler(ROOT,args.runtime_compiler_key)
+        runtime.environment(os.environ)
+        for config in mode_tools.values():
+            validate_tool_runtime(config['directory'],config['tool_key'],runtime)
+        runtime_proof=workflow_compiler.runtime_receipt(runtime)
     if args.aa_control:
         try:check_aa_settings(mode_tools,resolved_jobs)
         except ValueError as error:parser.error(str(error))
@@ -291,7 +325,9 @@ def run_workflow(cleanup):
     std=None
     if args.std_mir:
         from std_mir import checked_std_mir
-        std=checked_std_mir(TOOLCHAIN) # Shared setup is recorded separately.
+        std_options={} if runtime is None else dict(custom=runtime,policy='source-paths-v2-shared',prepared_key=args.std_mir_key)
+        std=checked_std_mir(TOOLCHAIN,**std_options) # Shared setup is recorded separately.
+    std_selection=None if std is None else dict(key=std[2],sysroot=str(std[0]),target=std[1])
     source=ROOT/'.work/sources'/args.project
     marker=json.loads((source/'.rust-interp-owned.json').read_text())
     if marker['owner']!=str(ROOT) or marker['revision']!=revision:
@@ -302,7 +338,9 @@ def run_workflow(cleanup):
         raise RuntimeError('snapshot has tracked changes')
     script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
     script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
-                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py']
+                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py']
+    if runtime is not None:
+        script_paths += [ROOT/'scripts'/name for name in ['runtime_compiler.py','runtime_tools.py','custom_compiler.py','std_mir_source_paths.py']]
     if case_proof is not None:
         payload=case_path.read_bytes()
         if hashlib.sha256(payload).hexdigest()!=case_proof['sha256']:raise RuntimeError('case file changed during preparation')
@@ -379,6 +417,8 @@ def run_workflow(cleanup):
                   '--package',package,'--jobs',str(resolved_jobs[mode]),'--test-body','--engine',config['engine'],'--instruction-limit',str(args.instruction_limit),
                   '--cache-namespace',cache_namespaces[mode]]
             if args.baseline_tool_key is not None:base+=['--tool-key',config['tool_key']]
+            base+=compiler_arguments
+            if runtime is not None:base+=['--rustflag='+flag for flag in config['guest_flags']]
             if args.allocation_limit is not None:base+=['--allocation-limit',str(args.allocation_limit)]
             if config['inline_leaves']:base+=['--inline-leaves']
             if config['jit_resumable_calls']:base+=['--jit-resumable-calls']
@@ -395,8 +435,8 @@ def run_workflow(cleanup):
         start=time.perf_counter();calls=[]
         child_env=env.copy()
         if mode=='native':child_env=native_environment(env,args.native_profile,args.native_rustflag,compiler=native_identity)
-        if mode!='native' and config['guest_flags']:
-            child_env['RUSTFLAGS']=' '.join(config['guest_flags'])
+        if mode!='native' and runtime is None:
+            child_env=workflow_compiler.flag_environment(child_env,config['guest_flags'],encoded_guest_flags)
         for command in commands:
             require_space(work,args.minimum_free_gib)
             child_start=time.perf_counter()
@@ -432,6 +472,8 @@ def run_workflow(cleanup):
                 launches=[json.loads(line.split('rust-interp-launch: ',1)[1]) for line in call['stderr'].splitlines() if line.startswith('rust-interp-launch: ')]
                 assert len(launches)==1,'missing executed-artifact provenance'
                 launch=launches[0];call['launch']=launch
+                workflow_compiler.verify_flags(call,config['guest_flags'],encoded_guest_flags,runtime is not None)
+                if runtime is not None:workflow_compiler.verify_runtime_call(call,runtime_proof,std_selection)
                 assert launch['tool_key']==config['tool_key'] and launch['engine']==config['engine']
                 assert launch.get('inline_leaves',False)==config['inline_leaves']
                 assert launch.get('jit_resumable_calls',False)==config['jit_resumable_calls']
@@ -586,6 +628,11 @@ def run_workflow(cleanup):
         identity_record['final_identity']=revalidate_native_toolchain(native_identity,identity_command,
             environment=identity_base,source=source)
         write_json(native_identity_path,identity_record)
+    if runtime is not None:
+        if load_runtime_compiler(ROOT,runtime.key)!=runtime:raise RuntimeError('runtime compiler changed during workflow')
+        for config in mode_tools.values():validate_tool_runtime(config['directory'],config['tool_key'],runtime)
+        if std is not None and checked_std_mir(TOOLCHAIN,**std_options)!=std:
+            raise RuntimeError('prepared standard library changed during workflow')
     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
     result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,initial_mode_order=scheduled_modes,
                 minimum_free_gib=args.minimum_free_gib,
@@ -618,6 +665,10 @@ def run_workflow(cleanup):
                 exporter_sha256=hashlib.sha256((tools/'rust-interp-mir-export').read_bytes()).hexdigest(),
                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
     if args.aa_control:result['aa_control']=True
+    if args.workload_lock is not None:result['workload_lock']=str(workload_lock)
+    if runtime is not None:result['guest_rustflag_encoding']='launcher-arguments'
+    elif encoded_guest_flags:result['guest_rustflag_encoding']='cargo-unit-separator'
+    if runtime is not None:result['runtime_compiler']=dict(runtime_proof,prepared_std=std_selection)
     if native_identity is not None:
         result['native_control'].update(toolchain=native_selection,identity=native_identity,
             identity_evidence=str(native_identity_path.relative_to(ROOT)),
@@ -708,7 +759,11 @@ def run_workflow(cleanup):
         report+='Unavailable foreign calls and catch_unwind intrinsics are explicit terminal stops. Successful tests avoided those boundaries; their call-site metadata and exact executed bytecode are retained with the command records. Ordinary type and borrow checking remained enabled.\n\n'
     if args.build_tool_opt_level is not None:
         report+=f'Host build scripts, procedural macros, and their build dependencies use optimization level {args.build_tool_opt_level} in every mode. Their first compilation is included in cold command times.\n\n'
-    if args.baseline_guest_mir_opt_level is not None:
+    if runtime is not None or encoded_guest_flags:
+        report+=f"Custom compiler arguments are recorded separately for each mode: baseline `{json.dumps(baseline_guest_flags)}`, candidate `{json.dumps(guest_flags)}`. "
+        report+=('The launcher applies these arguments only to application Cargo, after tool and standard-library selection. ' if runtime is not None else 'Cargo receives each argument through its unit-separator encoding. ')
+        report+='Native retains its declared Cargo profile and compiler flags.\n\n'
+    elif args.baseline_guest_mir_opt_level is not None:
         report+=f"Baseline custom commands use `RUSTFLAGS={' '.join(baseline_guest_flags)}`; candidate commands use `RUSTFLAGS={' '.join(guest_flags)}`. Native retains its Cargo profile. Both configurations preserve strict checking. Exact per-mode flags and all resulting artifacts are retained.\n\n"
     elif guest_flags:
         flags=' '.join(guest_flags)

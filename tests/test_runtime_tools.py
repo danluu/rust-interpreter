@@ -1,6 +1,7 @@
 """Native runtime associations and ordinary launch routing; no native children."""
 import copy
 import json
+import os
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -78,6 +79,33 @@ class RuntimeToolsTests(unittest.TestCase):
         self.assertEqual(prepared.call_args.kwargs['prepared_key'], 'e' * 64)
         self.assertEqual(prepared.call_args.kwargs['namespace'], 'stable-cgu:off')
         self.assertEqual(report['std_mir']['key'], 'e' * 64)
+
+    def test_application_flags_reach_cargo_after_clean_std_lookup(self):
+        from std_mir_source_paths import validate_environment
+        flags=['-Zhir-body-cache-reuse=true','--remap-path-prefix=/path with spaces=/virtual']
+        def prepared(*args, **kwargs):
+            validate_environment(os.environ)
+            return (self.root/'std',self.compiler.host,'e'*64,
+                    dict(identity=dict(policy='metadata-sysroot-v2-shared-source-paths-release-backtrace')))
+        with patch.object(std_mir,'checked_std_mir',side_effect=prepared):
+            result,[report]=self.runtime_launch('--std-mir','--std-mir-policy','source-paths-v2-shared',
+                '--std-mir-key','e'*64,*['--rustflag='+flag for flag in flags])
+        self.assertEqual(result,0)
+        cargo,vm=self.invocations
+        self.assertEqual(cargo[1]['env']['CARGO_ENCODED_RUSTFLAGS'],'\x1f'.join(flags))
+        self.assertNotIn('RUSTFLAGS',cargo[1]['env'])
+        self.assertNotIn('CARGO_ENCODED_RUSTFLAGS',vm[1]['env'])
+        self.assertNotIn('CARGO_ENCODED_RUSTFLAGS',os.environ)
+        self.assertEqual(report['application_rustflags'],flags)
+
+    def test_application_flags_reject_ambiguous_environment_before_children(self):
+        for name in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','CARGO_BUILD_RUSTFLAGS']:
+            with self.subTest(name=name),patch.dict(os.environ,{name:''}),self.assertRaises(SystemExit):
+                self.runtime_launch('--rustflag=-Zhir-body-cache-reuse=true')
+        for flag in ['', 'one\x1ftwo', 'one\x00two']:
+            with self.subTest(flag=flag),self.assertRaises(SystemExit):
+                self.runtime_launch('--rustflag='+flag)
+        self.assertEqual(self.invocations,[])
 
     def test_missing_ambiguous_and_unsupported_selection_fail_before_children(self):
         with self.assertRaises(SystemExit):
