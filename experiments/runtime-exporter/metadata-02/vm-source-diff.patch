@@ -1,0 +1,1802 @@
+diff --git a/crates/bytecode/src/jit.rs b/crates/bytecode/src/jit.rs
+index 89353bb1..aca4649b 100644
+--- a/crates/bytecode/src/jit.rs
++++ b/crates/bytecode/src/jit.rs
+@@ -58,6 +58,14 @@ mod flush_census;
+ #[cfg(test)]
+ mod memory_parts;
+ #[cfg(test)]
++mod emission_stages;
++#[cfg(test)]
++mod immutable_reads;
++#[cfg(test)]
++mod guarded_value_census;
++#[cfg(test)]
++mod guarded_capture_census;
++#[cfg(test)]
+ mod memory_operand_tests;
+ 
+ // This cursor is host-owned and lives across exactly one generated-code call.
+@@ -517,6 +525,8 @@ impl<'a> Jit<'a> {
+     // It reuses admission and original assertion identities without republishing.
+     fn emit_function_inner(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
+         mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
++        #[cfg(test)]
++        let _emission_timer = emission_stages::Span::new(emission_stages::Stage::Function);
+         let resumable = self.resumable.is_some();
+         let mut words = vec![];
+         #[cfg(test)]
+@@ -534,12 +544,30 @@ impl<'a> Jit<'a> {
+         let mut assertions = vec![];
+         let mut operations = 0;
+         let mut range_work = 4_000_000;
+-        let reads = read_registers(f);
+-        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
+-        let fills = local_fills(f);
+-        let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
++        let reads = {
++            #[cfg(test)]
++            let _timer = emission_stages::Span::new(emission_stages::Stage::Reads);
++            read_registers(f)
++        };
++        let values = {
++            #[cfg(test)]
++            let _timer = emission_stages::Span::new(emission_stages::Stage::Liveness);
++            self.persistent_registers.then(|| values::analyze(f)).flatten()
++        };
++        let fills = {
++            #[cfg(test)]
++            let _timer = emission_stages::Span::new(emission_stages::Stage::Fills);
++            local_fills(f)
++        };
++        let slots = {
++            #[cfg(test)]
++            let _timer = emission_stages::Span::new(emission_stages::Stage::Slots);
++            if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() }
++        };
+         #[cfg(test)]
+         let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
++        #[cfg(test)]
++        let _setup_timer = emission_stages::Span::new(emission_stages::Stage::RegionsSetup);
+         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
+             || (resumable && transfers::supported(&f.code[pc]));
+         let mut entries = vec![None; f.code.len()];
+@@ -566,6 +594,8 @@ impl<'a> Jit<'a> {
+                 starts[pc + 1] = true;
+             }
+         }
++        #[cfg(test)]
++        drop(_setup_timer);
+         let mut pc = 0;
+         while pc < f.code.len() {
+             let start = pc;
+@@ -580,6 +610,8 @@ impl<'a> Jit<'a> {
+                 pc += 1;
+             }
+             if pc - start >= if resumable { 1 } else { 3 } {
++                #[cfg(test)]
++                let _timer = emission_stages::Span::new(emission_stages::Stage::Regions);
+                 let offset = words.len() * 4;
+                 let mut a = Assembler {
+                     #[cfg(test)]
+@@ -605,6 +637,10 @@ impl<'a> Jit<'a> {
+                     resumable,
+                     ..Assembler::default()
+                 };
++                #[cfg(test)]
++                let mut guarded_values = guarded_value_census::State::new();
++                #[cfg(test)]
++                let mut guarded_captures = guarded_capture_census::State::new();
+                 let mut covered = 0;
+                 macro_rules! span {
+                     ($kind:ident, $pc:expr) => {{
+@@ -654,6 +690,12 @@ impl<'a> Jit<'a> {
+                 for (index, op) in f.code[start..body_end].iter().enumerate() {
+                     a.current_pc = start + index;
+                     #[cfg(test)]
++                    immutable_reads::observe(op, &a.facts, &self.program.data, start + index);
++                    #[cfg(test)]
++                    guarded_values.observe(&a, op);
++                    #[cfg(test)]
++                    guarded_captures.observe(&a, op);
++                    #[cfg(test)]
+                     a.memory_parts.begin(op, start + index, start, pc, a.heap);
+                     if let Op::Assert { value, expected, message } = op {
+                         let code = assertion_code(assertion_base, assertions.len())?;
+@@ -744,6 +786,8 @@ impl<'a> Jit<'a> {
+             }
+             if pc == start {
+                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
++                    #[cfg(test)]
++                    let _timer = emission_stages::Span::new(emission_stages::Stage::Transitions);
+                     let offset = words.len() * 4;
+                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
+                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
+@@ -780,10 +824,14 @@ impl<'a> Jit<'a> {
+                 pc += 1;
+             }
+         }
++        #[cfg(test)]
++        let _links_timer = emission_stages::Span::new(emission_stages::Stage::Links);
+         for (at, successor, fallback) in links {
+             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
+             patch_jump(&mut words, at, target)?;
+         }
++        #[cfg(test)]
++        drop(_links_timer);
+         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
+             #[cfg(test)] memory_spans,
+             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
+diff --git a/crates/bytecode/src/jit/code_spans.rs b/crates/bytecode/src/jit/code_spans.rs
+index 837a64be..b24f70b2 100644
+--- a/crates/bytecode/src/jit/code_spans.rs
++++ b/crates/bytecode/src/jit/code_spans.rs
+@@ -19,6 +19,12 @@ mod flush_census;
+ mod memory_parts;
+ #[cfg(test)]
+ mod continuation_census;
++#[cfg(test)]
++mod emission_census;
++#[cfg(test)]
++mod immutable_reads;
++#[cfg(test)]
++mod guarded_values;
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+ #[serde(rename_all = "snake_case")]
+@@ -230,3 +236,9 @@ fn verify_words(words: &[u32], bytes: &[u8]) -> Result<(), String> {
+ 
+ #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+ mod tests;
++
++#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
++mod range_admission;
++
++#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
++mod guarded_captures;
+diff --git a/crates/bytecode/src/jit/code_spans/emission_census.rs b/crates/bytecode/src/jit/code_spans/emission_census.rs
+new file mode 100644
+index 00000000..dde39125
+--- /dev/null
++++ b/crates/bytecode/src/jit/code_spans/emission_census.rs
+@@ -0,0 +1,58 @@
++//! Time only host emitter stages while reconstructing exact retained native code.
++use super::*;
++use serde_json::{json,Value};
++use super::super::emission_stages::{capture,LABELS};
++fn n(v:&Value,k:&str)->usize {usize::try_from(v[k].as_u64().unwrap()).unwrap()}
++#[test]
++#[ignore="Requires exact closed adopted code/map and artifact"]
++fn observe_saved_emission_stages() {
++    let artifact=std::fs::read(std::env::var("EMISSION_ARTIFACT").unwrap()).unwrap();
++    assert!(artifact.len()<=128*1024*1024);
++    let p:Program=bincode::deserialize(&artifact).unwrap();crate::validate(&p).unwrap();
++    let map=std::fs::read(std::env::var("EMISSION_MAP").unwrap()).unwrap();assert!(map.len()<=MAX_OUTPUT_BYTES);
++    let map:Value=serde_json::from_slice(&map).unwrap();
++    let bytes=std::fs::read(std::env::var("EMISSION_CODE").unwrap()).unwrap();assert!(bytes.len()<=MAX_CODE_BYTES);
++    assert_eq!(n(&map,"schema_version"),2);assert_eq!(map["profiled"],false);
++    for key in ["persistent_registers","resumable_calls","complete","reconstructed_bytes_match"] {assert_eq!(map[key],true);}
++    assert_eq!(n(&map,"code_bytes"),bytes.len());assert_eq!(map["code_sha256"],format!("{:x}",Sha256::digest(&bytes)));
++    let mut jit=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();jit.enable_scalar_calls();
++    let mut scalars=BTreeSet::new();let base=n(&map,"arena_base");assert!(base>0);
++    for saved in map["functions"].as_array().unwrap() {
++        if saved["spans"][0]["kind"]!="scalar_leaf" {continue;}
++        let id=n(saved,"function");assert!(scalars.insert(id));
++        let offset=n(saved,"offset");let end=n(saved,"end");assert!(offset<end && end<=bytes.len());
++        let words=jit.observe_saved_scalar_entry(id,offset,end-offset,base);verify_words(&words,&bytes[offset..end]).unwrap();
++    }
++    let (mut cursor,mut assertions)=(0,0);let mut seen=BTreeSet::new();let mut rows=vec![];
++    for saved in map["functions"].as_array().unwrap() {
++        let id=n(saved,"function");let f=&p.functions[id];let offset=n(saved,"offset");let end=n(saved,"end");
++        assert_eq!(saved["name"],f.name);assert_eq!(offset,cursor);assert!(offset<end && end<=bytes.len());
++        assert_eq!(n(saved,"assertion_base"),assertions);
++        if saved["spans"][0]["kind"]=="scalar_leaf" {
++            assert!(scalars.contains(&id));assert_eq!(n(saved,"assertion_count"),0);
++            assert_eq!(saved["spans"],json!([{"offset":offset,"end":end,"region_pc":0,"pc":null,"kind":"scalar_leaf"}]));
++            cursor=end;continue;
++        }
++        assert!(seen.insert(id));
++        let mut collector=Collector{rows:vec![],limit:MAX_SPANS};
++        let a=jit.emit_function_inner(f,(end-offset)/4,assertions,Some(&mut collector)).unwrap().unwrap();
++        collector.validate(f,&a).unwrap();verify_words(&a.words,&bytes[offset..end]).unwrap();
++        for s in &mut collector.rows {s.offset+=offset;s.end+=offset;}
++        assert_eq!(serde_json::to_value(&collector.rows).unwrap(),saved["spans"]);
++        let (b,t)=capture(||jit.emit_function_inner(f,(end-offset)/4,assertions,None).unwrap().unwrap());
++        assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.operations,b.operations);assert_eq!(a.assertions,b.assertions);
++        let entries=|v:&CompiledFunction<'_>|v.entries.iter().map(|b|b.map(|b|(b.offset,b.end))).collect::<Vec<_>>();
++        assert_eq!(entries(&a),entries(&b));assert_eq!(a.register_pairs,b.register_pairs);assert_eq!(a.liveness_declined,b.liveness_declined);
++        assert_eq!(a.assertions.len(),n(saved,"assertion_count"));assert_eq!(t.calls[0],1);
++        assert!(t.nanos[0]>=t.nanos[1..].iter().sum::<u128>());
++        rows.push(json!({"id":id,"name":f.name,"operations":f.code.len(),"registers":f.registers,"native_bytes":end-offset,
++            "calls":t.calls,"nanos":t.nanos}));
++        assertions+=a.assertions.len();cursor=end;
++    }
++    assert_eq!(cursor,bytes.len());assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
++    let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("EMISSION_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(file,&json!({"status":"passed","functions":rows,"labels":LABELS,"scalar_bodies":scalars.len(),
++        "code_bytes":bytes.len(),"code_sha256":map["code_sha256"],"full_code_and_entries_reconstructed":true,
++        "timed_scope":"second ordinary-body emission without operation-map collection; scalar preparation and decoding excluded",
++        "timed_emission_changes_code":false,"guest_commands":0,"executable_code_publications":0,"performance_measurement":false})).unwrap();
++}
+diff --git a/crates/bytecode/src/jit/code_spans/guarded_captures.rs b/crates/bytecode/src/jit/code_spans/guarded_captures.rs
+new file mode 100644
+index 00000000..e87aba80
+--- /dev/null
++++ b/crates/bytecode/src/jit/code_spans/guarded_captures.rs
+@@ -0,0 +1,57 @@
++//! Bound four-slot external payload capture against exact retained native code.
++use super::*;
++use serde_json::{json,Value};
++use super::super::guarded_capture_census::capture;
++fn n(v:&Value,k:&str)->usize {usize::try_from(v[k].as_u64().unwrap()).unwrap()}
++#[test]
++#[ignore="Requires exact closed adopted code/map and artifact"]
++fn observe_saved_guarded_captures() {
++    let artifact=std::fs::read(std::env::var("GUARDED_CAPTURE_ARTIFACT").unwrap()).unwrap();
++    assert!(artifact.len()<=128*1024*1024);
++    let p:Program=bincode::deserialize(&artifact).unwrap();crate::validate(&p).unwrap();
++    let map=std::fs::read(std::env::var("GUARDED_CAPTURE_MAP").unwrap()).unwrap();assert!(map.len()<=MAX_OUTPUT_BYTES);
++    let map:Value=serde_json::from_slice(&map).unwrap();
++    let bytes=std::fs::read(std::env::var("GUARDED_CAPTURE_CODE").unwrap()).unwrap();assert!(bytes.len()<=MAX_CODE_BYTES);
++    assert_eq!(n(&map,"schema_version"),2);assert_eq!(map["profiled"],false);
++    for key in ["persistent_registers","resumable_calls","complete","reconstructed_bytes_match"] {assert_eq!(map[key],true);}
++    assert_eq!(n(&map,"code_bytes"),bytes.len());assert_eq!(map["code_sha256"],format!("{:x}",Sha256::digest(&bytes)));
++    let mut jit=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();jit.enable_scalar_calls();jit.observe_memory_parts=true;
++    let mut scalars=BTreeSet::new();let base=n(&map,"arena_base");assert!(base>0);
++    for saved in map["functions"].as_array().unwrap() {
++        if saved["spans"][0]["kind"]!="scalar_leaf" {continue;}
++        let id=n(saved,"function");assert!(scalars.insert(id));
++        let offset=n(saved,"offset");let end=n(saved,"end");assert!(offset<end && end<=bytes.len());
++        let words=jit.observe_saved_scalar_entry(id,offset,end-offset,base);verify_words(&words,&bytes[offset..end]).unwrap();
++    }
++    let (mut cursor,mut assertions)=(0,0);let mut seen=BTreeSet::new();let mut rows=vec![];
++    for saved in map["functions"].as_array().unwrap() {
++        let id=n(saved,"function");let f=&p.functions[id];let offset=n(saved,"offset");let end=n(saved,"end");
++        assert_eq!(saved["name"],f.name);assert_eq!(offset,cursor);assert!(offset<end && end<=bytes.len());
++        assert_eq!(n(saved,"assertion_base"),assertions);
++        if saved["spans"][0]["kind"]=="scalar_leaf" {
++            assert!(scalars.contains(&id));assert_eq!(n(saved,"assertion_count"),0);
++            assert_eq!(saved["spans"],json!([{"offset":offset,"end":end,"region_pc":0,"pc":null,"kind":"scalar_leaf"}]));
++            cursor=end;continue;
++        }
++        assert!(seen.insert(id));
++        let mut collector=Collector{rows:vec![],limit:MAX_SPANS};
++        let a=jit.emit_function_inner(f,(end-offset)/4,assertions,Some(&mut collector)).unwrap().unwrap();
++        collector.validate(f,&a).unwrap();verify_words(&a.words,&bytes[offset..end]).unwrap();
++        for s in &mut collector.rows {s.offset+=offset;s.end+=offset;}
++        assert_eq!(serde_json::to_value(&collector.rows).unwrap(),saved["spans"]);
++        let (b,hits)=capture(||jit.emit_function_inner(f,(end-offset)/4,assertions,None).unwrap().unwrap());
++        assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.operations,b.operations);assert_eq!(a.assertions,b.assertions);
++        let entries=|v:&CompiledFunction<'_>|v.entries.iter().map(|b|b.map(|b|(b.offset,b.end))).collect::<Vec<_>>();
++        assert_eq!(entries(&a),entries(&b));assert_eq!(a.register_pairs,b.register_pairs);assert_eq!(a.liveness_declined,b.liveness_declined);
++        assert_eq!(a.assertions.len(),n(saved,"assertion_count"));
++        rows.push(json!({"id":id,"name":f.name,"operations":f.code.len(),"registers":f.registers,"native_bytes":end-offset,
++            "reads":hits.reads,"captures":hits.captures,"memory_spans":b.memory_spans.iter().map(|s|{let mut v=serde_json::to_value(s).unwrap();v["offset"]=(s.offset+offset).into();v["end"]=(s.end+offset).into();v}).collect::<Vec<_>>()}));
++        assertions+=a.assertions.len();cursor=end;
++    }
++    assert_eq!(cursor,bytes.len());assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
++    let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("GUARDED_CAPTURE_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(file,&json!({"status":"passed","functions":rows,"scalar_bodies":scalars.len(),
++        "code_bytes":bytes.len(),"code_sha256":map["code_sha256"],"full_code_and_entries_reconstructed":true,
++        "observer_scope":"Four private retained payload slots in existing frame-disjoint guards; original register lifetimes do not constrain the model; captures are hypothetical",
++        "observation_changes_code":false,"guest_commands":0,"executable_code_publications":0,"performance_measurement":false})).unwrap();
++}
+diff --git a/crates/bytecode/src/jit/code_spans/guarded_values.rs b/crates/bytecode/src/jit/code_spans/guarded_values.rs
+new file mode 100644
+index 00000000..848a04d9
+--- /dev/null
++++ b/crates/bytecode/src/jit/code_spans/guarded_values.rs
+@@ -0,0 +1,57 @@
++//! Observe immutable reads while reconstructing exact retained native code.
++use super::*;
++use serde_json::{json,Value};
++use super::super::guarded_value_census::capture;
++fn n(v:&Value,k:&str)->usize {usize::try_from(v[k].as_u64().unwrap()).unwrap()}
++#[test]
++#[ignore="Requires exact closed adopted code/map and artifact"]
++fn observe_saved_guarded_values() {
++    let artifact=std::fs::read(std::env::var("GUARDED_VALUE_ARTIFACT").unwrap()).unwrap();
++    assert!(artifact.len()<=128*1024*1024);
++    let p:Program=bincode::deserialize(&artifact).unwrap();crate::validate(&p).unwrap();
++    let map=std::fs::read(std::env::var("GUARDED_VALUE_MAP").unwrap()).unwrap();assert!(map.len()<=MAX_OUTPUT_BYTES);
++    let map:Value=serde_json::from_slice(&map).unwrap();
++    let bytes=std::fs::read(std::env::var("GUARDED_VALUE_CODE").unwrap()).unwrap();assert!(bytes.len()<=MAX_CODE_BYTES);
++    assert_eq!(n(&map,"schema_version"),2);assert_eq!(map["profiled"],false);
++    for key in ["persistent_registers","resumable_calls","complete","reconstructed_bytes_match"] {assert_eq!(map[key],true);}
++    assert_eq!(n(&map,"code_bytes"),bytes.len());assert_eq!(map["code_sha256"],format!("{:x}",Sha256::digest(&bytes)));
++    let mut jit=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();jit.enable_scalar_calls();
++    let mut scalars=BTreeSet::new();let base=n(&map,"arena_base");assert!(base>0);
++    for saved in map["functions"].as_array().unwrap() {
++        if saved["spans"][0]["kind"]!="scalar_leaf" {continue;}
++        let id=n(saved,"function");assert!(scalars.insert(id));
++        let offset=n(saved,"offset");let end=n(saved,"end");assert!(offset<end && end<=bytes.len());
++        let words=jit.observe_saved_scalar_entry(id,offset,end-offset,base);verify_words(&words,&bytes[offset..end]).unwrap();
++    }
++    let (mut cursor,mut assertions)=(0,0);let mut seen=BTreeSet::new();let mut rows=vec![];
++    for saved in map["functions"].as_array().unwrap() {
++        let id=n(saved,"function");let f=&p.functions[id];let offset=n(saved,"offset");let end=n(saved,"end");
++        assert_eq!(saved["name"],f.name);assert_eq!(offset,cursor);assert!(offset<end && end<=bytes.len());
++        assert_eq!(n(saved,"assertion_base"),assertions);
++        if saved["spans"][0]["kind"]=="scalar_leaf" {
++            assert!(scalars.contains(&id));assert_eq!(n(saved,"assertion_count"),0);
++            assert_eq!(saved["spans"],json!([{"offset":offset,"end":end,"region_pc":0,"pc":null,"kind":"scalar_leaf"}]));
++            cursor=end;continue;
++        }
++        assert!(seen.insert(id));
++        let mut collector=Collector{rows:vec![],limit:MAX_SPANS};
++        let a=jit.emit_function_inner(f,(end-offset)/4,assertions,Some(&mut collector)).unwrap().unwrap();
++        collector.validate(f,&a).unwrap();verify_words(&a.words,&bytes[offset..end]).unwrap();
++        for s in &mut collector.rows {s.offset+=offset;s.end+=offset;}
++        assert_eq!(serde_json::to_value(&collector.rows).unwrap(),saved["spans"]);
++        let (b,hits)=capture(||jit.emit_function_inner(f,(end-offset)/4,assertions,None).unwrap().unwrap());
++        assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.operations,b.operations);assert_eq!(a.assertions,b.assertions);
++        let entries=|v:&CompiledFunction<'_>|v.entries.iter().map(|b|b.map(|b|(b.offset,b.end))).collect::<Vec<_>>();
++        assert_eq!(entries(&a),entries(&b));assert_eq!(a.register_pairs,b.register_pairs);assert_eq!(a.liveness_declined,b.liveness_declined);
++        assert_eq!(a.assertions.len(),n(saved,"assertion_count"));
++        rows.push(json!({"id":id,"name":f.name,"operations":f.code.len(),"registers":f.registers,"native_bytes":end-offset,
++            "reads":hits}));
++        assertions+=a.assertions.len();cursor=end;
++    }
++    assert_eq!(cursor,bytes.len());assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
++    let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("GUARDED_VALUE_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(file,&json!({"status":"passed","functions":rows,"scalar_bodies":scalars.len(),
++        "code_bytes":bytes.len(),"code_sha256":map["code_sha256"],"full_code_and_entries_reconstructed":true,
++        "observer_scope":"available guarded external Load/Copy values in frame-disjoint ordinary regions; original facts only",
++        "observation_changes_code":false,"guest_commands":0,"executable_code_publications":0,"performance_measurement":false})).unwrap();
++}
+diff --git a/crates/bytecode/src/jit/code_spans/immutable_reads.rs b/crates/bytecode/src/jit/code_spans/immutable_reads.rs
+new file mode 100644
+index 00000000..b790a39c
+--- /dev/null
++++ b/crates/bytecode/src/jit/code_spans/immutable_reads.rs
+@@ -0,0 +1,57 @@
++//! Observe immutable reads while reconstructing exact retained native code.
++use super::*;
++use serde_json::{json,Value};
++use super::super::immutable_reads::capture;
++fn n(v:&Value,k:&str)->usize {usize::try_from(v[k].as_u64().unwrap()).unwrap()}
++#[test]
++#[ignore="Requires exact closed adopted code/map and artifact"]
++fn observe_saved_immutable_reads() {
++    let artifact=std::fs::read(std::env::var("IMMUTABLE_ARTIFACT").unwrap()).unwrap();
++    assert!(artifact.len()<=128*1024*1024);
++    let p:Program=bincode::deserialize(&artifact).unwrap();crate::validate(&p).unwrap();
++    let map=std::fs::read(std::env::var("IMMUTABLE_MAP").unwrap()).unwrap();assert!(map.len()<=MAX_OUTPUT_BYTES);
++    let map:Value=serde_json::from_slice(&map).unwrap();
++    let bytes=std::fs::read(std::env::var("IMMUTABLE_CODE").unwrap()).unwrap();assert!(bytes.len()<=MAX_CODE_BYTES);
++    assert_eq!(n(&map,"schema_version"),2);assert_eq!(map["profiled"],false);
++    for key in ["persistent_registers","resumable_calls","complete","reconstructed_bytes_match"] {assert_eq!(map[key],true);}
++    assert_eq!(n(&map,"code_bytes"),bytes.len());assert_eq!(map["code_sha256"],format!("{:x}",Sha256::digest(&bytes)));
++    let mut jit=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();jit.enable_scalar_calls();
++    let mut scalars=BTreeSet::new();let base=n(&map,"arena_base");assert!(base>0);
++    for saved in map["functions"].as_array().unwrap() {
++        if saved["spans"][0]["kind"]!="scalar_leaf" {continue;}
++        let id=n(saved,"function");assert!(scalars.insert(id));
++        let offset=n(saved,"offset");let end=n(saved,"end");assert!(offset<end && end<=bytes.len());
++        let words=jit.observe_saved_scalar_entry(id,offset,end-offset,base);verify_words(&words,&bytes[offset..end]).unwrap();
++    }
++    let (mut cursor,mut assertions)=(0,0);let mut seen=BTreeSet::new();let mut rows=vec![];
++    for saved in map["functions"].as_array().unwrap() {
++        let id=n(saved,"function");let f=&p.functions[id];let offset=n(saved,"offset");let end=n(saved,"end");
++        assert_eq!(saved["name"],f.name);assert_eq!(offset,cursor);assert!(offset<end && end<=bytes.len());
++        assert_eq!(n(saved,"assertion_base"),assertions);
++        if saved["spans"][0]["kind"]=="scalar_leaf" {
++            assert!(scalars.contains(&id));assert_eq!(n(saved,"assertion_count"),0);
++            assert_eq!(saved["spans"],json!([{"offset":offset,"end":end,"region_pc":0,"pc":null,"kind":"scalar_leaf"}]));
++            cursor=end;continue;
++        }
++        assert!(seen.insert(id));
++        let mut collector=Collector{rows:vec![],limit:MAX_SPANS};
++        let a=jit.emit_function_inner(f,(end-offset)/4,assertions,Some(&mut collector)).unwrap().unwrap();
++        collector.validate(f,&a).unwrap();verify_words(&a.words,&bytes[offset..end]).unwrap();
++        for s in &mut collector.rows {s.offset+=offset;s.end+=offset;}
++        assert_eq!(serde_json::to_value(&collector.rows).unwrap(),saved["spans"]);
++        let (b,hits)=capture(||jit.emit_function_inner(f,(end-offset)/4,assertions,None).unwrap().unwrap());
++        assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.operations,b.operations);assert_eq!(a.assertions,b.assertions);
++        let entries=|v:&CompiledFunction<'_>|v.entries.iter().map(|b|b.map(|b|(b.offset,b.end))).collect::<Vec<_>>();
++        assert_eq!(entries(&a),entries(&b));assert_eq!(a.register_pairs,b.register_pairs);assert_eq!(a.liveness_declined,b.liveness_declined);
++        assert_eq!(a.assertions.len(),n(saved,"assertion_count"));
++        rows.push(json!({"id":id,"name":f.name,"operations":f.code.len(),"registers":f.registers,"native_bytes":end-offset,
++            "reads":hits}));
++        assertions+=a.assertions.len();cursor=end;
++    }
++    assert_eq!(cursor,bytes.len());assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
++    let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("IMMUTABLE_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(file,&json!({"status":"passed","functions":rows,"scalar_bodies":scalars.len(),
++        "code_bytes":bytes.len(),"code_sha256":map["code_sha256"],"full_code_and_entries_reconstructed":true,
++        "observer_scope":"explicit known immutable Load/Copy sources in ordinary native bodies; no propagated new facts",
++        "observation_changes_code":false,"guest_commands":0,"executable_code_publications":0,"performance_measurement":false})).unwrap();
++}
+diff --git a/crates/bytecode/src/jit/code_spans/range_admission.rs b/crates/bytecode/src/jit/code_spans/range_admission.rs
+new file mode 100644
+index 00000000..cc9807ed
+--- /dev/null
++++ b/crates/bytecode/src/jit/code_spans/range_admission.rs
+@@ -0,0 +1,73 @@
++//! Observe smaller range admission against exact retained native code.
++use super::*;
++use serde_json::{json,Value};
++use super::super::range_groups;
++fn n(v:&Value,k:&str)->usize {usize::try_from(v[k].as_u64().unwrap()).unwrap()}
++#[test]
++#[ignore="Requires exact closed adopted code/map and artifact"]
++fn observe_saved_range_admission() {
++    let artifact=std::fs::read(std::env::var("RANGE_ADMISSION_ARTIFACT").unwrap()).unwrap();
++    assert!(artifact.len()<=128*1024*1024);
++    let p:Program=bincode::deserialize(&artifact).unwrap();crate::validate(&p).unwrap();
++    let map=std::fs::read(std::env::var("RANGE_ADMISSION_MAP").unwrap()).unwrap();assert!(map.len()<=MAX_OUTPUT_BYTES);
++    let map:Value=serde_json::from_slice(&map).unwrap();
++    let bytes=std::fs::read(std::env::var("RANGE_ADMISSION_CODE").unwrap()).unwrap();assert!(bytes.len()<=MAX_CODE_BYTES);
++    assert_eq!(n(&map,"schema_version"),2);assert_eq!(map["profiled"],false);
++    for key in ["persistent_registers","resumable_calls","complete","reconstructed_bytes_match"] {assert_eq!(map[key],true);}
++    assert_eq!(n(&map,"code_bytes"),bytes.len());assert_eq!(map["code_sha256"],format!("{:x}",Sha256::digest(&bytes)));
++    let mut jit=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();jit.enable_scalar_calls();
++    let mut scalars=BTreeSet::new();let base=n(&map,"arena_base");assert!(base>0);
++    for saved in map["functions"].as_array().unwrap() {
++        if saved["spans"][0]["kind"]!="scalar_leaf" {continue;}
++        let id=n(saved,"function");assert!(scalars.insert(id));
++        let offset=n(saved,"offset");let end=n(saved,"end");assert!(offset<end && end<=bytes.len());
++        let words=jit.observe_saved_scalar_entry(id,offset,end-offset,base);verify_words(&words,&bytes[offset..end]).unwrap();
++    }
++    let (mut cursor,mut assertions)=(0,0);let mut seen=BTreeSet::new();let mut rows=vec![];
++    for saved in map["functions"].as_array().unwrap() {
++        let id=n(saved,"function");let f=&p.functions[id];let offset=n(saved,"offset");let end=n(saved,"end");
++        assert_eq!(saved["name"],f.name);assert_eq!(offset,cursor);assert!(offset<end && end<=bytes.len());
++        assert_eq!(n(saved,"assertion_base"),assertions);
++        if saved["spans"][0]["kind"]=="scalar_leaf" {
++            assert!(scalars.contains(&id));assert_eq!(n(saved,"assertion_count"),0);
++            assert_eq!(saved["spans"],json!([{"offset":offset,"end":end,"region_pc":0,"pc":null,"kind":"scalar_leaf"}]));
++            cursor=end;continue;
++        }
++        assert!(seen.insert(id));
++        let mut collector=Collector{rows:vec![],limit:MAX_SPANS};
++        let a=jit.emit_function_inner(f,(end-offset)/4,assertions,Some(&mut collector)).unwrap().unwrap();
++        collector.validate(f,&a).unwrap();verify_words(&a.words,&bytes[offset..end]).unwrap();
++        for s in &mut collector.rows {s.offset+=offset;s.end+=offset;}
++        assert_eq!(serde_json::to_value(&collector.rows).unwrap(),saved["spans"]);
++        let (mut old_work,mut small_work)=(4_000_000,4_000_000);
++        let mut groups=vec![];let mut retained_groups=0;
++        for (start,entry) in a.entries.iter().enumerate() {
++            let Some(entry)=entry else {continue;};
++            let old=range_groups::runtime_plan(f,start,entry.end,&mut old_work);
++            let small=range_groups::small_plan(f,start,entry.end,&mut small_work);
++            assert_eq!(old_work,small_work);
++            if let Some(old)=old {
++                let small=small.unwrap();assert_eq!(old.sites,small.sites);
++                assert_eq!((old.root,old.low,old.high,old.writes,old.frame_disjoint),
++                    (small.root,small.low,small.high,small.writes,small.frame_disjoint));
++                retained_groups+=1;
++            } else if let Some(small)=small {
++                assert!((4..8).contains(&small.sites.len()));
++                let sites:Vec<_>=small.sites.iter().map(|s|json!({"pc":s.pc,"register":s.register,
++                    "offset":s.offset,"size":s.size,"write":s.write})).collect();
++                groups.push(json!({"start":start,"end":entry.end,"root":small.root,"low":small.low,
++                    "high":small.high,"writes":small.writes,"frame_disjoint":small.frame_disjoint,"sites":sites}));
++            }
++        }
++        assert_eq!(a.assertions.len(),n(saved,"assertion_count"));
++        rows.push(json!({"id":id,"name":f.name,"operations":f.code.len(),"registers":f.registers,"native_bytes":end-offset,
++            "groups":groups,"retained_groups":retained_groups,"analysis_work":4_000_000-old_work}));
++        assertions+=a.assertions.len();cursor=end;
++    }
++    assert_eq!(cursor,bytes.len());assert!(jit.code.is_none());assert_eq!(jit.bytes,0);
++    let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("RANGE_ADMISSION_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(file,&json!({"status":"passed","functions":rows,"scalar_bodies":scalars.len(),
++        "code_bytes":bytes.len(),"code_sha256":map["code_sha256"],"full_code_and_entries_reconstructed":true,
++        "observer_scope":"Additional 4–7-access groups under existing typed range proofs; original eight-access admission unchanged",
++        "observation_changes_code":false,"guest_commands":0,"executable_code_publications":0,"performance_measurement":false})).unwrap();
++}
+diff --git a/crates/bytecode/src/jit/emission_stages.rs b/crates/bytecode/src/jit/emission_stages.rs
+new file mode 100644
+index 00000000..7cdf4127
+--- /dev/null
++++ b/crates/bytecode/src/jit/emission_stages.rs
+@@ -0,0 +1,45 @@
++//! Disabled test-only host preparation timing; never samples guest execution.
++use std::{cell::RefCell,time::Instant};
++use serde::Serialize;
++#[derive(Clone,Copy)]
++#[repr(usize)]
++pub(super) enum Stage { Function, Reads, Liveness, Fills, Slots, RegionsSetup, Regions, Transitions, Links }
++const COUNT:usize=9;
++#[derive(Clone,Default,Serialize)]
++pub(super) struct Totals { pub calls:[u64;COUNT], pub nanos:[u128;COUNT] }
++thread_local! { static ACTIVE:RefCell<Option<Totals>>=const { RefCell::new(None) }; }
++pub(super) const LABELS:[&str;COUNT]=["function","read_registers","liveness","local_fills","call_slots","region_setup","regions","transitions","links"];
++pub(super) struct Span { stage:Stage, started:Option<Instant> }
++impl Span {
++    pub(super) fn new(stage:Stage)->Self {
++        Self {stage,started:ACTIVE.with(|s|s.borrow().is_some()).then(Instant::now)}
++    }
++}
++impl Drop for Span {
++    fn drop(&mut self) {
++        if let Some(started)=self.started {
++            let elapsed=started.elapsed().as_nanos();
++            ACTIVE.with(|s| {let mut s=s.borrow_mut();let t=s.as_mut().expect("timing owner ended before span");
++                t.calls[self.stage as usize]+=1;t.nanos[self.stage as usize]+=elapsed;});
++        }
++    }
++}
++struct Reset;
++impl Drop for Reset {fn drop(&mut self){ACTIVE.with(|s|*s.borrow_mut()=None);}}
++pub(super) fn capture<T>(f:impl FnOnce()->T)->(T,Totals) {
++    ACTIVE.with(|s|{let mut s=s.borrow_mut();assert!(s.is_none(),"nested timing capture");*s=Some(Totals::default());});
++    let reset=Reset;let result=f();let totals=ACTIVE.with(|s|s.borrow_mut().take().unwrap());drop(reset);(result,totals)
++}
++#[test]
++fn disabled_and_scoped_accounting_restore_after_errors() {
++    {let _span=Span::new(Stage::Reads);}
++    let (_,totals)=capture(|| {let _all=Span::new(Stage::Function);for _ in 0..3 {let _part=Span::new(Stage::Reads);}});
++    assert_eq!(totals.calls,[1,3,0,0,0,0,0,0,0]);assert!(totals.nanos[0]>=totals.nanos[1]);
++    assert!(std::panic::catch_unwind(||capture(||panic!("timing control"))).is_err());
++    let (value,totals)=capture(||7);assert_eq!(value,7);assert_eq!(totals.calls,[0;COUNT]);
++}
++#[test]
++fn nested_capture_is_rejected_without_leaking_owner() {
++    assert!(std::panic::catch_unwind(||capture(||capture(||()))).is_err());
++    let (_,totals)=capture(|| {let _span=Span::new(Stage::Links);});assert_eq!(totals.calls[Stage::Links as usize],1);
++}
+diff --git a/crates/bytecode/src/jit/guarded_capture_census.rs b/crates/bytecode/src/jit/guarded_capture_census.rs
+new file mode 100644
+index 00000000..528185e1
+--- /dev/null
++++ b/crates/bytecode/src/jit/guarded_capture_census.rs
+@@ -0,0 +1,116 @@
++//! Disabled scope model: retain complete external payloads in four private slots.
++use super::*;
++use std::cell::RefCell;
++use serde::Serialize;
++const CAPACITY:usize=4;
++#[derive(Clone,Debug)]
++struct Cell {offset:usize,size:usize,origin:usize}
++#[derive(Serialize)]
++pub(super) struct Hit {pc:usize,region:usize,operation:&'static str,offset:usize,size:usize,origin:usize}
++#[derive(Serialize)]
++pub(super) struct Capture {pc:usize,region:usize,operation:&'static str,access:&'static str,offset:usize,size:usize}
++#[derive(Default,Serialize)]
++pub(super) struct Report {pub(super) reads:Vec<Hit>,pub(super) captures:Vec<Capture>}
++thread_local! {static ACTIVE:RefCell<Option<Report>>=const {RefCell::new(None)};}
++#[derive(Default)]
++struct Model {cells:Vec<Cell>}
++impl Model {
++    fn find(&self,offset:usize,size:usize)->Option<usize> {
++        self.cells.iter().find(|c|c.offset==offset && c.size==size).map(|c|c.origin)
++    }
++    fn write(&mut self,offset:usize,size:usize) {
++        if size==0 {return;}
++        let Some(end)=offset.checked_add(size) else {self.cells.clear();return;};
++        self.cells.retain(|c|c.offset>=end || offset>=c.offset+c.size);
++    }
++    fn remember(&mut self,offset:usize,size:usize,origin:usize) {
++        assert!([1,2,4,8].contains(&size));
++        self.cells.retain(|c|c.offset!=offset || c.size!=size);
++        if self.cells.len()==CAPACITY {self.cells.remove(0);}
++        self.cells.push(Cell{offset,size,origin});
++    }
++}
++pub(super) struct State {enabled:bool,model:Model}
++impl State {
++    pub(super) fn new()->Self {Self{enabled:ACTIVE.with(|s|s.borrow().is_some()),model:Model::default()}}
++    fn remember(&mut self,a:&Assembler<'_>,operation:&'static str,access:&'static str,offset:usize,size:usize) {
++        let origin=ACTIVE.with(|s| {let mut s=s.borrow_mut();let r=s.as_mut().unwrap();assert!(r.captures.len()<1_000_000);
++            let id=r.captures.len();r.captures.push(Capture{pc:a.current_pc,region:a.region_start,operation,access,offset,size});id});
++        self.model.remember(offset,size,origin);
++    }
++    pub(super) fn observe(&mut self,a:&Assembler<'_>,op:&Op) {
++        if !self.enabled {return;}
++        let Some(plan)=a.guarded_range.as_ref().filter(|p|p.frame_disjoint) else {self.model.cells.clear();return;};
++        let offset=|r,size,write|plan.displacement(a.current_pc,r,size,write);
++        let read=match *op {
++            Op::Load{address,size,..} if [1,2,4,8].contains(&(size as usize))=>offset(address,size as usize,false).map(|o|(o,size as usize,"Load")),
++            Op::Copy{src,size,..} if [1,2,4,8].contains(&size)=>offset(src,size,false).map(|o|(o,size,"Copy")),
++            _=>None,
++        };
++        if let Some((off,size,operation))=read {
++            if let Some(origin)=self.model.find(off,size) {
++                ACTIVE.with(|s| {let mut s=s.borrow_mut();let r=s.as_mut().unwrap();assert!(r.reads.len()<1_000_000);
++                    r.reads.push(Hit{pc:a.current_pc,region:a.region_start,operation,offset:off,size,origin});});
++            } else {self.remember(a,operation,"source",off,size);}
++        }
++        let write=match *op {
++            Op::Store{address,size,..}=>Some((address,size as usize,"Store")),
++            Op::Copy{dst,size,..}=>Some((dst,size,"Copy")),
++            Op::Imm{..}|Op::Local{..}|Op::Load{..}|Op::Binary{..}|Op::Unary{..}|Op::Cast{..}|Op::Select{..}
++            |Op::Assert{..}|Op::CompareBytes{..}|Op::FloatBinary{..}|Op::FloatUnary{..}|Op::FloatConvert{..}=>None,
++            _=>{self.model.cells.clear();None},
++        };
++        if let Some((reg,size,operation))=write {
++            if size==0 || a.local_range(reg,size).is_some() {return;}
++            if let Some(off)=offset(reg,size,true) {
++                self.model.write(off,size);
++                if [1,2,4,8].contains(&size) {self.remember(a,operation,"destination",off,size);}
++            } else {self.model.cells.clear();}
++        }
++    }
++}
++struct Reset;
++impl Drop for Reset {fn drop(&mut self){ACTIVE.with(|s|*s.borrow_mut()=None);}}
++pub(super) fn capture<T>(f:impl FnOnce()->T)->(T,Report) {
++    ACTIVE.with(|s|{let mut s=s.borrow_mut();assert!(s.is_none());*s=Some(Report::default());});
++    let reset=Reset;let value=f();let r=ACTIVE.with(|s|s.borrow_mut().take().unwrap());drop(reset);(value,r)
++}
++#[test]
++fn complete_payload_cache_matches_independent_byte_writes() {
++    for width in [1,2,4,8] {for at in 0..24 {for size in [0,1,2,4,8] {
++        let mut bytes:Vec<u8>=(0..40).collect();let captured=bytes[8..8+width].to_vec();
++        let mut m=Model::default();m.remember(8,width,7);
++        bytes[at..at+size].fill(255);m.write(at,size);
++        if m.find(8,width).is_some() {assert_eq!(&bytes[8..8+width],captured.as_slice());}
++        let overlap=size!=0 && at<8+width && 8<at+size;
++        assert_eq!(m.find(8,width).is_none(),overlap);
++    }}}
++}
++#[test]
++fn four_slots_replacement_widths_and_capture_ownership_are_bounded() {
++    let mut m=Model::default();for id in 0..5 {m.remember(id*8,8,id);}
++    assert_eq!(m.cells.len(),4);assert_eq!(m.find(0,8),None);assert_eq!(m.find(8,8),Some(1));assert_eq!(m.find(8,4),None);
++    m.remember(8,8,10);assert_eq!(m.cells.len(),4);assert_eq!(m.find(8,8),Some(10));
++    m.write(usize::MAX,8);assert!(m.cells.is_empty());
++    assert!(!State::new().enabled);assert!(State::new().model.cells.is_empty());
++    assert!(std::panic::catch_unwind(||capture(||panic!("cleanup"))).is_err());assert!(capture(||()).1.reads.is_empty());
++}
++#[test]
++fn register_eviction_keeps_captured_values_but_unknown_writes_and_regions_do_not() {
++    let op=Op::Load{dst:1,address:0,size:8};
++    let f=Function{name:"captured payload control".into(),frame_size:64,frame_align:8,registers:3,args:vec![],
++        result:crate::Slot{offset:0,size:0},code:vec![op.clone();8]};
++    let mut plan=range_groups::runtime_plan(&f,0,8,&mut 4_000_000).unwrap();plan.frame_disjoint=true;
++    let mut a=Assembler{frame_size:64,guarded_range:Some(plan),..Assembler::default()};
++    let (_,r)=capture(||{
++        let mut s=State::new();s.observe(&a,&op);a.current_pc=1;s.observe(&a,&op);
++        // No original register fact is available, yet the hypothetical capture lives.
++        assert!(a.facts.is_empty());assert!(a.live_in.is_empty());assert!(a.words.is_empty());
++        s.observe(&a,&Op::Store{address:2,src:1,size:8});assert!(s.model.cells.is_empty());
++        a.current_pc=2;s.observe(&a,&op);a.current_pc=3;s.observe(&a,&op);
++        let mut fresh=State::new();assert!(fresh.model.cells.is_empty());
++        a.guarded_range.as_mut().unwrap().frame_disjoint=false;fresh.observe(&a,&op);s.observe(&a,&op);assert!(s.model.cells.is_empty());
++    });
++    assert_eq!(r.captures.len(),2);assert_eq!(r.reads.len(),2);
++    assert_eq!((r.reads[0].origin,r.reads[1].origin),(0,1));
++}
+diff --git a/crates/bytecode/src/jit/guarded_value_census.rs b/crates/bytecode/src/jit/guarded_value_census.rs
+new file mode 100644
+index 00000000..8367a862
+--- /dev/null
++++ b/crates/bytecode/src/jit/guarded_value_census.rs
+@@ -0,0 +1,124 @@
++//! Disabled observer of available values in an existing frame-disjoint range.
++use super::*;
++use std::cell::RefCell;
++use serde::Serialize;
++const MAX_VALUES:usize=16;
++#[derive(Clone,Debug)]
++struct Value { offset:usize,size:usize,source:Reg,origin:usize }
++#[derive(Serialize)]
++pub(super) struct Hit { pub pc:usize,pub operation:&'static str,pub offset:usize,pub size:usize,pub source:Reg,pub origin_pc:usize }
++thread_local! {static ACTIVE:RefCell<Option<Vec<Hit>>>=const {RefCell::new(None)};}
++#[derive(Clone,Copy)]
++enum Write {None,Local,External(usize,usize),Unknown}
++#[derive(Default)]
++struct Model {values:Vec<Value>}
++impl Model {
++    fn find(&self,offset:usize,size:usize,available:impl Fn(Reg)->bool)->Option<Value> {
++        self.values.iter().find(|v|v.offset==offset && v.size==size && available(v.source)).cloned()
++    }
++    fn write(&mut self,write:Write) {
++        match write {
++            Write::None|Write::Local=>{},
++            Write::Unknown=>self.values.clear(),
++            Write::External(offset,size)=> {let end=offset.checked_add(size).unwrap();
++                if size!=0 {self.values.retain(|v|v.offset>=end || offset>=v.offset+v.size);}
++            }
++        }
++    }
++    fn forget(&mut self,r:Reg) {self.values.retain(|v|v.source!=r);}
++    fn remember(&mut self,offset:usize,size:usize,source:Reg,origin:usize) {
++        if ![1,2,4,8].contains(&size) {return;}
++        self.values.retain(|v|v.offset!=offset || v.size!=size);
++        if self.values.len()==MAX_VALUES {self.values.remove(0);}
++        self.values.push(Value{offset,size,source,origin});
++    }
++}
++pub(super) struct State {enabled:bool,model:Model}
++impl State {
++    pub(super) fn new()->Self {Self{enabled:ACTIVE.with(|s|s.borrow().is_some()),model:Model::default()}}
++    pub(super) fn observe(&mut self,a:&Assembler<'_>,op:&Op) {
++        if !self.enabled {return;}
++        let Some(plan)=a.guarded_range.as_ref().filter(|p|p.frame_disjoint) else {self.model.values.clear();return;};
++        // Use immutable plan queries, never guarded_displacement(), which would
++        // add synthetic register live-ins to the ordinary emitter.
++        let offset=|r,size,write|plan.displacement(a.current_pc,r,size,write);
++        let write_to=|r,size|if size==0 {Write::None} else if a.local_range(r,size).is_some() {Write::Local}
++            else {offset(r,size,true).map_or(Write::Unknown,|o|Write::External(o,size))};
++        let mut read=None;let mut producer=None;let mut effect=Write::None;
++        match *op {
++            Op::Load{dst,address,size}=>if let Some(o)=offset(address,size as usize,false) {
++                if [1,2,4,8].contains(&(size as usize)) {read=Some((o,size as usize,"Load"));producer=Some((o,size as usize,dst));}
++            },
++            Op::Store{address,src,size}=> {
++                effect=write_to(address,size as usize);
++                if let Some(o)=offset(address,size as usize,true) {
++                    if a.facts.contains_key(&src) {producer=Some((o,size as usize,src));}
++                }
++            },
++            Op::Copy{dst,src,size}=> {
++                if [1,2,4,8].contains(&size) {read=offset(src,size,false).map(|o|(o,size,"Copy"));}
++                effect=write_to(dst,size);
++                if let Some(o)=offset(dst,size,true) {
++                    let available=read.and_then(|(o,s,_)|self.model.find(o,s,|r|a.facts.contains_key(&r)))
++                        .map(|v|v.source).or_else(||a.local_value(a.local_range(src,size),size).map(|(r,_)|r));
++                    producer=available.map(|r|(o,size,r));
++                }
++            },
++            Op::Imm{..}|Op::Local{..}|Op::Binary{..}|Op::Unary{..}|Op::Cast{..}|Op::Select{..}|Op::Assert{..}
++            |Op::CompareBytes{..}|Op::FloatBinary{..}|Op::FloatUnary{..}|Op::FloatConvert{..}=>{},
++            _=>effect=Write::Unknown,
++        }
++        if let Some((offset,size,operation))=read {
++            if let Some(v)=self.model.find(offset,size,|r|a.facts.contains_key(&r)) {
++                ACTIVE.with(|s| {let mut s=s.borrow_mut();let rows=s.as_mut().unwrap();assert!(rows.len()<1_000_000);
++                    rows.push(Hit{pc:a.current_pc,operation,offset,size,source:v.source,origin_pc:v.origin});});
++            }
++        }
++        self.model.write(effect);
++        crate::registers::visit_registers(op,|_|{},|r|self.model.forget(r));
++        if let Some((offset,size,r))=producer {self.model.remember(offset,size,r,a.current_pc);}
++    }
++}
++struct Reset;
++impl Drop for Reset {fn drop(&mut self){ACTIVE.with(|s|*s.borrow_mut()=None);}}
++pub(super) fn capture<T>(f:impl FnOnce()->T)->(T,Vec<Hit>) {
++    ACTIVE.with(|s|{let mut s=s.borrow_mut();assert!(s.is_none());*s=Some(vec![]);});
++    let reset=Reset;let result=f();let rows=ACTIVE.with(|s|s.borrow_mut().take().unwrap());drop(reset);(result,rows)
++}
++#[test]
++fn overlap_unknown_writes_and_unavailable_registers_remove_reuse() {
++    let mut m=Model::default();m.remember(8,8,1,0);m.remember(24,8,2,1);
++    assert!(m.find(8,8,|_|false).is_none());assert!(m.find(8,4,|_|true).is_none());
++    m.write(Write::Local);m.write(Write::External(16,8));assert!(m.find(8,8,|_|true).is_some());
++    m.write(Write::External(12,4));assert!(m.find(8,8,|_|true).is_none());assert!(m.find(24,8,|_|true).is_some());
++    m.write(Write::External(25,0));assert!(m.find(24,8,|_|true).is_some());
++    m.write(Write::Unknown);assert!(m.values.is_empty());
++}
++#[test]
++fn register_writes_capacity_and_region_boundaries_invalidate_old_values() {
++    let mut m=Model::default();m.remember(8,8,1,0);m.remember(24,8,1,1);m.forget(1);assert!(m.values.is_empty());
++    for r in 0..17 {m.remember(r as usize*8,8,r,r as usize);}
++    assert_eq!(m.values.len(),16);assert!(m.find(0,8,|_|true).is_none());assert!(m.find(8,8,|_|true).is_some());
++    m.remember(128,8,99,20);assert_eq!(m.values.len(),16);assert_eq!(m.find(128,8,|_|true).unwrap().source,99);
++    assert!(State::new().model.values.is_empty());assert!(!State::new().enabled);
++    assert!(std::panic::catch_unwind(||capture(||panic!("cleanup"))).is_err());assert!(capture(||()).1.is_empty());
++}
++
++#[test]
++fn only_active_disjoint_plans_record_hits_without_emitter_side_effects() {
++    let mut a=Assembler{frame_size:64,..Assembler::default()};
++    let op=Op::Load{dst:1,address:0,size:8};
++    let f=Function{name:"observer plan control".into(),frame_size:64,frame_align:8,registers:2,
++        args:vec![],result:crate::Slot{offset:0,size:0},code:vec![op.clone();8]};
++    let mut plan=range_groups::runtime_plan(&f,0,8,&mut 4_000_000).unwrap();
++    // Exercise the observer's disjointness gate; this unit control publishes or
++    // executes no plan. Runtime reconstruction uses only the actual plan flag.
++    plan.frame_disjoint=true;a.guarded_range=Some(plan);
++    let (_,hits)=capture(|| {
++        let mut state=State::new();state.observe(&a,&op);
++        a.facts.insert(1,Fact::Imm(99));a.current_pc=1;state.observe(&a,&op);
++        a.guarded_range.as_mut().unwrap().frame_disjoint=false;a.current_pc=2;state.observe(&a,&op);
++        assert!(state.model.values.is_empty());assert!(a.live_in.is_empty());assert!(matches!(a.facts[&1],Fact::Imm(99)));
++    });
++    assert_eq!(hits.len(),1);assert_eq!((hits[0].pc,hits[0].origin_pc,hits[0].source,hits[0].offset),(1,0,1,0));
++}
+diff --git a/crates/bytecode/src/jit/immutable_reads.rs b/crates/bytecode/src/jit/immutable_reads.rs
+new file mode 100644
+index 00000000..c23b117f
+--- /dev/null
++++ b/crates/bytecode/src/jit/immutable_reads.rs
+@@ -0,0 +1,58 @@
++//! Observe only explicit known read addresses in immutable Program.data.
++use super::*;
++use std::cell::RefCell;
++use serde::Serialize;
++#[derive(Debug,PartialEq,Eq,Serialize)]
++pub(super) struct Read { pub pc:usize, pub operation:&'static str, pub offset:usize, pub size:usize, pub value_le:[u8;16] }
++thread_local! { static ACTIVE:RefCell<Option<Vec<Read>>>=const {RefCell::new(None)}; }
++fn known(op:&Op,facts:&BTreeMap<Reg,Fact>,data:&[u8],pc:usize)->Option<Read> {
++    let (r,size,operation)=match *op {
++        Op::Load{address,size,..}=>(address,size as usize,"Load"),
++        Op::Copy{src,size,..}=>(src,size,"Copy"),
++        _=>return None,
++    };
++    if size==0 || size>16 {return None;}
++    let Fact::Imm(value)=*facts.get(&r)? else {return None;};
++    // Conservative full-width conversion. No numerical pointer guessing: the
++    // value is already the source operand of this exact Load/Copy instruction.
++    let offset=usize::try_from(value).ok()?;if offset==0 {return None;}
++    let end=offset.checked_add(size)?;let bytes=data.get(offset..end)?;
++    let mut value_le=[0;16];value_le[..size].copy_from_slice(bytes);
++    Some(Read{pc,operation,offset,size,value_le})
++}
++pub(super) fn observe(op:&Op,facts:&BTreeMap<Reg,Fact>,data:&[u8],pc:usize) {
++    ACTIVE.with(|s| {let mut s=s.borrow_mut();if let Some(rows)=s.as_mut() {
++        if let Some(hit)=known(op,facts,data,pc) {assert!(rows.len()<1_000_000);rows.push(hit);}
++    }});
++}
++struct Reset;
++impl Drop for Reset {fn drop(&mut self){ACTIVE.with(|s|*s.borrow_mut()=None);}}
++pub(super) fn capture<T>(f:impl FnOnce()->T)->(T,Vec<Read>) {
++    ACTIVE.with(|s|{let mut s=s.borrow_mut();assert!(s.is_none());*s=Some(vec![]);});
++    let reset=Reset;let result=f();let rows=ACTIVE.with(|s|s.borrow_mut().take().unwrap());drop(reset);(result,rows)
++}
++#[test]
++fn exact_immutable_ranges_reject_null_heap_truncation_and_overflow() {
++    let data:Vec<u8>=(0..64).collect();let mut facts=BTreeMap::new();
++    for size in 1..=16 {
++        facts.insert(0,Fact::Imm((64-size) as u128));
++        let op=Op::Load{dst:1,address:0,size:size as u8};let hit=known(&op,&facts,&data,9).unwrap();
++        assert_eq!(hit.pc,9);assert_eq!(&hit.value_le[..size],&data[64-size..]);assert!(hit.value_le[size..].iter().all(|b|*b==0));
++        for offset in [0,65-size as u128,crate::heap::TAG as u128,u64::MAX as u128,(1u128<<64)+16,u128::MAX] {
++            facts.insert(0,Fact::Imm(offset));assert!(known(&op,&facts,&data,9).is_none());
++        }
++    }
++    facts.insert(0,Fact::Imm(16));
++    for size in [0,17] {assert!(known(&Op::Copy{dst:1,src:0,size},&facts,&data,0).is_none());}
++}
++#[test]
++fn only_explicit_constant_reads_are_observed_without_changing_facts() {
++    let data=vec![7;64];let mut facts=BTreeMap::new();facts.insert(0,Fact::Imm(16));
++    let op=Op::Copy{dst:1,src:0,size:8};observe(&op,&facts,&data,0);
++    let (_,rows)=capture(|| {observe(&op,&facts,&data,7);observe(&Op::Store{address:0,src:0,size:8},&facts,&data,8);});
++    assert_eq!(rows.len(),1);assert_eq!(rows[0].operation,"Copy");assert_eq!(rows[0].offset,16);
++    assert!(matches!(facts[&0],Fact::Imm(16)));
++    facts.insert(0,Fact::Local(16));assert!(known(&op,&facts,&data,0).is_none());facts.clear();assert!(known(&op,&facts,&data,0).is_none());
++    assert!(std::panic::catch_unwind(||capture(||panic!("observer cleanup"))).is_err());
++    assert!(capture(||()).1.is_empty());
++}
+diff --git a/crates/bytecode/src/jit/range_groups.rs b/crates/bytecode/src/jit/range_groups.rs
+index 179e0ce3..072d9dbd 100644
+--- a/crates/bytecode/src/jit/range_groups.rs
++++ b/crates/bytecode/src/jit/range_groups.rs
+@@ -145,6 +145,8 @@ const KEYS: [&str; 7] = ["fixed_addresses","local_addresses","unknown_addresses"
+ 
+ mod plan;
+ pub(super) use plan::{Plan, runtime_plan};
++#[cfg(test)]
++pub(super) use plan::small_plan;
+ 
+ fn function(f: &Function, intervals: &[(usize,usize,u64)], budget: &mut usize) -> Option<serde_json::Value> {
+     function_with_mode(f,intervals,budget,false)
+diff --git a/crates/bytecode/src/jit/range_groups/plan.rs b/crates/bytecode/src/jit/range_groups/plan.rs
+index dbd8b10a..34fe36b7 100644
+--- a/crates/bytecode/src/jit/range_groups/plan.rs
++++ b/crates/bytecode/src/jit/range_groups/plan.rs
+@@ -30,6 +30,15 @@ impl Plan {
+ }
+ 
+ pub(in crate::jit) fn runtime_plan(f: &Function, start: usize, end: usize, budget: &mut usize) -> Option<Plan> {
++    plan_with_minimum(f, start, end, budget, 8)
++}
++
++#[cfg(test)]
++pub(in crate::jit) fn small_plan(f: &Function, start: usize, end: usize, budget: &mut usize) -> Option<Plan> {
++    plan_with_minimum(f, start, end, budget, 4)
++}
++
++fn plan_with_minimum(f: &Function, start: usize, end: usize, budget: &mut usize, minimum: usize) -> Option<Plan> {
+     if f.registers > MAX_ITEMS || f.code.len() > MAX_ITEMS || start >= end
+         || end > f.code.len() || end-start > 1024 { return None; }
+     // No helpers, transitions or unbounded transfers may clobber the cache.
+@@ -56,7 +65,7 @@ pub(in crate::jit) fn runtime_plan(f: &Function, start: usize, end: usize, budge
+         state.transfer(op,f.frame_size);
+     }
+     let mut plans:Vec<_>=groups.into_iter().filter_map(|(root,sites)| {
+-        if sites.len()<8 { return None; }
++        if sites.len()<minimum { return None; }
+         let low=sites.iter().map(|s|s.offset).min()?;
+         let high=sites.iter().map(|s|s.offset+s.size as i64).max()?;
+         if high-low>MAX_SPAN { return None; }
+@@ -99,6 +108,33 @@ mod tests {
+         }
+     }
+     #[test]
++    fn smaller_admission_preserves_proof_and_work_for_existing_groups() {
++        for n in 1..=12 {
++            let f=input(vec![Op::Load {dst:7,address:0,size:8};n]);
++            let (mut old_work,mut new_work)=(MAX_FUNCTION_WORK,MAX_FUNCTION_WORK);
++            let old=runtime_plan(&f,0,n,&mut old_work);
++            let new=small_plan(&f,0,n,&mut new_work);
++            assert_eq!(old_work,new_work);
++            assert_eq!(old.is_some(),n>=8);assert_eq!(new.is_some(),n>=4);
++            if let Some(old)=old {
++                let new=new.unwrap();assert_eq!(old.sites,new.sites);
++                assert_eq!((old.root,old.low,old.high,old.writes,old.frame_disjoint),
++                    (new.root,new.low,new.high,new.writes,new.frame_disjoint));
++            }
++        }
++    }
++    #[test]
++    fn smaller_admission_keeps_write_disjointness_and_bounded_declines() {
++        let mut code=vec![Op::Local {dst:0,offset:0}];
++        for _ in 0..4 {code.extend([Op::Load {dst:1,address:0,size:8},Op::Store {address:1,src:7,size:8}]);}
++        let mut f=input(code);let p=small_plan(&f,0,f.code.len(),&mut MAX_FUNCTION_WORK.clone()).unwrap();
++        assert_eq!(p.root,Root::FrameSlot(0));assert!(p.frame_disjoint && p.writes);
++        assert_eq!(p.sites.len(),4);assert!(runtime_plan(&f,0,f.code.len(),&mut MAX_FUNCTION_WORK.clone()).is_none());
++        assert!(small_plan(&f,0,f.code.len(),&mut 1).is_none());
++        f.code.push(Op::Call {function:0,args:vec![],destination:0});
++        assert!(small_plan(&f,0,f.code.len(),&mut MAX_FUNCTION_WORK.clone()).is_none());
++    }
++    #[test]
+     fn slot_proof_includes_every_conditional_write_and_rejects_crossing_calls() {
+         let mut code=vec![Op::Local {dst:0,offset:0}];
+         for _ in 0..8 {code.extend([Op::Load {dst:1,address:0,size:8},Op::Store {address:1,src:7,size:8}]);}
+diff --git a/crates/bytecode/src/lib.rs b/crates/bytecode/src/lib.rs
+index 92cf4c94..9a7ba68c 100644
+--- a/crates/bytecode/src/lib.rs
++++ b/crates/bytecode/src/lib.rs
+@@ -20,6 +20,8 @@ mod inline;
+ mod inline_tests;
+ mod registers;
+ mod register_init;
++#[cfg(test)]
++mod native_identity_census;
+ mod inline_graph;
+ #[cfg(test)]
+ mod whole_call_inline_tests;
+diff --git a/crates/bytecode/src/native_identity_census.rs b/crates/bytecode/src/native_identity_census.rs
+new file mode 100644
+index 00000000..6db90c16
+--- /dev/null
++++ b/crates/bytecode/src/native_identity_census.rs
+@@ -0,0 +1,93 @@
++//! Necessary identity conditions only: no cache, code generation or guest run.
++use crate::{Function, Op, Program};
++use bincode::Options;
++use serde_json::{Value, json};
++use sha2::{Digest, Sha256};
++use std::{fs, io::Write, path::Path, time::Instant};
++mod churn;
++
++fn digest<T: serde::Serialize>(value: &T) -> String {
++    format!("{:x}", Sha256::digest(bincode::serialize(value).unwrap()))
++}
++
++fn layout(f: &Function) -> String {
++    digest(&(f.frame_size, f.frame_align, f.registers, &f.args, f.result))
++}
++
++fn describe(program: &Program) -> Value {
++    // Mirror the adopted emitter's global heap-mode choice, without invoking it.
++    // This is NOT a complete code-cache key or a proof of emitted-code equality.
++    let uses_heap = !program.statics.is_empty() || program.functions.iter().flat_map(|f| &f.code).any(|op| {
++        matches!(op, Op::Allocate { .. } | Op::Deallocate { .. } | Op::Reallocate { .. }
++            | Op::CAllocate { .. } | Op::CReallocate { .. } | Op::CAlignedAllocate { .. }
++            | Op::CurrentDirectory { .. })
++    });
++    let rows: Vec<_> = program.functions.iter().enumerate().map(|(id, f)| {
++        let mut calls: Vec<_> = f.code.iter().filter_map(|op| match op {
++            Op::Call { function, .. } => Some(*function), _ => None,
++        }).collect();
++        calls.sort_unstable(); calls.dedup();
++        let bytes = bincode::serialize(f).unwrap();
++        json!({"id": id, "name": f.name, "body_sha256": format!("{:x}", Sha256::digest(&bytes)),
++            "layout_sha256": layout(f), "serialized_bytes": bytes.len(), "operations": f.code.len(),
++            "direct_callees": calls, "indirect_calls": f.code.iter().filter(|op| matches!(op, Op::CallIndirect {..})).count(),
++            "assertions": f.code.iter().filter(|op| matches!(op, Op::Assert {..})).count()})
++    }).collect();
++    json!({"functions": rows, "version": program.version, "target": program.target,
++        "uses_heap": uses_heap, "data_bytes": program.data.len(), "static_bytes": program.statics.len(),
++        "data_sha256": digest(&program.data), "statics_sha256": digest(&program.statics),
++        "thread_locals_sha256": digest(&program.thread_locals), "entry": program.entry,
++        "global_sha256": digest(&(program.version, &program.target, program.functions.len(), uses_heap)),
++        "complete_cache_key": false, "guest_commands": 0, "code_publications": 0})
++}
++
++fn bounded(path: &Path, limit: u64) -> Vec<u8> {
++    let meta = fs::symlink_metadata(path).unwrap();
++    assert!(meta.is_file() && meta.len() <= limit);
++    fs::read(path).unwrap()
++}
++
++#[test]
++fn body_identity_includes_implementation_layout_names_and_call_targets() {
++    let f = Function { name: "leaf".into(), frame_size: 8, frame_align: 8, registers: 1,
++        args: vec![], result: crate::Slot { offset: 0, size: 0 },
++        code: vec![Op::Imm { dst: 0, value: 7 }, Op::Return] };
++    let original = digest(&f);
++    let mut changed = f.clone(); changed.code[0] = Op::Imm { dst: 0, value: 8 };
++    assert_ne!(digest(&changed), original); assert_eq!(layout(&changed), layout(&f));
++    changed = f.clone(); changed.frame_size = 16;
++    assert_ne!(digest(&changed), original); assert_ne!(layout(&changed), layout(&f));
++    changed = f.clone(); changed.name.push('x'); assert_ne!(digest(&changed), original);
++    changed = f.clone(); changed.code[0] = Op::Call { function: 0, args: vec![], destination: 0 };
++    let a = digest(&changed); changed.code[0] = Op::Call { function: 1, args: vec![], destination: 0 };
++    assert_ne!(digest(&changed), a);
++}
++
++#[test]
++#[ignore = "Requires closed, hash-bound real edited artifacts and a fresh output directory"]
++fn observe_saved_edit_identities() {
++    let input = std::env::var("NATIVE_IDENTITY_INPUT").unwrap();
++    let items: Vec<Value> = serde_json::from_slice(&bounded(Path::new(&input), 1024 * 1024)).unwrap();
++    assert!(!items.is_empty() && items.len() <= 32);
++    for item in items {
++        let start = Instant::now();
++        let bytes = bounded(Path::new(item["artifact"].as_str().unwrap()), 64 * 1024 * 1024);
++        let artifact_hash = format!("{:x}", Sha256::digest(&bytes));
++        assert_eq!(artifact_hash, item["sha256"].as_str().unwrap());
++        let read_hash_ns = start.elapsed().as_nanos(); let start = Instant::now();
++        let program: Program = bincode::DefaultOptions::new().with_fixint_encoding()
++            .with_limit(64 * 1024 * 1024).reject_trailing_bytes().deserialize(&bytes).unwrap();
++        let decode_ns = start.elapsed().as_nanos(); let start = Instant::now();
++        crate::validate(&program).unwrap();
++        let validate_ns = start.elapsed().as_nanos(); let start = Instant::now();
++        let mut report = describe(&program);
++        let describe_ns = start.elapsed().as_nanos();
++        report["artifact_sha256"] = artifact_hash.into();
++        report["diagnostic_stage_ns"] = json!({"read_and_hash": read_hash_ns, "decode": decode_ns,
++            "validate": validate_ns, "describe": describe_ns});
++        let output = serde_json::to_vec(&report).unwrap(); assert!(output.len() <= 32 * 1024 * 1024);
++        let mut file = fs::OpenOptions::new().write(true).create_new(true)
++            .open(item["output"].as_str().unwrap()).unwrap();
++        file.write_all(&output).unwrap(); file.write_all(b"\n").unwrap();
++    }
++}
+diff --git a/crates/bytecode/src/native_identity_census/churn.rs b/crates/bytecode/src/native_identity_census/churn.rs
+new file mode 100644
+index 00000000..58061d17
+--- /dev/null
++++ b/crates/bytecode/src/native_identity_census/churn.rs
+@@ -0,0 +1,115 @@
++//! Explain exact field changes. Numeric address resemblance is never a proof.
++use super::*;
++use std::collections::BTreeMap;
++
++fn difference(before: &Function, after: &Function, old_data: &[u8], new_data: &[u8]) -> Option<Value> {
++    if bincode::serialize(before).unwrap() == bincode::serialize(after).unwrap() { return None; }
++    let names_equal = before.name == after.name;
++    let layouts_equal = layout(before) == layout(after);
++    let lengths_equal = before.code.len() == after.code.len();
++    let mut immediate_only = names_equal && layouts_equal && lengths_equal;
++    let (mut imm, mut other, mut in_data, mut equal_window) = (0usize, 0usize, 0usize, 0usize);
++    let mut examples = vec![]; let mut deltas = BTreeMap::<String, usize>::new();
++    for (pc, (old, new)) in before.code.iter().zip(&after.code).enumerate() {
++        if bincode::serialize(old).unwrap() == bincode::serialize(new).unwrap() { continue; }
++        match (old, new) {
++            (Op::Imm {dst: a, value: x}, Op::Imm {dst: b, value: y}) if a == b => {
++                imm += 1;
++                let delta = if y >= x { format!("+{}", y-x) } else { format!("-{}", x-y) };
++                *deltas.entry(delta.clone()).or_default() += 1;
++                let offsets = usize::try_from(*x).ok().zip(usize::try_from(*y).ok());
++                let fits = offsets.is_some_and(|(x,y)| x < old_data.len() && y < new_data.len());
++                let same = offsets.is_some_and(|(x,y)| {
++                    x.checked_add(16).zip(y.checked_add(16)).is_some_and(|(ex,ey)| {
++                        old_data.get(x..ex).zip(new_data.get(y..ey)).is_some_and(|(a,b)| a == b)
++                    })
++                });
++                in_data += usize::from(fits); equal_window += usize::from(same);
++                if examples.len() < 4 { examples.push(json!({"pc": pc, "before_hex":format!("{x:x}"),
++                    "after_hex":format!("{y:x}"), "delta":delta, "both_numbers_fit_data":fits,
++                    "equal_16_byte_data_windows":same})); }
++            }
++            _ => { other += 1; immediate_only = false; }
++        }
++    }
++    Some(json!({"name":after.name,"names_equal":names_equal,"layouts_equal":layouts_equal,
++        "code_lengths_equal":lengths_equal,"immediate_values_only":immediate_only,
++        "changed_immediates":imm,"other_changed_operations_at_same_pc":other,
++        "both_numbers_fit_data":in_data,"equal_16_byte_data_windows":equal_window,
++        "deltas":deltas,"examples":examples,
++        "address_relocation_proven":false}))
++}
++
++fn fixture() -> Function {
++    Function { name:"literal".into(), frame_size:8, frame_align:8, registers:2,args:vec![],
++        result:crate::Slot{offset:0,size:0}, code:vec![Op::Imm{dst:0,value:1},Op::Return] }
++}
++
++#[test]
++fn immediate_classification_keeps_width_and_all_other_identity_fields() {
++    let old=fixture(); let mut new=old.clone();
++    new.code[0]=Op::Imm{dst:0,value:1u128<<127};
++    let row=difference(&old,&new,&[],&[]).unwrap();
++    assert_eq!(row["immediate_values_only"],true); assert_eq!(row["changed_immediates"],1);
++    assert_eq!(row["examples"][0]["after_hex"],"80000000000000000000000000000000");
++    assert_eq!(row["both_numbers_fit_data"],0);
++    assert!(difference(&old,&old,&[],&[]).is_none());
++    for field in 0..4 {
++        let mut new=new.clone();
++        match field {0=>new.name.push('x'),1=>new.frame_size=16,
++            2=>new.code.push(Op::Return),_=>new.code[0]=Op::Imm{dst:1,value:2}}
++        assert_eq!(difference(&old,&new,&[],&[]).unwrap()["immediate_values_only"],false);
++    }
++}
++
++#[test]
++fn matching_data_windows_do_not_certify_integer_literals_as_addresses() {
++    let old=fixture();let mut new=old.clone();new.code[0]=Op::Imm{dst:0,value:2};
++    // Plain integers happen to index equal bytes. Preserve the ambiguity.
++    let row=difference(&old,&new,&[0;32],&[0;32]).unwrap();
++    assert_eq!(row["both_numbers_fit_data"],1);assert_eq!(row["equal_16_byte_data_windows"],1);
++    assert_eq!(row["address_relocation_proven"],false);
++}
++
++fn program(item: &Value) -> Program {
++    let bytes=bounded(Path::new(item["artifact"].as_str().unwrap()),64*1024*1024);
++    assert_eq!(format!("{:x}",Sha256::digest(&bytes)),item["sha256"].as_str().unwrap());
++    let p: Program=bincode::DefaultOptions::new().with_fixint_encoding()
++        .with_limit(64*1024*1024).reject_trailing_bytes().deserialize(&bytes).unwrap();
++    crate::validate(&p).unwrap();p
++}
++
++#[test]
++#[ignore="Requires closed real-edit artifact pairs and fresh outputs; no guest"]
++fn observe_saved_immediate_changes() {
++    let pairs:Vec<Value>=serde_json::from_slice(&bounded(Path::new(&std::env::var("NATIVE_CHURN_INPUT").unwrap()),1024*1024)).unwrap();
++    assert!(!pairs.is_empty() && pairs.len()<=32);
++    for pair in pairs {
++        let before=program(&pair["before"]);let after=program(&pair["after"]);
++        assert_eq!(before.functions.len(),after.functions.len());
++        let mut rows=vec![];
++        for (id,(old,new)) in before.functions.iter().zip(&after.functions).enumerate() {
++            if let Some(mut row)=difference(old,new,&before.data,&after.data) {
++                row["function"]=id.into();rows.push(row);
++            }
++        }
++        let mut deltas=BTreeMap::<String,u64>::new();
++        for row in &rows {for (delta,count) in row["deltas"].as_object().unwrap() {
++            *deltas.entry(delta.clone()).or_default()+=count.as_u64().unwrap();
++        }}
++        let summary=json!({"functions":after.functions.len(),"changed_functions":rows.len(),
++            "immediate_only_functions":rows.iter().filter(|r|r["immediate_values_only"]==true).count(),
++            "name_changes":rows.iter().filter(|r|r["names_equal"]==false).count(),
++            "layout_changes":rows.iter().filter(|r|r["layouts_equal"]==false).count(),
++            "code_length_changes":rows.iter().filter(|r|r["code_lengths_equal"]==false).count(),
++            "changed_immediates":rows.iter().map(|r|r["changed_immediates"].as_u64().unwrap()).sum::<u64>(),
++            "both_numbers_fit_data":rows.iter().map(|r|r["both_numbers_fit_data"].as_u64().unwrap()).sum::<u64>(),
++            "equal_16_byte_data_windows":rows.iter().map(|r|r["equal_16_byte_data_windows"].as_u64().unwrap()).sum::<u64>()});
++        let output=serde_json::to_vec(&json!({"status":"passed","before_sha256":pair["before"]["sha256"],
++            "after_sha256":pair["after"]["sha256"],"summary":summary,"deltas":deltas,"rows":rows,
++            "guest_commands":0,"code_publications":0,"address_relocation_proven":false})).unwrap();
++        assert!(output.len()<=32*1024*1024);
++        let mut file=fs::OpenOptions::new().write(true).create_new(true).open(pair["output"].as_str().unwrap()).unwrap();
++        file.write_all(&output).unwrap();file.write_all(b"\n").unwrap();
++    }
++}
+diff --git a/crates/bytecode/src/register_init.rs b/crates/bytecode/src/register_init.rs
+index 8283eddd..ece78394 100644
+--- a/crates/bytecode/src/register_init.rs
++++ b/crates/bytecode/src/register_init.rs
+@@ -4,6 +4,9 @@
+ use crate::{Function, Op};
+ use std::collections::VecDeque;
+ 
++#[cfg(test)]
++mod census;
++
+ #[derive(Clone, Copy)]
+ struct Bounds { registers: usize, operations: usize, blocks: usize, cells: usize, edges: usize, work: usize }
+ const BOUNDS: Bounds = Bounds { registers: 65_536, operations: 500_000, blocks: 8192,
+diff --git a/crates/bytecode/src/register_init/census.rs b/crates/bytecode/src/register_init/census.rs
+new file mode 100644
+index 00000000..6b79f2de
+--- /dev/null
++++ b/crates/bytecode/src/register_init/census.rs
+@@ -0,0 +1,64 @@
++//! Offline typed census of current decisions and projected bitmap dimensions.
++use super::*;
++use serde_json::json;
++use sha2::{Digest,Sha256};
++
++fn dimensions(f:&Function)->(usize,usize,usize,usize) {
++    let mut starts=vec![false;f.code.len()];starts[0]=true;
++    for (pc,op) in f.code.iter().enumerate() {
++        match op {
++            Op::Jump{target}=>starts[*target]=true,
++            Op::Switch{cases,otherwise,..}=>{
++                starts[*otherwise]=true;
++                for (_,target) in cases { starts[*target]=true; }
++            }
++            _=>{}
++        }
++        if matches!(op,Op::Jump{..}|Op::Switch{..}|Op::Return|Op::Trap{..}) && pc+1<starts.len() { starts[pc+1]=true; }
++    }
++    let blocks=starts.iter().filter(|b|**b).count();
++    let mut definitions=vec![0;f.registers];let mut required=vec![false;f.registers];let mut epoch=0;
++    for (pc,op) in f.code.iter().enumerate() {
++        if starts[pc] { epoch=pc+1; }
++        let mut writes=[0;2];let mut n=0;
++        crate::registers::visit_registers(op,|r| {
++            if definitions[r as usize]!=epoch { required[r as usize]=true; }
++        },|r|{writes[n]=r;n+=1;});
++        for &r in &writes[..n] { definitions[r as usize]=epoch; }
++    }
++    let needed=required.into_iter().filter(|b|*b).count();
++    (blocks,needed,blocks*f.registers.div_ceil(64).max(1),blocks*needed.div_ceil(64).max(1))
++}
++
++#[test]
++#[ignore="Requires a bound validated artifact, saved direct-call census and fresh output"]
++fn observe_saved_register_initialization() {
++    let bytes=std::fs::read(std::env::var("INITIALIZATION_ARTIFACT").unwrap()).unwrap();
++    assert!(bytes.len()<=128*1024*1024);
++    let program:crate::Program=bincode::deserialize(&bytes).unwrap();crate::validate(&program).unwrap();
++    let calls:Vec<serde_json::Value>=serde_json::from_slice(&std::fs::read(std::env::var("INITIALIZATION_CALLS").unwrap()).unwrap()).unwrap();
++    let mut rows=vec![];let mut nominal=0u128;let mut current_zeroes=0u128;
++    for call in calls {
++        let id=call["function"].as_u64().unwrap() as usize;let f=&program.functions[id];
++        assert_eq!(call["name"].as_str().unwrap(),f.name);
++        assert_eq!(call["registers"].as_u64().unwrap() as usize,f.registers);
++        assert_eq!(call["operations"].as_u64().unwrap() as usize,f.code.len());
++        assert_eq!(call["frame_bytes"].as_u64().unwrap() as usize,f.frame_size);
++        let needs=crate::registers::needs_initial_zeroes(f);
++        let (blocks,required,dense_cells,projected_cells)=dimensions(f);
++        let weight=call["nominal_register_bytes"].as_u64().unwrap() as u128;
++        nominal+=weight;if needs { current_zeroes+=weight; }
++        rows.push(json!({"function":id,"name":f.name,"registers":f.registers,"operations":f.code.len(),
++            "ordinary_direct_calls_lower_bound":call["ordinary_direct_calls_lower_bound"],
++            "nominal_register_bytes":call["nominal_register_bytes"],"needs_initial_zeroes":needs,
++            "blocks":blocks,"upward_exposed_registers":required,"dense_cells":dense_cells,"projected_cells":projected_cells,
++            "register_bound_exceeded":f.registers>BOUNDS.registers,"block_bound_exceeded":blocks>BOUNDS.blocks,
++            "dense_cell_bound_exceeded":dense_cells>BOUNDS.cells,"projected_cell_bound_exceeded":projected_cells>BOUNDS.cells}));
++    }
++    let output=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("INITIALIZATION_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(output,&json!({"status":"passed","artifact_sha256":format!("{:x}",Sha256::digest(&bytes)),
++        "nominal_register_bytes":nominal,"current_zeroing_direct_weight":current_zeroes,"functions":rows,
++        "bounds":{"registers":BOUNDS.registers,"operations":BOUNDS.operations,"blocks":BOUNDS.blocks,"cells":BOUNDS.cells,"edges":BOUNDS.edges,"work":BOUNDS.work},
++        "guest_commands":0,"production_changes":0,
++        "scope":"Current production initialization decisions on typed validated functions. Direct-call byte weights are not measured traffic. Projected dimensions conservatively include unreachable blocks and do not establish initialization or a future proof's resource/work success."})).unwrap();
++}
+diff --git a/crates/bytecode/src/scalar/native_registers.rs b/crates/bytecode/src/scalar/native_registers.rs
+index dda6f375..6888b94c 100644
+--- a/crates/bytecode/src/scalar/native_registers.rs
++++ b/crates/bytecode/src/scalar/native_registers.rs
+@@ -2,6 +2,9 @@
+ //! Phis retain stack slots. Incoming phi uses occur at predecessor exits; a
+ //! value used from any other block retains its original stack storage.
+ use super::*;
++#[cfg(test)]
++#[path="native_registers/global.rs"]
++mod global;
+ 
+ // x3's entry budget is dead after the admission check. The body never calls
+ // another function. x15-x17 are otherwise unused by scalar emission. x18 is
+diff --git a/crates/bytecode/src/scalar/native_registers/global.rs b/crates/bytecode/src/scalar/native_registers/global.rs
+new file mode 100644
+index 00000000..8470616e
+--- /dev/null
++++ b/crates/bytecode/src/scalar/native_registers/global.rs
+@@ -0,0 +1,168 @@
++//! Test-only bounded whole-CFG allocation model. The emitter still uses allocate.
++use super::*;
++use std::collections::VecDeque;
++const MAX_CANDIDATES: usize = 4096;
++const MAX_BLOCKS: usize = 512;
++const MAX_EVENTS: usize = 250_000;
++const MAX_WORK: usize = 8_000_000;
++
++#[derive(Clone)]
++struct Event { reads: Vec<usize>, write: Option<usize> }
++struct Graph { ids: Vec<Id>, edges: Vec<Vec<u64>>, weights: Vec<u64>, work: usize }
++struct Assignment { registers: Vec<Option<u32>>, global_selected: bool, work: usize,
++    candidates: usize, baseline_weight: u64, global_weight: u64 }
++struct Work { used: usize, limit: usize }
++impl Work {
++    fn charge(&mut self, n: usize) -> Result<(), &'static str> {
++        self.used = self.used.checked_add(n).ok_or("global_register_work")?;
++        if self.used > self.limit { Err("global_register_work") } else { Ok(()) }
++    }
++}
++fn set(bits: &mut [u64], id: usize) { bits[id/64] |= 1 << (id%64); }
++fn clear(bits: &mut [u64], id: usize) { bits[id/64] &= !(1 << (id%64)); }
++fn each(bits: &[u64], mut f: impl FnMut(usize)) {
++    for (word, &value) in bits.iter().enumerate() {
++        let mut value=value;
++        while value!=0 { f(word*64+value.trailing_zeros() as usize); value &= value-1; }
++    }
++}
++fn reads(ids: impl IntoIterator<Item=Id>, mapping: &[Option<usize>], weights: &mut [u64],
++    work: &mut Work) -> Result<Vec<usize>, &'static str> {
++    let mut out=vec![];
++    for id in ids {
++        work.charge(1)?;
++        if let Some(index)=*mapping.get(id).ok_or("global_register_input")? {
++            weights[index]+=1;out.push(index);
++        }
++    }
++    Ok(out)
++}
++
++fn graph(plan: &Plan, limit: usize) -> Result<Graph, &'static str> {
++    if plan.blocks.len()>MAX_BLOCKS || plan.nodes.len()>16_384 || plan.effects.len()>512
++        || plan.live.len()!=plan.nodes.len() || plan.reachable.len()!=plan.blocks.len()
++        || plan.at.len()!=plan.effects.len() || plan.computations.len()!=plan.effects.len() {
++        return Err("global_register_shape");
++    }
++    let mut work=Work{used:0,limit};let mut ids=vec![];let mut mapping=vec![None;plan.nodes.len()];
++    let mut defined=vec![false;plan.nodes.len()];
++    for (block,b) in plan.blocks.iter().enumerate() {
++        if !plan.reachable[block] {continue;}
++        if b.start>=b.end || b.end>plan.effects.len() {return Err("global_register_block");}
++        for pc in b.start..b.end {
++            if plan.at[pc]!=block {return Err("global_register_block_identity");}
++            for &id in &plan.computations[pc] {
++                work.charge(1)?;
++                let node=plan.nodes.get(id).ok_or("global_register_definition")?;
++                if !plan.live[id] {continue;}
++                if defined[id] || node.pc!=Some(pc) {return Err("global_register_definition");}
++                defined[id]=true;
++                if node.width==0 || node.width>8 || matches!(node.value,Value::Phi(_)|Value::Constant(_)|Value::Input(_)|Value::Base(_)) {continue;}
++                if ids.len()==MAX_CANDIDATES {return Err("global_register_candidates");}
++                mapping[id]=Some(ids.len());ids.push(id);
++            }
++        }
++    }
++    let n=ids.len();let stride=n.div_ceil(64);let mut weights=vec![1u64;n];
++    let mut events=vec![vec![];plan.blocks.len()];let mut edge_uses=vec![vec![];plan.blocks.len()];let mut count=0;
++    for (block,b) in plan.blocks.iter().enumerate() {
++        if !plan.reachable[block] {continue;}
++        for pc in b.start..b.end {
++            for &id in &plan.computations[pc] {
++                if !plan.live[id] {continue;}
++                let uses=reads(plan.nodes[id].inputs(),&mapping,&mut weights,&mut work)?;
++                events[block].push(Event{reads:uses,write:mapping[id]});count+=1;
++            }
++            let uses=match plan.effects[pc] {
++                Effect::Assert{value,..}|Effect::Switch{value,..}|Effect::Return(value)=>vec![value],_=>vec![],
++            };
++            events[block].push(Event{reads:reads(uses,&mapping,&mut weights,&mut work)?,write:None});count+=1;
++            if count>MAX_EVENTS {return Err("global_register_events");}
++        }
++        for &to in &b.successors {
++            let next=plan.blocks.get(to).ok_or("global_register_successor")?;
++            if !plan.reachable[to] {return Err("global_register_reachability");}
++            for &phi in &next.phis {
++                if !*plan.live.get(phi).ok_or("global_register_phi")? {continue;}
++                let Value::Phi(parts)=&plan.nodes[phi].value else {return Err("global_register_phi");};
++                let (_,part)=parts.iter().find(|(from,_)|*from==block).ok_or("global_register_phi_edge")?;
++                edge_uses[block].extend(reads([part.value],&mapping,&mut weights,&mut work)?);
++            }
++        }
++    }
++    let mut predecessors=vec![vec![];plan.blocks.len()];
++    for (block,b) in plan.blocks.iter().enumerate() {if plan.reachable[block] {
++        for &to in &b.successors {predecessors[to].push(block);}
++    }}
++    let mut incoming=vec![vec![0u64;stride];plan.blocks.len()];let mut outgoing=incoming.clone();
++    let mut queued=plan.reachable.clone();let mut pending:VecDeque<_>=(0..plan.blocks.len()).rev().filter(|&b|plan.reachable[b]).collect();
++    while let Some(block)=pending.pop_front() {
++        queued[block]=false;let mut live=vec![0;stride];
++        for &to in &plan.blocks[block].successors {
++            work.charge(stride)?;for (out,&value) in live.iter_mut().zip(&incoming[to]) {*out|=value;}
++        }
++        for &id in &edge_uses[block] {work.charge(1)?;set(&mut live,id);}
++        outgoing[block].clone_from(&live);
++        for event in events[block].iter().rev() {
++            work.charge(event.reads.len()+1)?;
++            if let Some(id)=event.write {clear(&mut live,id);}
++            for &id in &event.reads {set(&mut live,id);}
++        }
++        if incoming[block]!=live {
++            incoming[block]=live;
++            for &previous in &predecessors[block] {work.charge(1)?;if !queued[previous] {queued[previous]=true;pending.push_back(previous);}}
++        }
++    }
++    let mut edges=vec![vec![0;stride];n];
++    for (block,events) in events.iter().enumerate() {
++        if !plan.reachable[block] {continue;}
++        let mut live=outgoing[block].clone();
++        for event in events.iter().rev() {
++            if let Some(id)=event.write {
++                work.charge(stride)?;let mut neighbors=vec![];each(&live,|other|if other!=id {neighbors.push(other)});
++                work.charge(neighbors.len())?;
++                for other in neighbors {set(&mut edges[id],other);set(&mut edges[other],id);}
++                clear(&mut live,id);
++            }
++            work.charge(event.reads.len())?;for &id in &event.reads {set(&mut live,id);}
++        }
++    }
++    Ok(Graph{ids,edges,weights,work:work.used})
++}
++
++fn valid(graph: &Graph, assigned: &[Option<u32>]) -> bool {
++    graph.ids.iter().enumerate().all(|(i,&id)| {
++        let Some(reg)=assigned[id] else {return true;};
++        let mut okay=REGISTERS.contains(&reg);
++        each(&graph.edges[i],|j|okay &= assigned[graph.ids[j]]!=Some(reg));okay
++    })
++}
++
++fn allocate_global(plan: &Plan) -> Result<Assignment, &'static str> {
++    let baseline=allocate(plan)?;let graph=graph(plan,MAX_WORK)?;
++    if !valid(&graph,&baseline) {return Err("global_register_baseline_conflict");}
++    let degrees:Vec<_>=graph.edges.iter().map(|row|row.iter().map(|w|w.count_ones() as u64).sum::<u64>()).collect();
++    let mut order:Vec<_>=(0..graph.ids.len()).collect();
++    order.sort_unstable_by(|&a,&b| (graph.weights[b]*(degrees[a]+1)).cmp(&(graph.weights[a]*(degrees[b]+1)))
++        .then_with(||graph.weights[b].cmp(&graph.weights[a])).then_with(||graph.ids[a].cmp(&graph.ids[b])));
++    let mut assigned=vec![None;plan.nodes.len()];
++    for index in order {
++        let mut used=[false;4];
++        each(&graph.edges[index],|j|if let Some(reg)=assigned[graph.ids[j]] {
++            used[REGISTERS.iter().position(|r|*r==reg).unwrap()]=true;
++        });
++        if let Some(color)=used.iter().position(|v|!*v) {assigned[graph.ids[index]]=Some(REGISTERS[color]);}
++    }
++    if !valid(&graph,&assigned) {return Err("global_register_coloring_conflict");}
++    let score=|assignment:&[Option<u32>]|graph.ids.iter().enumerate().filter(|(_,id)|assignment[**id].is_some()).map(|(i,_)|graph.weights[i]).sum::<u64>();
++    let baseline_weight=score(&baseline);let global_weight=score(&assigned);let global_selected=global_weight>baseline_weight;
++    Ok(Assignment{registers:if global_selected {assigned} else {baseline},global_selected,work:graph.work,
++        candidates:graph.ids.len(),baseline_weight,global_weight})
++}
++
++#[cfg(test)]
++#[path="global/tests.rs"]
++mod tests;
++#[cfg(test)]
++#[path="global/census.rs"]
++mod census;
+diff --git a/crates/bytecode/src/scalar/native_registers/global/census.rs b/crates/bytecode/src/scalar/native_registers/global/census.rs
+new file mode 100644
+index 00000000..1df0edd4
+--- /dev/null
++++ b/crates/bytecode/src/scalar/native_registers/global/census.rs
+@@ -0,0 +1,71 @@
++use super::*;
++use serde_json::{Value as Json,json};
++use sha2::{Digest,Sha256};
++
++fn spilled(plan:&Plan,assignment:&[Option<u32>],id:Id) -> bool {
++    let n=&plan.nodes[id];plan.live[id] && n.width>0 && n.width<=8 && assignment[id].is_none()
++        && !matches!(n.value,Value::Constant(_)|Value::Input(_)|Value::Base(_))
++}
++fn metrics(plan:&Plan,assignment:&[Option<u32>],hits:&[u64]) -> Json {
++    let mut definitions=0u64;let mut operands=0u64;let mut values=0;
++    for (id,node) in plan.nodes.iter().enumerate() {
++        if !plan.live[id] {continue;}
++        if spilled(plan,assignment,id) {values+=1;if let Some(pc)=node.pc {definitions+=hits[pc];}}
++        if matches!(node.value,Value::Phi(_)) {continue;}
++        if let Some(pc)=node.pc {for input in node.inputs() {if spilled(plan,assignment,input) {operands+=hits[pc];}}}
++    }
++    for (pc,effect) in plan.effects.iter().enumerate() {
++        if let Effect::Assert{value,..}|Effect::Switch{value,..}|Effect::Return(value)=*effect {
++            if spilled(plan,assignment,value) {operands+=hits[pc];}
++        }
++    }
++    json!({"narrow_spill_values":values,"successful_spill_definitions":definitions,
++        "successful_spill_ir_operands":operands,"assigned_values":assignment.iter().filter(|r|r.is_some()).count()})
++}
++fn checked(input:&Json,key:&str,limit:usize)->Vec<u8> {
++    let bytes=std::fs::read(input[key].as_str().unwrap()).unwrap();assert!(bytes.len()<=limit);
++    assert_eq!(format!("{:x}",Sha256::digest(&bytes)),input[format!("{key}_sha256")]);bytes
++}
++
++#[test]
++#[ignore="Requires closed adopted profiles and exact scalar bodies; no guest run"]
++fn observe_saved_global_register_scope() {
++    let inputs:Vec<Json>=serde_json::from_slice(&std::fs::read(std::env::var("SCALAR_GLOBAL_INPUT").unwrap()).unwrap()).unwrap();
++    assert_eq!(inputs.len(),3);let mut cases=vec![];
++    for input in inputs {
++        let p:crate::Program=bincode::deserialize(&checked(&input,"artifact",64*1024*1024)).unwrap();crate::validate(&p).unwrap();
++        let profile:Json=serde_json::from_slice(&checked(&input,"profile",256*1024*1024)).unwrap();
++        let mapping:Json=serde_json::from_slice(&checked(&input,"operations",256*1024*1024)).unwrap();
++        let code=checked(&input,"code",16*1024*1024);assert_eq!(mapping["code_sha256"],input["code_sha256"]);
++        assert_eq!(mapping["schema_version"],2);
++        for key in ["complete","reconstructed_bytes_match","profiled"] {assert_eq!(mapping[key],true);}
++        let profiles=profile["functions"].as_array().unwrap();assert_eq!(profiles.len(),p.functions.len());
++        let mut functions=vec![];
++        for saved in mapping["functions"].as_array().unwrap() {
++            if saved["spans"][0]["kind"]!="scalar_leaf" {continue;}
++            let id=saved["function"].as_u64().unwrap() as usize;let f=&p.functions[id];
++            assert_eq!(saved["name"],f.name);assert_eq!(profiles[id]["name"],f.name);
++            let memory=crate::proof::memory_plan(&p,id,&mut crate::proof::MAX_GLOBAL_WORK.clone());
++            let plan=crate::scalar_ir::lower(f,&memory,250_000).unwrap();
++            let emitted=emit_call(&plan,true).unwrap();let bytes:Vec<_>=emitted.words.iter().flat_map(|w|w.to_le_bytes()).collect();
++            let start=saved["offset"].as_u64().unwrap() as usize;let end=saved["end"].as_u64().unwrap() as usize;
++            assert_eq!(&code[start..end],bytes.as_slice(),"adopted scalar body {id}");
++            let hits:Vec<u64>=serde_json::from_value(profiles[id]["jit_scalar_hits"].clone()).unwrap();assert_eq!(hits.len(),f.code.len());
++            let calls:u64=f.code.iter().zip(&hits).filter(|(op,_)|matches!(op,Op::Return)).map(|(_,h)|*h).sum();
++            let baseline=allocate(&plan).unwrap();let next=allocate_global(&plan);
++            let (assignment,detail)=match next {
++                Ok(a)=>(a.registers,json!({"selected":a.global_selected,"work":a.work,"candidates":a.candidates,
++                    "baseline_weight":a.baseline_weight,"global_weight":a.global_weight})),
++                Err(reason)=>(baseline.clone(),json!({"selected":false,"declined":reason})),
++            };
++            assert!(plan.nodes.iter().enumerate().filter(|(_,n)|matches!(n.value,Value::Phi(_))).all(|(id,_)|assignment[id].is_none()));
++            functions.push(json!({"function":id,"name":f.name,"successful_calls":calls,"native_bytes":bytes.len(),
++                "before":metrics(&plan,&baseline,&hits),"after":metrics(&plan,&assignment,&hits),"allocation":detail}));
++        }
++        assert_eq!(input["expected_scalar_bodies"],functions.len());
++        cases.push(json!({"index":input["index"],"reconstructed_bodies":functions.len(),"functions":functions}));
++    }
++    let out=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("SCALAR_GLOBAL_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(out,&json!({"status":"passed","cases":cases,"guest_commands":0,"executable_code_publications":0,
++        "scope":"Exact adopted scalar bodies. Test-only global allocation model. Successful IR definition/operand occurrences exclude phi-edge transfers and failed private attempts; they are not emitted instructions or time savings. No generated code or runtime policy change."})).unwrap();
++}
+diff --git a/crates/bytecode/src/scalar/native_registers/global/tests.rs b/crates/bytecode/src/scalar/native_registers/global/tests.rs
+new file mode 100644
+index 00000000..99a03856
+--- /dev/null
++++ b/crates/bytecode/src/scalar/native_registers/global/tests.rs
+@@ -0,0 +1,113 @@
++use super::*;
++
++pub(super) fn straight(split: bool) -> Plan {
++    let mut code=vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8}];
++    for r in 4..10 {code.extend([Op::Imm{dst:14,value:r as u128},
++        Op::Binary{dst:r,overflow:15,op:Binary::Add,a:1,b:14,bits:64,signed:false}]);}
++    if split {code.push(Op::Jump{target:code.len()+1});}
++    code.push(Op::Imm{dst:11,value:0});
++    for r in 4..10 {code.push(Op::Binary{dst:11,overflow:15,op:Binary::Add,a:11,b:r,bits:64,signed:false});}
++    code.extend([Op::Store{address:0,src:11,size:8},Op::Return]);
++    lower_fixture(code,16,vec![crate::Slot{offset:0,size:8}],crate::Slot{offset:0,size:8})
++}
++
++fn lower_fixture(code:Vec<Op>,frame:usize,args:Vec<crate::Slot>,result:crate::Slot) -> Plan {
++    let f=crate::Function{name:"global register fixture".into(),frame_size:frame,frame_align:16,registers:24,args,result,code};
++    let p=crate::Program{version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
++        functions:vec![f],data:vec![],statics:vec![],thread_locals:vec![]};crate::validate(&p).unwrap();
++    let memory=crate::proof::memory_plan(&p,0,&mut crate::proof::MAX_GLOBAL_WORK.clone());
++    crate::scalar_ir::lower(&p.functions[0],&memory,250_000).unwrap()
++}
++
++fn diamond(seed: usize, width: u8) -> Plan {
++    let mut code=vec![Op::Local{dst:0,offset:0},Op::Load{dst:1,address:0,size:8},
++        Op::Local{dst:2,offset:8},Op::Load{dst:3,address:2,size:8},
++        Op::Local{dst:4,offset:16},Op::Imm{dst:5,value:(seed+1) as u128},
++        Op::Binary{dst:6,overflow:23,op:Binary::Add,a:1,b:5,bits:64,signed:false},
++        Op::Switch{value:3,cases:vec![(0,8)],otherwise:12},
++        Op::Unary{dst:7,src:6,op:Unary::Not,bits:64},
++        Op::Store{address:4,src:7,size:width},Op::Imm{dst:8,value:19},Op::Jump{target:16},
++        Op::Binary{dst:7,overflow:23,op:Binary::Xor,a:6,b:5,bits:64,signed:false},
++        Op::Store{address:4,src:7,size:width},Op::Imm{dst:8,value:23},Op::Jump{target:16},
++        Op::Load{dst:9,address:4,size:width},
++        Op::Binary{dst:10,overflow:23,op:Binary::Add,a:9,b:6,bits:64,signed:false},
++        Op::Binary{dst:11,overflow:23,op:Binary::Xor,a:10,b:8,bits:64,signed:false},
++        Op::Store{address:0,src:11,size:8},Op::Return];
++    if seed%2==1 {code[8]=Op::Binary{dst:7,overflow:23,op:Binary::Mul,a:6,b:5,bits:64,signed:false};}
++    lower_fixture(code,32,vec![crate::Slot{offset:0,size:8},crate::Slot{offset:8,size:8}],crate::Slot{offset:0,size:8})
++}
++
++// Independent forward path simulation checks every read against the identity
++// actually last written to the chosen physical register. It uses no liveness
++// sets or interference edges from the allocation algorithm.
++fn paths(plan:&Plan,assigned:&[Option<u32>]) -> Result<usize,&'static str> {
++    let mut todo=vec![(plan.at[0],std::collections::BTreeMap::<u32,Id>::new(),0usize)];let mut completed=0;
++    let check=|id:Id,physical:&std::collections::BTreeMap<u32,Id>| {
++        if let Some(reg)=assigned[id] {if physical.get(&reg)!=Some(&id) {return Err("read after physical register clobber");}}
++        Ok(())
++    };
++    while let Some((block,mut physical,depth))=todo.pop() {
++        if depth>plan.blocks.len() {return Err("fixture has cycle");}
++        let b=&plan.blocks[block];
++        for pc in b.start..b.end {
++            for &id in &plan.computations[pc] {
++                if !plan.live[id] {continue;}
++                for input in plan.nodes[id].inputs() {check(input,&physical)?;}
++                if let Some(reg)=assigned[id] {physical.insert(reg,id);}
++            }
++            if let Effect::Assert{value,..}|Effect::Switch{value,..}|Effect::Return(value)=plan.effects[pc] {check(value,&physical)?;}
++        }
++        if b.successors.is_empty() {completed+=1;}
++        for &to in &b.successors {
++            for &phi in &plan.blocks[to].phis {
++                if !plan.live[phi] {continue;}
++                assert!(assigned[phi].is_none());
++                let Value::Phi(parts)=&plan.nodes[phi].value else {panic!("phi shape")};
++                let (_,part)=parts.iter().find(|(from,_)|*from==block).unwrap();check(part.value,&physical)?;
++            }
++            todo.push((to,physical.clone(),depth+1));
++        }
++        if completed+todo.len()>256 {return Err("fixture path bound");}
++    }
++    Ok(completed)
++}
++
++#[test]
++fn cross_block_values_gain_registers_without_expanding_the_bank() {
++    let plan=straight(true);let old=allocate(&plan).unwrap();let new=allocate_global(&plan).unwrap();
++    assert!(new.global_selected && new.global_weight>new.baseline_weight);
++    assert!(new.registers.iter().flatten().all(|r|REGISTERS.contains(r)));
++    assert!(new.registers.iter().zip(&old).any(|(a,b)|a.is_some() && b.is_none()));
++    assert_eq!(paths(&plan,&old),Ok(1));assert_eq!(paths(&plan,&new.registers),Ok(1));
++}
++
++#[test]
++fn all_diamond_paths_preserve_values_and_leave_phis_in_stack_slots() {
++    for seed in 0..64 {for width in [1,2,4,8] {
++        let plan=diamond(seed,width);let new=allocate_global(&plan).unwrap();
++        assert!(plan.nodes.iter().zip(&plan.live).any(|(n,l)|*l && matches!(n.value,Value::Phi(_))));
++        assert!(plan.nodes.iter().enumerate().filter(|(_,n)|matches!(n.value,Value::Phi(_))).all(|(id,_)|new.registers[id].is_none()));
++        assert_eq!(paths(&plan,&new.registers),Ok(2));assert!(new.global_weight>=new.baseline_weight || !new.global_selected);
++    }}
++}
++
++#[test]
++fn path_oracle_detects_forced_clobbers_and_dead_values_do_not_change_assignments() {
++    let mut plan=straight(true);let old=allocate_global(&plan).unwrap();let graph=graph(&plan,MAX_WORK).unwrap();
++    let mut bad=vec![None;plan.nodes.len()];for &id in &graph.ids {bad[id]=Some(3);}
++    assert!(paths(&plan,&bad).is_err());
++    plan.nodes.push(Node{value:Value::Unary{src:0,op:Unary::Not,bits:64},width:8,pc:Some(0)});
++    plan.live.push(false);plan.computations[0].push(plan.nodes.len()-1);
++    let new=allocate_global(&plan).unwrap();assert_eq!(&new.registers[..old.registers.len()],old.registers.as_slice());
++    assert!(new.registers.last().unwrap().is_none());
++}
++
++#[test]
++fn shape_and_work_bounds_decline_before_unbounded_analysis() {
++    let plan=straight(false);assert_eq!(graph(&plan,0).err(),Some("global_register_work"));
++    let mut too_many=plan.clone();too_many.blocks.resize(MAX_BLOCKS+1,plan.blocks[0].clone());
++    assert_eq!(graph(&too_many,MAX_WORK).err(),Some("global_register_shape"));
++    let mut invalid=plan.clone();let id=invalid.computations.iter().flatten().copied().find(|&id|invalid.live[id]).unwrap();
++    let pc=invalid.nodes[id].pc.unwrap();invalid.computations[pc].push(id);
++    assert_eq!(graph(&invalid,MAX_WORK).err(),Some("global_register_definition"));
++}
+diff --git a/crates/bytecode/src/scalar/proof.rs b/crates/bytecode/src/scalar/proof.rs
+index 1d31c3e0..d42f2f53 100644
+--- a/crates/bytecode/src/scalar/proof.rs
++++ b/crates/bytecode/src/scalar/proof.rs
+@@ -279,6 +279,10 @@ pub fn effects(program: &Program) -> Vec<Proof> {
+ #[path = "proof_tests.rs"]
+ mod tests;
+ 
++#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
++#[path = "proof/chain_census.rs"]
++mod chain_census;
++
+ #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
+ pub struct Access { pub offset: Option<usize>, pub size: usize }
+ #[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+diff --git a/crates/bytecode/src/scalar/proof/chain_census.rs b/crates/bytecode/src/scalar/proof/chain_census.rs
+new file mode 100644
+index 00000000..862282a1
+--- /dev/null
++++ b/crates/bytecode/src/scalar/proof/chain_census.rs
+@@ -0,0 +1,149 @@
++//! Bounded structural census only: no scalar graph, native code or runtime policy.
++use super::*;
++use crate::scalar_ir;
++use serde_json::json;
++use std::collections::BTreeSet;
++
++#[derive(Clone,Debug,Serialize)]
++struct Candidate {depth:usize,expanded_operations:usize,expanded_frames:usize,expanded_registers:usize,calls:usize}
++#[derive(Serialize)]
++struct Row {function:usize,name:String,function_sha256:String,candidate:Option<Candidate>,decline:Option<&'static str>}
++
++fn scalar_opcode(op:&Op)->bool {
++    matches!(op,Op::Imm{..}|Op::Local{..}|Op::Load{..}|Op::Store{..}|Op::Copy{..}
++        |Op::CopyDynamic{..}|Op::FillBytes{..}|Op::Binary{..}|Op::Unary{..}|Op::Cast{..}|Op::Select{..}
++        |Op::Jump{..}|Op::Switch{..}|Op::Assert{..}|Op::Trap{..}|Op::Return|Op::Call{..})
++}
++fn assess(p:&Program,id:usize,accepted:&[bool],rows:&[Option<Candidate>],remaining:&mut usize)->Result<Candidate,&'static str> {
++    let f=&p.functions[id];
++    if f.code.is_empty() || f.code.len()>512 || f.frame_size>512 || f.registers>512 {return Err("small_shape_limit");}
++    if f.args.len()>64 || f.args.iter().chain([&f.result]).any(|s|!matches!(s.size,0|1|2|4|8|16)) {return Err("boundary_width");}
++    if f.code.iter().any(|op|!scalar_opcode(op)) {return Err("scalar_opcode");}
++    let mut candidate=Candidate{depth:1,expanded_operations:f.code.len(),expanded_frames:f.frame_size.max(1),expanded_registers:f.registers,calls:0};
++    for op in &f.code {
++        if let Op::Call{function,..}=op {
++            let c=rows[*function].as_ref().ok_or("callee_declined")?;
++            candidate.depth=candidate.depth.max(c.depth+1);
++            candidate.expanded_operations+=c.expanded_operations;
++            candidate.expanded_frames+=c.expanded_frames;
++            candidate.expanded_registers+=c.expanded_registers;
++            candidate.calls+=c.calls+1;
++            if candidate.depth>4 || candidate.expanded_operations>2048 || candidate.expanded_frames>4096
++                || candidate.expanded_registers>2048 {return Err("expanded_shape_limit");}
++        }
++    }
++    if candidate.calls==0 {
++        let memory=memory_plan(p,id,remaining);
++        if !memory.eligible {return Err(memory.decline.unwrap().reason);}
++        let graph=scalar_ir::lower(f,&memory,250_000)?;
++        // Offline words only. Current leaf emitability is a prerequisite for
++        // future parent work; parent graphs themselves are not implemented.
++        scalar_ir::native_leaf::emit_call(&graph,false)?;
++        return Ok(candidate);
++    }
++    for mode in [Mode::Initialized,Mode::Confined] {
++        let proof=analyze_budgeted(p,id,accepted,mode,remaining);
++        if !proof.eligible {return Err(proof.decline.unwrap().reason);}
++    }
++    // Use the same bounded typed CFG builder, then independently require a DAG.
++    let mut analysis=Analysis{program:p,confined:accepted,mode:Mode::Confined,work:0,max_work:MAX_WORK.min(*remaining),pc:0};
++    let blocks=analysis.blocks(f).map_err(|d|d.reason);
++    *remaining=remaining.saturating_sub(analysis.work);
++    let blocks=blocks?;
++    let mut reachable=BTreeSet::from([0]);let mut todo=vec![0];
++    while let Some(b)=todo.pop() {for &s in &blocks[b].successors {if reachable.insert(s) {todo.push(s);}}}
++    let mut indegree=vec![0;blocks.len()];
++    for &b in &reachable {for &s in &blocks[b].successors {indegree[s]+=1;}}
++    let mut ready:VecDeque<_>=reachable.iter().copied().filter(|&b|indegree[b]==0).collect();let mut visited=0;
++    while let Some(b)=ready.pop_front() {visited+=1;for &s in &blocks[b].successors {indegree[s]-=1;if indegree[s]==0 {ready.push_back(s);}}}
++    if visited!=reachable.len() {return Err("scalar_cycle");}
++    Ok(candidate)
++}
++fn census(p:&Program,remaining:&mut usize)->Vec<Row> {
++    assert!(p.functions.len()<=65_536 && p.functions.iter().map(|f|f.code.len()).sum::<usize>()<=2_000_000);
++    let n=p.functions.len();let mut dependents=vec![vec![];n];let mut pending=vec![0;n];
++    for (id,f) in p.functions.iter().enumerate() {
++        let deps:BTreeSet<_>=f.code.iter().filter_map(|op|if let Op::Call{function,..}=op {Some(*function)} else {None}).collect();
++        pending[id]=deps.len();for dep in deps {dependents[dep].push(id);}
++    }
++    let mut ready:VecDeque<_>=(0..n).filter(|&id|pending[id]==0).collect();
++    let mut accepted=vec![false;n];let mut candidates=vec![None;n];let mut declines=vec![Some("call_cycle_or_dependency");n];
++    while let Some(id)=ready.pop_front() {
++        match assess(p,id,&accepted,&candidates,remaining) {
++            Ok(c)=>{accepted[id]=true;candidates[id]=Some(c);declines[id]=None;}
++            Err(reason)=>declines[id]=Some(reason),
++        }
++        for &parent in &dependents[id] {pending[parent]-=1;if pending[parent]==0 {ready.push_back(parent);}}
++    }
++    candidates.into_iter().zip(declines).enumerate().map(|(function,(candidate,decline))|
++        Row{function,name:p.functions[function].name.clone(),function_sha256:{use sha2::{Digest,Sha256};format!("{:x}",Sha256::digest(bincode::serialize(&p.functions[function]).unwrap()))},candidate,decline}).collect()
++}
++
++#[test]
++#[ignore="Requires pinned original artifact and new output file"]
++fn observe_saved_scalar_chains() {
++    use sha2::{Digest,Sha256};
++    let bytes=std::fs::read(std::env::var("CHAIN_ARTIFACT").unwrap()).unwrap();assert!(bytes.len()<=128*1024*1024);
++    let hash=format!("{:x}",Sha256::digest(&bytes));assert_eq!(hash,std::env::var("CHAIN_ARTIFACT_SHA256").unwrap());
++    let p:Program=bincode::deserialize(&bytes).unwrap();crate::validate(&p).unwrap();
++    let mut remaining=MAX_GLOBAL_WORK;let rows=census(&p,&mut remaining);assert!(remaining>0);
++    let calls:Vec<_>=p.functions.iter().enumerate().flat_map(|(id,f)|f.code.iter().enumerate().filter_map(move |(pc,op)|
++        if let Op::Call{function,..}=op {Some(json!({"caller":id,"pc":pc,"callee":function}))} else {None})).collect();
++    let file=std::fs::OpenOptions::new().write(true).create_new(true).open(std::env::var("CHAIN_OUTPUT").unwrap()).unwrap();
++    serde_json::to_writer(file,&json!({"status":"passed","artifact_sha256":hash,"rows":rows,"calls":calls,
++        "memory_work_remaining":remaining,"memory_work_used":MAX_GLOBAL_WORK-remaining,
++        "original_project_guest_commands":0,"executable_code_publications":0,"production_policy_changed":false,
++        "scope":"Structural initialized/confined direct-call DAGs only. Parent scalar graphs, virtual-frame address identity, resource peaks, original-PC accounting and transactional replay are not implemented or qualified."})).unwrap();
++}
++
++#[cfg(test)]
++mod controls {
++    use super::*;
++    use crate::{Slot,VERSION};
++    fn leaf()->Function {Function{name:"identity".into(),frame_size:16,frame_align:8,registers:3,
++        args:vec![Slot{offset:0,size:8}],result:Slot{offset:8,size:8},
++        code:vec![Op::Local{dst:0,offset:0},Op::Local{dst:1,offset:8},Op::Copy{dst:1,src:0,size:8},Op::Return]}}
++    fn wrapper(child:usize)->Function {let mut f=leaf();f.name="wrapper".into();f.code[2]=Op::Call{function:child,args:vec![0],destination:1};f}
++    fn program(functions:Vec<Function>)->Program {Program{version:VERSION,target:"aarch64-apple-darwin".into(),entry:0,functions,data:vec![0;16],statics:vec![],thread_locals:vec![]}}
++    fn check(p:&Program)->Vec<Row> {crate::validate(p).unwrap();census(p,&mut MAX_GLOBAL_WORK.clone())}
++    #[test]
++    fn local_argument_result_chains_preserve_order_and_reference_values() {
++        let p=program(vec![wrapper(1),wrapper(2),leaf()]);let rows=check(&p);
++        assert!(rows.iter().all(|r|r.candidate.is_some()));
++        let c=rows[0].candidate.as_ref().unwrap();assert_eq!((c.depth,c.calls,c.expanded_operations),(3,2,12));
++        for value in [0,1,u64::MAX as u128,1u128<<32,1u128<<63] {
++            let result=crate::execute_with_engine(&p,&[value],crate::Limits::default(),crate::Engine::Interpreter).unwrap();
++            assert_eq!(result.value,value as u64 as u128);assert_eq!(result.instructions,12);
++        }
++        for value in [1u128<<80,u128::MAX] {
++            let error=crate::execute_with_engine(&p,&[value],crate::Limits::default(),crate::Engine::Interpreter).unwrap_err();
++            assert_eq!(error,"entry argument exceeds its integer width");
++        }
++        let mut p=p;p.functions[0].code.insert(3,Op::Call{function:2,args:vec![1],destination:1});
++        let rows=check(&p);let c=rows[0].candidate.as_ref().unwrap();
++        assert_eq!((c.depth,c.calls,c.expanded_operations),(3,3,17));
++    }
++    #[test]
++    fn missing_initialization_and_external_reads_do_not_become_pure_calls() {
++        let mut p=program(vec![wrapper(1),leaf()]);p.functions[0].args.clear();
++        assert_eq!(check(&p)[0].decline,Some("local_read_before_write"));
++        let mut p=program(vec![wrapper(1),leaf()]);p.functions[1].code.insert(2,Op::Load{dst:2,address:0,size:8});
++        p.functions[1].code.insert(3,Op::Load{dst:2,address:2,size:8});
++        let rows=check(&p);assert_eq!(rows[1].decline,Some("unknown_pointer_read"));assert_eq!(rows[0].decline,Some("callee_declined"));
++    }
++    #[test]
++    fn recursion_cfg_cycles_and_resource_bounds_decline() {
++        let p=program(vec![wrapper(1),wrapper(0)]);assert!(check(&p).iter().all(|r|r.decline==Some("call_cycle_or_dependency")));
++        let mut p=program(vec![wrapper(1),leaf()]);p.functions[0].code[3]=Op::Jump{target:0};assert_eq!(check(&p)[0].decline,Some("scalar_cycle"));
++        let p=program(vec![wrapper(1),wrapper(2),wrapper(3),wrapper(4),leaf()]);assert_eq!(check(&p)[0].decline,Some("expanded_shape_limit"));
++        assert!(check(&p)[1].candidate.is_some());
++        assert!(census(&program(vec![wrapper(1),leaf()]),&mut 0).iter().all(|r|r.candidate.is_none()));
++    }
++    #[test]
++    fn boundary_and_unknown_effects_keep_conservative_admission() {
++        let mut p=program(vec![wrapper(1),leaf()]);p.functions[1].args[0].size=3;p.functions[1].result.size=3;
++        assert_eq!(check(&p)[1].decline,Some("boundary_width"));
++        let mut p=program(vec![wrapper(1),leaf()]);p.functions[1].code.insert(2,Op::CompareBytes{dst:2,left:0,right:1,size:2});
++        assert_eq!(check(&p)[1].decline,Some("scalar_opcode"));assert_eq!(check(&p)[0].decline,Some("callee_declined"));
++    }
++}

@@ -14,8 +14,12 @@ runtime has now prepared the shared source-containing std sysroot; all seven
 children and all published source/metadata bytes were independently verified.
 See [std preparation evidence](../../../results/runtime-std-preparation-01/README.md).
 The beta auxiliary build sysroot also passed its real debug-stripping control.
-An exporter built for the final runtime path and application correctness remain
-the next gates; these setup results establish no application latency gain.
+A fresh exporter and wrapper built for the final runtime path have passed
+frontend diagnostic/bytecode parity and all 23 installation checks. The
+ordinary launcher accepts the installed composition; its VM, compiler, sources
+and prepared std identities are recorded separately. See
+[exporter installation evidence](../../../results/runtime-exporter-publication-01/README.md).
+These setup results establish no application latency gain.
 
 The ordinary edit workflow can now compare application compiler flags with the
 runtime, exporter, VM and prepared std held fixed. Flags are applied after tool
@@ -42,7 +46,11 @@ three production edits took 11.918, 11.757 and 8.326 seconds, and only the
 The 0.192-second already-built original state is not an edited-build result.
 These are three configuration tests compiling the full test crate, not lint-rule
 coverage or interpreter compatibility. Oxc's interpreter/JIT qualification is
-next; it remains a development target, and no holdout success is claimed.
+next. Its independent source copy and all 323 offline registry packages are
+now admitted under the runtime owner; the acquisition passed 17 controls and
+all nine planned commands without compiling or running the application. See
+[runtime source acquisition](../../../results/oxc-runtime-source-acquisition-01/README.md).
+It remains a development target, and no holdout success is claimed.
 The sub-0.500-second target remains unmet.
 
 An independent launcher improvement preserves every runtime file/directory
@@ -53,6 +61,13 @@ the median component time fell from 144.822 to 118.937 milliseconds. See the
 a component measurement, not an application build-time gain. The first runtime
 Ruff diagnostic keeps its already frozen launcher source so this separate
 change cannot confound the HIR cache-off/cache-on comparison.
+
+A subsequent direct POSIX-path predicate candidate passed its 22 controls but
+failed the predeclared consistency threshold: only eight of twelve paired
+lookups improved, against ten required. The source was restored and all
+observations retained in the
+[unadopted comparison](../../../results/runtime-lookup-relative-01/README.md).
+Its favorable median does not establish an adopted performance gain.
 
 The strict target is still unmet. The latest complete screen has a 5.3454s
 candidate median and no candidate edit below 0.500s. No single proposed change
