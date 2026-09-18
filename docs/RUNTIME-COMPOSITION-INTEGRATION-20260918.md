@@ -64,14 +64,18 @@ This also permits verified retirement of completed project compiler caches if
 the fresh parser histories need disk space. Final closure and integration still
 require the original parser guards, and all retained project artifacts stay intact.
 
-If later disk admission needs space, retire_current_nushell_custom.py is prepared
-for only the three completed Nushell custom compiler namespaces. It requires
-the separate project closure, exact132-command evidence and source restoration,
-then locks each namespace and verifies open files before unlinking nonexecutable
-compiler intermediates. It preserves native/parser/shared/private/peer caches,
-executables and every recorded artifact. Its paired close helper rechecks all
-retained hashes and removed paths. Both helpers remain unexecuted. The completed history and project closure now
-satisfy their evidence prerequisite; actual cleanup still requires fresh checks.
+The three completed Nushell custom compiler namespaces were retired after
+free space fell below parser admission. The deletion controller verified the
+project closure, exact132-command evidence, source restoration and namespace
+locks/open files. Its later close audit verifies33,924 removed paths absent
+and20,095 protected hashes unchanged. Native/parser/shared/private/peer caches,
+executables and recorded artifacts remain. Do not repeat that retirement.
+
+All114 original parser compatibility tests and16 parser protocol controls pass
+and are closed. The first compatibility supervisor timed out before admission;
+a separate supervisor ran one fresh guest invocation. Batched evidence closure
+also retains the original failure and the earlier no-mutation closure timeouts.
+Both88-command parser performance histories remain required and unstarted.
 
 Production Python has changed on main since the measured launcher was frozen.
 Review the exact diff and merge the indirect-option path with main's current

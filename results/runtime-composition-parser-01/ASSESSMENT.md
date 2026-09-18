@@ -9,6 +9,7 @@ This is a correctness check, with no performance claim.
 
 The first supervisor could not obtain the shared lock in 45 seconds and started
 no guest. A separate supervisor ran the unchanged controller successfully. Both
-terminal histories are retained. Evidence closure has also encountered a lock
-wait timeout before performing its audit; the completed tests are not repeated.
+terminal histories are retained. The first evidence-closure attempt also encountered a lock wait timeout before
+audit. Batched closure subsequently verified all 6,801 input bindings, including
+the three original admission records; the completed tests were not repeated.
 The two 88-command changed-source parser histories remain unstarted and required.

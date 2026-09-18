@@ -102,17 +102,19 @@ pending and runtime adoption false. No final-audit recovery was needed.
 
 Parser compatibility passes all114 original tests under supervisor9983,
 child10069 (runtime-composition-parser-admission-02), with6,798 frozen inputs.
-The first supervisor83909/child83912 expired after45seconds waiting for the
-shared lock, before preflight or any guest command; retain its separate admission
-failure. An early closure attempt failed without writing anything. The successful
-run uses the unchanged parser-01 controller; its prepared close helper binds both
-terminal histories. Closure then hit another45-second lock timeout before audit,
-without mutation. A peer Ruff diagnostic owns the shared lock; leave it alone.
-Check closure and fresh resources before the protocol/history steps. Both parser
-performance histories remain unstarted. Preserve all scripts and frozen
-runtime-composition-full inputs through parser histories/final closure; use
-840eee0c for their unchanged Git binding. Fresh free space was26.44GiB;
-parser history admission remains24GiB and child floor8GiB.
+Its closure verifies6,801 bindings including three original admission records.
+The first supervisor83909/child83912 expired at45seconds before preflight or any
+guest. Retain that admission failure and the two no-mutation closure failures.
+Batched audit runtime-composition-pending-evidence-01 (supervisor57715/child57718,
+source60d6a01e) closed compatibility and current Nushell cache retirement;
+it ran no new guest or deletion. Both checks passed normally.
+
+The16 parser protocol controls now pass and are closed with120 source inputs
+(source7e10588f; supervisor60793). Both88-command parser histories remain
+unstarted, incremental first. Fresh free space is28.87GiB at16:13. Require
+24GiB initially and8GiB before each command; keep two Cargo/prepared workers.
+Preserve all scripts and frozen runtime-composition-full/parser inputs through
+histories and final closure;840eee0c binds the unchanged full controller sources.
 
 Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
 finished normally, but their outer post-case audits timed out on the shared lock.
@@ -121,22 +123,23 @@ Checkpoints2/3 originally included a reference to the growing live campaign ledg
 their immutable ledger copies were intact. The closed supplemental repair resolves
 those references through exact original hashes, preserving all original receipts.
 Use each case's checkpoint-evidence-repair.json when auditing those older closures.
-Checkpoint4 is closed and admits only Nushell. No peer process was altered.
+Checkpoint4 remains historical evidence; the final project closure supersedes
+its next-case state. No peer process was altered.
 
-The completed project closure permits retirement of exactly the three current
-Nushell custom compiler caches if later disk admission needs it. Prepared
-retire_current_nushell_custom.py and its close helper remain unexecuted. They
-preserve all executables, artifacts, native/parser/private/shared/peer caches.
-Neither cleanup nor project closure admits adoption. The final closure now
-also binds any audit recovery and its own helper sources; recovery is unused.
+Current Nushell custom caches were retired only after project closure and actual
+free space fell below parser admission. Supervisor96627/child96630 completed
+normally:33,924 files,12,730,891,710 logical bytes removed;20,095 protected hashes
+unchanged. Observed free space rose from23,032,410,112 to31,306,891,264bytes.
+The batched closure rechecked every removed path and protected hash. Source
+ac3618f3 binds the deletion controller; never repeat this retirement. All native,
+parser, private, shared-target and peer caches remain untouched. Neither cleanup
+nor project closure admits adoption. Final-audit recovery remains unused.
 
-Then run candidate parser compatibility (`runtime-composition-full/parser.py`,
-run runtime-composition-parser-01,114 original tests), and the prepared16-control
-parser protocol (`runtime-composition-parser-edits/check.py`). Both separate
-88-command parser histories, incremental first and repository second, remain
-required. Their admission is24GiB, child floor8GiB. Stop the unstarted successor
-on any failed guard. The three terminal-parser-decision controls already pass
-and are closed. The compatibility/protocol/history controllers remain unexecuted.
+Both separate88-command parser histories, incremental first and repository
+second, remain required after the passing compatibility/protocol. Stop the
+unstarted successor on any failed guard. The three terminal-parser-decision
+controls already pass and are closed. The final closure handles a failed parser
+guard without relabeling the project result and binds its own helper sources.
 Final close_campaign.py and current-main integration still require the parser
 results. Last inspected main237510c3 includes2ba26966 (bounded leaf scans, shared
 call-graph facts and exporter summary CFG), plus091f9ea9 (runtime collision
@@ -145,7 +148,8 @@ binaries, full contracts, strict/cache paths and a newly declared matched
 changed-source comparison; frozen timings do not qualify that new combination.
 [Integration plan](docs/RUNTIME-COMPOSITION-INTEGRATION-20260918.md).
 
-Disk cleanup is complete and closed for three exact public cache groups:
+Disk cleanup is complete and closed for the current Nushell group above and
+three earlier exact public cache groups:
 old scratch/scalar Nushell custom namespaces (33,924 nonexecutable files;
 20,002 protected hashes unchanged), current full-token caches (13,304 files;
 3,389 protected hashes unchanged), and current full-folded caches (13,304 files;
@@ -172,7 +176,9 @@ current observation validator before it can profile the new configuration.
 [token](results/runtime-composition-edit-token-02/ASSESSMENT.md),
 [folded](results/runtime-composition-edit-folded-02/ASSESSMENT.md),
 [pgrust](results/runtime-composition-edit-pgrust-02/ASSESSMENT.md),
-[private aggregate](results/runtime-composition-edit-rg-aot-02/ASSESSMENT.md).
+[private aggregate](results/runtime-composition-edit-rg-aot-02/ASSESSMENT.md),
+[Nushell](results/runtime-composition-edit-nushell-02/ASSESSMENT.md),
+[all five projects](results/runtime-composition-full-02/ASSESSMENT.md).
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
