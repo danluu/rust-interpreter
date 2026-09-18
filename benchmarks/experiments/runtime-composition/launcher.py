@@ -1,11 +1,12 @@
 """Qualify launcher readmission while binding the unchanged, qualified Rust VM."""
-import json, os, subprocess, sys
+import json, os, re, subprocess, sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'scripts'))
 from compare_saved_runtime import acquire_lock,sha
 from workflow_io import capture,require_space,write_json as write
-NAME='runtime-composition-launcher-01'
+NAME=sys.argv[1]
+assert re.fullmatch(r'runtime-composition-launcher-\d{2}',NAME)
 STD='bd27cc0f910e0c93a9a6cf088789ef526d36a8697a7717e08d7585f5d19467ef'
 def read(p):return json.loads(p.read_text())
 def main():

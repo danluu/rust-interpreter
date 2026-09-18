@@ -6,12 +6,19 @@ still fail. A separate receipt amortizes the complete content verification.
 """
 import hashlib
 import json
-from pathlib import Path
+import os
 import stat
 
 
 def stamp(info):
     return [info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns]
+
+
+def file_digest(stream):
+    digest = hashlib.sha256()
+    for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+        digest.update(chunk)
+    return digest.hexdigest()
 
 
 def validate(work, ready, result):
@@ -43,11 +50,10 @@ def validate(work, ready, result):
     for name, before in current.items():
         path = work / name
         with path.open('rb') as stream:
-            import os
             opened = os.fstat(stream.fileno())
             if not stat.S_ISREG(opened.st_mode) or stamp(opened) != before:
                 raise RuntimeError('standard-library MIR artifact changed during readmission')
-            digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+            digest = file_digest(stream)
             if stamp(os.fstat(stream.fileno())) != before:
                 raise RuntimeError('standard-library MIR artifact changed during readmission')
         if digest != result['artifacts'][name]['sha256']:

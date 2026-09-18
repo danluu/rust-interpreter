@@ -38,7 +38,7 @@ class Readmission(unittest.TestCase):
         receipt = json.loads(receipts[0].read_text())
         self.assertEqual(set(receipt['artifacts']), set(self.result['artifacts']))
         self.assertEqual(self.ready.read_bytes(), self.original_ready)
-        with patch.object(recovery.hashlib, 'file_digest', side_effect=AssertionError('rehash')):
+        with patch.object(recovery, 'file_digest', side_effect=AssertionError('rehash')):
             self.validate()
 
     def test_unchanged_device_needs_no_readmission(self):
@@ -81,13 +81,13 @@ class Readmission(unittest.TestCase):
             self.validate()
 
     def test_invalid_receipt_and_mutation_during_hash_are_rejected(self):
-        real = recovery.hashlib.file_digest
-        def mutate(stream, algorithm):
-            result = real(stream, algorithm)
+        real = recovery.file_digest
+        def mutate(stream):
+            result = real(stream)
             with (self.work / 'std.rmeta').open('ab') as changed:
                 changed.write(b'x')
             return result
-        with patch.object(recovery.hashlib, 'file_digest', side_effect=mutate):
+        with patch.object(recovery, 'file_digest', side_effect=mutate):
             with self.assertRaisesRegex(RuntimeError, 'during readmission'):
                 self.validate()
         self.assertEqual(list(self.work.glob('readmission-*')), [])

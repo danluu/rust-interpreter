@@ -12,7 +12,7 @@ def main():
     assert re.fullmatch(r'runtime-composition-screen-protocol-\d{2}',args.run_id)
     with (ROOT/'.work/benchmark.lock').open('a') as lock:
         acquire_lock(lock,45);require_space(ROOT,12)
-        build_path=ROOT/'results/runtime-composition-launcher-01/summary.json';build=read(build_path)
+        build_path=ROOT/'results/runtime-composition-launcher-02/summary.json';build=read(build_path)
         assert build['status']=='passed' and build['python']==dict(discovered=443,passed=421,skipped=22)
         raw=ROOT/build['raw'];plan=read(raw/'plan.json');records=read(raw/'records.json')
         assert sha(raw/'plan.json')==build['plan_sha256'] and sha(raw/'records.json')==build['records_sha256']
