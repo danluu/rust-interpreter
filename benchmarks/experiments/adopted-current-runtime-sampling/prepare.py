@@ -1,0 +1,123 @@
+"""Freeze diagnostic commands, archived VM sources and current-host profiles."""
+import hashlib
+import subprocess
+import sys
+from pathlib import Path
+from common import ROOT, RUN, KEY, VM, read, verify, acquire_lock, sha, require_space, write
+from interpreter import installed_tools
+
+
+def main():
+    with (ROOT / '.work/benchmark.lock').open('a') as lock:
+        acquire_lock(lock, 45)
+        require_space(ROOT, 12)
+        paths = []
+
+        def closed(name):
+            out = ROOT / 'results' / name
+            summary, receipt = read(out / 'summary.json'), read(out / 'closure.json')
+            assert receipt['status'] == 'closed'
+            assert sha(out / 'summary.json') == receipt['summary_sha256']
+            assert sha(out / 'terminal.json') == receipt['terminal_sha256']
+            paths.extend(out / n for n in ['summary.json', 'closure.json', 'terminal.json'])
+            return summary, receipt
+
+        _, rejected = closed('runtime-composition-full-02')
+        assert not rejected['candidate_qualified'] and not rejected['parser_gates_passed']
+        assert rejected['unstarted_parser_profiles'] == ['repository']
+        assert not (ROOT / '.work/runtime-composition-parser-edits-repository-01').exists()
+        build, _ = closed('scratch-memory-values-build-02')
+        adoption, _ = closed('scratch-scalar-main-qualification-01')
+        profiles, _ = closed('runtime-composition-profile-02')
+        assert build['status'] == adoption['status'] == profiles['status'] == 'passed'
+        assert build['tool_key'] == adoption['tool_key'] == profiles['matched_control_key'] == KEY
+        assert profiles['control_vm_matches_adopted'] and profiles['fresh_control_profiles'] == 3
+        assert profiles['exact_per_pc_counts'] and profiles['exact_operation_map_reconstruction']
+        tool, key = installed_tools(KEY)
+        assert key == KEY and sha(tool / 'rust-interp-vm') == VM
+        assert build['binaries'] == adoption['binaries']
+        assert all(sha(tool / name) == digest for name, digest in build['binaries'].items())
+        paths += [tool / n for n in [*build['binaries'], 'source.json', 'ready.json', 'capabilities.json']]
+        source = ROOT / build['source_manifest']
+        assert sha(source) == build['source_manifest_sha256']
+        manifest = read(source)
+        assert read(tool / 'source.json')['source_commit'] == manifest['source_revision']
+        archived = {}
+        for path, digest in manifest['frozen'].items():
+            if path.startswith(('crates/', '.cargo/')) or path in ['Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml']:
+                blob = subprocess.check_output(['git', 'show', manifest['source_revision'] + ':' + path], cwd=ROOT)
+                assert hashlib.sha256(blob).hexdigest() == digest
+                archived[path] = dict(revision=manifest['source_revision'], sha256=digest)
+        assert archived
+        paths.append(source)
+
+        old = ROOT / '.work/scalar-runtime-sampling-01'
+        prior = read(old / 'plan.json')
+        control, = [r for r in read(old / 'records.json') if r['label'] == 'controls']
+        assert control['returncode'] == 0 and sha(old / 'controls.stderr') == control['stderr_sha256']
+        assert 'Ran 9 tests' in (old / 'controls.stderr').read_text()
+        dependencies = ['scripts/compare_saved_runtime.py', 'scripts/summarize_owned_sample.py',
+            'benchmarks/experiments/scalar-runtime-sampling/attribute.py',
+            'benchmarks/experiments/scalar-runtime-sampling/test_attribution.py',
+            'benchmarks/experiments/scalar-private-transfers/native_observation.py',
+            'benchmarks/experiments/scalar-private-transfers/test_native_observation.py',
+            'benchmarks/experiments/operation-map/attribute.py',
+            'benchmarks/experiments/operation-map/maps.py',
+            'benchmarks/experiments/operation-map/test_attribute.py']
+        for path in dependencies:
+            assert sha(ROOT / path) == prior['frozen'][path], path
+            paths.append(ROOT / path)
+        paths += [old / n for n in ['plan.json', 'records.json', 'controls.stdout', 'controls.stderr']]
+        reference_path = ROOT / 'results/current-runtime-boundaries-02/summary.json'
+        reference = read(reference_path)
+        assert reference['status'] == 'passed'
+        paths.append(reference_path)
+        cases = []
+        for index, label in enumerate(['block', 'exhaustive']):
+            item, = [r for r in reference['profiles'] if r['index'] == index]
+            profile, = [r for r in profiles['comparisons'] if r['index'] == index and r['mode'] == 'control']
+            assert profile['tool_key'] == KEY and not profile['reused'] and profile['name'] == item['name']
+            assert profile['native_indirect_calls'] == 0
+            for field in ['artifact', 'catalog']:
+                assert sha(ROOT / item[field]) == item[field + '_sha256']
+                paths.append(ROOT / item[field])
+            assert sha(ROOT / profile['profile_path']) == profile['profile_sha256']
+            paths.append(ROOT / profile['profile_path'])
+            name = 'adopted-current-sample-' + label + '-01'
+            assert not (ROOT / '.work' / name).exists() and not (ROOT / 'results' / name).exists()
+            command = [sys.executable, 'scripts/sample_owned_vm.py', '--tool-key', KEY,
+                '--artifact', str(ROOT / item['artifact']), '--artifact-sha256', item['artifact_sha256'],
+                '--run-id', name, '--repetitions', '1', '--duration', '3',
+                '--instruction-limit', str(item['limits']['instructions']),
+                '--allocation-limit', str(item['limits']['allocations']),
+                '--jit-persistent-registers', '--jit-resumable-calls', '--jit-scalar-calls',
+                '--dump-code', '--jit-operation-map', '--select-test', item['name'],
+                '--suite-catalog', str(ROOT / item['catalog']), '--lock-wait-seconds', '45',
+                '--minimum-free-bytes', str(8 * 1024**3), '--expected-jit-declines', '0']
+            summary_command = [sys.executable, 'scripts/summarize_owned_sample.py', '--run-id', name]
+            cases.append(dict(label=label, run_id=name, command=command, summary_command=summary_command, profile=profile['profile_path'],
+                              profile_sha256=profile['profile_sha256'], test=item['name']))
+        paths += [p for p in Path(__file__).parent.iterdir() if p.suffix in ['.py', '.md']]
+        paths += [ROOT / 'scripts' / n for n in ['interpreter.py', 'sample_owned_vm.py', 'compare_saved_runtime.py', 'workflow_io.py', 'supervise_experiment.py']]
+        frozen = {str(p.relative_to(ROOT)): sha(p) for p in paths}
+        revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        for path, digest in frozen.items():
+            if not path.startswith(('.work/', 'results/')):
+                assert hashlib.sha256(subprocess.check_output(['git', 'show', revision + ':' + path], cwd=ROOT)).hexdigest() == digest
+        raw = ROOT / '.work' / RUN
+        raw.mkdir(exist_ok=False)
+        write(raw / 'vm-source-bindings.json', archived)
+        plan = dict(owner=str(ROOT), source_revision=revision, tool_key=KEY, vm_sha256=VM,
+            frozen=frozen, cases=cases, guest_commands=2, reused_controls=9,
+            archived_vm_sources=str((raw / 'vm-source-bindings.json').relative_to(ROOT)),
+            archived_vm_sources_sha256=sha(raw / 'vm-source-bindings.json'),
+            sampler_workspace_snapshot_is_not_vm_build_source=True,
+            initial_gib=12, minimum_child_gib=8, ordinary_entropy=True,
+            profile_used_for_static_identity_only=True, performance_measurement=False)
+        verify(plan)
+        write(raw / 'plan.json', plan)
+        print('Prepared two fresh owned sample commands;', len(archived), 'archived VM sources;', len(frozen), 'frozen inputs', flush=True)
+
+
+if __name__ == '__main__':
+    main()
