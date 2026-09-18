@@ -236,3 +236,6 @@ fn verify_words(words: &[u32], bytes: &[u8]) -> Result<(), String> {
 
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
 mod tests;
+
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod range_admission;

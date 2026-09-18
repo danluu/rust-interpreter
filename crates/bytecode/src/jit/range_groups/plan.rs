@@ -30,6 +30,15 @@ impl Plan {
 }
 
 pub(in crate::jit) fn runtime_plan(f: &Function, start: usize, end: usize, budget: &mut usize) -> Option<Plan> {
+    plan_with_minimum(f, start, end, budget, 8)
+}
+
+#[cfg(test)]
+pub(in crate::jit) fn small_plan(f: &Function, start: usize, end: usize, budget: &mut usize) -> Option<Plan> {
+    plan_with_minimum(f, start, end, budget, 4)
+}
+
+fn plan_with_minimum(f: &Function, start: usize, end: usize, budget: &mut usize, minimum: usize) -> Option<Plan> {
     if f.registers > MAX_ITEMS || f.code.len() > MAX_ITEMS || start >= end
         || end > f.code.len() || end-start > 1024 { return None; }
     // No helpers, transitions or unbounded transfers may clobber the cache.
@@ -56,7 +65,7 @@ pub(in crate::jit) fn runtime_plan(f: &Function, start: usize, end: usize, budge
         state.transfer(op,f.frame_size);
     }
     let mut plans:Vec<_>=groups.into_iter().filter_map(|(root,sites)| {
-        if sites.len()<8 { return None; }
+        if sites.len()<minimum { return None; }
         let low=sites.iter().map(|s|s.offset).min()?;
         let high=sites.iter().map(|s|s.offset+s.size as i64).max()?;
         if high-low>MAX_SPAN { return None; }
@@ -97,6 +106,33 @@ mod tests {
             f.code.push(op);assert!(runtime_plan(&f,0,f.code.len(),&mut MAX_FUNCTION_WORK.clone()).is_none());
             f.code.pop();
         }
+    }
+    #[test]
+    fn smaller_admission_preserves_proof_and_work_for_existing_groups() {
+        for n in 1..=12 {
+            let f=input(vec![Op::Load {dst:7,address:0,size:8};n]);
+            let (mut old_work,mut new_work)=(MAX_FUNCTION_WORK,MAX_FUNCTION_WORK);
+            let old=runtime_plan(&f,0,n,&mut old_work);
+            let new=small_plan(&f,0,n,&mut new_work);
+            assert_eq!(old_work,new_work);
+            assert_eq!(old.is_some(),n>=8);assert_eq!(new.is_some(),n>=4);
+            if let Some(old)=old {
+                let new=new.unwrap();assert_eq!(old.sites,new.sites);
+                assert_eq!((old.root,old.low,old.high,old.writes,old.frame_disjoint),
+                    (new.root,new.low,new.high,new.writes,new.frame_disjoint));
+            }
+        }
+    }
+    #[test]
+    fn smaller_admission_keeps_write_disjointness_and_bounded_declines() {
+        let mut code=vec![Op::Local {dst:0,offset:0}];
+        for _ in 0..4 {code.extend([Op::Load {dst:1,address:0,size:8},Op::Store {address:1,src:7,size:8}]);}
+        let mut f=input(code);let p=small_plan(&f,0,f.code.len(),&mut MAX_FUNCTION_WORK.clone()).unwrap();
+        assert_eq!(p.root,Root::FrameSlot(0));assert!(p.frame_disjoint && p.writes);
+        assert_eq!(p.sites.len(),4);assert!(runtime_plan(&f,0,f.code.len(),&mut MAX_FUNCTION_WORK.clone()).is_none());
+        assert!(small_plan(&f,0,f.code.len(),&mut 1).is_none());
+        f.code.push(Op::Call {function:0,args:vec![],destination:0});
+        assert!(small_plan(&f,0,f.code.len(),&mut MAX_FUNCTION_WORK.clone()).is_none());
     }
     #[test]
     fn slot_proof_includes_every_conditional_write_and_rejects_crossing_calls() {
