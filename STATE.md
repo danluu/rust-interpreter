@@ -51,7 +51,7 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-The current manual branch is `experiment/range-admission-census-20260918`.
+The current manual branch is `experiment/scalar-chain-census-20260918`.
 Main still adopts df4006e0. The aggregate and native-indirect compositions remain
 archived after failing their original changed-source wall gates. The indirect
 composition passed all correctness controls, 122 strict/cache commands and three
@@ -80,10 +80,17 @@ The completed indirect primary's compiler intermediates were already retired:
 The smaller range-admission census is also complete: 43/59/7 new groups but
 only 14/0/0 block/exhaustive/parser samples. It preserves exact original code and
 all previously selected proofs. Defer smaller runtime guards and keep the
-threshold of eight. Next review remaining complete native Call frame-memory
-initialization costs and existing safety proofs; register-array zeroing is
-already absent in the retained workload profiles.
+threshold of eight. Frame-initialization review confirms prior proof extensions and clearing rewrites
+already address that area; register-array zeroing is absent in retained profiles.
 [Range admission](results/range-admission-census-01/ASSESSMENT.md).
+
+A bounded scalar call-chain census passes after two retained diagnostic failures.
+It admits 57 additional initialized/confined direct-call DAGs but selects no
+Call/Return samples in either current token capture. Defer parent scalar graph
+implementation. Next measure complete value captures inside the existing guarded
+external ranges, where original register facts may expire before a repeated read.
+Count capture cost and exact remaining native access samples before changing code.
+[Call-chain scope](results/scalar-chain-census-03/ASSESSMENT.md).
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
