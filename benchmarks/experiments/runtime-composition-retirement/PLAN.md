@@ -37,3 +37,11 @@ to remain identical. Native, private, peer, installed-tool and current campaign
 caches are excluded. It acquires all three invocation locks and uses the same
 nonexecutable-only inventory, open-file/identity checks and protected hashes.
 First inspect its read-only space estimate; no deletion has yet been performed.
+
+After the Nushell and current full-token retirements, actual free space remained
+about45.8GiB. retire_previous_parser_repository.py is a further scoped adaptation
+of the qualified parser-incremental retirement. It targets only the four caches
+from the closed scratch-memory-values-parser-edits-repository-01 history, verifies
+all88 commands and114 original outcomes, and preserves its263 retained evidence
+files and all executables. It never touches the new composition's parser caches
+(which have not been created), the shared build target or any private/peer path.
