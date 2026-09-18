@@ -59,6 +59,14 @@ impl Jit<'_> {
                     pc: None, pc_end: None });
             }
         }
+        if let Some(scalar) = &self.scalar {
+            for (function, entry) in scalar.entries.iter().enumerate() {
+                if let Some(entry) = entry {
+                    ranges.push(Range {offset:entry.offset,end:0,function,name:&self.program.functions[function].name,
+                        kind:"scalar_leaf",pc:None,pc_end:None});
+                }
+            }
+        }
         ranges.sort_by_key(|r| r.offset);
         if ranges.first().is_some_and(|r| r.offset != 0) || (ranges.is_empty() != bytes.is_empty()) {
             return Err("native code dump has an unclassified prefix".into());

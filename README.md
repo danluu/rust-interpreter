@@ -1,3 +1,7 @@
+# "Works for me"
+
+This is an extremely vibe coded rust interpreter that is "works for me" quality software. I don't think there's a good reason anyone would want to use this, but it works for me, at least kinda sorta. Text below this is the usual AI generated nonsense.
+
 # A custom Rust development engine
 
 This project checks Rust with rustc, lowers selected MIR to its own bytecode,
@@ -65,29 +69,34 @@ semantics are not implemented by this mode.
 Use `--engine interpreter` for the reference engine. Some standard-library paths
 require `--std-mir`, which prepares a reusable metadata sysroot.
 
-The qualified development configuration uses the guarded-range JIT, prepared
-test isolation, two explicit workers, function reuse and cached toolchain
-discovery. For the measured fre token selection:
+The qualified development configuration uses the scratch-value/scalar-call JIT,
+prepared test isolation, two explicit workers, function reuse and cached
+toolchain discovery. For the measured fre token selection:
 
 ```sh
 python3 scripts/interpreter.py --manifest-path .work/sources/fre/Cargo.toml \
   --package fre-kernels --test-body --test-filter 'token_phrase::tests::' \
-  --std-mir --engine jit --jit-resumable-calls --jit-persistent-registers \
+  --std-mir --engine jit --jit-resumable-calls --jit-persistent-registers --jit-scalar-calls \
   --isolated-batch prepared --suite-workers 2 --jobs 2 \
   --function-cache auto --toolchain-lookup cached --inline-leaves \
   --trap-unsupported-calls --run-try-callbacks --allocation-limit 150000 \
   --instruction-limit 100000000000 --suite-report token-suite.json
 ```
 
-Type and borrow checking still complete before execution. Cached discovery
-avoids repeated compiler-identity lookup; guarded native regions reuse a checked
-pointer range while preserving original-path fallback and fault ordering.
-The 726-command five-case comparison passes: token improves wall time by 2.55%
-against the prior custom runtime, with a narrow pass beyond observed variation,
-and remains 1.773 times ordinary native. Other selections pass regression guards.
-The complete tool preserves the exact qualified VM and newer compiler binaries;
-132 harness checks and 263 fresh strict cache/Cargo/project commands pass.
-[Integration, coverage and exact identities](results/guarded-ranges-main-qualification-01/assessment.md).
+Type and borrow checking still complete before execution. The explicit scalar
+option uses a bounded native calling path for eligible functions. Scratch-value
+reuse avoids reloading a value still held in a native register, with conservative
+invalidation for writes and clobbers. Ordinary fallback and fault ordering remain.
+The 726-command five-case comparison passes: token improves wall time by 6.30%
+against the previous custom runtime and remains 1.571 times ordinary native.
+Folded matching improves 3.11%; the other selections pass regression guards
+without an established speedup. Both 88-command full-parser profiles pass their
+guards, but remain 1.140×/1.263× native under repository-default/matched-incremental
+settings respectively. These gains measure the complete composition.
+Integration retains the measured VM/exporter/wrapper, 608 Rust tests per profile
+and 121 strict/cache commands, and passes 407 merged Python tests (22 declared
+skips). The 16 MiB arena and explicit worker/scalar settings remain unchanged.
+[Integration, coverage and exact identities](results/scratch-scalar-main-qualification-01/assessment.md).
 
 `--borrowck-cache verify|reuse` experimentally reconstructs successful empty
 borrow-check results when rustc proves their dependencies unchanged. It needs

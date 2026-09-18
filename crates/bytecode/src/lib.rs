@@ -20,6 +20,8 @@ mod inline;
 mod inline_tests;
 mod registers;
 mod register_init;
+#[cfg(test)]
+mod native_identity_census;
 mod inline_graph;
 #[cfg(test)]
 mod whole_call_inline_tests;
@@ -31,6 +33,15 @@ mod descriptor_io;
 mod getcwd;
 mod tls;
 mod forwarding;
+// Experimental custom scalar lowering, enabled only for explicit scalar Calls.
+#[path = "scalar/proof.rs"]
+#[allow(dead_code)]
+mod proof;
+#[path = "scalar/scalar_ir.rs"]
+#[allow(dead_code)]
+mod scalar_ir;
+#[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+mod scalar_call_model;
 #[cfg(test)]
 mod memory_tests;
 #[cfg(any(test, feature = "indirect-target-observer"))]
@@ -436,6 +447,8 @@ pub struct Limits {
     /// Experimental native Calls/Returns with exact guest-frame continuations.
     /// Requires JIT and cannot be combined with the tree/stub experiment.
     pub jit_resumable_calls: bool,
+    /// Experimental confined scalar leaves called directly by resumable code.
+    pub jit_scalar_calls: bool,
     /// Diagnostic only: create a new directory containing published JIT bytes
     /// and address ranges after successful execution. Requires Engine::Jit.
     pub jit_code_dump: Option<std::path::PathBuf>,
@@ -457,6 +470,7 @@ impl Default for Limits {
             jit_native_call_stubs: false,
             jit_persistent_registers: false,
             jit_resumable_calls: false,
+            jit_scalar_calls: false,
             jit_code_dump: None,
             jit_operation_map: false,
         }
@@ -699,6 +713,9 @@ fn execute_observed<const PROFILE: bool>(
     engine: Engine,
     profile: Option<&mut ExecutionProfile>,
 ) -> Result<Execution, String> {
+    if limits.jit_scalar_calls && (!limits.jit_resumable_calls || engine != Engine::Jit) {
+        return Err("scalar calls require resumable JIT execution".into());
+    }
     // Select once at entry. Each loop specialization can omit the other
     // engine's transition path and its temporaries completely.
     if limits.jit_native_call_stubs && !limits.jit_native_calls {
@@ -761,7 +778,13 @@ fn create_jit<'program, const PROFILE: bool, const USE_JIT: bool, const CALL_STU
             jit::Jit::new(program, PROFILE, limits.jit_code_bytes)?
         })
     } else { None };
-    if let Some(jit) = &mut jit { jit.compile_nanos = started.elapsed().as_nanos(); }
+    if let Some(jit) = &mut jit {
+        if limits.jit_scalar_calls {
+            if program.version & PARTIAL_VALIDATION != 0 { return Err("scalar calls require full validation".into()); }
+            jit.enable_scalar_calls();
+        }
+        jit.compile_nanos = started.elapsed().as_nanos();
+    }
     Ok(jit)
 }
 
@@ -808,10 +831,15 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
     let descriptor_bytes = descriptors.as_ref().map_or(0, |state| state.charged_bytes());
     let mut jit_instructions = 0;
     let mut jit_entries = 0;
+    #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+    let mut scalar_leaf = scalar_call_model::Context::new(program, PROFILE, USE_JIT)?;
     let mut resumable_calls = 0;
     let mut resumable_returns = 0;
     let resumable_profiles: Vec<_> = if RESUMABLE && PROFILE {
         profile.as_deref_mut().unwrap().functions.iter_mut().map(|f| f.jit_blocks.as_mut_ptr()).collect()
+    } else { vec![] };
+    let scalar_profiles: Vec<_> = if RESUMABLE && PROFILE && limits.jit_scalar_calls {
+        profile.as_deref_mut().unwrap().functions.iter_mut().map(|f| f.jit_scalar_hits.as_mut_ptr()).collect()
     } else { vec![] };
     let mut native = if NATIVE_CALLS { Some(native_execution::Context::new(profile.as_deref_mut())) } else { None };
     if limits.frames == 0 {
@@ -893,7 +921,7 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                     // survives the call; descendants may become the new top.
                     let run = unsafe { jit.run_resumable(block, limits.instructions - steps,
                         &limits, &mut memory, &mut registers, &mut frames, &mut register_bytes,
-                        &resumable_profiles) }?;
+                        &resumable_profiles, &scalar_profiles) }?;
                     steps += run.instructions;
                     jit_instructions += run.instructions;
                     jit_entries += 1;
@@ -1256,6 +1284,20 @@ fn execute_prepared_impl<'program, const PROFILE: bool, const USE_JIT: bool, con
                     };
                     let callee = &program.functions[callee_id];
                     let return_address = r[*destination as usize] as usize;
+                    #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
+                    if let Some(context) = &mut scalar_leaf {
+                        if let Some(executed) = context.try_call(callee_id, args, r, return_address,
+                            &mut memory, register_bytes, active_frames, &limits,
+                            limits.instructions - steps, profile.as_deref_mut())? {
+                            steps += executed;
+                            jit_instructions += executed;
+                            jit_entries += 1;
+                            resumable_calls += 1;
+                            resumable_returns += 1;
+                            if steps >= limits.instructions { return Err("interpreter instruction limit exceeded".into()); }
+                            continue 'dispatch;
+                        }
+                    }
                     let base = memory.reserve_frame(callee.frame_size, callee.frame_align)?;
                     let added = callee
                         .registers

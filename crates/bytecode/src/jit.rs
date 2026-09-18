@@ -40,12 +40,14 @@ mod trees;
 mod native_calls;
 mod native_regions;
 mod resumable;
+mod scalar_calls;
 mod call_slots;
 mod code_dump;
 mod code_spans;
 mod values;
 mod transfers;
 mod guarded_ranges;
+mod scratch_values;
 
 #[cfg(test)]
 mod limit_tests;
@@ -55,6 +57,14 @@ mod scratch_locals;
 mod flush_census;
 #[cfg(test)]
 mod memory_parts;
+#[cfg(test)]
+mod emission_stages;
+#[cfg(test)]
+mod immutable_reads;
+#[cfg(test)]
+mod guarded_value_census;
+#[cfg(test)]
+mod guarded_capture_census;
 #[cfg(test)]
 mod memory_operand_tests;
 
@@ -324,6 +334,8 @@ struct CompiledFunction<'a> {
     #[cfg(test)]
     scratch_hits: Vec<scratch_locals::Hit>,
     #[cfg(test)]
+    scratch_copy_hits: Vec<scratch_locals::Hit>,
+    #[cfg(test)]
     flush_spans: Vec<flush_census::Span>,
     #[cfg(test)]
     memory_spans: Vec<memory_parts::Span>,
@@ -361,6 +373,7 @@ pub(crate) struct Jit<'a> {
     pub call_stubs: usize,
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
+    scalar: Option<scalar_calls::State>,
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
@@ -371,6 +384,8 @@ pub(crate) struct Jit<'a> {
     observe_scalar_copy: bool,
     #[cfg(test)]
     observe_scratch_locals: bool,
+    #[cfg(test)]
+    scratch_values_enabled: bool,
     #[cfg(test)]
     observe_flush: bool,
     #[cfg(test)]
@@ -401,7 +416,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None,
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -412,6 +427,8 @@ impl<'a> Jit<'a> {
             observe_scalar_copy: true,
             #[cfg(test)]
             observe_scratch_locals: false,
+            #[cfg(test)]
+            scratch_values_enabled: true,
             #[cfg(test)]
             observe_flush: false,
             #[cfg(test)]
@@ -442,6 +459,7 @@ impl<'a> Jit<'a> {
     }
     fn prepare_function(&mut self, id: usize) -> Result<bool, String> {
         if self.native_call_stubs { self.prepare_region_calls(id)?; }
+        if self.scalar.is_some() { self.prepare_scalar_callees(id)?; }
         let remaining = (self.capacity - self.bytes) / 4;
         let staged = self.emit_function(&self.program.functions[id], remaining);
         self.finish_preparation(id, staged)
@@ -507,6 +525,8 @@ impl<'a> Jit<'a> {
     // It reuses admission and original assertion identities without republishing.
     fn emit_function_inner(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
         mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
+        #[cfg(test)]
+        let _emission_timer = emission_stages::Span::new(emission_stages::Stage::Function);
         let resumable = self.resumable.is_some();
         let mut words = vec![];
         #[cfg(test)]
@@ -516,18 +536,38 @@ impl<'a> Jit<'a> {
         #[cfg(test)]
         let mut scratch_hits = vec![];
         #[cfg(test)]
+        let mut scratch_copy_hits = vec![];
+        #[cfg(test)]
         let mut flush_spans = vec![];
         #[cfg(test)]
         let mut memory_spans = vec![];
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
-        let reads = read_registers(f);
-        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
-        let fills = local_fills(f);
-        let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
+        let reads = {
+            #[cfg(test)]
+            let _timer = emission_stages::Span::new(emission_stages::Stage::Reads);
+            read_registers(f)
+        };
+        let values = {
+            #[cfg(test)]
+            let _timer = emission_stages::Span::new(emission_stages::Stage::Liveness);
+            self.persistent_registers.then(|| values::analyze(f)).flatten()
+        };
+        let fills = {
+            #[cfg(test)]
+            let _timer = emission_stages::Span::new(emission_stages::Stage::Fills);
+            local_fills(f)
+        };
+        let slots = {
+            #[cfg(test)]
+            let _timer = emission_stages::Span::new(emission_stages::Stage::Slots);
+            if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() }
+        };
         #[cfg(test)]
         let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
+        #[cfg(test)]
+        let _setup_timer = emission_stages::Span::new(emission_stages::Stage::RegionsSetup);
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
             || (resumable && transfers::supported(&f.code[pc]));
         let mut entries = vec![None; f.code.len()];
@@ -554,6 +594,8 @@ impl<'a> Jit<'a> {
                 starts[pc + 1] = true;
             }
         }
+        #[cfg(test)]
+        drop(_setup_timer);
         let mut pc = 0;
         while pc < f.code.len() {
             let start = pc;
@@ -568,6 +610,8 @@ impl<'a> Jit<'a> {
                 pc += 1;
             }
             if pc - start >= if resumable { 1 } else { 3 } {
+                #[cfg(test)]
+                let _timer = emission_stages::Span::new(emission_stages::Stage::Regions);
                 let offset = words.len() * 4;
                 let mut a = Assembler {
                     #[cfg(test)]
@@ -578,6 +622,8 @@ impl<'a> Jit<'a> {
                     observe_scalar_copy: self.observe_scalar_copy,
                     #[cfg(test)]
                     scratch: scratch_locals::State::new(self.observe_scratch_locals),
+                    #[cfg(test)]
+                    scratch_values: scratch_values::State::new(self.scratch_values_enabled),
                     #[cfg(test)]
                     observe_flush: self.observe_flush,
                     #[cfg(test)]
@@ -591,6 +637,10 @@ impl<'a> Jit<'a> {
                     resumable,
                     ..Assembler::default()
                 };
+                #[cfg(test)]
+                let mut guarded_values = guarded_value_census::State::new();
+                #[cfg(test)]
+                let mut guarded_captures = guarded_capture_census::State::new();
                 let mut covered = 0;
                 macro_rules! span {
                     ($kind:ident, $pc:expr) => {{
@@ -639,6 +689,12 @@ impl<'a> Jit<'a> {
                 let body_end = pc-usize::from(terminal.is_some());
                 for (index, op) in f.code[start..body_end].iter().enumerate() {
                     a.current_pc = start + index;
+                    #[cfg(test)]
+                    immutable_reads::observe(op, &a.facts, &self.program.data, start + index);
+                    #[cfg(test)]
+                    guarded_values.observe(&a, op);
+                    #[cfg(test)]
+                    guarded_captures.observe(&a, op);
                     #[cfg(test)]
                     a.memory_parts.begin(op, start + index, start, pc, a.heap);
                     if let Op::Assert { value, expected, message } = op {
@@ -711,6 +767,7 @@ impl<'a> Jit<'a> {
                     local_forwarding.extend(a.local_forwarding);
                     local_fact_events.extend(a.local_fact_events);
                     scratch_hits.extend(a.scratch.hits);
+                    scratch_copy_hits.extend(a.scratch.copy_hits);
                     for mut span in a.flush_spans {
                         span.offset += words.len() * 4;
                         span.end += words.len() * 4;
@@ -729,6 +786,8 @@ impl<'a> Jit<'a> {
             }
             if pc == start {
                 if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
+                    #[cfg(test)]
+                    let _timer = emission_stages::Span::new(emission_stages::Stage::Transitions);
                     let offset = words.len() * 4;
                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
@@ -738,6 +797,10 @@ impl<'a> Jit<'a> {
                     internal_entries[pc] = Some(words.len() + internal);
                     entries[pc] = Some(Block { offset, end: pc + 1 });
                     operations += 1;
+                    for &(at, successor) in &a.links {
+                        let fallback = *a.scalar_fallbacks.get(&at).ok_or(EmitError::InvalidRelocation("missing scalar successor fallback"))?;
+                        links.push((words.len() + at, successor, words.len() + fallback));
+                    }
                     words.extend(a.words);
                 }
                 if self.native_call_stubs {
@@ -761,10 +824,14 @@ impl<'a> Jit<'a> {
                 pc += 1;
             }
         }
+        #[cfg(test)]
+        let _links_timer = emission_stages::Span::new(emission_stages::Stage::Links);
         for (at, successor, fallback) in links {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
+        #[cfg(test)]
+        drop(_links_timer);
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
@@ -772,6 +839,7 @@ impl<'a> Jit<'a> {
             #[cfg(test)] local_forwarding,
             #[cfg(test)] local_fact_events,
             #[cfg(test)] scratch_hits,
+            #[cfg(test)] scratch_copy_hits,
             #[cfg(test)] flush_spans,
             #[cfg(test)] retained_local_writes }))
     }
@@ -1045,6 +1113,7 @@ enum Fact {
 
 #[cfg_attr(not(test), derive(Default))]
 struct Assembler<'a> {
+    scalar_fallbacks: BTreeMap<usize, usize>,
     #[cfg(test)]
     observe_guarded_local_retention: bool,
     #[cfg(test)]
@@ -1056,6 +1125,7 @@ struct Assembler<'a> {
     tree_caller_is_region: bool,
     resumable: bool,
     local_values: Vec<local_memory::Value>,
+    scratch_values: scratch_values::State,
     #[cfg(test)]
     local_forwarding: Vec<(usize, &'static str)>,
     #[cfg(test)]
@@ -1106,6 +1176,7 @@ impl Default for Assembler<'_> {
             tree_caller_is_region: Default::default(),
             resumable: Default::default(),
             local_values: Default::default(),
+            scratch_values: Default::default(),
             local_forwarding: Default::default(),
             local_fact_events: Default::default(),
             retained_local_writes: Default::default(),
@@ -1117,6 +1188,7 @@ impl Default for Assembler<'_> {
             memory_parts: Default::default(),
             words: Default::default(),
             links: Default::default(),
+            scalar_fallbacks: Default::default(),
             failures: Default::default(),
             assertions: Default::default(),
             heap: Default::default(),
@@ -1217,6 +1289,7 @@ impl Assembler<'_> {
         }
     }
     fn emit(&mut self, word: u32) {
+        self.scratch_values.word(word);
         #[cfg(test)]
         self.scratch.observe_word(word);
         #[cfg(test)]
@@ -1979,10 +2052,13 @@ impl Assembler<'_> {
                 } else {
                     let immediate = memory_access!(self, "source", self.memory_address(11, address, size as usize, false));
                     // put() supplies the narrow result's zero high word below.
-                    self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
+                    if !self.scratch_values.contains(local,size as usize) {
+                        self.load_mem_at(9, if size <= 8 { 31 } else { 10 }, 11, size as usize, immediate);
+                    }
                 }
                 memory_part!(self, "register_publication", self.put(dst, 9, if size <= 8 { 31 } else { 10 }));
                 self.remember_local_memory(local, size as usize, dst);
+                self.scratch_values.capture(local,size as usize);
                 #[cfg(test)]
                 self.scratch.capture(self.current_pc, local, size as usize, "Load");
             }
@@ -1997,6 +2073,7 @@ impl Assembler<'_> {
                 let retain = self.preserve_guarded_local_write(local, address, size as usize);
                 if !retain { self.invalidate_local_memory(local, size as usize); }
                 self.remember_local_memory(local, size as usize, src);
+                self.scratch_values.capture(local,size as usize);
                 #[cfg(test)]
                 self.scratch.capture(self.current_pc, local, size as usize, "Store");
             }
@@ -2020,6 +2097,7 @@ impl Assembler<'_> {
                     if let Some((source, _)) = forwarded {
                         self.remember_local_memory(destination_local, size, source);
                     }
+                    self.scratch_values.capture(destination_local,size);
                     #[cfg(test)]
                     self.scratch.capture(self.current_pc, destination_local, size, "Copy");
                     return;
@@ -2069,6 +2147,7 @@ impl Assembler<'_> {
                 if let Some((source, _)) = forwarded {
                     self.remember_local_memory(destination_local, size, source);
                 }
+                self.scratch_values.capture(destination_local,size);
             }
             Op::Binary {
                 dst,

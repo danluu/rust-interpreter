@@ -146,3 +146,190 @@ exporter cost. Next qualify direct AArch64 emission and the unchanged-on-failure
 Call boundary, then use the original primary/full edit workflows. Node counts
 are not a native-time model. No new compiler ownership or worker setting follows.
 [Scalar evidence](../results/confined-scalar-ir-coverage-01/assessment.md).
+
+Follow-up through21:24: the suggestions hash remains unchanged. A custom scalar
+leaf body and native Call transaction pass590 workspace controls/profile,121
+strict/cache commands and six exact original profiles, but their40-command
+primary fails (wall1.003720, CPU0.996103, A/A wall3.0585%). Four native registers
+for block-local scalar values then pass593 controls/profile and the same real
+qualification. Their primary observes4.00% wall /1.53% CPU improvement inside
+7.6260% wall control variation and fails its existing gate. Keep both results,
+cancel larger comparisons, and do not retime unchanged candidates. The scalar
+bridge already uses ordinary effective capacity bounds; the concrete remaining
+difference is its missing guarded caller-frame argument-address path. Review
+that path and preserve private failure replay. This is runtime work only;
+compiler/Cargo ownership, two-worker limits and strict frontend checking remain.
+
+Follow-up through 22:15: the suggestions hash remains unchanged. Guarded caller-
+frame argument addressing and removal of a redundant private scalar-entry budget
+check pass 594 workspace controls per profile, 121 strict/cache commands and six
+exact original profiles. The 40-command primary observes 1.38% wall and 2.04% CPU
+improvement, inside 3.3145% wall A/A variation; its unchanged gate fails. Park this
+revision and cancel larger comparisons. All assertion outcomes, source restoration
+and candidate/control bytecode identities pass. Its 2,530 protected evidence
+hashes remain unchanged after retiring disposable compiler intermediates.
+[Screen and limitations](../results/scalar-call-guards-screen-token-01/ASSESSMENT.md).
+
+Continue with a bounded saved-artifact census of constant expressions and unused
+high halves in the scalar emitter. Reconstruct qualified emitted bodies first;
+static words and successful scalar PC counts do not establish hardware time or
+an end-to-end speedup. No new runtime candidate follows until that census identifies
+material work. Keep the adopted VM as the control, full checking, two Cargo workers,
+and the existing build/disk gates. Compiler/Cargo ownership remains separate.
+
+Follow-up through 22:39: the suggestions file is unchanged. The saved scalar-body
+census identifies 733–822 million dead pure-register word executions on successful
+Calls in the original token block test. Most occur in copy_nonoverlapping's
+precondition and define an unused high half. Nine observer controls and all saved
+bodies pass after explicitly proving unconditional Trap branches; earlier failed
+census attempts remain archived. This is a bounded static/path estimate, not a
+hardware or timing result. [Census](../results/scalar-word-census-03/ASSESSMENT.md).
+
+A custom bounded dead-register pass now matches independently compacted words for
+all 137 saved bodies in debug/release. A std-only live probe adds 35,072 synthetic
+native body attempts per profile, comparing complete private outputs even on
+failure and preserved host registers/SP. Original memory operations, branches,
+budget/profile updates and Call transactions are retained. Full VM qualification
+and real edited-source timing are pending the unchanged workspace disk gate.
+The small isolated probes do not use Cargo or the shared target and do not count
+as end-to-end comparisons. Keep the adopted VM as control; no runtime adoption.
+[Live probe](../results/scalar-dead-registers-native-probe-01/summary.json).
+
+Follow-up through 23:12: bounded dead-register elimination passes 20 focused and
+596 workspace tests/profile, 121 strict Cargo/cache commands and six exact
+original profiles. Its primary has a 0.949959 wall ratio and 0.956743 CPU ratio,
+but the 0.060657 A/A wall envelope makes the margin 1.010617: park it without
+starting larger comparisons or changing the gate. The descriptive Cargo stage
+is 161.7 ms lower despite a runtime-only revision; do not attribute that
+variation to scalar emission. Scalar native bodies shrink 14.5% in token block,
+11.5% in exhaustive token and 9.4% in folded prefilter. Next quantify constant
+computations and duplicated arithmetic-result/overflow calculations in saved
+real scalar bodies before picking the next revision.
+[Primary assessment](../results/scalar-dead-registers-screen-token-01/ASSESSMENT.md).
+
+Follow-up through 23:43: the width-alias candidate passes 600 workspace tests in
+each profile, 22 native/Call controls, 121 strict commands and six exact profiles,
+but its primary fails (wall 1.028289, CPU 0.987340; A/A wall 0.040899). Park it.
+The preceding no-constant census prevented an unnecessary constant folder;
+117 million modeled pack/cast aliases still did not establish an end-to-end win.
+The load comparison is mixed (+2 input loads, -1 stack load/store in the hottest
+whole body), so it does not establish the timing cause. Next examine the private
+native Call ABI: keep the VM's three live pointer registers intact and address
+captured arguments/private Output through its fixed host-stack layout. Retain
+strict checking, original artifacts, guards, faults and transaction accounting.
+[Width primary](../results/scalar-width-aliases-screen-token-01/ASSESSMENT.md),
+[static loads](../results/scalar-width-aliases-screen-token-01/load-observations.json).
+
+Follow-up after the private Call ABI primary: the suggestions file is unchanged.
+Keeping x0–x2 live passes 597 workspace tests/profile, 21 focused controls, 121
+strict commands and six exact original profiles. The 40-command primary fails:
+wall 0.994813, CPU 0.968224, A/A wall 0.016892, wall margin 1.011705. Park it
+without a larger comparison. Descriptive execution is 68.4 ms lower while Cargo
+is 103.4 ms higher; these nested stages neither add nor establish a cause.
+Next census zero-byte results and invariant successful-path step counts before
+changing private Call commit traffic. Keep runtime/compiler ownership separate,
+strict checking, two workers and the existing resource and timing gates.
+[Private ABI assessment](../results/scalar-call-frame-abi-screen-token-01/ASSESSMENT.md).
+
+Follow-up on September 14 after the private-transfer primary: independent saved-
+body censuses identify fixed success counts, zero-byte results and 38.23 million
+narrow argument captures in token block. The implementation passes 600 workspace
+controls/profile, 23 focused controls, 121 strict commands and six exact profiles.
+Its complete 40-command primary still fails: wall 0.986218, CPU 0.978075, A/A wall
+0.036221, wall margin 1.022439. Park it and cancel larger comparisons. Descriptive
+execution is 72.9 ms lower; the single profiled JIT compile counters differ by
+only 1.6 ms in block and 4.4 ms in exhaustive token. Neither measurement is causal
+or a substitute for the edited-source gate. Review remaining execution/general
+Call costs before further private-body changes. No runtime adoption or new
+compiler ownership follows.
+[Transfer assessment](../results/scalar-private-transfers-screen-token-01/ASSESSMENT.md).
+
+Follow-up on September 14 after fresh runtime sampling: the suggestions hash
+remains unchanged. Two new unprofiled original-token executions pass, with nine
+map/attribution controls and complete same-process generated-PC attribution.
+Copy spans account for 487/1,814 generated self samples in block and 290/1,480
+in exhaustive token; private scalar bodies account for 57 and 123. These partial
+normal-entropy windows are diagnostic only. Follow the suggestions' remaining-
+cost priority by reconstructing Copy subparts before another implementation.
+Keep old failed general-address candidates parked, preserve compiler ownership,
+and do not infer an end-to-end gain from sample shares.
+[Fresh samples](../results/scalar-runtime-sampling-01/ASSESSMENT.md).
+
+The fresh small-memory partition now reconstructs all 1,050/1,245 ordinary
+functions and 60/69 scalar bodies exactly, with six focused controls and no guest
+execution. Small Copy data loads contribute 171/98 samples; address selection
+159/65. This does not justify repeating the failed selector/address rewrites.
+Next census scratch-value availability at Copy loads, which the earlier Load-
+only observer did not query. Preserve original source/destination checks and
+full alias/clobber invalidation; no runtime change follows without coverage.
+[Memory parts](../results/scalar-memory-parts-01/ASSESSMENT.md).
+
+The Copy-specific scratch census passes 12 controls and reconstructs both fresh
+captures without changing words. It finds 45/29 samples at candidate Copy load
+instructions, versus 45/15 for the same captures' pre-address Load observations.
+This justifies one bounded shared x9 cache experiment, with queries after address
+handling and unchanged alias, clobber, fault, budget and profile contracts.
+The combined 90/44 partial samples are not a timing prediction or adoption gate.
+Use the unchanged primary-first workflow after correctness qualification.
+[Copy census](../results/scratch-copy-census-01/ASSESSMENT.md),
+[shared scope](../results/scratch-load-copy-coverage-01/ASSESSMENT.md).
+
+The shared scratch-memory candidate now passes the unchanged 40-command primary:
+wall 0.950873, CPU 0.949951, A/A wall 0.042955, wall margin 0.993828. This narrow
+pass follows 608 workspace controls/profile, five scratch controls/profile,
+121 strict commands and six exact original profiles. Qualify the retained
+selected/prepared suites and proceed to a fresh full comparison, token first.
+Do not infer that the runtime caused the descriptive Cargo improvement or that
+this composition isolates the cache's marginal effect. All five full guards and
+complete/edited parser qualification remain required before adoption.
+[Scratch-memory primary](../results/scratch-memory-values-screen-token-01/ASSESSMENT.md).
+
+The fresh three-cycle token history also passes: 154 commands, wall 0.936992,
+CPU 0.934942, A/A wall 0.014128, wall margin 0.951120. The complete composition
+improves changed-source latency 6.30%, while remaining 1.571393x ordinary native.
+Advance the same campaign through the held-outs, preserving all existing gates;
+no runtime adoption follows from the primary alone. Retire only completed case
+compiler caches between cases, preserving the recorded checkpoint and artifacts.
+[Full token result](../results/scratch-memory-values-edit-token-01/ASSESSMENT.md).
+
+The full folded held-out also passes all 154 commands: wall 0.968919, CPU
+0.975493, wall A/A 0.014842, wall margin 0.983761. Candidate/native is 0.918104.
+Both completed cases are closed in the same campaign; advance to pgrust before
+private rg-aot and the resource-intensive Nushell guard. Full and edited parser
+qualification remain necessary for adoption.
+[Folded result](../results/scratch-memory-values-edit-folded-01/ASSESSMENT.md).
+
+Pgrust hash passes its full regression guard: 154 commands, wall 0.993862,
+CPU 0.994779, wall A/A 0.014998. Treat the small change as unchanged within
+control variation. Candidate/native is 0.846553. The three-case checkpoint
+admits private rg-aot; full parser coverage remains a separate obligation.
+[Pgrust hash result](../results/scratch-memory-values-edit-pgrust-01/ASSESSMENT.md).
+
+The private rg-aot guard passes 132 commands: wall 1.004840, CPU 1.008911,
+wall margin 1.032169 and CPU margin 1.015559. This is regression qualification,
+not an incremental speedup. Candidate/native is 0.409691. The four-case
+checkpoint contains 594 passed commands; Nushell remains last under its existing
+disk gate, with complete and edited-parser qualification still required.
+[Private aggregate](../results/scratch-memory-values-edit-rg-aot-01/ASSESSMENT.md).
+
+Complete parser compatibility passes all 114 tests. Its fresh four-arm matched
+incremental history also passes the regression guard: 88 commands, wall 1.005451,
+CPU 1.005560, wall margin 1.028352, CPU margin 1.028630. The change is within
+control variation and candidate/native remains 1.263277; the token/folded gains
+do not generalize to the parser. Keep frontend ownership separate and complete
+the repository-default parser and remaining Nushell guards before adoption.
+[Incremental parser](../results/scratch-memory-values-parser-edits-incremental-01/ASSESSMENT.md).
+
+The repository-default parser guard also passes all88 commands and114 original tests. Candidate/baseline wall+0.32% and CPU+0.64% remain inside A/A2.00%/2.15%; the predeclared margins1.02321/1.02793 pass1.05. Candidate wall remains14.02% slower than native, so neither parser profile establishes a speedup. Source restoration and6,721 frozen inputs/263 retained evidence files verify. The scratch/scalar composition still awaits Nushell admission; no runtime is adopted. [Default parser guard](../results/scratch-memory-values-parser-edits-repository-01/ASSESSMENT.md).
+
+The scratch/scalar composition now passes all726 commands and allfive performance guards. The final132-command Nushell comparison is unchanged versus baseline (wall0.999955; margin1.024804) and63.63% of native wall time. The existing594 commands were retained without repeats. Both88-command full-parser guards also pass. The closure verifies9,218 frozen inputs and119 Git source bindings. Proceed to current-main integration while preserving its compiler-loader change; no timing rerun or runtime adoption yet. [Complete decision](../results/scratch-memory-values-full-01/ASSESSMENT.md).
+
+September 14, read-only native-Call follow-up: the suggestions file remains
+unchanged. The native prototype passes 622 workspace tests/profile, 407 Python
+tests (22 skips), 121 strict/cache commands and three exact original profiles
+against retained adopted controls. Token block gains 7.73 million scalar Calls,
+but the complete primary is unchanged (wall 0.999836 / CPU 0.999544) inside
+1.9585% wall A/A variation. Park this candidate and cancel its larger histories.
+Inspect its actual emitted bodies and preparation cost before further changes;
+keep the adopted runtime, strict checking and independent compiler ownership.
+[Primary evidence](../results/scalar-readonly-native-screen-token-01/ASSESSMENT.md).

@@ -1,121 +1,113 @@
-# Current state — September 13, 2026
+# Current state — September 18, 2026
 
 Manual optimization continues indefinitely. The saved goal remains paused.
 The task is a general custom Rust interpreter/direct AArch64 JIT, guided by
 real changed-source build/test commands across small and large projects.
 Private repository: `danluu/rust-interpreter`. Qualified changes go to main.
 
-The guarded local-value/scalar-Copy runtime is adopted with the current compiler.
-It preserves proven frame-disjoint facts across writes and folds existing local
-scalar-copy addresses, retaining ordered fallback and memory fault semantics.
-Rust type and borrow checking still finish before guest execution. The custom
-interpreter/direct AArch64 JIT remains the guest backend; the16 MiB default stays.
+The scratch-value/scalar-call composition is adopted with the current compiler.
+It combines bounded scalar native calls and private value transfers with reuse
+of checked memory values still held in x9. Writes, aliases and register clobbers
+invalidate reuse conservatively. Type and borrow checking finish before guest
+execution; partial-demand artifacts cannot use the scalar calling path.
 
-All726 changed-source performance commands and five gates pass. The primary
-improves4.73% wall/3.83% CPU against the previous custom runtime and remains1.641
-times ordinary native. Folded matching, pgrust hashfn, private rg-aot and Nushell
-type-relations pass regression guards. Nushell's incremental difference stays
-inside variation. These selections cover four pgrust hash tests and14 Nushell
-tests; they do not establish complete database/shell coverage.
-[Complete comparison](results/guarded-local-facts-full-continuation-01/assessment.md).
+Use explicit `--jit-scalar-calls --jit-resumable-calls
+--jit-persistent-registers`, prepared isolation and the measured two-worker
+configuration. The 16 MiB default arena remains. There is no LLVM, Cranelift or
+foreign-interpreter fallback for guest execution.
 
-Qualified complete tool `35df4077` retains exact measured VM `f0e5f2ea` and uses
-new exporter `cf4b3499`/wrapper `45bca4f2`. It passes513 workspace Rust tests per
-profile,130 internal remapping controls,119 strict/cache/Cargo commands,40 exact
-project histories and all114 original parser tests. The final audit verifies
-9,639 unique frozen inputs and579 Git source bindings. The publication merge
-also passes334 Python contracts (16 declared skips) and preserves the other
-session's owned-compiler loader improvement. Timing ratios stay bound to the
-original measured compiler binaries; these integration checks establish
-compatibility without repeating the timing campaign.
-[Integration](results/guarded-local-facts-main-final-audit-01/assessment.md).
+All five predeclared performance guards pass across 726 complete commands:
 
-The local-value-transfer observer reconstructs all three current code/maps exactly
-but saves only8 /8 /0 static bytes and1,792 /8 /0 weighted forwarded accesses.
-Park it without timing; its test-only implementation remains experimental.
-Two new owned native-PC captures now identify native Call/Return code at26.23%
-/34.68% of attributed generated samples, plus8.18% /12.51% register flushing.
-Next partition the actual protocol emission and label those already captured
-PCs; preserve all guards before choosing a mechanism. These partial perturbed
-samples are diagnostic, and native calls are not VM exits.
-[Current samples](results/adopted-runtime-sampling-01/assessment.md),
-[eviction-loss result](results/local-value-transfer-census-01/assessment.md).
+| Selected workload | Wall / previous custom | Wall / ordinary native |
+| --- | ---: | ---: |
+| fre token | 0.9370 | 1.5714 |
+| fre folded matching | 0.9689 | 0.9181 |
+| pgrust hashfn | 0.9939 | 0.8466 |
+| private rg-aot | 1.0048 | 0.4097 |
+| Nushell type-relations | 1.0000 | 0.6363 |
 
-The general boxed `FnOnce` receiver fix is qualified:88 exporter tests per
-profile,18 focused guest tests across interpreter/JIT modes and78 existing
-dynamic/closure/cache/strict Cargo commands pass. Tool `15574904` retains the
-exact adopted VM and wrapper. Sized dynamic bytecode matches the prior control.
-[Receiver fix](results/boxed-fnonce-after-01/assessment.md).
-The full original pgrust SQL-parser target now passes all 114 native and custom
-JIT tests, including C reference vectors. General function-capacity, environment
-read and checked C-string support remove the subsequent blockers. The combined
-main compiler qualification and publication audit pass. All 40 existing-project history
-commands now preserve exact artifacts and assertion outcomes. The workspace
-passes 484 tests per profile, the final exporter passes
-89 per profile, and 119 focused/cache/strict Cargo commands pass. All 4,918 parser
-inputs verify; source and assertions are unchanged.
-[Complete parser support](results/pgrust-parser-support-04/assessment.md).
-The complete 66-command default-profile parser comparison now passes its
-correctness controls but is 15.78% slower than native on edited wall time
-(8.29% more child CPU). The separately completed matched-incremental comparison
-is23.03% slower wall and24.02% more CPU across15 edited pairs. Its revised
-protocol retains the failed22-command cross-cycle study and runs only44
-unstarted commands. Paired allocation traces with function reuse disabled locate
-the original/restored layout difference in rustc's sharing of an immutable
-literal, before exporter placement. A/B artifact identity holds within each
-cycle/state. All114 native/custom assertion outcomes match and sources restore.
-The dominant reference-vector test spends94.13% of its interpreted operations
-in one large parser routine. Offline emission produces16,554,488 native bytes
-for that routine alone, establishing whole-function capacity pressure.
-The completed explicit 16/32 MiB screen retains the 16 MiB default and parks the
-larger treatment: its 0.69% paired wall improvement is inside 4.04% A/A variation.
-All 32 controls agree with native, including the wrong edit. Five commands were
-retained after a failed-test statistics validator repair; exactly 27 new commands
-completed the schedule. No valid edited timing preceded the repair. The large
-routine reaches 66.60% of its bytecode and already avoids bulk register zeroing.
-No unchanged full capacity study or broad lazy-region rewrite follows this
-result. Return to actual-emitter local-value forwarding composition evidence.
-[Capacity screen](results/parser-jit-capacity-screen-continuation-01/assessment.md).
-[Parser baseline](results/pgrust-parser-edits-repository-continuation-01/assessment.md).
-[Matched incremental](results/pgrust-parser-edits-incremental-history-01/assessment.md).
-[Combined compatibility](results/environment-main-final-audit-01/assessment.md).
-The actual-emitter local-value censuses are complete. All three public baselines
-reconstruct exactly. Composition `317a0bf1` of guarded local-value retention,
-preserved static facts and scalar-copy address folding now passes 504 workspace
-tests per profile, 119 strict/cache controls and three exact real-test profiles.
-Both reduced operation spans and increased flush code remain reported; the
-profiled emitted sizes match the independent census. Earlier fixture-setup and
-admission failures remain recorded. The 40-command token screen now passes:
-paired wall is 7.91% lower and CPU 6.19% lower, with A/A envelopes 5.002% and
-3.814%; the command remains 1.727 times native. A workspace-library parser repair
-retains one completed native control and executes only 39 new commands. All 13
-additional real controls, 21 full-protocol checks and all114 original parser
-tests pass. Four full histories now pass594 commands: token improves wall4.73%
-and CPU3.83% (A/A1.714%/1.583%), while folded, pgrust and private rg-aot pass
-regression guards. Token remains1.641 times native. Nushell now also passes its
-132-command guard: paired wall1.00115, CPU0.99711, with wall/CPU noise margins
-1.04160/1.00547 within1.05. The complete726-command audit verifies9,005 inputs,
-all source restoration and retained artifacts. Continuation01 retained594
-commands and ran132 new ones, with zero repeats. Earlier disk/lock refusals and
-verified compiler-cache retirement remain recorded. Proceed with current-main
-compiler integration and compatibility qualification; these timing ratios remain
-bound to the measured exporter/wrapper. Private details remain local.
-[Complete decision](results/guarded-local-facts-full-continuation-01/assessment.md).
-[Composition evidence](results/guarded-local-facts-composed-census-01/assessment.md),
-[qualification](results/guarded-local-facts-profile-01/assessment.md).
-The automatic tool cache now includes its selected toolchain identifier: the
-retained regression fails before the fix, and 123 runnable root tests pass after
-it (10 existing skips). Explicit immutable keys remain usable. The unrelated
-archived backend crates correctly remain excluded.
-[Cache fix](results/toolchain-cache-after-01/assessment.md).
+Token improves 6.30% wall and 6.51% child CPU, beyond 1.41% wall A/A variation.
+Folded improves 3.11% wall. Differences for pgrust, rg-aot and Nushell establish
+no speedup over the previous custom runtime. These are complete changed-source
+commands, with 15 valid edited pairs per case. Wrong edits and restoration
+retain their original assertions. The two independent 88-command full-parser
+histories also pass: 114 original tests, no established parser speedup, and
+1.140× native wall under the repository profile / 1.263× matched incremental.
+[Full results and limits](results/scratch-memory-values-full-01/ASSESSMENT.md).
 
-Every latest suggestion has an [explicit disposition](docs/SUGGESTIONS-REVIEW-20260912-2210.md).
-`suggestions.txt` remains user-owned, unmodified and untracked. Update short
-current-state notes at milestones; detailed receipts belong in results.
-[Prior state snapshot](docs/history/STATE-20260913-before-guarded-integration.md).
+Qualified tool `df4006e0` preserves measured VM `6ac4dd9e`, exporter `cf4b3499`
+and wrapper `45bca4f2`. All Rust/Cargo/configuration inputs match the measured
+candidate. The integration retains main's optional runtime-compiler validation
+and restores the scalar launcher test; 407 merged Python tests pass, 22 declared
+compiler/native tests are skipped. The closure binds 1,460 source files.
+Prior 608 workspace tests per profile (13 ignored), 121 strict/cache commands,
+six exact profiles, 13 original selected/prepared controls, the full-parser
+compatibility and performance histories are reused through exact source/binary
+and closed-evidence bindings. The integration repeats no guest timing.
+[Integration](results/scratch-scalar-main-qualification-01/assessment.md).
 
-Keep the shared benchmark lock, 45-second admission, two Cargo workers,
-conservative cache estimates and an 8 GiB per-command floor. Read the independent
-disk sampler; do not start another cleaner or repair it. Preserve all other
-sessions and processes. No subagents, AWS activations or billing fallbacks.
-[Next work](RUNTIME-NEXT.md).
+This is still a selected-function/test-body engine. Complete Rust application,
+libtest, thread/OS/FFI and real unwinding support remain open. The parser and
+token native gaps still guide optimization; no complete database/shell coverage
+or isolated scratch-cache speedup is claimed.
+
+The current manual branch is `experiment/guarded-capture-census-20260918`.
+Main still adopts df4006e0. The aggregate and native-indirect compositions remain
+archived after failing their original changed-source wall gates. The indirect
+composition passed all correctness controls, 122 strict/cache commands and three
+exact profiles, then completed the full 40-command token primary with wall ratio
+1.00299236, CPU ratio 0.99040808 and wall A/A envelope 3.379272%. It was parked;
+no larger comparison or unchanged retry was started.
+[Indirect assessment](results/scalar-indirect-screen-token-01/ASSESSMENT.md).
+
+Three disabled observers now narrow the next runtime work. Exact re-emission
+attributes ordinary code generation mainly to region emission and liveness,
+but its total warm host cost is only 66–114ms in these captures. Existing known
+immutable Load/Copy operands account for 0/5/3 block/exhaustive/parser samples.
+Guarded external value forwarding has only 2/2/0 available sites and no selected
+samples. None warrants a runtime implementation or new timing screen yet.
+[Emission stages](results/jit-emission-stages-01/ASSESSMENT.md),
+[immutable reads](results/immutable-read-census-01/ASSESSMENT.md),
+[guarded values](results/guarded-value-census-02/ASSESSMENT.md).
+
+The resumed September 18 inspection confirms the last census finished and its
+closure is intact. No unfinished command from this run was inferred to be active.
+Suggestions remain unchanged. The independent disk monitor reports stale status;
+this task uses fresh disk admission checks and does not repair or restart it.
+The completed indirect primary's compiler intermediates were already retired:
+3,147 files, about 1.47GiB actual space, all 2,532 protected hashes unchanged.
+
+The smaller range-admission census is also complete: 43/59/7 new groups but
+only 14/0/0 block/exhaustive/parser samples. It preserves exact original code and
+all previously selected proofs. Defer smaller runtime guards and keep the
+threshold of eight. Frame-initialization review confirms prior proof extensions and clearing rewrites
+already address that area; register-array zeroing is absent in retained profiles.
+[Range admission](results/range-admission-census-01/ASSESSMENT.md).
+
+A bounded scalar call-chain census passes after two retained diagnostic failures.
+It admits 57 additional initialized/confined direct-call DAGs but selects no
+Call/Return samples in either current token capture. Defer parent scalar graphs.
+Four private external payload slots find 99 reuses in three functions, but only
+15 block source-address/load samples and none in exhaustive/parser, before capture
+cost. Defer this new runtime cache too.
+[Call-chain scope](results/scalar-chain-census-03/ASSESSMENT.md),
+[external captures](results/guarded-capture-census-01/ASSESSMENT.md).
+
+Next qualify a new composition of native indirect transitions, successor-only
+spilling and checked readonly scalar leaves on the adopted scalar/scratch runtime.
+Keep all isolated failures; infer no additive gain. Require new complete memory,
+fault, profile, strict/cache and original-test qualification, then the unchanged
+full-token changed-source primary. No aggregate output expansion, new memory
+capture policy or smaller range guard is included. Preserve current main's peer
+compiler-selection fixes when publishing or integrating launcher changes.
+
+The compiler/Cargo/parser-exporter investigation belongs to the other session.
+Preserve its worktrees and all user-owned processes. Keep the global benchmark
+lock, two Cargo workers, the shared owned build target, conservative reservations
+and the 8 GiB child floor. The disk monitor is read-only for this task; do not
+start a competing repair or cleaner. The saved goal stays paused while manual
+optimization continues.
+
+The September 13 12:45 suggestions were re-read on September 18 and their SHA
+remains unchanged: 4d74b3dc8b79ad7655a153c8aaf7485677e4bbe677b5a7bc7bec683a3da80c2f.
+[Review and dispositions](docs/SUGGESTIONS-REVIEW-20260913-1245.md).

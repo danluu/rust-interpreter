@@ -44,7 +44,7 @@ fn guarded_address_matches_original_for_arbitrary_entry_registers_and_extents() 
 #[derive(Debug,PartialEq,Eq)]
 struct Snapshot {
     status:usize, remaining:u64, extents:[usize;4], calls:u64, returns:u64,
-    memory:Vec<u8>, heap:Vec<u8>, registers:Vec<u128>, frames:Vec<Frame>, hits:Vec<Vec<u64>>,
+    memory:Vec<u8>, heap:Vec<u8>, registers:Vec<u128>, frames:Vec<Frame>, hits:Vec<Vec<u64>>, scalar_hits:Vec<Vec<u64>>,
 }
 
 fn direct_entry(p:&Program,jit:&Jit<'_>,values:[u128;3],budget:u64,frame_end:usize) -> Snapshot {
@@ -59,7 +59,9 @@ fn direct_entry(p:&Program,jit:&Jit<'_>,values:[u128;3],budget:u64,frame_end:usi
     let mut frames=vec![root,Frame::default(),Frame::default(),canary];
     let mut hits:Vec<_>=p.functions.iter().map(|f|vec![0u64;f.code.len()]).collect();
     let profiles:Vec<_>=hits.iter_mut().map(|r|r.as_mut_ptr()).collect();
-    let mut cursor=ResumeCursor { state:State{remaining:budget,profile_hits:profiles[0],memory_len:48,
+    let mut scalar_hits:Vec<_>=p.functions.iter().map(|f|vec![0u64;f.code.len()]).collect();
+    let scalar_profiles:Vec<_>=scalar_hits.iter_mut().map(|r|r.as_mut_ptr()).collect();
+    let mut cursor=ResumeCursor {scalar_profiles:scalar_profiles.as_ptr(), state:State{remaining:budget,profile_hits:profiles[0],memory_len:48,
         peak_linear:48,register_len:n,frame_len:1,calls:0,returns:0},
         frames:frames.as_mut_ptr(),registers:registers.as_mut_ptr(),
         entries:jit.resumable.as_ref().unwrap().pointers.as_ptr(),profiles:profiles.as_ptr(),
@@ -75,11 +77,20 @@ fn direct_entry(p:&Program,jit:&Jit<'_>,values:[u128;3],budget:u64,frame_end:usi
     assert_eq!(frames[3],canary);
     Snapshot { status:output[0],remaining:cursor.state.remaining,
         extents:[cursor.state.memory_len,cursor.state.peak_linear,cursor.state.register_len,cursor.state.frame_len],
-        calls:cursor.state.calls,returns:cursor.state.returns,memory,heap,registers,frames,hits }
+        calls:cursor.state.calls,returns:cursor.state.returns,memory,heap,registers,frames,hits,scalar_hits }
 }
 
 #[test]
 fn external_call_guards_preserve_fault_order_partial_copies_and_native_abi() {
+    call_guards_preserve_entry_state(false);
+}
+
+#[test]
+fn native_scalar_call_hints_preserve_external_entry_state_and_all_budget_tails() {
+    call_guards_preserve_entry_state(true);
+}
+
+fn call_guards_preserve_entry_state(scalar:bool) {
     for registers in [8,5000] {
         let r=registers as Reg-3;
         let mut root=function(vec![Op::Local{dst:r,offset:0},Op::Local{dst:r+1,offset:8},
@@ -95,7 +106,11 @@ fn external_call_guards_preserve_fault_order_partial_copies_and_native_abi() {
             let mut old=Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,persistent).unwrap();
             old.disable_call_slot_hints=true;
             let mut new=Jit::new_resumable(&p,profiled,MAX_CODE_BYTES,persistent).unwrap();
-            for jit in [&mut old,&mut new] { jit.ensure_function(0).unwrap();jit.ensure_function(1).unwrap(); }
+            for jit in [&mut old,&mut new] {
+                if scalar {jit.enable_scalar_calls();}
+                jit.ensure_function(0).unwrap();jit.ensure_function(1).unwrap();
+                assert_eq!(jit.scalar_entry(1).is_some(),scalar);
+            }
             for pair in [(16,24),(24,16),(crate::heap::TAG+16,24),(16,crate::heap::TAG+32),
                 (16,0),(0,24),(usize::MAX,24),(1,24),(40,48)] {
                 for result in [32,0] { for budget in 0..=12 { for frame_end in [1,3] {

@@ -17,6 +17,7 @@ pub(super) struct State {
     enabled: bool,
     snapshots: Vec<Snapshot>,
     pub hits: Vec<Hit>,
+    pub copy_hits: Vec<Hit>,
 }
 
 /// Only these reviewed straight-line integer encodings can preserve x9.
@@ -68,6 +69,13 @@ impl State {
         let Some(offset) = local else { return; };
         if let Some(s) = self.snapshots.iter().find(|s| s.offset == offset) {
             self.hits.push(Hit { pc, origin_pc: s.pc, origin: s.origin, offset });
+        }
+    }
+    pub fn copy_load(&mut self, pc: usize, local: Option<usize>, size: usize) {
+        if !self.enabled || size != 8 { return; }
+        let Some(offset)=local else { return; };
+        if let Some(s)=self.snapshots.iter().find(|s|s.offset==offset) {
+            self.copy_hits.push(Hit {pc,origin_pc:s.pc,origin:s.origin,offset});
         }
     }
 }
@@ -159,4 +167,44 @@ fn scratch_copy_value_survives_virtual_pointer_redefinition_without_word_changes
     assert_eq!((hit.pc, hit.origin_pc, hit.origin, hit.offset), (4, 2, "Copy", 16));
     assert!(plain.code.is_none() && observer.code.is_none());
     assert_eq!(plain.bytes + observer.bytes, 0);
+}
+
+#[test]
+fn scratch_copy_queries_require_exact_live_bytes_after_address_handling() {
+    let mut state=State::new(true);
+    state.capture(1,Some(8),8,"Copy");
+    for (offset,size) in [(Some(9),8),(Some(8),4),(None,8),(Some(8),16)] {state.copy_load(2,offset,size);}
+    assert!(state.copy_hits.is_empty());
+    state.observe_word(0x8b01004b); // shared frame address in x11, x9 untouched
+    state.copy_load(3,Some(8),8);assert_eq!(state.copy_hits.len(),1);
+    state.invalidate(Some(16),8);state.copy_load(4,Some(8),8);assert_eq!(state.copy_hits.len(),2);
+    state.invalidate(Some(15),1);state.copy_load(5,Some(8),8);assert_eq!(state.copy_hits.len(),2);
+    for word in [0x91000429,0x54000000,0xffffffff] {
+        state.capture(6,Some(8),8,"Copy");state.observe_word(word);
+        state.copy_load(7,Some(8),8);assert_eq!(state.copy_hits.len(),2);
+    }
+    let mut disabled=State::default();disabled.capture(1,Some(8),8,"Copy");
+    disabled.copy_load(2,Some(8),8);assert!(disabled.copy_hits.is_empty());
+}
+
+#[test]
+fn scratch_consecutive_copies_reconstruct_with_two_additional_load_opportunities() {
+    let p=Program {version:crate::VERSION,target:"aarch64-apple-darwin".into(),entry:0,
+        data:vec![0;16],statics:vec![],thread_locals:vec![],functions:vec![Function {
+        name:"consecutive copies".into(),frame_size:64,frame_align:16,registers:4,
+        args:vec![crate::Slot{offset:8,size:8}],result:crate::Slot{offset:0,size:8},
+        code:vec![Op::Local{dst:0,offset:8},Op::Local{dst:1,offset:16},
+            Op::Copy{dst:1,src:0,size:8},Op::Local{dst:0,offset:24},
+            Op::Copy{dst:0,src:1,size:8},Op::Local{dst:1,offset:32},
+            Op::Copy{dst:1,src:0,size:8},Op::Return]}]};
+    crate::validate(&p).unwrap();
+    let plain=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+    let mut observer=Jit::new_resumable(&p,false,MAX_CODE_BYTES,true).unwrap();
+    observer.observe_scratch_locals=true;
+    let a=plain.emit_function_inner(&p.functions[0],MAX_CODE_BYTES/4,0,None).unwrap().unwrap();
+    let b=observer.emit_function_inner(&p.functions[0],MAX_CODE_BYTES/4,0,None).unwrap().unwrap();
+    assert_eq!(a.words,b.words);assert_eq!(a.resumes,b.resumes);assert_eq!(a.assertions,b.assertions);
+    assert!(a.scratch_copy_hits.is_empty() && b.scratch_hits.is_empty());
+    assert_eq!(b.scratch_copy_hits.iter().map(|h|(h.pc,h.origin_pc,h.offset)).collect::<Vec<_>>(),vec![(4,2,16),(6,4,24)]);
+    assert!(plain.code.is_none() && observer.code.is_none());assert_eq!(plain.bytes+observer.bytes,0);
 }

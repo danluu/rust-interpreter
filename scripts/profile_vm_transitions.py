@@ -27,6 +27,10 @@ def counts(profile, stats):
             require(len(f[field]) == len(ops) and
                     all(type(n) is int and 0 <= n < 2**64 for n in f[field]),
                     'invalid profile vector')
+        scalar = f.get('jit_scalar_hits', [0] * len(ops))
+        require(len(scalar) == len(ops) and all(type(n) is int and 0 <= n < 2**64 for n in scalar),
+                'invalid scalar profile vector')
+        native += sum(scalar)
         for pc, (op, n) in enumerate(zip(ops, f['interpreted'])):
             require(isinstance(op, str), 'invalid rendered operation')
             if n:
