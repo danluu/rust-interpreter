@@ -140,6 +140,14 @@ assuming completion. Further case groups use --resume on this same campaign,
 only after passing, closing and auditing each complete checkpoint. Parser guard
 controllers and terminal/checkpoint auditors are prepared separately and unrun.
 
+The fresh token phase completed and closed154 commands and15 valid edited pairs.
+Its wall ratio0.96769033 exceeds the2.728848% A/A envelope narrowly; CPU ratio
+0.96381150 also passes. All12 original tests and restored source pass. Candidate
+wall remains1.598225 times ordinary native. Checkpoint1 is closed and the same
+campaign now runs folded matching under runtime-composition-full-folded-02,
+supervisor84332, started September18 15:04. No token command is repeated.
+[Full token assessment](results/runtime-composition-edit-token-02/ASSESSMENT.md).
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
