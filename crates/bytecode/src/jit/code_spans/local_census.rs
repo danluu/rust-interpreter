@@ -29,6 +29,8 @@ fn observe_saved_local_facts() {
     baseline.observe_static_local_facts = false;
     baseline.observe_scalar_copy = false;
     let mut alternative = Jit::new_resumable(&program, true, MAX_CODE_BYTES, true).unwrap();
+    baseline.omit_dead_exit_spills = false;
+    alternative.omit_dead_exit_spills = false;
     alternative.observe_guarded_local_retention = true;
     let static_facts = match std::env::var("LOCAL_CENSUS_STATIC_FACTS").ok().as_deref() {
         None | Some("0") => false, Some("1") => true, _ => panic!("invalid static-fact census option"),

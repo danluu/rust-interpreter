@@ -106,6 +106,8 @@ struct ResumeCursor {
     frame_end: usize,
     working_budget: usize,
     scalar_profiles: *const *mut u64,
+    indirect_layout: *const indirect::Layout,
+    indirect_layouts: *const indirect::Layout,
 }
 
 use continuation::layout as state;
@@ -118,6 +120,8 @@ pub(super) const REGISTER_END: usize = std::mem::offset_of!(ResumeCursor, regist
 pub(super) const FRAME_END: usize = std::mem::offset_of!(ResumeCursor, frame_end);
 pub(super) const SCALAR_PROFILES: usize = std::mem::offset_of!(ResumeCursor, scalar_profiles);
 pub(super) const WORKING_BUDGET: usize = std::mem::offset_of!(ResumeCursor, working_budget);
+const INDIRECT_LAYOUT: usize = std::mem::offset_of!(ResumeCursor, indirect_layout);
+const INDIRECT_LAYOUTS: usize = std::mem::offset_of!(ResumeCursor, indirect_layouts);
 const _: () = {
     assert!(std::mem::offset_of!(ResumeCursor, state) == 0);
 };
@@ -129,7 +133,8 @@ const _: () = {
     assert!(MEMORY_END == 96 && REGISTER_END == 104 && FRAME_END == 112);
     assert!(WORKING_BUDGET == 120);
     assert!(SCALAR_PROFILES == 128);
-    assert!(std::mem::size_of::<ResumeCursor>() == 136);
+    assert!(INDIRECT_LAYOUT == 136 && INDIRECT_LAYOUTS == 144);
+    assert!(std::mem::size_of::<ResumeCursor>() == 152);
 };
 
 impl<'a> Jit<'a> {
@@ -142,6 +147,12 @@ impl<'a> Jit<'a> {
         let mut jit = Self::new_with_options(program, profiled, capacity, false, persistent)?;
         jit.resumable = Some(Entries::new(program));
         Ok(jit)
+    }
+
+    pub(crate) fn enable_indirect_calls(&mut self) {
+        if let Some(entries)=&self.resumable {
+            self.indirect=indirect::Metadata::new(self.program,&entries.zeroes);
+        }
     }
 
     pub(crate) fn resumable_register_zeroes(&self) -> &[bool] {
@@ -249,6 +260,8 @@ impl<'a> Jit<'a> {
             frame_end: frame_end.min(limits.frames),
             working_budget,
             scalar_profiles: scalar_profiles.as_ptr(),
+            indirect_layout: std::ptr::null(),
+            indirect_layouts: self.indirect.as_ref().map_or(std::ptr::null(),|m|m.layouts.as_ptr()),
         };
         // SAFETY: all preparation precedes these fresh exclusive pointers.
         // Native guards bound every push, zero/copy and profile/table access.
@@ -336,6 +349,12 @@ impl<'a> Jit<'a> {
                     self.profiled,
                     &mut declines,
                 )?;
+            }
+            Op::CallIndirect {callee,args,arg_sizes,destination,result_size} => {
+                let signature=self.indirect.as_ref().and_then(|m|m.signature(arg_sizes,*result_size))
+                    .ok_or(EmitError::InvalidRelocation("missing indirect signature metadata"))?;
+                a.resumable_indirect_call(f,pc,*callee,args,arg_sizes,*destination,signature,
+                    self.program.functions.len(),self.profiled,&mut declines)?;
             }
             Op::Return => a.resumable_return(f, pc, self.profiled, &mut declines)?,
             _ => return Err(EmitError::InvalidRelocation("invalid resumable transition")),
@@ -777,3 +796,6 @@ impl Assembler<'_> {
 #[cfg(all(test, target_arch = "aarch64", target_os = "macos"))]
 #[path = "resumable_tests.rs"]
 mod tests;
+
+#[path = "resumable_indirect.rs"]
+mod indirect_call;

@@ -489,13 +489,19 @@ def prepare(root, compiler, namespace, run_id, lock_path, wait_seconds):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--compiler-key', required=True)
+    compilers = parser.add_mutually_exclusive_group(required=True)
+    compilers.add_argument('--compiler-key', help='owned complete stage2 compiler key')
+    compilers.add_argument('--runtime-compiler-key', help='separately installed native runtime compiler key')
     parser.add_argument('--namespace', required=True)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--workload-lock', type=Path, required=True)
     parser.add_argument('--lock-wait-seconds', type=lock_wait_seconds, default=600)
     args = parser.parse_args()
-    compiler = load_compiler(ROOT, args.compiler_key)
+    if args.runtime_compiler_key is not None:
+        from runtime_compiler import load_runtime_compiler
+        compiler = load_runtime_compiler(ROOT, args.runtime_compiler_key)
+    else:
+        compiler = load_compiler(ROOT, args.compiler_key)
     sysroot, target, key, ready = prepare(ROOT, compiler, args.namespace, args.run_id,
                                     args.workload_lock, args.lock_wait_seconds)
     print(json.dumps(dict(sysroot=str(sysroot), target=target, key=key, policy=ready['identity']['policy'],
