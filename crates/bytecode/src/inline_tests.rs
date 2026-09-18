@@ -699,5 +699,79 @@ fn rematerialization_uses_latest_proven_argument_and_result_offsets() {
     equivalent(&p, &[17, 93], 93);
 }
 
+#[test]
+fn leaf_call_count_and_size_boundaries_keep_selection() {
+    let base = leaf("bounded leaf", 16, 1, vec![], Slot { offset: 0, size: 0 },
+        vec![Op::Local { dst: 0, offset: 0 }, Op::Return]);
+    for calls in 0..=2 {
+        let mut f = base.clone();
+        f.code.splice(1..1, (0..calls).map(|_| Op::Call {
+            function: 2, args: vec![], destination: 0,
+        }));
+        let mut p = root(f, &[], 0);
+        // The one-operation child cannot itself be expanded, isolating the
+        // decision whether the root may inline this zero/one/two-call body.
+        p.functions.push(leaf("terminal child", 0, 0, vec![],
+            Slot { offset: 0, size: 0 }, vec![Op::Return]));
+        let (q, report) = checked_transform(&p, options()).unwrap();
+        assert_eq!(report["selected_sites"], if calls <= 1 { 1 } else { 0 }, "{calls} calls");
+        if calls == 2 {
+            assert_eq!(bincode::serialize(&p).unwrap(), bincode::serialize(&q).unwrap());
+        }
+    }
+    for (variant, selected) in [
+        ("192 operations", 1), ("193 operations", 0),
+        ("512-byte frame", 1), ("513-byte frame", 0),
+        ("256 registers", 1), ("257 registers", 0),
+        ("no return", 0), ("single return", 0),
+    ] {
+        let mut f = base.clone();
+        match variant {
+            "192 operations" | "193 operations" => {
+                let count = if selected == 1 { 192 } else { 193 };
+                f.code = vec![Op::Imm { dst: 0, value: 0 }; count - 1];
+                f.code.push(Op::Return);
+            }
+            "512-byte frame" => f.frame_size = 512,
+            "513-byte frame" => f.frame_size = 513,
+            "256 registers" => f.registers = 256,
+            "257 registers" => f.registers = 257,
+            "no return" => f.code[1] = Op::Trap { message: "no return".into() },
+            "single return" => f.code = vec![Op::Return],
+            _ => unreachable!(),
+        }
+        let p = root(f, &[], 0);
+        let (q, report) = checked_transform(&p, options()).unwrap();
+        assert_eq!(report["selected_sites"], selected, "{variant}");
+        if selected == 0 {
+            assert_eq!(bincode::serialize(&p).unwrap(), bincode::serialize(&q).unwrap(), "{variant}");
+        }
+    }
+}
+
+#[test]
+fn no_direct_calls_preserve_complete_program_and_public_report() {
+    for indirect in [false, true] {
+        let mut p = root(leaf("unused leaf", 16, 1, vec![],
+            Slot { offset: 0, size: 0 },
+            vec![Op::Imm { dst: 0, value: 0 }, Op::Return]), &[], 0);
+        p.functions[0].code = vec![Op::Local { dst: 0, offset: 0 }, Op::Return];
+        if indirect {
+            p.functions[0].code.insert(1, Op::CallIndirect {
+                callee: 0, args: vec![], arg_sizes: vec![], destination: 0, result_size: 0,
+            });
+        }
+        let count: usize = p.functions.iter().map(|f| f.code.len()).sum();
+        let (q, report) = checked_transform(&p, options()).unwrap();
+        assert_eq!(bincode::serialize(&p).unwrap(), bincode::serialize(&q).unwrap());
+        assert_eq!(report, serde_json::json!({
+            "selected_sites": 0, "original_operations": count, "new_operations": count,
+            "added_operations_upper_bound": 0, "changed_callers": [],
+            "max_leaf_operations": 192, "max_program_growth_percent": 100,
+            "cloned_diagnostic_bytes": 0,
+        }));
+    }
+}
+
 mod medium_copy_tests;
 mod owned_tests;
