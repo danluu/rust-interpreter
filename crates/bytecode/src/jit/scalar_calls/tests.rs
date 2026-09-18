@@ -1,9 +1,6 @@
 use super::*;
 use crate::{Function,Slot,Op,Engine,VERSION,execute_profiled,Limits,ExecutionProfile};
 
-#[path="readonly_tests.rs"]
-mod readonly;
-
 fn local(dst:Reg,offset:usize)->Op {Op::Local{dst,offset}}
 fn load(dst:Reg,address:Reg,size:u8)->Op {Op::Load{dst,address,size}}
 fn function(name:&str,frame_size:usize,frame_align:usize,args:Vec<Slot>,result:Slot,code:Vec<Op>)->Function {
@@ -258,6 +255,3 @@ fn native_scalar_call_zero_results_preserve_fixed_variable_and_fault_budget_path
         }}}
     }
 }
-
-#[path="indirect_tests.rs"]
-mod indirect_tests;

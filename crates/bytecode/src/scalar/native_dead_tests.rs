@@ -1,15 +1,4 @@
 use super::*;
-
-#[test]
-fn native_scalar_dead_registers_retain_unsigned_external_loads() {
-    for opcode in [0x39400000,0x79400000,0xb9400000] {
-        let load=opcode|(11<<5)|9;
-        let words=[load,0xaa1f03e9,0xd65f03c0]; // unused read, successful status, RET
-        let result=eliminate_call(&words).unwrap();assert!(result.contains(&load));
-        let decoded=decode(load,0,words.len(),0).unwrap();
-        assert_eq!(decoded.reads,1<<11);assert_eq!(decoded.writes,1<<9);assert!(!decoded.pure);
-    }
-}
 const ZERO10: u32 = 0xaa1f03ea;
 const OK: u32 = 0xaa1f03e0;
 const FAIL: u32 = 0xd2800020;

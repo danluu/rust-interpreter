@@ -41,7 +41,6 @@ mod native_calls;
 mod native_regions;
 mod resumable;
 mod scalar_calls;
-mod indirect;
 mod call_slots;
 mod code_dump;
 mod code_spans;
@@ -57,17 +56,7 @@ mod scratch_locals;
 #[cfg(test)]
 mod flush_census;
 #[cfg(test)]
-mod successor_flush_tests;
-#[cfg(test)]
 mod memory_parts;
-#[cfg(test)]
-mod emission_stages;
-#[cfg(test)]
-mod immutable_reads;
-#[cfg(test)]
-mod guarded_value_census;
-#[cfg(test)]
-mod guarded_capture_census;
 #[cfg(test)]
 mod memory_operand_tests;
 
@@ -377,7 +366,6 @@ pub(crate) struct Jit<'a> {
     persistent_registers: bool,
     resumable: Option<resumable::Entries>,
     scalar: Option<scalar_calls::State>,
-    indirect: Option<indirect::Metadata<'a>>,
     #[cfg(test)]
     disable_call_slot_hints: bool,
     #[cfg(test)]
@@ -394,8 +382,6 @@ pub(crate) struct Jit<'a> {
     observe_flush: bool,
     #[cfg(test)]
     observe_memory_parts: bool,
-    #[cfg(test)]
-    omit_dead_exit_spills: bool,
     pub register_functions: usize,
     pub register_pairs: usize,
     pub liveness_declines: usize,
@@ -422,7 +408,7 @@ impl<'a> Jit<'a> {
             prepared: vec![false; program.functions.len()],
             blocks: vec![vec![]; program.functions.len()], bytes: 0, operations: 0,
             compiled_functions: 0, declined_functions: 0, compile_nanos: 0,
-            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None, indirect: None,
+            assertions: vec![], trees: None, native_call_stubs, call_stubs: 0, resumable: None, scalar: None,
             #[cfg(test)]
             disable_call_slot_hints: false,
             #[cfg(test)]
@@ -439,8 +425,6 @@ impl<'a> Jit<'a> {
             observe_flush: false,
             #[cfg(test)]
             observe_memory_parts: false,
-            #[cfg(test)]
-            omit_dead_exit_spills: true,
             persistent_registers, register_functions: 0, register_pairs: 0, liveness_declines: 0,
             region_plans: if native_call_stubs { vec![native_regions::RegionPlan::default(); program.functions.len()] } else { vec![] } })
     }
@@ -533,8 +517,6 @@ impl<'a> Jit<'a> {
     // It reuses admission and original assertion identities without republishing.
     fn emit_function_inner(&self, f: &'a Function, word_budget: usize, assertion_base: usize,
         mut spans: Option<&mut code_spans::Collector>) -> Result<Option<CompiledFunction<'a>>, EmitError> {
-        #[cfg(test)]
-        let _emission_timer = emission_stages::Span::new(emission_stages::Stage::Function);
         let resumable = self.resumable.is_some();
         let mut words = vec![];
         #[cfg(test)]
@@ -552,30 +534,12 @@ impl<'a> Jit<'a> {
         let mut assertions = vec![];
         let mut operations = 0;
         let mut range_work = 4_000_000;
-        let reads = {
-            #[cfg(test)]
-            let _timer = emission_stages::Span::new(emission_stages::Stage::Reads);
-            read_registers(f)
-        };
-        let values = {
-            #[cfg(test)]
-            let _timer = emission_stages::Span::new(emission_stages::Stage::Liveness);
-            self.persistent_registers.then(|| values::analyze(f)).flatten()
-        };
-        let fills = {
-            #[cfg(test)]
-            let _timer = emission_stages::Span::new(emission_stages::Stage::Fills);
-            local_fills(f)
-        };
-        let slots = {
-            #[cfg(test)]
-            let _timer = emission_stages::Span::new(emission_stages::Stage::Slots);
-            if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() }
-        };
+        let reads = read_registers(f);
+        let values = self.persistent_registers.then(|| values::analyze(f)).flatten();
+        let fills = local_fills(f);
+        let slots = if resumable { call_slots::collect(f, self.program) } else { std::collections::BTreeMap::new() };
         #[cfg(test)]
         let slots = if self.disable_call_slot_hints { std::collections::BTreeMap::new() } else { slots };
-        #[cfg(test)]
-        let _setup_timer = emission_stages::Span::new(emission_stages::Stage::RegionsSetup);
         let native = |pc: usize| supported(&f.code[pc]) || fills.contains_key(&pc)
             || (resumable && transfers::supported(&f.code[pc]));
         let mut entries = vec![None; f.code.len()];
@@ -602,8 +566,6 @@ impl<'a> Jit<'a> {
                 starts[pc + 1] = true;
             }
         }
-        #[cfg(test)]
-        drop(_setup_timer);
         let mut pc = 0;
         while pc < f.code.len() {
             let start = pc;
@@ -618,8 +580,6 @@ impl<'a> Jit<'a> {
                 pc += 1;
             }
             if pc - start >= if resumable { 1 } else { 3 } {
-                #[cfg(test)]
-                let _timer = emission_stages::Span::new(emission_stages::Stage::Regions);
                 let offset = words.len() * 4;
                 let mut a = Assembler {
                     #[cfg(test)]
@@ -645,10 +605,6 @@ impl<'a> Jit<'a> {
                     resumable,
                     ..Assembler::default()
                 };
-                #[cfg(test)]
-                let mut guarded_values = guarded_value_census::State::new();
-                #[cfg(test)]
-                let mut guarded_captures = guarded_capture_census::State::new();
                 let mut covered = 0;
                 macro_rules! span {
                     ($kind:ident, $pc:expr) => {{
@@ -698,12 +654,6 @@ impl<'a> Jit<'a> {
                 for (index, op) in f.code[start..body_end].iter().enumerate() {
                     a.current_pc = start + index;
                     #[cfg(test)]
-                    immutable_reads::observe(op, &a.facts, &self.program.data, start + index);
-                    #[cfg(test)]
-                    guarded_values.observe(&a, op);
-                    #[cfg(test)]
-                    guarded_captures.observe(&a, op);
-                    #[cfg(test)]
                     a.memory_parts.begin(op, start + index, start, pc, a.heap);
                     if let Op::Assert { value, expected, message } = op {
                         let code = assertion_code(assertion_base, assertions.len())?;
@@ -722,11 +672,7 @@ impl<'a> Jit<'a> {
                 }
                 #[cfg(test)]
                 { a.flush_tail_consumed = terminal.is_none(); }
-                #[cfg(test)]
-                let retain_tail_reads = !self.omit_dead_exit_spills;
-                #[cfg(not(test))]
-                let retain_tail_reads = false;
-                a.flush_facts(start, pc, retain_tail_reads);
+                a.flush_facts(start, pc);
                 span!(Flush, None);
                 a.exit(terminal, pc)?;
                 if terminal.is_some() { span!(Operation, Some(pc - 1)); }
@@ -797,14 +743,7 @@ impl<'a> Jit<'a> {
                 operations += pc - start;
             }
             if pc == start {
-                if resumable && (matches!(f.code[pc], Op::Call { .. } | Op::Return)
-                    || match &f.code[pc] {
-                        Op::CallIndirect {arg_sizes,result_size,..} => self.indirect.as_ref()
-                            .and_then(|m|m.signature(arg_sizes,*result_size)).is_some(),
-                        _ => false,
-                    }) {
-                    #[cfg(test)]
-                    let _timer = emission_stages::Span::new(emission_stages::Stage::Transitions);
+                if resumable && matches!(f.code[pc], Op::Call { .. } | Op::Return) {
                     let offset = words.len() * 4;
                     let (a, resume, internal) = self.emit_resumable_transition(f, pc, &reads, values.as_ref(), slots.get(&pc).map(Vec::as_slice))?;
                     code_spans::record(&mut spans, words.len(), pc, Some(pc),
@@ -841,14 +780,10 @@ impl<'a> Jit<'a> {
                 pc += 1;
             }
         }
-        #[cfg(test)]
-        let _links_timer = emission_stages::Span::new(emission_stages::Stage::Links);
         for (at, successor, fallback) in links {
             let target = internal_entries.get(successor).copied().flatten().unwrap_or(fallback);
             patch_jump(&mut words, at, target)?;
         }
-        #[cfg(test)]
-        drop(_links_timer);
         Ok(Some(CompiledFunction { words, entries, resumes, operations, assertions,
             #[cfg(test)] memory_spans,
             register_pairs: values.as_ref().map_or(0, |v| v.registers.len()),
@@ -1639,7 +1574,7 @@ impl Assembler<'_> {
             }
         }
     }
-    fn flush_facts(&mut self, start: usize, end: usize, retain_tail_reads: bool) {
+    fn flush_facts(&mut self, start: usize, end: usize) {
         // Registers are not guest-addressable. A value used only inside this
         // straight-line region needs no spill. Conservatively retain every
         // value read elsewhere. Also retain values read before their first
@@ -1648,10 +1583,7 @@ impl Assembler<'_> {
         let live: Vec<_> = self.facts.iter().filter_map(|(&reg, &fact)| {
             if matches!(fact, Fact::Physical { .. }) { return None; }
             if let Some(values) = self.values {
-                // exit() consumes its branch operand from the unchanged facts
-                // and x5/x6 after flushing. Tree-call tails keep their prior rule.
-                return (values.live.after(end - 1, reg)
-                    || retain_tail_reads && values.live.at(end - 1, reg)).then_some((reg, fact));
+                return (values.live.at(end - 1, reg) || values.live.after(end - 1, reg)).then_some((reg, fact));
             }
             self.reads[reg as usize]
                 .filter(|&(first, last)| matches!(fact, Fact::Cached { .. }) || first < start || last >= end || self.live_in.contains(&reg))

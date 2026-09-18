@@ -51,7 +51,7 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-The current manual branch is `experiment/runtime-composition-20260918`.
+The current manual branch is `experiment/shared-cold-tails-20260918`.
 Main still adopts df4006e0; the new runtime remains experimental. Main4b6ec8bf
 published only the separately qualified std-MIR device-readmission repair,
 preserving peer compiler work. Re-fetch main when integration is actually admitted.
@@ -181,11 +181,15 @@ files and214 archived adopted-VM build inputs. Analysis-only admission retry
 19433/19474 passed; neither guest repeated. Source/binary separation remains
 explicit. These are partial diagnostic windows, not speedup measurements.
 
-Next investigate exact repeated cold exit tails within native functions. A
-bounded saved-code census must establish byte identity, terminal control flow
-and branch reach before implementation. A smaller generated image could improve
-hot instruction locality but needs a fresh changed-source test; do not retime
-the rejected address/budget/spill/composition candidates unchanged.
+The closed shared-cold-tail-census-01 passes6 controls and83 frozen input checks,
+with no guest execution. Exact intra-function fault-tail sharing projects
+720,192/837,504 fewer bytes (6.37%/6.09%) in the two adopted captures. All samples
+reconcile; no unsupported tail shapes. This is footprint, not speedup evidence.
+The new branch restores crates/Cargo/toolchain inputs exactly to adopted source
+fca687eb; all rejected prototypes remain preserved in Git. Implement only bounded
+sharing of complete identical fault tails, keeping local conditional targets via
+one-word branches. Assertion/budget/successor/transition tails stay separate.
+Qualify correctness before a fresh changed-source primary. Main runtime unchanged.
 
 Token/rg-aot supervisors ended normally. Folded/pgrust case controllers also
 finished normally, but their outer post-case audits timed out on the shared lock.

@@ -834,8 +834,6 @@ fn fixed_native_host_frame_preserves_all_callee_saved_registers_on_every_exit() 
                                 register_end,
                                 frame_end: frame_end.min(3),
                                 working_budget,
-                                indirect_layout: std::ptr::null(),
-                                indirect_layouts: std::ptr::null(),
                             };
                             let args = [
                                 registers.as_mut_ptr() as usize,

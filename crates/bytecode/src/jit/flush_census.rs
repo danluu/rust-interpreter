@@ -45,10 +45,8 @@ fn program(code: Vec<Op>) -> Program {
 
 fn observe(p: &Program, persistent: bool) -> Vec<Span> {
     crate::validate(p).unwrap();
-    let mut baseline = Jit::new_resumable(p, false, MAX_CODE_BYTES, persistent).unwrap();
+    let baseline = Jit::new_resumable(p, false, MAX_CODE_BYTES, persistent).unwrap();
     let mut observer = Jit::new_resumable(p, false, MAX_CODE_BYTES, persistent).unwrap();
-    baseline.omit_dead_exit_spills = false;
-    observer.omit_dead_exit_spills = false;
     observer.observe_flush = true;
     let a = baseline.emit_function_inner(&p.functions[0],MAX_CODE_BYTES/4,0,None).unwrap().unwrap();
     let b = observer.emit_function_inner(&p.functions[0],MAX_CODE_BYTES/4,0,None).unwrap().unwrap();
