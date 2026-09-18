@@ -19,7 +19,7 @@ errors. Reject actual partial-validation artifacts with indirect-only and combin
 flags. Verify source restoration and all expected negative results before closure.
 
 Qualify five operation-map controls and nine launcher controls freshly. Then run
-three original candidate profiles (block, exhaustive, folded) against three retained
+three original candidate profiles (block, exhaustive, folded) against three freshly executed
 adopted profiles. Require exact logical counts at every original PC, instruction
 and peak-memory counts, entropy consumption, and complete emitted-code ownership.
 Entropy replay is used only for these identity diagnostics, never timing.
@@ -28,3 +28,8 @@ Use the shared lock,12GiB admission,8GiB child floor and two-worker limits.
 After all qualifications pass, run the fresh40-command full-token primary with
 all12 original tests and the unchanged gates in SCREEN.md. Main remains adopted
 unless the primary, prospective five-project histories and both parser guards pass.
+
+Host recovery changed CPU-feature-query paths in historical controls. The closed
+environment diagnostic reproduces the same change with the unchanged adopted VM.
+Use six fresh profile commands under the current host; preserve exact PC-count
+comparison without exemptions. The failed retained-profile attempt stays failed.

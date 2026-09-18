@@ -28,10 +28,15 @@ source on all ordinary controller exits. Do not disrupt other work.
 Before timing, run13 protocol controls and bind the five closed operation-map controls.
 Reuse the complete 443-test Python launcher qualification (421 passed, 22 skipped)
 only through exact scripts/tests/source/log bindings; do not report reused
-tests as newly executed. Require three new candidate diagnostic profiles to match three closed adopted
+tests as newly executed. Require three new candidate diagnostic profiles to match three freshly executed adopted
 profiles, including logical counts, memory and entropy, before timing.
 
 This primary uses all12 original token tests. Only the candidate enables native
 indirect transitions; its immutable VM also includes readonly scalar leaves and
 successor-only spilling. Earlier isolated and partially combined failures remain
 failures. This composition must independently clear the unchanged gate.
+
+Host recovery changed CPU-feature-query paths in historical controls. The closed
+environment diagnostic reproduces the same change with the unchanged adopted VM.
+Use six fresh profile commands under the current host; preserve exact PC-count
+comparison without exemptions. The failed retained-profile attempt stays failed.

@@ -61,7 +61,7 @@ def validate_matched_profile(build,profile):
     for name in ['rust-interp-mir-export','rust-interp-rustc-wrapper']:
         assert matched['binaries'][name]==build['binaries'][name]
     assert profile['status']=='passed' and profile['tool_key']==build['tool_key']
-    assert profile['commands']==3 and profile['reused_control_profiles']==3 and profile['matched_control_key']==matched['tool_key']
+    assert profile['commands']==6 and profile['reused_control_profiles']==0 and profile['fresh_control_profiles']==3 and profile['matched_control_key']==matched['tool_key']
     for field in ['control_vm_matches_adopted','exact_logical_counts_memory_and_entropy',
                   'exact_per_pc_counts','exact_operation_map_reconstruction']:assert profile[field] is True
     assert sorted((r['index'],r['mode']) for r in profile['comparisons'])==[(i,m) for i in range(3) for m in ['candidate','control']]
@@ -73,7 +73,7 @@ def validate_matched_profile(build,profile):
             assert totals['native']==stats['jit_instructions']
             assert row['current_native_bytes']>=row['scalar_code_bytes']>0
             assert totals['scalar']>0 and row['scalar_calls']>0
-            assert row['reused']==(mode=='control')
+            assert row['reused'] is False
             if mode=='control':assert row['tool_key']==BASELINE_KEY
         a,b=rows['control'],rows['candidate']
         for key in ['instructions','peak_guest_memory','entropy_calls','entropy_bytes']:

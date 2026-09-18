@@ -16,14 +16,14 @@ class ScreenTests(unittest.TestCase):
         build=dict(tool_key='new',binaries={'rust-interp-vm':'new-vm','rust-interp-mir-export':'exporter','rust-interp-rustc-wrapper':'wrapper'},
             composition=dict(kind='native-indirect-readonly-successor',compiler_source_key=screen.EXPORTER_KEY))
         build['matched_control']=dict(tool_key=screen.BASELINE_KEY,binaries=dict(build['binaries'],**{'rust-interp-vm':'old-vm'}))
-        profile=dict(status='passed',tool_key='new',commands=3,reused_control_profiles=3,matched_control_key=screen.BASELINE_KEY,control_vm_matches_adopted=True,
+        profile=dict(status='passed',tool_key='new',commands=6,reused_control_profiles=0,fresh_control_profiles=3,matched_control_key=screen.BASELINE_KEY,control_vm_matches_adopted=True,
             exact_logical_counts_memory_and_entropy=True,exact_per_pc_counts=True,exact_operation_map_reconstruction=True,
-            comparisons=[dict(index=i,mode=m,reused=m=='control',tool_key=screen.BASELINE_KEY,statistics=dict(jit_declined_functions=0,instructions=10,jit_instructions=8,peak_guest_memory=100,entropy_calls=2,entropy_bytes=32),
+            comparisons=[dict(index=i,mode=m,reused=False,tool_key=screen.BASELINE_KEY,statistics=dict(jit_declined_functions=0,instructions=10,jit_instructions=8,peak_guest_memory=100,entropy_calls=2,entropy_bytes=32),
                     current_native_bytes=100 if m=='control' else 110,scalar_code_bytes=10,
                     logical_counts=dict(total=10,native=8,interpreted=2,scalar=5),scalar_calls=1)
                 for i in range(3) for m in ['control','candidate']])
         self.assertTrue(screen.validate_matched_profile(build,profile))
-        for field,value in [('commands',6),('matched_control_key','new'),('control_vm_matches_adopted',False),
+        for field,value in [('commands',3),('reused_control_profiles',3),('fresh_control_profiles',2),('matched_control_key','new'),('control_vm_matches_adopted',False),
             ('exact_per_pc_counts',False),('exact_operation_map_reconstruction',False)]:
             bad=copy.deepcopy(profile);bad[field]=value
             with self.subTest(field=field),self.assertRaises(AssertionError):screen.validate_matched_profile(build,bad)

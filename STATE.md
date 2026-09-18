@@ -104,6 +104,14 @@ full-token changed-source primary. No aggregate output expansion, new memory
 capture policy or smaller range guard is included. Preserve current main's peer
 compiler-selection fixes when publishing or integrating launcher changes.
 
+The122 strict/cache commands pass after a narrow std-MIR device readmission:
+all26 metadata hashes were unchanged, and the historical manifest stays immutable.
+The updated launcher passes421 Python tests with22 skips and all seven focused
+readmission controls also pass under system Python3.9. The first retained-profile
+comparison stopped on18 extra instructions in macOS CPU-feature detection. A
+fresh unchanged adopted VM reproduces the same path and exactly matches the
+candidate. Preserve both results and require six fresh profiles before timing.
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
