@@ -104,7 +104,7 @@ def main():
     interpreter.ROOT = root
     assert re.fullmatch('runtime-composition-edit-'+args.case+r'-\d{2}', args.run_id)
     wide, memory, proofs = load_prerequisites()
-    harness_path=root/'results/runtime-composition-full-protocol-01/summary.json'
+    harness_path=root/'results/runtime-composition-full-protocol-02/summary.json'
     harness=json.loads(harness_path.read_text())
     assert harness['status']=='passed' and harness['tests']==23
     harness_inputs=root/harness['raw']/'inputs.json'

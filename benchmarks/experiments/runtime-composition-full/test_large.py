@@ -77,8 +77,8 @@ class ComparisonTests(unittest.TestCase):
 
     def test_distinct_runtime_composition_uses_the_recorded_pins(self):
         self.assertNotEqual(comparison.BASELINE,comparison.CANDIDATE)
-        self.assertEqual(comparison.BASELINE,'4a1381c40d6b412aa613aa1ae4ba4eea0fc6a290fae143d96af48101eb1fc177')
-        self.assertEqual(comparison.CANDIDATE,'df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62')
+        self.assertEqual(comparison.BASELINE,'df4006e03daad7dd008eab34c24a03390d892ec14e55154c43e2d5568c0bba62')
+        self.assertEqual(comparison.CANDIDATE,'45a1529e5e3069e23d2222cfe63758208e6259522dd9c5e520c332600121441b')
         self.assertEqual(set(comparison.PINS),{'pgrust','rg-aot','nushell'})
 
 

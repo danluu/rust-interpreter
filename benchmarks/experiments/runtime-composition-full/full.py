@@ -105,7 +105,7 @@ def main():
     directory=Path(__file__).parent
     paths=[p for p in directory.iterdir() if p.suffix in ['.py','.md']]
     paths+=list((ROOT/'scripts').glob('*.py'))
-    harness=ROOT/'results/runtime-composition-full-protocol-01/summary.json'
+    harness=ROOT/'results/runtime-composition-full-protocol-02/summary.json'
     proof=json.loads(harness.read_text());assert proof['status']=='passed' and proof['tests']==23
     inputs=ROOT/proof['raw']/'inputs.json';assert sha(inputs)==proof['inputs_sha256']
     assert all(sha(ROOT/p)==h for p,h in json.loads(inputs.read_text()).items())

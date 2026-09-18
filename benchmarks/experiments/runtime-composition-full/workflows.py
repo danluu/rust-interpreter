@@ -118,7 +118,7 @@ def main():
         acquire_lock(lock, 45)
         admission = 14 if project == 'fre' else 10
         require_space(ROOT, admission)
-        harness_path = ROOT / 'results/runtime-composition-full-protocol-01/summary.json'
+        harness_path = ROOT / 'results/runtime-composition-full-protocol-02/summary.json'
         harness = json.loads(harness_path.read_text())
         assert harness['status'] == 'passed' and harness['tests'] == 23
         baseline_proof, candidate_proof, proofs = load_prerequisites()
