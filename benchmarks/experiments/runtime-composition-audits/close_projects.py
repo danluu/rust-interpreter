@@ -81,6 +81,9 @@ def main():
             source(plan['script'], plan['script_sha256'], plan['source_revision'])
         else:
             assert supervisor == 'runtime-composition-full-nushell-02'
+        helper_revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+        helper_path = str(Path(__file__).relative_to(ROOT))
+        source(helper_path, sha(Path(__file__)), helper_revision)
         snapshot = raw / 'closed-projects'
         snapshot.mkdir(exist_ok=False)
         for file in ['plan.json', 'records.json', summary['final_audit_path']]:
@@ -90,6 +93,7 @@ def main():
         write(snapshot / 'evidence.json', evidence)
         (out / 'project-terminal.json').write_bytes((outer / 'status.json').read_bytes())
         receipt = dict(status='closed', commands=726, completed_cases=CASES,
+            closure_source_revision=helper_revision,
             project_gates_passed=passed, parser_guards_complete=False, runtime_adopted=False,
             snapshot=str(snapshot.relative_to(ROOT)), sources_sha256=sha(snapshot / 'sources.json'),
             evidence_sha256=sha(snapshot / 'evidence.json'), frozen_sources=len(sources),
