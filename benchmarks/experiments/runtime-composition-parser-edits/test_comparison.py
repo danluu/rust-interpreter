@@ -39,6 +39,7 @@ class ComparisonTests(unittest.TestCase):
             self.assertEqual(result[result.index('--cache-namespace')+1],'fresh:'+mode)
         self.assertEqual(template[3],'old')
         with self.assertRaises(AssertionError):custom_command(template+['--jit-scalar-calls'],'x','baseline',Path('/test'),0)
+        with self.assertRaises(AssertionError):custom_command(template+['--jit-indirect-calls'],'x','baseline',Path('/test'),0)
     def test_all_states_get_four_distinct_rotated_modes(self):
         states=[dict(cycle=c,state=s,label=str(s),source=str(s).encode()) for c in range(3) for s in [0,-1,1,2,3,4,5]]+[dict(cycle=3,state=0,label='restored',source=b'0')]
         rows=schedule(states);self.assertEqual(len(rows),88)

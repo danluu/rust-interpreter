@@ -13,7 +13,7 @@ def main():
         directory=Path(__file__).parent;old=ROOT/'benchmarks/experiments/pgrust-parser-edits'
         paths=[p for p in directory.iterdir() if p.suffix in ['.py','.md']]
         paths += list((ROOT/'scripts').glob('*.py'))+[old/'states.py',old/'test_protocol.py']
-        paths += [ROOT/'benchmarks/experiments/runtime-composition-full'/n for n in ['prerequisites.py']]
+        paths += [ROOT/'benchmarks/experiments/runtime-composition-full'/n for n in ['prerequisites.py','full.py','large_compare.py']]
         paths += [ROOT/'benchmarks/experiments/runtime-composition-screen/screen.py',ROOT/'benchmarks/experiments/pgrust-parser-probe/probe.py']
         frozen={str(p.relative_to(ROOT)):sha(p) for p in paths}
         raw=ROOT/'.work'/NAME;raw.mkdir(exist_ok=False);write(raw/'inputs.json',frozen)

@@ -130,6 +130,16 @@ validator and two regression controls now cover both full-history controllers.
 Fresh02 case namespaces require full-protocol03 (25 controls); no failed prefix
 will be reused. Parser guard controllers are prepared but remain unexecuted.
 
+Full-protocol03 passed and closed all25 controls. The fresh campaign
+`runtime-composition-full-02` is running its token phase under supervisor
+`runtime-composition-full-token-02`, started September18 14:55 with supervisor
+86451. Its case is `runtime-composition-edit-token-02`; require154 commands and
+15 valid pairs before any performance decision. Source files in
+runtime-composition-full and scripts stay frozen. Read terminal receipts before
+assuming completion. Further case groups use --resume on this same campaign,
+only after passing, closing and auditing each complete checkpoint. Parser guard
+controllers and terminal/checkpoint auditors are prepared separately and unrun.
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations

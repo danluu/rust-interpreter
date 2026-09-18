@@ -79,6 +79,7 @@ def main():
         from full import audit_cases,CASES
         assert audit_cases(CASES)==json.loads(audit_path.read_text())
         paths += [audit_path,campaign/'plan.json',campaign/'records.json']
+        paths += [ROOT/'benchmarks/experiments/runtime-composition-full'/n for n in ['full.py','large_compare.py','prerequisites.py']]
         if args.profile=='repository':
             first=ROOT/'results/runtime-composition-parser-edits-incremental-01/summary.json';proof=json.loads(first.read_text())
             assert proof['status']=='passed' and proof['commands']==88 and proof['measurement']['gate_passed'];paths.append(first)
