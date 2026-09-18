@@ -44,6 +44,29 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
             p=raw/(row['case']+'.'+stream);assert sha(p)==row[stream+'_sha256'];evidence[str(p.relative_to(ROOT))]=sha(p)
         p=ROOT/'results'/('runtime-composition-edit-'+row['case']+'-02')/'summary.json'
         assert sha(p)==row['summary_sha256'];evidence[str(p.relative_to(ROOT))]=sha(p)
+    if 'audit_recovery' in summary:
+        assert summary['audit_recovery']==supervisor
+        recovery_path=ROOT/'results'/supervisor/'summary.json'
+        recovery=json.loads(recovery_path.read_text())
+        assert recovery['status']=='passed' and recovery['new_guest_commands']==recovery['repeated_commands']==0
+        assert recovery['final_summary_sha256']==sha(out/'summary.json')
+        plan_path=ROOT/recovery['raw']/'plan.json'
+        assert sha(plan_path)==recovery['plan_sha256']
+        recovery_plan=json.loads(plan_path.read_text())
+        evidence[str(recovery_path.relative_to(ROOT))]=sha(recovery_path)
+        evidence[str(plan_path.relative_to(ROOT))]=sha(plan_path)
+        for path,digest in recovery_plan['evidence'].items():
+            assert sha(ROOT/path)==digest,path
+            evidence[path]=digest
+        path=recovery_plan['script'];digest=recovery_plan['script_sha256'];commit=recovery_plan['source_revision']
+        assert sha(ROOT/path)==digest
+        assert hashlib.sha256(subprocess.check_output(['git','show',commit+':'+path],cwd=ROOT)).hexdigest()==digest
+        bindings[path]=dict(revision=commit,sha256=digest)
+    helper_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    for helper in [Path(__file__),Path(__file__).with_name('parser_decision.py')]:
+        path=str(helper.relative_to(ROOT));digest=sha(helper)
+        assert hashlib.sha256(subprocess.check_output(['git','show',helper_revision+':'+path],cwd=ROOT)).hexdigest()==digest
+        bindings[path]=dict(revision=helper_revision,sha256=digest)
     parser=[]
     for profile in (['incremental','repository'] if passed else []):
         p=ROOT/'results'/('runtime-composition-parser-edits-'+profile+'-01');s=json.loads((p/'summary.json').read_text());c=json.loads((p/'closure.json').read_text())
@@ -64,7 +87,7 @@ with (ROOT/'.work/benchmark.lock').open('a') as lock:
         (dest/file).write_bytes((raw/file).read_bytes());evidence[str((dest/file).relative_to(ROOT))]=sha(dest/file)
     write(dest/'sources.json',bindings);write(dest/'evidence.json',evidence)
     (out/'terminal.json').write_bytes((outer/'status.json').read_bytes())
-    closure=dict(status='closed',source_revision=revision,performance_gate_passed=passed,completed_cases=completed,unstarted_cases=summary['unstarted_cases'],commands=summary['commands'],
+    closure=dict(status='closed',source_revision=revision,closure_source_revision=helper_revision,performance_gate_passed=passed,completed_cases=completed,unstarted_cases=summary['unstarted_cases'],commands=summary['commands'],
         frozen_sources=len(bindings),unique_frozen_inputs=audit['unique_frozen_inputs'],all_retained_artifacts_and_sources_verified=True,
         snapshot=str(dest.relative_to(ROOT)),evidence_sha256=sha(dest/'evidence.json'),sources_sha256=sha(dest/'sources.json'),
         summary_sha256=sha(out/'summary.json'),terminal_sha256=sha(out/'terminal.json'),parser_guards=parser,
