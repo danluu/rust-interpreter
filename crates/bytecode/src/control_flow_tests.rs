@@ -4,6 +4,16 @@ use crate::{Binary, Engine, Function, Limits, Op, Program, Slot, VERSION, execut
 fn transform(original: &Program, layout: bool) -> Result<(Program, ControlFlowReport), String> {
     let mut output = original.clone();
     let report = optimize(&mut output, layout)?;
+    let mut summary_output = original.clone();
+    let summary = if layout {
+        crate::optimize_control_flow_summary(&mut summary_output)?
+    } else {
+        crate::control_flow::optimize_impl(&mut summary_output, layout, false)?
+    };
+    assert_eq!(bincode::serialize(&summary_output).unwrap(), bincode::serialize(&output).unwrap());
+    assert_eq!(summary.old_operations, report.old_operations);
+    assert_eq!(summary.new_operations, report.new_operations);
+    assert!(summary.functions.is_empty());
     let mut before = original.clone();
     let mut after = output.clone();
     for f in &mut before.functions {
@@ -449,5 +459,144 @@ fn growth_fallback_and_fresh_zeroes_survive_repeated_calls() {
                 .value,
             0
         );
+    }
+}
+
+#[test]
+fn straight_line_bodies_keep_complete_bytes_and_zero_reports() {
+    use crate::control_flow::FunctionControlFlowReport;
+
+    let zero_read = || Op::Assert {
+        value: 6,
+        expected: false,
+        message: "initial zero".into(),
+    };
+    let trap = || Op::Trap {
+        message: "straight-line sentinel".into(),
+    };
+    for (code, operations, zeroes) in [
+        (vec![Op::Return], 1, false),
+        (vec![zero_read(), Op::Return], 2, true),
+        (vec![Op::Imm { dst: 6, value: 0 }, zero_read(), trap()], 3, false),
+        (vec![zero_read(), trap()], 2, true),
+    ] {
+        let p = program(code);
+        for layout in [false, true] {
+            let (q, report) = transform(&p, layout).unwrap();
+            assert_eq!(
+                bincode::serialize(&p).unwrap(),
+                bincode::serialize(&q).unwrap()
+            );
+            let expected = ControlFlowReport {
+                functions: vec![
+                    FunctionControlFlowReport {
+                        function: 0,
+                        old_operations: operations,
+                        new_operations: operations,
+                        register_zeroes_before: zeroes,
+                        register_zeroes_proposed: zeroes,
+                        ..Default::default()
+                    },
+                    FunctionControlFlowReport {
+                        function: 1,
+                        old_operations: 10,
+                        new_operations: 10,
+                        ..Default::default()
+                    },
+                ],
+                old_operations: operations + 10,
+                new_operations: operations + 10,
+            };
+            assert_eq!(
+                bincode::serialize(&report).unwrap(),
+                bincode::serialize(&expected).unwrap()
+            );
+        }
+    }
+}
+
+#[test]
+fn interior_returns_and_traps_still_remove_unreachable_operations() {
+    use crate::control_flow::FunctionControlFlowReport;
+
+    for code in [
+        vec![
+            Op::Return,
+            Op::Imm { dst: 6, value: 7 },
+            Op::Trap { message: "unreachable".into() },
+        ],
+        vec![
+            Op::Trap { message: "first fault".into() },
+            Op::Imm { dst: 6, value: 7 },
+            Op::Return,
+        ],
+    ] {
+        let p = program(code);
+        let mut expected_program = p.clone();
+        expected_program.functions[0].code.truncate(1);
+        for layout in [false, true] {
+            let (q, report) = transform(&p, layout).unwrap();
+            assert_eq!(
+                bincode::serialize(&q).unwrap(),
+                bincode::serialize(&expected_program).unwrap()
+            );
+            let expected = ControlFlowReport {
+                functions: vec![
+                    FunctionControlFlowReport {
+                        function: 0,
+                        old_operations: 3,
+                        new_operations: 1,
+                        unreachable_operations: 2,
+                        ..Default::default()
+                    },
+                    FunctionControlFlowReport {
+                        function: 1,
+                        old_operations: 10,
+                        new_operations: 10,
+                        ..Default::default()
+                    },
+                ],
+                old_operations: 13,
+                new_operations: 11,
+            };
+            assert_eq!(
+                bincode::serialize(&report).unwrap(),
+                bincode::serialize(&expected).unwrap()
+            );
+        }
+    }
+}
+
+#[test]
+fn malformed_later_function_is_rejected_before_any_cfg_mutation() {
+    let mut p = program(vec![Op::Return]);
+    p.functions[1].code = vec![
+        Op::Return,
+        Op::Imm { dst: 4, value: 7 },
+        Op::Trap { message: "valid unreachable body".into() },
+    ];
+    let mut invalid = p.functions[1].clone();
+    invalid.name = "invalid later function".into();
+    // All functions are validated, even registers in unreachable operations.
+    // The valid middle body would shrink if mutation began before validation.
+    invalid.code = vec![
+        Op::Return,
+        Op::Imm { dst: 5, value: 7 },
+        Op::Trap { message: "invalid unreachable body".into() },
+    ];
+    p.functions.push(invalid);
+    let expected = bincode::serialize(&p).unwrap();
+    for layout in [false, true] {
+        let mut q = p.clone();
+        assert_eq!(optimize(&mut q, layout).unwrap_err(), "invalid register");
+        assert_eq!(bincode::serialize(&q).unwrap(), expected);
+        let mut summary_output = p.clone();
+        let error = if layout {
+            crate::optimize_control_flow_summary(&mut summary_output).unwrap_err()
+        } else {
+            crate::control_flow::optimize_impl(&mut summary_output, layout, false).unwrap_err()
+        };
+        assert_eq!(error, "invalid register");
+        assert_eq!(bincode::serialize(&summary_output).unwrap(), expected);
     }
 }
