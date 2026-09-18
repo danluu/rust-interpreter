@@ -17,7 +17,7 @@ def main():
         assert "launch.get('jit_scalar_calls', False)" in (outer/'command.log').read_text()
         campaign=ROOT/'.work/runtime-composition-full-01';raw=ROOT/'.work/runtime-composition-edit-token-01'
         rows=read(raw/'records.json');plan=read(raw/'plan.json');parents=read(campaign/'records.json')
-        assert len(rows)==2 and [(r['state'],r['mode'],r['returncode']) for r in rows]==[(0,'native',0),(0,'baseline',0)]
+        assert len(rows)==2 and [(r['state'],r['mode'],r['returncode']) for r in rows]==[(0,'native_lines',0),(0,'baseline',0)]
         assert len(parents)==1 and parents[0]['case']=='token' and parents[0]['returncode']==1
         source=ROOT/'.work/sources/fre'
         assert sha(source/plan['case']['file'])==plan['original_source_sha256']

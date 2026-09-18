@@ -69,7 +69,7 @@ mismatched checkpoints and attempts to resume failed/finished campaigns (25 tota
 The separate matched edited-parser comparison is also required before adoption;
 114-test compatibility alone is not parser performance evidence.
 
-The first full-history setup stopped after native and adopted baseline original
+The first full-history setup stopped after native line-table and adopted baseline original
 builds because a copied report assertion still expected candidate-only scalar
 flags. No valid edit pair was measured. Retain its two commands and restored
 source. The new campaign uses fresh02 case namespaces, central arm validation

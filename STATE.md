@@ -121,6 +121,15 @@ the screen alone. Main4b6ec8bf publishes only the separately qualified std-MIR
 readmission repair. The runtime stays experimental.
 [Primary assessment](results/runtime-composition-screen-token-01/ASSESSMENT.md).
 
+All26 fresh selected/prepared compatibility commands passed. The first full
+campaign stopped after two original-state setup commands (native line tables and
+adopted baseline) because a copied launcher assertion still expected scalar calls
+only for candidate. Source restoration and evidence closure pass; zero edited
+pairs were measured, and no performance gate was evaluated. A shared runtime-mode
+validator and two regression controls now cover both full-history controllers.
+Fresh02 case namespaces require full-protocol03 (25 controls); no failed prefix
+will be reused. Parser guard controllers are prepared but remain unexecuted.
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
