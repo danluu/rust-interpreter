@@ -192,6 +192,16 @@ unchanged. Free space is about45.8GiB, still below Nushell's47.03GiB admission.
 The closed old repository-parser history is the next scoped cache candidate;
 its retirement controller is prepared but not started. Nushell remains unstarted.
 
+The repository-parser retirement found zero eligible intermediates and removed
+nothing; its failed/no-removal receipt is preserved. The two recovered checkpoint
+evidence maps had references to the growing live campaign ledger. Their original
+immutable copies were intact: supplemental repair verifies every old digest and
+resolves those references without changing original receipts or measurements.
+That repair is closed. Full-folded cache retirement is now running under supervisor
+52496, run closed-runtime-composition-full-folded-retirement-01, started
+September18 15:35. It requires that repaired checkpoint and the same strict
+ownership/identity/protected-hash checks. Last free space was about46GiB.
+
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
 lock, two Cargo workers, the shared owned build target, conservative reservations
