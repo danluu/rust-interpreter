@@ -13,21 +13,13 @@ import subprocess
 import sys
 import tempfile
 
+from compiler_association import TOOL_POLICY, digest, read_json, require, validate_tool_compiler
+
 ROOT = Path(__file__).resolve().parents[1]
 POLICY = 'owned-stage2-compiler-v1'
-TOOL_POLICY = 'owned-compiler-tools-v1'
 PRIVATE_CRATES = ('rustc_abi', 'rustc_ast', 'rustc_borrowck', 'rustc_data_structures',
                   'rustc_driver', 'rustc_hir', 'rustc_incremental', 'rustc_interface',
                   'rustc_middle', 'rustc_session', 'rustc_span')
-
-
-def require(condition, message):
-    if not condition:
-        raise RuntimeError(message)
-
-
-def digest(value):
-    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
 def file_digest(path):
@@ -127,12 +119,6 @@ def require_complete(files, host):
         require(source + name in files, 'custom compiler is missing rust-src ' + name)
 
 
-def read_json(path):
-    require(not path.is_symlink() and path.is_file() and path.stat().st_size <= 32 * 1024 * 1024,
-            'missing or invalid compiler manifest: ' + str(path))
-    return json.loads(path.read_bytes())
-
-
 @dataclass(frozen=True)
 class Compiler:
     key: str
@@ -200,25 +186,6 @@ def load_compiler(root, key):
         return Compiler(key, sysroot, identity)
     except (OSError, KeyError, TypeError, ValueError, AttributeError) as error:
         raise RuntimeError('invalid custom compiler installation: ' + str(error)) from error
-
-
-def validate_tool_compiler(directory, key, compiler):
-    path = directory / 'compiler.json'
-    if compiler is None:
-        require(not path.exists() and not path.is_symlink(),
-                'custom compiler tools require --compiler-key')
-        return
-    try:
-        composition = read_json(path)
-        require(digest(composition) == key and composition['kind'] == TOOL_POLICY,
-                'custom tool composition identity mismatch')
-        require(composition['compiler_key'] == compiler.key
-                and composition['compiler_sysroot'] == str(compiler.sysroot),
-                'tool was built with a different compiler')
-        require(composition['binaries'] == read_json(directory / 'ready.json'),
-                'custom tool composition binary mismatch')
-    except (OSError, KeyError, TypeError, ValueError) as error:
-        raise RuntimeError('invalid custom tool compiler association: ' + str(error)) from error
 
 
 def audit_macos_libraries(sysroot):

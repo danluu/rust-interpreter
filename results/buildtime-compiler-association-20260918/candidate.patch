@@ -1,0 +1,249 @@
+--- a/scripts/custom_compiler.py
++++ b/scripts/custom_compiler.py
+@@ -13,21 +13,13 @@
+ import sys
+ import tempfile
+ 
++from compiler_association import TOOL_POLICY, digest, read_json, require, validate_tool_compiler
++
+ ROOT = Path(__file__).resolve().parents[1]
+ POLICY = 'owned-stage2-compiler-v1'
+-TOOL_POLICY = 'owned-compiler-tools-v1'
+ PRIVATE_CRATES = ('rustc_abi', 'rustc_ast', 'rustc_borrowck', 'rustc_data_structures',
+                   'rustc_driver', 'rustc_hir', 'rustc_incremental', 'rustc_interface',
+                   'rustc_middle', 'rustc_session', 'rustc_span')
+-
+-
+-def require(condition, message):
+-    if not condition:
+-        raise RuntimeError(message)
+-
+-
+-def digest(value):
+-    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+ 
+ 
+ def file_digest(path):
+@@ -125,12 +117,6 @@
+     source = 'lib/rustlib/src/rust/library/'
+     for name in ['Cargo.toml', 'Cargo.lock', 'core/src/lib.rs', 'std/src/lib.rs', 'proc_macro/src/lib.rs']:
+         require(source + name in files, 'custom compiler is missing rust-src ' + name)
+-
+-
+-def read_json(path):
+-    require(not path.is_symlink() and path.is_file() and path.stat().st_size <= 32 * 1024 * 1024,
+-            'missing or invalid compiler manifest: ' + str(path))
+-    return json.loads(path.read_bytes())
+ 
+ 
+ @dataclass(frozen=True)
+@@ -200,25 +186,6 @@
+         return Compiler(key, sysroot, identity)
+     except (OSError, KeyError, TypeError, ValueError, AttributeError) as error:
+         raise RuntimeError('invalid custom compiler installation: ' + str(error)) from error
+-
+-
+-def validate_tool_compiler(directory, key, compiler):
+-    path = directory / 'compiler.json'
+-    if compiler is None:
+-        require(not path.exists() and not path.is_symlink(),
+-                'custom compiler tools require --compiler-key')
+-        return
+-    try:
+-        composition = read_json(path)
+-        require(digest(composition) == key and composition['kind'] == TOOL_POLICY,
+-                'custom tool composition identity mismatch')
+-        require(composition['compiler_key'] == compiler.key
+-                and composition['compiler_sysroot'] == str(compiler.sysroot),
+-                'tool was built with a different compiler')
+-        require(composition['binaries'] == read_json(directory / 'ready.json'),
+-                'custom tool composition binary mismatch')
+-    except (OSError, KeyError, TypeError, ValueError) as error:
+-        raise RuntimeError('invalid custom tool compiler association: ' + str(error)) from error
+ 
+ 
+ def audit_macos_libraries(sysroot):
+--- a/scripts/interpreter.py
++++ b/scripts/interpreter.py
+@@ -392,7 +392,9 @@
+         parser.error('--workspace-cache-root: '+str(error))
+     manifest=args.manifest_path.resolve()
+     stage=time.perf_counter()
+-    from custom_compiler import load_compiler, validate_tool_compiler
++    from compiler_association import validate_tool_compiler
++    if args.compiler_key is not None:
++        from custom_compiler import load_compiler
+     if args.cargo_key is not None:
+         from custom_cargo import load_cargo
+     if args.runtime_compiler_key is not None:
+--- a/scripts/bench_e2e_workflow.py
++++ b/scripts/bench_e2e_workflow.py
+@@ -338,7 +338,8 @@
+         raise RuntimeError('snapshot has tracked changes')
+     script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
+     script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
+-                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py']
++                  ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py',ROOT/'scripts/workflow_compiler.py',
++                  ROOT/'scripts/compiler_association.py']
+     if runtime is not None:
+         script_paths += [ROOT/'scripts'/name for name in ['runtime_compiler.py','runtime_tools.py','custom_compiler.py','std_mir_source_paths.py']]
+     if case_proof is not None:
+--- a/tests/test_interpreter_build_metrics.py
++++ b/tests/test_interpreter_build_metrics.py
+@@ -162,6 +162,21 @@
+         self.entry_catalog.write_text(json.dumps(dict(schema_version=1, bytecode_version=5,
+             artifact_sha256=digest, entries=[dict(name='selected'), dict(name='sibling')])))
+ 
++    def test_stock_launch_does_not_import_custom_compiler_or_cargo_implementation(self):
++        original_import = __import__
++
++        def stock_import(name, *args, **kwargs):
++            if name in ('custom_compiler', 'custom_cargo'):
++                raise AssertionError('stock launch imported ' + name)
++            return original_import(name, *args, **kwargs)
++
++        # Intercept import statements even if other tests have already loaded
++        # the modules. The fixture still reaches Cargo and VM boundaries, both
++        # stubbed by setUp; no compiler, Cargo or VM process is launched here.
++        with patch('builtins.__import__', side_effect=stock_import):
++            self.assertEqual(self.launch(), 0)
++        self.assertEqual(len(self.invocations), 2)
++
+     def test_ready_includes_launcher_checks_and_waited_build_children_but_excludes_vm(self):
+         self.assertEqual(self.launch(['--allocation-trace', '--trap-unsupported-calls']), 0)
+         [stats] = self.launch_stats()
+--- /dev/null
++++ b/scripts/compiler_association.py
+@@ -0,0 +1,39 @@
++"""Validate installed tools' compiler association without importing the installer."""
++import hashlib
++import json
++
++TOOL_POLICY = 'owned-compiler-tools-v1'
++
++
++def require(condition, message):
++    if not condition:
++        raise RuntimeError(message)
++
++
++def digest(value):
++    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
++
++
++def read_json(path):
++    require(not path.is_symlink() and path.is_file() and path.stat().st_size <= 32 * 1024 * 1024,
++            'missing or invalid compiler manifest: ' + str(path))
++    return json.loads(path.read_bytes())
++
++
++def validate_tool_compiler(directory, key, compiler):
++    path = directory / 'compiler.json'
++    if compiler is None:
++        require(not path.exists() and not path.is_symlink(),
++                'custom compiler tools require --compiler-key')
++        return
++    try:
++        composition = read_json(path)
++        require(digest(composition) == key and composition['kind'] == TOOL_POLICY,
++                'custom tool composition identity mismatch')
++        require(composition['compiler_key'] == compiler.key
++                and composition['compiler_sysroot'] == str(compiler.sysroot),
++                'tool was built with a different compiler')
++        require(composition['binaries'] == read_json(directory / 'ready.json'),
++                'custom tool composition binary mismatch')
++    except (OSError, KeyError, TypeError, ValueError) as error:
++        raise RuntimeError('invalid custom tool compiler association: ' + str(error)) from error
+--- /dev/null
++++ b/tests/test_compiler_association.py
+@@ -0,0 +1,90 @@
++"""Real temporary-manifest association checks; no compiler or Cargo processes."""
++import json
++from pathlib import Path
++import sys
++import tempfile
++from types import SimpleNamespace
++import unittest
++from unittest.mock import patch
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
++import compiler_association as association
++
++
++class CompilerAssociationTests(unittest.TestCase):
++    def setUp(self):
++        temporary = tempfile.TemporaryDirectory()
++        self.addCleanup(temporary.cleanup)
++        self.root = Path(temporary.name)
++        self.tools = self.root / 'tools'
++        self.tools.mkdir()
++        self.compiler = SimpleNamespace(key='a' * 64, sysroot=self.root / 'sysroot')
++        self.binaries = {'rust-interp-vm': 'e' * 64, 'rust-interp-mir-export': 'f' * 64}
++        self.composition = dict(kind=association.TOOL_POLICY, compiler_key=self.compiler.key,
++                               compiler_sysroot=str(self.compiler.sysroot), binaries=self.binaries)
++        self.key = association.digest(self.composition)
++
++    def publish_manifests(self):
++        (self.tools / 'compiler.json').write_text(json.dumps(self.composition))
++        (self.tools / 'ready.json').write_text(json.dumps(self.binaries))
++
++    def test_stock_tools_accept_absence_and_reject_a_dangling_association_link(self):
++        association.validate_tool_compiler(self.tools, self.key, None)
++        (self.tools / 'compiler.json').symlink_to(self.root / 'missing')
++        with self.assertRaises(RuntimeError) as caught:
++            association.validate_tool_compiler(self.tools, self.key, None)
++        self.assertEqual(str(caught.exception), 'custom compiler tools require --compiler-key')
++
++    def test_custom_composition_compiler_and_ready_mismatches_keep_error_order(self):
++        self.publish_manifests()
++        association.validate_tool_compiler(self.tools, self.key, self.compiler)
++        wrong = SimpleNamespace(key='b' * 64, sysroot=self.compiler.sysroot)
++        (self.tools / 'ready.json').write_text('{}')
++        for key, compiler, message in [
++            ('0' * 64, wrong, 'custom tool composition identity mismatch'),
++            (self.key, wrong, 'tool was built with a different compiler'),
++            (self.key, self.compiler, 'custom tool composition binary mismatch'),
++        ]:
++            with self.subTest(message=message), self.assertRaises(RuntimeError) as caught:
++                association.validate_tool_compiler(self.tools, key, compiler)
++            self.assertEqual(str(caught.exception), message)
++        self.publish_manifests()
++        wrong = SimpleNamespace(key=self.compiler.key, sysroot=self.root / 'other-sysroot')
++        with self.assertRaisesRegex(RuntimeError, '^tool was built with a different compiler$'):
++            association.validate_tool_compiler(self.tools, self.key, wrong)
++
++    def test_association_manifest_guards_and_parse_read_failures_are_preserved(self):
++        path = self.tools / 'compiler.json'
++        expected = 'missing or invalid compiler manifest: ' + str(path)
++        for form in ('absent', 'directory', 'dangling-link', 'oversized'):
++            with self.subTest(form=form):
++                if form == 'directory':
++                    path.mkdir()
++                elif form == 'dangling-link':
++                    path.symlink_to(self.root / 'missing')
++                elif form == 'oversized':
++                    # Sparse size only; the reader must reject before reading.
++                    with path.open('wb') as stream:
++                        stream.truncate(32 * 1024 * 1024 + 1)
++                try:
++                    with self.assertRaises(RuntimeError) as caught:
++                        association.validate_tool_compiler(self.tools, self.key, self.compiler)
++                    self.assertEqual(str(caught.exception), expected)
++                finally:
++                    if form == 'directory': path.rmdir()
++                    elif form != 'absent': path.unlink()
++        path.write_text('{')
++        with self.assertRaises(RuntimeError) as caught:
++            association.validate_tool_compiler(self.tools, self.key, self.compiler)
++        self.assertTrue(str(caught.exception).startswith('invalid custom tool compiler association: '))
++        self.assertIsInstance(caught.exception.__cause__, json.JSONDecodeError)
++        self.publish_manifests()
++        with patch.object(Path, 'read_bytes', side_effect=OSError('fixture read failure')):
++            with self.assertRaises(RuntimeError) as caught:
++                association.validate_tool_compiler(self.tools, self.key, self.compiler)
++        self.assertEqual(str(caught.exception),
++                         'invalid custom tool compiler association: fixture read failure')
++
++
++if __name__ == '__main__':
++    unittest.main()

@@ -27,7 +27,18 @@ and std validation, and the runner supports the canonical shared workload lock
 from a separate installation checkout. Its 67 focused controls passed, including
 a synthetic complete edit history and mutation rejection. See
 [workflow controls](../../../results/runtime-workflow-controls-03/README.md).
-These controls do not replace a real cache-off/cache-on application history.
+The first actual Ruff cache-off/cache-on history subsequently passed its six
+unchanged tests, five production edits, intentional failure and restoration.
+Cache-on regressed the diagnostic complete-command median from 3.348 to 4.253
+seconds; exporter frontend time rose from 2.318 to 3.121 seconds. Only the
+selected `ruff_linter` compiler ran on each warm custom call. Its direct output
+reported 1,411 reuse hits and zero captures; 1,510 apparent captures in aggregate
+Cargo stderr were replayed dependency diagnostics. The preserved correction
+and raw evidence are in the
+[Ruff diagnostic](../../../results/runtime-ruff-hir-diagnostic-01/README.md).
+These instrumented, trap-enabled observations are not strict latency results.
+A selected-process self-profile is the next step; the current timing aggregates
+do not identify the cause of the cache regression.
 
 [Target selection](TARGET-SELECTION.md) retains Ruff as the immediate measured
 development target, adds pinned Oxc as another development target, and keeps
@@ -45,11 +56,18 @@ three production edits took 11.918, 11.757 and 8.326 seconds, and only the
 [clean native history](../../../results/oxc-native-compatibility-02/README.md).
 The 0.192-second already-built original state is not an edited-build result.
 These are three configuration tests compiling the full test crate, not lint-rule
-coverage or interpreter compatibility. Oxc's interpreter/JIT qualification is
-next. Its independent source copy and all 323 offline registry packages are
+coverage. Its independent source copy and all 323 offline registry packages are
 now admitted under the runtime owner; the acquisition passed 17 controls and
 all nine planned commands without compiling or running the application. See
 [runtime source acquisition](../../../results/oxc-runtime-source-acquisition-01/README.md).
+The same source history then passed all 16 interpreter/JIT calls: the three
+unchanged tests passed on the original, edited and restored states, and all six
+individual wrong-edit assertions failed as expected. Every artifact reported
+zero unavailable call sites. The recipe still enabled unavailable-call traps
+and try callbacks, so strict execution without those flags remains unqualified.
+Edited build-to-ready observations were 5.715–5.953 seconds; they exclude VM
+startup/execution and come from one correctness history. See the
+[runtime compatibility evidence](../../../results/oxc-runtime-compatibility-01/README.md).
 It remains a development target, and no holdout success is claimed.
 The sub-0.500-second target remains unmet.
 
@@ -116,8 +134,9 @@ The current HIR experiment has passed all 27 compiler controls and the
 unchanged native fixture, with 335 verified cache hits under the required tree,
 journal and poststate audits.
 [Native qualification evidence](../../../results/hir-arena-native-qualification-01/README.md).
-Application/exporter integration and a latency gain remain unqualified; its
-structural coverage remains conservative. The selected-unit lowering event
+Application/exporter integration now has the bounded Ruff correctness evidence
+above, but no latency gain; its structural coverage remains conservative.
+The earlier Nushell selected-unit lowering event
 was 251.869ms; that event is not an established removable budget. The separate
 [span-handle map candidate](../../../experiments/proc-macro-span-handles/README.md)
 preserves macro execution and compiler API calls while changing numeric lookup.
