@@ -51,7 +51,7 @@ libtest, thread/OS/FFI and real unwinding support remain open. The parser and
 token native gaps still guide optimization; no complete database/shell coverage
 or isolated scratch-cache speedup is claimed.
 
-The current manual branch is `experiment/scalar-chain-census-20260918`.
+The current manual branch is `experiment/guarded-capture-census-20260918`.
 Main still adopts df4006e0. The aggregate and native-indirect compositions remain
 archived after failing their original changed-source wall gates. The indirect
 composition passed all correctness controls, 122 strict/cache commands and three
@@ -86,11 +86,20 @@ already address that area; register-array zeroing is absent in retained profiles
 
 A bounded scalar call-chain census passes after two retained diagnostic failures.
 It admits 57 additional initialized/confined direct-call DAGs but selects no
-Call/Return samples in either current token capture. Defer parent scalar graph
-implementation. Next measure complete value captures inside the existing guarded
-external ranges, where original register facts may expire before a repeated read.
-Count capture cost and exact remaining native access samples before changing code.
-[Call-chain scope](results/scalar-chain-census-03/ASSESSMENT.md).
+Call/Return samples in either current token capture. Defer parent scalar graphs.
+Four private external payload slots find 99 reuses in three functions, but only
+15 block source-address/load samples and none in exhaustive/parser, before capture
+cost. Defer this new runtime cache too.
+[Call-chain scope](results/scalar-chain-census-03/ASSESSMENT.md),
+[external captures](results/guarded-capture-census-01/ASSESSMENT.md).
+
+Next qualify a new composition of native indirect transitions, successor-only
+spilling and checked readonly scalar leaves on the adopted scalar/scratch runtime.
+Keep all isolated failures; infer no additive gain. Require new complete memory,
+fault, profile, strict/cache and original-test qualification, then the unchanged
+full-token changed-source primary. No aggregate output expansion, new memory
+capture policy or smaller range guard is included. Preserve current main's peer
+compiler-selection fixes when publishing or integrating launcher changes.
 
 The compiler/Cargo/parser-exporter investigation belongs to the other session.
 Preserve its worktrees and all user-owned processes. Keep the global benchmark
