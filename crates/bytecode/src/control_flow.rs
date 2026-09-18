@@ -38,10 +38,38 @@ pub fn optimize_control_flow(program: &mut Program) -> Result<ControlFlowReport,
     optimize(program, true)
 }
 
+/// Run the same validated CFG pass while retaining only operation totals.
+/// The returned functions vector is empty. An already straight-line body is
+/// unchanged by this pass, so summary mode needs neither reconstruction nor
+/// register-initialization proofs for that body. Transformed bodies retain the
+/// existing before/after proofs and rollback checks.
+pub fn optimize_control_flow_summary(program: &mut Program) -> Result<ControlFlowReport, String> {
+    optimize_impl(program, true, false)
+}
+
 pub(crate) fn optimize(program: &mut Program, layout: bool) -> Result<ControlFlowReport, String> {
+    optimize_impl(program, layout, true)
+}
+
+fn optimize_impl(
+    program: &mut Program,
+    layout: bool,
+    retain_details: bool,
+) -> Result<ControlFlowReport, String> {
     crate::validate(program)?;
     let mut report = ControlFlowReport::default();
     for (id, function) in program.functions.iter_mut().enumerate() {
+        // Complete Program validation has already checked all instructions,
+        // including unreachable ones. With no interior terminal and a final
+        // Return/Trap, CFG threading, layout and jump removal are the identity.
+        if !retain_details && function.code.split_last().is_some_and(|(last, prefix)| {
+            matches!(last, Op::Return | Op::Trap { .. })
+                && prefix.iter().all(|op| !terminal(op))
+        }) {
+            report.old_operations += function.code.len();
+            report.new_operations += function.code.len();
+            continue;
+        }
         let before = crate::registers::needs_initial_zeroes(function);
         let (code, mut part) = transform_code(&function.code, layout)?;
         let original = std::mem::replace(&mut function.code, code);
@@ -60,7 +88,9 @@ pub(crate) fn optimize(program: &mut Program, layout: bool) -> Result<ControlFlo
         part.register_zeroes_proposed = after;
         report.old_operations += part.old_operations;
         report.new_operations += function.code.len();
-        report.functions.push(part);
+        if retain_details {
+            report.functions.push(part);
+        }
     }
     crate::validate(program)?;
     Ok(report)

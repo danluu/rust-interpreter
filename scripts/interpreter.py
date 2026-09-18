@@ -256,6 +256,7 @@ def _main(resources):
     compiler_selection=parser.add_mutually_exclusive_group()
     compiler_selection.add_argument('--compiler-key',help='use an owned complete stage2 compiler; requires preinstalled matching --tool-key')
     compiler_selection.add_argument('--runtime-compiler-key',help='use a separately installed native runtime; requires preinstalled matching --tool-key')
+    parser.add_argument('--rustflag',action='append',default=[],help='application Cargo compiler argument, applied after tool/std setup; repeat using --rustflag=ARG')
     parser.add_argument('--compiler-argv-record-dir',type=Path,help='retain actual compiler argv in an existing empty directory for qualification')
     parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable with the selected compiler')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off',help='custom compiler CGU grouping policy (default: off)')
@@ -279,6 +280,10 @@ def _main(resources):
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
     custom_key=args.compiler_key or args.runtime_compiler_key
+    if any(not value or '\x00' in value or '\x1f' in value for value in args.rustflag):
+        parser.error('--rustflag requires nonempty arguments without NUL or unit separators')
+    if args.rustflag and any(name in os.environ for name in ['RUSTFLAGS','CARGO_ENCODED_RUSTFLAGS','CARGO_BUILD_RUSTFLAGS']):
+        parser.error('--rustflag conflicts with ambient Cargo rustflags')
     if args.runtime_compiler_key is not None:
         if args.tool_key is None:parser.error('--runtime-compiler-key requires preinstalled --tool-key')
         if (args.cargo_key is not None or args.frontend_workers is not None
@@ -571,6 +576,10 @@ def _main(resources):
         if args.borrowck_cache!='off':cargo_env['RUST_INTERP_BORROWCK_CACHE']=args.borrowck_cache
         if args.host_proc_macro_opt!='off':cargo_env['RUST_INTERP_HOST_PROC_MACRO_OPT']=args.host_proc_macro_opt
         if args.host_library_opt!='off':cargo_env['RUST_INTERP_HOST_LIBRARY_OPT']=args.host_library_opt
+    if args.rustflag:
+        cargo_env=cargo_env.copy()
+        cargo_env['CARGO_ENCODED_RUSTFLAGS']='\x1f'.join(args.rustflag)
+        timings['application_rustflags']=args.rustflag
     result=subprocess.run(command,cwd=manifest.parent,env=cargo_env,stdout=subprocess.PIPE,text=True)
     timings['cargo_seconds']=time.perf_counter()-stage
     if stats:timings['cargo_cpu']=cpu_since(resource.RUSAGE_CHILDREN,cargo_cpu_started)

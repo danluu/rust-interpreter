@@ -58,7 +58,7 @@ pub use jit::range_group_census;
 pub use jit::disjoint_frame_census;
 pub use entry_catalog::{EntryCatalog, SelectedEntry};
 pub use optimize::{remove_fallthrough_jumps, optimize_calls, CallOptimizationReport};
-pub use control_flow::{optimize_control_flow, ControlFlowReport, FunctionControlFlowReport};
+pub use control_flow::{optimize_control_flow, optimize_control_flow_summary, ControlFlowReport, FunctionControlFlowReport};
 pub use inline::{transform as inline_leaves, Options as LeafInlineOptions};
 pub use forwarding::{eliminate_direct_forwarders, ForwardingReport};
 use frames::{Frame, Frames};
