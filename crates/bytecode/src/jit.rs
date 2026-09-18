@@ -62,6 +62,8 @@ mod emission_stages;
 #[cfg(test)]
 mod immutable_reads;
 #[cfg(test)]
+mod guarded_value_census;
+#[cfg(test)]
 mod memory_operand_tests;
 
 // This cursor is host-owned and lives across exactly one generated-code call.
@@ -633,6 +635,8 @@ impl<'a> Jit<'a> {
                     resumable,
                     ..Assembler::default()
                 };
+                #[cfg(test)]
+                let mut guarded_values = guarded_value_census::State::new();
                 let mut covered = 0;
                 macro_rules! span {
                     ($kind:ident, $pc:expr) => {{
@@ -683,6 +687,8 @@ impl<'a> Jit<'a> {
                     a.current_pc = start + index;
                     #[cfg(test)]
                     immutable_reads::observe(op, &a.facts, &self.program.data, start + index);
+                    #[cfg(test)]
+                    guarded_values.observe(&a, op);
                     #[cfg(test)]
                     a.memory_parts.begin(op, start + index, start, pc, a.heap);
                     if let Op::Assert { value, expected, message } = op {
