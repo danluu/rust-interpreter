@@ -37,8 +37,23 @@ Cargo stderr were replayed dependency diagnostics. The preserved correction
 and raw evidence are in the
 [Ruff diagnostic](../../../results/runtime-ruff-hir-diagnostic-01/README.md).
 These instrumented, trap-enabled observations are not strict latency results.
-A selected-process self-profile is the next step; the current timing aggregates
-do not identify the cause of the cache regression.
+A continued selected-process self-profile now preserves both complete profiles,
+all successful child histories and the two earlier collection failures. In its
+single instrumented edited pair, incremental-session directory preparation took
+0.000954 seconds with the cache off and 0.383906 seconds with it on; the number
+of hard-linked files rose from 3 to 1,414. Lowering self time also rose from
+0.296 to 0.467 seconds. Type-checking and other phases varied, so these differences
+are not a causal decomposition of total wall time. The reader's total is a sum
+of per-thread elapsed spans, not CPU time. See the
+[Ruff self-profile](../../../results/runtime-ruff-hir-self-profile-01/README.md).
+
+Two independent compiler candidates address repeated work without changing the
+application. A source-only [options-hash candidate](../../../experiments/hir-options-hash/README.md)
+stores the immutable incremental-options hash once per compiler context while
+preserving its wire encoding. It has not been compiled or measured. Separately,
+a packed body-cache representation is being developed to reduce filesystem work
+while preserving record keys, checksums, reconstruction and validation. Neither
+candidate has established a performance gain.
 
 [Target selection](TARGET-SELECTION.md) retains Ruff as the immediate measured
 development target, adds pinned Oxc as another development target, and keeps
@@ -63,11 +78,17 @@ all nine planned commands without compiling or running the application. See
 The same source history then passed all 16 interpreter/JIT calls: the three
 unchanged tests passed on the original, edited and restored states, and all six
 individual wrong-edit assertions failed as expected. Every artifact reported
-zero unavailable call sites. The recipe still enabled unavailable-call traps
-and try callbacks, so strict execution without those flags remains unqualified.
-Edited build-to-ready observations were 5.715–5.953 seconds; they exclude VM
-startup/execution and come from one correctness history. See the
+zero unavailable call sites. This first recipe enabled unavailable-call traps
+and try callbacks, so its 5.715–5.953-second edited build-to-ready observations
+were diagnostic. See the
 [runtime compatibility evidence](../../../results/oxc-runtime-compatibility-01/README.md).
+A fresh strict history then passed the same 16 interpreter/JIT calls with both
+flags removed, including all six intentional assertion failures. All 16 strict
+bytecode artifacts matched their diagnostic counterparts. The three edited
+builds took 5.895–6.265 seconds for the interpreter and 5.759–5.948 seconds for
+the JIT. These build-to-ready observations exclude VM startup/execution and
+come from one correctness history, not the repeated latency protocol. See the
+[strict runtime history](../../../results/oxc-runtime-strict-compatibility-01/README.md).
 It remains a development target, and no holdout success is claimed.
 The sub-0.500-second target remains unmet.
 
