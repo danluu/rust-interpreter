@@ -2,7 +2,8 @@
 
 This adds an opt-in Oxc workflow at
 `4d5c812d6b16c23fa71d106cf87f7f20ddee69b1`. It is separate from the executable
-corpus and the frozen holdouts. No Oxc compatibility or timing result exists.
+corpus and the frozen holdouts. Acquisition is complete; no Oxc compatibility
+or timing result has been qualified yet.
 The original Nushell acceptance target is unchanged.
 
 The workflow loader now accepts `--project oxc --case-file
@@ -29,11 +30,12 @@ review remains [here](../../results/oxc-target-source-review-01/README.md).
 
 ## Resource plan and staged setup
 
-`setup-plan-01.json` contains absolute task-owned paths and command shapes.
-It is a resource and sequencing plan, not a launched controller. The next
-step is a frozen controller/launch review for acquisition, followed by actual
-source/toolchain/dependency inventory. No download or Oxc compilation has
-started. The parent coordinates admission with other current-task jobs.
+`setup-plan-01.json` contains the original resource and sequencing plan.
+The acquisition controllers and their retained results are described
+[here](../../results/oxc-native-acquisition-01/README.md). The first native
+compatibility stage is frozen in `native-compatibility-plan-01.json` and
+`native_compatibility.py`; it has no qualified result yet. The parent
+coordinates admission with other current-task jobs.
 
 All workload stages use the existing canonical lock at
 `/Users/danluu/dev/rust-interp/.work/benchmark.lock`, with a 600-second bounded
