@@ -40,6 +40,13 @@ audit status does not turn a failed performance gate into a pass. If used, bind
 its separate plan, original failure, recovery terminal and Git source when closing
 and integrating the final campaign. The recovery is currently unexecuted.
 
+close_projects.py can separately close the726-command project evidence before
+parser qualification. Its explicit `parser_guards_complete: false` and
+`runtime_adopted: false` prevent that receipt from becoming an adoption decision.
+This also permits verified retirement of completed project compiler caches if
+the fresh parser histories need disk space. Final closure and integration still
+require the original parser guards, and all retained project artifacts stay intact.
+
 Production Python has changed on main since the measured launcher was frozen.
 Review the exact diff and merge the indirect-option path with main's current
 compiler/tool routing. Do not reuse the old integration's assumption that only
