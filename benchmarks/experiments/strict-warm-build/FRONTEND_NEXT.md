@@ -1,5 +1,28 @@
 # Remaining repeated work after the development screens
 
+September 18 continuation: the native HIR compiler has been rechecked on the
+updated host and installed as an ordinary immutable runtime. Both the fresh
+28-command readmission and the 28-command final-path installation passed;
+all 3,709 installed files were independently rehashed. See
+[installation evidence](../../../results/runtime-installation-r-02/README.md).
+This establishes compiler/source installation, not application latency.
+
+The source-containing std CLI and ordinary launcher now have explicit native
+runtime selectors. The launcher requires a separately keyed tool composition
+with matching recorded exporter/wrapper compiler roles. Its 45 focused controls
+passed with mocked children; actual prepared std, an exporter built for the final
+runtime path, and application correctness checks are the next steps. The beta
+auxiliary build sysroot has passed fresh metadata inspection; its missing LLVM
+provider is being added in a separate composition, with a real debug-stripping
+control before the exporter rebuild.
+
+[Target selection](TARGET-SELECTION.md) retains Ruff as the immediate measured
+development target, adds pinned Oxc as another development target, and keeps
+Nushell for regression/stress coverage. Oxc's workflow and explicit native
+compiler accounting passed 30 controls. Source/toolchain acquisition and real
+native compatibility are still pending; no Oxc timing or holdout success is
+claimed. The sub-0.500-second target remains unmet.
+
 The strict target is still unmet. The latest complete screen has a 5.3454s
 candidate median and no candidate edit below 0.500s. No single proposed change
 has evidence supporting the remaining order-of-magnitude reduction.

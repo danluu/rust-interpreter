@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Edit production code, then execute existing project tests."""
 import argparse
+from contextlib import ExitStack
 import fcntl
 import hashlib
 import json
@@ -16,9 +17,11 @@ from interpreter import ROOT, TOOLCHAIN, checked_tools, installed_tools, require
 
 from workflow_cases import WORKFLOWS, WORKFLOW_VARIANTS
 from workflow_measurements import child_usage, child_cpu_since, initial_modes, mode_order, per_edit_spread, sample_path, source_states
-from workflow_controls import native_command, native_environment, exporter_seconds
+from workflow_controls import (native_command, native_environment, native_toolchain, inspect_native_toolchain,
+                               revalidate_native_toolchain, native_identity_environment, exporter_seconds)
 from workflow_io import SourceEdit, capture, require_space, write_json
 from workflow_case_file import load as load_case_file, source_file
+from workflow_projects import WORKFLOW_ONLY_PROJECTS, project_revision
 from workflow_jobs import UniqueJobCount, resolve_build_jobs
 from compare_saved_runtime import acquire_lock, lock_wait_seconds
 from suite_reports import guest_test_failure, read_report, validate_report
@@ -84,12 +87,17 @@ def restored_sample(cycles, modes, paired, original):
 
 
 def main():
+    with ExitStack() as cleanup:
+        return run_workflow(cleanup)
+
+
+def run_workflow(cleanup):
     if not __debug__:
         raise RuntimeError('benchmark validation uses assertions; run Python without -O')
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-id',default='e2e-workflow-'+str(time.time_ns()))
     parser.add_argument('--lock-wait-seconds',type=lock_wait_seconds,default=0,help='bounded wait for the shared benchmark lock; default fails immediately')
-    parser.add_argument('--project',choices=[*WORKFLOWS,'rg-aot'],default='fre')
+    parser.add_argument('--project',choices=[*WORKFLOWS,*WORKFLOW_ONLY_PROJECTS,'rg-aot'],default='fre')
     parser.add_argument('--workflow',default='default',help='additional named workload within a project')
     parser.add_argument('--case-file',type=Path,help='bounded public workflow JSON inside this workspace; mutually exclusive with a named workflow')
     parser.add_argument('--batch',action='store_true',help='invoke all custom test entries in one command')
@@ -102,6 +110,7 @@ def main():
     parser.add_argument('--baseline-jobs',type=int,action=UniqueJobCount,help='override baseline Cargo jobs in a paired comparison (1..256)')
     parser.add_argument('--candidate-jobs',type=int,action=UniqueJobCount,help='override candidate Cargo jobs in a paired comparison (1..256)')
     parser.add_argument('--native-profile',choices=['repository','o0-incremental'],default='repository',help='explicit native/check profile override; no fastest-native claim')
+    parser.add_argument('--native-toolchain',type=native_toolchain,help='explicit installed native/check compiler; default keeps the existing nightly route; custom engines are unchanged')
     parser.add_argument('--native-test-threads',default='1',help='positive libtest thread count or default')
     parser.add_argument('--native-rustflag',action='append',default=[],help='one explicit native/check rustc argument; repeat, using --native-rustflag=VALUE')
     parser.add_argument('--check-floor',action='store_true',help='independently time cargo check of the library-test target after each primary mode triplet')
@@ -132,6 +141,7 @@ def main():
     parser.add_argument('--comparison-engine',choices=['interpreter','jit'],help='engine for both tool builds; defaults to jit when comparing')
     parser.add_argument('--expect-identical-bytecode',action='store_true',help='require matching executed bytecode when isolating a runtime change')
     args=parser.parse_args()
+    native_selection=args.native_toolchain or TOOLCHAIN
     try:
         scheduled_modes=initial_modes(['native','baseline','candidate'] if args.baseline_tool_key is not None else ['native','interpreter','jit'],args.initial_mode_order)
         resolved_jobs=resolve_build_jobs(args.jobs,native=args.native_jobs,baseline=args.baseline_jobs,
@@ -184,7 +194,9 @@ def main():
         parser.error('allocation limit must be in 0..1000000')
     if Path(args.run_id).name != args.run_id or args.run_id in ['.', '..']:
         parser.error('--run-id must be a directory name')
-    revision=json.loads((ROOT/'benchmarks/corpus.json').read_text())['projects'][args.project]['revision']
+    if args.project in WORKFLOW_ONLY_PROJECTS and args.case_file is None:
+        parser.error('this development project requires --case-file')
+    revision=project_revision(ROOT,args.project)
     case_proof=None
     workflow_label=args.workflow
     if args.case_file is not None:
@@ -208,11 +220,35 @@ def main():
     private=case.get('private',False)
     tests=case['tests'];edits=case['edits'];package=case['package']
     if args.compare_isolated_batches and len(tests)<2:parser.error('isolated batch comparison requires at least two tests')
-    lock=(ROOT/'.work/benchmark.lock').open('a')
+    lock=cleanup.enter_context((ROOT/'.work/benchmark.lock').open('a'))
     if args.lock_wait_seconds:
         acquire_lock(lock,args.lock_wait_seconds)
     else:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    work=ROOT/'.work/runs'/args.run_id
+    work.mkdir(parents=True)
+    native_identity=None
+    native_identity_calls=[]
+    native_identity_path=work/'native-toolchain.json'
+    identity_base=os.environ.copy()
+    identity_env=native_identity_environment(identity_base)
+    identity_record=dict(toolchain=args.native_toolchain,calls=native_identity_calls,identity=None,final_identity=None)
+    def identity_command(command):
+        receipt_path=work/f'native-identity-{len(native_identity_calls)}.json'
+        child,stdout,stderr=capture(command,cwd=ROOT,env=identity_env,receipt_path=receipt_path,
+            receipt=dict(mode='native-toolchain-identity',stage='setup' if native_identity is None else 'final',environment=identity_env))
+        row=dict(command=command,pid=child.pid,returncode=child.returncode,stdout=stdout,stderr=stderr,
+            stdout_sha256=hashlib.sha256(stdout.encode()).hexdigest(),stderr_sha256=hashlib.sha256(stderr.encode()).hexdigest(),
+            receipt_path=str(receipt_path.relative_to(ROOT)),receipt=json.loads(receipt_path.read_bytes()),
+            receipt_sha256=hashlib.sha256(receipt_path.read_bytes()).hexdigest())
+        native_identity_calls.append(row)
+        write_json(native_identity_path,identity_record)
+        return row
+    if args.native_toolchain is not None:
+        native_identity=inspect_native_toolchain(args.native_toolchain,identity_command,
+            environment=identity_base,source=ROOT/'.work/sources'/args.project)
+        identity_record['identity']=native_identity
+        write_json(native_identity_path,identity_record)
     tools,key=installed_tools(args.candidate_tool_key) if args.candidate_tool_key is not None else checked_tools()
     modes=['native','interpreter','jit']
     mode_tools={mode:dict(engine=mode,tool_key=key,directory=tools) for mode in modes[1:]}
@@ -264,9 +300,7 @@ def main():
         raise RuntimeError('snapshot HEAD mismatch')
     if subprocess.check_output(['git','diff','--name-only','HEAD'],cwd=source,text=True).strip():
         raise RuntimeError('snapshot has tracked changes')
-    work=ROOT/'.work/runs'/args.run_id
-    work.mkdir(parents=True)
-    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
+    script_paths=[Path(__file__).resolve(),ROOT/'scripts/interpreter.py',ROOT/'scripts/workflow_cases.py',ROOT/'scripts/workflow_case_file.py',ROOT/'scripts/workflow_projects.py',ROOT/'scripts/workflow_measurements.py',ROOT/'scripts/workflow_controls.py',ROOT/'scripts/workflow_io.py',ROOT/'scripts/std_mir.py',ROOT/'scripts/workflow_jobs.py']
     script_paths+=[ROOT/'scripts/native_suite.py',ROOT/'scripts/suite_reports.py',ROOT/'scripts/compare_saved_runtime.py',
                   ROOT/'scripts/workspace_cache.py',ROOT/'scripts/test_discovery.py']
     if case_proof is not None:
@@ -297,17 +331,19 @@ def main():
         if file.read_bytes()!=current:raise RuntimeError('source changed before Cargo-check control')
         previous=check_records[-1]['source_sha256'] if check_records else None
         if sample['phase']!='cold' and previous==digest:raise RuntimeError('unchanged Cargo-check source')
-        command=native_command(TOOLCHAIN,source/'Cargo.toml',package,work/'check',native_jobs,
-            args.native_test_threads,[],check=True)
-        child_env=native_environment(env,args.native_profile,args.native_rustflag)
+        command=native_command(native_selection,source/'Cargo.toml',package,work/'check',native_jobs,
+            args.native_test_threads,[],check=True,cargo=None if native_identity is None else native_identity['tools']['cargo']['resolved'])
+        child_env=native_environment(env,args.native_profile,args.native_rustflag,compiler=native_identity)
         require_space(work,args.minimum_free_gib)
         before=child_usage();start=time.perf_counter()
         child,stdout,stderr=capture(command,cwd=source,env=child_env,receipt_path=work/'active-command.json',
-            receipt=dict(mode='check-floor',cycle=sample['cycle'],state=sample['state'],phase=sample['phase']))
+            receipt=dict(mode='check-floor',cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],
+                         native_environment=None if native_identity is None else {k:child_env[k] for k in ['RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER']}))
         elapsed=time.perf_counter()-start;cpu=child_cpu_since(before)
         row=dict(cycle=sample['cycle'],state=sample['state'],phase=sample['phase'],source_sha256=digest,
             previous_source_sha256=previous,seconds=elapsed,cpu_seconds=cpu['total_seconds'],cpu=cpu,
-            command=command,returncode=child.returncode,stdout=stdout,stderr=stderr,load=os.getloadavg())
+            command=command,returncode=child.returncode,stdout=stdout,stderr=stderr,load=os.getloadavg(),
+            native_environment=None if native_identity is None else {k:child_env[k] for k in ['RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER']})
         check_records.append(row);write_json(work/'check-records.json',check_records)
         if child.returncode or 'Checking '+package not in stderr:raise RuntimeError('Cargo-check control did not successfully check the edited target: '+stderr)
         if file.read_bytes()!=current:raise RuntimeError('source changed during Cargo-check control')
@@ -328,11 +364,13 @@ def main():
             suite_path=work/'suites'/mode/sample_path(sample,0,args.cycles,'json')
             suite_path.parent.mkdir(parents=True,exist_ok=True)
         if mode=='native':
-            commands=[native_command(TOOLCHAIN,manifest,package,work/'native',native_jobs,
-                args.native_test_threads,selected,timings=args.cargo_timings)]
+            commands=[native_command(native_selection,manifest,package,work/'native',native_jobs,
+                args.native_test_threads,selected,timings=args.cargo_timings,
+                cargo=None if native_identity is None else native_identity['tools']['cargo']['resolved'])]
             if suite_path is not None:
                 commands=[[sys.executable,str(ROOT/'scripts/native_suite.py'),'--manifest-path',manifest,
                     '--package',package,'--target-dir',str(work/'native'),'--jobs',str(native_jobs),
+                    *(['--native-toolchain',native_selection,'--native-cargo',native_identity['tools']['cargo']['resolved']] if native_identity else []),
                     '--test-threads=1','--suite-report',str(suite_path),
                     *(['--timings'] if args.cargo_timings else []),*[a for test in selected for a in ['--entry',test]]]]
         else:
@@ -356,7 +394,7 @@ def main():
             commands=[[*base,*[arg for test in selected for arg in ['--entry',test]]]] if args.batch else [[*base,'--entry',test] for test in selected]
         start=time.perf_counter();calls=[]
         child_env=env.copy()
-        if mode=='native':child_env=native_environment(env,args.native_profile,args.native_rustflag)
+        if mode=='native':child_env=native_environment(env,args.native_profile,args.native_rustflag,compiler=native_identity)
         if mode!='native' and config['guest_flags']:
             child_env['RUSTFLAGS']=' '.join(config['guest_flags'])
         for command in commands:
@@ -365,10 +403,12 @@ def main():
             usage_before=child_usage()
             p,stdout,stderr=capture(command,cwd=source,env=child_env,receipt_path=work/'active-command.json',
                 receipt=dict(mode=mode,cycle=cycle,state=state,phase=phase,label=label,
-                    rustflags=child_env.get('RUSTFLAGS'),encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS')))
+                    rustflags=child_env.get('RUSTFLAGS'),encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS'),
+                    native_environment={k:child_env[k] for k in ['RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER']} if mode=='native' and native_identity else None))
             cpu=child_cpu_since(usage_before)
             calls.append(dict(pid=p.pid,command=command,rustflags=child_env.get('RUSTFLAGS'),seconds=time.perf_counter()-child_start,
                               encoded_rustflags=child_env.get('CARGO_ENCODED_RUSTFLAGS'),
+                              native_environment={k:child_env[k] for k in ['RUSTC','RUSTC_WRAPPER','RUSTC_WORKSPACE_WRAPPER']} if mode=='native' and native_identity else None,
                               exporter_seconds=exporter_seconds(stderr) if mode!='native' else {},
                               cpu=cpu,returncode=p.returncode,stdout=stdout,stderr=stderr))
             if p.returncode:break
@@ -542,6 +582,10 @@ def main():
                 assert [a['sha256'] for a in restored[0]['artifacts']]==[a['sha256'] for a in restored[1]['artifacts']],'restored paired bytecode differs'
         if args.check_floor:check_reference(sample)
     assert all(hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest for path,digest in frozen_scripts.items()),'benchmark scripts changed during the run'
+    if native_identity is not None:
+        identity_record['final_identity']=revalidate_native_toolchain(native_identity,identity_command,
+            environment=identity_base,source=source)
+        write_json(native_identity_path,identity_record)
     med={m:statistics.median(r['seconds'] for r in records if r['mode']==m and r['state']>0) for m in modes}
     result=dict(schema_version=2,project=args.project,workflow=workflow_label,revision=revision,cycles=args.cycles,initial_mode_order=scheduled_modes,
                 minimum_free_gib=args.minimum_free_gib,
@@ -574,6 +618,10 @@ def main():
                 exporter_sha256=hashlib.sha256((tools/'rust-interp-mir-export').read_bytes()).hexdigest(),
                 samples=[{k:v for k,v in r.items() if k!='calls' and not (private and k=='tests')} for r in records])
     if args.aa_control:result['aa_control']=True
+    if native_identity is not None:
+        result['native_control'].update(toolchain=native_selection,identity=native_identity,
+            identity_evidence=str(native_identity_path.relative_to(ROOT)),
+            identity_evidence_sha256=hashlib.sha256(native_identity_path.read_bytes()).hexdigest())
     if args.build_metrics or args.verify_restoration or args.aa_control:result['build_controls']=dict(package=package)
     if controlled_caches:result.update(cache_namespaces=cache_namespaces,cache_workspaces=cache_workspaces)
     if args.verify_restoration:

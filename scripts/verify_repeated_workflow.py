@@ -102,6 +102,59 @@ def verify(report, reference=None, *, compiler_flags=None):
         require(all(namespaces[m] == Path(report['raw']).name + ':' + m for m in namespaces) and
                 len(set(report['cache_workspaces'].values())) == 2, 'comparison caches are not isolated')
     rows = read(ROOT / report['raw'] / 'records.json')
+    native_toolchain = report.get('native_control', {}).get('toolchain')
+    if native_toolchain is not None:
+        control = report['native_control']
+        path = ROOT / control['identity_evidence']
+        require(path == ROOT / report['raw'] / 'native-toolchain.json' and not path.is_symlink(),
+                'native compiler identity evidence path differs')
+        payload = path.read_bytes()
+        require(hashlib.sha256(payload).hexdigest() == control['identity_evidence_sha256'],
+                'native compiler identity evidence changed')
+        evidence = json.loads(payload)
+        require(evidence['identity'] == evidence['final_identity'] == control['identity'] and control['identity']['toolchain'] == native_toolchain,
+                'native compiler identity differs from the selected toolchain')
+        require(set(control['identity']['tools']) == {'rustc', 'cargo'} and len(evidence['calls']) == 8,
+                'native compiler identity probes are incomplete')
+        native_routing = dict(RUSTC=control['identity']['tools']['rustc']['resolved'],
+                              RUSTC_WRAPPER='', RUSTC_WORKSPACE_WRAPPER='')
+        native_cargo = control['identity']['tools']['cargo']['resolved']
+        for index, name in enumerate(['rustc', 'cargo', 'rustc', 'cargo']):
+            tool = control['identity']['tools'][name]
+            lookup, version = evidence['calls'][index * 2:index * 2 + 2]
+            require(lookup['command'] == [control['identity']['rustup']['path'], 'which', '--toolchain', native_toolchain, name] and
+                    lookup['returncode'] == 0 and lookup['stdout'].strip() == tool['rustup_path'] and
+                    version['command'] == [tool['resolved'], '-vV'] and version['returncode'] == 0 and
+                    version['stdout'] == tool['version_stdout'] and version['stderr'] == tool['version_stderr'] and
+                    version['stdout'].startswith(name + ' '), 'native compiler identity command differs')
+        for index, call in enumerate(evidence['calls']):
+            receipt_path = ROOT / call['receipt_path']
+            require(receipt_path == ROOT / report['raw'] / f'native-identity-{index}.json' and not receipt_path.is_symlink(),
+                    'native identity process receipt path differs')
+            receipt_payload = receipt_path.read_bytes()
+            receipt = json.loads(receipt_payload)
+            require(hashlib.sha256(receipt_payload).hexdigest() == call['receipt_sha256'] and receipt == call['receipt'] and
+                    receipt['status'] == 'finished' and receipt['returncode'] == call['returncode'] == 0 and
+                    receipt['pid'] == call['pid'] and receipt['command'] == call['command'] and
+                    receipt['stage'] == ('setup' if index < 4 else 'final') and receipt['parent_pid'] > 0 and
+                    receipt['finished_at'] >= receipt['started_at'] and
+                    receipt['environment'] == control['identity']['identity_environment'] and
+                    all(hashlib.sha256(call[field].encode()).hexdigest() == call[field + '_sha256'] for field in ['stdout', 'stderr']),
+                    'native identity process receipt or raw output differs')
+        for row in rows:
+            if row['mode'] != 'native':
+                continue
+            for call in row['calls']:
+                command = call['command']
+                require(call['native_environment'] == native_routing, 'native compiler/wrapper environment differs')
+                if report.get('compare_isolated_batches'):
+                    require(command.count('--native-toolchain') == 1 and
+                            command[command.index('--native-toolchain') + 1] == native_toolchain and
+                            command.count('--native-cargo') == 1 and command[command.index('--native-cargo') + 1] == native_cargo,
+                            'native suite selected a different toolchain')
+                else:
+                    require(command[0] == native_cargo,
+                            'native command selected a different toolchain')
     if 'case_file' in report:
         from workflow_case_file import verify_snapshot
         # The existing case verifier reconstructs its declared edit history.
@@ -194,6 +247,9 @@ def verify(report, reference=None, *, compiler_flags=None):
             if mode == 'native':
                 require(Path(command[1]).resolve() == ROOT / 'scripts/native_suite.py', 'native isolation runner differs')
                 verify_command_jobs(suite['build']['command'], job_counts[mode])
+                if native_toolchain is not None:
+                    require(suite['build']['command'][0] == native_cargo,
+                            'native suite built with a different toolchain')
                 require(suite['build']['returncode'] == 0, 'native suite did not build')
                 for test in suite['tests']:
                     require(test['command'] == [suite['executable'], '--exact', test['name'], '--test-threads=1'],
@@ -314,7 +370,10 @@ def verify(report, reference=None, *, compiler_flags=None):
             require(check['phase'] == group[0]['phase'], 'check phase mismatch')
             require(check['seconds'] > 0 and check['cpu_seconds'] > 0 and abs(check['cpu_seconds'] - check['cpu']['total_seconds']) < 1e-8, 'invalid check timing')
             command = check['command']
-            require(command[2] == 'check' and '--profile' in command and command[command.index('--profile') + 1] == 'test' and '--' not in command, 'check did not select the non-executing test target')
+            if native_toolchain is not None:
+                require(command[0] == native_cargo and check['native_environment'] == native_routing,
+                        'check selected a different compiler route')
+            require(command[1 if native_toolchain is not None else 2] == 'check' and '--profile' in command and command[command.index('--profile') + 1] == 'test' and '--' not in command, 'check did not select the non-executing test target')
             verify_command_jobs(command, control['jobs'])
             require('test result:' not in check['stdout'], 'check unexpectedly executed tests')
         for row in rows:

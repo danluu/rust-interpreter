@@ -64,11 +64,12 @@ class NativeSuiteTests(unittest.TestCase):
                 if name=='first':return SimpleNamespace(returncode=101),libtest(name,status='FAILED',passed=0,failed=1),''
                 return SimpleNamespace(returncode=0),libtest(name),''
             args=argparse.Namespace(manifest_path=root/'Cargo.toml',package='fixture',target_dir=target,
-                jobs=2,timings=False,suite_report=root/'report.json',entry=['first','second'])
+                jobs=2,timings=False,suite_report=root/'report.json',entry=['first','second'],native_toolchain='1.98.1',native_cargo=root/'installed-cargo')
             report=dict(tests=[])
             with patch.object(native_suite,'capture',capture), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(native_suite.execute(args,report),1)
             self.assertEqual(len(calls),3)
+            self.assertEqual(calls[0][:2],[str(root/'installed-cargo'),'test'])
             self.assertIn('--no-run',calls[0]);self.assertNotIn('--',calls[0])
             self.assertEqual(calls[1:],[ [str(executable),'--exact',name,'--test-threads=1'] for name in ['first','second'] ])
             self.assertEqual([t['status'] for t in report['tests']],['failed','passed'])

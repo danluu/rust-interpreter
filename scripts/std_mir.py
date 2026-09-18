@@ -78,10 +78,8 @@ def _checked_std_mir_locked(toolchain,fetch,lookup,lookup_stats,custom,namespace
         result=json.loads(ready.read_text())
         if result['owner']!=str(ROOT) or result['identity']!=identity:
             raise RuntimeError('standard-library MIR ownership or identity mismatch')
-        for name,metadata in result['artifacts'].items():
-            path=work/name
-            if not path.is_file() or stamp(path)!=metadata['stamp']:
-                raise RuntimeError('standard-library MIR artifact changed: '+str(path))
+        from std_mir_readmission import validate
+        validate(work, ready, result)
         return work/'sysroot',target,key,result
     work.mkdir(parents=True,exist_ok=True)
     marker=work/'owner.json'

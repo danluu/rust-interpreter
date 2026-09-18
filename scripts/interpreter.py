@@ -253,7 +253,9 @@ def _main(resources):
     parser.add_argument('--jit-persistent-registers',action='store_true',help='experimental full-width values retained across native block edges; requires --engine=jit')
     parser.add_argument('--jit-native-calls',action='store_true',help='experimental complete native call trees; requires --engine=jit')
     parser.add_argument('--tool-key',help='use an already installed immutable tool build, for reproducing or comparing runs')
-    parser.add_argument('--compiler-key',help='use an owned complete stage2 compiler; requires preinstalled matching --tool-key')
+    compiler_selection=parser.add_mutually_exclusive_group()
+    compiler_selection.add_argument('--compiler-key',help='use an owned complete stage2 compiler; requires preinstalled matching --tool-key')
+    compiler_selection.add_argument('--runtime-compiler-key',help='use a separately installed native runtime; requires preinstalled matching --tool-key')
     parser.add_argument('--compiler-argv-record-dir',type=Path,help='retain actual compiler argv in an existing empty directory for qualification')
     parser.add_argument('--cargo-key',help='use an owned qualified Cargo executable with the selected compiler')
     parser.add_argument('--stable-cgu-partitioning',choices=['off','on'],default='off',help='custom compiler CGU grouping policy (default: off)')
@@ -276,6 +278,16 @@ def _main(resources):
     parser.add_argument('--test-target',help='select a named Cargo integration-test target; requires --test-body')
     parser.add_argument('arguments',nargs=argparse.REMAINDER)
     args=parser.parse_args()
+    custom_key=args.compiler_key or args.runtime_compiler_key
+    if args.runtime_compiler_key is not None:
+        if args.tool_key is None:parser.error('--runtime-compiler-key requires preinstalled --tool-key')
+        if (args.cargo_key is not None or args.frontend_workers is not None
+                or args.host_proc_macro_opt!='off' or args.host_library_opt!='off'
+                or args.stable_cgu_partitioning!='off' or args.stable_mono_cgu_partitioning is not None
+                or args.borrowck_cache!='off'):
+            parser.error('--runtime-compiler-key currently requires stock Cargo and other compiler routing policies off')
+        if args.std_mir and args.std_mir_policy=='v1':
+            parser.error('--runtime-compiler-key with --std-mir requires a prepared source-paths-v2 policy and key')
     if args.compiler_argv_record_dir is not None:
         directory=args.compiler_argv_record_dir
         if not directory.is_absolute() or directory.resolve(strict=True)!=directory or not directory.is_dir() or any(directory.iterdir()):
@@ -289,8 +301,8 @@ def _main(resources):
         try:host_library_opt.validate_selection(args,os.environ)
         except ValueError as error:parser.error(str(error))
     if args.std_mir_policy!='v1' or args.std_mir_key is not None:
-        if args.std_mir_policy not in ['source-paths-v2','source-paths-v2-shared'] or args.std_mir_key is None or not args.std_mir or args.compiler_key is None or args.cargo_key is not None:
-            parser.error('source-paths-v2 requires --std-mir, --std-mir-key and --compiler-key, without --cargo-key')
+        if args.std_mir_policy not in ['source-paths-v2','source-paths-v2-shared'] or args.std_mir_key is None or not args.std_mir or custom_key is None or args.cargo_key is not None:
+            parser.error('source-paths-v2 requires --std-mir, --std-mir-key and an explicit compiler key, without --cargo-key')
     if args.stable_mono_cgu_partitioning is not None:
         import stable_mono_cgu
         try:stable_mono_cgu.validate_selection(args,os.environ)
@@ -378,14 +390,22 @@ def _main(resources):
     from custom_compiler import load_compiler, validate_tool_compiler
     if args.cargo_key is not None:
         from custom_cargo import load_cargo
-    custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
+    if args.runtime_compiler_key is not None:
+        from runtime_compiler import load_runtime_compiler
+        from runtime_tools import validate_tool_runtime
+        custom=load_runtime_compiler(ROOT,args.runtime_compiler_key)
+    else:
+        custom=load_compiler(ROOT,args.compiler_key) if args.compiler_key is not None else None
     if custom:custom.environment(os.environ) # Reject conflicts before any compilation.
     if args.stable_mono_cgu_partitioning is not None:
         custom.require_option(stable_mono_cgu.OPTION)
     cargo=load_cargo(ROOT,args.cargo_key) if args.cargo_key is not None else None
     if cargo:cargo.environment(os.environ,TOOLCHAIN,custom) # Validate before tool/std setup.
     tools,key=installed_tools(args.tool_key) if args.tool_key is not None else checked_tools()
-    validate_tool_compiler(tools,key,custom)
+    if args.runtime_compiler_key is not None:
+        validate_tool_runtime(tools,key,custom)
+    else:
+        validate_tool_compiler(tools,key,custom)
     if custom:require_export_option(tools,key,'stable-cgu-partitioning')
     if args.compiler_argv_record_dir is not None:require_export_option(tools,key,'compiler-argv-record-v1')
     if args.stable_mono_cgu_partitioning is not None:
@@ -421,6 +441,8 @@ def _main(resources):
         timings['custom_compiler']=dict(key=custom.key,rustc=str(custom.rustc),
             rustc_sha256=custom.identity['files']['bin/rustc'],compiler=custom.identity['compiler'],
             stable_cgu_partitioning=args.stable_cgu_partitioning)
+        if args.runtime_compiler_key is not None:
+            timings['custom_compiler']['policy']=custom.identity['policy']
         if args.stable_mono_cgu_partitioning is not None:
             timings['custom_compiler']['stable_mono_cgu_partitioning']=stable_mono_cgu.receipt(
                 args.stable_mono_cgu_partitioning,custom,mono_wrapper)

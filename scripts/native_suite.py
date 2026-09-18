@@ -11,7 +11,7 @@ import sys
 import time
 
 from interpreter import TOOLCHAIN
-from workflow_controls import native_command
+from workflow_controls import native_command, native_toolchain
 from workflow_io import capture
 
 
@@ -50,8 +50,8 @@ def execute(args, report):
     receipt_directory = args.suite_report.with_suffix('.workers')
     if workers > 1:
         receipt_directory.mkdir()  # Reserve distinct child receipts before Cargo.
-    command = native_command(TOOLCHAIN, args.manifest_path, args.package, args.target_dir,
-                             args.jobs, '1', [], timings=args.timings)
+    command = native_command(getattr(args, 'native_toolchain', TOOLCHAIN), args.manifest_path, args.package, args.target_dir,
+                             args.jobs, '1', [], timings=args.timings,cargo=getattr(args, 'native_cargo', None))
     command = command[:command.index('--')] + ['--no-run', '--message-format=json-render-diagnostics']
     receipt = args.suite_report.with_suffix('.active.json')
     before = time.perf_counter()
@@ -99,6 +99,9 @@ def main():
     parser.add_argument('--package', required=True)
     parser.add_argument('--target-dir', required=True, type=Path)
     parser.add_argument('--jobs', required=True, type=int, choices=range(1, 257))
+    parser.add_argument('--native-toolchain', type=native_toolchain, default=TOOLCHAIN,
+                        help='installed rustup toolchain for the native build')
+    parser.add_argument('--native-cargo', type=Path, help='explicit inspected native Cargo executable')
     parser.add_argument('--test-threads', choices=['1'], default='1')
     parser.add_argument('--suite-workers', type=int, choices=range(1, 65), default=1,
                         help='concurrent isolated test processes; each uses one libtest thread')

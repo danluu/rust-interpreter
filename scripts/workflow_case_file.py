@@ -4,6 +4,7 @@ import json
 from pathlib import Path, PurePosixPath
 import re
 import subprocess
+from workflow_projects import WORKFLOW_ONLY_PROJECTS, project_revision
 
 
 def require(ok, message):
@@ -15,7 +16,7 @@ def checked(data, project, revision):
     require(isinstance(data, dict) and set(data) ==
             {'schema_version', 'label', 'project', 'revision', 'edit_class', 'case'}, 'unexpected top-level fields')
     require(type(data['schema_version']) is int and data['schema_version'] == 1, 'unsupported schema')
-    require(project in {'fre', 'pgrust', 'nushell', 'ruff'} and data['project'] == project, 'public project differs')
+    require(project in {'fre', 'pgrust', 'nushell', 'ruff', *WORKFLOW_ONLY_PROJECTS} and data['project'] == project, 'public project differs')
     require(data['revision'] == revision, 'source pin differs')
     require(isinstance(data['label'], str) and re.fullmatch(r'[a-z0-9][a-z0-9-]{0,95}', data['label']), 'invalid label')
     require(isinstance(data['edit_class'], str) and re.fullmatch(r'[a-z][a-z0-9-]{0,95}', data['edit_class']), 'invalid edit class')
@@ -82,7 +83,7 @@ def verify_snapshot(root, report, rows):
     proof = report['case_file']
     snapshot = Path(root) / report['raw'] / 'case.json'
     require(proof['snapshot'] == str(snapshot.relative_to(root)), 'unexpected case snapshot path')
-    revision = json.loads((Path(root) / 'benchmarks/corpus.json').read_text())['projects'][report['project']]['revision']
+    revision = project_revision(root, report['project'])
     require(report['revision'] == revision, 'report source pin differs')
     case, actual = load(snapshot, report['project'], revision)
     require(all(actual[k] == proof[k] for k in ['sha256', 'label', 'edit_class', 'schema_version']), 'case snapshot changed')
