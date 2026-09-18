@@ -144,13 +144,8 @@ def identity_for(spec):
                 native_records[output] = row
     require(len(runtime) == 1, 'require exactly one complete admitted runtime component')
     for name in records:
-        # Component names and destinations are already canonical relative POSIX
-        # paths. Walk every ancestor without constructing Path objects for each
-        # segment; this check runs again on every installed-runtime lookup.
-        parent = name.rpartition('/')[0]
-        while parent:
-            require(parent not in records, 'file/directory collision: ' + name)
-            parent = parent.rpartition('/')[0]
+        require(not any(str(p) in records for p in PurePosixPath(name).parents if str(p) != '.'),
+                'file/directory collision: ' + name)
     for name, link in runtime[0]['links'].items():
         require(name in SOURCE_ROOTS, 'undeclared source-link kind')
         require(set(link) == {'text', 'resolved_target', 'action', 'reason'}

@@ -309,6 +309,43 @@ class RuntimeCompilerTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'must not claim'):
             runtime.identity_for(changed)
 
+    def test_file_directory_collisions_across_components_and_distant_ancestors(self):
+        proof = self.spec['components'][0]['files']['bin/rustc'] | {'mode': 0o644}
+        for ancestor, descendant in [('share', 'share/data'),
+                ('share/a', 'share/a/b/c'), ('share/café', 'share/café/deep/file')]:
+            for reverse in [False, True]:
+                changed = copy.deepcopy(self.spec)
+                additions = [dict(role='support', root=str(self.root / str(i)),
+                    destination='support', links={}, files={name: proof})
+                    for i, name in enumerate([ancestor, descendant])]
+                changed['components'] += additions[::-1] if reverse else additions
+                with self.subTest(ancestor=ancestor, reverse=reverse), \
+                        self.assertRaisesRegex(RuntimeError, 'file/directory collision'):
+                    runtime.identity_for(changed)
+        changed = copy.deepcopy(self.spec)
+        changed['components'] += [
+            dict(role='support', root=str(self.root / 'first'), destination='support',
+                 links={}, files={'parent': proof}),
+            dict(role='support', root=str(self.root / 'second'), destination='support/parent',
+                 links={}, files={'deep/child': proof})]
+        with self.assertRaisesRegex(RuntimeError, 'file/directory collision'):
+            runtime.identity_for(changed)
+
+    def test_path_prefix_siblings_and_noncanonical_names(self):
+        proof = self.spec['components'][0]['files']['bin/rustc'] | {'mode': 0o644}
+        changed = copy.deepcopy(self.spec)
+        siblings = ['share/a', 'share/ab/child', 'share/a-b/child', 'share/.hidden/file',
+                    'share/café name/file', 'share/café names/file']
+        changed['components'].append(dict(role='support', root=str(self.root / 'support'),
+            destination='support', links={}, files={name: proof for name in siblings}))
+        identity = runtime.identity_for(changed)
+        self.assertTrue(all('support/' + name in identity['files'] for name in siblings))
+        for name in ['x/../y', 'x/./y', 'x//y', 'x/', '/x', '..', '.']:
+            invalid = copy.deepcopy(self.spec)
+            invalid['components'][0]['files'][name] = proof
+            with self.subTest(name=name), self.assertRaisesRegex(RuntimeError, 'invalid relative runtime path'):
+                runtime.identity_for(invalid)
+
     def test_auxiliary_tool_has_its_own_executable_rpath_context(self):
         name = 'lib/rustlib/' + HOST + '/bin/rust-objcopy'
         row = self.spec['components'][0]['files']['bin/rustc'].copy()
