@@ -77,3 +77,9 @@ and execution returning 42, and fourteen final loader probes. It validates
 the complete original and composed inventories before and after, binds every
 prior receipt and raw stream, and retains the successful direct-object check.
 It does not copy, install, download or modify the toolchains.
+
+The continuation passed all 24 children without diagnostics. The subsequent
+fresh native Oxc history also passed all 64 children and all six source states
+without warnings. See [toolchain evidence](../../results/oxc-native-toolchain-01/README.md)
+and [clean native history](../../results/oxc-native-compatibility-02/README.md).
+Interpreter/JIT compatibility remains a separate next step.
